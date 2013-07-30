@@ -27,7 +27,7 @@ import io.informant.trace.model.Trace;
 
 /**
  * This micro benchmark helps justify using synchronized ArrayList over ConcurrentLinkedQueue for
- * {@code attributes} and {@code metrics} fields in {@link Trace}.
+ * the {@code attributes} and {@code metrics} fields in {@link Trace}.
  * 
  * @author Trask Stalnaker
  * @since 0.5

@@ -171,6 +171,8 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/styles/(.*)$"), resourceBase + "/styles/$1");
         uriMappings.put(Pattern.compile("^/components/(.*)$"), resourceBase + "/components/$1");
         // services
+        // export service is not bound under /backend since the export url is visible to users as
+        // the download url for the export file
         uriMappings.put(Pattern.compile("^/export/.*$"), traceExportHttpService);
         uriMappings.put(Pattern.compile("^/backend/trace/detail/.*$"), snapshotHttpService);
 

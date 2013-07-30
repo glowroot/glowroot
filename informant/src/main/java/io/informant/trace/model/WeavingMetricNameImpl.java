@@ -24,9 +24,10 @@ import io.informant.weaving.WeavingMetricName;
 
 /**
  * Weaving metric is a very special case because it is measuring timing inside of
- * ClassFileTransformation.transform(), and so it should not load/depend on lots of other classes.
- * (otherwise the weaving API could perform metric collection via the normal
- * PluginServices.startTimer())
+ * ClassFileTransformation.transform(), and so it should not load/depend on lots of other classes,
+ * otherwise the weaving API could perform metric collection via the normal
+ * PluginServices.startTimer() (see comment in PreInitializeClasses for details on why class file
+ * transformation should not load/depend on lots of other classes).
  * 
  * @author Trask Stalnaker
  * @since 0.5

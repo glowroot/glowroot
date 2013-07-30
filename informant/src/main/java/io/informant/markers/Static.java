@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.TYPE;
 
 /**
- * Marker to identify classes that have only static members (similar to a C# static class).
+ * Marker to identify classes that have only static members.
  * 
  * @author Trask Stalnaker
  * @since 0.5

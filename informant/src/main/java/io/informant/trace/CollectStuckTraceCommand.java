@@ -23,7 +23,7 @@ import io.informant.markers.ThreadSafe;
 import io.informant.trace.model.Trace;
 
 /**
- * Designed to be scheduled and run as soon as the trace exceeds a given threshold.
+ * Scheduled to run as soon as the trace exceeds a given threshold.
  * 
  * If the {@link Trace} has already completed when this is run then it does nothing.
  * 

@@ -16,7 +16,7 @@
 package io.informant.collector;
 
 /**
- * Interface for storing snapshots.
+ * Interface for storing trace snapshots.
  * 
  * @author Trask Stalnaker
  * @since 0.5

@@ -48,7 +48,7 @@ import io.informant.testkit.Trace;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
- * Basic test of the servlet plugin.
+ * Basic tests of the servlet plugin.
  * 
  * @author Trask Stalnaker
  * @since 0.5

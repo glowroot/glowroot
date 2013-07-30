@@ -32,8 +32,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * Owns the thread (via a single threaded scheduled executor) that captures fine-grained thread
- * dumps for a percentage of traces.
+ * Captures fine-grained profile for a percentage of traces.
  * 
  * @author Trask Stalnaker
  * @since 0.5

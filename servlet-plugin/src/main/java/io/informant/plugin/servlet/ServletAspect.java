@@ -40,7 +40,7 @@ import io.informant.shaded.google.common.base.Strings;
  * {@link javax.servlet.Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)}
  * calls.
  * 
- * By default only calls to the top-most Filter and to the top-most Servlet are captured.
+ * By default only the calls to the top-most Filter and to the top-most Servlet are captured.
  * 
  * This plugin is careful not to rely on request or session objects being thread-safe.
  * 

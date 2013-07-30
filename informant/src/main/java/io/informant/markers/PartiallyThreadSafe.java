@@ -22,7 +22,7 @@ import static java.lang.annotation.ElementType.TYPE;
 
 /**
  * Marker to identify classes that are partially thread safe, e.g. safe for observation by multiple
- * threads, but only supports updates from a single threads.
+ * threads, but only support updates from a single thread.
  * 
  * @author Trask Stalnaker
  * @since 0.5

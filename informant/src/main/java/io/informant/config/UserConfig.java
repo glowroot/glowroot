@@ -22,7 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 
 /**
- * Immutable structure to hold the user tracing config.
+ * Immutable structure to hold the user override config.
  * 
  * @author Trask Stalnaker
  * @since 0.5

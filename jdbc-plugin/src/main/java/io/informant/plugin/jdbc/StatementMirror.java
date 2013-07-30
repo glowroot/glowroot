@@ -20,13 +20,13 @@ import java.sql.Statement;
 import java.util.List;
 
 import checkers.nullness.quals.Nullable;
-import com.google.common.collect.Lists;
 
 import io.informant.shaded.google.common.collect.ImmutableList;
+import io.informant.shaded.google.common.collect.Lists;
 
 /**
- * Used by JdbcAspect to capture and mirror the state of statements since the underlying
- * {@link Statement} values cannot be inspected after they have been set.
+ * Used to capture and mirror the state of statements since the underlying {@link Statement} values
+ * cannot be inspected after they have been set.
  * 
  * @author Trask Stalnaker
  * @see java.sql.Statement#addBatch(String)

@@ -19,7 +19,7 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 
 /**
- * Structure used to deserialize json post data sent to "/trace/points".
+ * Structure used to deserialize json post data sent to /backend/trace/points.
  * 
  * @author Trask Stalnaker
  * @since 0.5

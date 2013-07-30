@@ -27,7 +27,7 @@ import io.informant.shaded.google.common.collect.Queues;
 import io.informant.shaded.google.common.hash.HashCodes;
 
 /**
- * Used by JdbcAspect to capture and mirror the state of prepared statements since the underlying
+ * Used to capture and mirror the state of prepared statements since the underlying
  * {@link PreparedStatement} values cannot be inspected after they have been set.
  * 
  * @author Trask Stalnaker

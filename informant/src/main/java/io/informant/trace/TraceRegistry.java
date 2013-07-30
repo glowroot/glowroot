@@ -24,8 +24,7 @@ import io.informant.markers.Singleton;
 import io.informant.trace.model.Trace;
 
 /**
- * Registry to hold all active traces. Also holds the current trace state for each thread via
- * ThreadLocals.
+ * Registry to hold all active traces.
  * 
  * @author Trask Stalnaker
  * @since 0.5

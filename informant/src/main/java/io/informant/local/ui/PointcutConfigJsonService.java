@@ -40,7 +40,7 @@ import io.informant.weaving.ParsedTypeCache;
 import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
 /**
- * Json service to read pointcut data.
+ * Json service to read and update pointcut config data, bound to /backend/pointcut.
  * 
  * @author Trask Stalnaker
  * @since 0.5

@@ -25,8 +25,6 @@ import io.informant.shaded.google.common.collect.ImmutableList;
 import io.informant.shaded.google.common.collect.ImmutableSet;
 
 /**
- * Convenience methods for accessing servlet plugin property values.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */

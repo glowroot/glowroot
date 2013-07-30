@@ -41,7 +41,7 @@ import io.informant.api.MessageSupplier;
 import io.informant.markers.PartiallyThreadSafe;
 
 /**
- * Contains all data that has been captured for a given trace (e.g. servlet request).
+ * Contains all data that has been captured for a given trace (e.g. a servlet request).
  * 
  * This class needs to be thread safe, only one thread updates it, but multiple threads can read it
  * at the same time as it is being updated.

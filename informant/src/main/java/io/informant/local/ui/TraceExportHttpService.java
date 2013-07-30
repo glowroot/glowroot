@@ -56,7 +56,8 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
- * Http service to export full trace html page.
+ * Http service to export a trace snapshot as a complete html page, bound to /export. It is not
+ * bound under /backend since it is visible to users as the download url for the export file.
  * 
  * @author Trask Stalnaker
  * @since 0.5

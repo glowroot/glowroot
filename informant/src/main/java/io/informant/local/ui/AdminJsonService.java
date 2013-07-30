@@ -41,7 +41,7 @@ import io.informant.trace.TraceRegistry;
 import io.informant.weaving.ParsedTypeCache;
 
 /**
- * Json service for various admin tasks.
+ * Json service for various admin tasks, bound to /backend/admin.
  * 
  * @author Trask Stalnaker
  * @since 0.5

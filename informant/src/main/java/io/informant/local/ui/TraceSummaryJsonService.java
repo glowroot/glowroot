@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import io.informant.markers.Singleton;
 
 /**
- * Json service to read trace data.
+ * Json service to read trace summary data, bound under /backend/trace/summary.
  * 
  * @author Trask Stalnaker
  * @since 0.5

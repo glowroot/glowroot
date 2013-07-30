@@ -52,7 +52,7 @@ import io.informant.local.store.RollingFile;
 import io.informant.markers.Singleton;
 
 /**
- * Json service to read config data.
+ * Json service to read and update config data, bound to /backend/config.
  * 
  * @author Trask Stalnaker
  * @since 0.5

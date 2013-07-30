@@ -38,9 +38,6 @@ import io.informant.markers.ThreadSafe;
  * Merged stack tree built from sampled stack traces captured by periodic calls to
  * {@link Thread#getStackTrace()}.
  * 
- * This can be either thread-specific stack sampling tied to a trace, or it can be a global sampled
- * stack tree across all threads.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */

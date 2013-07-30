@@ -31,10 +31,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * The placement of this code in the main Informant code base (and not inside of the tests folder)
- * is not ideal, but the alternative is to create a separate artifact (or at least classifier) for
- * this small amount of code, which also seems to be not ideal.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */

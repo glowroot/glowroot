@@ -35,8 +35,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * Owns the thread (via a single threaded scheduled executor) that captures coarse-grained thread
- * dumps for traces that exceed the configured threshold.
+ * Captures coarse-grained profile for traces that exceed the configured threshold.
  * 
  * @author Trask Stalnaker
  * @since 0.5

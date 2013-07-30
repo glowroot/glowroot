@@ -43,7 +43,7 @@ import io.informant.testkit.TraceMarker;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
- * Basic test of the jdbc plugin.
+ * Basic tests of the jdbc plugin.
  * 
  * @author Trask Stalnaker
  * @since 0.5

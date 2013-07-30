@@ -22,10 +22,11 @@ import java.util.Map;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 /**
- * A request object that behaves a bit like tomcat's Request object to make sure the call to
- * {@link #getParameterValues(String)} inside of the method {@link #getParameterMap()} doesn't
- * trigger a new call to {@link #getParameterMap()} (via {@link ServletAspect}) which would lock the
- * parameter map causing the outer call to {@link #getParameterMap()} to fail.
+ * This is a mock request object that mimics tomcat's getParameterMap() behavior. This tests that
+ * the servlet-plugin doesn't try to capture the request parameters (which it does via
+ * getParameterMap()) after the call to getParameterValues() (if getParameterValues() is called from
+ * inside of getParameterMap()), since this would lock the parameter map causing the outer call to
+ * {@link #getParameterMap()} to fail.
  * 
  * @author Trask Stalnaker
  * @since 0.5

@@ -38,7 +38,7 @@ import io.informant.markers.Singleton;
 import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
 /**
- * Json service to read aggregate data.
+ * Json service to read aggregate data, bound to /backend/aggregate.
  * 
  * @author Trask Stalnaker
  * @since 0.5

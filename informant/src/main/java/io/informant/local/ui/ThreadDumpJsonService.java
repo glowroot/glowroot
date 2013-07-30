@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import io.informant.markers.Singleton;
 
 /**
- * Json service to clear captured data.
+ * Json service to capture a thread dump, bound to /backend/threads.
  * 
  * @author Trask Stalnaker
  * @since 0.5

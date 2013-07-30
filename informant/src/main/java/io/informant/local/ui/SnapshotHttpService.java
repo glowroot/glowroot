@@ -35,7 +35,7 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
- * Http service to read trace snapshot data.
+ * Http service to read trace snapshot data, bound to /backend/trace/detail.
  * 
  * @author Trask Stalnaker
  * @since 0.5

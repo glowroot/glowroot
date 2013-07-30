@@ -18,7 +18,9 @@ package io.informant.trace;
 import io.informant.markers.Static;
 
 /**
- * Convenience method for nanosecond comparison.
+ * Nano times roll over every 292 years, so it is important to test differences between nano times
+ * instead of direct comparison (e.g. nano2 - nano1 >= 0, not nano1 <= nano2) (see
+ * http://java.sun.com/javase/7/docs/api/java/lang/System.html#nanoTime())
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -28,9 +30,6 @@ class Nanoseconds {
 
     private Nanoseconds() {}
 
-    // nano times roll over every 292 years, so it is important to test differences between
-    // nano times (e.g. nano2 - nano1 >= 0, not nano1 <= nano2)
-    // (see http://java.sun.com/javase/7/docs/api/java/lang/System.html#nanoTime())
     static boolean lessThan(long nano1, long nano2) {
         return nano2 - nano1 >= 0;
     }

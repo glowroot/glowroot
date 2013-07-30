@@ -26,8 +26,6 @@ import io.informant.api.MessageSupplier;
 import io.informant.shaded.google.common.collect.ImmutableList;
 
 /**
- * Jdbc message supplier created by pointcut.
- * 
  * Objects in the parameter array, batchedParameters collections and batchedSqls collection aren't
  * necessarily thread safe so users of this class must adhere to the following contract:
  * 

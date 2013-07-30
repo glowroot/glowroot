@@ -49,7 +49,7 @@ import io.informant.trace.model.Trace;
 import static io.informant.common.Nullness.assertNonNull;
 
 /**
- * Json service to read trace data.
+ * Json service to read trace point data, bound under /backend/trace/points.
  * 
  * @author Trask Stalnaker
  * @since 0.5

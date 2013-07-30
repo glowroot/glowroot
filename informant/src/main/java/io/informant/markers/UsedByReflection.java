@@ -22,7 +22,7 @@ import static java.lang.annotation.ElementType.METHOD;
 
 /**
  * Marker to identify methods that are called by reflection. This is helpful to know when
- * refactoring.
+ * refactoring and when running tools to find unused code (e.g. UCDetector).
  * 
  * @author Trask Stalnaker
  * @since 0.5
