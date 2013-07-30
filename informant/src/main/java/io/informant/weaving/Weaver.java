@@ -35,6 +35,7 @@ import org.objectweb.asm.util.CheckClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.informant.api.MetricName;
 import io.informant.api.MetricTimer;
 import io.informant.markers.ThreadSafe;
 import io.informant.weaving.ParsedTypeCache.ParseContext;
@@ -62,18 +63,20 @@ class Weaver {
     private final ClassLoader loader;
     private final ParsedTypeCache parsedTypeCache;
 
-    private final WeavingMetricName weavingMetricName;
+    private final MetricTimerService metricTimerService;
+    private final MetricName weavingMetricName;
 
     Weaver(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> dynamicAdvisors,
             @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
-            WeavingMetricName weavingMetricName) {
+            MetricTimerService metricTimerService) {
         this.mixinTypes = mixinTypes;
         this.pluginAdvisors = pluginAdvisors;
         this.dynamicAdvisors = dynamicAdvisors;
         this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
-        this.weavingMetricName = weavingMetricName;
+        this.metricTimerService = metricTimerService;
+        weavingMetricName = metricTimerService.getMetricName("informant weaving");
     }
 
     byte[] weave(byte[] classBytes, String className) {
@@ -88,7 +91,7 @@ class Weaver {
     // weird method name is following "metric marker" method naming
     private byte[] weave$informant$metric$informant$weaving$0(byte[] classBytes,
             @Nullable CodeSource codeSource, String className) {
-        MetricTimer metricTimer = weavingMetricName.start();
+        MetricTimer metricTimer = metricTimerService.startMetricTimer(weavingMetricName);
         try {
             // from http://www.oracle.com/technetwork/java/javase/compatibility-417013.html:
             //

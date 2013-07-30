@@ -74,11 +74,11 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     }
 
     private IsolatedWeavingClassLoader(ImmutableList<MixinType> mixinTypes,
-            ImmutableList<Advice> advisors, ImmutableList<Class<?>> bridgeClasses,
-            ImmutableList<String> excludePackages, WeavingMetricName weavingMetricName) {
+            ImmutableList<Advice> advisors, MetricTimerService metricTimerService,
+            ImmutableList<Class<?>> bridgeClasses, ImmutableList<String> excludePackages) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
         weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE, this, new ParsedTypeCache(),
-                weavingMetricName);
+                metricTimerService);
         this.bridgeClasses = bridgeClasses;
         this.excludePackages = excludePackages;
     }
@@ -192,9 +192,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
         private ImmutableList<MixinType> mixinTypes = ImmutableList.of();
         private ImmutableList<Advice> advisors = ImmutableList.of();
+        private MetricTimerService metricTimerService;
         private final ImmutableList.Builder<Class<?>> bridgeClasses = ImmutableList.builder();
         private final ImmutableList.Builder<String> excludePackages = ImmutableList.builder();
-        private WeavingMetricName weavingMetricName = NopWeavingMetricName.INSTANCE;
 
         private Builder() {}
 
@@ -206,6 +206,10 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.advisors = ImmutableList.copyOf(advisors);
         }
 
+        public void setMetricTimerService(MetricTimerService metricTimerService) {
+            this.metricTimerService = metricTimerService;
+        }
+
         public void addBridgeClasses(Class<?>... bridgeClasses) {
             this.bridgeClasses.add(bridgeClasses);
         }
@@ -214,17 +218,13 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.excludePackages.add(excludePackages);
         }
 
-        public void weavingMetric(WeavingMetricName weavingMetricName) {
-            this.weavingMetricName = weavingMetricName;
-        }
-
         public IsolatedWeavingClassLoader build() {
             return AccessController.doPrivileged(
                     new PrivilegedAction<IsolatedWeavingClassLoader>() {
                         public IsolatedWeavingClassLoader run() {
                             return new IsolatedWeavingClassLoader(mixinTypes, advisors,
-                                    bridgeClasses.build(), excludePackages.build(),
-                                    weavingMetricName);
+                                    metricTimerService, bridgeClasses.build(),
+                                    excludePackages.build());
                         }
                     });
         }

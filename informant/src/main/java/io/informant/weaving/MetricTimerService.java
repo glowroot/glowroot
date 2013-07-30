@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,16 @@
  */
 package io.informant.weaving;
 
+import io.informant.api.MetricName;
 import io.informant.api.MetricTimer;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-class NopWeavingMetricName implements WeavingMetricName {
+public interface MetricTimerService {
 
-    static final NopWeavingMetricName INSTANCE = new NopWeavingMetricName();
+    MetricName getMetricName(String name);
 
-    public MetricTimer start() {
-        return NopMetricTimer.INSTANCE;
-    }
-
-    private static class NopMetricTimer implements MetricTimer {
-        private static final NopMetricTimer INSTANCE = new NopMetricTimer();
-        public void stop() {}
-    }
+    MetricTimer startMetricTimer(MetricName metricName);
 }

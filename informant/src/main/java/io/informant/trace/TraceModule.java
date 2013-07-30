@@ -30,7 +30,7 @@ import io.informant.config.ConfigService;
 import io.informant.dynamicadvice.DynamicAdviceCache;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
-import io.informant.trace.model.WeavingMetricNameImpl;
+import io.informant.weaving.MetricTimerService;
 import io.informant.weaving.ParsedTypeCache;
 import io.informant.weaving.WeavingClassFileTransformer;
 
@@ -47,10 +47,10 @@ public class TraceModule {
     private final ConfigModule configModule;
     private final TraceCollector traceCollector;
     private final ParsedTypeCache parsedTypeCache;
-    private final WeavingMetricNameImpl weavingMetricName;
     private final TraceRegistry traceRegistry;
     private final MetricNameCache metricNameCache;
     private final DynamicAdviceCache dynamicAdviceCache;
+    private final MetricTimerService metricTimerService;
 
     private final StuckTraceCollector stuckTraceCollector;
     private final CoarseProfiler coarseProfiler;
@@ -62,8 +62,7 @@ public class TraceModule {
                 public PluginServices load(String pluginId) {
                     return new PluginServicesImpl(traceRegistry, traceCollector,
                             configModule.getConfigService(), metricNameCache, fineProfileScheduler,
-                            ticker, clock, weavingMetricName,
-                            configModule.getPluginDescriptorCache(), pluginId);
+                            ticker, clock, configModule.getPluginDescriptorCache(), pluginId);
                 }
             });
 
@@ -75,10 +74,11 @@ public class TraceModule {
         this.traceCollector = traceCollector;
         ConfigService configService = configModule.getConfigService();
         parsedTypeCache = new ParsedTypeCache();
-        weavingMetricName = new WeavingMetricNameImpl(ticker);
         traceRegistry = new TraceRegistry();
         metricNameCache = new MetricNameCache(ticker);
         dynamicAdviceCache = new DynamicAdviceCache(configService.getPointcutConfigs());
+        metricTimerService = new MetricTimerServiceImpl(metricNameCache, traceRegistry);
+
         fineProfileScheduler = new FineProfileScheduler(scheduledExecutor, configService, ticker,
                 new Random());
         stuckTraceCollector = new StuckTraceCollector(scheduledExecutor, traceRegistry,
@@ -95,7 +95,7 @@ public class TraceModule {
                 configModule.getPluginDescriptorCache().getMixinTypes(),
                 configModule.getPluginDescriptorCache().getAdvisors(),
                 dynamicAdviceCache.getDynamicAdvisorsSupplier(), parsedTypeCache,
-                weavingMetricName);
+                metricTimerService);
     }
 
     public PluginServices getPluginServices(String pluginId) {
@@ -114,9 +114,8 @@ public class TraceModule {
         return dynamicAdviceCache;
     }
 
-    @OnlyUsedByTests
-    public WeavingMetricNameImpl getWeavingMetricName() {
-        return weavingMetricName;
+    public MetricTimerService getMetricTimerService() {
+        return metricTimerService;
     }
 
     @OnlyUsedByTests

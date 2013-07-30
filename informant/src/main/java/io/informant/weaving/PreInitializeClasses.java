@@ -74,6 +74,7 @@ class PreInitializeClasses {
     static ImmutableList<String> usedTypes() {
         ImmutableList.Builder<String> types = ImmutableList.builder();
         types.addAll(getLogbackUsedTypes());
+        types.addAll(getJacksonUsedTypes());
         types.addAll(getGuavaUsedTypes());
         types.addAll(getInformantUsedTypes());
         types.addAll(getH2UsedTypes());
@@ -419,6 +420,7 @@ class PreInitializeClasses {
         types.add("com.google.common.base.Preconditions");
         types.add("com.google.common.base.Stopwatch");
         types.add("com.google.common.base.Stopwatch$1");
+        types.add("com.google.common.base.Strings");
         types.add("com.google.common.base.Supplier");
         types.add("com.google.common.base.Suppliers");
         types.add("com.google.common.base.Suppliers$SupplierOfInstance");
@@ -621,8 +623,36 @@ class PreInitializeClasses {
         return types;
     }
 
+    private static List<String> getJacksonUsedTypes() {
+        List<String> types = Lists.newArrayList();
+        types.add("com.fasterxml.jackson.core.JsonFactory");
+        types.add("com.fasterxml.jackson.core.JsonFactory$Feature");
+        types.add("com.fasterxml.jackson.core.JsonGenerator$Feature");
+        types.add("com.fasterxml.jackson.core.JsonParser$Feature");
+        types.add("com.fasterxml.jackson.core.ObjectCodec");
+        types.add("com.fasterxml.jackson.core.PrettyPrinter");
+        types.add("com.fasterxml.jackson.core.SerializableString");
+        types.add("com.fasterxml.jackson.core.Versioned");
+        types.add("com.fasterxml.jackson.core.io.SerializedString");
+        types.add("com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer");
+        types.add("com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer$Bucket");
+        types.add("com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer$TableInfo");
+        types.add("com.fasterxml.jackson.core.sym.CharsToNameCanonicalizer");
+        types.add("com.fasterxml.jackson.core.sym.CharsToNameCanonicalizer$Bucket");
+        types.add("com.fasterxml.jackson.core.sym.Name");
+        types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter");
+        types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter$FixedSpaceIndenter");
+        types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter$Indenter");
+        types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter$Lf2SpacesIndenter");
+        types.add("com.fasterxml.jackson.core.util.Instantiatable");
+        return types;
+    }
+
     private static List<String> getInformantUsedTypes() {
         List<String> types = Lists.newArrayList();
+        types.add("io.informant.api.ErrorMessage");
+        types.add("io.informant.api.Message");
+        types.add("io.informant.api.MessageSupplier");
         types.add("io.informant.api.MetricName");
         types.add("io.informant.api.MetricTimer");
         types.add("io.informant.api.weaving.BindMethodArg");
@@ -644,10 +674,19 @@ class PreInitializeClasses {
         types.add("io.informant.local.store.DataSource");
         types.add("io.informant.local.store.DataSource$1");
         types.add("io.informant.local.store.DataSource$ShutdownHookThread");
+        types.add("io.informant.trace.MetricNameCache");
+        types.add("io.informant.trace.MetricTimerServiceImpl");
+        types.add("io.informant.trace.MetricTimerServiceImpl$NopMetricTimer");
+        types.add("io.informant.trace.TraceRegistry");
+        types.add("io.informant.trace.model.JvmInfo");
+        types.add("io.informant.trace.model.JvmInfo$GarbageCollectorInfo");
+        types.add("io.informant.trace.model.MergedStackTree");
         types.add("io.informant.trace.model.Metric");
         types.add("io.informant.trace.model.MetricNameImpl");
-        types.add("io.informant.trace.model.WeavingMetricNameImpl");
-        types.add("io.informant.trace.model.WeavingMetricNameImpl$NopMetricTimer");
+        types.add("io.informant.trace.model.RootSpan");
+        types.add("io.informant.trace.model.Span");
+        types.add("io.informant.trace.model.Trace");
+        types.add("io.informant.trace.model.TraceUniqueId");
         types.add("io.informant.weaving.Advice");
         types.add("io.informant.weaving.Advice$AdviceParameter");
         types.add("io.informant.weaving.Advice$ParameterKind");
@@ -655,6 +694,7 @@ class PreInitializeClasses {
         types.add("io.informant.weaving.AdviceFlowOuterHolder$1");
         types.add("io.informant.weaving.AdviceFlowOuterHolder$AdviceFlowHolder");
         types.add("io.informant.weaving.AdviceMatcher");
+        types.add("io.informant.weaving.MetricTimerService");
         types.add("io.informant.weaving.MixinMatcher");
         types.add("io.informant.weaving.MixinType");
         types.add("io.informant.weaving.ParsedMethod");
@@ -674,9 +714,7 @@ class PreInitializeClasses {
         types.add("io.informant.weaving.WeavingClassVisitor");
         types.add("io.informant.weaving.WeavingClassVisitor$InitMixins");
         types.add("io.informant.weaving.WeavingMethodVisitor");
-        types.add("io.informant.weaving.WeavingMethodVisitor$1");
         types.add("io.informant.weaving.WeavingMethodVisitor$MarkerException");
-        types.add("io.informant.weaving.WeavingMetricName");
         return types;
     }
 
@@ -956,6 +994,8 @@ class PreInitializeClasses {
         // (see http://stackoverflow.com/questions/2883181)
         types.add("io.informant.weaving.ParsedType$1");
         types.add("io.informant.weaving.Weaver$1");
+        types.add("io.informant.weaving.WeavingMethodVisitor$1");
+        types.add("io.informant.trace.model.JvmInfo$1");
         // this is a special class generated by javac (but not by the eclipse compiler) to handle
         // enum switch statements
         // (see http://stackoverflow.com/questions/1834632/java-enum-and-additional-class-files)

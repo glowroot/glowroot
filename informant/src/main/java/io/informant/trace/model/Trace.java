@@ -115,12 +115,9 @@ public class Trace {
     private volatile ScheduledFuture<?> stuckScheduledFuture;
 
     private final Ticker ticker;
-    private final WeavingMetricNameImpl weavingMetricName;
-    private final Metric weavingMetric;
 
     public Trace(long startTime, boolean background, String grouping,
-            MessageSupplier messageSupplier, MetricNameImpl metricName,
-            WeavingMetricNameImpl weavingMetricName, Ticker ticker) {
+            MessageSupplier messageSupplier, MetricNameImpl metricName, Ticker ticker) {
         this.startTime = startTime;
         this.background = background;
         this.grouping = grouping;
@@ -135,11 +132,6 @@ public class Trace {
         // safe publish of metrics to avoid synchronization
         this.metrics = theMetrics;
         metricNames.add(metricName);
-        // the weaving metric thread local is initialized so that it can be cached in this class
-        // (otherwise it is painful to synchronize properly between clearThreadLocalMetrics()
-        // and getMetricSnapshots())
-        weavingMetric = weavingMetricName.create();
-        this.weavingMetricName = weavingMetricName;
         threadId = Thread.currentThread().getId();
         jvmInfo = new JvmInfo();
     }
@@ -227,17 +219,12 @@ public class Trace {
     }
 
     // this is called from a non-trace thread
-    public List<Metric> getMetrics() {
-        List<Metric> copyOfMetrics;
+    public ImmutableList<Metric> getMetrics() {
         // metrics is a non-thread safe list, but it is guarded by itself, so ok to make a copy
         // inside of synchronized block
         synchronized (metrics) {
-            copyOfMetrics = Lists.newArrayList(metrics);
+            return ImmutableList.copyOf(metrics);
         }
-        if (weavingMetric.getCount() > 0) {
-            copyOfMetrics.add(weavingMetric);
-        }
-        return copyOfMetrics;
     }
 
     // can be called from a non-trace thread
@@ -376,9 +363,6 @@ public class Trace {
         for (MetricNameImpl metricName : metricNames) {
             metricName.clear();
         }
-        // reset weaving metric thread local to prevent the thread from continuing to
-        // increment the one associated to this trace
-        weavingMetricName.clear();
     }
 
     public void captureStackTrace(boolean fine) {

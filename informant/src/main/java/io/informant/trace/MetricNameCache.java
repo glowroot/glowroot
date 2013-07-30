@@ -54,14 +54,18 @@ class MetricNameCache {
         Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
         if (pointcut == null) {
             logger.warn("advice class '{}' has no @Pointcut", adviceClass.getName());
-            return metricNames.getUnchecked("unknown");
+            return getUnknownMetricName();
         } else if (pointcut.metricName().equals("")) {
             logger.warn("@Pointcut on advice class '{}' has no metricName() attribute",
                     adviceClass.getName());
             return getUnknownMetricName();
         } else {
-            return metricNames.getUnchecked(pointcut.metricName());
+            return getMetricName(pointcut.metricName());
         }
+    }
+
+    MetricName getMetricName(String name) {
+        return metricNames.getUnchecked(name);
     }
 
     MetricName getUnknownMetricName() {

@@ -18,6 +18,8 @@ package io.informant.weaving;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
+import io.informant.api.MetricName;
+import io.informant.api.MetricTimer;
 import io.informant.api.OptionalReturn;
 import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.Pointcut;
@@ -1053,10 +1055,30 @@ public class WeaverTest {
         if (mixin != null) {
             loader.setMixinTypes(ImmutableList.of(MixinType.from(mixin, adviceClass)));
         }
+        loader.setMetricTimerService(NopMetricTimerService.INSTANCE);
         // adviceClass is passed as bridgeable so that the static threadlocals will be accessible
         // for test verification
         loader.addBridgeClasses(bridgeClass, adviceClass);
         loader.addBridgeClasses(extraBridgeClasses);
         return loader.build().newInstance(implClass, bridgeClass);
+    }
+
+    private static class NopMetricTimerService implements MetricTimerService {
+        private static final NopMetricTimerService INSTANCE = new NopMetricTimerService();
+        public MetricName getMetricName(String name) {
+            return NopMetricName.INSTANCE;
+        }
+        public MetricTimer startMetricTimer(MetricName metricName) {
+            return NopMetricTimer.INSTANCE;
+        }
+    }
+
+    private static class NopMetricName implements MetricName {
+        private static final NopMetricName INSTANCE = new NopMetricName();
+    }
+
+    private static class NopMetricTimer implements MetricTimer {
+        private static final NopMetricTimer INSTANCE = new NopMetricTimer();
+        public void stop() {}
     }
 }

@@ -43,9 +43,9 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> pluginAdvisors;
     private final Supplier<ImmutableList<Advice>> dynamicAdvisors;
-    private final WeavingMetricName weavingMetricName;
 
     private final ParsedTypeCache parsedTypeCache;
+    private final MetricTimerService metricTimerService;
 
     // it is important to only have a single weaver per class loader because storing state of each
     // previously parsed class in order to re-construct class hierarchy in case one or more .class
@@ -58,7 +58,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                         @Override
                         public Weaver load(ClassLoader loader) {
                             return new Weaver(mixinTypes, pluginAdvisors, dynamicAdvisors, loader,
-                                    parsedTypeCache, weavingMetricName);
+                                    parsedTypeCache, metricTimerService);
                         }
                     });
     // the weaver for the bootstrap class loader (null) has to be stored separately since
@@ -74,14 +74,14 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // note: an exception is made for WeavingMetric, see PreInitializeClassesTest for explanation
     public WeavingClassFileTransformer(@ReadOnly List<MixinType> mixinTypes,
             @ReadOnly List<Advice> pluginAdvisors, Supplier<ImmutableList<Advice>> dynamicAdvisors,
-            ParsedTypeCache parsedTypeCache, WeavingMetricName weavingMetricName) {
+            ParsedTypeCache parsedTypeCache, MetricTimerService metricTimerService) {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
         this.dynamicAdvisors = dynamicAdvisors;
         this.parsedTypeCache = parsedTypeCache;
-        this.weavingMetricName = weavingMetricName;
+        this.metricTimerService = metricTimerService;
         bootLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors, this.dynamicAdvisors,
-                null, parsedTypeCache, weavingMetricName);
+                null, parsedTypeCache, metricTimerService);
         PreInitializeClasses.preInitializeClasses(WeavingClassFileTransformer.class
                 .getClassLoader());
     }

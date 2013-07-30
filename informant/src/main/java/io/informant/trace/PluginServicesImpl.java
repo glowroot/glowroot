@@ -48,7 +48,6 @@ import io.informant.trace.CollectStackCommand.TerminateScheduledActionException;
 import io.informant.trace.model.Metric;
 import io.informant.trace.model.MetricNameImpl;
 import io.informant.trace.model.Trace;
-import io.informant.trace.model.WeavingMetricNameImpl;
 
 /**
  * Implementation of PluginServices from the Plugin API. Each plugin gets its own instance so that
@@ -73,7 +72,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final FineProfileScheduler fineProfileScheduler;
     private final Clock clock;
     private final Ticker ticker;
-    private final WeavingMetricNameImpl weavingMetricName;
 
     // pluginId should be "groupId:artifactId", based on the groupId and artifactId specified in the
     // plugin's io.informant.plugin.json
@@ -88,7 +86,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     PluginServicesImpl(TraceRegistry traceRegistry, TraceCollector traceCollector,
             ConfigService configService, MetricNameCache metricNameCache,
             FineProfileScheduler fineProfileScheduler, Ticker ticker, Clock clock,
-            WeavingMetricNameImpl weavingMetricName, PluginDescriptorCache pluginDescriptorCache,
+            PluginDescriptorCache pluginDescriptorCache,
             String pluginId) {
         this.traceRegistry = traceRegistry;
         this.traceCollector = traceCollector;
@@ -97,7 +95,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         this.fineProfileScheduler = fineProfileScheduler;
         this.clock = clock;
         this.ticker = ticker;
-        this.weavingMetricName = weavingMetricName;
         this.pluginId = pluginId;
         // add config listener first before caching config properties to avoid a
         // (remotely) possible race condition
@@ -203,7 +200,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
             trace = new Trace(clock.currentTimeMillis(), background, grouping, messageSupplier,
-                    (MetricNameImpl) metricName, weavingMetricName, ticker);
+                    (MetricNameImpl) metricName, ticker);
             traceRegistry.addTrace(trace);
             fineProfileScheduler.maybeScheduleFineProfilingUsingPercentage(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
