@@ -375,15 +375,16 @@ var TraceRenderer = (function () {
           $selector.find('.mst-filter').append($('<option />').val(node.name)
               .text(node.name + ' (' + rootNode.metricNameCounts[node.name] + ')'));
         });
-        var i = 0;
         var interestingRootNode = rootNode;
         var uninterestingHtml = '';
         while (true) {
-          if (!interestingRootNode.childNodes || interestingRootNode.childNodes.length !== 1) {
+          if (interestingRootNode.childNodes.length > 1) {
             break;
           }
           var childNode = interestingRootNode.childNodes[0];
           if (childNode.leafThreadState) {
+            interestingRootNode = rootNode;
+            uninterestingHtml = '';
             break;
           }
           // the space after the % is actually important when highlighting a block of stack trace
@@ -393,7 +394,6 @@ var TraceRenderer = (function () {
           uninterestingHtml += '<span class="inline-block" style="width: 4em;">100.0% </span>' +
               interestingRootNode.stackTraceElement + '<br>';
           interestingRootNode = childNode;
-          i++;
         }
         $selector.find('.mst-filter').change(function () {
           // update merged stack tree based on filter
