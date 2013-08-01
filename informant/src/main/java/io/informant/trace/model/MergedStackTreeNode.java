@@ -36,7 +36,8 @@ public class MergedStackTreeNode {
 
     @Nullable
     private final StackTraceElement stackTraceElement;
-    private final List<MergedStackTreeNode> childNodes = Lists.newArrayList();
+    // nodes mostly have a single child node, and rarely have more than two child nodes
+    private final List<MergedStackTreeNode> childNodes = Lists.newArrayListWithCapacity(2);
     // using List over Set in order to preserve ordering
     @ReadOnly
     private List<String> metricNames;
