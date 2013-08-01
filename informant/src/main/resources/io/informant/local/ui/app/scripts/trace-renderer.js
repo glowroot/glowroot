@@ -110,13 +110,6 @@ var TraceRenderer = (function () {
     return 'indent2';
   });
 
-  Handlebars.registerHelper('ifRolledOver', function (value, options) {
-    if (value === 'rolled over') {
-      return options.fn(this);
-    }
-    return options.inverse(this);
-  });
-
   Handlebars.registerHelper('addIndent2', function (width) {
     return width + 2 * indent1;
   });

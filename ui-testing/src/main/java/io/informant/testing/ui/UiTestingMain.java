@@ -24,6 +24,7 @@ import io.informant.container.Container;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
+import io.informant.container.config.StorageConfig;
 import io.informant.container.javaagent.JavaagentContainer;
 import io.informant.container.local.LocalContainer;
 
@@ -39,6 +40,7 @@ public class UiTestingMain {
     // won't be available
     private static final boolean useJavaagent = false;
     private static final int UI_PORT = 4001;
+    private static final boolean rollOverQuickly = false;
 
     private static final Logger logger = LoggerFactory.getLogger(UiTestingMain.class);
 
@@ -71,6 +73,11 @@ public class UiTestingMain {
         fineProfilingConfig.setIntervalMillis(10);
         fineProfilingConfig.setTotalSeconds(1);
         container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
+        if (rollOverQuickly) {
+            StorageConfig storageConfig = container.getConfigService().getStorageConfig();
+            storageConfig.setRollingSizeMb(10);
+            container.getConfigService().updateStorageConfig(storageConfig);
+        }
         logger.info("view ui at http://localhost:" + UI_PORT);
         container.executeAppUnderTest(GenerateTraces.class);
     }
