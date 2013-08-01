@@ -17,6 +17,7 @@ package io.informant.testing.ui;
 
 import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
+import io.informant.api.MetricTimer;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.weaving.BindTarget;
@@ -27,6 +28,9 @@ import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.Pointcut;
 
 /**
+ * This is used to generate a trace with <multiple root nodes> (and with multiple metrics) just to
+ * test this unusual situation.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
@@ -58,6 +62,52 @@ public class ExternalJvmMainAspect {
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
             span.end();
+        }
+    }
+
+    @Pointcut(typeName = "io.informant.container.javaagent.JavaagentContainer",
+            methodName = "metricOne", metricName = "metric one")
+    public static class MetricOneAdvice {
+
+        private static final MetricName metricName =
+                pluginServices.getMetricName(MetricOneAdvice.class);
+
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+
+        @OnBefore
+        public static MetricTimer onBefore() {
+            return pluginServices.startMetricTimer(metricName);
+        }
+
+        @OnAfter
+        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
+            metricTimer.stop();
+        }
+    }
+
+    @Pointcut(typeName = "io.informant.container.javaagent.JavaagentContainer",
+            methodName = "metricTwo", metricName = "metric two")
+    public static class MetricTwoAdvice {
+
+        private static final MetricName metricName =
+                pluginServices.getMetricName(MetricTwoAdvice.class);
+
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+
+        @OnBefore
+        public static MetricTimer onBefore() {
+            return pluginServices.startMetricTimer(metricName);
+        }
+
+        @OnAfter
+        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
+            metricTimer.stop();
         }
     }
 }

@@ -275,11 +275,19 @@ public class JavaagentContainer implements Container {
         }
         // spin a bit to so that caller can capture a trace with <multiple root nodes> if desired
         for (int i = 0; i < 1000; i++) {
-            Thread.sleep(1);
-            Thread.sleep(1);
+            metricOne();
+            metricTwo();
             Thread.sleep(1);
         }
         // do not close socket since program is still running after main returns
+    }
+
+    private static void metricOne() throws InterruptedException {
+        Thread.sleep(1);
+    }
+
+    private static void metricTwo() throws InterruptedException {
+        Thread.sleep(1);
     }
 
     private static List<String> buildCommand(int containerPort, File dataDir, int uiPort,
