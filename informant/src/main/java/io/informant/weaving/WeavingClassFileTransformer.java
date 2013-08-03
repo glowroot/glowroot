@@ -88,12 +88,14 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     public byte[] transform(@Nullable ClassLoader loader, String className,
             Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] bytes) {
-        // don't weave informant classes, included shaded classes like h2 jdbc driver
-        if (className.startsWith("io/informant/common/")
+        // don't weave informant classes, including shaded classes like h2 jdbc driver
+        // (can't just match "io/informant/" since that would match integration test classes)
+        if (className.startsWith("io/informant/collector/")
+                || className.startsWith("io/informant/common/")
                 || className.startsWith("io/informant/config/")
+                || className.startsWith("io/informant/dynamicadvice/")
                 || className.startsWith("io/informant/local/")
                 || className.startsWith("io/informant/shaded/")
-                || className.startsWith("io/informant/snapshot/")
                 || className.startsWith("io/informant/trace/")
                 || className.startsWith("io/informant/weaving/")) {
             return bytes;
