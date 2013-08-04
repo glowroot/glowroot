@@ -13,12 +13,9 @@
     </div>
     {{! +1 at the beginning is for the indent1 of the offset column }}
     <div style="margin-left: {{spanIndent .}}em;">
-      {{#if beyondLimit}}
-      {{^}}
-        <div class="indent1 left-numeric-column" style="width: {{offsetColumnWidth}}em;">
-          {{nanosToMillis duration}}{{#if active}}..{{/if}}
-        </div>
-      {{/if}}
+      <div class="indent1 left-numeric-column" style="width: {{offsetColumnWidth}}em;">
+        {{nanosToMillis duration}}{{#if active}}..{{/if}}
+      </div>
       <div style="margin-left: {{addIndent2 offsetColumnWidth}}em;">
         {{#if message}}
           {{#ifLongMessage message.text}}

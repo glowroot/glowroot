@@ -329,9 +329,9 @@ public class Trace {
         return rootSpan.pushSpan(startTick, messageSupplier, metric);
     }
 
-    public Span addSpan(@Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage, boolean spanLimitBypass) {
-        return rootSpan.addSpan(ticker.read(), messageSupplier, errorMessage, spanLimitBypass);
+    public Span addSpan(long startTick, long endTick, @Nullable MessageSupplier messageSupplier,
+            @Nullable ErrorMessage errorMessage, boolean limitBypassed) {
+        return rootSpan.addSpan(startTick, endTick, messageSupplier, errorMessage, limitBypassed);
     }
 
     public void addSpanLimitExceededMarkerIfNeeded() {

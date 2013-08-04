@@ -115,9 +115,6 @@ var TraceRenderer = (function () {
   });
 
   Handlebars.registerHelper('spanIndent', function (span) {
-    if (span.beyondLimit) {
-      return indent1;
-    }
     return indent1 * (1 + span.nestingLevel) + span.offsetColumnWidth;
   });
 

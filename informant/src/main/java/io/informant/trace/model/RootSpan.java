@@ -114,12 +114,12 @@ class RootSpan {
         }
     }
 
-    Span addSpan(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage, boolean spanLimitBypass) {
-        Span span = createSpan(startTick, messageSupplier, errorMessage, null, spanLimitBypass);
+    Span addSpan(long startTick, long endTick, @Nullable MessageSupplier messageSupplier,
+            @Nullable ErrorMessage errorMessage, boolean limitBypassed) {
+        Span span = createSpan(startTick, messageSupplier, errorMessage, null, limitBypassed);
         spans.add(span);
         size++;
-        span.setEndTick(startTick);
+        span.setEndTick(endTick);
         return span;
     }
 
@@ -133,8 +133,8 @@ class RootSpan {
     }
 
     private Span createSpan(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage, @Nullable Metric metric, boolean spanLimitBypass) {
-        if (!spanLimitBypass && spanLimitExceeded) {
+            @Nullable ErrorMessage errorMessage, @Nullable Metric metric, boolean limitBypassed) {
+        if (!limitBypassed && spanLimitExceeded) {
             // just in case the spanLimit property is changed in the middle of a trace this resets
             // the flag so that it can be triggered again (and possibly then a second limit marker)
             spanLimitExceeded = false;
@@ -144,8 +144,9 @@ class RootSpan {
             size++;
         }
         Span currentSpan = spanStack.get(spanStack.size() - 1);
-        Span span = new Span(messageSupplier, this.startTick, startTick,
-                currentSpan.getNestingLevel() + 1, metric);
+        // limit bypassed spans have no proper nesting, so put them directly under the root
+        int nestingLevel = limitBypassed ? 1 : currentSpan.getNestingLevel() + 1;
+        Span span = new Span(messageSupplier, this.startTick, startTick, nestingLevel, metric);
         span.setErrorMessage(errorMessage);
         return span;
     }

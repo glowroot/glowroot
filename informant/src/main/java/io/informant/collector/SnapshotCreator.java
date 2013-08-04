@@ -302,9 +302,6 @@ public class SnapshotCreator {
                 return;
             }
             jg.writeStartObject();
-            if (limitExceeded) {
-                jg.writeBooleanField("beyondLimit", true);
-            }
             jg.writeNumberField("offset", span.getOffset());
             jg.writeFieldName("duration");
             long endTick = span.getEndTick();

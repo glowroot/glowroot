@@ -256,7 +256,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null && trace.getSpanCount() < maxSpans) {
             // the trace limit has not been exceeded
-            return new CompletedSpanImpl(trace.addSpan(messageSupplier, null, false));
+            long currTick = ticker.read();
+            return new CompletedSpanImpl(trace.addSpan(currTick, currTick, messageSupplier, null,
+                    false));
         }
         return NopCompletedSpan.INSTANCE;
     }
@@ -270,7 +272,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Trace trace = traceRegistry.getCurrentTrace();
         // use higher span limit when adding errors, but still need some kind of cap
         if (trace != null && trace.getSpanCount() < 2 * maxSpans) {
-            return new CompletedSpanImpl(trace.addSpan(null, errorMessage, true));
+            long currTick = ticker.read();
+            return new CompletedSpanImpl(
+                    trace.addSpan(currTick, currTick, null, errorMessage, true));
         }
         return NopCompletedSpan.INSTANCE;
     }
@@ -463,7 +467,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                     && trace.getSpanCount() < 2 * maxSpans) {
                 // span won't necessarily be nested properly, and won't have any timing data, but at
                 // least the long span and stack trace will get captured
-                io.informant.trace.model.Span span = trace.addSpan(messageSupplier, null, true);
+                io.informant.trace.model.Span span =
+                        trace.addSpan(startTick, endTick, messageSupplier, null, true);
                 span.setStackTrace(captureSpanStackTrace());
                 return new CompletedSpanImpl(span);
             }
@@ -475,12 +480,13 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // fallback to end() without error
                 return end();
             }
-            metric.stop();
+            long endTick = ticker.read();
+            metric.end(endTick);
             // use higher span limit when adding errors, but still need some kind of cap
             if (trace.getSpanCount() < 2 * maxSpans) {
-                // span won't necessarily be nested properly, and won't have any timing data, but at
-                // least the error will get captured
-                return new CompletedSpanImpl(trace.addSpan(messageSupplier, errorMessage, true));
+                // span won't be nested properly, but at least the error will get captured
+                return new CompletedSpanImpl(trace.addSpan(startTick, endTick, messageSupplier,
+                        errorMessage, true));
             }
             return NopCompletedSpan.INSTANCE;
         }
