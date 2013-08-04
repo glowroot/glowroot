@@ -417,13 +417,22 @@
                   { public static **[] values();
                     public static ** valueOf(java.lang.String); }
                 </option>
+                <!-- if the FilterAttachable<E> interface is not kept, then the interface is
+                     stripped from io.informant.shaded.qos.logback.core.Appender<E>, and proguard
+                     then strips the generic parameter type from Appender, but proguard
+                     (at least as of version 4.10) leaves behind the generic parameter on the
+                     doAppend(E paramE) method, which leads to a MalformedParameterizedTypeException
+                     on JDK 7 (maybe due to more strict validation in JDK 7) -->
+                <option>
+                  -keep class io.informant.shaded.qos.logback.core.spi.FilterAttachable { *; }
+                </option>
               </options>
             </configuration>
             <dependencies>
               <dependency>
                 <groupId>net.sf.proguard</groupId>
                 <artifactId>proguard-base</artifactId>
-                <version>4.9</version>
+                <version>4.10</version>
               </dependency>
             </dependencies>
           </plugin>
