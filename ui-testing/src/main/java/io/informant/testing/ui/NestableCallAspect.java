@@ -27,6 +27,7 @@ import io.informant.api.ErrorMessage;
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
+import io.informant.api.Optional;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.weaving.BindTraveler;
@@ -87,11 +88,18 @@ public class NestableCallAspect {
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
-            if (random.nextDouble() < 0.8) {
+            double value = random.nextDouble();
+            if (value < 0.8) {
                 span.end();
-            } else {
+            } else if (value < 0.9) {
                 span.endWithError(ErrorMessage
-                        .from("randomized error", new IllegalStateException()));
+                        .from("root span randomized error", new IllegalStateException()));
+            } else {
+                // add detail map to half of randomized errors
+                span.endWithError(ErrorMessage.withDetail(
+                        "root span randomized error with detail map",
+                        new IllegalStateException(), ImmutableMap.of("roota", Optional.absent(),
+                                "rootb", "a non-null value for rootb")));
             }
         }
     }

@@ -38,7 +38,10 @@
             <strong><span class="inline-block content-padding">{{error.text}}</span></strong>
             <br>
             {{#if error.detail}}
-              <div class="content-detail">{{{messageDetailHtml error.detail}}}</div>
+              <div class="content-detail">
+                <span class="inline-block unexpanded-content informant-red">detail</span>
+                <div class="expanded-content hide">{{{messageDetailHtml error.detail}}}</div>
+              </div>
             {{/if}}
             {{#if error.exception}}
               <div class="{{{exceptionIndentClass message}}}">

@@ -25,6 +25,7 @@ import io.informant.api.ErrorMessage;
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
+import io.informant.api.Optional;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.UnresolvedMethod;
@@ -324,17 +325,30 @@ public class ExpensiveCallAspect {
     }
 
     private static void onAfterInternal(@Nullable Span span, int num) {
+        double value = random.nextDouble();
         if (span == null) {
-            pluginServices.addErrorSpan(ErrorMessage.from("randomized error with no span text",
-                    new IllegalStateException("Exception in execute" + num, cause)));
+            if (value < 0.5) {
+                pluginServices.addErrorSpan(ErrorMessage.from("randomized error with no span text",
+                        new IllegalStateException("Exception in execute" + num, cause)));
+            } else {
+                // add detail map to half of randomized errors
+                pluginServices.addErrorSpan(ErrorMessage.withDetail(
+                        "randomized error with no span text, with detail map",
+                        new IllegalStateException("Exception in execute" + num, cause),
+                        ImmutableMap.of("x", Optional.absent(), "y", "a non-null value")));
+            }
             return;
         }
-        double value = random.nextDouble();
         if (value < 0.95) {
             span.end();
-        } else {
+        } else if (value < 0.975) {
             span.endWithError(ErrorMessage.from("randomized error", new IllegalStateException(
                     "Exception in execute" + num, cause)));
+        } else {
+            // add detail map to half of randomized errors
+            span.endWithError(ErrorMessage.withDetail("randomized error with detail map",
+                    new IllegalStateException("Exception in execute" + num, cause),
+                    ImmutableMap.of("x", Optional.absent(), "y", "a non-null value")));
         }
     }
 

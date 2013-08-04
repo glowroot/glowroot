@@ -70,12 +70,14 @@ public class ErrorCaptureTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getError()).isNotNull();
         assertThat(trace.getError().getDetail()).isNotNull();
-        assertThat(trace.getError().getDetail()).isEqualTo(mapOf("ea", "ex", "eb", null));
+        assertThat(trace.getError().getDetail()).isEqualTo(
+                mapOf("erra", null, "errb", mapOf("errc", null, "errd", "xyz")));
         assertThat(trace.getSpans()).hasSize(3);
         assertThat(trace.getSpans().get(0).getError()).isNotNull();
         assertThat(trace.getSpans().get(1).getError()).isNull();
         assertThat(trace.getSpans().get(2).getError()).isNull();
     }
+
     @Test
     public void shouldCaptureErrorWithSpanStackTrace() throws Exception {
         // given

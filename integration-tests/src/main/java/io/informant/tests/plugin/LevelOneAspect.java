@@ -92,7 +92,8 @@ public class LevelOneAspect {
 
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            Map<String, ?> detail = ImmutableMap.of("ea", "ex", "eb", Optional.absent());
+            Map<String, ?> detail = ImmutableMap.of("erra", Optional.absent(), "errb",
+                    ImmutableMap.of("errc", Optional.absent(), "errd", "xyz"));
             span.endWithError(ErrorMessage.withDetail(t, detail));
         }
 
