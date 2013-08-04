@@ -77,11 +77,11 @@ public class RequestParameterAspect {
                 continue;
             }
             // converted to lower case for case-insensitive matching (patterns are lower case)
-            key = key.toLowerCase(Locale.ENGLISH);
-            if (!matchesOneOf(key, capturePatterns)) {
+            String keyLowerCase = key.toLowerCase(Locale.ENGLISH);
+            if (!matchesOneOf(keyLowerCase, capturePatterns)) {
                 continue;
             }
-            if (matchesOneOf(key, maskPatterns)) {
+            if (matchesOneOf(keyLowerCase, maskPatterns)) {
                 map.put(key, new String[] {"****"});
                 continue;
             }

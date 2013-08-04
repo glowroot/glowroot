@@ -122,7 +122,7 @@ public class ServletPluginTest {
         @SuppressWarnings("unchecked")
         Map<String, String> requestParameters =
                 (Map<String, String>) span.getMessage().getDetail().get("request parameters");
-        assertThat(requestParameters.get("xy")).isEqualTo("abc");
+        assertThat(requestParameters.get("xYz")).isEqualTo("aBc");
         assertThat(requestParameters.get("jpassword1")).isEqualTo("****");
     }
 
@@ -294,12 +294,12 @@ public class ServletPluginTest {
     public static class GetParameter extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
-            ((MockHttpServletRequest) request).setParameter("xy", "abc");
+            ((MockHttpServletRequest) request).setParameter("xYz", "aBc");
             ((MockHttpServletRequest) request).setParameter("jpassword1", "mask me");
         }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            request.getParameter("xy");
+            request.getParameter("xYz");
         }
     }
 
