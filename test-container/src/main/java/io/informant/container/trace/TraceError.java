@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableMap;
 
 import static io.informant.container.common.ObjectMappers.nullToEmpty;
 
@@ -37,15 +36,17 @@ public class TraceError {
 
     @Nullable
     private final String text;
-    private final ImmutableMap<String, Object> detail;
+    // can't use ImmutableMap since detail can have null values
     @Nullable
     private final ExceptionInfo exception;
+    @Immutable
+    private final Map<String, /*@Nullable*/Object> detail;
 
-    private TraceError(@Nullable String text, @ReadOnly Map<String, Object> detail,
-            @Nullable ExceptionInfo exception) {
+    private TraceError(@Nullable String text, @Nullable ExceptionInfo exception,
+            @ReadOnly Map<String, /*@Nullable*/Object> detail) {
         this.text = text;
-        this.detail = ImmutableMap.copyOf(detail);
         this.exception = exception;
+        this.detail = detail;
     }
 
     @Nullable
@@ -53,30 +54,32 @@ public class TraceError {
         return text;
     }
 
-    public ImmutableMap<String, Object> getDetail() {
-        return detail;
-    }
-
     @Nullable
     public ExceptionInfo getException() {
         return exception;
+    }
+
+    // can't use ImmutableMap since detail can have null values
+    @Immutable
+    public Map<String, /*@Nullable*/Object> getDetail() {
+        return detail;
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("text", text)
-                .add("detail", detail)
                 .add("exception", exception)
+                .add("detail", detail)
                 .toString();
     }
 
     @JsonCreator
     static TraceError readValue(
             @JsonProperty("text") @Nullable String text,
-            @JsonProperty("detail") @Nullable Map<String, Object> detail,
-            @JsonProperty("exception") @Nullable ExceptionInfo exception)
+            @JsonProperty("exception") @Nullable ExceptionInfo exception,
+            @JsonProperty("detail") @Nullable Map<String, /*@Nullable*/Object> detail)
             throws JsonMappingException {
-        return new TraceError(text, nullToEmpty(detail), exception);
+        return new TraceError(text, exception, nullToEmpty(detail));
     }
 }

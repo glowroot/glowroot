@@ -16,8 +16,10 @@
 package io.informant.tests;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -67,12 +69,13 @@ public class ErrorCaptureTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getError()).isNotNull();
+        assertThat(trace.getError().getDetail()).isNotNull();
+        assertThat(trace.getError().getDetail()).isEqualTo(mapOf("ea", "ex", "eb", null));
         assertThat(trace.getSpans()).hasSize(3);
         assertThat(trace.getSpans().get(0).getError()).isNotNull();
         assertThat(trace.getSpans().get(1).getError()).isNull();
         assertThat(trace.getSpans().get(2).getError()).isNull();
     }
-
     @Test
     public void shouldCaptureErrorWithSpanStackTrace() throws Exception {
         // given
@@ -134,6 +137,13 @@ public class ErrorCaptureTest {
         String element = cause.getStackTrace().get(0);
         return Integer.parseInt(element.substring(element.lastIndexOf(':') + 1,
                 element.length() - 1));
+    }
+
+    private static Map<String, Object> mapOf(String k1, Object v1, String k2, Object v2) {
+        Map<String, Object> map = Maps.newHashMap();
+        map.put(k1, v1);
+        map.put(k2, v2);
+        return map;
     }
 
     public static class ShouldCaptureError implements AppUnderTest {

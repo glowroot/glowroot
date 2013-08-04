@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableMap;
 
 import static io.informant.container.common.ObjectMappers.nullToEmpty;
 
@@ -37,11 +36,13 @@ public class Message {
 
     @Nullable
     private final String text;
-    private final ImmutableMap<String, Object> detail;
+    // can't use ImmutableMap since detail can have null values
+    @Immutable
+    private final Map<String, /*@Nullable*/Object> detail;
 
-    protected Message(@Nullable String text, @ReadOnly Map<String, Object> detail) {
+    protected Message(@Nullable String text, @ReadOnly Map<String, /*@Nullable*/Object> detail) {
         this.text = text;
-        this.detail = ImmutableMap.copyOf(detail);
+        this.detail = detail;
     }
 
     @Nullable
@@ -49,7 +50,9 @@ public class Message {
         return text;
     }
 
-    public ImmutableMap<String, Object> getDetail() {
+    // can't use ImmutableMap since detail can have null values
+    @Immutable
+    public Map<String, /*@Nullable*/Object> getDetail() {
         return detail;
     }
 
@@ -64,7 +67,7 @@ public class Message {
     @JsonCreator
     static Message readValue(
             @JsonProperty("text") @Nullable String text,
-            @JsonProperty("detail") @Nullable Map<String, Object> detail)
+            @JsonProperty("detail") @Nullable Map<String, /*@Nullable*/Object> detail)
             throws JsonMappingException {
         return new Message(text, nullToEmpty(detail));
     }

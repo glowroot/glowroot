@@ -21,6 +21,7 @@ import io.informant.api.ErrorMessage;
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
+import io.informant.api.Optional;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.weaving.BindMethodArg;
@@ -68,10 +69,14 @@ public class LevelOneAspect {
             MessageSupplier messageSupplier = new MessageSupplier() {
                 @Override
                 public Message get() {
-                    Map<String, ?> detail = ImmutableMap.of("arg1", arg1, "arg2", arg2, "nested1",
-                            ImmutableMap.of("nestedkey11", arg1, "nestedkey12", arg2, "subnested1",
-                                    ImmutableMap.of("subnestedkey1", arg1, "subnestedkey2", arg2)),
-                            "nested2", ImmutableMap.of("nestedkey21", arg1, "nestedkey22", arg2));
+                    Optional<String> optionalArg2 = Optional.fromNullable(arg2);
+                    Map<String, ?> detail = ImmutableMap.of("arg1", arg1, "arg2", optionalArg2,
+                            "nested1",
+                            ImmutableMap.of("nestedkey11", arg1, "nestedkey12", optionalArg2,
+                                    "subnested1", ImmutableMap.of("subnestedkey1", arg1,
+                                            "subnestedkey2", optionalArg2)),
+                            "nested2", ImmutableMap.of("nestedkey21", arg1,
+                                    "nestedkey22", optionalArg2));
                     return Message.withDetail(groupingFinal, detail);
                 }
             };
@@ -87,7 +92,8 @@ public class LevelOneAspect {
 
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            span.endWithError(ErrorMessage.from(t));
+            Map<String, ?> detail = ImmutableMap.of("ea", "ex", "eb", Optional.absent());
+            span.endWithError(ErrorMessage.withDetail(t, detail));
         }
 
         @OnReturn

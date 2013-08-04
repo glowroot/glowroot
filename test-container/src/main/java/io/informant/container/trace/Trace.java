@@ -28,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
@@ -50,7 +49,9 @@ public class Trace {
     private final long duration;
     private final boolean background;
     private final String grouping;
-    private final ImmutableMap<String, String> attributes;
+    // can't use ImmutableMap since attributes can have null values
+    @Immutable
+    private final Map<String, /*@Nullable*/String> attributes;
     @Nullable
     private final String userId;
     @Nullable
@@ -68,7 +69,7 @@ public class Trace {
 
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, boolean background, String grouping,
-            @ReadOnly Map<String, String> attributes, @Nullable String userId,
+            @ReadOnly Map<String, /*@Nullable*/String> attributes, @Nullable String userId,
             @Nullable TraceError error, @ReadOnly List<Metric> metrics, JvmInfo jvmInfo,
             @ReadOnly @Nullable List<Span> spans,
             @Nullable MergedStackTreeNode coarseMergedStackTree,
@@ -82,7 +83,7 @@ public class Trace {
         this.duration = duration;
         this.background = background;
         this.grouping = grouping;
-        this.attributes = ImmutableMap.copyOf(attributes);
+        this.attributes = attributes;
         this.userId = userId;
         this.error = error;
         this.metrics = ImmutableList.copyOf(metrics);
@@ -125,7 +126,9 @@ public class Trace {
         return grouping;
     }
 
-    public ImmutableMap<String, String> getAttributes() {
+    // can't use ImmutableMap since attributes can have null values
+    @Immutable
+    public Map<String, /*@Nullable*/String> getAttributes() {
         return attributes;
     }
 

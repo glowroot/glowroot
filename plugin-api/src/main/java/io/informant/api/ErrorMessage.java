@@ -49,24 +49,53 @@ public abstract class ErrorMessage {
 
     public static ErrorMessage from(Throwable t) {
         if (t == null) {
-            logger.error("from(): argument 't' must be non-null");
-            return new ErrorMessageImpl("", null, null);
+            logger.warn("from(): argument 't' must be non-null");
+            return from((String) null);
         }
-        return new ErrorMessageImpl(getRootCause(t).toString(), null, ExceptionInfo.from(t));
+        return new ErrorMessageImpl(getRootCause(t).toString(), ExceptionInfo.from(t), null);
     }
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
     public static ErrorMessage from(@Nullable String message, Throwable t) {
         if (t == null) {
-            logger.error("from(): argument 't' must be non-null");
+            logger.warn("from(): argument 't' must be non-null");
             return from(message);
         }
-        return new ErrorMessageImpl(message, null, ExceptionInfo.from(t));
+        return new ErrorMessageImpl(message, ExceptionInfo.from(t), null);
     }
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
     public static ErrorMessage from(@Nullable String message) {
         return new ErrorMessageImpl(message, null, null);
+    }
+
+    public static ErrorMessage withDetail(Throwable t,
+            @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
+        if (t == null) {
+            logger.warn("withDetail(): argument 't' must be non-null");
+            return withDetail((String) null, detail);
+        }
+        return new ErrorMessageImpl(getRootCause(t).toString(), ExceptionInfo.from(t), detail);
+    }
+
+    // accepts null message so callers don't have to check if passing it in from elsewhere
+    public static ErrorMessage withDetail(@Nullable String message, Throwable t,
+            @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
+        if (t == null) {
+            logger.warn("withDetail(): argument 't' must be non-null");
+            return withDetail(message, detail);
+        }
+        return new ErrorMessageImpl(message, ExceptionInfo.from(t), detail);
+    }
+
+    // accepts null message so callers don't have to check if passing it in from elsewhere
+    public static ErrorMessage withDetail(@Nullable String message,
+            @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
+        if (detail == null) {
+            logger.warn("withDetail(): argument 'detail' must be non-null");
+            return new ErrorMessageImpl(message, null, null);
+        }
+        return new ErrorMessageImpl(message, null, detail);
     }
 
     private static Throwable getRootCause(Throwable t) {
@@ -85,22 +114,26 @@ public abstract class ErrorMessage {
 
         @Nullable
         private final String text;
+        @Nullable
+        private final ExceptionInfo exceptionInfo;
         @ReadOnly
         @Nullable
         private final Map<String, ? extends /*@Nullable*/Object> detail;
-        @Nullable
-        private final ExceptionInfo exceptionInfo;
 
-        private ErrorMessageImpl(@Nullable String text,
-                @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> detail,
-                @Nullable ExceptionInfo exceptionInfo) {
+        private ErrorMessageImpl(@Nullable String text, @Nullable ExceptionInfo exceptionInfo,
+                @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> detail) {
             this.text = text;
-            this.detail = detail;
             this.exceptionInfo = exceptionInfo;
+            this.detail = detail;
         }
 
         public String getText() {
             return Strings.nullToEmpty(text);
+        }
+
+        @Nullable
+        public ExceptionInfo getExceptionInfo() {
+            return exceptionInfo;
         }
 
         @ReadOnly
@@ -109,17 +142,12 @@ public abstract class ErrorMessage {
             return detail;
         }
 
-        @Nullable
-        public ExceptionInfo getExceptionInfo() {
-            return exceptionInfo;
-        }
-
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("text", text)
-                    .add("detail", detail)
                     .add("exception", exceptionInfo)
+                    .add("detail", detail)
                     .toString();
         }
     }
