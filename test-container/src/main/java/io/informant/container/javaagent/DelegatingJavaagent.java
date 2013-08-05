@@ -27,6 +27,7 @@ import java.util.jar.Manifest;
 import com.google.common.io.Resources;
 
 import io.informant.markers.Static;
+import io.informant.weaving.TypeNames;
 
 import static io.informant.common.Nullness.assertNonNull;
 
@@ -58,7 +59,7 @@ public class DelegatingJavaagent {
         manifest.getMainAttributes().put(new Attributes.Name("Premain-Class"),
                 DelegatingJavaagent.class.getName());
         JarOutputStream out = new JarOutputStream(new FileOutputStream(jarFile), manifest);
-        String resourceName = DelegatingJavaagent.class.getName().replace('.', '/') + ".class";
+        String resourceName = TypeNames.toInternal(DelegatingJavaagent.class.getName()) + ".class";
         out.putNextEntry(new JarEntry(resourceName));
         Resources.asByteSource(Resources.getResource(resourceName)).copyTo(out);
         out.closeEntry();

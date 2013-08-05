@@ -29,6 +29,7 @@ import io.informant.Containers;
 import io.informant.container.AppUnderTest;
 import io.informant.container.Container;
 import io.informant.weaving.ParsedTypeCache;
+import io.informant.weaving.TypeNames;
 
 /**
  * @author Trask Stalnaker
@@ -67,7 +68,7 @@ public class ParsedTypePlanBTest {
     public void shouldLogWarningInParsedTypeCachePlanB() throws Exception {
         // given
         container.addExpectedLogMessage(ParsedTypeCache.class.getName(),
-                "could not find resource '" + Y.class.getName().replace('.', '/') + ".class'");
+                "could not find resource '" + TypeNames.toInternal(Y.class.getName()) + ".class'");
         // when
         container.executeAppUnderTest(ShouldLogWarningInParsedTypeCachePlanB.class);
         // then
@@ -100,7 +101,7 @@ public class ParsedTypePlanBTest {
         protected Class<?> load(String name) throws ClassFormatError {
             byte[] bytes;
             try {
-                bytes = Resources.toByteArray(Resources.getResource(name.replace('.', '/')
+                bytes = Resources.toByteArray(Resources.getResource(TypeNames.toInternal(name)
                         + ".class"));
             } catch (IOException e) {
                 throw new IllegalStateException(e);

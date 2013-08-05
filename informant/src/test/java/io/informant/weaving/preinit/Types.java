@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 import com.google.common.collect.Maps;
 
 import io.informant.markers.ThreadSafe;
+import io.informant.weaving.TypeNames;
 
 /**
  * @author Trask Stalnaker
@@ -73,6 +74,7 @@ class Types {
     }
 
     private static Class<?> getType(String typeName) throws ClassNotFoundException {
-        return Class.forName(typeName.replace('/', '.'), false, ClassLoader.getSystemClassLoader());
+        return Class.forName(TypeNames.fromInternal(typeName), false,
+                ClassLoader.getSystemClassLoader());
     }
 }

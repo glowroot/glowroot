@@ -365,7 +365,7 @@ public class ParsedTypeCache {
     private ParsedType createParsedType(String typeName, @Nullable ClassLoader loader)
             throws ClassNotFoundException, IOException {
         ParsedTypeClassVisitor cv = new ParsedTypeClassVisitor();
-        String path = typeName.replace('.', '/') + ".class";
+        String path = TypeNames.toInternal(typeName) + ".class";
         URL url;
         if (loader == null) {
             // null loader means the bootstrap class loader
@@ -397,7 +397,7 @@ public class ParsedTypeCache {
             // means weaving was bypassed since ClassFileTransformer.transform() is not re-entrant
             logger.warn("could not find resource '{}.class' in class loader '{}', so the class"
                     + " was loaded during weaving of a subclass and was not woven itself",
-                    type.getName().replace('.', '/'), loader);
+                    TypeNames.toInternal(type.getName()), loader);
             return createParsedTypePlanC(typeName, type);
         } else {
             // the type was previously loaded so weaving was not bypassed, yay!

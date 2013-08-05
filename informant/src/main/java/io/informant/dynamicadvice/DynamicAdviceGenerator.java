@@ -28,6 +28,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
 import io.informant.config.PointcutConfig;
+import io.informant.weaving.TypeNames;
 
 import static io.informant.common.Nullness.assertNonNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
@@ -83,7 +84,7 @@ class DynamicAdviceGenerator {
         }
         cw.visitEnd();
         byte[] bytes = cw.toByteArray();
-        return defineClass(adviceTypeName.replace('/', '.'), bytes);
+        return defineClass(TypeNames.fromInternal(adviceTypeName), bytes);
     }
 
     private void addClassAnnotation(ClassVisitor cv) {

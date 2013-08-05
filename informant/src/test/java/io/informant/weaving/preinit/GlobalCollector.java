@@ -30,6 +30,8 @@ import org.objectweb.asm.ClassReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.informant.weaving.TypeNames;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -82,7 +84,7 @@ public class GlobalCollector {
         List<String> typeNames = Lists.newArrayList();
         for (String typeName : Sets.newTreeSet(typeCollectors.keySet())) {
             if (!Types.inBootstrapClassLoader(typeName) && Types.exists(typeName)) {
-                typeNames.add(typeName.replace('/', '.'));
+                typeNames.add(TypeNames.fromInternal(typeName));
             }
         }
         return typeNames;

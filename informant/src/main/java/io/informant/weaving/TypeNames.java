@@ -25,16 +25,25 @@ import io.informant.markers.Static;
  * @since 0.5
  */
 @Static
-class TypeNames {
+public class TypeNames {
 
     private TypeNames() {}
 
     @PolyNull
-    static String fromInternal(@PolyNull String typeName) {
+    public static String fromInternal(@PolyNull String typeName) {
         if (typeName == null) {
             return null;
         } else {
             return typeName.replace('/', '.');
+        }
+    }
+
+    @PolyNull
+    public static String toInternal(@PolyNull String typeName) {
+        if (typeName == null) {
+            return null;
+        } else {
+            return typeName.replace('.', '/');
         }
     }
 
@@ -47,14 +56,5 @@ class TypeNames {
             builder.add(typeName.replace('/', '.'));
         }
         return builder.build();
-    }
-
-    @PolyNull
-    static String toInternal(@PolyNull String typeName) {
-        if (typeName == null) {
-            return null;
-        } else {
-            return typeName.replace('.', '/');
-        }
     }
 }

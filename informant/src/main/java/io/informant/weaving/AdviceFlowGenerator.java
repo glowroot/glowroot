@@ -55,7 +55,7 @@ class AdviceFlowGenerator {
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, generatedTypeName, null, "java/lang/Object", null);
         writeThreadLocalFields(cw);
         writeThreadLocalInitialization(cw, generatedTypeName);
-        return defineClass(generatedTypeName.replace('/', '.'), cw.toByteArray());
+        return defineClass(TypeNames.fromInternal(generatedTypeName), cw.toByteArray());
     }
 
     private static void writeThreadLocalFields(ClassVisitor cv) {

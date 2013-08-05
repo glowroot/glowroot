@@ -114,7 +114,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                 return bridgeClass;
             }
         }
-        String resourceName = name.replace('.', '/') + ".class";
+        String resourceName = TypeNames.toInternal(name) + ".class";
         URL url = getResource(resourceName);
         if (url == null) {
             throw new ClassNotFoundException(name);
