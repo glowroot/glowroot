@@ -327,27 +327,36 @@ public class ExpensiveCallAspect {
     private static void onAfterInternal(@Nullable Span span, int num) {
         double value = random.nextDouble();
         if (span == null) {
-            if (value < 0.5) {
+            if (value < 0.33) {
+                pluginServices.addErrorSpan(ErrorMessage.from(
+                        new IllegalStateException("Exception in execute" + num
+                                + ", with no span text and no custom error message",
+                                getRandomCause())));
+            } else if (value < 0.67) {
                 pluginServices.addErrorSpan(ErrorMessage.from("randomized error with no span text",
-                        new IllegalStateException("Exception in execute" + num, cause)));
+                        new IllegalStateException("Exception in execute" + num
+                                + ", with no span text", getRandomCause())));
             } else {
-                // add detail map to half of randomized errors
                 pluginServices.addErrorSpan(ErrorMessage.withDetail(
                         "randomized error with no span text, with detail map",
-                        new IllegalStateException("Exception in execute" + num, cause),
+                        new IllegalStateException("Exception in execute" + num, getRandomCause()),
                         ImmutableMap.of("x", Optional.absent(), "y", "a non-null value")));
             }
             return;
         }
-        if (value < 0.95) {
+        if (value < 0.94) {
             span.end();
-        } else if (value < 0.975) {
-            span.endWithError(ErrorMessage.from("randomized error", new IllegalStateException(
-                    "Exception in execute" + num, cause)));
+        } else if (value < 0.96) {
+            span.endWithError(ErrorMessage.from(
+                    new IllegalStateException("Exception in execute" + num
+                            + ", with no custom error message", getRandomCause())));
+        } else if (value < 0.98) {
+            span.endWithError(ErrorMessage.from("randomized error",
+                    new IllegalStateException("Exception in execute" + num, getRandomCause())));
         } else {
             // add detail map to half of randomized errors
             span.endWithError(ErrorMessage.withDetail("randomized error with detail map",
-                    new IllegalStateException("Exception in execute" + num, cause),
+                    new IllegalStateException("Exception in execute" + num, getRandomCause()),
                     ImmutableMap.of("x", Optional.absent(), "y", "a non-null value")));
         }
     }
@@ -371,5 +380,13 @@ public class ExpensiveCallAspect {
                 return Message.withDetail(spanText, detail);
             }
         };
+    }
+
+    private static Exception getRandomCause() {
+        if (random.nextBoolean()) {
+            return cause;
+        } else {
+            return null;
+        }
     }
 }
