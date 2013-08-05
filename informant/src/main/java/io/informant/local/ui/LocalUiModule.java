@@ -196,8 +196,8 @@ public class LocalUiModule {
                 configJsonService, "updateCoarseProfilingConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/fine-profiling$",
                 configJsonService, "updateFineProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/user",
-                configJsonService, "updateUserConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/user-overrides",
+                configJsonService, "updateUserOverridesConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/storage",
                 configJsonService, "updateStorageConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/plugin/(.+)$",

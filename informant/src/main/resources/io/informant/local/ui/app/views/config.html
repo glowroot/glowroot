@@ -245,12 +245,12 @@
             <div class="accordion-form-padding">
               <div ix-control-group
                    ix-label="Enabled"
-                   ix-model="config.userConfig.enabled"
+                   ix-model="config.userOverridesConfig.enabled"
                    ix-type="checkbox">
               </div>
               <div ix-control-group
                    ix-label="User ID"
-                   ix-model="config.userConfig.userId"
+                   ix-model="config.userOverridesConfig.userId"
                    ix-width="10em">
                 <div class="help-block">
                   All traces for the given user will use the store threshold and profiling
@@ -259,7 +259,7 @@
               </div>
               <div ix-control-group
                    ix-label="Store threshold"
-                   ix-model="config.userConfig.storeThresholdMillis"
+                   ix-model="config.userOverridesConfig.storeThresholdMillis"
                    ix-pattern="{{pattern.integer}}"
                    ix-width="5em"
                    ix-add-on="milliseconds">
@@ -271,7 +271,7 @@
               </div>
               <div ix-control-group
                    ix-label="Fine profiling"
-                   ix-model="config.userConfig.fineProfiling"
+                   ix-model="config.userOverridesConfig.fineProfiling"
                    ix-type="checkbox">
                 <div class="help-block">
                   All traces for the given user will be profiled using the fine-grained
@@ -282,7 +282,7 @@
             <div class="form-actions">
               <div ix-button
                    ix-label="Save changes"
-                   ix-click="saveUserConfig(deferred)">
+                   ix-click="saveuserOverridesConfig(deferred)">
               </div>
             </div>
           </fieldset>

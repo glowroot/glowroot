@@ -29,7 +29,7 @@ import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
 import io.informant.container.config.PointcutConfig;
 import io.informant.container.config.StorageConfig;
-import io.informant.container.config.UserConfig;
+import io.informant.container.config.UserOverridesConfig;
 import io.informant.markers.ThreadSafe;
 
 /**
@@ -82,13 +82,13 @@ class JavaagentConfigService implements ConfigService {
         return httpClient.post("/backend/config/fine-profiling", mapper.writeValueAsString(config));
     }
 
-    public UserConfig getUserConfig() throws Exception {
-        return getConfig().getUserConfig();
+    public UserOverridesConfig getUserOverridesConfig() throws Exception {
+        return getConfig().getUserOverridesConfig();
     }
 
     // returns new version
-    public String updateUserConfig(UserConfig config) throws Exception {
-        return httpClient.post("/backend/config/user", mapper.writeValueAsString(config));
+    public String updateUserOverridesConfig(UserOverridesConfig config) throws Exception {
+        return httpClient.post("/backend/config/user-overrides", mapper.writeValueAsString(config));
     }
 
     public StorageConfig getStorageConfig() throws Exception {

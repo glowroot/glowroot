@@ -23,7 +23,7 @@ import com.google.common.base.Ticker;
 
 import io.informant.config.ConfigService;
 import io.informant.config.FineProfilingConfig;
-import io.informant.config.UserConfig;
+import io.informant.config.UserOverridesConfig;
 import io.informant.markers.Singleton;
 import io.informant.trace.model.Trace;
 
@@ -54,9 +54,9 @@ class FineProfileScheduler {
     }
 
     void maybeScheduleFineProfilingUsingUserId(Trace trace, String userId) {
-        UserConfig userConfig = configService.getUserConfig();
-        if (userConfig.isEnabled() && userConfig.isFineProfiling()
-                && userId.equals(userConfig.getUserId())) {
+        UserOverridesConfig userOverridesConfig = configService.getUserOverridesConfig();
+        if (userOverridesConfig.isEnabled() && userOverridesConfig.isFineProfiling()
+                && userId.equals(userOverridesConfig.getUserId())) {
             scheduleProfiling(trace);
         }
     }

@@ -44,7 +44,7 @@ import io.informant.config.PluginDescriptor;
 import io.informant.config.PluginDescriptorCache;
 import io.informant.config.PointcutConfig;
 import io.informant.config.StorageConfig;
-import io.informant.config.UserConfig;
+import io.informant.config.UserOverridesConfig;
 import io.informant.config.WithVersionJsonView;
 import io.informant.dynamicadvice.DynamicAdviceCache;
 import io.informant.dynamicadvice.RetransformClasses;
@@ -96,8 +96,8 @@ class ConfigJsonService {
         writer.writeValue(jg, configService.getCoarseProfilingConfig());
         jg.writeFieldName("fineProfilingConfig");
         writer.writeValue(jg, configService.getFineProfilingConfig());
-        jg.writeFieldName("userConfig");
-        writer.writeValue(jg, configService.getUserConfig());
+        jg.writeFieldName("userOverridesConfig");
+        writer.writeValue(jg, configService.getUserOverridesConfig());
         jg.writeFieldName("storageConfig");
         writer.writeValue(jg, configService.getStorageConfig());
         jg.writeFieldName("pluginDescriptors");
@@ -177,8 +177,8 @@ class ConfigJsonService {
     }
 
     @JsonServiceMethod
-    String updateUserConfig(String content) throws OptimisticLockException, IOException {
-        logger.debug("updateUserConfig(): content={}", content);
+    String updateUserOverridesConfig(String content) throws OptimisticLockException, IOException {
+        logger.debug("updateUserOverridesConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
         if (versionNode == null || !versionNode.isTextual()) {
@@ -187,10 +187,11 @@ class ConfigJsonService {
         String priorVersion = versionNode.asText();
         configNode.remove("version");
 
-        UserConfig.Overlay overlay = UserConfig.overlay(configService.getUserConfig());
+        UserOverridesConfig.Overlay overlay = UserOverridesConfig.overlay(configService
+                .getUserOverridesConfig());
         mapper.readerForUpdating(overlay).readValue(configNode);
 
-        return configService.updateUserConfig(overlay.build(), priorVersion);
+        return configService.updateUserOverridesConfig(overlay.build(), priorVersion);
     }
 
     @JsonServiceMethod

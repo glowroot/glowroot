@@ -86,8 +86,8 @@ public class ConfigService {
         return config.getFineProfilingConfig();
     }
 
-    public UserConfig getUserConfig() {
-        return config.getUserConfig();
+    public UserOverridesConfig getUserOverridesConfig() {
+        return config.getUserOverridesConfig();
     }
 
     public StorageConfig getStorageConfig() {
@@ -166,20 +166,20 @@ public class ConfigService {
         return fineProfilingConfig.getVersion();
     }
 
-    public String updateUserConfig(UserConfig userConfig, String priorVersion)
-            throws OptimisticLockException, IOException {
+    public String updateUserOverridesConfig(UserOverridesConfig userOverridesConfig,
+            String priorVersion) throws OptimisticLockException, IOException {
         synchronized (writeLock) {
-            if (!config.getUserConfig().getVersion().equals(priorVersion)) {
+            if (!config.getUserOverridesConfig().getVersion().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
             Config updatedConfig = Config.builder(config)
-                    .userConfig(userConfig)
+                    .userOverridesConfig(userOverridesConfig)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return userConfig.getVersion();
+        return userOverridesConfig.getVersion();
     }
 
     public String updateStorageConfig(StorageConfig storageConfig, String priorVersion)

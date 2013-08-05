@@ -74,14 +74,14 @@ class ConfigMapper {
         GeneralConfig generalConfig = readGeneralNode(rootNode);
         CoarseProfilingConfig coarseProfilingConfig = readCoarseProfilingNode(rootNode);
         FineProfilingConfig fineProfilingConfig = readFineProfilingNode(rootNode);
-        UserConfig userConfig = readUserNode(rootNode);
+        UserOverridesConfig userOverridesConfig = readUserNode(rootNode);
         StorageConfig storageConfig = readStorageNode(rootNode);
         Map<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
         ImmutableList<PluginConfig> pluginConfigs =
                 createPluginConfigs(pluginNodes, pluginDescriptors);
         ImmutableList<PointcutConfig> pointcutConfigs = createPointcutConfigs(rootNode);
-        return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig, userConfig,
-                storageConfig, pluginConfigs, pointcutConfigs);
+        return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig,
+                userOverridesConfig, storageConfig, pluginConfigs, pointcutConfigs);
     }
 
     static void writeValue(File configFile, Config config) throws IOException {
@@ -102,7 +102,7 @@ class ConfigMapper {
         jg.writeFieldName(FINE_PROFILING);
         writer.writeValue(jg, config.getFineProfilingConfig());
         jg.writeFieldName(USER);
-        writer.writeValue(jg, config.getUserConfig());
+        writer.writeValue(jg, config.getUserOverridesConfig());
         jg.writeFieldName(STORAGE);
         writer.writeValue(jg, config.getStorageConfig());
 
@@ -161,13 +161,13 @@ class ConfigMapper {
         }
     }
 
-    private static UserConfig readUserNode(ObjectNode rootNode) throws IOException {
+    private static UserOverridesConfig readUserNode(ObjectNode rootNode) throws IOException {
         ObjectNode configNode = (ObjectNode) rootNode.get(USER);
-        UserConfig defaultConfig = UserConfig.getDefault();
+        UserOverridesConfig defaultConfig = UserOverridesConfig.getDefault();
         if (configNode == null) {
             return defaultConfig;
         } else {
-            UserConfig.Overlay overlay = UserConfig.overlay(defaultConfig);
+            UserOverridesConfig.Overlay overlay = UserOverridesConfig.overlay(defaultConfig);
             mapper.readerForUpdating(overlay).readValue(configNode);
             return overlay.build();
         }

@@ -31,14 +31,14 @@ class Config {
     private final GeneralConfig generalConfig;
     private final CoarseProfilingConfig coarseProfilingConfig;
     private final FineProfilingConfig fineProfilingConfig;
-    private final UserConfig userConfig;
+    private final UserOverridesConfig userOverridesConfig;
     private final StorageConfig storageConfig;
     private final ImmutableList<PluginConfig> pluginConfigs;
     private final ImmutableList<PointcutConfig> pointcutConfigs;
 
     static Config getDefault(@ReadOnly List<PluginDescriptor> pluginDescriptors) {
         return new Config(GeneralConfig.getDefault(), CoarseProfilingConfig.getDefault(),
-                FineProfilingConfig.getDefault(), UserConfig.getDefault(),
+                FineProfilingConfig.getDefault(), UserOverridesConfig.getDefault(),
                 StorageConfig.getDefault(), createPluginConfigs(pluginDescriptors),
                 ImmutableList.<PointcutConfig>of());
     }
@@ -48,13 +48,13 @@ class Config {
     }
 
     Config(GeneralConfig generalConfig, CoarseProfilingConfig coarseProfilingConfig,
-            FineProfilingConfig fineProfilingConfig, UserConfig userConfig,
+            FineProfilingConfig fineProfilingConfig, UserOverridesConfig userOverridesConfig,
             StorageConfig storageConfig, ImmutableList<PluginConfig> pluginConfigs,
             ImmutableList<PointcutConfig> pointcutConfigs) {
         this.generalConfig = generalConfig;
         this.coarseProfilingConfig = coarseProfilingConfig;
         this.fineProfilingConfig = fineProfilingConfig;
-        this.userConfig = userConfig;
+        this.userOverridesConfig = userOverridesConfig;
         this.storageConfig = storageConfig;
         this.pluginConfigs = pluginConfigs;
         this.pointcutConfigs = pointcutConfigs;
@@ -72,8 +72,8 @@ class Config {
         return fineProfilingConfig;
     }
 
-    UserConfig getUserConfig() {
-        return userConfig;
+    UserOverridesConfig getUserOverridesConfig() {
+        return userOverridesConfig;
     }
 
     StorageConfig getStorageConfig() {
@@ -102,7 +102,7 @@ class Config {
         private GeneralConfig generalConfig;
         private CoarseProfilingConfig coarseProfilingConfig;
         private FineProfilingConfig fineProfilingConfig;
-        private UserConfig userConfig;
+        private UserOverridesConfig userOverridesConfig;
         private StorageConfig storageConfig;
         private ImmutableList<PluginConfig> pluginConfigs;
         private ImmutableList<PointcutConfig> pointcutConfigs;
@@ -111,7 +111,7 @@ class Config {
             generalConfig = base.generalConfig;
             coarseProfilingConfig = base.coarseProfilingConfig;
             fineProfilingConfig = base.fineProfilingConfig;
-            userConfig = base.userConfig;
+            userOverridesConfig = base.userOverridesConfig;
             storageConfig = base.storageConfig;
             pluginConfigs = base.pluginConfigs;
             pointcutConfigs = base.pointcutConfigs;
@@ -128,8 +128,8 @@ class Config {
             this.fineProfilingConfig = fineProfilingConfig;
             return this;
         }
-        Builder userConfig(UserConfig userConfig) {
-            this.userConfig = userConfig;
+        Builder userOverridesConfig(UserOverridesConfig userOverridesConfig) {
+            this.userOverridesConfig = userOverridesConfig;
             return this;
         }
         Builder storageConfig(StorageConfig storageConfig) {
@@ -146,7 +146,7 @@ class Config {
         }
         Config build() {
             return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig,
-                    userConfig, storageConfig, pluginConfigs, pointcutConfigs);
+                    userOverridesConfig, storageConfig, pluginConfigs, pointcutConfigs);
         }
     }
 }

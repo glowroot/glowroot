@@ -70,11 +70,11 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
         });
   };
 
-  $scope.saveUserConfig = function (deferred) {
-    $http.post('backend/config/user', $scope.config.userConfig)
+  $scope.saveUserOverridesConfig = function (deferred) {
+    $http.post('backend/config/user-overrides', $scope.config.userOverridesConfig)
         .success(function (response) {
-          $scope.config.userConfig.version = response;
-          $scope.userEnabled = $scope.config.userConfig.enabled;
+          $scope.config.userOverridesConfig.version = response;
+          $scope.userEnabled = $scope.config.userOverridesConfig.enabled;
           deferred.resolve('Saved');
         })
         .error(function (response) {
@@ -161,7 +161,7 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
         $scope.generalEnabled = $scope.config.generalConfig.enabled;
         $scope.coarseEnabled = $scope.config.coarseProfilingConfig.enabled;
         $scope.fineEnabled = $scope.config.fineProfilingConfig.enabled;
-        $scope.userEnabled = $scope.config.userConfig.enabled;
+        $scope.userEnabled = $scope.config.userOverridesConfig.enabled;
         for (i = 0; i < $scope.plugins.length; i++) {
           $scope.plugins[i].enabled = $scope.plugins[i].config.enabled;
         }

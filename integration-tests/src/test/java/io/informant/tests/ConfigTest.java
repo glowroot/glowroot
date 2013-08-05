@@ -33,7 +33,7 @@ import io.informant.container.config.PluginConfig;
 import io.informant.container.config.PointcutConfig;
 import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.config.StorageConfig;
-import io.informant.container.config.UserConfig;
+import io.informant.container.config.UserOverridesConfig;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -100,14 +100,14 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldUpdateUserConfig() throws Exception {
+    public void shouldUpdateUserOverridesConfig() throws Exception {
         // given
-        UserConfig config = container.getConfigService().getUserConfig();
+        UserOverridesConfig config = container.getConfigService().getUserOverridesConfig();
         // when
         updateAllFields(config);
-        container.getConfigService().updateUserConfig(config);
+        container.getConfigService().updateUserOverridesConfig(config);
         // then
-        UserConfig updatedConfig = container.getConfigService().getUserConfig();
+        UserOverridesConfig updatedConfig = container.getConfigService().getUserOverridesConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
@@ -196,7 +196,7 @@ public class ConfigTest {
         config.setTotalSeconds(config.getTotalSeconds() + 1);
     }
 
-    private static void updateAllFields(UserConfig config) {
+    private static void updateAllFields(UserOverridesConfig config) {
         config.setEnabled(!config.isEnabled());
         config.setUserId(config.getUserId() + "x");
         config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);

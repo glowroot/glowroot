@@ -31,7 +31,7 @@ import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
 import io.informant.container.config.PointcutConfig;
 import io.informant.container.config.StorageConfig;
-import io.informant.container.config.UserConfig;
+import io.informant.container.config.UserOverridesConfig;
 
 import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -45,7 +45,7 @@ class Config {
     private final GeneralConfig generalConfig;
     private final CoarseProfilingConfig coarseProfilingConfig;
     private final FineProfilingConfig fineProfilingConfig;
-    private final UserConfig userConfig;
+    private final UserOverridesConfig userOverridesConfig;
     private final StorageConfig storageConfig;
     private final Map<String, PluginConfig> pluginConfigs;
     private final String dataDir;
@@ -57,7 +57,7 @@ class Config {
     Config(@JsonProperty("generalConfig") @Nullable GeneralConfig generalConfig,
             @JsonProperty("coarseProfilingConfig") @Nullable CoarseProfilingConfig coarseProfilingConfig,
             @JsonProperty("fineProfilingConfig") @Nullable FineProfilingConfig fineProfilingConfig,
-            @JsonProperty("userConfig") @Nullable UserConfig userConfig,
+            @JsonProperty("userOverridesConfig") @Nullable UserOverridesConfig userOverridesConfig,
             @JsonProperty("storageConfig") @Nullable StorageConfig storageConfig,
             @JsonProperty("pluginConfigs") @Nullable Map<String, PluginConfig> pluginConfigs,
             @JsonProperty("dataDir") @Nullable String dataDir,
@@ -68,7 +68,7 @@ class Config {
         checkRequiredProperty(generalConfig, "generalConfig");
         checkRequiredProperty(coarseProfilingConfig, "coarseProfilingConfig");
         checkRequiredProperty(fineProfilingConfig, "fineProfilingConfig");
-        checkRequiredProperty(userConfig, "userConfig");
+        checkRequiredProperty(userOverridesConfig, "userOverridesConfig");
         checkRequiredProperty(storageConfig, "storageConfig");
         checkRequiredProperty(pluginConfigs, "pluginConfigs");
         checkRequiredProperty(dataDir, "dataDir");
@@ -78,7 +78,7 @@ class Config {
         this.generalConfig = generalConfig;
         this.coarseProfilingConfig = coarseProfilingConfig;
         this.fineProfilingConfig = fineProfilingConfig;
-        this.userConfig = userConfig;
+        this.userOverridesConfig = userOverridesConfig;
         this.storageConfig = storageConfig;
         this.pluginConfigs = pluginConfigs;
         this.dataDir = dataDir;
@@ -99,8 +99,8 @@ class Config {
         return fineProfilingConfig;
     }
 
-    UserConfig getUserConfig() {
-        return userConfig;
+    UserOverridesConfig getUserOverridesConfig() {
+        return userOverridesConfig;
     }
 
     StorageConfig getStorageConfig() {
@@ -133,7 +133,7 @@ class Config {
                 .add("generalConfig", generalConfig)
                 .add("coarseProfilingConfig", coarseProfilingConfig)
                 .add("fineProfilingConfig", fineProfilingConfig)
-                .add("userConfig", userConfig)
+                .add("userOverridesConfig", userOverridesConfig)
                 .add("pluginConfigs", pluginConfigs)
                 .add("dataDir", dataDir)
                 .add("pointcutConfigs", pointcutConfigs)

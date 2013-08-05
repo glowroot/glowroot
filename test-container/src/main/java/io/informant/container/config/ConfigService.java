@@ -39,9 +39,9 @@ public interface ConfigService {
 
     String updateFineProfilingConfig(FineProfilingConfig config) throws Exception;
 
-    UserConfig getUserConfig() throws Exception;
+    UserOverridesConfig getUserOverridesConfig() throws Exception;
 
-    String updateUserConfig(UserConfig config) throws Exception;
+    String updateUserOverridesConfig(UserOverridesConfig config) throws Exception;
 
     StorageConfig getStorageConfig() throws Exception;
 

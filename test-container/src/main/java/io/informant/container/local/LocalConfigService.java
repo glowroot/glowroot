@@ -30,7 +30,7 @@ import io.informant.container.config.PluginConfig;
 import io.informant.container.config.PointcutConfig;
 import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.config.StorageConfig;
-import io.informant.container.config.UserConfig;
+import io.informant.container.config.UserOverridesConfig;
 import io.informant.local.store.DataSource;
 import io.informant.markers.ThreadSafe;
 
@@ -119,9 +119,9 @@ class LocalConfigService implements ConfigService {
         return configService.updateFineProfilingConfig(updatedConfig, config.getVersion());
     }
 
-    public UserConfig getUserConfig() {
-        io.informant.config.UserConfig coreConfig = configService.getUserConfig();
-        UserConfig config = new UserConfig(coreConfig.getVersion());
+    public UserOverridesConfig getUserOverridesConfig() {
+        io.informant.config.UserOverridesConfig coreConfig = configService.getUserOverridesConfig();
+        UserOverridesConfig config = new UserOverridesConfig(coreConfig.getVersion());
         config.setEnabled(coreConfig.isEnabled());
         config.setUserId(coreConfig.getUserId());
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
@@ -129,11 +129,11 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
-    public String updateUserConfig(UserConfig config) throws Exception {
-        io.informant.config.UserConfig updatedConfig = new io.informant.config.UserConfig(
-                config.isEnabled(), config.getUserId(), config.getStoreThresholdMillis(),
-                config.isFineProfiling());
-        return configService.updateUserConfig(updatedConfig, config.getVersion());
+    public String updateUserOverridesConfig(UserOverridesConfig config) throws Exception {
+        io.informant.config.UserOverridesConfig updatedConfig =
+                new io.informant.config.UserOverridesConfig(config.isEnabled(), config.getUserId(),
+                        config.getStoreThresholdMillis(), config.isFineProfiling());
+        return configService.updateUserOverridesConfig(updatedConfig, config.getVersion());
     }
 
     public StorageConfig getStorageConfig() {

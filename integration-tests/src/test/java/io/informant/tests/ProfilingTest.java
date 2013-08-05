@@ -34,7 +34,7 @@ import io.informant.container.Threads;
 import io.informant.container.TraceMarker;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.FineProfilingConfig;
-import io.informant.container.config.UserConfig;
+import io.informant.container.config.UserOverridesConfig;
 import io.informant.container.trace.MergedStackTreeNode;
 import io.informant.container.trace.Trace;
 
@@ -156,11 +156,12 @@ public class ProfilingTest {
         fineProfilingConfig.setIntervalMillis(10);
         fineProfilingConfig.setStoreThresholdMillis(10000);
         container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
-        UserConfig userConfig = container.getConfigService().getUserConfig();
-        userConfig.setUserId("able");
-        userConfig.setStoreThresholdMillis(0);
-        userConfig.setFineProfiling(true);
-        container.getConfigService().updateUserConfig(userConfig);
+        UserOverridesConfig userOverridesConfig =
+                container.getConfigService().getUserOverridesConfig();
+        userOverridesConfig.setUserId("able");
+        userOverridesConfig.setStoreThresholdMillis(0);
+        userOverridesConfig.setFineProfiling(true);
+        container.getConfigService().updateUserOverridesConfig(userOverridesConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTreeForAble.class);
         // then

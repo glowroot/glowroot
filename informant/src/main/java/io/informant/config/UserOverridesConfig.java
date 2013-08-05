@@ -22,13 +22,13 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 
 /**
- * Immutable structure to hold the user override config.
+ * Immutable structure to hold the user overrides config.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Immutable
-public class UserConfig {
+public class UserOverridesConfig {
 
     private final boolean enabled;
     @Nullable
@@ -39,20 +39,20 @@ public class UserConfig {
     private final boolean fineProfiling;
     private final String version;
 
-    static UserConfig getDefault() {
+    static UserOverridesConfig getDefault() {
         final boolean enabled = true;
         final String userId = null;
         final int storeThresholdMillis = 0;
         final boolean fineProfiling = true;
-        return new UserConfig(enabled, userId, storeThresholdMillis, fineProfiling);
+        return new UserOverridesConfig(enabled, userId, storeThresholdMillis, fineProfiling);
     }
 
-    public static Overlay overlay(UserConfig base) {
+    public static Overlay overlay(UserOverridesConfig base) {
         return new Overlay(base);
     }
 
     @VisibleForTesting
-    public UserConfig(boolean enabled, @Nullable String userId, int storeThresholdMillis,
+    public UserOverridesConfig(boolean enabled, @Nullable String userId, int storeThresholdMillis,
             boolean fineProfiling) {
         this.enabled = enabled;
         this.userId = userId;
@@ -103,7 +103,7 @@ public class UserConfig {
         private int storeThresholdMillis;
         private boolean fineProfiling;
 
-        private Overlay(UserConfig base) {
+        private Overlay(UserOverridesConfig base) {
             enabled = base.enabled;
             userId = base.userId;
             storeThresholdMillis = base.storeThresholdMillis;
@@ -121,8 +121,8 @@ public class UserConfig {
         public void setFineProfiling(boolean fineProfiling) {
             this.fineProfiling = fineProfiling;
         }
-        public UserConfig build() {
-            return new UserConfig(enabled, userId, storeThresholdMillis, fineProfiling);
+        public UserOverridesConfig build() {
+            return new UserOverridesConfig(enabled, userId, storeThresholdMillis, fineProfiling);
         }
     }
 }

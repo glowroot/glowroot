@@ -27,7 +27,7 @@ import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class UserConfig {
+public class UserOverridesConfig {
 
     private boolean enabled;
     @Nullable
@@ -37,7 +37,7 @@ public class UserConfig {
 
     private final String version;
 
-    public UserConfig(String version) {
+    public UserOverridesConfig(String version) {
         this.version = version;
     }
 
@@ -80,8 +80,8 @@ public class UserConfig {
 
     @Override
     public boolean equals(@Nullable Object obj) {
-        if (obj instanceof UserConfig) {
-            UserConfig that = (UserConfig) obj;
+        if (obj instanceof UserOverridesConfig) {
+            UserOverridesConfig that = (UserOverridesConfig) obj;
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
@@ -113,7 +113,7 @@ public class UserConfig {
     }
 
     @JsonCreator
-    static UserConfig readValue(@JsonProperty("enabled") @Nullable Boolean enabled,
+    static UserOverridesConfig readValue(@JsonProperty("enabled") @Nullable Boolean enabled,
             @JsonProperty("userId") @Nullable String userId,
             @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
             @JsonProperty("fineProfiling") @Nullable Boolean fineProfiling,
@@ -122,7 +122,7 @@ public class UserConfig {
         checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
         checkRequiredProperty(fineProfiling, "fineProfiling");
         checkRequiredProperty(version, "version");
-        UserConfig config = new UserConfig(version);
+        UserOverridesConfig config = new UserOverridesConfig(version);
         config.setEnabled(enabled);
         config.setUserId(userId);
         config.setStoreThresholdMillis(storeThresholdMillis);
