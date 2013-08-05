@@ -15,6 +15,8 @@
  */
 package io.informant.testing.ui;
 
+import java.io.File;
+
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +55,9 @@ public class UiTestingMain {
     public static void main(String... args) throws Exception {
         Container container;
         if (useJavaagent) {
-            container = JavaagentContainer.createWithFileDb(UI_PORT);
+            container = new JavaagentContainer(new File("target"), UI_PORT, true, false);
         } else {
-            container = LocalContainer.createWithFileDb(UI_PORT);
+            container = new LocalContainer(new File("target"), UI_PORT, true, false);
         }
         // set thresholds low so there will be lots of data to view
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
