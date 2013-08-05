@@ -96,7 +96,7 @@ public class LocalUiModule {
                         traceModule.getDynamicAdviceCache(), instrumentation);
         PointcutConfigJsonService pointcutConfigJsonService =
                 new PointcutConfigJsonService(parsedTypeCache);
-        ThreadDumpJsonService threadDumpJsonService = new ThreadDumpJsonService();
+        ThreadsJsonService threadsJsonService = new ThreadsJsonService();
         AdminJsonService adminJsonService = new AdminJsonService(snapshotDao,
                 configService, traceModule.getDynamicAdviceCache(), parsedTypeCache,
                 instrumentation, traceCollector, dataSource, traceRegistry);
@@ -107,7 +107,7 @@ public class LocalUiModule {
         httpServer = buildHttpServer(port, numWorkerThreads, aggregateJsonService,
                 tracePointJsonService, traceSummaryJsonService, snapshotHttpService,
                 traceExportHttpService, configJsonService, pointcutConfigJsonService,
-                threadDumpJsonService, adminJsonService);
+                threadsJsonService, adminJsonService);
     }
 
     @OnlyUsedByTests
@@ -154,7 +154,7 @@ public class LocalUiModule {
             SnapshotHttpService snapshotHttpService,
             TraceExportHttpService traceExportHttpService, ConfigJsonService configJsonService,
             PointcutConfigJsonService pointcutConfigJsonService,
-            ThreadDumpJsonService threadDumpJsonService, AdminJsonService adminJsonService) {
+            ThreadsJsonService threadsJsonService, AdminJsonService adminJsonService) {
 
         String resourceBase = "io/informant/local/ui/app-dist";
 
@@ -215,7 +215,7 @@ public class LocalUiModule {
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/pointcut/matching-methods",
                 pointcutConfigJsonService, "getMatchingMethods"));
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/threads/dump$",
-                threadDumpJsonService, "getThreadDump"));
+                threadsJsonService, "getThreadDump"));
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/data/delete-all$",
                 adminJsonService, "deleteAllData"));
         jsonServiceMappings.add(new JsonServiceMapping(

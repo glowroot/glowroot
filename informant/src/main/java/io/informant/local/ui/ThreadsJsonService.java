@@ -39,9 +39,9 @@ import io.informant.markers.Singleton;
  */
 @Singleton
 @JsonService
-class ThreadDumpJsonService {
+class ThreadsJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ThreadDumpJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(ThreadsJsonService.class);
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     @JsonServiceMethod
