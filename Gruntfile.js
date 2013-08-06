@@ -15,9 +15,9 @@ module.exports = function (grunt) {
 
   // configurable paths
   var yeomanConfig = {
-    app: 'src/main/resources/io/informant/local/ui/app',
-    dist: 'ui-resources-dist/io/informant/local/ui/app-dist',
-    export_dist: 'ui-resources-dist/io/informant/local/ui/export-dist'
+    app: 'informant/src/main/resources/io/informant/local/ui/app',
+    dist: 'informant/ui-resources-dist/io/informant/local/ui/app-dist',
+    export_dist: 'informant/ui-resources-dist/io/informant/local/ui/export-dist'
   };
 
   try {
@@ -130,10 +130,16 @@ module.exports = function (grunt) {
     },
     useminPrepare: {
       dist: {
-        files: {'<%= yeoman.dist %>/index.html': '<%= yeoman.app %>/index.html'}
+        files: {'<%= yeoman.dist %>/index.html': '<%= yeoman.app %>/index.html'},
+        options: {
+          dest: '<%= yeoman.dist %>'
+        }
       },
       export_dist: {
-        files: {'<%= yeoman.export_dist %>/export.html': '<%= yeoman.app %>/export.html'}
+        files: {'<%= yeoman.export_dist %>/export.html': '<%= yeoman.app %>/export.html'},
+        options: {
+          dest: '<%= yeoman.export_dist %>'
+        }
       }
     },
     handlebars: {
@@ -220,8 +226,8 @@ module.exports = function (grunt) {
     },
     ngmin: {
       dist: {
-        src: '<%= yeoman.dist %>/scripts/app.js',
-        dest: '<%= yeoman.dist %>/scripts/app.js'
+        src: '.tmp/concat/scripts/app.js',
+        dest: '.tmp/concat/scripts/app.js'
       }
     },
     uglify: {
