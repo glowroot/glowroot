@@ -35,6 +35,11 @@ $iconWhiteSpritePath: "../components/sass-bootstrap/img/glyphicons-halflings-whi
 @import "../components/sass-bootstrap/lib/_sprites.scss";
 @import "../components/sass-bootstrap/lib/_utilities.scss";
 
+@import "../components/sass-bootstrap/lib/_responsive-utilities.scss";
+@import "../components/sass-bootstrap/lib/_responsive-1200px-min.scss";
+@import "../components/sass-bootstrap/lib/_responsive-768px-979px.scss";
+@import "../components/sass-bootstrap/lib/_responsive-767px-max.scss";
+
 @import "_bootstrap-form-overrides.scss";
 @import "_bootstrap-datepicker-overrides.scss";
 @import "_common-trace.scss";

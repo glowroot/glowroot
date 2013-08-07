@@ -20,18 +20,22 @@ Post 'em all to the [GitHub issue tracker](https://github.com/informant/informan
 
 #### How to build
 
-Install [Node.js](http://nodejs.org), [Maven](http://maven.apache.org/download.cgi) and [Grunt](http://gruntjs.com).
+Informant uses [Grunt](http://gruntjs.com) to build its web assets (Javascript concat/minify, SASS compile/minify, AngularJS template concat/minify, asset revving and more).
 
-Clone the repository and install the Node (build-time) dependencies:
+To install Grunt, first install [Node.js](http://nodejs.org).
 
-    git clone https://github.com/informant/informant
-    cd informant
+Then install Grunt from the command line using the Node.js package manager:
+
+    npm install -g grunt-cli
+
+Lastly, from inside the project's root directory, install Informant's Node.js dependencies:
+
     npm install
 
-From inside the project's root directory:
+Now building is easy:
 
     grunt
-    mvn clean package
+    mvn clean install
 
 Binary and source distributions are built under package/target.
 
@@ -39,13 +43,13 @@ Binary and source distributions are built under package/target.
 
 Run `io.informant.testing.ui.UiTestingMain` under a debugger inside your favorite IDE. It starts Informant and generates a variety of sample traces to give the UI something to display and to help with manual testing. Connect your browser to `http://localhost:4001`.
 
-If you are working on the UI, you either need to run `grunt` to re-build the UI after each change, or (better):
+If you are working on the UI, you either need to run `grunt` to re-build the web assets after each change, or (better) run:
 
     grunt server
 
 and connect your browser to `http://localhost:9000`.
 
-`grunt server` will watch for modifications to Informant web resources and perform [SASS compilation](https://github.com/sindresorhus/grunt-sass), [AngularJS template concatenation](https://npmjs.org/package/grunt-angular-templates) and [handlebars template compilation](https://github.com/gruntjs/grunt-contrib-handlebars) automatically as needed. It reverse proxies non- static resource requests to http://localhost:4001 to be handled by Informant.
+`grunt server` serves up the Informant web assets to the browser without the concat/minify/rev step, which makes debugging much easier. It reverse proxies non- static resource requests to http://localhost:4001 to be handled by Informant. It also watches for changes to the files and performs live-reload of the assets inside the browser, which is pretty cool even though it doesn't work all of the time :-).
 
 #### How to run automated tests
 
