@@ -18,8 +18,6 @@ package io.informant.testing.ui;
 import java.io.File;
 
 import com.google.common.base.Stopwatch;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.informant.container.AppUnderTest;
 import io.informant.container.Container;
@@ -44,8 +42,6 @@ public class UiTestingMain {
     private static final int UI_PORT = 4001;
     private static final boolean rollOverQuickly = false;
 
-    private static final Logger logger = LoggerFactory.getLogger(UiTestingMain.class);
-
     static {
         System.setProperty("informant.internal.collector.aggregateInterval", "15");
     }
@@ -55,7 +51,7 @@ public class UiTestingMain {
     public static void main(String... args) throws Exception {
         Container container;
         if (useJavaagent) {
-            container = new JavaagentContainer(new File("target"), UI_PORT, true, false);
+            container = new JavaagentContainer(new File("target"), UI_PORT, true, false, false);
         } else {
             container = new LocalContainer(new File("target"), UI_PORT, true, false);
         }
@@ -80,7 +76,6 @@ public class UiTestingMain {
             storageConfig.setRollingSizeMb(10);
             container.getConfigService().updateStorageConfig(storageConfig);
         }
-        logger.info("view ui at http://localhost:" + UI_PORT);
         container.executeAppUnderTest(GenerateTraces.class);
     }
 

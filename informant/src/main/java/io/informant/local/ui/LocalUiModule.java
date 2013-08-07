@@ -63,7 +63,8 @@ public class LocalUiModule {
 
     public LocalUiModule(Ticker ticker, Clock clock, File dataDir, ConfigModule configModule,
             StorageModule storageModule, CollectorModule collectorModule, TraceModule traceModule,
-            @Nullable Instrumentation instrumentation, @ReadOnly Map<String, String> properties) {
+            @Nullable Instrumentation instrumentation, @ReadOnly Map<String, String> properties,
+            String version) {
 
         ConfigService configService = configModule.getConfigService();
         PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();
@@ -104,10 +105,10 @@ public class LocalUiModule {
         // for now only a single http worker thread to keep # of threads down
         final int numWorkerThreads = 1;
         int port = getHttpServerPort(properties);
-        httpServer = buildHttpServer(port, numWorkerThreads, aggregateJsonService,
-                tracePointJsonService, traceSummaryJsonService, snapshotHttpService,
-                traceExportHttpService, configJsonService, pointcutConfigJsonService,
-                threadsJsonService, adminJsonService);
+        httpServer = buildHttpServer(port, numWorkerThreads, new VersionJsonService(version),
+                aggregateJsonService, tracePointJsonService, traceSummaryJsonService,
+                snapshotHttpService, traceExportHttpService, configJsonService,
+                pointcutConfigJsonService, threadsJsonService, adminJsonService);
     }
 
     @OnlyUsedByTests
@@ -148,7 +149,7 @@ public class LocalUiModule {
 
     @Nullable
     private static HttpServer buildHttpServer(int port, int numWorkerThreads,
-            AggregateJsonService aggregateJsonService,
+            VersionJsonService versionJsonService, AggregateJsonService aggregateJsonService,
             TracePointJsonService tracePointJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
             SnapshotHttpService snapshotHttpService,
@@ -180,6 +181,8 @@ public class LocalUiModule {
         // calling the method in json service, e.g. /backend/trace/summary/abc123 below calls the
         // method getSummary("abc123") in TraceSummaryJsonService
         ImmutableList.Builder<JsonServiceMapping> jsonServiceMappings = ImmutableList.builder();
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/version$",
+                versionJsonService, "getVersion"));
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/aggregate/points$",
                 aggregateJsonService, "getPoints"));
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/aggregate/groupings",

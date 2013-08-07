@@ -15,6 +15,10 @@
   <name>Informant</name>
   <description>Informant</description>
 
+  <properties>
+    <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.informant</groupId>
@@ -202,11 +206,14 @@
           <archive>
             <manifest>
               <mainClass>io.informant.Viewer</mainClass>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
             </manifest>
             <manifestEntries>
               <Premain-Class>io.informant.MainEntryPoint</Premain-Class>
               <Can-Redefine-Classes>true</Can-Redefine-Classes>
               <Can-Retransform-Classes>true</Can-Retransform-Classes>
+              <!-- build time is useful for snapshot versions -->
+              <Build-Time>${maven.build.timestamp}</Build-Time>
             </manifestEntries>
           </archive>
           <excludes>

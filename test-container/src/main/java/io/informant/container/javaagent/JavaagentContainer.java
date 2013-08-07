@@ -27,8 +27,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.regex.Pattern;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -85,26 +87,27 @@ public class JavaagentContainer implements Container {
     private final Thread shutdownHook;
     private final int uiPort;
 
-    private volatile long numConsoleBytes;
+    // the one place ever that StringBuffer's synchronization is useful :-)
+    private final StringBuffer consoleOutput = new StringBuffer();
 
     public static JavaagentContainer create() throws Exception {
-        return new JavaagentContainer(null, 0, false, false);
+        return new JavaagentContainer(null, 0, false, false, false);
     }
 
     public static JavaagentContainer createWithFileDb() throws Exception {
-        return new JavaagentContainer(null, 0, true, false);
+        return new JavaagentContainer(null, 0, true, false, false);
     }
 
     public static JavaagentContainer createWithFileDb(int uiPort) throws Exception {
-        return new JavaagentContainer(null, uiPort, true, false);
+        return new JavaagentContainer(null, uiPort, true, false, false);
     }
 
     public static JavaagentContainer createWithFileDb(File dataDir) throws Exception {
-        return new JavaagentContainer(dataDir, 0, true, false);
+        return new JavaagentContainer(dataDir, 0, true, false, false);
     }
 
     public JavaagentContainer(@Nullable File dataDir, int uiPort, boolean useFileDb,
-            boolean shared) throws Exception {
+            boolean shared, final boolean scrapeConsoleOutput) throws Exception {
         if (dataDir == null) {
             this.dataDir = TempDirs.createTempDir("informant-test-datadir");
             deleteDataDirOnClose = true;
@@ -130,7 +133,10 @@ public class JavaagentContainer implements Container {
                         if (n == -1) {
                             break;
                         }
-                        numConsoleBytes += n;
+                        if (scrapeConsoleOutput) {
+                            // intentionally using platform default charset
+                            consoleOutput.append(new String(buffer, 0, n));
+                        }
                         System.out.write(buffer, 0, n);
                     }
                 } catch (IOException e) {
@@ -245,8 +251,16 @@ public class JavaagentContainer implements Container {
         cleanup();
     }
 
-    public long getNumConsoleBytes() {
-        return numConsoleBytes;
+    public List<String> getUnexpectedConsoleLines() {
+        List<String> unexpectedLines = Lists.newArrayList();
+        Splitter splitter = Splitter.on(Pattern.compile("\r?\n")).omitEmptyStrings();
+        for (String line : splitter.split(consoleOutput.toString())) {
+            if (line.contains("Informant started") || line.contains("Informant listening")) {
+                continue;
+            }
+            unexpectedLines.add(line);
+        }
+        return unexpectedLines;
     }
 
     private void cleanup() throws Exception {

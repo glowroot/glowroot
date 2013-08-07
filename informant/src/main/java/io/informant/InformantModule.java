@@ -62,7 +62,8 @@ public class InformantModule {
     private final LocalUiModule uiModule;
 
     InformantModule(@ReadOnly Map<String, String> properties,
-            @Nullable Instrumentation instrumentation) throws SQLException, IOException {
+            @Nullable Instrumentation instrumentation, String version) throws SQLException,
+            IOException {
         Ticker ticker = Ticker.systemTicker();
         Clock clock = Clock.systemClock();
         File dataDir = DataDir.getDataDir(properties);
@@ -79,7 +80,7 @@ public class InformantModule {
         traceModule = new TraceModule(ticker, clock, configModule,
                 collectorModule.getTraceCollector(), scheduledExecutor);
         uiModule = new LocalUiModule(ticker, clock, dataDir, configModule, storageModule,
-                collectorModule, traceModule, instrumentation, properties);
+                collectorModule, traceModule, instrumentation, properties, version);
 
         ClassFileTransformer transformer = traceModule.createWeavingClassFileTransformer();
         if (instrumentation != null) {

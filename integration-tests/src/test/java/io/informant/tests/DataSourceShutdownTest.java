@@ -46,7 +46,7 @@ public class DataSourceShutdownTest {
         // given
         // this test is only relevant in external jvm so that the process can be killed and the jvm
         // shutdown hook can be tested
-        final JavaagentContainer container = JavaagentContainer.createWithFileDb();
+        final JavaagentContainer container = new JavaagentContainer(null, 0, true, false, true);
         container.getConfigService().setStoreThresholdMillis(0);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -69,10 +69,10 @@ public class DataSourceShutdownTest {
         container.kill();
         // then
         assertThat(startedWritingToDb).isTrue();
-        // check that no error messages were logged, problem is (1) the external jvm is terminated
-        // so can't query it and (2) any error or warning messages due to database shutdown wouldn't
-        // be stored in the database log_message table, so have to resort to screen scraping
-        assertThat(container.getNumConsoleBytes()).isEqualTo(0);
+        // check that no error messages were logged during shutdown
+        // the problem is that the external jvm is terminated so it can't be queried, so have to
+        // resort to screen scraping
+        assertThat(container.getUnexpectedConsoleLines()).isEmpty();
         // cleanup
         executorService.shutdown();
     }

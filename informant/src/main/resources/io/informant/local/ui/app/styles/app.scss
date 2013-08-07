@@ -72,3 +72,42 @@ $iconWhiteSpritePath: "../components/sass-bootstrap/img/glyphicons-halflings-whi
   font-weight: normal;
   font-style: normal;
 }
+
+html,
+body {
+  height: 100%;
+  background-color: #f5f5f5;
+}
+
+/* #wrap, #push and #footer are for sticky footer
+   see http://twitter.github.io/bootstrap/examples/sticky-footer.html */
+
+#wrap {
+  min-height: 100%;
+  height: auto !important;
+  height: 100%;
+  margin: 0 auto -40px;
+  background-color: white;
+}
+
+#push {
+  height: 100px;
+}
+
+#footer {
+  height: 40px;
+  margin: 0 auto;
+}
+
+#wrap, #footer {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+#footer-inner {
+  text-align: center;
+  background-color: #eee;
+  @include border-top-radius(8px);
+  font-size: 11px;
+  height: 100%;
+}

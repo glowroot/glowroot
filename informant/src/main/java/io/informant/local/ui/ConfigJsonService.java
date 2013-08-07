@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.jar.Attributes;
+import java.util.jar.JarInputStream;
 
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -119,6 +121,33 @@ class ConfigJsonService {
         jg.writeEndObject();
         jg.close();
         return sb.toString();
+    }
+
+    @JsonServiceMethod
+    String getVersion() throws IOException {
+        logger.debug("getVersion()");
+        JarInputStream jarIn = new JarInputStream(ConfigJsonService.class.getProtectionDomain()
+                .getCodeSource().getLocation().openStream());
+        try {
+            Attributes m = jarIn.getManifest().getMainAttributes();
+            String version = m.getValue("Implementation-Version");
+            if (version == null) {
+                logger.warn("could not find Implementation-Version attribute in"
+                        + " META-INF/MANIFEST.MF file");
+                return "<unknown>";
+            }
+            if (version.endsWith("-SNAPSHOT")) {
+                String snapshotTimestamp = m.getValue("Build-Time");
+                if (snapshotTimestamp == null) {
+                    logger.warn("could not find Build-Time attribute in META-INF/MANIFEST.MF file");
+                    return version + " (<timestamp unknown>)";
+                }
+                return version + " (" + snapshotTimestamp + ")";
+            }
+            return version;
+        } finally {
+            jarIn.close();
+        }
     }
 
     @JsonServiceMethod

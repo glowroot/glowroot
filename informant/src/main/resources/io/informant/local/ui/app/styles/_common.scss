@@ -20,10 +20,6 @@
 @import "../components/sass-bootstrap/lib/_mixins.scss";
 @import "_variables.scss";
 
-body {
-  padding: 32px 0px;
-}
-
 .pin-vertical-scrollbar {
   // always display vertical scrollbar so content doesn't shift horizontally when the vertical
   // scrollbar shows up because the page dynamically expanded greater than a single screen, or
@@ -39,7 +35,7 @@ body {
   font-weight: normal;
   font-size: 36px;
   line-height: 40px;
-  margin: 10px 0 24px 0;
+  padding: 42px 0 24px 0;
   text-rendering: optimizelegibility;
 }
 

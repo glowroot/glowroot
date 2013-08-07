@@ -43,8 +43,15 @@ informant.config(function ($locationProvider, $routeProvider) {
   });
 });
 
-informant.controller('MainCtrl', function ($scope) {
+informant.controller('MainCtrl', function ($scope, $http) {
   $scope.title = '';
+  $http.get('backend/version')
+      .success(function (version) {
+        $scope.version = version;
+      })
+      .error(function (error) {
+        // TODO
+      });
 });
 
 informant.factory('ixButtonGroupControllerFactory', function ($q) {

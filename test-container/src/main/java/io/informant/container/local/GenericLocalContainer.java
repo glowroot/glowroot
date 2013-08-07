@@ -81,7 +81,8 @@ public class GenericLocalContainer<T> {
             properties.put("internal.h2.memdb", "true");
         }
         try {
-            informantModule = MainEntryPoint.start(properties);
+            MainEntryPoint.start(properties);
+            informantModule = MainEntryPoint.getInformantModule();
         } catch (Throwable t) {
             throw new StartupFailedException(t);
         }

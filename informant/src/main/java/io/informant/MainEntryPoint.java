@@ -52,6 +52,7 @@ import static io.informant.common.Nullness.assertNonNull;
 public class MainEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
+    private static final Logger infoLogger = LoggerFactory.getLogger("io.informant");
 
     private static volatile InformantModule informantModule;
 
@@ -101,12 +102,15 @@ public class MainEntryPoint {
         start(getInformantProperties(), null);
     }
 
-    private static InformantModule start(@ReadOnly Map<String, String> properties,
+    private static void start(@ReadOnly Map<String, String> properties,
             @Nullable Instrumentation instrumentation) throws SQLException, IOException {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
-        informantModule = new InformantModule(properties, instrumentation);
-        return informantModule;
+        String version = Version.getVersion();
+        informantModule = new InformantModule(properties, instrumentation, version);
+        infoLogger.info("Informant started (version {})", version);
+        infoLogger.info("Informant listening at http://localhost:"
+                + informantModule.getUiModule().getPort());
     }
 
     private static ImmutableMap<String, String> getInformantProperties() {
@@ -127,9 +131,9 @@ public class MainEntryPoint {
     }
 
     @OnlyUsedByTests
-    public static InformantModule start(@ReadOnly Map<String, String> properties)
+    public static void start(@ReadOnly Map<String, String> properties)
             throws SQLException, IOException {
-        return start(properties, null);
+        start(properties, null);
     }
 
     @OnlyUsedByTests
