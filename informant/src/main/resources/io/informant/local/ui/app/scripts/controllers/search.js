@@ -366,7 +366,7 @@ informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
   $scope.filterHighText = '';
   $scope.filter.groupingComparator = 'begins';
   $scope.filter.userIdComparator = 'begins';
-  $scope.filter.limit = 500;
+  $scope.filter.limit = window.ieLt9 ? 100 : 500;
   $scope.filterDurationComparator = 'greater';
 
   $scope.$watch('filterDate', function (date) {

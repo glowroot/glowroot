@@ -21,11 +21,20 @@
 <br>
 <div style="float: right; margin-top: 10px;">
   <div ng-show="chartLimitExceeded">
-    <div class="alert alert-error chart-limit-exceeded">
+    <div class="chart-warning">
       <strong>
         Specified limit exceeded,<br>
         only displaying the slowest<br>
         {{chartLimit}} matching traces
+      </strong>
+    </div>
+  </div>
+  <div ng-show="ieLt9">
+    <div class="chart-warning">
+      <strong>
+        Dear IE8 user,<br>
+        Opening traces on this page<br>
+        will probably be slow.<br>
       </strong>
     </div>
   </div>

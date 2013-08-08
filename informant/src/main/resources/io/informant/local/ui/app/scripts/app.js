@@ -45,6 +45,7 @@ informant.config(function ($locationProvider, $routeProvider) {
 
 informant.controller('MainCtrl', function ($scope, $http) {
   $scope.title = '';
+  $scope.ieLt9 = window.ieLt9;
   $http.get('backend/version')
       .success(function (version) {
         $scope.version = version;

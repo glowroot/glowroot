@@ -60,6 +60,18 @@
 <script src="components/spin/spin.js"></script>
 <!-- endbuild -->
 
+<!--[if lt IE 9]>
+<script src="components/swfobject/swfobject.js"></script>
+<script>
+  if (swfobject.hasFlashPlayerVersion("1")) {
+    document.write('<script src="components/flashcanvas/flashcanvas.js"><\/script>');
+  } else {
+    document.write('<script src="components/flot/excanvas.js"><\/script>');
+  }
+  var ieLt9 = true;
+</script>
+<![endif]-->
+
 <!-- strange syntax to pick up generated *-templates.js
      see https://github.com/yeoman/grunt-usemin/issues/133 -->
 <!-- build:js({informant/src/main/resources/io/informant/local/ui/app,.tmp}) scripts/app.js -->
@@ -74,17 +86,6 @@
 <script src="scripts/angular-templates.js"></script>
 <script src="scripts/handlebars-templates.js"></script>
 <!-- endbuild -->
-
-<!--[if lt IE 9]>
-<script src="components/swfobject/swfobject.js"></script>
-<script>
-  if (swfobject.hasFlashPlayerVersion("1")) {
-    document.write('<script src="components/flashcanvas/flashcanvas.js"><\/script>');
-  } else {
-    document.write('<script src="components/flot/excanvas.js"><\/script>');
-  }
-</script>
-<![endif]-->
 
 </head>
 <body class="pin-vertical-scrollbar">
