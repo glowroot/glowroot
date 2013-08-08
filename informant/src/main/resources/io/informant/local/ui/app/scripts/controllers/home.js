@@ -19,6 +19,7 @@
 
 informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModal) {
 
+  document.title = 'Home | Informant';
   $scope.$parent.title = 'Home';
 
   var plot;

@@ -19,6 +19,7 @@
 
 informant.controller('ConfigCtrl', function ($scope, $http) {
 
+  document.title = 'Configuration | Informant';
   $scope.$parent.title = 'Configuration';
 
   $scope.pattern = {

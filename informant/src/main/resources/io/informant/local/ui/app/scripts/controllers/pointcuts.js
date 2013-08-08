@@ -19,6 +19,7 @@
 
 informant.controller('PointcutsCtrl', function ($scope, $http, $timeout) {
 
+  document.title = 'Pointcuts | Informant';
   $scope.$parent.title = 'Pointcuts';
 
   // TODO CONVERT TO ANGULARJS, global $http error handler?

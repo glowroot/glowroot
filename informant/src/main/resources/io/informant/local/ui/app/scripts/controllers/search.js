@@ -19,6 +19,7 @@
 
 informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
 
+  document.title = 'Search | Informant';
   $scope.$parent.title = 'Search';
 
   var plot;
