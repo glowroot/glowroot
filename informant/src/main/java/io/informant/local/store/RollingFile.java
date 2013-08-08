@@ -163,7 +163,7 @@ public class RollingFile {
                 }
                 long filePosition = out.convertToFilePosition(block.getStartIndex() + blockIndex);
                 inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES + filePosition);
-                long fileRemaining = out.getRollingSizeKb() * 1024 - filePosition;
+                long fileRemaining = out.getRollingSizeKb() * 1024L - filePosition;
                 int numToRead = (int) Longs.min(len, blockRemaining, fileRemaining);
                 inFile.readFully(bytes, off, numToRead);
                 blockIndex += numToRead;
