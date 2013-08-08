@@ -20,7 +20,10 @@
 var informant = angular.module('informant', ['ui.bootstrap']);
 
 informant.config(function ($locationProvider, $routeProvider) {
-  $locationProvider.html5Mode(true);
+  // TODO try html5mode again after next angularjs release
+  // angularjs 1.1.5 introduced an issue in IE8: when hitting page reload the url
+  // changes from http://localhost:4000/#/ to http://localhost:4000/#/#/#%2F
+  // $locationProvider.html5Mode(true);
   $routeProvider.when('/', {
     templateUrl: 'views/home.html',
     controller: 'HomeCtrl'
