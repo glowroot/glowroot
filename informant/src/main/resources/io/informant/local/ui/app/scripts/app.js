@@ -17,7 +17,7 @@
 /* global angular, $, Spinner */
 /* jshint strict: false */
 
-var informant = angular.module('informant', ['ui.bootstrap']);
+var informant = angular.module('informant', ['ui.bootstrap.accordion']);
 
 informant.config(function ($locationProvider, $routeProvider) {
   // TODO try html5mode again after next angularjs release

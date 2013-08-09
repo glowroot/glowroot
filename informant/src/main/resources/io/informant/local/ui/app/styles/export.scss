@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-@import "../components/sass-bootstrap/lib/_variables.scss";
-@import "../components/sass-bootstrap/lib/_mixins.scss";
-@import "../components/sass-bootstrap/lib/_reset.scss";
-@import "../components/sass-bootstrap/lib/_scaffolding.scss";
-@import "../components/sass-bootstrap/lib/_grid.scss";
-@import "../components/sass-bootstrap/lib/_layouts.scss";
-@import "../components/sass-bootstrap/lib/_forms.scss";
-@import "../components/sass-bootstrap/lib/_utilities.scss";
+@import "../bower_components/sass-bootstrap/lib/_variables.scss";
+@import "../bower_components/sass-bootstrap/lib/_mixins.scss";
+@import "../bower_components/sass-bootstrap/lib/_reset.scss";
+@import "../bower_components/sass-bootstrap/lib/_scaffolding.scss";
+@import "../bower_components/sass-bootstrap/lib/_grid.scss";
+@import "../bower_components/sass-bootstrap/lib/_layouts.scss";
+@import "../bower_components/sass-bootstrap/lib/_forms.scss";
+@import "../bower_components/sass-bootstrap/lib/_utilities.scss";
 @import "_common.scss";
 @import "_common-trace.scss";
 

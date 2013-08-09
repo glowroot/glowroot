@@ -31,13 +31,6 @@ module.exports = function (grunt) {
         files: '<%= yeoman.app %>/styles/*.scss',
         tasks: 'sass:server'
       },
-      ngtemplates: {
-        files: [
-          '<%= yeoman.app %>/views/*.html',
-          '<%= yeoman.app %>/template/**/*.html'
-        ],
-        tasks: 'ngtemplates:server'
-      },
       handlebars: {
         files: '<%= yeoman.app %>/hbs/*.hbs',
         tasks: 'handlebars'
@@ -46,9 +39,11 @@ module.exports = function (grunt) {
         files: [
           '<%= yeoman.app %>/index.html',
           '<%= yeoman.app %>/scripts/**/*.js',
+          '<%= yeoman.app %>/views/*.html',
+          '<%= yeoman.app %>/partials/*.html',
+          '<%= yeoman.app %>/template/**/*.html',
+          '.tmp/generated/handlebars-templates.js',
           '.tmp/scripts/app.js',
-          '.tmp/scripts/angular-templates.js',
-          '.tmp/scripts/handlebars-templates.js',
           '.tmp/styles/app.css'
         ],
         tasks: 'livereload'
@@ -57,8 +52,7 @@ module.exports = function (grunt) {
     connect: {
       options: {
         port: 9000,
-        // change hostname to 0.0.0.0 to access it from another machine
-        hostname: 'localhost'
+        hostname: '0.0.0.0'
       },
       proxies: [
         {
@@ -73,7 +67,7 @@ module.exports = function (grunt) {
         }
       ],
       rules: {
-        '/.*\\.html': '/index.html',
+        '^/[^/]*.html$': '/index.html'
       },
       livereload: {
         options: {
@@ -84,10 +78,29 @@ module.exports = function (grunt) {
               proxySnippet,
               mountFolder(connect, yeomanConfig.app),
               mountFolder(connect, '.tmp'),
-              // for source maps
+              // serve angular-ui-bootstrap templates
+              mountFolder(connect, yeomanConfig.app + '/bower_components/angular-ui-bootstrap'),
+              function(req, res, next) {
+                if (req.url === '/generated/angular-ui-bootstrap-templates.js' ||
+                    req.url === '/generated/templates.js') {
+                  // angular html templates are retrieved directly when running connect server
+                  // but index.html file still references them, so need to return dummy response
+                  res.end('// dummy javascript file');
+                } else {
+                  next();
+                }
+              },
+              // serve source maps
               mountFolder(connect, '.')
             ];
           }
+        }
+      }
+    },
+    bower: {
+      install: {
+        options: {
+          copy: false
         }
       }
     },
@@ -158,7 +171,7 @@ module.exports = function (grunt) {
           }
         },
         files: {
-          '.tmp/scripts/handlebars-templates.js': '<%= yeoman.app %>/hbs/*.hbs'
+          '.tmp/generated/handlebars-templates.js': '<%= yeoman.app %>/hbs/*.hbs'
         }
       }
     },
@@ -173,6 +186,7 @@ module.exports = function (grunt) {
             expand: true,
             cwd: '<%= yeoman.app %>',
             src: [
+              'bower_components/angular-ui-bootstrap/template/accordion/accordion.html',
               'views/*.html',
               'partials/*.html',
               'template/**/*.html'
@@ -199,7 +213,17 @@ module.exports = function (grunt) {
       }
     },
     ngtemplates: {
-      dist: {
+      components: {
+        options: {
+          base: '.tmp/bower_components/angular-ui-bootstrap',
+          module: 'ui.bootstrap.accordion',
+        },
+        src: [
+          '.tmp/bower_components/angular-ui-bootstrap/template/accordion/accordion.html'
+        ],
+        dest: '.tmp/generated/angular-ui-bootstrap-templates.js'
+      },
+      app: {
         options: {
           base: '.tmp',
           module: 'informant'
@@ -209,19 +233,7 @@ module.exports = function (grunt) {
           '.tmp/partials/*.html',
           '.tmp/template/**/*.html'
         ],
-        dest: '.tmp/scripts/angular-templates.js'
-      },
-      server: {
-        options: {
-          base: '<%= yeoman.app %>',
-          module: 'informant'
-        },
-        src: [
-          '<%= yeoman.app %>/views/*.html',
-          '<%= yeoman.app %>/partials/*.html',
-          '<%= yeoman.app %>/template/**/*.html'
-        ],
-        dest: '.tmp/scripts/angular-templates.js'
+        dest: '.tmp/generated/templates.js'
       }
     },
     ngmin: {
@@ -249,13 +261,11 @@ module.exports = function (grunt) {
             dest: '<%= yeoman.dist %>',
             src: [
               // jquery.min.js and angular.min.js are used for cdn fallback
-              'components/jquery/jquery.min.js',
-              'components/angular/angular.min.js',
-              'components/swfobject/swfobject.js',
-              'components/flashcanvas/flashcanvas.*',
-              'components/flot/excanvas.js',
-              'components/sass-bootstrap/img/*.png',
-              'components/specialelite/*',
+              'bower_components/jquery/jquery.min.js',
+              'bower_components/angular-unstable/angular.min.js',
+              'bower_components/flot/excanvas.min.js',
+              'bower_components/sass-bootstrap/img/*.png',
+              'styles/fonts/*',
               'images/favicon.ico',
               'index.html'
             ]
@@ -282,15 +292,11 @@ module.exports = function (grunt) {
         files: {
           src: [
             // jquery.min.js and angular.min.js are used for cdn fallback
-            '<%= yeoman.dist %>/components/jquery/jquery.min.js',
-            '<%= yeoman.dist %>/components/angular/angular.min.js',
-            '<%= yeoman.dist %>/components/swfobject/swfobject.js',
-            '<%= yeoman.dist %>/components/flashcanvas/flashcanvas.js',
-            // flashcanvas.swf is not revved at this time as it would
-            // require updating its url inside of flashcanvas.js
-            '<%= yeoman.dist %>/components/flot/excanvas.js',
-            '<%= yeoman.dist %>/components/sass-bootstrap/img/*.png',
-            '<%= yeoman.dist %>/components/specialelite/*',
+            '<%= yeoman.dist %>/bower_components/jquery/jquery.min.js',
+            '<%= yeoman.dist %>/bower_components/angular-unstable/angular.min.js',
+            '<%= yeoman.dist %>/bower_components/flot/excanvas.min.js',
+            '<%= yeoman.dist %>/bower_components/sass-bootstrap/img/*.png',
+            '<%= yeoman.dist %>/styles/fonts/*',
             '<%= yeoman.dist %>/images/favicon.ico',
             '<%= yeoman.dist %>/scripts/app{,.components}.js',
             '<%= yeoman.dist %>/styles/app{,.components}.css'
@@ -303,17 +309,19 @@ module.exports = function (grunt) {
       // use revved font filenames in revved app.css
       css: '<%= yeoman.dist %>/styles/*.app.css'
     },
-    // TODO replace with grunt-google-cdn after moving to bower
+    cdnify: {
+      dist: {
+        // jquery
+        html: '<%= yeoman.dist %>/index.html'
+      }
+    },
     replace: {
       dist: {
         src: '<%= yeoman.dist %>/index.html',
         overwrite: true,
         replacements: [{
-          from: 'components/jquery/jquery.js',
-          to: '//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js'
-        },
-        {
-          from: 'components/angular/angular.js',
+          // TODO remove once on angular stable release since then cdnify above will handle this
+          from: 'bower_components/angular-unstable/angular.js',
           to: '//ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js'
         }]
       }
@@ -325,7 +333,6 @@ module.exports = function (grunt) {
   grunt.registerTask('server', [
     'clean:server',
     'sass:server',
-    'ngtemplates:server',
     'handlebars',
     'configureRewriteRules',
     'configureProxies',
@@ -335,12 +342,14 @@ module.exports = function (grunt) {
   ]);
 
   grunt.registerTask('build', [
+    'bower',
     'clean:dist',
     'jshint',
     'sass:dist',
     'useminPrepare',
-    'htmlmin:ngtemplates',
-    'ngtemplates:dist',
+    'htmlmin',
+    'ngtemplates:components',
+    'ngtemplates:app',
     'handlebars',
     'concat',
     'copy',
@@ -349,6 +358,7 @@ module.exports = function (grunt) {
     'uglify',
     'rev',
     'usemin',
+    'cdnify',
     'replace',
     'htmlmin:pages'
   ]);

@@ -4,6 +4,7 @@
   "devDependencies": {
     "grunt": "~0.4.1",
     "grunt-angular-templates": "~0.3.9",
+    "grunt-bower-task": "~0.3.1",
     "grunt-connect-proxy": "~0.1.5",
     "grunt-contrib-clean": "~0.4.1",
     "grunt-contrib-concat": "~0.3.0",
@@ -17,6 +18,7 @@
     "grunt-connect-rewrite": "~0.1.0",
     "grunt-contrib-sass": "~0.4.0",
     "grunt-contrib-uglify": "~0.2.2",
+    "grunt-google-cdn": "~0.2.2",
     "grunt-ngmin": "0.0.3",
     "grunt-open": "~0.2.0",
     "grunt-regarde": "~0.1.1",

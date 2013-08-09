@@ -22,8 +22,8 @@
 <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon"/>
 
 <!-- build:css styles/app.components.css -->
-<link rel="stylesheet" type="text/css" href="components/qtip/jquery.qtip.css"/>
-<link rel="stylesheet" type="text/css" href="components/bootstrap-datepicker/css/datepicker.css"/>
+<link rel="stylesheet" type="text/css" href="bower_components/qtip2/dist/jquery.qtip.css"/>
+<link rel="stylesheet" type="text/css" href="bower_components/bootstrap-datepicker/css/datepicker.css"/>
 <!-- endbuild -->
 
 <link rel="stylesheet" type="text/css" href="styles/app.css"/>
@@ -31,37 +31,43 @@
 <!-- jquery and angular are replaced by google cdn links during grunt build -->
 <!-- jquery needs to come before angular so that angular will wrap elements with real jquery
      instead of with jquery lite -->
-<script src="components/jquery/jquery.js"></script>
-<script src="components/angular/angular.js"></script>
+<script src="bower_components/jquery/jquery.js"></script>
+<script src="bower_components/angular-unstable/angular.js"></script>
 
-<!-- cdn fallbacks for jquery and angular -->
+<!-- fallbacks if cdn is not available -->
 <script>
-  window.jQuery || document.write('<script src="components/jquery/jquery.min.js"><\/script>');
-  window.angular || document.write('<script src="components/angular/angular.min.js"><\/script>');
+  window.jQuery || document.write('<script src="bower_components/jquery/jquery.min.js"><\/script>');
+  window.angular || document.write('<script src="bower_components/angular-unstable/angular.min.js"><\/script>');
 </script>
 
-<!-- build:js scripts/app.components.js -->
-<script src="components/handlebars/handlebars.runtime.js"></script>
-<script src="components/sass-bootstrap/js/bootstrap-transition.js"></script>
-<script src="components/sass-bootstrap/js/bootstrap-collapse.js"></script>
-<script src="components/sass-bootstrap/js/bootstrap-modal.js"></script>
-<script src="components/sass-bootstrap/js/bootstrap-typeahead.js"></script>
-<script src="components/angular/angular-ui-bootstrap-tpls.js"></script>
-<script src="components/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
-<script src="components/flot/jquery.flot.js"></script>
-<script src="components/flot/jquery.flot.navigate.js"></script>
-<script src="components/flot/jquery.flot.selection.js"></script>
-<script src="components/flot/jquery.flot.time.js"></script>
+<!-- strange syntax to pick up generated *-templates.js
+     see https://github.com/yeoman/grunt-usemin/issues/133 -->
+<!-- build:js({informant/src/main/resources/io/informant/local/ui/app,.tmp}) scripts/app.components.js -->
+<script src="bower_components/handlebars/handlebars.runtime.js"></script>
+<script src="bower_components/sass-bootstrap/js/bootstrap-transition.js"></script>
+<script src="bower_components/sass-bootstrap/js/bootstrap-collapse.js"></script>
+<script src="bower_components/sass-bootstrap/js/bootstrap-modal.js"></script>
+<script src="bower_components/sass-bootstrap/js/bootstrap-typeahead.js"></script>
+<script src="bower_components/angular-ui-bootstrap/src/accordion/accordion.js"></script>
+<script src="bower_components/angular-ui-bootstrap/src/collapse/collapse.js"></script>
+<script src="bower_components/angular-ui-bootstrap/src/transition/transition.js"></script>
+<script src="bower_components/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
+<script src="bower_components/flot/jquery.flot.js"></script>
+<script src="bower_components/flot/jquery.flot.navigate.js"></script>
+<script src="bower_components/flot/jquery.flot.selection.js"></script>
+<script src="bower_components/flot/jquery.flot.time.js"></script>
 <!-- jquery-migrate is needed by qtip2 until its next release -->
-<script src="components/jquery/jquery-migrate.js"></script>
-<script src="components/qtip/jquery.qtip.js"></script>
-<script src="components/jquery/jquery.color.js"></script>
-<script src="components/moment/moment.js"></script>
-<script src="components/spin/spin.js"></script>
+<script src="bower_components/jquery/jquery-migrate.js"></script>
+<script src="bower_components/qtip2/dist/jquery.qtip.js"></script>
+<script src="bower_components/jquery-color/jquery.color.js"></script>
+<script src="bower_components/moment/moment.js"></script>
+<script src="bower_components/spinjs/spin.js"></script>
+<!-- angular-ui-bootstrap-templates.js is generated during at build time by grunt-angular-templates -->
+<script src="generated/angular-ui-bootstrap-templates.js"></script>
 <!-- endbuild -->
 
 <!--[if lt IE 9]>
-<script src="components/flot/excanvas.js"></script>
+<script src="bower_components/flot/excanvas.min.js"></script>
 <script>
   var ieLt9 = true;
 </script>
@@ -83,8 +89,10 @@
 <script src="scripts/controllers/config.js"></script>
 <script src="scripts/controllers/pointcuts.js"></script>
 <script src="scripts/controllers/threaddump.js"></script>
-<script src="scripts/angular-templates.js"></script>
-<script src="scripts/handlebars-templates.js"></script>
+<!-- handlebars-templates.js is generated during at build time by grunt-contrib-handlebars -->
+<script src="generated/handlebars-templates.js"></script>
+<!-- templates.js is generated during at build time by grunt-angular-templates -->
+<script src="generated/templates.js"></script>
 <!-- endbuild -->
 
 </head>

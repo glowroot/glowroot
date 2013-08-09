@@ -16,8 +16,8 @@
 
 /* styles shared between app.scss and export.scss */
 
-@import "../components/sass-bootstrap/lib/_variables.scss";
-@import "../components/sass-bootstrap/lib/_mixins.scss";
+@import "../bower_components/sass-bootstrap/lib/_variables.scss";
+@import "../bower_components/sass-bootstrap/lib/_mixins.scss";
 @import "_variables.scss";
 
 .pin-vertical-scrollbar {

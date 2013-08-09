@@ -15,30 +15,30 @@
  */
 
 // override bootstrap sprite paths
-$iconSpritePath: "../components/sass-bootstrap/img/glyphicons-halflings.png";
-$iconWhiteSpritePath: "../components/sass-bootstrap/img/glyphicons-halflings-white.png";
+$iconSpritePath: "../bower_components/sass-bootstrap/img/glyphicons-halflings.png";
+$iconWhiteSpritePath: "../bower_components/sass-bootstrap/img/glyphicons-halflings-white.png";
 
-@import "../components/sass-bootstrap/lib/_variables.scss";
-@import "../components/sass-bootstrap/lib/_mixins.scss";
+@import "../bower_components/sass-bootstrap/lib/_variables.scss";
+@import "../bower_components/sass-bootstrap/lib/_mixins.scss";
 
-@import "../components/sass-bootstrap/lib/_accordion.scss";
-@import "../components/sass-bootstrap/lib/_buttons.scss";
-@import "../components/sass-bootstrap/lib/_close.scss";
-@import "../components/sass-bootstrap/lib/_component-animations.scss";
-@import "../components/sass-bootstrap/lib/_dropdowns.scss";
-@import "../components/sass-bootstrap/lib/_forms.scss";
-@import "../components/sass-bootstrap/lib/_grid.scss";
-@import "../components/sass-bootstrap/lib/_layouts.scss";
-@import "../components/sass-bootstrap/lib/_modals.scss";
-@import "../components/sass-bootstrap/lib/_reset.scss";
-@import "../components/sass-bootstrap/lib/_scaffolding.scss";
-@import "../components/sass-bootstrap/lib/_sprites.scss";
-@import "../components/sass-bootstrap/lib/_utilities.scss";
+@import "../bower_components/sass-bootstrap/lib/_accordion.scss";
+@import "../bower_components/sass-bootstrap/lib/_buttons.scss";
+@import "../bower_components/sass-bootstrap/lib/_close.scss";
+@import "../bower_components/sass-bootstrap/lib/_component-animations.scss";
+@import "../bower_components/sass-bootstrap/lib/_dropdowns.scss";
+@import "../bower_components/sass-bootstrap/lib/_forms.scss";
+@import "../bower_components/sass-bootstrap/lib/_grid.scss";
+@import "../bower_components/sass-bootstrap/lib/_layouts.scss";
+@import "../bower_components/sass-bootstrap/lib/_modals.scss";
+@import "../bower_components/sass-bootstrap/lib/_reset.scss";
+@import "../bower_components/sass-bootstrap/lib/_scaffolding.scss";
+@import "../bower_components/sass-bootstrap/lib/_sprites.scss";
+@import "../bower_components/sass-bootstrap/lib/_utilities.scss";
 
-@import "../components/sass-bootstrap/lib/_responsive-utilities.scss";
-@import "../components/sass-bootstrap/lib/_responsive-1200px-min.scss";
-@import "../components/sass-bootstrap/lib/_responsive-768px-979px.scss";
-@import "../components/sass-bootstrap/lib/_responsive-767px-max.scss";
+@import "../bower_components/sass-bootstrap/lib/_responsive-utilities.scss";
+@import "../bower_components/sass-bootstrap/lib/_responsive-1200px-min.scss";
+@import "../bower_components/sass-bootstrap/lib/_responsive-768px-979px.scss";
+@import "../bower_components/sass-bootstrap/lib/_responsive-767px-max.scss";
 
 @import "_bootstrap-form-overrides.scss";
 @import "_bootstrap-datepicker-overrides.scss";
@@ -70,10 +70,10 @@ $iconWhiteSpritePath: "../components/sass-bootstrap/img/glyphicons-halflings-whi
 
 @font-face {
   font-family: SpecialElite-Regular;
-  src: url(../components/specialelite/specialelite.eot);
-  src: url(../components/specialelite/specialelite.eot?#iefix) format("embedded-opentype"),
-       url(../components/specialelite/specialelite.woff) format("woff"),
-       url(../components/specialelite/specialelite.ttf) format("truetype");
+  src: url(fonts/specialelite.eot);
+  src: url(fonts/specialelite.eot?#iefix) format("embedded-opentype"),
+       url(fonts/specialelite.woff) format("woff"),
+       url(fonts/specialelite.ttf) format("truetype");
   font-weight: normal;
   font-style: normal;
 }
