@@ -40,9 +40,9 @@ informant.controller('ThreaddumpCtrl', function ($scope, $http) {
 
   $scope.refresh = function (scroll, deferred) {
     $http.get('backend/threads/dump')
-        .success(function (response) {
+        .success(function (data) {
           // $.trim() is needed because this template is sensitive to surrounding spaces
-          var html = $.trim(JST.threaddump(response));
+          var html = $.trim(JST.threaddump(data));
           $('#threadDump').html(html);
           if (scroll) {
             $(window).scrollTop(document.body.scrollHeight);

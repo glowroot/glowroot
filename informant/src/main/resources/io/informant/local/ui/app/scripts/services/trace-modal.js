@@ -85,14 +85,14 @@ informant.factory('traceModal', function ($rootScope, $http) {
     }, 400);
     $rootScope.$apply(function () {
       $http.get('backend/trace/detail/' + summaryTrace.id)
-          .success(function (response) {
+          .success(function (data) {
             detailLoaded = true;
             Informant.hideSpinner('#detailSpinner');
-            if (response.expired) {
+            if (data.expired) {
               $('#modalContent').html('expired');
             } else {
-              response.showExport = true;
-              TraceRenderer.renderDetail(response, '#modalContent');
+              data.showExport = true;
+              TraceRenderer.renderDetail(data, '#modalContent');
             }
           })
           .error(function () {

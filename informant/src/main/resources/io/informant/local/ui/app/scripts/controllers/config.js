@@ -34,8 +34,8 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
 
   $scope.saveGeneralConfig = function (deferred) {
     $http.post('backend/config/general', $scope.config.generalConfig)
-        .success(function (response) {
-          $scope.config.generalConfig.version = response;
+        .success(function (data) {
+          $scope.config.generalConfig.version = data;
           $scope.generalEnabled = $scope.config.generalConfig.enabled;
           deferred.resolve('Saved');
         })
@@ -50,8 +50,8 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
 
   $scope.saveCoarseProfilingConfig = function (deferred) {
     $http.post('backend/config/coarse-profiling', $scope.config.coarseProfilingConfig)
-        .success(function (response) {
-          $scope.config.coarseProfilingConfig.version = response;
+        .success(function (data) {
+          $scope.config.coarseProfilingConfig.version = data;
           $scope.coarseEnabled = $scope.config.coarseProfilingConfig.enabled;
           deferred.resolve('Saved');
         })
@@ -66,8 +66,8 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
 
   $scope.saveFineProfilingConfig = function (deferred) {
     $http.post('backend/config/fine-profiling', $scope.config.fineProfilingConfig)
-        .success(function (response) {
-          $scope.config.fineProfilingConfig.version = response;
+        .success(function (data) {
+          $scope.config.fineProfilingConfig.version = data;
           $scope.fineEnabled = $scope.config.fineProfilingConfig.enabled;
           deferred.resolve('Saved');
         })
@@ -82,8 +82,8 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
 
   $scope.saveUserOverridesConfig = function (deferred) {
     $http.post('backend/config/user-overrides', $scope.config.userOverridesConfig)
-        .success(function (response) {
-          $scope.config.userOverridesConfig.version = response;
+        .success(function (data) {
+          $scope.config.userOverridesConfig.version = data;
           $scope.userEnabled = $scope.config.userOverridesConfig.enabled;
           deferred.resolve('Saved');
         })
@@ -98,8 +98,8 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
 
   $scope.saveStorageConfig = function (deferred) {
     $http.post('backend/config/storage', $scope.config.storageConfig)
-        .success(function (response) {
-          $scope.config.storageConfig.version = response;
+        .success(function (data) {
+          $scope.config.storageConfig.version = data;
           deferred.resolve('Saved');
         })
         .error(function (data, status) {
@@ -113,8 +113,8 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
 
   $scope.deleteAll = function (deferred) {
     $http.post('backend/admin/data/delete-all')
-        .success(function (response) {
-          deferred.resolve('Saved');
+        .success(function (data) {
+          deferred.resolve('Deleted');
         })
         .error(function (data, status) {
           if (status === 0) {
@@ -143,8 +143,8 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
       'version': plugin.config.version
     };
     $http.post('backend/config/plugin/' + plugin.id, config)
-        .success(function (response) {
-          plugin.config.version = response;
+        .success(function (data) {
+          plugin.config.version = data;
           plugin.enabled = plugin.config.enabled;
           deferred.resolve('Saved');
         })
@@ -161,17 +161,17 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
   // TODO fix initial load spinner
   Informant.showSpinner('#initialLoadSpinner');
   $http.get('backend/config')
-      .success(function (config) {
+      .success(function (data) {
         Informant.hideSpinner('#initialLoadSpinner');
 
-        $scope.config = config;
+        $scope.config = data;
         $scope.plugins = [];
         var i, j;
-        for (i = 0; i < config.pluginDescriptors.length; i++) {
+        for (i = 0; i < data.pluginDescriptors.length; i++) {
           var plugin = {};
-          plugin.descriptor = config.pluginDescriptors[i];
+          plugin.descriptor = data.pluginDescriptors[i];
           plugin.id = plugin.descriptor.groupId + ':' + plugin.descriptor.artifactId;
-          plugin.config = config.pluginConfigs[plugin.id];
+          plugin.config = data.pluginConfigs[plugin.id];
           for (j = 0; j < plugin.descriptor.properties.length; j++) {
             var property = plugin.descriptor.properties[j];
             property.value = plugin.config.properties[property.name];
@@ -188,18 +188,18 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
         }
 
         var $offscreenMeasure = $('#offscreenMeasure');
-        $offscreenMeasure.text(config.dataDir);
+        $offscreenMeasure.text(data.dataDir);
         $scope.dataDirControlWidth = ($offscreenMeasure.width() + 50) + 'px';
 
         // set up calculated properties
         $scope.data = {};
-        $scope.data.snapshotExpirationDays = config.storageConfig.snapshotExpirationHours / 24;
+        $scope.data.snapshotExpirationDays = data.storageConfig.snapshotExpirationHours / 24;
         $scope.$watch('data.snapshotExpirationDays', function (newValue) {
-          config.storageConfig.snapshotExpirationHours = newValue * 24;
+          data.storageConfig.snapshotExpirationHours = newValue * 24;
         });
-        if (config.fineProfilingConfig.storeThresholdMillis !== -1) {
+        if (data.fineProfilingConfig.storeThresholdMillis !== -1) {
           $scope.data.fineStoreThresholdOverride = true;
-          $scope.data.fineStoreThresholdMillis = config.fineProfilingConfig.storeThresholdMillis;
+          $scope.data.fineStoreThresholdMillis = data.fineProfilingConfig.storeThresholdMillis;
         } else {
           $scope.data.fineStoreThresholdOverride = false;
           $scope.data.fineStoreThresholdMillis = '';
@@ -211,10 +211,10 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
                   $scope.data.fineStoreThresholdMillis =
                       $scope.config.generalConfig.storeThresholdMillis;
                 }
-                config.fineProfilingConfig.storeThresholdMillis = $scope.data.fineStoreThresholdMillis;
+                data.fineProfilingConfig.storeThresholdMillis = $scope.data.fineStoreThresholdMillis;
               } else {
                 $scope.data.fineStoreThresholdMillis = '';
-                config.fineProfilingConfig.storeThresholdMillis = -1;
+                data.fineProfilingConfig.storeThresholdMillis = -1;
               }
             }, true);
       })

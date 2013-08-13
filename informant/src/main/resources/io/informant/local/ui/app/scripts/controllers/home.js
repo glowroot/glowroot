@@ -64,13 +64,13 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
     };
     Informant.showSpinner('#chartSpinner');
     $http.post('backend/aggregate/points', query)
-        .success(function (response) {
+        .success(function (data) {
           if (refreshId !== currentRefreshId) {
             return;
           }
           Informant.hideSpinner('#chartSpinner');
           $scope.refreshChartError = false;
-          fixedAggregateIntervalMillis = response.fixedAggregateIntervalSeconds * 1000;
+          fixedAggregateIntervalMillis = data.fixedAggregateIntervalSeconds * 1000;
           plot.getAxes().xaxis.options.borderGridLock = fixedAggregateIntervalMillis;
           if (deferred) {
             // user clicked on Refresh button, need to reset axes
@@ -82,7 +82,7 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
             ];
             plot.unhighlight();
           }
-          plot.setData([ response.points ]);
+          plot.setData([ data.points ]);
           plot.setupGrid();
           plot.draw();
           if (deferred) {
@@ -264,10 +264,10 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
       limit: 10
     };
     $http.post('backend/aggregate/groupings', query)
-        .success(function (response) {
+        .success(function (data) {
           $scope.refreshGroupingsError = false;
           $('#groupAggregates').html('');
-          $.each(response, function (i, grouping) {
+          $.each(data, function (i, grouping) {
             var average = ((grouping.durationTotal / grouping.traceCount) / 1000000000).toFixed(2);
             $('#groupAggregates').append('<div>' + grouping.grouping + ': ' + average + '</div>');
           });

@@ -27,12 +27,12 @@ informant.controller('PointcutsCtrl', function ($scope, $http, $timeout) {
   // TODO fix initial load spinner
   Informant.showSpinner('#initialLoadSpinner');
   $http.get('backend/config')
-      .success(function (response) {
+      .success(function (data) {
         Informant.hideSpinner('#initialLoadSpinner');
         $scope.pointcuts = [];
         var i;
-        for (i = 0; i < response.pointcutConfigs.length; i++) {
-          var config = response.pointcutConfigs[i];
+        for (i = 0; i < data.pointcutConfigs.length; i++) {
+          var config = data.pointcutConfigs[i];
           var signature = {
             name: config.methodName,
             argTypeNames: config.methodArgTypeNames,
@@ -49,8 +49,8 @@ informant.controller('PointcutsCtrl', function ($scope, $http, $timeout) {
           });
           delete config.version;
         }
-        $scope.dirty = response.pointcutConfigsOutOfSync;
-        $scope.retransformClassesSupported = response.retransformClassesSupported;
+        $scope.dirty = data.pointcutConfigsOutOfSync;
+        $scope.retransformClassesSupported = data.retransformClassesSupported;
       })
       .error(function (error) {
         // TODO
@@ -83,7 +83,7 @@ informant.controller('PointcutsCtrl', function ($scope, $http, $timeout) {
 
   $scope.retransformClasses = function (deferred) {
     $http.post('backend/admin/pointcut/retransform-classes', '')
-        .success(function () {
+        .success(function (data) {
           $scope.dirty = false;
           deferred.resolve('Success');
         })
@@ -105,7 +105,7 @@ informant.directive('pointcut', function ($http) {
     },
     require: '^ngController',
     templateUrl: 'partials/pointcut.html',
-    link: function (scope, element, attrs, ngController) {
+    link: function (scope, iElement, iAttrs, ngController) {
       scope.typeNames = function (suggestion) {
         var url = 'backend/pointcut/matching-type-names?partial-type-name=' + suggestion + '&limit=7';
         return $http.get(url)
@@ -205,10 +205,10 @@ informant.directive('pointcut', function ($http) {
           url = 'backend/config/pointcut/+';
         }
         $http.post(url, scope.pointcut.config)
-            .success(function (response) {
-              if (response !== version) {
+            .success(function (data) {
+              if (data !== version) {
                 // something changed
-                scope.pointcut.version = response;
+                scope.pointcut.version = data;
                 scope.pointcut.heading = scope.pointcut.config.typeName +
                     '.' + scope.pointcut.config.methodName +
                     '(' + scope.pointcut.config.methodArgTypeNames.join(', ') + ')';
@@ -229,7 +229,7 @@ informant.directive('pointcut', function ($http) {
       scope.pointcutDelete = function (deferred) {
         if (scope.pointcut.version) {
           $http.post('backend/config/pointcut/-', '"' + scope.pointcut.version + '"')
-              .success(function () {
+              .success(function (data) {
                 ngController.removePointcut(scope.pointcut);
                 ngController.setDirty(true);
                 deferred.resolve('Deleted');
@@ -255,10 +255,10 @@ informant.directive('pointcut', function ($http) {
         var url = 'backend/pointcut/matching-methods?type-name=' +
             scope.pointcut.config.typeName + '&method-name=' + methodName;
         $http.get(url)
-            .success(function (signatures) {
-              scope.pointcut.signatures = signatures;
-              if (signatures.length !== 1) {
-                // this includes the case where signatures.length === 0, which is possible if the user enters a
+            .success(function (data) {
+              scope.pointcut.signatures = data;
+              if (data.length !== 1) {
+                // this includes the case where data.length === 0, which is possible if the user enters a
                 // non-matching method name and clicks outside of the input field to bypass the typeahead values
                 scope.pointcut.signatures.push({
                   name: methodName,
@@ -267,8 +267,8 @@ informant.directive('pointcut', function ($http) {
                   modifiers: []
                 });
               }
-              if (signatures.length === 1) {
-                scope.pointcut.selectedSignature = signatures[0];
+              if (data.length === 1) {
+                scope.pointcut.selectedSignature = data[0];
               } else {
                 scope.pointcut.selectedSignature = undefined;
               }

@@ -67,8 +67,8 @@ informant.config(function ($locationProvider, $routeProvider, $httpProvider) {
 informant.controller('MainCtrl', function ($scope, $http) {
   $scope.ieLt9 = window.ieLt9;
   $http.get('backend/version')
-      .success(function (version) {
-        $scope.version = version;
+      .success(function (data) {
+        $scope.version = data;
       })
       .error(function (error) {
         // TODO
@@ -149,9 +149,9 @@ informant.directive('ixButton', function (ixButtonGroupControllerFactory) {
       ixShow: '&',
       ixDontValidateForm: '@'
     },
-    template: function (element, attrs) {
-      var ixButtonGroup = element.parent().controller('ixButtonGroup');
-      var ngShow = attrs.ixShow ? ' ng-show="ixShow()"' : '';
+    template: function (tElement, tAttrs) {
+      var ixButtonGroup = tElement.parent().controller('ixButtonGroup');
+      var ngShow = tAttrs.ixShow ? ' ng-show="ixShow()"' : '';
       if (ixButtonGroup) {
         return '<button class="btn" ng-click="onClick()"' + ngShow + '>{{ixLabel}}</button>';
       } else {
@@ -161,11 +161,11 @@ informant.directive('ixButton', function (ixButtonGroupControllerFactory) {
       }
     },
     require: '^?ixButtonGroup',
-    link: function (scope, element, attrs, ixButtonGroup) {
-      var form = element.parent().controller('form');
+    link: function (scope, iElement, iAttrs, ixButtonGroup) {
+      var form = iElement.parent().controller('form');
       if (!ixButtonGroup) {
         scope.noGroup = true;
-        ixButtonGroup = ixButtonGroupControllerFactory.create(element);
+        ixButtonGroup = ixButtonGroupControllerFactory.create(iElement);
       }
       scope.onClick = function () {
         ixButtonGroup.onClick(scope.ixClick, form && !scope.ixDontValidateForm);
@@ -187,8 +187,8 @@ informant.directive('ixControlGroup', function ($compile) {
     },
     transclude: true,
     require: '^form',
-    compile: function (element, attrs, transclude) {
-      return function (scope, element, attrs, form) {
+    compile: function (tElement, tAttrs, transclude) {
+      return function (scope, iElement, iAttrs, form) {
         var type = scope.ixType || 'text';
         var style = scope.ixWidth ? ' style="width: ' + scope.ixWidth + '"' : '';
         scope.form = form;
@@ -212,8 +212,8 @@ informant.directive('ixControlGroup', function ($compile) {
         }
         template += '</div></div></div>';
 
-        element.html(template);
-        $compile(element.contents(), transclude)(scope);
+        iElement.html(template);
+        $compile(iElement.contents(), transclude)(scope);
       };
     }
   };
@@ -227,11 +227,11 @@ informant.directive('ixDatepicker', function () {
       ixId: '@'
     },
     template: '<input type="text" class="input-small {{ixClass}}" id="{{ixId}}">',
-    link: function (scope, element, attrs) {
+    link: function (scope, iElement, iAttrs) {
       // TODO use bootstrap-datepicker momentjs backend when it's available and then use momentjs's
       // localized format 'moment.longDateFormat.L' both here and when parsing date
       // see https://github.com/eternicode/bootstrap-datepicker/issues/24
-      var $input = $(element).find('input');
+      var $input = $(iElement).find('input');
       $input.datepicker({format: 'mm/dd/yyyy', autoclose: true, todayHighlight: true});
       $input.datepicker('setDate', scope.ixModel);
       $input.on('changeDate', function (event) {
@@ -244,11 +244,11 @@ informant.directive('ixDatepicker', function () {
 });
 
 informant.directive('ixSetFocus', function () {
-  return function (scope, element, attrs) {
-    scope.$watch(attrs.ixFocus,
+  return function (scope, iElement, iAttrs) {
+    scope.$watch(iAttrs.ixFocus,
         function (newValue) {
           if (newValue) {
-            element.focus();
+            iElement.focus();
           }
         }, true);
   };
@@ -256,9 +256,9 @@ informant.directive('ixSetFocus', function () {
 
 // until ngBlur is included in angularjs
 informant.directive('ixBlur', function ($parse) {
-  return function (scope, element, attr) {
-    var fn = $parse(attr.ixBlur);
-    element.bind('blur', function (event) {
+  return function (scope, iElement, iAttrs) {
+    var fn = $parse(iAttrs.ixBlur);
+    iElement.bind('blur', function (event) {
       scope.$apply(function () {
         fn(scope, {$event: event});
       });

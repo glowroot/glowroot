@@ -66,13 +66,13 @@ informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
     var refreshId = ++currentRefreshId;
     Informant.showSpinner('#chartSpinner');
     $http.post('backend/trace/points', $scope.filter)
-        .success(function (response) {
+        .success(function (data) {
           if (refreshId !== currentRefreshId) {
             return;
           }
           Informant.hideSpinner('#chartSpinner');
           $scope.refreshChartError = false;
-          $scope.chartLimitExceeded = response.limitExceeded;
+          $scope.chartLimitExceeded = data.limitExceeded;
           $scope.chartLimit = limit;
           if (deferred) {
             // user clicked on Refresh button, need to reset axes
@@ -86,7 +86,7 @@ informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
             ];
             plot.unhighlight();
           }
-          plot.setData([response.normalPoints, response.errorPoints, response.activePoints]);
+          plot.setData([data.normalPoints, data.errorPoints, data.activePoints]);
           // setupGrid is needed in case yaxis.max === undefined
           plot.setupGrid();
           plot.draw();
@@ -265,7 +265,7 @@ informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
     var localSummaryItem = summaryItem;
     $scope.$apply(function () {
       $http.get('backend/trace/summary/' + id)
-          .success(function (response) {
+          .success(function (data) {
             spinner.stop();
             spinner = undefined;
             // intentionally not using itemEquals() here to avoid edge case where user clicks on item
@@ -278,10 +278,10 @@ informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
             }
             var text;
             var summaryTrace;
-            if (response.expired) {
+            if (data.expired) {
               text = 'expired';
             } else {
-              summaryTrace = response;
+              summaryTrace = data;
               var html = TraceRenderer.renderSummary(summaryTrace);
               var showDetailHtml = '<div style="margin-top: 0.5em;">' +
                   '<button class="flat-btn informant-red pad1" id="showDetail"' +
