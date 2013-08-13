@@ -17,12 +17,16 @@ package io.informant.container.javaagent;
 
 import java.io.InputStream;
 
+import com.google.common.net.MediaType;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
 import com.ning.http.client.Response;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import io.informant.markers.ThreadSafe;
+
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 
 /**
  * @author Trask Stalnaker
@@ -90,7 +94,12 @@ class JavaagentHttpClient {
     // Content-Encoding header after decompression) so that the original Content-Encoding can be
     // still be retrieved via the alternate http header X-Original-Content-Encoding
     private static boolean wasUncompressed(Response response) {
-        String contentLength = response.getHeader("Content-Length");
+        String contentType = response.getHeader(CONTENT_TYPE);
+        if (MediaType.ZIP.toString().equals(contentType)) {
+            // zip file downloads are never compressed (e.g. trace export)
+            return false;
+        }
+        String contentLength = response.getHeader(CONTENT_LENGTH);
         if ("0".equals(contentLength)) {
             // zero-length responses are never compressed
             return false;

@@ -35,12 +35,12 @@ import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
+import com.google.common.net.MediaType;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.stream.ChunkedInput;
@@ -51,6 +51,7 @@ import io.informant.common.CharStreams2;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
 
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -85,7 +86,7 @@ public class TraceExportHttpService implements HttpService {
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.setHeader(Names.CONTENT_TYPE, "application/zip");
+        response.setHeader(CONTENT_TYPE, MediaType.ZIP.toString());
         response.setHeader("Content-Disposition", "attachment; filename=" + getFilename(id)
                 + ".zip");
         HttpServices.preventCaching(response);
