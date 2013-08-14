@@ -397,19 +397,33 @@ informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
       },
       grid: {
         hoverable: true,
-        clickable: true
+        clickable: true,
+        // min border margin should match aggregate chart so they are positioned the same from the top of page
+        // without specifying min border margin, the point radius is used
+        minBorderMargin: 10
       },
       xaxis: {
         mode: 'time',
         timezone: 'browser',
         twelveHourClock: true,
         ticks: 5,
-        gridLock: 1
+        // xaxis is in milliseconds, so grid lock to 1 second
+        borderGridLock: 1000,
+        min: $scope.filter.from,
+        max: $scope.filter.to,
+        absoluteZoomRange: true,
+        zoomRange: [
+          $scope.filterDate.getTime(),
+          $scope.filterDate.getTime() + 24 * 60 * 60 * 1000
+        ]
       },
       yaxis: {
         ticks: 10,
         zoomRange: false,
-        gridLock: 0.001
+        borderGridLock: 0.001,
+        min: 0,
+        // 10 second yaxis max just for initial empty chart rendering
+        max: 10
       },
       zoom: {
         interactive: true,
@@ -425,15 +439,6 @@ informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
         mode: 'xy'
       }
     };
-    options.xaxis.min = $scope.filter.from;
-    options.xaxis.max = $scope.filter.to;
-    options.xaxis.zoomRange = [
-      $scope.filterDate.getTime(),
-      $scope.filterDate.getTime() + 24 * 60 * 60 * 1000
-    ];
-    options.yaxis.min = 0;
-    // 10 second yaxis max just for initial empty chart rendering
-    options.yaxis.max = 10;
     // render chart with no data points
     plot = $.plot($chart, [], options);
   })();

@@ -4,7 +4,7 @@
     "angular-unstable": "1.1.5",
     "angular-ui-bootstrap": "0.4.0",
     "bootstrap-datepicker": "trask/bootstrap-datepicker#1.1.2+patch.1",
-    "flot": "trask/flot#0.8.1+patch.1",
+    "flot": "trask/flot#0.9-work+patch",
     "handlebars": "1.0.0",
     "jquery": "1.10.1",
     "jquery-color": "2.1.1",

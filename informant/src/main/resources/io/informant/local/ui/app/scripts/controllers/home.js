@@ -68,7 +68,7 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
           }
           Informant.hideSpinner('#chartSpinner');
           fixedAggregateIntervalMillis = response.fixedAggregateIntervalSeconds * 1000;
-          plot.getAxes().xaxis.options.gridLock = fixedAggregateIntervalMillis;
+          plot.getAxes().xaxis.options.borderGridLock = fixedAggregateIntervalMillis;
           if (deferred) {
             // user clicked on Refresh button, need to reset axes
             plot.getAxes().xaxis.options.min = query.from;
@@ -302,19 +302,30 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
       },
       grid: {
         hoverable: true,
-        mouseActiveRadius: 10
+        mouseActiveRadius: 10,
+        // min border margin should match aggregate chart so they are positioned the same from the top of page
+        // without specifying min border margin, the point radius is used
+        minBorderMargin: 10
       },
       xaxis: {
         mode: 'time',
         timezone: 'browser',
         twelveHourClock: true,
         ticks: 5,
-        gridLock: 1
+        min: $scope.filter.from,
+        max: $scope.filter.to,
+        absoluteZoomRange: true,
+        zoomRange: [
+          $scope.filter.date.getTime(),
+          $scope.filter.date.getTime() + 24 * 60 * 60 * 1000
+        ]
       },
       yaxis: {
         ticks: 10,
         zoomRange: false,
-        gridLock: 15
+        min: 0,
+        // 10 second yaxis max just for initial empty chart rendering
+        max: 10
       },
       zoom: {
         interactive: true,
@@ -334,15 +345,6 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
         }
       }
     };
-    options.xaxis.min = $scope.filter.from;
-    options.xaxis.max = $scope.filter.to;
-    options.xaxis.zoomRange = [
-      $scope.filter.date.getTime(),
-      $scope.filter.date.getTime() + 24 * 60 * 60 * 1000
-    ];
-    options.yaxis.min = 0;
-    // 10 second yaxis max just for initial empty chart rendering
-    options.yaxis.max = 10;
     // render chart with no data points
     plot = $.plot($chart, [], options);
   })();
