@@ -1,7 +1,8 @@
 /* global require, module */
 /* jshint strict: false */
 
-var lrSnippet = require('grunt-contrib-livereload/lib/utils').livereloadSnippet;
+var LIVERELOAD_PORT = 35729;
+var lrSnippet = require('connect-livereload')({port: LIVERELOAD_PORT});
 var rewriteRulesSnippet = require('grunt-connect-rewrite/lib/utils').rewriteRequest;
 var mountFolder = function (connect, dir) {
   return connect.static(require('path').resolve(dir));
@@ -36,6 +37,9 @@ module.exports = function (grunt) {
         tasks: 'handlebars'
       },
       livereload: {
+        options: {
+          livereload: LIVERELOAD_PORT
+        },
         files: [
           '<%= yeoman.app %>/index.html',
           '<%= yeoman.app %>/scripts/**/*.js',
@@ -45,8 +49,7 @@ module.exports = function (grunt) {
           '.tmp/generated/handlebars-templates.js',
           '.tmp/scripts/app.js',
           '.tmp/styles/app.css'
-        ],
-        tasks: 'livereload'
+        ]
       }
     },
     connect: {
@@ -329,15 +332,12 @@ module.exports = function (grunt) {
     }
   });
 
-  grunt.renameTask('regarde', 'watch');
-
   grunt.registerTask('server', [
     'clean:server',
     'sass:server',
     'handlebars',
     'configureRewriteRules',
     'configureProxies',
-    'livereload-start',
     'connect:livereload',
     'watch'
   ]);
