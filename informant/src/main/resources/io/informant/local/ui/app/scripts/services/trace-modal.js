@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, $, TraceRenderer, alert */
-/* jshint strict: false */
+/* global informant, Informant, TraceRenderer, $, alert */
 
 informant.factory('traceModal', function ($rootScope, $http) {
 

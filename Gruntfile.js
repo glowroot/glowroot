@@ -17,7 +17,7 @@ module.exports = function (grunt) {
   var yeomanConfig = {
     app: 'informant/src/main/resources/io/informant/local/ui/app',
     dist: 'informant/ui-resources-dist/io/informant/local/ui/app-dist',
-    export_dist: 'informant/ui-resources-dist/io/informant/local/ui/export-dist'
+    exportDist: 'informant/ui-resources-dist/io/informant/local/ui/export-dist'
   };
 
   try {
@@ -112,7 +112,7 @@ module.exports = function (grunt) {
             src: [
               '.tmp',
               '<%= yeoman.dist %>/*',
-              '<%= yeoman.export_dist %>/*'
+              '<%= yeoman.exportDist %>/*'
             ]
           }
         ]
@@ -121,9 +121,9 @@ module.exports = function (grunt) {
     },
     jshint: {
       options: {
-        force: true
+        jshintrc: '.jshintrc',
       },
-      all: [
+      files: [
         'Gruntfile.js',
         '<%= yeoman.app %>/scripts/**/*.js'
       ]
@@ -132,7 +132,7 @@ module.exports = function (grunt) {
       dist: {
         files: {
           '<%= yeoman.dist %>/styles/app.css': '<%= yeoman.app %>/styles/app.scss',
-          '<%= yeoman.export_dist %>/styles/export.css': '<%= yeoman.app %>/styles/export.scss'
+          '<%= yeoman.exportDist %>/styles/export.css': '<%= yeoman.app %>/styles/export.scss'
         }
       },
       server: {
@@ -148,10 +148,10 @@ module.exports = function (grunt) {
           dest: '<%= yeoman.dist %>'
         }
       },
-      export_dist: {
-        files: {'<%= yeoman.export_dist %>/export.html': '<%= yeoman.app %>/export.html'},
+      exportDist: {
+        files: {'<%= yeoman.exportDist %>/export.html': '<%= yeoman.app %>/export.html'},
         options: {
-          dest: '<%= yeoman.export_dist %>'
+          dest: '<%= yeoman.exportDist %>'
         }
       }
     },
@@ -205,9 +205,9 @@ module.exports = function (grunt) {
           },
           {
             expand: true,
-            cwd: '<%= yeoman.export_dist %>',
+            cwd: '<%= yeoman.exportDist %>',
             src: 'export.html',
-            dest: '<%= yeoman.export_dist %>'
+            dest: '<%= yeoman.exportDist %>'
           }
         ]
       }
@@ -238,8 +238,9 @@ module.exports = function (grunt) {
     },
     ngmin: {
       dist: {
-        src: '.tmp/concat/scripts/app.js',
-        dest: '.tmp/concat/scripts/app.js'
+        files: {
+          '.tmp/concat/scripts/app.js': '.tmp/concat/scripts/app.js'
+        }
       }
     },
     uglify: {
@@ -273,7 +274,7 @@ module.exports = function (grunt) {
           {
             expand: true,
             cwd: '<%= yeoman.app %>',
-            dest: '<%= yeoman.export_dist %>',
+            dest: '<%= yeoman.exportDist %>',
             src: 'export.html'
           }
         ]
@@ -283,7 +284,7 @@ module.exports = function (grunt) {
       dist: {
         files: {
           '<%= yeoman.dist %>/styles/app.css': '<%= yeoman.dist %>/styles/app.css',
-          '<%= yeoman.export_dist %>/styles/export.css': '<%= yeoman.export_dist %>/styles/export.css'
+          '<%= yeoman.exportDist %>/styles/export.css': '<%= yeoman.exportDist %>/styles/export.css'
         }
       }
     },
@@ -305,7 +306,7 @@ module.exports = function (grunt) {
       }
     },
     usemin: {
-      html: ['<%= yeoman.dist %>/index.html', '<%= yeoman.export_dist %>/export.html'],
+      html: ['<%= yeoman.dist %>/index.html', '<%= yeoman.exportDist %>/export.html'],
       // use revved font filenames in revved app.css
       css: '<%= yeoman.dist %>/styles/*.app.css'
     },

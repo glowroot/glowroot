@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, alert */
-/* jshint strict: false */
+/* global informant, Informant */
 
 informant.controller('PointcutsCtrl', function ($scope, $http, $timeout) {
 
@@ -248,14 +247,12 @@ informant.directive('pointcut', function ($http) {
               if (signatures.length !== 1) {
                 // this includes the case where signatures.length === 0, which is possible if the user enters a
                 // non-matching method name and clicks outside of the input field to bypass the typeahead values
-                scope.pointcut.signatures.push(
-                    {
-                      name: methodName,
-                      argTypeNames: [ '..' ],
-                      returnTypeName: '',
-                      modifiers: []
-                    }
-                );
+                scope.pointcut.signatures.push({
+                  name: methodName,
+                  argTypeNames: [ '..' ],
+                  returnTypeName: '',
+                  modifiers: []
+                });
               }
               if (signatures.length === 1) {
                 scope.pointcut.selectedSignature = signatures[0];

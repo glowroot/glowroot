@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, Handlebars, $ */
-/* jshint strict: false */
+/* global informant, Informant, $, Handlebars, JST */
 
 informant.controller('ThreaddumpCtrl', function ($scope, $http) {
 

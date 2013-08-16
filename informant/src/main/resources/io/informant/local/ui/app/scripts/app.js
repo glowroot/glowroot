@@ -15,9 +15,10 @@
  */
 
 /* global angular, $, Spinner */
-/* jshint strict: false */
 
 var informant = angular.module('informant', ['ui.bootstrap.accordion']);
+
+var Informant;
 
 informant.config(function ($locationProvider, $routeProvider) {
   // TODO try html5mode again after next angularjs release
@@ -261,113 +262,119 @@ $(document).ready(function () {
       .on('keydown touchstart', onTabCloseMenu);
 });
 
-var Informant = {};
+Informant = (function() {
 
-Informant.showAndFadeSuccessMessage = function (selector) {
-  showAndFadeMessage(selector, 0);
-};
-
-// TODO unused
-Informant.showAndFadeErrorMessage = function (selector) {
-  showAndFadeMessage(selector, 1000);
-};
-
-var showAndFadeMessage = function (selector, delay) {
-  $(selector).each(function () {
-    // handle crazy user clicking on the button
-    var $this = $(this);
-    if ($this.data('timeout')) {
-      clearTimeout($this.data('timeout'));
-    }
-    $this.stop().animate({opacity: '100'});
-    $this.removeClass('hide');
-    var outerThis = this;
-    $this.data('timeout', setTimeout(function () {
-      fadeOut(outerThis, 1000);
-    }, delay));
-  });
-};
-
-var fadeOut = function (selector, duration) {
-  // fade out and then override jquery behavior and use hide class instead of display: none
-  var $selector = $(selector);
-  $selector.fadeOut(duration, function () {
-    $selector.addClass('hide');
-    $selector.css('display', '');
-  });
-};
-
-Informant.showSpinner = function (selector, opts) {
-  opts = opts || { lines: 10, width: 4, radius: 8 };
-  $(selector).each(function () {
-    var data = $(this).data();
-    data.spinner = new Spinner(opts);
-    var outerThis = this;
-
-    function displaySpinner() {
-      // data.spinner may have been cleared already by hideSpinner() before setTimeout triggered
-      if (data.spinner) {
-        $(outerThis).removeClass('hide');
-        data.spinner.spin(outerThis);
+  function showAndFadeMessage(selector, delay) {
+    $(selector).each(function () {
+      // handle crazy user clicking on the button
+      var $this = $(this);
+      if ($this.data('timeout')) {
+        clearTimeout($this.data('timeout'));
       }
-    }
-
-    // small delay so that if there is an immediate response the spinner doesn't blink
-    setTimeout(displaySpinner, 100);
-  });
-};
-
-Informant.hideSpinner = function (selector) {
-  $(selector).each(function () {
-    var $this = $(this);
-    var data = $this.data();
-    if (data.spinner) {
-      data.spinner.stop();
-      delete data.spinner;
-    }
-    $this.addClass('hide');
-  });
-};
-
-Informant.configureAjaxError = function () {
-  var modalDiv =
-      '<div class="modal hide fade" id="ajaxErrorModal" tabindex="-1"' +
-          '    style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px;">' +
-          '  <div class="modal-header">' +
-          '    <button class="close" data-dismiss="modal">&times;</button>' +
-          '    <h3>Ajax Error</h3>' +
-          '  </div>' +
-          '  <div class="modal-body" id="ajaxError"></div>' +
-          '  <div class="modal-footer">' +
-          '    <button class="btn" data-dismiss="modal">Close</button>' +
-          '  </div>' +
-          '</div>';
-  $(document.body).append(modalDiv);
-  $(document).ajaxError(function (e, jqxhr, settings, exception) {
-    if (jqxhr.abort) {
-      // intentional abort (currently happens in firefox if open trace detail modal, detail takes
-      // long to load, hit escape key to close trace detail modal before detail request completes)
-      return;
-    }
-    var $ajaxError = $('#ajaxError');
-    if (jqxhr.status === 0) {
-      $ajaxError.html('Can\'t connect to server');
-    } else if (jqxhr.status === 200) {
-      $ajaxError.html('Error parsing json: ' + exception);
-      $ajaxError.append('<br><br>');
-      $ajaxError.append(jqxhr.responseText);
-    } else {
-      $ajaxError.html('Error from server: ' + jqxhr.statusText);
-    }
-    $('#ajaxErrorModal').modal('show');
-  });
-};
-
-$(document).on('keypress', '.refresh-data-on-enter-key', function (event) {
-  if (event.which === 13) {
-    // trigger button so it will active spinner and success message
-    $('.form-submit > button').click();
-    // without preventDefault, enter triggers 'more filters' button
-    event.preventDefault();
+      $this.stop().animate({opacity: '100'});
+      $this.removeClass('hide');
+      var outerThis = this;
+      $this.data('timeout', setTimeout(function () {
+        fadeOut(outerThis, 1000);
+      }, delay));
+    });
   }
-});
+
+  function fadeOut(selector, duration) {
+    // fade out and then override jquery behavior and use hide class instead of display: none
+    var $selector = $(selector);
+    $selector.fadeOut(duration, function () {
+      $selector.addClass('hide');
+      $selector.css('display', '');
+    });
+  }
+
+  function showSpinner(selector, opts) {
+    opts = opts || { lines: 10, width: 4, radius: 8 };
+    $(selector).each(function () {
+      var data = $(this).data();
+      data.spinner = new Spinner(opts);
+      var outerThis = this;
+
+      function displaySpinner() {
+        // data.spinner may have been cleared already by hideSpinner() before setTimeout triggered
+        if (data.spinner) {
+          $(outerThis).removeClass('hide');
+          data.spinner.spin(outerThis);
+        }
+      }
+
+      // small delay so that if there is an immediate response the spinner doesn't blink
+      setTimeout(displaySpinner, 100);
+    });
+  }
+
+  function hideSpinner(selector) {
+    $(selector).each(function () {
+      var $this = $(this);
+      var data = $this.data();
+      if (data.spinner) {
+        data.spinner.stop();
+        delete data.spinner;
+      }
+      $this.addClass('hide');
+    });
+  }
+
+  function configureAjaxError() {
+    var modalDiv =
+        '<div class="modal hide fade" id="ajaxErrorModal" tabindex="-1"' +
+            '    style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px;">' +
+            '  <div class="modal-header">' +
+            '    <button class="close" data-dismiss="modal">&times;</button>' +
+            '    <h3>Ajax Error</h3>' +
+            '  </div>' +
+            '  <div class="modal-body" id="ajaxError"></div>' +
+            '  <div class="modal-footer">' +
+            '    <button class="btn" data-dismiss="modal">Close</button>' +
+            '  </div>' +
+            '</div>';
+    $(document.body).append(modalDiv);
+    $(document).ajaxError(function (e, jqxhr, settings, exception) {
+      if (jqxhr.abort) {
+        // intentional abort (currently happens in firefox if open trace detail modal, detail takes
+        // long to load, hit escape key to close trace detail modal before detail request completes)
+        return;
+      }
+      var $ajaxError = $('#ajaxError');
+      if (jqxhr.status === 0) {
+        $ajaxError.html('Can\'t connect to server');
+      } else if (jqxhr.status === 200) {
+        $ajaxError.html('Error parsing json: ' + exception);
+        $ajaxError.append('<br><br>');
+        $ajaxError.append(jqxhr.responseText);
+      } else {
+        $ajaxError.html('Error from server: ' + jqxhr.statusText);
+      }
+      $('#ajaxErrorModal').modal('show');
+    });
+  }
+
+  $(document).on('keypress', '.refresh-data-on-enter-key', function (event) {
+    if (event.which === 13) {
+      // trigger button so it will active spinner and success message
+      $('.form-submit > button').click();
+      // without preventDefault, enter triggers 'more filters' button
+      event.preventDefault();
+    }
+  });
+
+  return {
+    showAndFadeSuccessMessage: function(selector) {
+      showAndFadeMessage(selector, 0);
+    },
+    // TODO unused
+    showAndFadeErrorMessage: function(selector) {
+      showAndFadeMessage(selector, 1000);
+    },
+    fadeOut: fadeOut,
+    showSpinner: showSpinner,
+    hideSpinner: hideSpinner,
+    configureAjaxError: configureAjaxError
+  };
+})();

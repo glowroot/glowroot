@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, angular, $ */
-/* jshint strict: false */
+/* global informant, Informant, $ */
 
 informant.controller('ConfigCtrl', function ($scope, $http) {
 

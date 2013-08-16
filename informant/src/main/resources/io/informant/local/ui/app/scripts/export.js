@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-/* global $, TraceRenderer */
-/* jshint strict: false */
+/* global TraceRenderer, $ */
 
 $(document).ready(function () {
   var detailTrace = JSON.parse($('#detailTraceJson').html());

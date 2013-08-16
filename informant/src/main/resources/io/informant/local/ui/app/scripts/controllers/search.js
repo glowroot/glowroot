@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, $, Spinner, TraceRenderer, alert */
-/* jshint strict: false */
+/* global informant, Informant, TraceRenderer, $, Spinner, alert */
 
 informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
 
@@ -34,7 +33,9 @@ informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
   // qtip adds some code to the beginning of jquery's cleanData function which causes the trace
   // detail modal to close slowly when it has 5000 spans
   // this extra cleanup code is not needed anyways since cleanup is performed explicitly
+  /* jshint -W106 */ // W106 is camelcase
   $.cleanData = $.cleanData_replacedByqTip;
+  /* jshint +W106 */
 
   (function () {
     // with responsive design, body width doesn't change on every window resize event

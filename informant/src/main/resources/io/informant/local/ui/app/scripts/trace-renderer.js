@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-/* global $, Handlebars, moment, JST */
-/* jshint strict: false */
+/* global $, Handlebars, JST, moment */
 
 // not using angular so that this can be embedded into export.html
 // without needing to embed large angular.js as well
-var TraceRenderer = (function () {
+var TraceRenderer;
+
+TraceRenderer = (function () {
   // indent1 must be sync'd with $indent1 sass variable in trace-span.less
   var indent1 = 1; // em
 
