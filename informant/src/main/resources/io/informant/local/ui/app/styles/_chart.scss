@@ -25,12 +25,25 @@ $tracePointError: $informantRed;
 
 $informantLightRedBackground: #f2dede;
 
-.chart {
+.chart-container {
+  position: relative;
+  height: 300px;
+  // need min width, otherwise sometimes it gets flot error:
+  // "Invalid dimensions for plot, width = 0, height = 0"
+  min-width: 100px;
+}
+
+.chart-dimensions {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+.chart-spinner {
+  @extend .chart-dimensions;
+  pointer-events: none;
 }
 
 .chart-warning {
