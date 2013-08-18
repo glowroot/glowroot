@@ -18,8 +18,9 @@
 
 informant.controller('PointcutsCtrl', function ($scope, $http, $timeout) {
 
-  document.title = 'Pointcuts | Informant';
-  $scope.$parent.title = 'Pointcuts';
+  document.title = 'Dynamic pointcuts | Informant';
+  $scope.$parent.title = 'Dynamic pointcuts';
+  $scope.$parent.activenav = 'pointcuts';
 
   // TODO CONVERT TO ANGULARJS, global $http error handler?
   Informant.configureAjaxError();

@@ -20,6 +20,7 @@ informant.controller('ThreaddumpCtrl', function ($scope, $http) {
 
   document.title = 'Thread dump | Informant';
   $scope.$parent.title = 'Thread dump';
+  $scope.$parent.activenav = 'threaddump';
 
   Handlebars.registerHelper('ifBlocked', function (state, options) {
     if (state === 'BLOCKED') {

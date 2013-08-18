@@ -20,6 +20,7 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
 
   document.title = 'Configuration | Informant';
   $scope.$parent.title = 'Configuration';
+  $scope.$parent.activenav = 'config';
 
   $scope.pattern = {
     // TODO allow comma as decimal separator (and check out html5 input type="number")

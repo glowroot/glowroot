@@ -99,23 +99,24 @@
 
 </head>
 <body class="pin-vertical-scrollbar">
-  <div class="container" id="wrap">
-    <div class="header">
-      <!-- lack of spaces on this line is important -->
-      <a class="header-logo" href="#/">Informant</a><span class="header-page-name ng-cloak">{{title}}</span>
-      <div class="header-see-also dropdown pull-right">
-        <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
-        <a href="#" class="dropdown-toggle informant-red" role="button" data-toggle="dropdown">
-          see also:
-        </a>
-        <ul class="dropdown-menu" role="menu" style="margin: 0;">
-          <li role="menuitem"><a tabindex="-1" href="#/search.html">search</a></li>
-          <li role="menuitem"><a tabindex="-1" href="#/config.html">configuration</a></li>
-          <li role="menuitem"><a tabindex="-1" href="#/pointcuts.html">pointcuts</a></li>
+  <header class="navbar navbar-inverse navbar-fixed-top" role="banner">
+    <div class="container">
+      <span class="brand">Informant</span>
+      <div class="nav-collapse collapse">
+        <ul class="nav">
+          <li ng-class="{active: activenav === 'home'}"><a href=".">Overview</a></li>
+          <li ng-class="{active: activenav === 'search'}"><a href="#/search.html">Trace search</a></li>
+          <li ng-class="{active: activenav === 'config'}"><a href="#/config.html">Configuration</a></li>
+          <li ng-class="{active: activenav === 'pointcuts'}"><a href="#/pointcuts.html">Dynamic pointcuts</a></li>
+          <li ng-show="activenav === 'threaddump'" class="active"><a href="#/threaddump.html">Thread dump</a></li>
         </ul>
       </div>
     </div>
-    <br>
+  </header>
+  <div class="container" id="wrap">
+    <div class="header">
+      <span class="header-page-name ng-cloak">{{title}}</span>
+    </div>
     <div ng-view></div>
     <div id="push"></div>
   </div>

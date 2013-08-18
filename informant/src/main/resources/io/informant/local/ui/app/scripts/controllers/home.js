@@ -20,6 +20,7 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
 
   document.title = 'Home | Informant';
   $scope.$parent.title = 'Home';
+  $scope.$parent.activenav = 'home';
 
   var plot;
 
