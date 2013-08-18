@@ -34,8 +34,9 @@
 .header {
   font-weight: normal;
   font-size: 36px;
-  line-height: 40px;
-  padding: 42px 0 24px 0;
+  // need to override inherited line-height
+  line-height: normal;
+  margin: 42px 0 24px 0;
   text-rendering: optimizelegibility;
 }
 
