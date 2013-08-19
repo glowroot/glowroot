@@ -270,7 +270,7 @@ module.exports = function (grunt) {
               'bower_components/flot/excanvas.min.js',
               'bower_components/sass-bootstrap/img/*.png',
               'styles/fonts/*',
-              'images/favicon.ico',
+              'favicon.ico',
               'index.html'
             ]
           },
@@ -301,7 +301,6 @@ module.exports = function (grunt) {
             '<%= yeoman.dist %>/bower_components/flot/excanvas.min.js',
             '<%= yeoman.dist %>/bower_components/sass-bootstrap/img/*.png',
             '<%= yeoman.dist %>/styles/fonts/*',
-            '<%= yeoman.dist %>/images/favicon.ico',
             '<%= yeoman.dist %>/scripts/app{,.components}.js',
             '<%= yeoman.dist %>/styles/app{,.components}.css'
           ]

@@ -75,6 +75,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     private static final Logger logger = LoggerFactory.getLogger(HttpServerHandler.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
     private static final long TEN_YEARS = 10 * 365 * 24 * 60 * 60 * 1000L;
+    private static final long ONE_DAY = 24 * 60 * 60 * 1000L;
     private static final long FIVE_MINUTES = 5 * 60 * 1000L;
 
     private static final ImmutableSet<String> BROWSER_DISCONNECT_MESSAGES = ImmutableSet.of(
@@ -222,6 +223,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
         if (path.endsWith("/ui/app-dist/index.html")) {
             response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + FIVE_MINUTES));
+        } else if (path.endsWith("/ui/app-dist/favicon.ico")) {
+            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + ONE_DAY));
         } else {
             // all other static resources are versioned and can be safely cached forever
             response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));

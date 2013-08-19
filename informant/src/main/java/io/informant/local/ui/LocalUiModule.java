@@ -167,9 +167,9 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/pointcuts.html$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/threaddump.html$"), resourceBase + "/index.html");
         // internal resources
-        uriMappings.put(Pattern.compile("^/images/(.*)$"), resourceBase + "/images/$1");
         uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");
         uriMappings.put(Pattern.compile("^/styles/(.*)$"), resourceBase + "/styles/$1");
+        uriMappings.put(Pattern.compile("^/favicon.ico$"), resourceBase + "/favicon.ico");
         uriMappings.put(Pattern.compile("^/bower_components/(.*)$"),
                 resourceBase + "/bower_components/$1");
         // services
