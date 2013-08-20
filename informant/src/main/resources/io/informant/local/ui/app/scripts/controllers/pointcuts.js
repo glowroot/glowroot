@@ -87,8 +87,12 @@ informant.controller('PointcutsCtrl', function ($scope, $http, $timeout) {
           $scope.dirty = false;
           deferred.resolve('Success');
         })
-        .error(function () {
-          deferred.reject('Error occurred');
+        .error(function (data, status) {
+          if (status === 0) {
+            deferred.reject('Unable to connect to server');
+          } else {
+            deferred.reject('An error occurred');
+          }
         });
   };
 });
@@ -212,8 +216,12 @@ informant.directive('pointcut', function ($http) {
               }
               deferred.resolve(version ? 'Saved' : 'Added');
             })
-            .error(function () {
-              deferred.reject('Error occurred');
+            .error(function (data, status) {
+              if (status === 0) {
+                deferred.reject('Unable to connect to server');
+              } else {
+                deferred.reject('An error occurred');
+              }
             });
       };
 
@@ -226,8 +234,12 @@ informant.directive('pointcut', function ($http) {
                 ngController.setDirty(true);
                 deferred.resolve('Deleted');
               })
-              .error(function () {
-                deferred.reject('Error occurred');
+              .error(function (data, status) {
+                if (status === 0) {
+                  deferred.reject('Unable to connect to server');
+                } else {
+                  deferred.reject('An error occurred');
+                }
               });
         } else {
           ngController.removePointcut(scope.pointcut);

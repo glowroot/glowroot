@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, $, alert */
+/* global informant, Informant, $ */
 
 informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModal) {
 
@@ -62,12 +62,14 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
       from: $scope.filter.from,
       to: $scope.filter.to
     };
+    Informant.showSpinner('#chartSpinner');
     $http.post('backend/aggregate/points', query)
         .success(function (response) {
           if (refreshId !== currentRefreshId) {
             return;
           }
           Informant.hideSpinner('#chartSpinner');
+          $scope.refreshChartError = false;
           fixedAggregateIntervalMillis = response.fixedAggregateIntervalSeconds * 1000;
           plot.getAxes().xaxis.options.borderGridLock = fixedAggregateIntervalMillis;
           if (deferred) {
@@ -87,15 +89,19 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
             deferred.resolve('Success');
           }
         })
-        .error(function () {
+        .error(function (data, status) {
           if (refreshId !== currentRefreshId) {
             return;
           }
-          if (deferred) {
-            deferred.reject('Error occurred');
+          Informant.hideSpinner('#chartSpinner');
+          $scope.chartLimitExceeded = false;
+          if (status === 0) {
+            $scope.refreshChartError = 'Unable to connect to server';
           } else {
-            // TODO handle this better
-            alert('Error occurred');
+            $scope.refreshChartError = 'An error occurred';
+          }
+          if (deferred) {
+            deferred.reject($scope.refreshChartError);
           }
         });
     updateGroupings();
@@ -259,15 +265,19 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
     };
     $http.post('backend/aggregate/groupings', query)
         .success(function (response) {
+          $scope.refreshGroupingsError = false;
           $('#groupAggregates').html('');
           $.each(response, function (i, grouping) {
             var average = ((grouping.durationTotal / grouping.traceCount) / 1000000000).toFixed(2);
             $('#groupAggregates').append('<div>' + grouping.grouping + ': ' + average + '</div>');
           });
         })
-        .error(function () {
-          // TODO handle this better
-          alert('Error occurred');
+        .error(function (data, status) {
+          if (status === 0) {
+            $scope.refreshGroupingsError = 'Unable to connect to server';
+          } else {
+            $scope.refreshGroupingsError = 'An error occurred';
+          }
         });
   }
 
@@ -351,6 +361,5 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
   })();
 
   plot.getAxes().yaxis.options.max = undefined;
-  Informant.showSpinner('#chartSpinner');
   $scope.refreshChart();
 });

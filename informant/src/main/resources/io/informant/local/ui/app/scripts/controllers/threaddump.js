@@ -51,9 +51,14 @@ informant.controller('ThreaddumpCtrl', function ($scope, $http) {
             deferred.resolve('Refreshed');
           }
         })
-        .error(function () {
+        .error(function (data, status) {
+          // TODO handle for initial load (!deferred)
           if (deferred) {
-            deferred.reject('Error occurred');
+            if (status === 0) {
+              deferred.reject('Unable to connect to server');
+            } else {
+              deferred.reject('An error occurred');
+            }
           }
         });
   };

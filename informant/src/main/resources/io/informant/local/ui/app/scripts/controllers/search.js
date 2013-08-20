@@ -64,12 +64,14 @@ informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
     var low = $scope.filter.low;
     var high = $scope.filter.high;
     var refreshId = ++currentRefreshId;
+    Informant.showSpinner('#chartSpinner');
     $http.post('backend/trace/points', $scope.filter)
         .success(function (response) {
           if (refreshId !== currentRefreshId) {
             return;
           }
           Informant.hideSpinner('#chartSpinner');
+          $scope.refreshChartError = false;
           $scope.chartLimitExceeded = response.limitExceeded;
           $scope.chartLimit = limit;
           if (deferred) {
@@ -92,15 +94,19 @@ informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
             deferred.resolve('Success');
           }
         })
-        .error(function () {
+        .error(function (data, status) {
           if (refreshId !== currentRefreshId) {
             return;
           }
-          if (deferred) {
-            deferred.reject('Error occurred');
+          Informant.hideSpinner('#chartSpinner');
+          $scope.chartLimitExceeded = false;
+          if (status === 0) {
+            $scope.refreshChartError = 'Unable to connect to server';
           } else {
-            // TODO handle this better
-            alert('Error occurred');
+            $scope.refreshChartError = 'An error occurred';
+          }
+          if (deferred) {
+            deferred.reject($scope.refreshChartError);
           }
         });
   };
@@ -445,6 +451,5 @@ informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
   })();
 
   plot.getAxes().yaxis.options.max = undefined;
-  Informant.showSpinner('#chartSpinner');
   $scope.refreshChart();
 });

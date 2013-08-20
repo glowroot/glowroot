@@ -20,7 +20,22 @@ var informant = angular.module('informant', ['ui.bootstrap.accordion']);
 
 var Informant;
 
-informant.config(function ($locationProvider, $routeProvider) {
+informant.factory('httpInterceptor', function($q, $timeout) {
+  return {
+    'responseError': function (rejection) {
+      if (rejection.status === 0) {
+        // small timeout to prevent error message from flashing if this is a result of user hitting F5
+        $timeout(function () {
+          $q.reject(rejection);
+        }, 100);
+      } else {
+        $q.reject(rejection);
+      }
+    }
+  };
+});
+
+informant.config(function ($locationProvider, $routeProvider, $httpProvider) {
   // TODO try html5mode again after next angularjs release
   // angularjs 1.1.5 introduced an issue in IE8: when hitting page reload the url
   // changes from http://localhost:4000/#/ to http://localhost:4000/#/#/#%2F
@@ -45,6 +60,8 @@ informant.config(function ($locationProvider, $routeProvider) {
     templateUrl: 'views/threaddump.html',
     controller: 'ThreaddumpCtrl'
   });
+
+  $httpProvider.interceptors.push('httpInterceptor');
 });
 
 informant.controller('MainCtrl', function ($scope, $http) {

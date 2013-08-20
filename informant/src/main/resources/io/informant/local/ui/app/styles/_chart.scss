@@ -23,8 +23,6 @@ $tracePointNormal: darken($flotDefaultColor, 10);
 $tracePointActive: lighten($informantBlue, 20);
 $tracePointError: $informantRed;
 
-$informantLightRedBackground: #f2dede;
-
 .chart-container {
   position: relative;
   height: 300px;
@@ -52,6 +50,17 @@ $informantLightRedBackground: #f2dede;
   background-color: $informantLightRedBackground;
   margin-bottom: 6px;
   @include border-radius(6px);
+}
+
+.chart-error {
+  position: absolute;
+  width: 250px;
+  left: 50%;
+  margin-top: 100px;
+  // include padding in margin-left
+  margin-left: -(250px / 2 + 35px);
+  @extend .chart-warning;
+  pointer-events: none;
 }
 
 .chart-help {

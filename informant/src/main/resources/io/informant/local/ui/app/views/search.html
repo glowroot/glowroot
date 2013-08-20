@@ -15,7 +15,10 @@
 -->
 <div class="chart-container">
   <div class="chart-dimensions" id="chart"></div>
-  <span class="chart-spinner button-spinner hide" id="chartSpinner"></span>
+  <div class="chart-spinner hide" id="chartSpinner"></div>
+  <div class="chart-error" ng-show="refreshChartError">
+    <strong>{{refreshChartError}}</strong>
+  </div>
 </span>
 </div>
 <br>

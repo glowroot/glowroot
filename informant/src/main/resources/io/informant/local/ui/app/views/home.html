@@ -15,7 +15,10 @@
 -->
 <div class="chart-container">
   <div class="chart-dimensions" id="chart"></div>
-  <span class="chart-spinner button-spinner hide" id="chartSpinner"></span>
+  <div class="chart-spinner hide" id="chartSpinner"></div>
+  <div class="chart-error" ng-show="refreshChartError">
+    <strong>{{refreshChartError}}</strong>
+  </div>
 </div>
 <br>
 <div style="float: right; margin-top: 10px;">
@@ -67,7 +70,12 @@
     </div>
   </fieldset>
 </form>
-<div id="groupAggregates" style="clear: both; padding-top: 20px">
+<div style="clear: both; padding-top: 20px">
+  <div class="groupings-error" ng-show="refreshGroupingsError">
+    <strong>{{refreshGroupingsError}}</strong>
+  </div>
+</div>
+<div id="groupAggregates">
 </div>
 <div class="modal hide" id="modal">
   <button class="close" id="modalHide" style="position: fixed; right: 65px; top:30px;">

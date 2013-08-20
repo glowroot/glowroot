@@ -39,9 +39,12 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
           $scope.generalEnabled = $scope.config.generalConfig.enabled;
           deferred.resolve('Saved');
         })
-        .error(function (response) {
-          //TODO
-          deferred.reject('Error occurred');
+        .error(function (data, status) {
+          if (status === 0) {
+            deferred.reject('Unable to connect to server');
+          } else {
+            deferred.reject('An error occurred');
+          }
         });
   };
 
@@ -52,9 +55,12 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
           $scope.coarseEnabled = $scope.config.coarseProfilingConfig.enabled;
           deferred.resolve('Saved');
         })
-        .error(function (response) {
-          //TODO
-          deferred.reject('Error occurred');
+        .error(function (data, status) {
+          if (status === 0) {
+            deferred.reject('Unable to connect to server');
+          } else {
+            deferred.reject('An error occurred');
+          }
         });
   };
 
@@ -65,9 +71,12 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
           $scope.fineEnabled = $scope.config.fineProfilingConfig.enabled;
           deferred.resolve('Saved');
         })
-        .error(function (response) {
-          //TODO
-          deferred.reject('Error occurred');
+        .error(function (data, status) {
+          if (status === 0) {
+            deferred.reject('Unable to connect to server');
+          } else {
+            deferred.reject('An error occurred');
+          }
         });
   };
 
@@ -78,9 +87,12 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
           $scope.userEnabled = $scope.config.userOverridesConfig.enabled;
           deferred.resolve('Saved');
         })
-        .error(function (response) {
-          //TODO
-          deferred.reject('Error occurred');
+        .error(function (data, status) {
+          if (status === 0) {
+            deferred.reject('Unable to connect to server');
+          } else {
+            deferred.reject('An error occurred');
+          }
         });
   };
 
@@ -90,9 +102,12 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
           $scope.config.storageConfig.version = response;
           deferred.resolve('Saved');
         })
-        .error(function (response) {
-          //TODO
-          deferred.reject('Error occurred');
+        .error(function (data, status) {
+          if (status === 0) {
+            deferred.reject('Unable to connect to server');
+          } else {
+            deferred.reject('An error occurred');
+          }
         });
   };
 
@@ -101,9 +116,12 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
         .success(function (response) {
           deferred.resolve('Saved');
         })
-        .error(function (response) {
-          //TODO
-          deferred.reject('Error occurred');
+        .error(function (data, status) {
+          if (status === 0) {
+            deferred.reject('Unable to connect to server');
+          } else {
+            deferred.reject('An error occurred');
+          }
         });
   };
 
@@ -130,13 +148,15 @@ informant.controller('ConfigCtrl', function ($scope, $http) {
           plugin.enabled = plugin.config.enabled;
           deferred.resolve('Saved');
         })
-        .error(function (response) {
-          //TODO
-          deferred.reject('Error occurred');
+        .error(function (data, status) {
+          if (status === 0) {
+            deferred.reject('Unable to connect to server');
+          } else {
+            deferred.reject('An error occurred');
+          }
         });
   };
 
-  // TODO CONVERT TO ANGULARJS, global $http error handler?
   Informant.configureAjaxError();
   // TODO fix initial load spinner
   Informant.showSpinner('#initialLoadSpinner');
