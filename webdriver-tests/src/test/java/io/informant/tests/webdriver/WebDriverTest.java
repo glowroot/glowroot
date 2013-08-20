@@ -65,30 +65,31 @@ public class WebDriverTest {
     public void shouldUpdateGeneralConfig() throws InterruptedException {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
-        ConfigPage page = app.openConfigPage();
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigGeneralPage configGeneralPage = new ConfigGeneralPage(driver);
+
+        app.openHomePage();
+        globalNavbar.getConfigurationLink().click();
 
         // when
-        page.getTraceCaptureHeader().click();
-        page.getGeneralSection().getHeader().click();
-        page.getGeneralSection().getEnabledCheckbox().click();
-        page.getGeneralSection().getStoreThresholdTextField().clear();
-        page.getGeneralSection().getStoreThresholdTextField().sendKeys("2345");
-        page.getGeneralSection().getStuckThresholdTextField().clear();
-        page.getGeneralSection().getStuckThresholdTextField().sendKeys("3456");
-        page.getGeneralSection().getMaxSpansTextField().clear();
-        page.getGeneralSection().getMaxSpansTextField().sendKeys("4567");
-        page.getGeneralSection().getSaveButton().click();
+        configGeneralPage.getEnabledCheckbox().click();
+        configGeneralPage.getStoreThresholdTextField().clear();
+        configGeneralPage.getStoreThresholdTextField().sendKeys("2345");
+        configGeneralPage.getStuckThresholdTextField().clear();
+        configGeneralPage.getStuckThresholdTextField().sendKeys("3456");
+        configGeneralPage.getMaxSpansTextField().clear();
+        configGeneralPage.getMaxSpansTextField().sendKeys("4567");
+        configGeneralPage.getSaveButton().click();
 
         // then
-        page = app.openConfigPage();
-        page.getTraceCaptureHeader().click();
-        page.getGeneralSection().getHeader().click();
-        assertThat(page.getGeneralSection().getEnabledCheckbox().isSelected()).isFalse();
-        assertThat(page.getGeneralSection().getStoreThresholdTextField().getAttribute("value"))
+        app.openHomePage();
+        globalNavbar.getConfigurationLink().click();
+        assertThat(configGeneralPage.getEnabledCheckbox().isSelected()).isFalse();
+        assertThat(configGeneralPage.getStoreThresholdTextField().getAttribute("value"))
                 .isEqualTo("2345");
-        assertThat(page.getGeneralSection().getStuckThresholdTextField().getAttribute("value"))
+        assertThat(configGeneralPage.getStuckThresholdTextField().getAttribute("value"))
                 .isEqualTo("3456");
-        assertThat(page.getGeneralSection().getMaxSpansTextField().getAttribute("value"))
+        assertThat(configGeneralPage.getMaxSpansTextField().getAttribute("value"))
                 .isEqualTo("4567");
     }
 }

@@ -1,0 +1,119 @@
+/*
+ * Copyright 2012-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@import "variables";
+
+// $indent1 must be sync'd with indent1 javascript variable in trace-renderer.js
+$indent1: 1em;
+$horizontal-padding: 1em;
+// by default using flatButtonVerticalPadding, but these are really independent vars
+$vertical-padding: $flat-button-vertical-padding;
+
+.content-detail {
+  margin-left: (2 * $indent1);
+}
+
+.metrics-table td {
+  padding-left: 0px;
+  padding-right: 16px;
+  text-align: right;
+  vertical-align: top;
+}
+
+// some elements need the same padding as expanding elements
+@mixin content-padding {
+  padding: $vertical-padding $horizontal-padding;
+}
+
+.content-padding {
+  @include content-padding;
+}
+
+.unexpanded-content,
+.expanded-content {
+  cursor: pointer;
+  // margin-right is used (instead of padding-right on the container) so that stack traces which
+  // require horizontal scrolling still have padding to their right
+  margin-right: 20px;
+  border-radius: 4px;
+  @include content-padding;
+}
+
+.unexpanded-content:hover,
+.unexpanded-content:focus,
+.expanded-content:hover,
+.expanded-content:focus {
+  background-color: #ddd;
+}
+
+.expanded-content {
+  background-color: #eee;
+  // margin for white space between successive expanded elements, at the bottom so that
+  // expanding doesn't create jitter/shift down of expanding section
+  margin-bottom: 4px;
+}
+
+.left-numeric-column {
+  text-align: right;
+  // needs the same vertical padding as content
+  padding: $vertical-padding 0;
+}
+
+.indent1 {
+  margin-left: $indent1;
+}
+
+.indent2 {
+  margin-left: (2 * $indent1);
+}
+
+@mixin pad1 {
+  padding-left: $horizontal-padding;
+  padding-right: $horizontal-padding;
+}
+
+.pad1 {
+  @include pad1;
+}
+
+.pad1aligned {
+  margin-left: -$horizontal-padding;
+  @include pad1;
+}
+
+.flat-btn.flat-btn-big-pad1aligned {
+  margin-left: -$horizontal-padding;
+  @include pad1;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.second-line-indent {
+  padding-left: (4 * $indent1);
+  text-indent: -(4 * $indent1);
+}
+
+/* text-indent is inherited by default, so need to reset it on buttons inside .second-level-indent,
+   e.g. export button on trace detail modal
+   (note: button seems ok in Chrome and Firefox without this, but IE seems technically correct and requires it) */
+.second-line-indent button {
+  text-indent: 0;
+}
+
+.break-word {
+  word-wrap: break-word;
+  word-break: break-all;
+}

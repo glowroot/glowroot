@@ -1,0 +1,131 @@
+/*
+ * Copyright 2012-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* styles shared between app.scss and export.scss */
+
+@import "../bower_components/sass-bootstrap/lib/variables";
+@import "../bower_components/sass-bootstrap/lib/mixins";
+@import "variables";
+
+// --------
+// flat-btn
+// --------
+
+.flat-btn {
+  // upside to using a real button: mouse click does not focus on button, can use :active to provide
+  // feedback on clicking already focused button
+  // also good keyboard navigation, can be selected by tabbing and activated by <enter>
+  // downside to real button: button text is not selectable
+  border: none;
+  background-color: transparent;
+  // inherit vertical-align so it can be used inline with other text
+  vertical-align: inherit;
+  border-radius: 4px;
+}
+
+.flat-btn:hover,
+.flat-btn:focus {
+  background-color: #ddd;
+}
+
+.flat-btn:active {
+  background-color: #ccc;
+}
+
+.flat-btn-big {
+  padding: 6px 12px;
+}
+
+// ---------
+// utilities
+// ---------
+
+.lt-ie9-show {
+  display: none;
+}
+
+html.lt-ie9 .lt-ie9-show {
+  display: block;
+}
+
+html.lt-ie9 .lt-ie9-width-auto {
+  width: auto;
+}
+
+.button-message {
+  font-size: 16px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.button-message-success {
+  color: $informant-green;
+}
+
+.button-message-error {
+  color: $informant-red;
+}
+
+// this is to dynamically hide the error message immediately after it is fixed
+form.ng-valid .button-message-error {
+  display: none;
+}
+
+.button-spinner {
+  margin-left: 30px;
+  vertical-align: middle;
+}
+
+.informant-red {
+  color: $informant-red;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+.inline-block.hide {
+  display: none;
+}
+
+.offscreen {
+  position: absolute;
+  left: -999em;
+}
+
+span.disabled {
+  color: $gray-light;
+  cursor: not-allowed;
+}
+
+.input-xlarge {
+  width: 270px;
+}
+
+// fix off-by-one-pixel, possibly bootstrap 3 issue that will get fixed
+.input-group .input-group-btn button {
+  height: 34px;
+}
+
+// this keeps input-group-addon elements from appearing to the far right of the screen
+// possibly this is a bootstrap 3 issue that will get fixed
+.input-group-btn, .input-group-addon {
+  width: 1px !important;
+}

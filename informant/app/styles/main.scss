@@ -1,0 +1,126 @@
+/*
+ * Copyright 2012-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@import "variables";
+$navbar-height: 50px;
+$navbar-inverse-bg: darken($informant-red, 7%);
+$navbar-inverse-link-active-bg: darken($informant-red, 13%);
+$navbar-inverse-link-color: #ccc;
+
+$input-border-focus: $informant-blue;
+
+$btn-primary-color: #f8f8f8;
+$btn-primary-border: #ccc;
+
+$brand-primary: darken($informant-blue, 5%);
+
+$state-danger-text: $informant-red;
+
+@import "../bower_components/sass-bootstrap/lib/variables";
+@import "../bower_components/sass-bootstrap/lib/mixins";
+
+@import "../bower_components/sass-bootstrap/lib/buttons";
+// close is used by trace detail modal
+@import "../bower_components/sass-bootstrap/lib/close";
+// component-animations is used by mobile navbar expanding/collapsing
+@import "../bower_components/sass-bootstrap/lib/component-animations";
+// dropdowns is used by the trace search form (e.g. begins with / equals / ends with / contains)
+@import "../bower_components/sass-bootstrap/lib/dropdowns";
+@import "../bower_components/sass-bootstrap/lib/forms";
+@import "../bower_components/sass-bootstrap/lib/input-groups";
+// list-group is used by configuration sidebar
+@import "../bower_components/sass-bootstrap/lib/list-group";
+@import "../bower_components/sass-bootstrap/lib/modals";
+// navs import needs to be before navbar import, othewise navbar is messed up
+@import "../bower_components/sass-bootstrap/lib/navs";
+@import "../bower_components/sass-bootstrap/lib/navbar";
+// panels are used by config views
+@import "../bower_components/sass-bootstrap/lib/panels";
+
+// basic bootstrap foundation
+@import "../bower_components/sass-bootstrap/lib/grid";
+@import "../bower_components/sass-bootstrap/lib/normalize";
+@import "../bower_components/sass-bootstrap/lib/scaffolding";
+@import "../bower_components/sass-bootstrap/lib/type";
+@import "../bower_components/sass-bootstrap/lib/utilities";
+@import "../bower_components/sass-bootstrap/lib/responsive-utilities";
+
+@import "bootstrap-datepicker-overrides";
+@import "common-trace";
+@import "chart";
+@import "home";
+@import "search";
+@import "config";
+@import "sidebar";
+@import "threaddump";
+@import "common";
+@import "sticky-footer";
+
+body {
+  // always display vertical scrollbar so content doesn't shift horizontally when the vertical
+  // scrollbar shows up because the page dynamically expanded greater than a single screen, or
+  // contracted down to a single screen, e.g. when showing or hiding content
+  overflow-y: scroll;
+  // never display horizontal scrollbar
+  // when resizing the window horizontally smaller than the chart, there is a brief time before the chart re-draws
+  // itself during which time the horizontal scrollbar shows up (which actually triggers a vertical window resize)
+  overflow-x: hidden;
+}
+
+.header {
+  font-size: 36px;
+  // extra top padding to accomodate for navbar
+  padding: 100px 0 40px;
+}
+
+.header-page-name {
+  font-family: SpecialElite-Regular;
+  font-size: 44px;
+  color: $informant-red;
+}
+
+@font-face {
+  font-family: SpecialElite-Regular;
+  src: url(fonts/specialelite.eot);
+  src: url(fonts/specialelite.eot?#iefix) format("embedded-opentype"),
+       url(fonts/specialelite.woff) format("woff"),
+       url(fonts/specialelite.ttf) format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+.navbar {
+  background-color: $navbar-inverse-bg;
+}
+
+.navbar-brand {
+  font-family: SpecialElite-Regular;
+  font-size: 24px;
+  // push the text down a pixel to line up with the other nav bar links
+  padding-top: 17px;
+  padding-bottom: 13px;
+  color: #fff !important;
+}
+
+.nav.navbar-nav {
+  font-size: 16px;
+}
+
+// since the angular script is not loaded in the html head, the ng-cloak css style must be provided here
+.ng-cloak {
+  display: none !important;
+}
+

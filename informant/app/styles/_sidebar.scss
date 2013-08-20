@@ -1,0 +1,79 @@
+/*
+ * Copyright 2012-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@import "../bower_components/sass-bootstrap/lib/variables";
+@import "variables";
+
+$sidenav-vertical-margin: 30px;
+
+// sidebar is not affixed in mobile view
+.ix-sidebar.affix {
+  position: static;
+}
+
+.ix-sidebar .list-group-item.active,
+.ix-sidebar .list-group-item.active:hover,
+.ix-sidebar .list-group-item.active:focus {
+  background-color: #ccc;
+  border-color: #ccc;
+  // slightly darker than normal list-group-item (#555)
+  color: #444;
+}
+
+.ix-sidebar .list-group-item:first-child {
+  // this fixes top border problems when list-group is inside of panel with no panel-heading
+  // maybe bootstrap issue?
+  border-top-width: 0 !important;
+  // 3px instead of 4px since it is inside of a 4px radius border with lighter color
+  // and 3px helps to fill it in better
+  border-top-right-radius: 3px !important;
+  border-top-left-radius: 3px !important;
+}
+
+.ix-sidebar .list-group-item:last-child {
+  // 3px instead of 4px since it is inside of a 4px radius border with lighter color
+  // and 3px helps to fill it in better
+  border-bottom-right-radius: 3px !important;
+  border-bottom-left-radius: 3px !important;
+}
+
+$row-desktop: $container-desktop + $grid-gutter-width;
+$row-lg-desktop: $container-lg-desktop + $grid-gutter-width;
+
+@media screen and (min-width: $screen-md) {
+  .ix-sidebar {
+    position: absolute;
+    width: 220px;
+  }
+  .ix-main-column {
+    margin-left: 240px;
+  }
+  .ix-sidebar .nav > .active > ul {
+    display: block;
+  }
+  .ix-sidebar.affix {
+    position: fixed;
+    top: $navbar-height + $sidenav-vertical-margin;
+  }
+  .ix-sidebar.affix-bottom {
+    position: absolute;
+  }
+  .ix-sidebar.affix-bottom .ix-sidenav,
+  .ix-sidebar.affix .ix-sidenav {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}

@@ -1,22 +1,18 @@
 /* global require, module */
-/* jshint strict: false */
 
 var LIVERELOAD_PORT = 35729;
-var lrSnippet = require('connect-livereload')({port: LIVERELOAD_PORT});
-var rewriteRulesSnippet = require('grunt-connect-rewrite/lib/utils').rewriteRequest;
 var mountFolder = function (connect, dir) {
   return connect.static(require('path').resolve(dir));
 };
 
-var proxySnippet = require('grunt-connect-proxy/lib/utils').proxyRequest;
-
 module.exports = function (grunt) {
+
   // load all grunt tasks
   require('matchdep').filterDev('grunt-*').forEach(grunt.loadNpmTasks);
 
   // configurable paths
   var yeomanConfig = {
-    app: 'informant/src/main/resources/io/informant/local/ui/app',
+    app: 'informant/app',
     dist: 'informant/ui-resources-dist/io/informant/local/ui/app-dist',
     exportDist: 'informant/ui-resources-dist/io/informant/local/ui/export-dist'
   };
@@ -44,12 +40,15 @@ module.exports = function (grunt) {
           '<%= yeoman.app %>/index.html',
           '<%= yeoman.app %>/scripts/**/*.js',
           '<%= yeoman.app %>/views/*.html',
-          '<%= yeoman.app %>/partials/*.html',
           '<%= yeoman.app %>/template/**/*.html',
-          '.tmp/generated/handlebars-templates.js',
-          '.tmp/scripts/app.js',
-          '.tmp/styles/app.css'
+          // watch:sass output
+          '.tmp/styles/main.css',
+          // watch:handlebars output
+          '.tmp/generated/handlebars-templates.js'
         ]
+      },
+      gruntfile: {
+        files: 'Gruntfile.js'
       }
     },
     connect: {
@@ -76,25 +75,40 @@ module.exports = function (grunt) {
         options: {
           middleware: function (connect) {
             return [
-              lrSnippet,
-              rewriteRulesSnippet,
-              proxySnippet,
+              function (req, res, next) {
+                // X-UA-Compatible must be set via header (as opposed to via meta tag)
+                // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
+                res.setHeader('X-UA-Compatible', 'IE=edge');
+                next();
+              },
+              require('connect-livereload')({port: LIVERELOAD_PORT}),
+              require('grunt-connect-rewrite/lib/utils').rewriteRequest,
+              require('grunt-connect-proxy/lib/utils').proxyRequest,
               mountFolder(connect, yeomanConfig.app),
               mountFolder(connect, '.tmp'),
-              // serve angular-ui-bootstrap templates
-              mountFolder(connect, yeomanConfig.app + '/bower_components/angular-ui-bootstrap'),
-              function(req, res, next) {
-                if (req.url === '/generated/angular-ui-bootstrap-templates.js' ||
-                    req.url === '/generated/templates.js') {
+              function (req, res, next) {
+                if (req.url === '/generated/angular-templates.js') {
                   // angular html templates are retrieved directly when running connect server
-                  // but index.html file still references them, so need to return dummy response
+                  // but index.html file references the concatenated javascript version,
+                  // so need to return dummy response from connect server
                   res.end('// dummy javascript file');
                 } else {
                   next();
                 }
               },
+              // serve angular-ui-bootstrap templates
+              mountFolder(connect, yeomanConfig.app + '/bower_components/angular-ui-bootstrap'),
               // serve source maps
               mountFolder(connect, '.')
+            ];
+          }
+        }
+      },
+      dist: {
+        options: {
+          middleware: function (connect) {
+            return [
+              mountFolder(connect, yeomanConfig.dist)
             ];
           }
         }
@@ -124,7 +138,7 @@ module.exports = function (grunt) {
     },
     jshint: {
       options: {
-        jshintrc: '.jshintrc',
+        jshintrc: '.jshintrc'
       },
       files: [
         'Gruntfile.js',
@@ -134,25 +148,32 @@ module.exports = function (grunt) {
     sass: {
       dist: {
         files: {
-          '<%= yeoman.dist %>/styles/app.css': '<%= yeoman.app %>/styles/app.scss',
+          // need to output main.css to .tmp so it can still be concatenated with qtip and datepicker css files
+          // once sass supports inlining css files, this can output directly to destination
+          // see https://github.com/nex3/sass/issues/556
+          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.scss',
           '<%= yeoman.exportDist %>/styles/export.css': '<%= yeoman.app %>/styles/export.scss'
         }
       },
       server: {
         files: {
-          '.tmp/styles/app.css': '<%= yeoman.app %>/styles/app.scss'
+          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.scss'
         }
       }
     },
     useminPrepare: {
       dist: {
-        files: {'<%= yeoman.dist %>/index.html': '<%= yeoman.app %>/index.html'},
+        files: {
+          '<%= yeoman.dist %>/index.html': '<%= yeoman.app %>/index.html'
+        },
         options: {
           dest: '<%= yeoman.dist %>'
         }
       },
       exportDist: {
-        files: {'<%= yeoman.exportDist %>/export.html': '<%= yeoman.app %>/export.html'},
+        files: {
+          '<%= yeoman.exportDist %>/export.html': '<%= yeoman.app %>/export.html'
+        },
         options: {
           dest: '<%= yeoman.exportDist %>'
         }
@@ -187,11 +208,17 @@ module.exports = function (grunt) {
         files: [
           {
             expand: true,
+            cwd: '<%= yeoman.app %>/bower_components/angular-ui-bootstrap',
+            src: [
+              'template/typeahead/typeahead-*.html'
+            ],
+            dest: '.tmp'
+          },
+          {
+            expand: true,
             cwd: '<%= yeoman.app %>',
             src: [
-              'bower_components/angular-ui-bootstrap/template/accordion/accordion.html',
               'views/*.html',
-              'partials/*.html',
               'template/**/*.html'
             ],
             dest: '.tmp'
@@ -216,27 +243,16 @@ module.exports = function (grunt) {
       }
     },
     ngtemplates: {
-      components: {
-        options: {
-          base: '.tmp/bower_components/angular-ui-bootstrap',
-          module: 'ui.bootstrap.accordion',
-        },
-        src: [
-          '.tmp/bower_components/angular-ui-bootstrap/template/accordion/accordion.html'
-        ],
-        dest: '.tmp/generated/angular-ui-bootstrap-templates.js'
-      },
-      app: {
+      dist: {
         options: {
           base: '.tmp',
           module: 'informant'
         },
         src: [
           '.tmp/views/*.html',
-          '.tmp/partials/*.html',
           '.tmp/template/**/*.html'
         ],
-        dest: '.tmp/generated/templates.js'
+        dest: '.tmp/generated/angular-templates.js'
       }
     },
     ngmin: {
@@ -266,9 +282,9 @@ module.exports = function (grunt) {
             src: [
               // jquery.min.js and angular.min.js are used for cdn fallback
               'bower_components/jquery/jquery.min.js',
-              'bower_components/angular-unstable/angular.min.js',
+              'bower_components/angular/angular.min.js',
+              'bower_components/angular/angular.min.js.map',
               'bower_components/flot/excanvas.min.js',
-              'bower_components/sass-bootstrap/img/*.png',
               'styles/fonts/*',
               'favicon.ico',
               'index.html'
@@ -286,9 +302,22 @@ module.exports = function (grunt) {
     cssmin: {
       dist: {
         files: {
-          '<%= yeoman.dist %>/styles/app.css': '<%= yeoman.dist %>/styles/app.css',
           '<%= yeoman.exportDist %>/styles/export.css': '<%= yeoman.exportDist %>/styles/export.css'
         }
+      }
+    },
+    replace: {
+      dist: {
+        src: '<%= yeoman.dist %>/index.html',
+        overwrite: true,
+        replacements: [
+          {
+            // not using angular cdn at this time since custom angular build is required due to
+            // https://github.com/angular/angular.js/pull/3135
+            from: 'bower_components/angular/angular.js',
+            to: 'bower_components/angular/angular.min.js'
+          }
+        ]
       }
     },
     rev: {
@@ -297,36 +326,28 @@ module.exports = function (grunt) {
           src: [
             // jquery.min.js and angular.min.js are used for cdn fallback
             '<%= yeoman.dist %>/bower_components/jquery/jquery.min.js',
-            '<%= yeoman.dist %>/bower_components/angular-unstable/angular.min.js',
+            '<%= yeoman.dist %>/bower_components/angular/angular.min.js',
             '<%= yeoman.dist %>/bower_components/flot/excanvas.min.js',
-            '<%= yeoman.dist %>/bower_components/sass-bootstrap/img/*.png',
             '<%= yeoman.dist %>/styles/fonts/*',
             '<%= yeoman.dist %>/scripts/app{,.components}.js',
-            '<%= yeoman.dist %>/styles/app{,.components}.css'
+            '<%= yeoman.dist %>/styles/main.css'
           ]
         }
       }
     },
     usemin: {
-      html: ['<%= yeoman.dist %>/index.html', '<%= yeoman.exportDist %>/export.html'],
-      // use revved font filenames in revved app.css
-      css: '<%= yeoman.dist %>/styles/*.app.css'
+      html: [
+        '<%= yeoman.dist %>/index.html',
+        '<%= yeoman.exportDist %>/export.html'
+      ],
+      // use revved font filenames in revved main.css
+      css: '<%= yeoman.dist %>/styles/*.main.css'
     },
     cdnify: {
       dist: {
         // jquery
+        // cdnify won't replace angular since using '+patch.X' version of angular
         html: '<%= yeoman.dist %>/index.html'
-      }
-    },
-    replace: {
-      dist: {
-        src: '<%= yeoman.dist %>/index.html',
-        overwrite: true,
-        replacements: [{
-          // TODO remove once on angular stable release since then cdnify above will handle this
-          from: 'bower_components/angular-unstable/angular.js',
-          to: '//ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js'
-        }]
       }
     }
   });
@@ -347,19 +368,18 @@ module.exports = function (grunt) {
     'jshint',
     'sass:dist',
     'useminPrepare',
-    'htmlmin',
-    'ngtemplates:components',
-    'ngtemplates:app',
+    'htmlmin:ngtemplates',
+    'ngtemplates',
     'handlebars',
     'concat',
     'copy',
     'cssmin',
     'ngmin',
     'uglify',
+    'replace',
     'rev',
     'usemin',
     'cdnify',
-    'replace',
     'htmlmin:pages'
   ]);
 

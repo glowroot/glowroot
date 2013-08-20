@@ -1,0 +1,34 @@
+<div class="form-group" ng-class="{'has-error': formCtrl[ixId].$invalid}">
+  <label class="control-label col-lg-3" for="{{ixId}}">
+    {{ixLabel}}
+  </label>
+  <div class="col-lg-9">
+    <div ng-switch="ixType">
+      <div ng-switch-when="checkbox">
+        <div class="checkbox ix-form-checkbox">
+          <input type="checkbox"
+                 class="ix-form-checkbox"
+                 ng-model="$parent.ngModel"
+                 name="{{ixId}}"
+                 id="{{ixId}}">
+        </div>
+      </div>
+      <div ng-switch-default>
+        <div ng-style="{display : ixWidth ? 'inline' : 'block'}">
+          <div ng-class="{'input-group' : ixAddon}">
+            <input type="text"
+                   class="form-control"
+                   ng-model="$parent.ngModel"
+                   name="{{ixId}}"
+                   id="{{ixId}}"
+                   ng-pattern="ngPattern"
+                   ng-required="ixRequired()"
+                   ng-style="{'max-width': ixWidth ? ixWidth : 'none'}">
+            <span ng-if="ixAddon" class="input-group-addon">{{ixAddon}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div ng-transclude></div>
+  </div>
+</div>

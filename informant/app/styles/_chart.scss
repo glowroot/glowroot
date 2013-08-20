@@ -1,0 +1,108 @@
+/*
+ * Copyright 2012-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@import "variables";
+
+$trace-point-normal: $informant-yellow;
+$trace-point-active: lighten($informant-blue, 20);
+$trace-point-error: $informant-red;
+
+.chart-container {
+  position: relative;
+  height: 300px;
+  // need min width, otherwise sometimes it gets flot error:
+  // "Invalid dimensions for plot, width = 0, height = 0"
+  min-width: 100px;
+}
+
+.chart-dimensions {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.chart-spinner {
+  @extend .chart-dimensions;
+  pointer-events: none;
+}
+
+.chart-warning {
+  padding: 10px 35px;
+  color: $informant-red;
+  background-color: $informant-light-red-background;
+  margin-bottom: 6px;
+  border-radius: 6px;
+}
+
+.chart-error {
+  position: absolute;
+  width: 250px;
+  left: 50%;
+  margin-top: 100px;
+  // include padding in margin-left
+  margin-left: -(250px / 2 + 35px);
+  @extend .chart-warning;
+  pointer-events: none;
+}
+
+.chart-help {
+  padding: 4px 35px;
+  background-color: #eee;
+  border-radius: 6px;
+}
+
+.qtip-override {
+  max-width: 500px;
+  font-size: 12px;
+  line-height: 16px;
+  background-color: #fff;
+}
+
+.qtip-content {
+  padding: 1.5em 2em;
+}
+
+.qtip-border-color-0 {
+  border-color: $trace-point-normal;
+}
+
+.qtip-border-color-1 {
+  border-color: $trace-point-error;
+}
+
+.qtip-border-color-2 {
+  border-color: $trace-point-active;
+}
+
+.modal {
+  overflow-y: scroll;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.modal-body {
+  padding: 20px 0 20px 30px;
+}
+
+.modal .close {
+  opacity: .5;
+}
+
+.modal .close:hover {
+  opacity: .8;
+}

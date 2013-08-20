@@ -1,0 +1,115 @@
+<!--
+  Copyright 2013 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!-- ng-if is needed to prevent panel from displaying very briefly with red validation errors on load
+     due to required input fields being initially empty (note: ng-show is not good enough, at least on IE) -->
+<div class="panel panel-default" ng-if="config">
+  <div class="panel-heading">
+    <h2>Fine-Grained Profiling</h2>
+  </div>
+  <div class="panel-body">
+    <form class="form-horizontal" name="formCtrl">
+      <div ix-form-group
+           ix-label="Enabled"
+           ix-model="config.enabled"
+           ix-type="checkbox"
+           class="ix-form-group-without-help-block">
+      </div>
+      <div ix-form-group
+           ix-label="Trace percentage"
+           ix-model="config.tracePercentage"
+           ix-number="true"
+           ix-pattern="pattern.percentage"
+           ix-required="true"
+           ix-width="7em"
+           ix-addon="%">
+        <div class="help-block">
+          Apply fine-grained profiling to this percentage of traces.
+        </div>
+      </div>
+      <div ix-form-group
+           ix-label="Interval"
+           ix-model="config.intervalMillis"
+           ix-number="true"
+           ix-pattern="pattern.integer"
+           ix-required="true"
+           ix-width="7em"
+           ix-addon="milliseconds">
+        <div class="help-block">
+          The interval at which the fine-grained profiler captures stack traces (there
+          is no initial delay for the fine-grained profiler).
+        </div>
+      </div>
+      <div ix-form-group
+           ix-label="Total"
+           ix-model="config.totalSeconds"
+           ix-number="true"
+           ix-pattern="pattern.integer"
+           ix-required="true"
+           ix-width="7em"
+           ix-addon="seconds">
+        <div class="help-block">
+          The total length of time that the fine-grained profiler captures stack traces.
+        </div>
+      </div>
+      <div class="form-group"
+           ng-class="{'has-error': formCtrl.fineStoreThresholdMillis.$invalid}">
+        <label class="col-lg-3 control-label" for="fineStoreThresholdMillis">
+          Store threshold
+        </label>
+        <div class="col-lg-9"
+             style="padding-top: 1px;">
+          <div class="checkbox ix-form-checkbox">
+            <label>
+              <input type="checkbox"
+                     ng-model="data.fineStoreThresholdOverride"
+                     id="fineStoreThresholdOverride"
+                     style="margin-top: 3px;">
+              Override general store threshold
+            </label>
+          </div>
+          <div class="input-group">
+            <input type="text"
+                   class="form-control"
+                   ng-model="data.fineStoreThresholdMillis"
+                   ng-pattern="pattern.integer"
+                   id="fineStoreThresholdMillis"
+                   name="fineStoreThresholdMillis"
+                   style="width: 7em;"
+                   ng-readonly="!data.fineStoreThresholdOverride"
+                   ng-required="data.fineStoreThresholdOverride">
+            <span class="input-group-addon">
+              milliseconds
+            </span>
+          </div>
+          <div class="help-block">
+            After going through the trouble of collecting fine-grained profiling info,
+            it may be worth while to store the given trace even if it doesn't hit the
+            general store threshold.
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="col-lg-offset-3 col-lg-9">
+          <div ix-button
+               ix-label="Save changes"
+               ix-click="save(deferred)"
+               ix-disabled="!hasChanges() || formCtrl.$invalid">
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

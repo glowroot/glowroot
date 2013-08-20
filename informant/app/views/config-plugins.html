@@ -1,0 +1,75 @@
+<!--
+  Copyright 2013 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div ng-repeat="plugin in plugins"
+     ng-controller="ConfigPluginCtrl">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h2>{{plugin.descriptor.name}}</h2>
+    </div>
+    <div class="panel-body">
+      <form class="form-horizontal" name="formCtrl">
+        <div ix-form-group
+             ix-label="Enabled"
+             ix-model="plugin.config.enabled"
+             ix-type="checkbox"
+             class="ix-form-group-without-help-block">
+        </div>
+        <div ng-repeat="property in plugin.descriptor.properties">
+          <div ng-switch on="property.type" ng-hide="property.hidden">
+            <div ng-switch-when="string"
+                 ix-form-group
+                 ix-label="{{property.prompt}}"
+                 ix-model="property.value"
+                 ix-width="25em">
+              <div class="help-block">
+                {{property.description}}
+              </div>
+            </div>
+            <div ng-switch-when="boolean"
+                 ix-form-group
+                 ix-label="{{property.prompt}}"
+                 ix-model="property.value"
+                 ix-type="checkbox">
+              <div class="help-block">
+                {{property.description}}
+              </div>
+            </div>
+            <div ng-switch-when="double"
+                 ix-form-group
+                 ix-label="{{property.prompt}}"
+                 ix-model="property.value"
+                 ix-number="true"
+                 ix-pattern="pattern.double"
+                 ix-width="7em">
+              <div class="help-block">
+                {{property.description}}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="col-lg-offset-3 col-lg-9">
+            <div ix-button
+                 ix-label="Save changes"
+                 ix-click="save(deferred)"
+                 ix-disabled="!hasChanges() || formCtrl.$invalid">
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

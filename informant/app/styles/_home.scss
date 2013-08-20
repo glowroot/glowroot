@@ -13,26 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.tests.webdriver;
 
-import org.openqa.selenium.WebDriver;
+@import "variables";
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-class App {
+.home-tooltip-label {
+  display: inline-block;
+  width: 5em;
+}
 
-    private final WebDriver driver;
-    private final String baseUrl;
-
-    App(WebDriver driver, String baseUrl) {
-        this.driver = driver;
-        this.baseUrl = baseUrl;
-    }
-
-    void openHomePage() {
-        driver.get(baseUrl);
-        Util.waitForAngular(driver);
-    }
+.groupings-error {
+  display: inline-block;
+  padding: 10px 35px;
+  color: $informant-red;
+  background-color: $informant-light-red-background;
+  margin-bottom: 6px;
+  border-radius: 6px;
 }

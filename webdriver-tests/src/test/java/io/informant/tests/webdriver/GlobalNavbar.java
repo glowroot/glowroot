@@ -16,23 +16,28 @@
 package io.informant.tests.webdriver;
 
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+
+import static org.openqa.selenium.By.xpath;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-class App {
+class GlobalNavbar {
 
     private final WebDriver driver;
-    private final String baseUrl;
 
-    App(WebDriver driver, String baseUrl) {
+    GlobalNavbar(WebDriver driver) {
         this.driver = driver;
-        this.baseUrl = baseUrl;
     }
 
-    void openHomePage() {
-        driver.get(baseUrl);
+    WebElement getConfigurationLink() {
+        return getNav().findElement(xpath("//li[@ix-item-name='config']//a"));
+    }
+
+    private WebElement getNav() {
         Util.waitForAngular(driver);
+        return driver.findElement(xpath("//nav"));
     }
 }

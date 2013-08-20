@@ -89,10 +89,11 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                     .put("css", "text/css; charset=UTF-8")
                     .put("png", "image/png")
                     .put("ico", "image/x-icon")
-                    .put("woff", "application/x-font-woff")
+                    .put("woff", "application/font-woff")
                     .put("eot", "application/vnd.ms-fontobject")
                     .put("ttf", "application/x-font-ttf")
                     .put("swf", "application/x-shockwave-flash")
+                    .put("map", "application/json")
                     .build();
 
     private final ChannelGroup allChannels;
@@ -219,6 +220,11 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         byte[] staticContent = Resources.toByteArray(url);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
+        if ("html".equals(extension)) {
+            // X-UA-Compatible must be set via header (as opposed to via meta tag)
+            // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
+            response.setHeader("X-UA-Compatible", "IE=edge");
+        }
         response.setHeader(Names.CONTENT_TYPE, mimeType);
         response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
         if (path.endsWith("/ui/app-dist/index.html")) {

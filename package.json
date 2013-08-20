@@ -21,8 +21,6 @@
     "grunt-contrib-watch": "~0.5.2",
     "grunt-google-cdn": "~0.2.2",
     "grunt-ngmin": "0.0.3",
-    "grunt-open": "~0.2.2",
-    "grunt-regarde": "~0.1.1",
     "grunt-rev": "~0.1.0",
     "grunt-text-replace": "~0.3.6",
     "grunt-usemin": "trask/grunt-usemin#v2.0",

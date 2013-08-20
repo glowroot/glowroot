@@ -1,0 +1,37 @@
+/*
+ * Copyright 2012-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@import "../bower_components/sass-bootstrap/lib/variables";
+@import "../bower_components/sass-bootstrap/lib/mixins";
+@import "../bower_components/sass-bootstrap/lib/forms";
+@import "../bower_components/sass-bootstrap/lib/grid";
+@import "../bower_components/sass-bootstrap/lib/normalize";
+@import "../bower_components/sass-bootstrap/lib/scaffolding";
+@import "../bower_components/sass-bootstrap/lib/utilities";
+@import "common";
+@import "common-trace";
+
+.header {
+  font-size: 36px;
+  // less top padding than in main since don't need to accomodate for navbar
+  padding: 40px 0 30px;
+}
+
+.header-page-name {
+  font-family: 'Special Elite';
+  font-size: 44px;
+  color: $informant-red;
+}

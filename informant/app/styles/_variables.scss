@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.tests.webdriver;
 
-import org.openqa.selenium.WebDriver;
+$informant-red: #b12930;
+$informant-blue: darken(#4286bd, 2%);
+// TODO override and use bootstrap $brand-success instead of $informant-green?
+$informant-green: #336600;
+// flot default point color, just for documenting where $informantYellow / $tracePointNormal is derived from
+$flot-default-color: #edc240;
+$informant-yellow: darken($flot-default-color, 10);
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-class App {
+$flat-button-vertical-padding: 2px;
 
-    private final WebDriver driver;
-    private final String baseUrl;
-
-    App(WebDriver driver, String baseUrl) {
-        this.driver = driver;
-        this.baseUrl = baseUrl;
-    }
-
-    void openHomePage() {
-        driver.get(baseUrl);
-        Util.waitForAngular(driver);
-    }
-}
+$informant-light-red-background: #f2dede;

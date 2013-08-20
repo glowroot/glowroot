@@ -15,24 +15,22 @@
  */
 package io.informant.tests.webdriver;
 
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-class App {
+public class Util {
 
-    private final WebDriver driver;
-    private final String baseUrl;
-
-    App(WebDriver driver, String baseUrl) {
-        this.driver = driver;
-        this.baseUrl = baseUrl;
-    }
-
-    void openHomePage() {
-        driver.get(baseUrl);
-        Util.waitForAngular(driver);
+    public static void waitForAngular(WebDriver driver) {
+        driver.manage().timeouts().setScriptTimeout(30, SECONDS);
+        String javascript = "var callback = arguments[arguments.length - 1];"
+                + "angular.element(document.body).injector().get('$browser')"
+                + ".notifyWhenNoOutstandingRequests(callback);";
+        ((JavascriptExecutor) driver).executeAsyncScript(javascript);
     }
 }
