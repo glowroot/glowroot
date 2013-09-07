@@ -42,9 +42,9 @@ module.exports = function (grunt) {
           '<%= yeoman.app %>/views/*.html',
           '<%= yeoman.app %>/template/**/*.html',
           // watch:sass output
-          '.tmp/styles/main.css',
+          '.tmp/app/styles/main.css',
           // watch:handlebars output
-          '.tmp/generated/handlebars-templates.js'
+          '.tmp/app/scripts/generated/handlebars-templates.js'
         ]
       },
       gruntfile: {
@@ -85,7 +85,7 @@ module.exports = function (grunt) {
               require('grunt-connect-rewrite/lib/utils').rewriteRequest,
               require('grunt-connect-proxy/lib/utils').proxyRequest,
               mountFolder(connect, yeomanConfig.app),
-              mountFolder(connect, '.tmp'),
+              mountFolder(connect, '.tmp/app'),
               // serve angular-ui-bootstrap templates
               mountFolder(connect, yeomanConfig.app + '/bower_components/angular-ui-bootstrap'),
               // serve source maps
@@ -141,17 +141,47 @@ module.exports = function (grunt) {
           // need to output main.css to .tmp so it can still be concatenated with qtip and datepicker css files
           // once sass supports inlining css files, this can output directly to destination
           // see https://github.com/nex3/sass/issues/556
-          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.scss',
+          '.tmp/app/styles/main.css': '<%= yeoman.app %>/styles/main.scss',
           '<%= yeoman.exportDist %>/styles/export.css': '<%= yeoman.app %>/styles/export.scss'
         }
       },
       server: {
         files: {
-          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.scss'
+          '.tmp/app/styles/main.css': '<%= yeoman.app %>/styles/main.scss'
         }
       }
     },
     useminPrepare: {
+      options: {
+        flow: {
+          steps: {
+            js: [
+              {
+                name: 'copy',
+                createConfig: function (context, block) {
+                  var cfg = {
+                    files: []
+                  };
+                  context.inFiles.forEach(function (file) {
+                    cfg.files.push({
+                      src: [
+                        context.inDir + '/' + file
+                      ],
+                      dest: '<%= yeoman.dist %>/sources/' + file
+                    });
+                  });
+                  context.outFiles = context.inFiles;
+                  context.outDir = context.inDir;
+                  return cfg;
+                }
+              },
+              'uglifyjs'
+            ],
+            css: ['concat', 'cssmin']
+          },
+          post: []
+        }
+      },
       dist: {
         files: {
           '<%= yeoman.dist %>/index.html': '<%= yeoman.app %>/index.html'
@@ -185,7 +215,7 @@ module.exports = function (grunt) {
           }
         },
         files: {
-          '.tmp/generated/handlebars-templates.js': '<%= yeoman.app %>/hbs/*.hbs'
+          '.tmp/app/scripts/generated/handlebars-templates.js': '<%= yeoman.app %>/hbs/*.hbs'
         }
       }
     },
@@ -232,7 +262,7 @@ module.exports = function (grunt) {
         src: [
           'template/typeahead/typeahead-*.html'
         ],
-        dest: '.tmp/generated/angular-ui-bootstrap-templates.js'
+        dest: '.tmp/app/scripts/generated/angular-ui-bootstrap-templates.js'
       },
       appTemplates: {
         options: {
@@ -243,7 +273,7 @@ module.exports = function (grunt) {
           'views/*.html',
           'template/**/*.html'
         ],
-        dest: '.tmp/generated/angular-templates.js'
+        dest: '.tmp/app/scripts/generated/angular-templates.js'
       }
     },
     uglify: {
@@ -253,6 +283,26 @@ module.exports = function (grunt) {
           // TODO find better way of excluding informant license
           return (comment.value.indexOf('!') === 0 || comment.value.indexOf('Copyright') !== -1) &&
               comment.value.indexOf('the original author or authors.') === -1;
+        },
+        sourceMap: function (file) {
+          if (file.indexOf('export.js') !== -1 || file.indexOf('export.components.js') !== -1) {
+            // no use in generating source maps for js that is inlined into export files
+            return undefined;
+          }
+          return file.replace(/(.*)[/\\]scripts[/\\]([^/\\]+)$/, '$1/sources/$2') + '.map';
+        },
+        sourceMapRoot: '/sources',
+        // drop informant/app and .tmp/app prefixes in the source map file
+        // NOTE: this is why .tmp/app is used instead of just .tmp, since then it wouldn't have the same number of
+        // path elements that need to be stripped
+        sourceMapPrefix: 2,
+        sourceMappingURL: function (file) {
+          if (file.indexOf('export.js') !== -1 || file.indexOf('export.components.js') !== -1) {
+            // don't add sourceMappingURL to js that is inlined into export files
+            return undefined;
+          }
+          // strip path and add .map
+          return file.replace(/.*[/\\]scripts[/\\]([^/\\]+)$/, '/sources/$1') + '.map';
         }
       }
     },
@@ -291,7 +341,7 @@ module.exports = function (grunt) {
       }
     },
     replace: {
-      dist: {
+      index: {
         src: '<%= yeoman.dist %>/index.html',
         overwrite: true,
         replacements: [
@@ -300,6 +350,21 @@ module.exports = function (grunt) {
             // https://github.com/angular/angular.js/pull/3135
             from: 'bower_components/angular/angular.js',
             to: 'bower_components/angular/angular.min.js'
+          }
+        ]
+      },
+      sourceMaps: {
+        src: [
+          '<%= yeoman.dist %>/sources/*.js.map'
+        ],
+        overwrite: true,
+        replacements: [
+          {
+            // strip out the file attribute
+            // if the file attribute does not matches the rev'd filename then browser won't be happy
+            // TODO make it match the rev'd filename
+            from: /"file":[^,]+,/,
+            to: ''
           }
         ]
       }
@@ -313,7 +378,7 @@ module.exports = function (grunt) {
             '<%= yeoman.dist %>/bower_components/angular/angular.min.js',
             '<%= yeoman.dist %>/bower_components/flot/excanvas.min.js',
             '<%= yeoman.dist %>/styles/fonts/*',
-            '<%= yeoman.dist %>/scripts/app{,.components}.js',
+            '<%= yeoman.dist %>/scripts/*.js',
             '<%= yeoman.dist %>/styles/main.css'
           ]
         }
@@ -356,9 +421,10 @@ module.exports = function (grunt) {
     'handlebars',
     'concat',
     'copy',
+    'replace:index',
     'cssmin',
     'uglify',
-    'replace',
+    'replace:sourceMaps',
     'rev',
     'usemin',
     'cdnify',

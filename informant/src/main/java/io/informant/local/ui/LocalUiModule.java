@@ -172,6 +172,7 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/favicon.ico$"), resourceBase + "/favicon.ico");
         uriMappings.put(Pattern.compile("^/bower_components/(.*)$"),
                 resourceBase + "/bower_components/$1");
+        uriMappings.put(Pattern.compile("^/sources/(.*)$"), resourceBase + "/sources/$1");
         // services
         // export service is not bound under /backend since the export url is visible to users as
         // the download url for the export file

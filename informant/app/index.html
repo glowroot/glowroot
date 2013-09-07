@@ -25,10 +25,10 @@
   <title>Informant</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- main.css is compiled by sass to .tmp
+  <!-- main.css is compiled by sass to .tmp/app/styles/main.css
        once sass supports inlining css files, this build:css section will not be necessary
        see https://github.com/nex3/sass/issues/556 -->
-  <!-- build:css({informant/app,.tmp}) styles/main.css -->
+  <!-- build:css({informant/app,.tmp/app}) styles/main.css -->
   <link rel="stylesheet" href="bower_components/qtip2/src/core.css"/>
   <link rel="stylesheet" href="bower_components/qtip2/src/tips/tips.css"/>
   <link rel="stylesheet" href="bower_components/bootstrap-datepicker/css/datepicker.css"/>
@@ -125,7 +125,7 @@
   <!-- not using angular cdn at this time since custom angular build is required due to
        https://github.com/angular/angular.js/pull/3135 -->
 
-  <!-- build:js({informant/app,.tmp}) scripts/app.components.js -->
+  <!-- build:js({informant/app,.tmp/app}) scripts/app.components.js -->
   <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
   <script src="bower_components/handlebars/handlebars.runtime.js"></script>
   <!-- modal is used by trace detail modals -->
@@ -157,10 +157,10 @@
   <script src="bower_components/moment/moment.js"></script>
   <script src="bower_components/spinjs/spin.js"></script>
   <!-- angular-ui-bootstrap-templates.js is generated at build time by grunt-angular-templates -->
-  <script src="generated/angular-ui-bootstrap-templates.js"></script>
+  <script src="scripts/generated/angular-ui-bootstrap-templates.js"></script>
   <!-- endbuild -->
 
-  <!-- build:js({informant/app,.tmp}) scripts/app.js -->
+  <!-- build:js({informant/app,.tmp/app}) scripts/app.js -->
   <script src="scripts/app.js"></script>
   <script src="scripts/directives.js"></script>
   <script src="scripts/trace-renderer.js"></script>
@@ -177,9 +177,9 @@
   <script src="scripts/controllers/config-adhoc-pointcuts.js"></script>
   <script src="scripts/controllers/thread-dump.js"></script>
   <!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->
-  <script src="generated/handlebars-templates.js"></script>
+  <script src="scripts/generated/handlebars-templates.js"></script>
   <!-- angular-templates.js is generated at build time by grunt-angular-templates -->
-  <script src="generated/angular-templates.js"></script>
+  <script src="scripts/generated/angular-templates.js"></script>
   <!-- endbuild -->
 </body>
 </html>

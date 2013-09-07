@@ -216,6 +216,9 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + FIVE_MINUTES));
         } else if (path.endsWith("/ui/app-dist/favicon.ico")) {
             response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + ONE_DAY));
+        } else if (path.endsWith(".js.map") || path.startsWith("/sources/")) {
+            // javascript source maps and source files are not versioned
+            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + FIVE_MINUTES));
         } else {
             // all other static resources are versioned and can be safely cached forever
             String filename = path.substring(path.lastIndexOf("/") + 1);
