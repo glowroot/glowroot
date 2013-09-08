@@ -29,7 +29,8 @@
        once sass supports inlining css files, this build:css section will not be necessary
        see https://github.com/nex3/sass/issues/556 -->
   <!-- build:css({informant/app,.tmp}) styles/main.css -->
-  <link rel="stylesheet" href="bower_components/qtip2/dist/jquery.qtip.css"/>
+  <link rel="stylesheet" href="bower_components/qtip2/src/core.css"/>
+  <link rel="stylesheet" href="bower_components/qtip2/src/tips/tips.css"/>
   <link rel="stylesheet" href="bower_components/bootstrap-datepicker/css/datepicker.css"/>
   <link rel="stylesheet" href="styles/main.css"/>
   <!-- endbuild -->
@@ -151,8 +152,7 @@
   <script src="bower_components/flot/jquery.flot.navigate.js"></script>
   <script src="bower_components/flot/jquery.flot.selection.js"></script>
   <script src="bower_components/flot/jquery.flot.time.js"></script>
-  <!-- jquery-migrate is needed by qtip2 until its next release -->
-  <script src="bower_components/jquery/jquery-migrate.js"></script>
+  <!-- custom built qtip using grunt --plugins="tips viewport" -->
   <script src="bower_components/qtip2/dist/jquery.qtip.js"></script>
   <script src="bower_components/jquery-color/jquery.color.js"></script>
   <script src="bower_components/moment/moment.js"></script>
