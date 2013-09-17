@@ -58,6 +58,8 @@ public class DelegatingJavaagent {
         manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
         manifest.getMainAttributes().put(new Attributes.Name("Premain-Class"),
                 DelegatingJavaagent.class.getName());
+        manifest.getMainAttributes().put(new Attributes.Name("Can-Redefine-Classes"), "true");
+        manifest.getMainAttributes().put(new Attributes.Name("Can-Retransform-Classes"), "true");
         JarOutputStream out = new JarOutputStream(new FileOutputStream(jarFile), manifest);
         String resourceName = TypeNames.toInternal(DelegatingJavaagent.class.getName()) + ".class";
         out.putNextEntry(new JarEntry(resourceName));
