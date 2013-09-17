@@ -101,6 +101,32 @@ informant.config(function ($stateProvider, $urlRouterProvider, $httpProvider) {
   $httpProvider.interceptors.push('httpInterceptor');
 });
 
+informant.run(function ($rootScope, $timeout) {
+  // qtip adds some code to the beginning of jquery's cleanData function which causes the trace
+  // detail modal to close slowly when it has 5000 spans
+  // this extra cleanup code is not needed anyways since cleanup is performed explicitly
+  /* jshint -W106 */ // W106 is camelcase
+  $.cleanData = $.cleanData_replacedByqTip;
+  /* jshint +W106 */
+
+  // with responsive design, container width doesn't change on every window resize event
+  var $container = $('#container');
+  var $window = $(window);
+  $rootScope.containerWidth = $container.width();
+  $rootScope.windowHeight = $window.height();
+  $(window).resize(function () {
+    var containerWidth = $container.width();
+    var windowHeight = $window.height();
+    if (containerWidth !== $rootScope.containerWidth || windowHeight !== $rootScope.windowHeight) {
+      // one of the relevant dimensions has changed
+      $rootScope.$apply(function() {
+        $rootScope.containerWidth = containerWidth;
+        $rootScope.windowHeight = windowHeight;
+      });
+    }
+  });
+});
+
 informant.controller('FooterCtrl', function ($scope, $http) {
   $http.get('backend/version')
       .success(function (data) {

@@ -32,29 +32,11 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
 
   var $chart = $('#chart');
 
-  // qtip adds some code to the beginning of jquery's cleanData function which causes the trace
-  // detail modal to close slowly when it has 5000 spans
-  // this extra cleanup code is not needed anyways since cleanup is performed explicitly
-  /* jshint -W106 */ // W106 is camelcase
-  $.cleanData = $.cleanData_replacedByqTip;
-  /* jshint +W106 */
-
-  (function () {
-    // with responsive design, body width doesn't change on every window resize event
-    var $body = $('body');
-    var bodyWidth = $body.width();
-    var bodyHeight = $body.height();
-
-    $(window).resize(function () {
-      if ($body.width() !== bodyWidth || $body.height() !== bodyHeight) {
-        bodyWidth = $body.width();
-        bodyHeight = $body.height();
-        plot.resize();
-        plot.setupGrid();
-        plot.draw();
-      }
-    });
-  })();
+  $scope.$watchCollection('[containerWidth, windowHeight]', function() {
+    plot.resize();
+    plot.setupGrid();
+    plot.draw();
+  });
 
   $scope.refreshChart = function (deferred) {
     var refreshId = ++currentRefreshId;

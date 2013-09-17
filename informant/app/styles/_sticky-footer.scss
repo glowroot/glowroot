@@ -21,8 +21,8 @@ html, body {
   // the html and body elements cannot have any padding or margin
 }
 
-// wrapper for page content to push down footer
-#wrap {
+// container for page content to push down footer
+#container {
   min-height: 100%;
   height: auto !important;
   height: 100%;
