@@ -63,6 +63,7 @@ import io.informant.common.ObjectMappers;
 
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_MODIFIED;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
@@ -125,7 +126,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             return;
         }
         boolean keepAlive = HttpHeaders.isKeepAlive(request);
-        if (keepAlive) {
+        if (keepAlive && response.getStatus() != NOT_MODIFIED) {
             // add content-length header only for keep-alive connections
             response.setHeader(Names.CONTENT_LENGTH, response.getContent().readableBytes());
         }
@@ -178,7 +179,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                 } else {
                     // only other value type is String
                     String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
-                    return handleStaticResource(resourcePath);
+                    return handleStaticResource(resourcePath, request);
                 }
             }
         }
@@ -198,7 +199,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
     }
 
-    private HttpResponse handleStaticResource(String path) throws IOException {
+    private HttpResponse handleStaticResource(String path, HttpRequest request) throws IOException {
         int extensionStartIndex = path.lastIndexOf('.');
         if (extensionStartIndex == -1) {
             logger.warn("missing extension '{}'", path);
@@ -210,6 +211,23 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             logger.warn("unexpected extension '{}' for path '{}'", extension, path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        if (path.endsWith("/ui/app-dist/index.html")) {
+            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + FIVE_MINUTES));
+        } else if (path.endsWith("/ui/app-dist/favicon.ico")) {
+            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + ONE_DAY));
+        } else {
+            // all other static resources are versioned and can be safely cached forever
+            String filename = path.substring(path.lastIndexOf("/") + 1);
+            String rev = filename.substring(0, filename.indexOf("."));
+            response.setHeader(Names.ETAG, rev);
+            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
+
+            if (rev.equals(request.getHeader(Names.IF_NONE_MATCH))) {
+                response.setStatus(NOT_MODIFIED);
+                return response;
+            }
+        }
         URL url;
         try {
             url = Resources.getResource(path);
@@ -218,7 +236,6 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         byte[] staticContent = Resources.toByteArray(url);
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
         if ("html".equals(extension)) {
             // X-UA-Compatible must be set via header (as opposed to via meta tag)
@@ -227,14 +244,6 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
         response.setHeader(Names.CONTENT_TYPE, mimeType);
         response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
-        if (path.endsWith("/ui/app-dist/index.html")) {
-            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + FIVE_MINUTES));
-        } else if (path.endsWith("/ui/app-dist/favicon.ico")) {
-            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + ONE_DAY));
-        } else {
-            // all other static resources are versioned and can be safely cached forever
-            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
-        }
         return response;
     }
 
