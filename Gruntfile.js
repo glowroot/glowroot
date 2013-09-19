@@ -86,16 +86,6 @@ module.exports = function (grunt) {
               require('grunt-connect-proxy/lib/utils').proxyRequest,
               mountFolder(connect, yeomanConfig.app),
               mountFolder(connect, '.tmp'),
-              function (req, res, next) {
-                if (req.url === '/generated/angular-templates.js') {
-                  // angular html templates are retrieved directly when running connect server
-                  // but index.html file references the concatenated javascript version,
-                  // so need to return dummy response from connect server
-                  res.end('// dummy javascript file');
-                } else {
-                  next();
-                }
-              },
               // serve angular-ui-bootstrap templates
               mountFolder(connect, yeomanConfig.app + '/bower_components/angular-ui-bootstrap'),
               // serve source maps
@@ -204,27 +194,6 @@ module.exports = function (grunt) {
         removeComments: true,
         collapseWhitespace: true
       },
-      ngtemplates: {
-        files: [
-          {
-            expand: true,
-            cwd: '<%= yeoman.app %>/bower_components/angular-ui-bootstrap',
-            src: [
-              'template/typeahead/typeahead-*.html'
-            ],
-            dest: '.tmp'
-          },
-          {
-            expand: true,
-            cwd: '<%= yeoman.app %>',
-            src: [
-              'views/*.html',
-              'template/**/*.html'
-            ],
-            dest: '.tmp'
-          }
-        ]
-      },
       pages: {
         files: [
           {
@@ -243,14 +212,36 @@ module.exports = function (grunt) {
       }
     },
     ngtemplates: {
-      dist: {
+      options: {
+        htmlmin: {
+          collapseBooleanAttributes: true,
+          collapseWhitespace: true,
+          removeAttributeQuotes: true,
+          removeComments: true,
+          removeEmptyAttributes: true,
+          removeRedundantAttributes: true,
+          removeScriptTypeAttributes: true,
+          removeStyleLinkTypeAttributes: true
+        }
+      },
+      uiBootstrapTemplates: {
         options: {
-          base: '.tmp',
+          module: 'ui.bootstrap.typeahead'
+        },
+        cwd: '<%= yeoman.app %>/bower_components/angular-ui-bootstrap',
+        src: [
+          'template/typeahead/typeahead-*.html'
+        ],
+        dest: '.tmp/generated/angular-ui-bootstrap-templates.js'
+      },
+      appTemplates: {
+        options: {
           module: 'informant'
         },
+        cwd: '<%= yeoman.app %>',
         src: [
-          '.tmp/views/*.html',
-          '.tmp/template/**/*.html'
+          'views/*.html',
+          'template/**/*.html'
         ],
         dest: '.tmp/generated/angular-templates.js'
       }
@@ -368,7 +359,6 @@ module.exports = function (grunt) {
     'jshint',
     'sass:dist',
     'useminPrepare',
-    'htmlmin:ngtemplates',
     'ngtemplates',
     'handlebars',
     'concat',
@@ -380,7 +370,7 @@ module.exports = function (grunt) {
     'rev',
     'usemin',
     'cdnify',
-    'htmlmin:pages'
+    'htmlmin'
   ]);
 
   grunt.registerTask('default', 'build');

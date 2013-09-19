@@ -57,7 +57,7 @@
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
       <!-- netty 4.x requires jdk 6 -->
-      <version>3.6.6.Final</version>
+      <version>3.7.0.Final</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
