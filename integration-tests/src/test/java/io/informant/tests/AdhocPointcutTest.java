@@ -40,7 +40,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class DynamicAdviceTest {
+public class AdhocPointcutTest {
 
     protected static Container container;
     private static File dataDir;
@@ -49,11 +49,11 @@ public class DynamicAdviceTest {
     public static void setUp() throws Exception {
         dataDir = TempDirs.createTempDir("informant-test-datadir");
         container = Containers.createWithFileDb(dataDir);
-        addSpanPointcutForExecute1();
-        addSpanPointcutForExecute1MetricOnly();
-        addSpanPointcutForExecuteWithReturn();
-        addTracePointcutForExecuteWithArgs();
-        // re-start now with dynamic pointcuts
+        addAdhocPointcutForExecute1();
+        addAdhocPointcutForExecute1MetricOnly();
+        addAdhocPointcutForExecuteWithReturn();
+        addAdhocPointcutForExecuteWithArgs();
+        // re-start now with adhoc pointcuts
         container.close();
         container = Containers.createWithFileDb(dataDir);
     }
@@ -115,52 +115,52 @@ public class DynamicAdviceTest {
                 .isEqualTo("executeWithArgs(): abc, 123");
     }
 
-    protected static void addSpanPointcutForExecute1() throws Exception {
+    protected static void addAdhocPointcutForExecute1() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setMetric(true);
         config.setSpan(true);
-        config.setTypeName("io.informant.tests.DynamicAdviceTest$Misc");
+        config.setTypeName("io.informant.tests.AdhocPointcutTest$Misc");
         config.setMethodName("execute1");
         config.setMethodArgTypeNames(ImmutableList.<String>of());
         config.setMethodReturnTypeName("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setMetricName("execute one");
         config.setSpanText("execute1() => {{ret}}");
-        container.getConfigService().addPointcutConfig(config);
+        container.getConfigService().addAdhocPointcutConfig(config);
     }
 
-    protected static void addSpanPointcutForExecute1MetricOnly() throws Exception {
+    protected static void addAdhocPointcutForExecute1MetricOnly() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setMetric(true);
-        config.setTypeName("io.informant.tests.DynamicAdviceTest$Misc");
+        config.setTypeName("io.informant.tests.AdhocPointcutTest$Misc");
         config.setMethodName("execute1");
         config.setMethodArgTypeNames(ImmutableList.<String>of());
         config.setMethodReturnTypeName("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setMetricName("execute one metric only");
-        container.getConfigService().addPointcutConfig(config);
+        container.getConfigService().addAdhocPointcutConfig(config);
     }
 
-    protected static void addSpanPointcutForExecuteWithReturn() throws Exception {
+    protected static void addAdhocPointcutForExecuteWithReturn() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setMetric(true);
         config.setSpan(true);
-        config.setTypeName("io.informant.tests.DynamicAdviceTest$Misc");
+        config.setTypeName("io.informant.tests.AdhocPointcutTest$Misc");
         config.setMethodName("executeWithReturn");
         config.setMethodArgTypeNames(ImmutableList.<String>of());
         config.setMethodReturnTypeName("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setMetricName("execute with return");
         config.setSpanText("executeWithReturn() => {{ret}}");
-        container.getConfigService().addPointcutConfig(config);
+        container.getConfigService().addAdhocPointcutConfig(config);
     }
 
-    protected static void addTracePointcutForExecuteWithArgs() throws Exception {
+    protected static void addAdhocPointcutForExecuteWithArgs() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setMetric(true);
         config.setSpan(true);
         config.setTrace(true);
-        config.setTypeName("io.informant.tests.DynamicAdviceTest$Misc");
+        config.setTypeName("io.informant.tests.AdhocPointcutTest$Misc");
         config.setMethodName("executeWithArgs");
         config.setMethodArgTypeNames(ImmutableList.of("java.lang.String", "int"));
         config.setMethodReturnTypeName("void");
@@ -168,7 +168,7 @@ public class DynamicAdviceTest {
         config.setMetricName("execute with args");
         config.setSpanText("executeWithArgs(): {{0}}, {{1}}");
         config.setTraceGrouping("Misc / {{methodName}}");
-        container.getConfigService().addPointcutConfig(config);
+        container.getConfigService().addAdhocPointcutConfig(config);
     }
 
     public interface Misc {

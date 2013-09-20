@@ -45,5 +45,5 @@
     "enabled" : true,
     "properties" : { }
   } ],
-  "pointcuts" : [ ]
+  "adhoc-pointcuts" : [ ]
 }

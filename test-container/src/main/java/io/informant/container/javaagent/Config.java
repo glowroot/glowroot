@@ -49,8 +49,8 @@ class Config {
     private final StorageConfig storageConfig;
     private final Map<String, PluginConfig> pluginConfigs;
     private final String dataDir;
-    private final List<PointcutConfig> pointcutConfigs;
-    private final boolean pointcutConfigsOutOfSync;
+    private final List<PointcutConfig> adhocPointcutConfigs;
+    private final boolean adhocPointcutConfigsOutOfSync;
     private final boolean retransformClassesSupported;
 
     @JsonCreator
@@ -61,8 +61,8 @@ class Config {
             @JsonProperty("storageConfig") @Nullable StorageConfig storageConfig,
             @JsonProperty("pluginConfigs") @Nullable Map<String, PluginConfig> pluginConfigs,
             @JsonProperty("dataDir") @Nullable String dataDir,
-            @JsonProperty("pointcutConfigs") @Nullable List<PointcutConfig> pointcutConfigs,
-            @JsonProperty("pointcutConfigsOutOfSync") @Nullable Boolean pointcutConfigsOutOfSync,
+            @JsonProperty("adhocPointcutConfigs") @Nullable List<PointcutConfig> adhocPointcutConfigs,
+            @JsonProperty("adhocPointcutConfigsOutOfSync") @Nullable Boolean adhocPointcutConfigsOutOfSync,
             @JsonProperty("retransformClassesSupported") @Nullable Boolean retransformClassesSupported)
             throws JsonMappingException {
         checkRequiredProperty(generalConfig, "generalConfig");
@@ -72,8 +72,8 @@ class Config {
         checkRequiredProperty(storageConfig, "storageConfig");
         checkRequiredProperty(pluginConfigs, "pluginConfigs");
         checkRequiredProperty(dataDir, "dataDir");
-        checkRequiredProperty(pointcutConfigs, "pointcutConfigs");
-        checkRequiredProperty(pointcutConfigsOutOfSync, "pointcutConfigsOutOfSync");
+        checkRequiredProperty(adhocPointcutConfigs, "adhocPointcutConfigs");
+        checkRequiredProperty(adhocPointcutConfigsOutOfSync, "adhocPointcutConfigsOutOfSync");
         checkRequiredProperty(retransformClassesSupported, "jdk5");
         this.generalConfig = generalConfig;
         this.coarseProfilingConfig = coarseProfilingConfig;
@@ -82,8 +82,8 @@ class Config {
         this.storageConfig = storageConfig;
         this.pluginConfigs = pluginConfigs;
         this.dataDir = dataDir;
-        this.pointcutConfigs = pointcutConfigs;
-        this.pointcutConfigsOutOfSync = pointcutConfigsOutOfSync;
+        this.adhocPointcutConfigs = adhocPointcutConfigs;
+        this.adhocPointcutConfigsOutOfSync = adhocPointcutConfigsOutOfSync;
         this.retransformClassesSupported = retransformClassesSupported;
     }
 
@@ -115,12 +115,12 @@ class Config {
         return dataDir;
     }
 
-    List<PointcutConfig> getPointcutConfigs() {
-        return pointcutConfigs;
+    List<PointcutConfig> getAdhocPointcutConfigs() {
+        return adhocPointcutConfigs;
     }
 
-    boolean isPointcutConfigsOutOfSync() {
-        return pointcutConfigsOutOfSync;
+    boolean isAdhocPointcutConfigsOutOfSync() {
+        return adhocPointcutConfigsOutOfSync;
     }
 
     boolean isRetransformClassesSupported() {
@@ -136,8 +136,8 @@ class Config {
                 .add("userOverridesConfig", userOverridesConfig)
                 .add("pluginConfigs", pluginConfigs)
                 .add("dataDir", dataDir)
-                .add("pointcutConfigs", pointcutConfigs)
-                .add("pointcutConfigsOutOfSync", pointcutConfigsOutOfSync)
+                .add("adhocPointcutConfigs", adhocPointcutConfigs)
+                .add("adhocPointcutConfigsOutOfSync", adhocPointcutConfigsOutOfSync)
                 .add("retransformClassesSupported", retransformClassesSupported)
                 .toString();
     }

@@ -31,12 +31,11 @@ import org.slf4j.LoggerFactory;
 import io.informant.collector.TraceCollectorImpl;
 import io.informant.config.ConfigService;
 import io.informant.config.PointcutConfig;
-import io.informant.dynamicadvice.DynamicAdviceCache;
-import io.informant.dynamicadvice.RetransformClasses;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.SnapshotDao;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
+import io.informant.trace.AdhocAdviceCache;
 import io.informant.trace.TraceRegistry;
 import io.informant.weaving.ParsedTypeCache;
 
@@ -54,7 +53,7 @@ class AdminJsonService {
 
     private final SnapshotDao snapshotDao;
     private final ConfigService configService;
-    private final DynamicAdviceCache dynamicAdviceCache;
+    private final AdhocAdviceCache adhocAdviceCache;
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final Instrumentation instrumentation;
@@ -63,12 +62,12 @@ class AdminJsonService {
     private final TraceRegistry traceRegistry;
 
     AdminJsonService(SnapshotDao snapshotDao, ConfigService configService,
-            DynamicAdviceCache dynamicAdviceCache, ParsedTypeCache parsedTypeCache,
+            AdhocAdviceCache adhocAdviceCache, ParsedTypeCache parsedTypeCache,
             @Nullable Instrumentation instrumentation, TraceCollectorImpl traceCollector,
             DataSource dataSource, TraceRegistry traceRegistry) {
         this.snapshotDao = snapshotDao;
         this.configService = configService;
-        this.dynamicAdviceCache = dynamicAdviceCache;
+        this.adhocAdviceCache = adhocAdviceCache;
         this.parsedTypeCache = parsedTypeCache;
         this.instrumentation = instrumentation;
         this.traceCollector = traceCollector;
@@ -83,7 +82,7 @@ class AdminJsonService {
     }
 
     @JsonServiceMethod
-    void retransformClasses() {
+    void reweaveAdhocPointcuts() {
         if (System.getProperty("java.version").startsWith("1.5")) {
             logger.warn("retransformClasses is not available in java 1.5");
             return;
@@ -92,15 +91,15 @@ class AdminJsonService {
             logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
             return;
         }
-        List<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
-        dynamicAdviceCache.updateAdvisors(pointcutConfigs);
+        List<PointcutConfig> adhocPointcutConfigs = configService.getAdhocPointcutConfigs();
+        adhocAdviceCache.updateAdvisors(adhocPointcutConfigs);
         Set<String> typeNames = Sets.newHashSet();
-        for (PointcutConfig pointcutConfig : pointcutConfigs) {
-            typeNames.add(pointcutConfig.getTypeName());
+        for (PointcutConfig adhocPointcutConfig : adhocPointcutConfigs) {
+            typeNames.add(adhocPointcutConfig.getTypeName());
         }
         List<Class<?>> classes = Lists.newArrayList();
-        classes.addAll(parsedTypeCache.getDynamicallyWovenClasses());
-        classes.addAll(parsedTypeCache.getClassesToDynamicallyReweave(typeNames));
+        classes.addAll(parsedTypeCache.getClassesWithAdhocPointcuts());
+        classes.addAll(parsedTypeCache.getExistingSubClasses(typeNames));
         if (classes.isEmpty()) {
             return;
         }

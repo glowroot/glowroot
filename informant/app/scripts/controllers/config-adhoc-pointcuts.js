@@ -27,8 +27,8 @@ informant.controller('ConfigAdhocPointcutsCtrl', function ($scope, $http, $timeo
         Informant.hideSpinner('#initialLoadSpinner');
         $scope.pointcuts = [];
         var i;
-        for (i = 0; i < data.pointcutConfigs.length; i++) {
-          var config = data.pointcutConfigs[i];
+        for (i = 0; i < data.adhocPointcutConfigs.length; i++) {
+          var config = data.adhocPointcutConfigs[i];
           var signature = {
             name: config.methodName,
             argTypeNames: config.methodArgTypeNames,
@@ -47,7 +47,7 @@ informant.controller('ConfigAdhocPointcutsCtrl', function ($scope, $http, $timeo
         }
         // use object so dirty flag can be updated by child controllers
         $scope.data = {
-          dirty: data.pointcutConfigsOutOfSync
+          dirty: data.adhocPointcutConfigsOutOfSync
         };
         $scope.retransformClassesSupported = data.retransformClassesSupported;
         // this is to hide 'New adhoc pointcut' section until pointcuts are loaded
@@ -82,7 +82,7 @@ informant.controller('ConfigAdhocPointcutsCtrl', function ($scope, $http, $timeo
   };
 
   $scope.retransformClasses = function (deferred) {
-    $http.post('backend/admin/pointcut/retransform-classes', '')
+    $http.post('backend/admin/adhoc-pointcuts/reweave', '')
         .success(function (data) {
           $scope.data.dirty = false;
           deferred.resolve('Success');
@@ -106,7 +106,7 @@ informant.controller('ConfigAdhocPointcutCtrl', function ($scope, $http) {
   };
 
   $scope.typeNames = function (suggestion) {
-    var url = 'backend/pointcut/matching-type-names?partial-type-name=' + suggestion + '&limit=7';
+    var url = 'backend/adhoc-pointcut/matching-type-names?partial-type-name=' + suggestion + '&limit=7';
     return $http.get(url)
         .then(function (response) {
           return response.data;
@@ -132,7 +132,7 @@ informant.controller('ConfigAdhocPointcutCtrl', function ($scope, $http) {
     if (suggestion.indexOf('*') !== -1) {
       return [ suggestion ];
     }
-    var url = 'backend/pointcut/matching-method-names?type-name=' +
+    var url = 'backend/adhoc-pointcut/matching-method-names?type-name=' +
         $scope.pointcut.config.typeName + '&partial-method-name=' + suggestion + '&limit=7';
     return $http.get(url)
         .then(function (response) {
@@ -202,9 +202,9 @@ informant.controller('ConfigAdhocPointcutCtrl', function ($scope, $http) {
     var url;
     var version = $scope.pointcut.version;
     if (version) {
-      url = 'backend/config/pointcut/' + version;
+      url = 'backend/config/adhoc-pointcut/' + version;
     } else {
-      url = 'backend/config/pointcut/+';
+      url = 'backend/config/adhoc-pointcut/+';
     }
     $http.post(url, $scope.pointcut.config)
         .success(function (data) {
@@ -228,7 +228,7 @@ informant.controller('ConfigAdhocPointcutCtrl', function ($scope, $http) {
   // TODO this needs access to outer scope remove pointcut and update retransformClassesButton
   $scope.pointcutDelete = function (deferred) {
     if ($scope.pointcut.version) {
-      $http.post('backend/config/pointcut/-', '"' + $scope.pointcut.version + '"')
+      $http.post('backend/config/adhoc-pointcut/-', '"' + $scope.pointcut.version + '"')
           .success(function (data) {
             $scope.$parent.removePointcut($scope.pointcut);
             $scope.data.dirty = true;
@@ -248,7 +248,7 @@ informant.controller('ConfigAdhocPointcutCtrl', function ($scope, $http) {
   };
 
   function matchingMethods(methodName) {
-    var url = 'backend/pointcut/matching-methods?type-name=' +
+    var url = 'backend/adhoc-pointcut/matching-methods?type-name=' +
         $scope.pointcut.config.typeName + '&method-name=' + methodName;
     $http.get(url)
         .success(function (data) {

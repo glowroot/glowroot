@@ -48,10 +48,9 @@ import io.informant.config.PointcutConfig;
 import io.informant.config.StorageConfig;
 import io.informant.config.UserOverridesConfig;
 import io.informant.config.WithVersionJsonView;
-import io.informant.dynamicadvice.DynamicAdviceCache;
-import io.informant.dynamicadvice.RetransformClasses;
 import io.informant.local.store.RollingFile;
 import io.informant.markers.Singleton;
+import io.informant.trace.AdhocAdviceCache;
 
 /**
  * Json service to read and update config data, bound to /backend/config.
@@ -70,18 +69,18 @@ class ConfigJsonService {
     private final RollingFile rollingFile;
     private final PluginDescriptorCache pluginDescriptorCache;
     private final File dataDir;
-    private final DynamicAdviceCache dynamicAdviceCache;
+    private final AdhocAdviceCache adhocAdviceCache;
     @Nullable
     private final Instrumentation instrumentation;
 
     ConfigJsonService(ConfigService configService, RollingFile rollingFile,
             PluginDescriptorCache pluginDescriptorCache, File dataDir,
-            DynamicAdviceCache dynamicAdviceCache, @Nullable Instrumentation instrumentation) {
+            AdhocAdviceCache adhocAdviceCache, @Nullable Instrumentation instrumentation) {
         this.configService = configService;
         this.rollingFile = rollingFile;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.dataDir = dataDir;
-        this.dynamicAdviceCache = dynamicAdviceCache;
+        this.adhocAdviceCache = adhocAdviceCache;
         this.instrumentation = instrumentation;
     }
 
@@ -107,10 +106,11 @@ class ConfigJsonService {
         jg.writeFieldName("pluginConfigs");
         writer.writeValue(jg, getPluginConfigMap());
         jg.writeStringField("dataDir", dataDir.getCanonicalPath());
-        jg.writeFieldName("pointcutConfigs");
-        writer.writeValue(jg, configService.getPointcutConfigs());
-        jg.writeBooleanField("pointcutConfigsOutOfSync",
-                dynamicAdviceCache.isPointcutConfigsOutOfSync(configService.getPointcutConfigs()));
+        jg.writeFieldName("adhocPointcutConfigs");
+        writer.writeValue(jg, configService.getAdhocPointcutConfigs());
+        jg.writeBooleanField("adhocPointcutConfigsOutOfSync",
+                adhocAdviceCache.isAdhocPointcutConfigsOutOfSync(configService
+                        .getAdhocPointcutConfigs()));
         if (instrumentation == null) {
             // debugging with IsolatedWeavingClassLoader instead of javaagent
             jg.writeBooleanField("retransformClassesSupported", false);
@@ -263,28 +263,28 @@ class ConfigJsonService {
     }
 
     @JsonServiceMethod
-    String addPointcutConfig(String content) throws JsonProcessingException, IOException {
-        logger.debug("addPointcutConfig(): content={}", content);
-        PointcutConfig pointcutConfig =
+    String addAdhocPointcutConfig(String content) throws JsonProcessingException, IOException {
+        logger.debug("addAdhocPointcutConfig(): content={}", content);
+        PointcutConfig adhocPointcutConfig =
                 ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
-        return configService.insertPointcutConfig(pointcutConfig);
+        return configService.insertAdhocPointcutConfig(adhocPointcutConfig);
     }
 
     @JsonServiceMethod
-    String updatePointcutConfig(String priorVersion, String content)
+    String updateAdhocPointcutConfig(String priorVersion, String content)
             throws JsonProcessingException, IOException {
-        logger.debug("updatePointcutConfig(): priorVersion={}, content={}", priorVersion,
+        logger.debug("updateAdhocPointcutConfig(): priorVersion={}, content={}", priorVersion,
                 content);
-        PointcutConfig pointcutConfig =
+        PointcutConfig adhocPointcutConfig =
                 ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
-        return configService.updatePointcutConfig(priorVersion, pointcutConfig);
+        return configService.updateAdhocPointcutConfig(priorVersion, adhocPointcutConfig);
     }
 
     @JsonServiceMethod
-    void removePointcutConfig(String content) throws IOException {
-        logger.debug("removePointcutConfig(): content={}", content);
+    void removeAdhocPointcutConfig(String content) throws IOException {
+        logger.debug("removeAdhocPointcutConfig(): content={}", content);
         String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
-        configService.deletePointcutConfig(version);
+        configService.deleteAdhocPointcutConfig(version);
     }
 
     private Map<String, PluginConfig> getPluginConfigMap() {

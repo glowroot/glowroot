@@ -58,7 +58,7 @@ class Weaver {
 
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> pluginAdvisors;
-    private final Supplier<ImmutableList<Advice>> dynamicAdvisors;
+    private final Supplier<ImmutableList<Advice>> adhocAdvisors;
     @Nullable
     private final ClassLoader loader;
     private final ParsedTypeCache parsedTypeCache;
@@ -67,12 +67,12 @@ class Weaver {
     private final MetricName weavingMetricName;
 
     Weaver(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> pluginAdvisors,
-            Supplier<ImmutableList<Advice>> dynamicAdvisors,
+            Supplier<ImmutableList<Advice>> adhocAdvisors,
             @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
             MetricTimerService metricTimerService) {
         this.mixinTypes = mixinTypes;
         this.pluginAdvisors = pluginAdvisors;
-        this.dynamicAdvisors = dynamicAdvisors;
+        this.adhocAdvisors = adhocAdvisors;
         this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
         this.metricTimerService = metricTimerService;
@@ -108,7 +108,7 @@ class Weaver {
             ClassWriter cw = new ComputeFramesClassWriter(
                     ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES, parsedTypeCache, loader,
                     codeSource, className);
-            Iterable<Advice> advisors = Iterables.concat(pluginAdvisors, dynamicAdvisors.get());
+            Iterable<Advice> advisors = Iterables.concat(pluginAdvisors, adhocAdvisors.get());
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors, loader,
                     parsedTypeCache, codeSource);
             ClassReader cr = new ClassReader(classBytes);
@@ -138,7 +138,7 @@ class Weaver {
         return Objects.toStringHelper(this)
                 .add("mixinTypes", mixinTypes)
                 .add("pluginAdvisors", pluginAdvisors)
-                .add("dynamicAdvisors", dynamicAdvisors)
+                .add("adhocAdvisors", adhocAdvisors)
                 .add("loader", loader)
                 .add("parsedTypeCache", parsedTypeCache)
                 .toString();

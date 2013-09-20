@@ -114,11 +114,11 @@ public class Advice {
     private final ImmutableList<AdviceParameter> onAfterParameters;
 
     private final Class<?> generatedAdviceFlowClass;
-    private final boolean dynamic;
+    private final boolean adhoc;
 
-    public static Advice from(Pointcut pointcut, Class<?> adviceClass, boolean dynamic)
+    public static Advice from(Pointcut pointcut, Class<?> adviceClass, boolean adhoc)
             throws AdviceConstructionException {
-        return new Builder(pointcut, adviceClass, dynamic).build();
+        return new Builder(pointcut, adviceClass, adhoc).build();
     }
 
     private Advice(Pointcut pointcut, Type adviceType, @Nullable Pattern pointcutTypePattern,
@@ -131,7 +131,7 @@ public class Advice {
             ImmutableList<AdviceParameter> onThrowParameterKinds,
             ImmutableList<AdviceParameter> onAfterParameterKinds,
             Class<?> generatedAdviceFlowClass,
-            boolean dynamic) {
+            boolean adhoc) {
         this.pointcut = pointcut;
         this.adviceType = adviceType;
         this.pointcutTypePattern = pointcutTypePattern;
@@ -148,7 +148,7 @@ public class Advice {
         this.onThrowParameters = onThrowParameterKinds;
         this.onAfterParameters = onAfterParameterKinds;
         this.generatedAdviceFlowClass = generatedAdviceFlowClass;
-        this.dynamic = dynamic;
+        this.adhoc = adhoc;
     }
 
     Pointcut getPointcut() {
@@ -223,8 +223,8 @@ public class Advice {
         return generatedAdviceFlowClass;
     }
 
-    boolean isDynamic() {
-        return dynamic;
+    boolean isAdhoc() {
+        return adhoc;
     }
 
     @Override
@@ -246,7 +246,7 @@ public class Advice {
                 .add("onThrowParameters", onThrowParameters)
                 .add("onAfterParameters", onAfterParameters)
                 .add("generatedAdviceFlowClass", generatedAdviceFlowClass)
-                .add("dynamic", dynamic)
+                .add("adhoc", adhoc)
                 .toString();
     }
 
@@ -285,7 +285,7 @@ public class Advice {
 
         private final Pointcut pointcut;
         private final Class<?> adviceClass;
-        private final boolean dynamic;
+        private final boolean adhoc;
 
         private Type adviceType;
         @Nullable
@@ -313,10 +313,10 @@ public class Advice {
 
         private Class<?> generatedAdviceFlowClass;
 
-        private Builder(Pointcut pointcut, Class<?> adviceClass, boolean dynamic) {
+        private Builder(Pointcut pointcut, Class<?> adviceClass, boolean adhoc) {
             this.pointcut = pointcut;
             this.adviceClass = adviceClass;
-            this.dynamic = dynamic;
+            this.adhoc = adhoc;
         }
 
         private Advice build() throws AdviceConstructionException {
@@ -340,7 +340,7 @@ public class Advice {
             return new Advice(pointcut, adviceType, pointcutTypePattern, pointcutMethodPattern,
                     isEnabledAdvice, onBeforeAdvice, onReturnAdvice, onThrowAdvice, onAfterAdvice,
                     travelerType, isEnabledParameters, onBeforeParameters, onReturnParameters,
-                    onThrowParameters, onAfterParameters, generatedAdviceFlowClass, dynamic);
+                    onThrowParameters, onAfterParameters, generatedAdviceFlowClass, adhoc);
         }
 
         private Class<?> buildGeneratedAdviceFlowClass() throws AdviceConstructionException {

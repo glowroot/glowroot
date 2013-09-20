@@ -181,28 +181,29 @@ class LocalConfigService implements ConfigService {
         return configService.updatePluginConfig(updatedConfig.build(), config.getVersion());
     }
 
-    public List<PointcutConfig> getPointcutConfigs() {
+    public List<PointcutConfig> getAdhocPointcutConfigs() {
         List<PointcutConfig> configs = Lists.newArrayList();
         for (io.informant.config.PointcutConfig coreConfig : configService
-                .getPointcutConfigs()) {
+                .getAdhocPointcutConfigs()) {
             configs.add(convertToCore(coreConfig));
         }
         return configs;
     }
 
-    public String addPointcutConfig(PointcutConfig config) throws Exception {
-        return configService.insertPointcutConfig(convertToCore(config));
+    public String addAdhocPointcutConfig(PointcutConfig config) throws Exception {
+        return configService.insertAdhocPointcutConfig(convertToCore(config));
     }
 
-    public String updatePointcutConfig(String version, PointcutConfig config) throws Exception {
-        return configService.updatePointcutConfig(version, convertToCore(config));
+    public String updateAdhocPointcutConfig(String version, PointcutConfig config)
+            throws Exception {
+        return configService.updateAdhocPointcutConfig(version, convertToCore(config));
     }
 
-    public void removePointcutConfig(String version) throws Exception {
-        configService.deletePointcutConfig(version);
+    public void removeAdhocPointcutConfig(String version) throws Exception {
+        configService.deleteAdhocPointcutConfig(version);
     }
 
-    public void retransformClasses() throws Exception {
+    public void reweaveAdhocPointcuts() throws Exception {
         throw new IllegalStateException(
                 "Retransforming classes only works inside javaagent container");
     }

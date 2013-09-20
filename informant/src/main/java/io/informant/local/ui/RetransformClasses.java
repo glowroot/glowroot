@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.dynamicadvice;
+package io.informant.local.ui;
 
-import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -31,32 +30,13 @@ import static io.informant.common.Nullness.assertNonNull;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class RetransformClasses {
+class RetransformClasses {
 
     private static final Logger logger = LoggerFactory.getLogger(RetransformClasses.class);
 
     private RetransformClasses() {}
 
-    public static void addRetransformingTransformer(Instrumentation instrumentation,
-            ClassFileTransformer transformer) {
-        try {
-            Method addTransformerMethod = Instrumentation.class.getMethod("addTransformer",
-                    ClassFileTransformer.class, boolean.class);
-            addTransformerMethod.invoke(instrumentation, transformer, true);
-        } catch (SecurityException e) {
-            logger.warn(e.getMessage(), e);
-        } catch (NoSuchMethodException e) {
-            logger.warn(e.getMessage(), e);
-        } catch (IllegalArgumentException e) {
-            logger.error(e.getMessage(), e);
-        } catch (IllegalAccessException e) {
-            logger.warn(e.getMessage(), e);
-        } catch (InvocationTargetException e) {
-            logger.warn(e.getMessage(), e);
-        }
-    }
-
-    public static boolean isRetransformClassesSupported(Instrumentation instrumentation) {
+    static boolean isRetransformClassesSupported(Instrumentation instrumentation) {
         if (System.getProperty("java.version").startsWith("1.5")) {
             return false;
         }
@@ -80,7 +60,7 @@ public class RetransformClasses {
         return false;
     }
 
-    public static void retransformClasses(Instrumentation instrumentation, List<Class<?>> classes) {
+    static void retransformClasses(Instrumentation instrumentation, List<Class<?>> classes) {
         try {
             Method retransformClassesMethod = Instrumentation.class.getMethod("retransformClasses",
                     Class[].class);
@@ -98,5 +78,4 @@ public class RetransformClasses {
             logger.warn(e.getMessage(), e);
         }
     }
-
 }

@@ -33,7 +33,7 @@ import io.informant.api.weaving.MethodModifier;
 import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
 /**
- * Immutable structure to hold a dynamic pointcut.
+ * Immutable structure to hold a configured pointcut.
  * 
  * @author Trask Stalnaker
  * @since 0.5

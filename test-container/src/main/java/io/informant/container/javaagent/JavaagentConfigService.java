@@ -111,29 +111,29 @@ class JavaagentConfigService implements ConfigService {
                 mapper.writeValueAsString(config));
     }
 
-    public List<PointcutConfig> getPointcutConfigs() throws Exception {
-        return getConfig().getPointcutConfigs();
+    public List<PointcutConfig> getAdhocPointcutConfigs() throws Exception {
+        return getConfig().getAdhocPointcutConfigs();
     }
 
     // returns new version
-    public String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception {
-        return httpClient.post("/backend/config/pointcut/+",
-                mapper.writeValueAsString(pointcutConfig));
+    public String addAdhocPointcutConfig(PointcutConfig adhocPointcutConfig) throws Exception {
+        return httpClient.post("/backend/config/adhoc-pointcut/+",
+                mapper.writeValueAsString(adhocPointcutConfig));
     }
 
     // returns new version
-    public String updatePointcutConfig(String version, PointcutConfig pointcutConfig)
+    public String updateAdhocPointcutConfig(String version, PointcutConfig adhocPointcutConfig)
             throws Exception {
-        return httpClient.post("/backend/config/pointcut/" + version,
-                mapper.writeValueAsString(pointcutConfig));
+        return httpClient.post("/backend/config/adhoc-pointcut/" + version,
+                mapper.writeValueAsString(adhocPointcutConfig));
     }
 
-    public void removePointcutConfig(String version) throws Exception {
-        httpClient.post("/backend/config/pointcut/-", mapper.writeValueAsString(version));
+    public void removeAdhocPointcutConfig(String version) throws Exception {
+        httpClient.post("/backend/config/adhoc-pointcut/-", mapper.writeValueAsString(version));
     }
 
-    public void retransformClasses() throws Exception {
-        httpClient.post("/backend/admin/pointcut/retransform-classes", "");
+    public void reweaveAdhocPointcuts() throws Exception {
+        httpClient.post("/backend/admin/adhoc-pointcuts/reweave", "");
     }
 
     public void compactData() throws Exception {

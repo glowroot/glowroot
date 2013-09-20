@@ -49,7 +49,8 @@ public class PointcutConfigJsonServiceTest {
         ParsedTypeCache parsedTypeCache = mock(ParsedTypeCache.class);
         when(parsedTypeCache.getMatchingMethodNames(typeName, partialMethodName, limit))
                 .thenReturn(matchingMethodNames);
-        PointcutConfigJsonService jsonService = new PointcutConfigJsonService(parsedTypeCache);
+        AdhocPointcutConfigJsonService jsonService =
+                new AdhocPointcutConfigJsonService(parsedTypeCache);
         ObjectNode node = mapper.createObjectNode();
         node.put("typeName", typeName);
         node.put("partialMethodName", partialMethodName);

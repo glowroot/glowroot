@@ -168,12 +168,12 @@ public class ParsedTypeCache {
         return ParsedMethodOrdering.INSTANCE.sortedCopy(parsedMethods);
     }
 
-    public List<Class<?>> getDynamicallyWovenClasses() {
+    public List<Class<?>> getClassesWithAdhocPointcuts() {
         List<Class<?>> classes = Lists.newArrayList();
         for (Entry<ClassLoader, ConcurrentMap<String, ParsedType>> outerEntry : parsedTypeCache
                 .asMap().entrySet()) {
             for (Entry<String, ParsedType> innerEntry : outerEntry.getValue().entrySet()) {
-                if (innerEntry.getValue().isDynamicallyWoven()) {
+                if (innerEntry.getValue().hasAdhocPointcut()) {
                     try {
                         classes.add(outerEntry.getKey().loadClass(innerEntry.getKey()));
                     } catch (ClassNotFoundException e) {
@@ -185,12 +185,12 @@ public class ParsedTypeCache {
         return classes;
     }
 
-    public List<Class<?>> getClassesToDynamicallyReweave(Set<String> targetTypeNames) {
+    public List<Class<?>> getExistingSubClasses(Set<String> rootTypeNames) {
         List<Class<?>> classes = Lists.newArrayList();
         for (ClassLoader loader : parsedTypeCache.asMap().keySet()) {
-            classes.addAll(getClassesToDynamicallyReweave(targetTypeNames, loader));
+            classes.addAll(getExistingSubClasses(rootTypeNames, loader));
         }
-        classes.addAll(getClassesToDynamicallyReweave(targetTypeNames, null));
+        classes.addAll(getExistingSubClasses(rootTypeNames, null));
         return classes;
     }
 
@@ -278,11 +278,11 @@ public class ParsedTypeCache {
         return parsedType;
     }
 
-    private List<Class<?>> getClassesToDynamicallyReweave(Set<String> targetTypeNames,
+    private List<Class<?>> getExistingSubClasses(Set<String> rootTypeNames,
             @Nullable ClassLoader loader) {
         List<Class<?>> classes = Lists.newArrayList();
         for (ParsedType parsedType : getParsedTypes(loader).values()) {
-            if (shouldReweave(parsedType, loader, targetTypeNames)) {
+            if (isSubClass(parsedType, rootTypeNames, loader)) {
                 try {
                     classes.add(Class.forName(parsedType.getName(), false, loader));
                 } catch (ClassNotFoundException e) {
@@ -293,11 +293,11 @@ public class ParsedTypeCache {
         return classes;
     }
 
-    private boolean shouldReweave(ParsedType parsedType, @Nullable ClassLoader loader,
-            Set<String> targetTypeNames) {
+    private boolean isSubClass(ParsedType parsedType, Set<String> rootTypeNames,
+            @Nullable ClassLoader loader) {
         List<String> superTypeNames = getExistingTypeHierarchy(parsedType, loader);
         for (String superTypeName : superTypeNames) {
-            if (targetTypeNames.contains(superTypeName)) {
+            if (rootTypeNames.contains(superTypeName)) {
                 return true;
             }
         }

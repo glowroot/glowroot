@@ -42,7 +42,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> pluginAdvisors;
-    private final Supplier<ImmutableList<Advice>> dynamicAdvisors;
+    private final Supplier<ImmutableList<Advice>> adhocAdvisors;
 
     private final ParsedTypeCache parsedTypeCache;
     private final MetricTimerService metricTimerService;
@@ -57,7 +57,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                     .build(new CacheLoader<ClassLoader, Weaver>() {
                         @Override
                         public Weaver load(ClassLoader loader) {
-                            return new Weaver(mixinTypes, pluginAdvisors, dynamicAdvisors, loader,
+                            return new Weaver(mixinTypes, pluginAdvisors, adhocAdvisors, loader,
                                     parsedTypeCache, metricTimerService);
                         }
                     });
@@ -73,14 +73,14 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // hard-coded results in io.informant.core.weaving.PreInitializeClasses)
     // note: an exception is made for WeavingMetric, see PreInitializeClassesTest for explanation
     public WeavingClassFileTransformer(@ReadOnly List<MixinType> mixinTypes,
-            @ReadOnly List<Advice> pluginAdvisors, Supplier<ImmutableList<Advice>> dynamicAdvisors,
+            @ReadOnly List<Advice> pluginAdvisors, Supplier<ImmutableList<Advice>> adhocAdvisors,
             ParsedTypeCache parsedTypeCache, MetricTimerService metricTimerService) {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
-        this.dynamicAdvisors = dynamicAdvisors;
+        this.adhocAdvisors = adhocAdvisors;
         this.parsedTypeCache = parsedTypeCache;
         this.metricTimerService = metricTimerService;
-        bootLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors, this.dynamicAdvisors,
+        bootLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors, this.adhocAdvisors,
                 null, parsedTypeCache, metricTimerService);
         PreInitializeClasses.preInitializeClasses(WeavingClassFileTransformer.class
                 .getClassLoader());

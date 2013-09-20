@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -37,7 +39,6 @@ import io.informant.api.PluginServices;
 import io.informant.collector.CollectorModule;
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
-import io.informant.dynamicadvice.RetransformClasses;
 import io.informant.local.store.StorageModule;
 import io.informant.local.ui.LocalUiModule;
 import io.informant.markers.OnlyUsedByTests;
@@ -87,13 +88,32 @@ public class InformantModule {
             if (System.getProperty("java.version").startsWith("1.5")) {
                 instrumentation.addTransformer(transformer);
             } else {
-                RetransformClasses.addRetransformingTransformer(instrumentation, transformer);
+                addRetransformingTransformer(instrumentation, transformer);
             }
         }
     }
 
     PluginServices getPluginServices(String pluginId) {
         return traceModule.getPluginServices(pluginId);
+    }
+
+    private static void addRetransformingTransformer(Instrumentation instrumentation,
+            ClassFileTransformer transformer) {
+        try {
+            Method addTransformerMethod = Instrumentation.class.getMethod("addTransformer",
+                    ClassFileTransformer.class, boolean.class);
+            addTransformerMethod.invoke(instrumentation, transformer, true);
+        } catch (SecurityException e) {
+            logger.warn(e.getMessage(), e);
+        } catch (NoSuchMethodException e) {
+            logger.warn(e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            logger.error(e.getMessage(), e);
+        } catch (IllegalAccessException e) {
+            logger.warn(e.getMessage(), e);
+        } catch (InvocationTargetException e) {
+            logger.warn(e.getMessage(), e);
+        }
     }
 
     @OnlyUsedByTests

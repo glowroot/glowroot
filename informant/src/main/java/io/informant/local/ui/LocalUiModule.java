@@ -95,8 +95,8 @@ public class LocalUiModule {
         ConfigJsonService configJsonService =
                 new ConfigJsonService(configService, rollingFile, pluginDescriptorCache, dataDir,
                         traceModule.getDynamicAdviceCache(), instrumentation);
-        PointcutConfigJsonService pointcutConfigJsonService =
-                new PointcutConfigJsonService(parsedTypeCache);
+        AdhocPointcutConfigJsonService adhocPointcutConfigJsonService =
+                new AdhocPointcutConfigJsonService(parsedTypeCache);
         ThreadsJsonService threadsJsonService = new ThreadsJsonService();
         AdminJsonService adminJsonService = new AdminJsonService(snapshotDao,
                 configService, traceModule.getDynamicAdviceCache(), parsedTypeCache,
@@ -108,7 +108,7 @@ public class LocalUiModule {
         httpServer = buildHttpServer(port, numWorkerThreads, new VersionJsonService(version),
                 aggregateJsonService, tracePointJsonService, traceSummaryJsonService,
                 snapshotHttpService, traceExportHttpService, configJsonService,
-                pointcutConfigJsonService, threadsJsonService, adminJsonService);
+                adhocPointcutConfigJsonService, threadsJsonService, adminJsonService);
     }
 
     @OnlyUsedByTests
@@ -154,7 +154,7 @@ public class LocalUiModule {
             TraceSummaryJsonService traceSummaryJsonService,
             SnapshotHttpService snapshotHttpService,
             TraceExportHttpService traceExportHttpService, ConfigJsonService configJsonService,
-            PointcutConfigJsonService pointcutConfigJsonService,
+            AdhocPointcutConfigJsonService adhocPointcutConfigJsonService,
             ThreadsJsonService threadsJsonService, AdminJsonService adminJsonService) {
 
         String resourceBase = "io/informant/local/ui/app-dist";
@@ -206,25 +206,28 @@ public class LocalUiModule {
                 configJsonService, "updateStorageConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/plugin/(.+)$",
                 configJsonService, "updatePluginConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/pointcut/\\+$",
-                configJsonService, "addPointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/pointcut/([0-9a-f]+)$",
-                configJsonService, "updatePointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/pointcut/-$",
-                configJsonService, "removePointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/pointcut/matching-type-names",
-                pointcutConfigJsonService, "getMatchingTypeNames"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/pointcut/matching-method-names",
-                pointcutConfigJsonService, "getMatchingMethodNames"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/pointcut/matching-methods",
-                pointcutConfigJsonService, "getMatchingMethods"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/adhoc-pointcut/\\+$",
+                configJsonService, "addAdhocPointcutConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping(
+                "^/backend/config/adhoc-pointcut/([0-9a-f]+)$", configJsonService,
+                "updateAdhocPointcutConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/adhoc-pointcut/-$",
+                configJsonService, "removeAdhocPointcutConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping(
+                "^/backend/adhoc-pointcut/matching-type-names", adhocPointcutConfigJsonService,
+                "getMatchingTypeNames"));
+        jsonServiceMappings.add(new JsonServiceMapping(
+                "^/backend/adhoc-pointcut/matching-method-names", adhocPointcutConfigJsonService,
+                "getMatchingMethodNames"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/adhoc-pointcut/matching-methods",
+                adhocPointcutConfigJsonService, "getMatchingMethods"));
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/threads/dump$",
                 threadsJsonService, "getThreadDump"));
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/data/delete-all$",
                 adminJsonService, "deleteAllData"));
         jsonServiceMappings.add(new JsonServiceMapping(
-                "^/backend/admin/pointcut/retransform-classes$",
-                adminJsonService, "retransformClasses"));
+                "^/backend/admin/adhoc-pointcuts/reweave",
+                adminJsonService, "reweaveAdhocPointcuts"));
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/data/compact$",
                 adminJsonService, "compactData"));
         jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/config/reset-all$",

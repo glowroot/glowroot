@@ -47,16 +47,17 @@ import static io.informant.common.ObjectMappers.checkRequiredProperty;
  */
 @Singleton
 @JsonService
-class PointcutConfigJsonService {
+class AdhocPointcutConfigJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(PointcutConfigJsonService.class);
+    private static final Logger logger =
+            LoggerFactory.getLogger(AdhocPointcutConfigJsonService.class);
     @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
     private static final Splitter splitter = Splitter.on(' ').omitEmptyStrings();
 
     private final ParsedTypeCache parsedTypeCache;
 
-    PointcutConfigJsonService(ParsedTypeCache parsedTypeCache) {
+    AdhocPointcutConfigJsonService(ParsedTypeCache parsedTypeCache) {
         this.parsedTypeCache = parsedTypeCache;
     }
 

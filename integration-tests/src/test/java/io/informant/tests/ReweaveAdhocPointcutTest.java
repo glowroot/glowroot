@@ -29,17 +29,17 @@ import io.informant.container.javaagent.JavaagentContainer;
  * @since 0.5
  */
 @RunWith(IgnoreOnJdk5.class)
-public class DynamicAdviceRetransformClassesTest extends DynamicAdviceTest {
+public class ReweaveAdhocPointcutTest extends AdhocPointcutTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
         container = JavaagentContainer.create();
         container.executeAppUnderTest(ShouldExecute1.class);
-        addSpanPointcutForExecute1();
-        addSpanPointcutForExecute1MetricOnly();
-        addSpanPointcutForExecuteWithReturn();
-        addTracePointcutForExecuteWithArgs();
-        container.getConfigService().retransformClasses();
+        addAdhocPointcutForExecute1();
+        addAdhocPointcutForExecute1MetricOnly();
+        addAdhocPointcutForExecuteWithReturn();
+        addAdhocPointcutForExecuteWithArgs();
+        container.getConfigService().reweaveAdhocPointcuts();
     }
 
     @AfterClass

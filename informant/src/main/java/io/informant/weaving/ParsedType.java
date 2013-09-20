@@ -38,7 +38,7 @@ class ParsedType {
     private final String superName;
     private final ImmutableList<String> interfaceNames;
     private final ImmutableList<ParsedMethod> methods;
-    private final boolean dynamicallyWoven;
+    private final boolean hasAdhocPointcut;
 
     // interfaces that do not extend anything have null superClass
     static ParsedType from(boolean iface, String name, @Nullable String superName,
@@ -48,13 +48,13 @@ class ParsedType {
 
     private ParsedType(boolean iface, String name, @Nullable String superName,
             ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods,
-            boolean dynamicallyWoven) {
+            boolean hasAdhocPointcut) {
         this.iface = iface;
         this.name = name;
         this.superName = superName;
         this.interfaceNames = interfaceNames;
         this.methods = methods;
-        this.dynamicallyWoven = dynamicallyWoven;
+        this.hasAdhocPointcut = hasAdhocPointcut;
     }
 
     boolean isInterface() {
@@ -90,8 +90,8 @@ class ParsedType {
         return null;
     }
 
-    public boolean isDynamicallyWoven() {
-        return dynamicallyWoven;
+    public boolean hasAdhocPointcut() {
+        return hasAdhocPointcut;
     }
 
     @Override
@@ -102,7 +102,7 @@ class ParsedType {
                 .add("superName", superName)
                 .add("interfaceNames", interfaceNames)
                 .add("methods", methods)
-                .add("dynamicallyWoven", dynamicallyWoven)
+                .add("hasAdhocPointcut", hasAdhocPointcut)
                 .toString();
     }
 
@@ -120,7 +120,7 @@ class ParsedType {
         private final String superName;
         private final ImmutableList<String> interfaceNames;
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
-        private boolean dynamicallyWoven;
+        private boolean hasAdhocPointcut;
 
         private Builder(boolean iface, String name, @Nullable String superName,
                 ImmutableList<String> interfaceNames) {
@@ -134,13 +134,13 @@ class ParsedType {
             methods.add(method);
         }
 
-        public void setDynamicallyWoven(boolean dynamicallyWoven) {
-            this.dynamicallyWoven = dynamicallyWoven;
+        public void setHasAdhocPointcut(boolean hasAdhocPointcut) {
+            this.hasAdhocPointcut = hasAdhocPointcut;
         }
 
         ParsedType build() {
             return new ParsedType(iface, name, superName, interfaceNames, methods.build(),
-                    dynamicallyWoven);
+                    hasAdhocPointcut);
         }
     }
 }

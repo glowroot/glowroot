@@ -27,7 +27,6 @@ import io.informant.api.PluginServices;
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
-import io.informant.dynamicadvice.DynamicAdviceCache;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 import io.informant.weaving.MetricTimerService;
@@ -49,7 +48,7 @@ public class TraceModule {
     private final ParsedTypeCache parsedTypeCache;
     private final TraceRegistry traceRegistry;
     private final MetricNameCache metricNameCache;
-    private final DynamicAdviceCache dynamicAdviceCache;
+    private final AdhocAdviceCache adhocAdviceCache;
     private final MetricTimerService metricTimerService;
 
     private final StuckTraceCollector stuckTraceCollector;
@@ -76,7 +75,7 @@ public class TraceModule {
         parsedTypeCache = new ParsedTypeCache();
         traceRegistry = new TraceRegistry();
         metricNameCache = new MetricNameCache(ticker);
-        dynamicAdviceCache = new DynamicAdviceCache(configService.getPointcutConfigs());
+        adhocAdviceCache = new AdhocAdviceCache(configService.getAdhocPointcutConfigs());
         metricTimerService = new MetricTimerServiceImpl(metricNameCache, traceRegistry);
 
         fineProfileScheduler = new FineProfileScheduler(scheduledExecutor, configService, ticker,
@@ -94,7 +93,7 @@ public class TraceModule {
         return new WeavingClassFileTransformer(
                 configModule.getPluginDescriptorCache().getMixinTypes(),
                 configModule.getPluginDescriptorCache().getAdvisors(),
-                dynamicAdviceCache.getDynamicAdvisorsSupplier(), parsedTypeCache,
+                adhocAdviceCache.getAdhocAdvisorsSupplier(), parsedTypeCache,
                 metricTimerService);
     }
 
@@ -110,8 +109,8 @@ public class TraceModule {
         return traceRegistry;
     }
 
-    public DynamicAdviceCache getDynamicAdviceCache() {
-        return dynamicAdviceCache;
+    public AdhocAdviceCache getDynamicAdviceCache() {
+        return adhocAdviceCache;
     }
 
     public MetricTimerService getMetricTimerService() {
