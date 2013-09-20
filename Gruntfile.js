@@ -246,13 +246,6 @@ module.exports = function (grunt) {
         dest: '.tmp/generated/angular-templates.js'
       }
     },
-    ngmin: {
-      dist: {
-        files: {
-          '.tmp/concat/scripts/app.js': '.tmp/concat/scripts/app.js'
-        }
-      }
-    },
     uglify: {
       options: {
         preserveComments: function (node, comment) {
@@ -364,7 +357,6 @@ module.exports = function (grunt) {
     'concat',
     'copy',
     'cssmin',
-    'ngmin',
     'uglify',
     'replace',
     'rev',

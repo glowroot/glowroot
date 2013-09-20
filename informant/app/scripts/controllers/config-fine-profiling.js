@@ -16,62 +16,65 @@
 
 /* global informant, Informant, angular */
 
-informant.controller('ConfigFineProfilingCtrl', function ($scope, $http) {
+informant.controller('ConfigFineProfilingCtrl', [
+  '$scope',
+  '$http',
+  function ($scope, $http) {
+    var originalConfig;
 
-  var originalConfig;
+    $scope.hasChanges = function () {
+      return originalConfig && !angular.equals($scope.config, originalConfig);
+    };
 
-  $scope.hasChanges = function () {
-    return originalConfig && !angular.equals($scope.config, originalConfig);
-  };
+    $scope.save = function (deferred) {
+      $http.post('backend/config/fine-profiling', $scope.config)
+          .success(function (data) {
+            $scope.config.version = data;
+            originalConfig = angular.copy($scope.config);
+            deferred.resolve('Saved');
+          })
+          .error(function (data, status) {
+            if (status === 0) {
+              deferred.reject('Unable to connect to server');
+            } else {
+              deferred.reject('An error occurred');
+            }
+          });
+    };
 
-  $scope.save = function (deferred) {
-    $http.post('backend/config/fine-profiling', $scope.config)
+    // TODO fix initial load spinner
+    Informant.showSpinner('#initialLoadSpinner');
+    $http.get('backend/config')
         .success(function (data) {
-          $scope.config.version = data;
+          Informant.hideSpinner('#initialLoadSpinner');
+          $scope.config = data.fineProfilingConfig;
           originalConfig = angular.copy($scope.config);
-          deferred.resolve('Saved');
-        })
-        .error(function (data, status) {
-          if (status === 0) {
-            deferred.reject('Unable to connect to server');
+
+          $scope.generalStoreThresholdMillis = data.generalConfig.storeThresholdMillis;
+          // set up calculated properties
+          $scope.data = {};
+          if ($scope.config.storeThresholdMillis !== -1) {
+            $scope.data.fineStoreThresholdOverride = true;
+            $scope.data.fineStoreThresholdMillis = $scope.config.storeThresholdMillis;
           } else {
-            deferred.reject('An error occurred');
+            $scope.data.fineStoreThresholdOverride = false;
+            $scope.data.fineStoreThresholdMillis = '';
           }
-        });
-  };
-
-  // TODO fix initial load spinner
-  Informant.showSpinner('#initialLoadSpinner');
-  $http.get('backend/config')
-      .success(function (data) {
-        Informant.hideSpinner('#initialLoadSpinner');
-        $scope.config = data.fineProfilingConfig;
-        originalConfig = angular.copy($scope.config);
-
-        $scope.generalStoreThresholdMillis = data.generalConfig.storeThresholdMillis;
-        // set up calculated properties
-        $scope.data = {};
-        if ($scope.config.storeThresholdMillis !== -1) {
-          $scope.data.fineStoreThresholdOverride = true;
-          $scope.data.fineStoreThresholdMillis = $scope.config.storeThresholdMillis;
-        } else {
-          $scope.data.fineStoreThresholdOverride = false;
-          $scope.data.fineStoreThresholdMillis = '';
-        }
-        $scope.$watch('[data.fineStoreThresholdOverride, data.fineStoreThresholdMillis]',
-            function (newValue) {
-              if (newValue[0]) {
-                if ($scope.data.fineStoreThresholdMillis === '') {
-                  $scope.data.fineStoreThresholdMillis = $scope.generalStoreThresholdMillis;
+          $scope.$watch('[data.fineStoreThresholdOverride, data.fineStoreThresholdMillis]',
+              function (newValue) {
+                if (newValue[0]) {
+                  if ($scope.data.fineStoreThresholdMillis === '') {
+                    $scope.data.fineStoreThresholdMillis = $scope.generalStoreThresholdMillis;
+                  }
+                  $scope.config.storeThresholdMillis = $scope.data.fineStoreThresholdMillis;
+                } else {
+                  $scope.data.fineStoreThresholdMillis = '';
+                  $scope.config.storeThresholdMillis = -1;
                 }
-                $scope.config.storeThresholdMillis = $scope.data.fineStoreThresholdMillis;
-              } else {
-                $scope.data.fineStoreThresholdMillis = '';
-                $scope.config.storeThresholdMillis = -1;
-              }
-            }, true);
-      })
-      .error(function (error) {
-        // TODO
-      });
-});
+              }, true);
+        })
+        .error(function (error) {
+          // TODO
+        });
+  }
+]);

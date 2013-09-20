@@ -16,108 +16,120 @@
 
 /* global informant, Informant, $ */
 
-informant.factory('ixButtonGroupControllerFactory', function ($q) {
-  return {
-    create: function (element) {
-      var $element = $(element);
-      var $buttonMessage = $element.find('.button-message');
-      var $buttonSpinner = $element.find('.button-spinner');
-      var alreadyExecuting = false;
-      return {
-        onClick: function (fn, validate) {
-          // handle crazy user clicking on the button
-          if (alreadyExecuting) {
-            return;
-          }
-          // validate form
-          if (validate) {
-            var form = element.parent().controller('form');
-            if (!form.$valid) {
-              $buttonMessage.text('Please fix form errors');
+informant.factory('ixButtonGroupControllerFactory', [
+  '$q',
+  function ($q) {
+    return {
+      create: function (element) {
+        var $element = $(element);
+        var $buttonMessage = $element.find('.button-message');
+        var $buttonSpinner = $element.find('.button-spinner');
+        var alreadyExecuting = false;
+        return {
+          onClick: function (fn, validate) {
+            // handle crazy user clicking on the button
+            if (alreadyExecuting) {
+              return;
+            }
+            // validate form
+            if (validate) {
+              var form = element.parent().controller('form');
+              if (!form.$valid) {
+                $buttonMessage.text('Please fix form errors');
+                $buttonMessage.removeClass('button-message-success');
+                $buttonMessage.addClass('button-message-error');
+                $buttonMessage.removeClass('hide');
+                return;
+              }
+            }
+            // in case button is clicked again before message fades out
+            $buttonMessage.addClass('hide');
+            Informant.showSpinner($buttonSpinner);
+
+            var deferred = $q.defer();
+            deferred.promise.then(function (success) {
+              Informant.hideSpinner($buttonSpinner);
+              $buttonMessage.text(success);
+              $buttonMessage.removeClass('button-message-error');
+              $buttonMessage.addClass('button-message-success');
+              Informant.showAndFadeSuccessMessage($buttonMessage);
+              alreadyExecuting = false;
+            }, function (error) {
+              Informant.hideSpinner($buttonSpinner);
+              $buttonMessage.text(error);
               $buttonMessage.removeClass('button-message-success');
               $buttonMessage.addClass('button-message-error');
               $buttonMessage.removeClass('hide');
-              return;
-            }
+              alreadyExecuting = false;
+            });
+
+            alreadyExecuting = true;
+            fn({deferred: deferred});
           }
-          // in case button is clicked again before message fades out
-          $buttonMessage.addClass('hide');
-          Informant.showSpinner($buttonSpinner);
+        };
+      }
+    };
+  }
+]);
 
-          var deferred = $q.defer();
-          deferred.promise.then(function (success) {
-            Informant.hideSpinner($buttonSpinner);
-            $buttonMessage.text(success);
-            $buttonMessage.removeClass('button-message-error');
-            $buttonMessage.addClass('button-message-success');
-            Informant.showAndFadeSuccessMessage($buttonMessage);
-            alreadyExecuting = false;
-          }, function (error) {
-            Informant.hideSpinner($buttonSpinner);
-            $buttonMessage.text(error);
-            $buttonMessage.removeClass('button-message-success');
-            $buttonMessage.addClass('button-message-error');
-            $buttonMessage.removeClass('hide');
-            alreadyExecuting = false;
-          });
-
-          alreadyExecuting = true;
-          fn({deferred: deferred});
+informant.directive('ixButtonGroup', [
+  'ixButtonGroupControllerFactory',
+  function (ixButtonGroupControllerFactory) {
+    return {
+      scope: {},
+      transclude: true,
+      template: '<span ng-transclude></span>' +
+          '<span class="button-message hide"></span>' +
+          '<span class="button-spinner inline-block hide"></span>',
+      controller: [
+        '$element',
+        function ($element) {
+          return ixButtonGroupControllerFactory.create($element);
         }
-      };
-    }
-  };
-});
+      ]
+    };
+  }
+]);
 
-informant.directive('ixButtonGroup', function (ixButtonGroupControllerFactory) {
-  return {
-    scope: {},
-    transclude: true,
-    template: '<span ng-transclude></span>' +
-        '<span class="button-message hide"></span>' +
-        '<span class="button-spinner inline-block hide"></span>',
-    controller: function ($element) {
-      return ixButtonGroupControllerFactory.create($element);
-    }
-  };
-});
-
-informant.directive('ixButton', function (ixButtonGroupControllerFactory) {
-  return {
-    scope: {
-      ixLabel: '@',
-      ixClick: '&',
-      ixShow: '&',
-      ixDontValidateForm: '@',
-      ixBtnClass: '@',
-      ixDisabled: '&'
-    },
-    template: function (tElement, tAttrs) {
-      var ixButtonGroup = tElement.parent().controller('ixButtonGroup');
-      var ngShow = tAttrs.hasOwnProperty('ixShow') ? ' ng-show="ixShow()"' : '';
-      if (ixButtonGroup) {
-        return '<button class="btn" ng-class="ixBtnClass || \'btn-primary\'" ng-click="onClick()"' +
-            ngShow + ' ng-disabled="ixDisabled()">{{ixLabel}}</button>';
-      } else {
-        return '<button class="btn" ng-class="ixBtnClass || \'btn-primary\'" ng-click="onClick()"' +
-            ngShow + ' ng-disabled="ixDisabled()">{{ixLabel}}</button>' +
-            '<span class="button-message hide"></span>' +
-            '<span class="button-spinner inline-block hide"></span>';
+informant.directive('ixButton', [
+  'ixButtonGroupControllerFactory',
+  function (ixButtonGroupControllerFactory) {
+    return {
+      scope: {
+        ixLabel: '@',
+        ixClick: '&',
+        ixShow: '&',
+        ixDontValidateForm: '@',
+        ixBtnClass: '@',
+        ixDisabled: '&'
+      },
+      template: function (tElement, tAttrs) {
+        var ixButtonGroup = tElement.parent().controller('ixButtonGroup');
+        var ngShow = tAttrs.hasOwnProperty('ixShow') ? ' ng-show="ixShow()"' : '';
+        if (ixButtonGroup) {
+          return '<button class="btn" ng-class="ixBtnClass || \'btn-primary\'" ng-click="onClick()"' +
+              ngShow + ' ng-disabled="ixDisabled()">{{ixLabel}}</button>';
+        } else {
+          return '<button class="btn" ng-class="ixBtnClass || \'btn-primary\'" ng-click="onClick()"' +
+              ngShow + ' ng-disabled="ixDisabled()">{{ixLabel}}</button>' +
+              '<span class="button-message hide"></span>' +
+              '<span class="button-spinner inline-block hide"></span>';
+        }
+      },
+      require: '^?ixButtonGroup',
+      link: function (scope, iElement, iAttrs, ixButtonGroup) {
+        var form = iElement.parent().controller('form');
+        if (!ixButtonGroup) {
+          scope.noGroup = true;
+          ixButtonGroup = ixButtonGroupControllerFactory.create(iElement);
+        }
+        scope.onClick = function () {
+          ixButtonGroup.onClick(scope.ixClick, form && !scope.ixDontValidateForm);
+        };
       }
-    },
-    require: '^?ixButtonGroup',
-    link: function (scope, iElement, iAttrs, ixButtonGroup) {
-      var form = iElement.parent().controller('form');
-      if (!ixButtonGroup) {
-        scope.noGroup = true;
-        ixButtonGroup = ixButtonGroupControllerFactory.create(iElement);
-      }
-      scope.onClick = function () {
-        ixButtonGroup.onClick(scope.ixClick, form && !scope.ixDontValidateForm);
-      };
-    }
-  };
-});
+    };
+  }
+]);
 
 informant.directive('ixFormGroup', function () {
   return {
@@ -230,27 +242,30 @@ informant.directive('ixInputGroupDropdown', function () {
   };
 });
 
-informant.directive('ixNavbarItem', function ($location) {
-  return {
-    scope: {
-      ixDisplay: '@',
-      ixItemName: '@',
-      ixUrl: '@'
-    },
-    // replace is needed in order to not mess up bootstrap css hierarchical selectors
-    replace: true,
-    templateUrl: 'template/ix-navbar-item.html',
-    link: function (scope, iElement, iAttrs) {
-      scope.gotoItem = function (url) {
-        $location.path(url).hash('');
-        // need to collapse the navbar in mobile view
-        var $navbarCollapse = $('.navbar-collapse');
-        $navbarCollapse.removeClass('in');
-        $navbarCollapse.addClass('collapse');
-      };
-    }
-  };
-});
+informant.directive('ixNavbarItem', [
+  '$location',
+  function ($location) {
+    return {
+      scope: {
+        ixDisplay: '@',
+        ixItemName: '@',
+        ixUrl: '@'
+      },
+      // replace is needed in order to not mess up bootstrap css hierarchical selectors
+      replace: true,
+      templateUrl: 'template/ix-navbar-item.html',
+      link: function (scope, iElement, iAttrs) {
+        scope.gotoItem = function (url) {
+          $location.path(url).hash('');
+          // need to collapse the navbar in mobile view
+          var $navbarCollapse = $('.navbar-collapse');
+          $navbarCollapse.removeClass('in');
+          $navbarCollapse.addClass('collapse');
+        };
+      }
+    };
+  }
+]);
 
 informant.directive('ixSetFocus', function () {
   return function (scope, iElement, iAttrs) {

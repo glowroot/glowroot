@@ -16,72 +16,78 @@
 
 /* global informant, Informant, angular */
 
-informant.controller('ConfigPluginsCtrl', function ($scope, $http) {
-
-  // TODO fix initial load spinner
-  Informant.showSpinner('#initialLoadSpinner');
-  $http.get('backend/config')
-      .success(function (data) {
-        Informant.hideSpinner('#initialLoadSpinner');
-
-        $scope.config = data;
-        $scope.plugins = [];
-        var i, j;
-        for (i = 0; i < data.pluginDescriptors.length; i++) {
-          var plugin = {};
-          plugin.descriptor = data.pluginDescriptors[i];
-          plugin.id = plugin.descriptor.groupId + ':' + plugin.descriptor.artifactId;
-          plugin.config = data.pluginConfigs[plugin.id];
-          for (j = 0; j < plugin.descriptor.properties.length; j++) {
-            var property = plugin.descriptor.properties[j];
-            property.value = plugin.config.properties[property.name];
-          }
-          $scope.plugins.push(plugin);
-        }
-      })
-      .error(function (error) {
-        // TODO
-      });
-});
-
-informant.controller('ConfigPluginCtrl', function ($scope, $http) {
-
-  // need to track entire plugin object since properties are under plugin.descriptor.properties
-  // and enabled is under plugin.config.enabled
-  var originalPlugin = angular.copy($scope.plugin);
-
-  $scope.hasChanges = function () {
-    return !angular.equals($scope.plugin, originalPlugin);
-  };
-
-  $scope.save = function (deferred) {
-    var properties = {};
-    var i;
-    for (i = 0; i < $scope.plugin.descriptor.properties.length; i++) {
-      var property = $scope.plugin.descriptor.properties[i];
-      if (property.type === 'double') {
-        properties[property.name] = parseFloat(property.value);
-      } else {
-        properties[property.name] = property.value;
-      }
-    }
-    var config = {
-      enabled: $scope.plugin.config.enabled,
-      properties: properties,
-      version: $scope.plugin.config.version
-    };
-    $http.post('backend/config/plugin/' + $scope.plugin.id, config)
+informant.controller('ConfigPluginsCtrl', [
+  '$scope',
+  '$http',
+  function ($scope, $http) {
+    // TODO fix initial load spinner
+    Informant.showSpinner('#initialLoadSpinner');
+    $http.get('backend/config')
         .success(function (data) {
-          $scope.plugin.config.version = data;
-          originalPlugin = angular.copy($scope.plugin);
-          deferred.resolve('Saved');
-        })
-        .error(function (data, status) {
-          if (status === 0) {
-            deferred.reject('Unable to connect to server');
-          } else {
-            deferred.reject('An error occurred');
+          Informant.hideSpinner('#initialLoadSpinner');
+
+          $scope.config = data;
+          $scope.plugins = [];
+          var i, j;
+          for (i = 0; i < data.pluginDescriptors.length; i++) {
+            var plugin = {};
+            plugin.descriptor = data.pluginDescriptors[i];
+            plugin.id = plugin.descriptor.groupId + ':' + plugin.descriptor.artifactId;
+            plugin.config = data.pluginConfigs[plugin.id];
+            for (j = 0; j < plugin.descriptor.properties.length; j++) {
+              var property = plugin.descriptor.properties[j];
+              property.value = plugin.config.properties[property.name];
+            }
+            $scope.plugins.push(plugin);
           }
+        })
+        .error(function (error) {
+          // TODO
         });
-  };
-});
+  }
+]);
+
+informant.controller('ConfigPluginCtrl', [
+  '$scope',
+  '$http',
+  function ($scope, $http) {
+    // need to track entire plugin object since properties are under plugin.descriptor.properties
+    // and enabled is under plugin.config.enabled
+    var originalPlugin = angular.copy($scope.plugin);
+
+    $scope.hasChanges = function () {
+      return !angular.equals($scope.plugin, originalPlugin);
+    };
+
+    $scope.save = function (deferred) {
+      var properties = {};
+      var i;
+      for (i = 0; i < $scope.plugin.descriptor.properties.length; i++) {
+        var property = $scope.plugin.descriptor.properties[i];
+        if (property.type === 'double') {
+          properties[property.name] = parseFloat(property.value);
+        } else {
+          properties[property.name] = property.value;
+        }
+      }
+      var config = {
+        enabled: $scope.plugin.config.enabled,
+        properties: properties,
+        version: $scope.plugin.config.version
+      };
+      $http.post('backend/config/plugin/' + $scope.plugin.id, config)
+          .success(function (data) {
+            $scope.plugin.config.version = data;
+            originalPlugin = angular.copy($scope.plugin);
+            deferred.resolve('Saved');
+          })
+          .error(function (data, status) {
+            if (status === 0) {
+              deferred.reject('Unable to connect to server');
+            } else {
+              deferred.reject('An error occurred');
+            }
+          });
+    };
+  }
+]);

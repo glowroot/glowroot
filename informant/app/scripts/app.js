@@ -25,117 +25,134 @@ var informant = angular.module('informant', [
 
 var Informant;
 
-informant.factory('httpInterceptor', function ($q, $timeout) {
-  return {
-    'responseError': function (rejection) {
-      if (rejection.status === 0) {
-        // small timeout to prevent error message from flashing if this is a result of user hitting F5
-        $timeout(function () {
+informant.factory('httpInterceptor', [
+  '$q',
+  '$timeout',
+  function ($q, $timeout) {
+    return {
+      'responseError': function (rejection) {
+        if (rejection.status === 0) {
+          // small timeout to prevent error message from flashing if this is a result of user hitting F5
+          $timeout(function () {
+            $q.reject(rejection);
+          }, 100);
+        } else {
           $q.reject(rejection);
-        }, 100);
-      } else {
-        $q.reject(rejection);
+        }
       }
-    }
-  };
-});
+    };
+  }
+]);
 
-informant.config(function ($stateProvider, $urlRouterProvider, $httpProvider) {
-  $urlRouterProvider.otherwise('/');
-  $stateProvider.state('home', {
-    url: '/',
-    templateUrl: 'views/home.html',
-    controller: 'HomeCtrl'
-  });
-  $stateProvider.state('search', {
-    url: '/search.html',
-    templateUrl: 'views/search.html',
-    controller: 'SearchCtrl'
-  });
-  $stateProvider.state('config', {
-    url: '/config',
-    templateUrl: 'views/config.html',
-    controller: 'ConfigCtrl'
-  });
-  $stateProvider.state('config.general', {
-    url: '/general.html',
-    templateUrl: 'views/config-general.html',
-    controller: 'ConfigGeneralCtrl'
-  });
-  $stateProvider.state('config.coarseProfiling', {
-    url: '/coarse-grained-profiling.html',
-    templateUrl: 'views/config-coarse-profiling.html',
-    controller: 'ConfigCoarseProfilingCtrl'
-  });
-  $stateProvider.state('config.fineProfiling', {
-    url: '/fine-grained-profiling.html',
-    templateUrl: 'views/config-fine-profiling.html',
-    controller: 'ConfigFineProfilingCtrl'
-  });
-  $stateProvider.state('config.userOverrides', {
-    url: '/user-specific-overrides.html',
-    templateUrl: 'views/config-user-overrides.html',
-    controller: 'ConfigUserOverridesCtrl'
-  });
-  $stateProvider.state('config.storage', {
-    url: '/storage.html',
-    templateUrl: 'views/config-storage.html',
-    controller: 'ConfigStorageCtrl'
-  });
-  $stateProvider.state('config.plugins', {
-    url: '/plugins.html',
-    templateUrl: 'views/config-plugins.html',
-    controller: 'ConfigPluginsCtrl'
-  });
-  $stateProvider.state('config.adhocPointcuts', {
-    url: '/adhoc-pointcuts.html',
-    templateUrl: 'views/config-adhoc-pointcuts.html',
-    controller: 'ConfigAdhocPointcutsCtrl'
-  });
-  $stateProvider.state('threadDump', {
-    url: '/thread-dump.html',
-    templateUrl: 'views/thread-dump.html',
-    controller: 'ThreadDumpCtrl'
-  });
+informant.config([
+  '$stateProvider',
+  '$urlRouterProvider',
+  '$httpProvider',
+  function ($stateProvider, $urlRouterProvider, $httpProvider) {
+    $urlRouterProvider.otherwise('/');
+    $stateProvider.state('home', {
+      url: '/',
+      templateUrl: 'views/home.html',
+      controller: 'HomeCtrl'
+    });
+    $stateProvider.state('search', {
+      url: '/search.html',
+      templateUrl: 'views/search.html',
+      controller: 'SearchCtrl'
+    });
+    $stateProvider.state('config', {
+      url: '/config',
+      templateUrl: 'views/config.html',
+      controller: 'ConfigCtrl'
+    });
+    $stateProvider.state('config.general', {
+      url: '/general.html',
+      templateUrl: 'views/config-general.html',
+      controller: 'ConfigGeneralCtrl'
+    });
+    $stateProvider.state('config.coarseProfiling', {
+      url: '/coarse-grained-profiling.html',
+      templateUrl: 'views/config-coarse-profiling.html',
+      controller: 'ConfigCoarseProfilingCtrl'
+    });
+    $stateProvider.state('config.fineProfiling', {
+      url: '/fine-grained-profiling.html',
+      templateUrl: 'views/config-fine-profiling.html',
+      controller: 'ConfigFineProfilingCtrl'
+    });
+    $stateProvider.state('config.userOverrides', {
+      url: '/user-specific-overrides.html',
+      templateUrl: 'views/config-user-overrides.html',
+      controller: 'ConfigUserOverridesCtrl'
+    });
+    $stateProvider.state('config.storage', {
+      url: '/storage.html',
+      templateUrl: 'views/config-storage.html',
+      controller: 'ConfigStorageCtrl'
+    });
+    $stateProvider.state('config.plugins', {
+      url: '/plugins.html',
+      templateUrl: 'views/config-plugins.html',
+      controller: 'ConfigPluginsCtrl'
+    });
+    $stateProvider.state('config.adhocPointcuts', {
+      url: '/adhoc-pointcuts.html',
+      templateUrl: 'views/config-adhoc-pointcuts.html',
+      controller: 'ConfigAdhocPointcutsCtrl'
+    });
+    $stateProvider.state('threadDump', {
+      url: '/thread-dump.html',
+      templateUrl: 'views/thread-dump.html',
+      controller: 'ThreadDumpCtrl'
+    });
 
-  $httpProvider.interceptors.push('httpInterceptor');
-});
+    $httpProvider.interceptors.push('httpInterceptor');
+  }
+]);
 
-informant.run(function ($rootScope, $timeout) {
-  // qtip adds some code to the beginning of jquery's cleanData function which causes the trace
-  // detail modal to close slowly when it has 5000 spans
-  // this extra cleanup code is not needed anyways since cleanup is performed explicitly
-  /* jshint -W106 */ // W106 is camelcase
-  $.cleanData = $.cleanData_replacedByqTip;
-  /* jshint +W106 */
+informant.run([
+  '$rootScope',
+  '$timeout',
+  function ($rootScope, $timeout) {
+    // qtip adds some code to the beginning of jquery's cleanData function which causes the trace
+    // detail modal to close slowly when it has 5000 spans
+    // this extra cleanup code is not needed anyways since cleanup is performed explicitly
+    /* jshint -W106 */ // W106 is camelcase
+    $.cleanData = $.cleanData_replacedByqTip;
+    /* jshint +W106 */
 
-  // with responsive design, container width doesn't change on every window resize event
-  var $container = $('#container');
-  var $window = $(window);
-  $rootScope.containerWidth = $container.width();
-  $rootScope.windowHeight = $window.height();
-  $(window).resize(function () {
-    var containerWidth = $container.width();
-    var windowHeight = $window.height();
-    if (containerWidth !== $rootScope.containerWidth || windowHeight !== $rootScope.windowHeight) {
-      // one of the relevant dimensions has changed
-      $rootScope.$apply(function() {
-        $rootScope.containerWidth = containerWidth;
-        $rootScope.windowHeight = windowHeight;
-      });
-    }
-  });
-});
+    // with responsive design, container width doesn't change on every window resize event
+    var $container = $('#container');
+    var $window = $(window);
+    $rootScope.containerWidth = $container.width();
+    $rootScope.windowHeight = $window.height();
+    $(window).resize(function () {
+      var containerWidth = $container.width();
+      var windowHeight = $window.height();
+      if (containerWidth !== $rootScope.containerWidth || windowHeight !== $rootScope.windowHeight) {
+        // one of the relevant dimensions has changed
+        $rootScope.$apply(function () {
+          $rootScope.containerWidth = containerWidth;
+          $rootScope.windowHeight = windowHeight;
+        });
+      }
+    });
+  }
+]);
 
-informant.controller('FooterCtrl', function ($scope, $http) {
-  $http.get('backend/version')
-      .success(function (data) {
-        $scope.version = data;
-      })
-      .error(function (error) {
-        // TODO
-      });
-});
+informant.controller('FooterCtrl', [
+  '$scope',
+  '$http',
+  function ($scope, $http) {
+    $http.get('backend/version')
+        .success(function (data) {
+          $scope.version = data;
+        })
+        .error(function (error) {
+          // TODO
+        });
+  }
+]);
 
 Informant = (function () {
 

@@ -16,61 +16,64 @@
 
 /* global informant, Informant, angular */
 
-informant.controller('ConfigStorageCtrl', function ($scope, $http) {
+informant.controller('ConfigStorageCtrl', [
+  '$scope',
+  '$http',
+  function ($scope, $http) {
+    var originalConfig;
 
-  var originalConfig;
+    $scope.hasChanges = function () {
+      return originalConfig && !angular.equals($scope.config, originalConfig);
+    };
 
-  $scope.hasChanges = function () {
-    return originalConfig && !angular.equals($scope.config, originalConfig);
-  };
+    $scope.save = function (deferred) {
+      $http.post('backend/config/storage', $scope.config)
+          .success(function (data) {
+            $scope.config.version = data;
+            originalConfig = angular.copy($scope.config);
+            deferred.resolve('Saved');
+          })
+          .error(function (data, status) {
+            if (status === 0) {
+              deferred.reject('Unable to connect to server');
+            } else {
+              deferred.reject('An error occurred');
+            }
+          });
+    };
 
-  $scope.save = function (deferred) {
-    $http.post('backend/config/storage', $scope.config)
+    $scope.deleteAll = function (deferred) {
+      $http.post('backend/admin/data/delete-all')
+          .success(function () {
+            deferred.resolve('Deleted');
+          })
+          .error(function (data, status) {
+            if (status === 0) {
+              deferred.reject('Unable to connect to server');
+            } else {
+              deferred.reject('An error occurred');
+            }
+          });
+    };
+
+    // TODO fix initial load spinner
+    Informant.showSpinner('#initialLoadSpinner');
+    $http.get('backend/config')
         .success(function (data) {
-          $scope.config.version = data;
+          Informant.hideSpinner('#initialLoadSpinner');
+          $scope.config = data.storageConfig;
           originalConfig = angular.copy($scope.config);
-          deferred.resolve('Saved');
+
+          $scope.dataDir = data.dataDir;
+          // set up calculated properties
+          $scope.data = {};
+          $scope.data.snapshotExpirationDays = $scope.config.snapshotExpirationHours / 24;
+          $scope.$watch('data.snapshotExpirationDays', function (newValue) {
+            $scope.config.snapshotExpirationHours = newValue * 24;
+          });
         })
-        .error(function (data, status) {
-          if (status === 0) {
-            deferred.reject('Unable to connect to server');
-          } else {
-            deferred.reject('An error occurred');
-          }
+        .error(function (error) {
+          // TODO
         });
-  };
-
-  $scope.deleteAll = function (deferred) {
-    $http.post('backend/admin/data/delete-all')
-        .success(function () {
-          deferred.resolve('Deleted');
-        })
-        .error(function (data, status) {
-          if (status === 0) {
-            deferred.reject('Unable to connect to server');
-          } else {
-            deferred.reject('An error occurred');
-          }
-        });
-  };
-
-  // TODO fix initial load spinner
-  Informant.showSpinner('#initialLoadSpinner');
-  $http.get('backend/config')
-      .success(function (data) {
-        Informant.hideSpinner('#initialLoadSpinner');
-        $scope.config = data.storageConfig;
-        originalConfig = angular.copy($scope.config);
-
-        $scope.dataDir = data.dataDir;
-        // set up calculated properties
-        $scope.data = {};
-        $scope.data.snapshotExpirationDays = $scope.config.snapshotExpirationHours / 24;
-        $scope.$watch('data.snapshotExpirationDays', function (newValue) {
-          $scope.config.snapshotExpirationHours = newValue * 24;
-        });
-      })
-      .error(function (error) {
-        // TODO
-      });
-});
+  }
+]);

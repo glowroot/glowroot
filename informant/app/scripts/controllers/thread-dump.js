@@ -16,54 +16,57 @@
 
 /* global informant, Informant, $, Handlebars, JST */
 
-informant.controller('ThreadDumpCtrl', function ($scope, $http) {
+informant.controller('ThreadDumpCtrl', [
+  '$scope',
+  '$http',
+  function ($scope, $http) {
+    // \u00b7 is &middot;
+    document.title = 'Thread dump \u00b7 Informant';
+    $scope.$parent.title = 'Thread dump';
+    $scope.$parent.activeNavbarItem = 'thread-dump';
 
-  // \u00b7 is &middot;
-  document.title = 'Thread dump \u00b7 Informant';
-  $scope.$parent.title = 'Thread dump';
-  $scope.$parent.activeNavbarItem = 'thread-dump';
+    Handlebars.registerHelper('ifBlocked', function (state, options) {
+      if (state === 'BLOCKED') {
+        return options.fn(this);
+      } else {
+        return options.inverse(this);
+      }
+    });
 
-  Handlebars.registerHelper('ifBlocked', function (state, options) {
-    if (state === 'BLOCKED') {
-      return options.fn(this);
-    } else {
-      return options.inverse(this);
-    }
-  });
+    Handlebars.registerHelper('ifWaiting', function (state, options) {
+      if (state === 'WAITING' || state === 'TIMED_WAITING') {
+        return options.fn(this);
+      } else {
+        return options.inverse(this);
+      }
+    });
 
-  Handlebars.registerHelper('ifWaiting', function (state, options) {
-    if (state === 'WAITING' || state === 'TIMED_WAITING') {
-      return options.fn(this);
-    } else {
-      return options.inverse(this);
-    }
-  });
-
-  $scope.refresh = function (scroll, deferred) {
-    $http.get('backend/threads/dump')
-        .success(function (data) {
-          // $.trim() is needed because this template is sensitive to surrounding spaces
-          var html = $.trim(JST['thread-dump'](data));
-          $('#threadDump').html(html);
-          if (scroll) {
-            $(window).scrollTop(document.body.scrollHeight);
-          }
-          if (deferred) {
-            deferred.resolve('Refreshed');
-          }
-        })
-        .error(function (data, status) {
-          // TODO handle for initial load (!deferred)
-          if (deferred) {
-            if (status === 0) {
-              deferred.reject('Unable to connect to server');
-            } else {
-              deferred.reject('An error occurred');
+    $scope.refresh = function (scroll, deferred) {
+      $http.get('backend/threads/dump')
+          .success(function (data) {
+            // $.trim() is needed because this template is sensitive to surrounding spaces
+            var html = $.trim(JST['thread-dump'](data));
+            $('#threadDump').html(html);
+            if (scroll) {
+              $(window).scrollTop(document.body.scrollHeight);
             }
-          }
-        });
-  };
+            if (deferred) {
+              deferred.resolve('Refreshed');
+            }
+          })
+          .error(function (data, status) {
+            // TODO handle for initial load (!deferred)
+            if (deferred) {
+              if (status === 0) {
+                deferred.reject('Unable to connect to server');
+              } else {
+                deferred.reject('An error occurred');
+              }
+            }
+          });
+    };
 
-  Informant.configureAjaxError();
-  $scope.refresh(false);
-});
+    Informant.configureAjaxError();
+    $scope.refresh(false);
+  }
+]);
