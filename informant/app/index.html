@@ -88,9 +88,9 @@
           </div>
           <div ix-navbar-item
                ix-display="Thread dump"
-               ix-item-name="threaddump"
-               ix-url="threaddump.html"
-               ng-show="activenav === 'threaddump'">
+               ix-item-name="thread-dump"
+               ix-url="thread-dump.html"
+               ng-show="$parent.activeNavbarItem === 'thread-dump'">
           </div>
         </ul>
       </nav>
@@ -173,7 +173,7 @@
   <script src="scripts/controllers/config-storage.js"></script>
   <script src="scripts/controllers/config-plugins.js"></script>
   <script src="scripts/controllers/config-adhoc-pointcuts.js"></script>
-  <script src="scripts/controllers/threaddump.js"></script>
+  <script src="scripts/controllers/thread-dump.js"></script>
   <!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->
   <script src="generated/handlebars-templates.js"></script>
   <!-- angular-templates.js is generated at build time by grunt-angular-templates -->

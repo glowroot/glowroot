@@ -92,10 +92,10 @@ informant.config(function ($stateProvider, $urlRouterProvider, $httpProvider) {
     templateUrl: 'views/config-adhoc-pointcuts.html',
     controller: 'ConfigAdhocPointcutsCtrl'
   });
-  $stateProvider.state('threaddump', {
-    url: '/threaddump.html',
-    templateUrl: 'views/threaddump.html',
-    controller: 'ThreaddumpCtrl'
+  $stateProvider.state('threadDump', {
+    url: '/thread-dump.html',
+    templateUrl: 'views/thread-dump.html',
+    controller: 'ThreadDumpCtrl'
   });
 
   $httpProvider.interceptors.push('httpInterceptor');

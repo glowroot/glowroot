@@ -190,7 +190,7 @@ module.exports = function (grunt) {
           processContent: function (content) {
             // remove leading and trailing spaces
             content = content.replace(/^[ \t\r\n]+/mg, '').replace(/[ \t]+$/mg, '');
-            // keep newlines since they can be meaningful, e.g. in threaddump.hbs
+            // keep newlines since they can be meaningful, e.g. in thread-dump.hbs
             return content;
           }
         },

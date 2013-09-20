@@ -165,7 +165,7 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/search.html$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/config.html$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/pointcuts.html$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/threaddump.html$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/thread-dump.html$"), resourceBase + "/index.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");
         uriMappings.put(Pattern.compile("^/styles/(.*)$"), resourceBase + "/styles/$1");
