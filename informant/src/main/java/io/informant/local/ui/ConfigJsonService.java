@@ -85,37 +85,101 @@ class ConfigJsonService {
     }
 
     @JsonServiceMethod
-    String getConfig() throws IOException, SQLException {
-        logger.debug("getConfig()");
+    String getGeneralConfig() throws IOException, SQLException {
+        logger.debug("getGeneralConfig()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        writer.writeValue(jg, configService.getGeneralConfig());
+        jg.close();
+        return sb.toString();
+    }
+
+    @JsonServiceMethod
+    String getCoarseProfilingConfig() throws IOException, SQLException {
+        logger.debug("getCoarseProfilingConfig()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        writer.writeValue(jg, configService.getCoarseProfilingConfig());
+        jg.close();
+        return sb.toString();
+    }
+
+    @JsonServiceMethod
+    String getFineProfilingSection() throws IOException, SQLException {
+        logger.debug("getFineProfilingSection()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
         jg.writeStartObject();
-        jg.writeFieldName("generalConfig");
-        writer.writeValue(jg, configService.getGeneralConfig());
-        jg.writeFieldName("coarseProfilingConfig");
-        writer.writeValue(jg, configService.getCoarseProfilingConfig());
-        jg.writeFieldName("fineProfilingConfig");
+        jg.writeFieldName("config");
         writer.writeValue(jg, configService.getFineProfilingConfig());
-        jg.writeFieldName("userOverridesConfig");
+        jg.writeNumberField("generalStoreThresholdMillis",
+                configService.getGeneralConfig().getStoreThresholdMillis());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    @JsonServiceMethod
+    String getUserOverridesConfig() throws IOException, SQLException {
+        logger.debug("getUserOverridesConfig()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
         writer.writeValue(jg, configService.getUserOverridesConfig());
-        jg.writeFieldName("storageConfig");
+        jg.close();
+        return sb.toString();
+    }
+
+    @JsonServiceMethod
+    String getStorageSection() throws IOException, SQLException {
+        logger.debug("getStorageSection()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        jg.writeStartObject();
+        jg.writeFieldName("config");
         writer.writeValue(jg, configService.getStorageConfig());
-        jg.writeFieldName("pluginDescriptors");
-        writer.writeValue(jg, pluginDescriptorCache.getPluginDescriptors());
-        jg.writeFieldName("pluginConfigs");
-        writer.writeValue(jg, getPluginConfigMap());
         jg.writeStringField("dataDir", dataDir.getCanonicalPath());
-        jg.writeFieldName("adhocPointcutConfigs");
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    @JsonServiceMethod
+    String getPluginSection() throws IOException, SQLException {
+        logger.debug("getPluginSection()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        jg.writeStartObject();
+        jg.writeFieldName("descriptors");
+        writer.writeValue(jg, pluginDescriptorCache.getPluginDescriptors());
+        jg.writeFieldName("configs");
+        writer.writeValue(jg, getPluginConfigMap());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    @JsonServiceMethod
+    String getAdhocPointcutSection() throws IOException, SQLException {
+        logger.debug("getAdhocPointcutSection()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        jg.writeStartObject();
+        jg.writeFieldName("configs");
         writer.writeValue(jg, configService.getAdhocPointcutConfigs());
-        jg.writeBooleanField("adhocPointcutConfigsOutOfSync",
-                adhocAdviceCache.isAdhocPointcutConfigsOutOfSync(configService
-                        .getAdhocPointcutConfigs()));
+        jg.writeBooleanField("jvmOutOfSync", adhocAdviceCache
+                .isAdhocPointcutConfigsOutOfSync(configService.getAdhocPointcutConfigs()));
         if (instrumentation == null) {
             // debugging with IsolatedWeavingClassLoader instead of javaagent
-            jg.writeBooleanField("retransformClassesSupported", false);
+            jg.writeBooleanField("jvmRetransformClassesSupported", false);
         } else {
-            jg.writeBooleanField("retransformClassesSupported",
+            jg.writeBooleanField("jvmRetransformClassesSupported",
                     RetransformClasses.isRetransformClassesSupported(instrumentation));
         }
         jg.writeEndObject();

@@ -55,7 +55,8 @@ class JavaagentConfigService implements ConfigService {
     }
 
     public GeneralConfig getGeneralConfig() throws Exception {
-        return getConfig().getGeneralConfig();
+        return ObjectMappers.readRequiredValue(mapper, httpClient.get("/backend/config/general"),
+                GeneralConfig.class);
     }
 
     // returns new version
@@ -64,7 +65,8 @@ class JavaagentConfigService implements ConfigService {
     }
 
     public CoarseProfilingConfig getCoarseProfilingConfig() throws Exception {
-        return getConfig().getCoarseProfilingConfig();
+        return ObjectMappers.readRequiredValue(mapper,
+                httpClient.get("/backend/config/coarse-profiling"), CoarseProfilingConfig.class);
     }
 
     // returns new version
@@ -74,7 +76,9 @@ class JavaagentConfigService implements ConfigService {
     }
 
     public FineProfilingConfig getFineProfilingConfig() throws Exception {
-        return getConfig().getFineProfilingConfig();
+        return ObjectMappers.readRequiredValue(mapper,
+                httpClient.get("/backend/config/fine-profiling-section"),
+                FineProfilingConfigSection.class).getConfig();
     }
 
     // returns new version
@@ -83,7 +87,8 @@ class JavaagentConfigService implements ConfigService {
     }
 
     public UserOverridesConfig getUserOverridesConfig() throws Exception {
-        return getConfig().getUserOverridesConfig();
+        return ObjectMappers.readRequiredValue(mapper,
+                httpClient.get("/backend/config/user-overrides"), UserOverridesConfig.class);
     }
 
     // returns new version
@@ -92,7 +97,9 @@ class JavaagentConfigService implements ConfigService {
     }
 
     public StorageConfig getStorageConfig() throws Exception {
-        return getConfig().getStorageConfig();
+        return ObjectMappers.readRequiredValue(mapper,
+                httpClient.get("/backend/config/storage-section"),
+                StorageConfigSection.class).getConfig();
     }
 
     // returns new version
@@ -102,7 +109,9 @@ class JavaagentConfigService implements ConfigService {
 
     @Nullable
     public PluginConfig getPluginConfig(String pluginId) throws Exception {
-        return getConfig().getPluginConfigs().get(pluginId);
+        return ObjectMappers.readRequiredValue(mapper,
+                httpClient.get("/backend/config/plugin-section"), PluginConfigSection.class)
+                .getConfigs().get(pluginId);
     }
 
     // returns new version
@@ -112,7 +121,9 @@ class JavaagentConfigService implements ConfigService {
     }
 
     public List<PointcutConfig> getAdhocPointcutConfigs() throws Exception {
-        return getConfig().getAdhocPointcutConfigs();
+        return ObjectMappers.readRequiredValue(mapper,
+                httpClient.get("/backend/config/adhoc-pointcut-section"),
+                AdhocPointcutConfigSection.class).getConfigs();
     }
 
     // returns new version
@@ -142,10 +153,5 @@ class JavaagentConfigService implements ConfigService {
 
     void resetAllConfig() throws Exception {
         httpClient.post("/backend/admin/config/reset-all", "");
-    }
-
-    private Config getConfig() throws Exception {
-        return ObjectMappers.readRequiredValue(mapper, httpClient.get("/backend/config"),
-                Config.class);
     }
 }

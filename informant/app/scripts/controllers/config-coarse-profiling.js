@@ -44,10 +44,10 @@ informant.controller('ConfigCoarseProfilingCtrl', [
 
     // TODO fix initial load spinner
     Informant.showSpinner('#initialLoadSpinner');
-    $http.get('backend/config')
+    $http.get('backend/config/coarse-profiling')
         .success(function (data) {
           Informant.hideSpinner('#initialLoadSpinner');
-          $scope.config = data.coarseProfilingConfig;
+          $scope.config = data;
           originalConfig = angular.copy($scope.config);
         })
         .error(function (error) {

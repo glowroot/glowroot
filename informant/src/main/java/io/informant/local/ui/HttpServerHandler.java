@@ -184,6 +184,9 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             }
         }
         for (JsonServiceMapping jsonServiceMapping : jsonServiceMappings) {
+            if (!jsonServiceMapping.httpMethod.name().equals(request.getMethod().getName())) {
+                continue;
+            }
             Matcher matcher = jsonServiceMapping.pattern.matcher(path);
             if (matcher.matches()) {
                 String requestText = getRequestText(request, decoder);
@@ -349,13 +352,20 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     }
 
     static class JsonServiceMapping {
+        private final HttpMethod httpMethod;
         private final Pattern pattern;
         private final Object service;
         private final String methodName;
-        JsonServiceMapping(String pattern, Object service, String methodName) {
+        JsonServiceMapping(HttpMethod httpMethod, String pattern, Object service,
+                String methodName) {
+            this.httpMethod = httpMethod;
             this.pattern = Pattern.compile(pattern);
             this.service = service;
             this.methodName = methodName;
         }
+    }
+
+    static enum HttpMethod {
+        GET, POST
     }
 }

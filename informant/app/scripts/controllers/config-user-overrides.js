@@ -44,10 +44,10 @@ informant.controller('ConfigUserOverridesCtrl', [
 
     // TODO fix initial load spinner
     Informant.showSpinner('#initialLoadSpinner');
-    $http.get('backend/config')
+    $http.get('backend/config/user-overrides')
         .success(function (data) {
           Informant.hideSpinner('#initialLoadSpinner');
-          $scope.config = data.userOverridesConfig;
+          $scope.config = data;
           originalConfig = angular.copy($scope.config);
         })
         .error(function (error) {

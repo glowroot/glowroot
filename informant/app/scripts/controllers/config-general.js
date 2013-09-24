@@ -44,10 +44,10 @@ informant.controller('ConfigGeneralCtrl', [
 
     // TODO fix initial load spinner
     Informant.showSpinner('#initialLoadSpinner');
-    $http.get('backend/config')
+    $http.get('backend/config/general')
         .success(function (data) {
           Informant.hideSpinner('#initialLoadSpinner');
-          $scope.config = data.generalConfig;
+          $scope.config = data;
           originalConfig = angular.copy($scope.config);
         })
         .error(function (error) {

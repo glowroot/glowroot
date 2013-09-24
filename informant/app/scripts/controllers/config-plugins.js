@@ -22,18 +22,18 @@ informant.controller('ConfigPluginsCtrl', [
   function ($scope, $http) {
     // TODO fix initial load spinner
     Informant.showSpinner('#initialLoadSpinner');
-    $http.get('backend/config')
+    $http.get('backend/config/plugin-section')
         .success(function (data) {
           Informant.hideSpinner('#initialLoadSpinner');
 
           $scope.config = data;
           $scope.plugins = [];
           var i, j;
-          for (i = 0; i < data.pluginDescriptors.length; i++) {
+          for (i = 0; i < data.descriptors.length; i++) {
             var plugin = {};
-            plugin.descriptor = data.pluginDescriptors[i];
+            plugin.descriptor = data.descriptors[i];
             plugin.id = plugin.descriptor.groupId + ':' + plugin.descriptor.artifactId;
-            plugin.config = data.pluginConfigs[plugin.id];
+            plugin.config = data.configs[plugin.id];
             for (j = 0; j < plugin.descriptor.properties.length; j++) {
               var property = plugin.descriptor.properties[j];
               property.value = plugin.config.properties[property.name];

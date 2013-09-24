@@ -46,6 +46,9 @@ import io.informant.trace.TraceModule;
 import io.informant.trace.TraceRegistry;
 import io.informant.weaving.ParsedTypeCache;
 
+import static io.informant.local.ui.HttpServerHandler.HttpMethod.GET;
+import static io.informant.local.ui.HttpServerHandler.HttpMethod.POST;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -183,62 +186,81 @@ public class LocalUiModule {
         // calling the method in json service, e.g. /backend/trace/summary/abc123 below calls the
         // method getSummary("abc123") in TraceSummaryJsonService
         ImmutableList.Builder<JsonServiceMapping> jsonServiceMappings = ImmutableList.builder();
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/version$",
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/version$",
                 versionJsonService, "getVersion"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/aggregate/points$",
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/aggregate/points$",
                 aggregateJsonService, "getPoints"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/aggregate/groupings",
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/aggregate/groupings",
                 aggregateJsonService, "getGroupings"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/trace/points$",
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/trace/points$",
                 tracePointJsonService, "getPoints"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/trace/summary/(.+)$",
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/trace/summary/(.+)$",
                 traceSummaryJsonService, "getSummary"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config$",
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config$",
                 configJsonService, "getConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/general$",
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/general$",
+                configJsonService, "getGeneralConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/general$",
                 configJsonService, "updateGeneralConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/coarse-profiling$",
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/coarse-profiling$",
+                configJsonService, "getCoarseProfilingConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/coarse-profiling$",
                 configJsonService, "updateCoarseProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/fine-profiling$",
+        jsonServiceMappings.add(new JsonServiceMapping(GET,
+                "^/backend/config/fine-profiling-section$",
+                configJsonService, "getFineProfilingSection"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/fine-profiling$",
                 configJsonService, "updateFineProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/user-overrides",
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/user-overrides",
+                configJsonService, "getUserOverridesConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/user-overrides",
                 configJsonService, "updateUserOverridesConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/storage",
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/storage-section",
+                configJsonService, "getStorageSection"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/storage",
                 configJsonService, "updateStorageConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/plugin/(.+)$",
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/plugin-section$",
+                configJsonService, "getPluginSection"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/plugin/(.+)$",
                 configJsonService, "updatePluginConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/adhoc-pointcut/\\+$",
+        jsonServiceMappings.add(new JsonServiceMapping(GET,
+                "^/backend/config/adhoc-pointcut-section$",
+                configJsonService, "getAdhocPointcutSection"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST,
+                "^/backend/config/adhoc-pointcut/\\+$",
                 configJsonService, "addAdhocPointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(
+        jsonServiceMappings.add(new JsonServiceMapping(POST,
                 "^/backend/config/adhoc-pointcut/([0-9a-f]+)$", configJsonService,
                 "updateAdhocPointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/adhoc-pointcut/-$",
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/adhoc-pointcut/-$",
                 configJsonService, "removeAdhocPointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(
+        jsonServiceMappings.add(new JsonServiceMapping(GET,
                 "^/backend/adhoc-pointcut/matching-type-names", adhocPointcutConfigJsonService,
                 "getMatchingTypeNames"));
-        jsonServiceMappings.add(new JsonServiceMapping(
+        jsonServiceMappings.add(new JsonServiceMapping(GET,
                 "^/backend/adhoc-pointcut/matching-method-names", adhocPointcutConfigJsonService,
                 "getMatchingMethodNames"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/adhoc-pointcut/matching-methods",
+        jsonServiceMappings.add(new JsonServiceMapping(GET,
+                "^/backend/adhoc-pointcut/matching-methods",
                 adhocPointcutConfigJsonService, "getMatchingMethods"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/threads/dump$",
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/threads/dump$",
                 threadsJsonService, "getThreadDump"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/data/delete-all$",
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/admin/data/delete-all$",
                 adminJsonService, "deleteAllData"));
-        jsonServiceMappings.add(new JsonServiceMapping(
+        jsonServiceMappings.add(new JsonServiceMapping(POST,
                 "^/backend/admin/adhoc-pointcuts/reweave",
                 adminJsonService, "reweaveAdhocPointcuts"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/data/compact$",
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/admin/data/compact$",
                 adminJsonService, "compactData"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/config/reset-all$",
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/admin/config/reset-all$",
                 adminJsonService, "resetAllConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(
+        jsonServiceMappings.add(new JsonServiceMapping(GET,
                 "^/backend/admin/num-pending-complete-traces$",
                 adminJsonService, "getNumPendingCompleteTraces"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/num-stored-snapshots$",
+        jsonServiceMappings.add(new JsonServiceMapping(GET,
+                "^/backend/admin/num-stored-snapshots$",
                 adminJsonService, "getNumStoredSnapshots"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/num-active-traces",
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/admin/num-active-traces",
                 adminJsonService, "getNumActiveTraces"));
         try {
             return new HttpServer(port, numWorkerThreads, uriMappings.build(),

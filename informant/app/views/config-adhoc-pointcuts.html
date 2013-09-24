@@ -200,13 +200,13 @@
   </div>
 </div>
 <br>
-<div ng-show="retransformClassesSupported">
+<div ng-show="jvmRetransformClassesSupported">
   <div ix-button
        ix-label="Apply changes to running JVM"
        ix-click="retransformClasses(deferred)"
        ix-show="data.dirty">
   </div>
 </div>
-<div ng-show="!retransformClassesSupported && data.dirty">
+<div ng-show="!jvmRetransformClassesSupported && data.dirty">
   JVM restart is required to apply changes
 </div>

@@ -25,13 +25,13 @@ informant.controller('ConfigAdhocPointcutsCtrl', [
     Informant.configureAjaxError();
     // TODO fix initial load spinner
     Informant.showSpinner('#initialLoadSpinner');
-    $http.get('backend/config')
+    $http.get('backend/config/adhoc-pointcut-section')
         .success(function (data) {
           Informant.hideSpinner('#initialLoadSpinner');
           $scope.pointcuts = [];
           var i;
-          for (i = 0; i < data.adhocPointcutConfigs.length; i++) {
-            var config = data.adhocPointcutConfigs[i];
+          for (i = 0; i < data.configs.length; i++) {
+            var config = data.configs[i];
             var signature = {
               name: config.methodName,
               argTypeNames: config.methodArgTypeNames,
@@ -50,9 +50,9 @@ informant.controller('ConfigAdhocPointcutsCtrl', [
           }
           // use object so dirty flag can be updated by child controllers
           $scope.data = {
-            dirty: data.adhocPointcutConfigsOutOfSync
+            dirty: data.jvmOutOfSync
           };
-          $scope.retransformClassesSupported = data.retransformClassesSupported;
+          $scope.jvmRetransformClassesSupported = data.jvmRetransformClassesSupported;
           // this is to hide 'New adhoc pointcut' section until pointcuts are loaded
           // in order to prevent jitter of seeing that section very briefly before it gets pushed down by
           // existing adhoc pointcut sections

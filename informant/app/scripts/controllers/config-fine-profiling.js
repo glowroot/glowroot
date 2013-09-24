@@ -44,13 +44,13 @@ informant.controller('ConfigFineProfilingCtrl', [
 
     // TODO fix initial load spinner
     Informant.showSpinner('#initialLoadSpinner');
-    $http.get('backend/config')
+    $http.get('backend/config/fine-profiling-section')
         .success(function (data) {
           Informant.hideSpinner('#initialLoadSpinner');
-          $scope.config = data.fineProfilingConfig;
+          $scope.config = data.config;
           originalConfig = angular.copy($scope.config);
 
-          $scope.generalStoreThresholdMillis = data.generalConfig.storeThresholdMillis;
+          $scope.generalStoreThresholdMillis = data.generalStoreThresholdMillis;
           // set up calculated properties
           $scope.data = {};
           if ($scope.config.storeThresholdMillis !== -1) {

@@ -58,10 +58,10 @@ informant.controller('ConfigStorageCtrl', [
 
     // TODO fix initial load spinner
     Informant.showSpinner('#initialLoadSpinner');
-    $http.get('backend/config')
+    $http.get('backend/config/storage-section')
         .success(function (data) {
           Informant.hideSpinner('#initialLoadSpinner');
-          $scope.config = data.storageConfig;
+          $scope.config = data.config;
           originalConfig = angular.copy($scope.config);
 
           $scope.dataDir = data.dataDir;
