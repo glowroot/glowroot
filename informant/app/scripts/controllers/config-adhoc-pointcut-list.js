@@ -16,7 +16,7 @@
 
 /* global informant, Informant, angular */
 
-informant.controller('ConfigAdhocPointcutsCtrl', [
+informant.controller('ConfigAdhocPointcutListCtrl', [
   '$scope',
   '$http',
   '$timeout',

@@ -92,13 +92,13 @@ informant.config([
     });
     $stateProvider.state('config.plugins', {
       url: '/plugins.html',
-      templateUrl: 'views/config-plugins.html',
-      controller: 'ConfigPluginsCtrl'
+      templateUrl: 'views/config-plugin-list.html',
+      controller: 'ConfigPluginListCtrl'
     });
     $stateProvider.state('config.adhocPointcuts', {
       url: '/adhoc-pointcuts.html',
-      templateUrl: 'views/config-adhoc-pointcuts.html',
-      controller: 'ConfigAdhocPointcutsCtrl'
+      templateUrl: 'views/config-adhoc-pointcut-list.html',
+      controller: 'ConfigAdhocPointcutListCtrl'
     });
     $stateProvider.state('threadDump', {
       url: '/thread-dump.html',

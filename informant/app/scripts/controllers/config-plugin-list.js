@@ -16,7 +16,7 @@
 
 /* global informant, Informant, angular */
 
-informant.controller('ConfigPluginsCtrl', [
+informant.controller('ConfigPluginListCtrl', [
   '$scope',
   '$http',
   function ($scope, $http) {
