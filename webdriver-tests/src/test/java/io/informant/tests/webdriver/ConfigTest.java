@@ -156,6 +156,73 @@ public class ConfigTest {
         assertThat(adhocPointcutListPage.getNumSections()).isEqualTo(0);
     }
 
+    @Test
+    public void shouldAddMetricOnlyAdhocPointcut() throws InterruptedException {
+        // given
+        App app = new App(driver, "http://localhost:" + container.getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        ConfigAdhocPointcutListPage adhocPointcutListPage = new ConfigAdhocPointcutListPage(driver);
+
+        app.openHomePage();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAdhocPointcutsLink().click();
+
+        // when
+        createMetricOnlyAdhocPointcut(adhocPointcutListPage);
+
+        // then
+        app.openHomePage();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAdhocPointcutsLink().click();
+        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
+        assertThat(adhocPointcutSection.getTypeNameTextField().getAttribute("value"))
+                .isEqualTo("io.informant.container.AppUnderTest");
+        assertThat(adhocPointcutSection.getMethodNameTextField().getAttribute("value"))
+                .isEqualTo("executeApp");
+        assertThat(adhocPointcutSection.getMetricCheckbox().isSelected()).isTrue();
+        assertThat(adhocPointcutSection.getSpanCheckbox().isSelected()).isFalse();
+        assertThat(adhocPointcutSection.getTraceCheckbox().isSelected()).isFalse();
+        assertThat(adhocPointcutSection.getMetricNameTextField().getAttribute("value"))
+                .isEqualTo("a metric");
+        assertThat(adhocPointcutSection.getSpanTextTextField().isDisplayed()).isFalse();
+        assertThat(adhocPointcutSection.getTraceGroupingTextField().isDisplayed()).isFalse();
+    }
+
+    @Test
+    public void shouldAddMetricAndSpanOnlyAdhocPointcut() throws InterruptedException {
+        // given
+        App app = new App(driver, "http://localhost:" + container.getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        ConfigAdhocPointcutListPage adhocPointcutListPage = new ConfigAdhocPointcutListPage(driver);
+
+        app.openHomePage();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAdhocPointcutsLink().click();
+
+        // when
+        createMetricAndSpanOnlyAdhocPointcut(adhocPointcutListPage);
+
+        // then
+        app.openHomePage();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAdhocPointcutsLink().click();
+        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
+        assertThat(adhocPointcutSection.getTypeNameTextField().getAttribute("value"))
+                .isEqualTo("io.informant.container.AppUnderTest");
+        assertThat(adhocPointcutSection.getMethodNameTextField().getAttribute("value"))
+                .isEqualTo("executeApp");
+        assertThat(adhocPointcutSection.getMetricCheckbox().isSelected()).isTrue();
+        assertThat(adhocPointcutSection.getSpanCheckbox().isSelected()).isTrue();
+        assertThat(adhocPointcutSection.getTraceCheckbox().isSelected()).isFalse();
+        assertThat(adhocPointcutSection.getMetricNameTextField().getAttribute("value"))
+                .isEqualTo("a metric");
+        assertThat(adhocPointcutSection.getSpanTextTextField().getAttribute("value"))
+                .isEqualTo("a span");
+        assertThat(adhocPointcutSection.getTraceGroupingTextField().isDisplayed()).isFalse();
+    }
+
     private void createAdhocPointcut1(ConfigAdhocPointcutListPage adhocPointcutListPage) {
         adhocPointcutListPage.getAddPointcutButton().click();
         ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
@@ -172,6 +239,36 @@ public class ConfigTest {
         adhocPointcutSection.getSpanTextTextField().sendKeys("a span");
         adhocPointcutSection.getTraceGroupingTextField().clear();
         adhocPointcutSection.getTraceGroupingTextField().sendKeys("a trace");
+        adhocPointcutSection.getAddButton().click();
+    }
+
+    private void createMetricOnlyAdhocPointcut(ConfigAdhocPointcutListPage adhocPointcutListPage) {
+        adhocPointcutListPage.getAddPointcutButton().click();
+        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
+        adhocPointcutSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
+        adhocPointcutSection.getTypeNameAutoCompleteItem("container.AppUnderTest").click();
+        adhocPointcutSection.getMethodNameTextField().sendKeys("exec");
+        adhocPointcutSection.getMethodNameAutoCompleteItem("exec").click();
+        adhocPointcutSection.getMetricCheckbox().click();
+        adhocPointcutSection.getMetricNameTextField().clear();
+        adhocPointcutSection.getMetricNameTextField().sendKeys("a metric");
+        adhocPointcutSection.getAddButton().click();
+    }
+
+    private void createMetricAndSpanOnlyAdhocPointcut(
+            ConfigAdhocPointcutListPage adhocPointcutListPage) {
+        adhocPointcutListPage.getAddPointcutButton().click();
+        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
+        adhocPointcutSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
+        adhocPointcutSection.getTypeNameAutoCompleteItem("container.AppUnderTest").click();
+        adhocPointcutSection.getMethodNameTextField().sendKeys("exec");
+        adhocPointcutSection.getMethodNameAutoCompleteItem("exec").click();
+        adhocPointcutSection.getMetricCheckbox().click();
+        adhocPointcutSection.getSpanCheckbox().click();
+        adhocPointcutSection.getMetricNameTextField().clear();
+        adhocPointcutSection.getMetricNameTextField().sendKeys("a metric");
+        adhocPointcutSection.getSpanTextTextField().clear();
+        adhocPointcutSection.getSpanTextTextField().sendKeys("a span");
         adhocPointcutSection.getAddButton().click();
     }
 }

@@ -148,8 +148,7 @@ public class PointcutConfig {
             // without including a parameter for version, jackson will use direct field access after
             // this method in order to set the version field if it is included in the json being
             // deserialized (overwriting the hashed version that is calculated in the constructor)
-            @JsonProperty("version") @Nullable String version)
-            throws JsonMappingException {
+            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(typeName, "typeName");
         checkRequiredProperty(methodName, "methodName");
         checkRequiredProperty(methodReturnTypeName, "methodReturnTypeName");
@@ -170,7 +169,7 @@ public class PointcutConfig {
     }
 
     private static boolean orFalse(@ReadOnly @Nullable Boolean value) {
-        return value == null || value;
+        return value != null && value;
     }
 
     @Override
