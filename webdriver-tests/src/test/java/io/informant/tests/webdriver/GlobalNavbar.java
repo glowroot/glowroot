@@ -37,7 +37,7 @@ class GlobalNavbar {
     }
 
     private WebElement getNav() {
-        Util.waitForAngular(driver);
+        Utils.waitForAngular(driver);
         return driver.findElement(xpath("//nav"));
     }
 }

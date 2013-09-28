@@ -36,15 +36,19 @@ class ConfigAdhocPointcutListPage {
         return getNewAdhocPointcutSection().findElement(xpath("//button[text()='Add Pointcut']"));
     }
 
+    int getNumSections() {
+        return driver.findElements(xpath("(//form[@name='formCtrl'])")).size();
+    }
+
     ConfigAdhocPointcutSection getSection(int index) {
-        Util.waitForAngular(driver);
+        Utils.waitForAngular(driver);
         WebElement form = driver.findElement(xpath("(//form[@name='formCtrl'])[" + (index + 1)
                 + "]"));
         return new ConfigAdhocPointcutSection(driver, form);
     }
 
     private WebElement getNewAdhocPointcutSection() {
-        Util.waitForAngular(driver);
+        Utils.waitForAngular(driver);
         return driver.findElement(xpath("//div[div[h2[text()='New adhoc pointcut']]]"));
     }
 }

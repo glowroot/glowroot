@@ -104,9 +104,60 @@ public class ConfigTest {
         app.openHomePage();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getAdhocPointcutsLink().click();
-        adhocPointcutListPage.getAddPointcutButton().click();
 
         // when
+        createAdhocPointcut1(adhocPointcutListPage);
+
+        // then
+        app.openHomePage();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAdhocPointcutsLink().click();
+        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
+        assertThat(adhocPointcutSection.getTypeNameTextField().getAttribute("value"))
+                .isEqualTo("io.informant.container.AppUnderTest");
+        assertThat(adhocPointcutSection.getMethodNameTextField().getAttribute("value"))
+                .isEqualTo("executeApp");
+        assertThat(adhocPointcutSection.getMetricCheckbox().isSelected()).isTrue();
+        assertThat(adhocPointcutSection.getSpanCheckbox().isSelected()).isTrue();
+        assertThat(adhocPointcutSection.getTraceCheckbox().isSelected()).isTrue();
+        assertThat(adhocPointcutSection.getMetricNameTextField().getAttribute("value"))
+                .isEqualTo("a metric");
+        assertThat(adhocPointcutSection.getSpanTextTextField().getAttribute("value"))
+                .isEqualTo("a span");
+        assertThat(adhocPointcutSection.getTraceGroupingTextField().getAttribute("value"))
+                .isEqualTo("a trace");
+    }
+
+    // TODO in firefox, still see "Please fill out this field" tooltip on hitting delete when
+    // required field is missing
+    @Test
+    public void shouldNotValidateOnDeleteAdhocPointcut() throws InterruptedException {
+        // given
+        App app = new App(driver, "http://localhost:" + container.getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        ConfigAdhocPointcutListPage adhocPointcutListPage = new ConfigAdhocPointcutListPage(driver);
+
+        app.openHomePage();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAdhocPointcutsLink().click();
+        createAdhocPointcut1(adhocPointcutListPage);
+
+        app.openHomePage();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAdhocPointcutsLink().click();
+        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
+
+        // when
+        Utils.clearInput(adhocPointcutSection.getMetricNameTextField());
+        adhocPointcutSection.getDeleteButton().click();
+
+        // then
+        assertThat(adhocPointcutListPage.getNumSections()).isEqualTo(0);
+    }
+
+    private void createAdhocPointcut1(ConfigAdhocPointcutListPage adhocPointcutListPage) {
+        adhocPointcutListPage.getAddPointcutButton().click();
         ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
         adhocPointcutSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
         adhocPointcutSection.getTypeNameAutoCompleteItem("container.AppUnderTest").click();
@@ -122,24 +173,5 @@ public class ConfigTest {
         adhocPointcutSection.getTraceGroupingTextField().clear();
         adhocPointcutSection.getTraceGroupingTextField().sendKeys("a trace");
         adhocPointcutSection.getAddButton().click();
-
-        // then
-        app.openHomePage();
-        globalNavbar.getConfigurationLink().click();
-        configSidebar.getAdhocPointcutsLink().click();
-        adhocPointcutSection = adhocPointcutListPage.getSection(0);
-        assertThat(adhocPointcutSection.getTypeNameTextField().getAttribute("value"))
-                .isEqualTo("io.informant.container.AppUnderTest");
-        assertThat(adhocPointcutSection.getMethodNameTextField().getAttribute("value"))
-                .isEqualTo("executeApp");
-        assertThat(adhocPointcutSection.getMetricCheckbox().isSelected()).isTrue();
-        assertThat(adhocPointcutSection.getSpanCheckbox().isSelected()).isTrue();
-        assertThat(adhocPointcutSection.getTraceCheckbox().isSelected()).isTrue();
-        assertThat(adhocPointcutSection.getMetricNameTextField().getAttribute("value"))
-                .isEqualTo("a metric");
-        assertThat(adhocPointcutSection.getSpanTextTextField().getAttribute("value"))
-                .isEqualTo("a span");
-        assertThat(adhocPointcutSection.getTraceGroupingTextField().getAttribute("value"))
-                .isEqualTo("a trace");
     }
 }

@@ -33,6 +33,6 @@ class App {
 
     void openHomePage() {
         driver.get(baseUrl);
-        Util.waitForAngular(driver);
+        Utils.waitForAngular(driver);
     }
 }

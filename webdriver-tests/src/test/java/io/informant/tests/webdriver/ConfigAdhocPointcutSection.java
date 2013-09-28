@@ -39,7 +39,7 @@ class ConfigAdhocPointcutSection {
     }
 
     WebElement getTypeNameAutoCompleteItem(String highlightedPart) {
-        Util.waitForAngular(driver);
+        Utils.waitForAngular(driver);
         return form.findElement(xpath("//div[label[text()='Type name']]//ul/li/a[strong[text()='"
                 + highlightedPart + "']]"));
     }
@@ -49,7 +49,7 @@ class ConfigAdhocPointcutSection {
     }
 
     WebElement getMethodNameAutoCompleteItem(String highlightedPart) {
-        Util.waitForAngular(driver);
+        Utils.waitForAngular(driver);
         return form.findElement(xpath("//div[label[text()='Method name']]//ul/li/a[strong[text()='"
                 + highlightedPart + "']]"));
     }

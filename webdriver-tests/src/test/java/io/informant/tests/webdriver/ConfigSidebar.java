@@ -42,7 +42,7 @@ class ConfigSidebar {
     }
 
     private WebElement getSidebar() {
-        Util.waitForAngular(driver);
+        Utils.waitForAngular(driver);
         return driver.findElement(cssSelector("div.ix-sidebar"));
     }
 }
