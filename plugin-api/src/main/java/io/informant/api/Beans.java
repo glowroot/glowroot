@@ -15,6 +15,8 @@
  */
 package io.informant.api;
 
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -57,11 +59,11 @@ public class Beans {
     // reference to the class loader
     //
     // weak keys in loading cache to prevent Class retention
-    private static final LoadingCache<Class<?>, ConcurrentMap<String, Method>> getters =
+    private static final LoadingCache<Class<?>, ConcurrentMap<String, AccessibleObject>> getters =
             CacheBuilder.newBuilder().weakKeys()
-                    .build(new CacheLoader<Class<?>, ConcurrentMap<String, Method>>() {
+                    .build(new CacheLoader<Class<?>, ConcurrentMap<String, AccessibleObject>>() {
                         @Override
-                        public ConcurrentMap<String, Method> load(Class<?> type) {
+                        public ConcurrentMap<String, AccessibleObject> load(Class<?> type) {
                             // weak values since Method has a strong reference to its Class which
                             // is used as the key in the outer loading cache
                             return new MapMaker().weakValues().makeMap();
@@ -103,13 +105,19 @@ public class Beans {
             return value(((Map<?, ?>) obj).get(curr), remaining);
         }
         try {
-            Method getter = getGetter(obj.getClass(), curr);
-            if (getter.equals(SENTINEL_METHOD)) {
+            AccessibleObject accessor = getAccessor(obj.getClass(), curr);
+            if (accessor.equals(SENTINEL_METHOD)) {
                 // no appropriate method found, dynamic paths that may or may not resolve
                 // correctly are ok, just return null
                 return null;
             }
-            return value(getter.invoke(obj), remaining);
+            Object currItem;
+            if (accessor instanceof Method) {
+                currItem = ((Method) accessor).invoke(obj);
+            } else {
+                currItem = ((Field) accessor).get(obj);
+            }
+            return value(currItem, remaining);
         } catch (IllegalAccessException e) {
             logger.debug(e.getMessage(), e);
             // this is less ok
@@ -143,22 +151,25 @@ public class Beans {
         return builder.build();
     }
 
-    private static Method getGetter(Class<?> type, String name) {
-        ConcurrentMap<String, Method> getterForType = getters.getUnchecked(type);
-        Method method = getterForType.get(name);
-        if (method == null) {
-            method = loadGetter(type, name);
-            getterForType.put(name, method);
+    private static AccessibleObject getAccessor(Class<?> type, String name) {
+        ConcurrentMap<String, AccessibleObject> accessorsForType = getters.getUnchecked(type);
+        AccessibleObject accessor = accessorsForType.get(name);
+        if (accessor == null) {
+            accessor = loadAccessor(type, name);
+            accessor.setAccessible(true);
+            accessorsForType.put(name, accessor);
         }
-        return method;
+        return accessor;
     }
 
-    private static Method loadGetter(Class<?> type, String name) {
+    private static AccessibleObject loadAccessor(Class<?> type, String name) {
         String capitalizedName = Character.toUpperCase(name.charAt(0)) + name.substring(1);
         try {
+            // TODO the problem with using getDeclaredMethod() is that it will miss public methods
+            // in super classes
             return type.getMethod("get" + capitalizedName);
         } catch (NoSuchMethodException e) {
-            // fall back for "is" prefix
+            // fall back to "is" prefix
             try {
                 return type.getMethod("is" + capitalizedName);
             } catch (NoSuchMethodException f) {
@@ -166,9 +177,19 @@ public class Beans {
                 try {
                     return type.getMethod(name);
                 } catch (NoSuchMethodException g) {
-                    logger.debug("no appropriate getter found for property '{}' in class '{}'",
-                            name, type.getName());
-                    return SENTINEL_METHOD;
+                    // fall back to field access
+                    try {
+                        // TODO getDeclaredField will miss fields in super classes
+                        return type.getDeclaredField(name);
+                    } catch (NoSuchFieldException h) {
+                        logger.debug("no method or field found for property '{}' in class '{}'",
+                                name, type.getName());
+                        return SENTINEL_METHOD;
+                    } catch (SecurityException h) {
+                        logger.debug("no method or field found for property '{}' in class '{}'",
+                                name, type.getName());
+                        return SENTINEL_METHOD;
+                    }
                 }
             }
         }
