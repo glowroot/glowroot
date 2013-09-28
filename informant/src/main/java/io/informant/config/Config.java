@@ -34,13 +34,13 @@ class Config {
     private final UserOverridesConfig userOverridesConfig;
     private final StorageConfig storageConfig;
     private final ImmutableList<PluginConfig> pluginConfigs;
-    private final ImmutableList<PointcutConfig> adhocPointcutConfigs;
+    private final ImmutableList<AdhocPointcutConfig> adhocPointcutConfigs;
 
     static Config getDefault(@ReadOnly List<PluginDescriptor> pluginDescriptors) {
         return new Config(GeneralConfig.getDefault(), CoarseProfilingConfig.getDefault(),
                 FineProfilingConfig.getDefault(), UserOverridesConfig.getDefault(),
                 StorageConfig.getDefault(), createPluginConfigs(pluginDescriptors),
-                ImmutableList.<PointcutConfig>of());
+                ImmutableList.<AdhocPointcutConfig>of());
     }
 
     static Builder builder(Config base) {
@@ -50,7 +50,7 @@ class Config {
     Config(GeneralConfig generalConfig, CoarseProfilingConfig coarseProfilingConfig,
             FineProfilingConfig fineProfilingConfig, UserOverridesConfig userOverridesConfig,
             StorageConfig storageConfig, ImmutableList<PluginConfig> pluginConfigs,
-            ImmutableList<PointcutConfig> adhocPointcutConfigs) {
+            ImmutableList<AdhocPointcutConfig> adhocPointcutConfigs) {
         this.generalConfig = generalConfig;
         this.coarseProfilingConfig = coarseProfilingConfig;
         this.fineProfilingConfig = fineProfilingConfig;
@@ -84,7 +84,7 @@ class Config {
         return pluginConfigs;
     }
 
-    ImmutableList<PointcutConfig> getAdhocPointcutConfigs() {
+    ImmutableList<AdhocPointcutConfig> getAdhocPointcutConfigs() {
         return adhocPointcutConfigs;
     }
 
@@ -105,7 +105,7 @@ class Config {
         private UserOverridesConfig userOverridesConfig;
         private StorageConfig storageConfig;
         private ImmutableList<PluginConfig> pluginConfigs;
-        private ImmutableList<PointcutConfig> adhocPointcutConfigs;
+        private ImmutableList<AdhocPointcutConfig> adhocPointcutConfigs;
 
         private Builder(Config base) {
             generalConfig = base.generalConfig;
@@ -140,7 +140,7 @@ class Config {
             this.pluginConfigs = pluginConfigs;
             return this;
         }
-        Builder adhocPointcutConfigs(ImmutableList<PointcutConfig> adhocPointcutConfigs) {
+        Builder adhocPointcutConfigs(ImmutableList<AdhocPointcutConfig> adhocPointcutConfigs) {
             this.adhocPointcutConfigs = adhocPointcutConfigs;
             return this;
         }

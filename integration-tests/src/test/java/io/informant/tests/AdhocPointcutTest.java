@@ -30,8 +30,8 @@ import io.informant.container.AppUnderTest;
 import io.informant.container.Container;
 import io.informant.container.TempDirs;
 import io.informant.container.TraceMarker;
-import io.informant.container.config.PointcutConfig;
-import io.informant.container.config.PointcutConfig.MethodModifier;
+import io.informant.container.config.AdhocPointcutConfig;
+import io.informant.container.config.AdhocPointcutConfig.MethodModifier;
 import io.informant.container.trace.Trace;
 
 import static org.fest.assertions.api.Assertions.assertThat;
@@ -116,7 +116,7 @@ public class AdhocPointcutTest {
     }
 
     protected static void addAdhocPointcutForExecute1() throws Exception {
-        PointcutConfig config = new PointcutConfig();
+        AdhocPointcutConfig config = new AdhocPointcutConfig();
         config.setMetric(true);
         config.setSpan(true);
         config.setTypeName("io.informant.tests.AdhocPointcutTest$Misc");
@@ -130,7 +130,7 @@ public class AdhocPointcutTest {
     }
 
     protected static void addAdhocPointcutForExecute1MetricOnly() throws Exception {
-        PointcutConfig config = new PointcutConfig();
+        AdhocPointcutConfig config = new AdhocPointcutConfig();
         config.setMetric(true);
         config.setTypeName("io.informant.tests.AdhocPointcutTest$Misc");
         config.setMethodName("execute1");
@@ -142,7 +142,7 @@ public class AdhocPointcutTest {
     }
 
     protected static void addAdhocPointcutForExecuteWithReturn() throws Exception {
-        PointcutConfig config = new PointcutConfig();
+        AdhocPointcutConfig config = new AdhocPointcutConfig();
         config.setMetric(true);
         config.setSpan(true);
         config.setTypeName("io.informant.tests.AdhocPointcutTest$Misc");
@@ -156,7 +156,7 @@ public class AdhocPointcutTest {
     }
 
     protected static void addAdhocPointcutForExecuteWithArgs() throws Exception {
-        PointcutConfig config = new PointcutConfig();
+        AdhocPointcutConfig config = new AdhocPointcutConfig();
         config.setMetric(true);
         config.setSpan(true);
         config.setTrace(true);

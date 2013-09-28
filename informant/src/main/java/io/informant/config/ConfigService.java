@@ -222,13 +222,14 @@ public class ConfigService {
     }
 
     @ReadOnly
-    public List<PointcutConfig> getAdhocPointcutConfigs() {
+    public List<AdhocPointcutConfig> getAdhocPointcutConfigs() {
         return config.getAdhocPointcutConfigs();
     }
 
-    public String insertAdhocPointcutConfig(PointcutConfig adhocPointcutConfig) throws IOException {
+    public String insertAdhocPointcutConfig(AdhocPointcutConfig adhocPointcutConfig)
+            throws IOException {
         synchronized (writeLock) {
-            List<PointcutConfig> adhocPointcutConfigs =
+            List<AdhocPointcutConfig> adhocPointcutConfigs =
                     Lists.newArrayList(config.getAdhocPointcutConfigs());
             adhocPointcutConfigs.add(adhocPointcutConfig);
             Config updatedConfig = Config.builder(config)
@@ -240,13 +241,14 @@ public class ConfigService {
         return adhocPointcutConfig.getVersion();
     }
 
-    public String updateAdhocPointcutConfig(String priorVersion, PointcutConfig adhocPointcutConfig)
-            throws IOException {
+    public String updateAdhocPointcutConfig(String priorVersion,
+            AdhocPointcutConfig adhocPointcutConfig) throws IOException {
         synchronized (writeLock) {
-            List<PointcutConfig> adhocPointcutConfigs =
+            List<AdhocPointcutConfig> adhocPointcutConfigs =
                     Lists.newArrayList(config.getAdhocPointcutConfigs());
             boolean found = false;
-            for (ListIterator<PointcutConfig> i = adhocPointcutConfigs.listIterator(); i.hasNext();) {
+            for (ListIterator<AdhocPointcutConfig> i = adhocPointcutConfigs
+                    .listIterator(); i.hasNext();) {
                 if (priorVersion.equals(i.next().getVersion())) {
                     i.set(adhocPointcutConfig);
                     found = true;
@@ -268,10 +270,11 @@ public class ConfigService {
 
     public void deleteAdhocPointcutConfig(String version) throws IOException {
         synchronized (writeLock) {
-            List<PointcutConfig> adhocPointcutConfigs =
+            List<AdhocPointcutConfig> adhocPointcutConfigs =
                     Lists.newArrayList(config.getAdhocPointcutConfigs());
             boolean found = false;
-            for (ListIterator<PointcutConfig> i = adhocPointcutConfigs.listIterator(); i.hasNext();) {
+            for (ListIterator<AdhocPointcutConfig> i = adhocPointcutConfigs
+                    .listIterator(); i.hasNext();) {
                 if (version.equals(i.next().getVersion())) {
                     i.remove();
                     found = true;

@@ -52,11 +52,11 @@ public interface ConfigService {
 
     String updatePluginConfig(String pluginId, PluginConfig config) throws Exception;
 
-    List<PointcutConfig> getAdhocPointcutConfigs() throws Exception;
+    List<AdhocPointcutConfig> getAdhocPointcutConfigs() throws Exception;
 
-    String addAdhocPointcutConfig(PointcutConfig adhocPointcutConfig) throws Exception;
+    String addAdhocPointcutConfig(AdhocPointcutConfig adhocPointcutConfig) throws Exception;
 
-    String updateAdhocPointcutConfig(String version, PointcutConfig adhocPointcutConfig)
+    String updateAdhocPointcutConfig(String version, AdhocPointcutConfig adhocPointcutConfig)
             throws Exception;
 
     void removeAdhocPointcutConfig(String version) throws Exception;

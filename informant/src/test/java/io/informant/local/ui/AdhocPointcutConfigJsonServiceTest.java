@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class PointcutConfigJsonServiceTest {
+public class AdhocPointcutConfigJsonServiceTest {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 

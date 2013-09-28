@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import io.informant.collector.TraceCollectorImpl;
 import io.informant.config.ConfigService;
-import io.informant.config.PointcutConfig;
+import io.informant.config.AdhocPointcutConfig;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.SnapshotDao;
 import io.informant.markers.OnlyUsedByTests;
@@ -91,10 +91,10 @@ class AdminJsonService {
             logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
             return;
         }
-        List<PointcutConfig> adhocPointcutConfigs = configService.getAdhocPointcutConfigs();
+        List<AdhocPointcutConfig> adhocPointcutConfigs = configService.getAdhocPointcutConfigs();
         adhocAdviceCache.updateAdvisors(adhocPointcutConfigs);
         Set<String> typeNames = Sets.newHashSet();
-        for (PointcutConfig adhocPointcutConfig : adhocPointcutConfigs) {
+        for (AdhocPointcutConfig adhocPointcutConfig : adhocPointcutConfigs) {
             typeNames.add(adhocPointcutConfig.getTypeName());
         }
         List<Class<?>> classes = Lists.newArrayList();

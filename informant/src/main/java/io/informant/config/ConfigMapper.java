@@ -79,7 +79,8 @@ class ConfigMapper {
         Map<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
         ImmutableList<PluginConfig> pluginConfigs =
                 createPluginConfigs(pluginNodes, pluginDescriptors);
-        ImmutableList<PointcutConfig> adhocPointcutConfigs = createAdhocPointcutConfigs(rootNode);
+        ImmutableList<AdhocPointcutConfig> adhocPointcutConfigs =
+                createAdhocPointcutConfigs(rootNode);
         return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig,
                 userOverridesConfig, storageConfig, pluginConfigs, adhocPointcutConfigs);
     }
@@ -112,7 +113,7 @@ class ConfigMapper {
         }
         jg.writeEndArray();
         jg.writeArrayFieldStart(ADHOC_POINTCUTS);
-        for (PointcutConfig adhocPointcutConfig : config.getAdhocPointcutConfigs()) {
+        for (AdhocPointcutConfig adhocPointcutConfig : config.getAdhocPointcutConfigs()) {
             writer.writeValue(jg, adhocPointcutConfig);
         }
         jg.writeEndArray();
@@ -234,16 +235,16 @@ class ConfigMapper {
         return pluginConfigs.build();
     }
 
-    private static ImmutableList<PointcutConfig> createAdhocPointcutConfigs(ObjectNode rootNode)
-            throws JsonProcessingException {
+    private static ImmutableList<AdhocPointcutConfig> createAdhocPointcutConfigs(
+            ObjectNode rootNode) throws JsonProcessingException {
         JsonNode pointcutsNode = rootNode.get(ADHOC_POINTCUTS);
         if (pointcutsNode == null) {
             return ImmutableList.of();
         }
-        ImmutableList.Builder<PointcutConfig> adhocPointcutConfigs = ImmutableList.builder();
+        ImmutableList.Builder<AdhocPointcutConfig> adhocPointcutConfigs = ImmutableList.builder();
         for (JsonNode pointcutNode : pointcutsNode) {
-            PointcutConfig adhocPointcutConfig =
-                    ObjectMappers.treeToRequiredValue(mapper, pointcutNode, PointcutConfig.class);
+            AdhocPointcutConfig adhocPointcutConfig = ObjectMappers.treeToRequiredValue(mapper,
+                    pointcutNode, AdhocPointcutConfig.class);
             adhocPointcutConfigs.add(adhocPointcutConfig);
         }
         return adhocPointcutConfigs.build();

@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.api.weaving.Pointcut;
-import io.informant.config.PointcutConfig;
+import io.informant.config.AdhocPointcutConfig;
 import io.informant.dynamicadvice.DynamicAdviceGenerator;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
@@ -52,7 +52,7 @@ public class AdhocAdviceCache {
     private volatile ImmutableList<Advice> adhocAdvisors;
     private volatile ImmutableSet<String> adhocPointcutConfigVersions;
 
-    public AdhocAdviceCache(@ReadOnly List<PointcutConfig> adhocPointcutConfigs) {
+    public AdhocAdviceCache(@ReadOnly List<AdhocPointcutConfig> adhocPointcutConfigs) {
         updateAdvisors(adhocPointcutConfigs);
     }
 
@@ -64,28 +64,28 @@ public class AdhocAdviceCache {
         };
     }
 
-    public void updateAdvisors(@ReadOnly List<PointcutConfig> adhocPointcutConfigs) {
+    public void updateAdvisors(@ReadOnly List<AdhocPointcutConfig> adhocPointcutConfigs) {
         this.adhocAdvisors = getAdhocAdvisors(adhocPointcutConfigs);
         ImmutableSet.Builder<String> adhocPointcutConfigVersions = ImmutableSet.builder();
-        for (PointcutConfig adhocPointcutConfig : adhocPointcutConfigs) {
+        for (AdhocPointcutConfig adhocPointcutConfig : adhocPointcutConfigs) {
             adhocPointcutConfigVersions.add(adhocPointcutConfig.getVersion());
         }
         this.adhocPointcutConfigVersions = adhocPointcutConfigVersions.build();
     }
 
     public boolean isAdhocPointcutConfigsOutOfSync(
-            @ReadOnly List<PointcutConfig> adhocPointcutConfigs) {
+            @ReadOnly List<AdhocPointcutConfig> adhocPointcutConfigs) {
         Set<String> versions = Sets.newHashSet();
-        for (PointcutConfig adhocPointcutConfig : adhocPointcutConfigs) {
+        for (AdhocPointcutConfig adhocPointcutConfig : adhocPointcutConfigs) {
             versions.add(adhocPointcutConfig.getVersion());
         }
         return !versions.equals(this.adhocPointcutConfigVersions);
     }
 
     private static ImmutableList<Advice> getAdhocAdvisors(
-            @ReadOnly List<PointcutConfig> adhocPointcutConfigs) {
+            @ReadOnly List<AdhocPointcutConfig> adhocPointcutConfigs) {
         ImmutableList.Builder<Advice> adhocAdvisors = ImmutableList.builder();
-        for (PointcutConfig adhocPointcutConfig : adhocPointcutConfigs) {
+        for (AdhocPointcutConfig adhocPointcutConfig : adhocPointcutConfigs) {
             try {
                 Class<?> dynamicAdviceClass = new DynamicAdviceGenerator(adhocPointcutConfig)
                         .generate(ADHOC_POINTCUTS_PLUGIN_ID);

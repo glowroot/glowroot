@@ -22,13 +22,13 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.collect.Lists;
 
 import io.informant.InformantModule;
+import io.informant.container.config.AdhocPointcutConfig;
+import io.informant.container.config.AdhocPointcutConfig.MethodModifier;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.ConfigService;
 import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
-import io.informant.container.config.PointcutConfig;
-import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserOverridesConfig;
 import io.informant.local.store.DataSource;
@@ -181,20 +181,20 @@ class LocalConfigService implements ConfigService {
         return configService.updatePluginConfig(updatedConfig.build(), config.getVersion());
     }
 
-    public List<PointcutConfig> getAdhocPointcutConfigs() {
-        List<PointcutConfig> configs = Lists.newArrayList();
-        for (io.informant.config.PointcutConfig coreConfig : configService
+    public List<AdhocPointcutConfig> getAdhocPointcutConfigs() {
+        List<AdhocPointcutConfig> configs = Lists.newArrayList();
+        for (io.informant.config.AdhocPointcutConfig coreConfig : configService
                 .getAdhocPointcutConfigs()) {
             configs.add(convertToCore(coreConfig));
         }
         return configs;
     }
 
-    public String addAdhocPointcutConfig(PointcutConfig config) throws Exception {
+    public String addAdhocPointcutConfig(AdhocPointcutConfig config) throws Exception {
         return configService.insertAdhocPointcutConfig(convertToCore(config));
     }
 
-    public String updateAdhocPointcutConfig(String version, PointcutConfig config)
+    public String updateAdhocPointcutConfig(String version, AdhocPointcutConfig config)
             throws Exception {
         return configService.updateAdhocPointcutConfig(version, convertToCore(config));
     }
@@ -216,15 +216,15 @@ class LocalConfigService implements ConfigService {
         configService.resetAllConfig();
     }
 
-    private static PointcutConfig convertToCore(
-            io.informant.config.PointcutConfig coreConfig) {
+    private static AdhocPointcutConfig convertToCore(
+            io.informant.config.AdhocPointcutConfig coreConfig) {
         List<MethodModifier> methodModifiers = Lists.newArrayList();
         for (io.informant.api.weaving.MethodModifier methodModifier : coreConfig
                 .getMethodModifiers()) {
             methodModifiers.add(MethodModifier.valueOf(methodModifier.name()));
         }
 
-        PointcutConfig config = new PointcutConfig(coreConfig.getVersion());
+        AdhocPointcutConfig config = new AdhocPointcutConfig(coreConfig.getVersion());
         config.setMetric(coreConfig.isMetric());
         config.setSpan(coreConfig.isSpan());
         config.setTrace(coreConfig.isTrace());
@@ -238,7 +238,8 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
-    private static io.informant.config.PointcutConfig convertToCore(PointcutConfig config) {
+    private static io.informant.config.AdhocPointcutConfig convertToCore(
+            AdhocPointcutConfig config) {
         List<io.informant.api.weaving.MethodModifier> methodModifiers = Lists.newArrayList();
         for (MethodModifier methodModifier : config.getMethodModifiers()) {
             methodModifiers.add(io.informant.api.weaving.MethodModifier.valueOf(methodModifier
@@ -250,7 +251,7 @@ class LocalConfigService implements ConfigService {
         assertNonNull(typeName, "Config typeName is null");
         assertNonNull(methodName, "Config methodName is null");
         assertNonNull(methodReturnTypeName, "Config methodReturnTypeName is null");
-        return new io.informant.config.PointcutConfig(config.isMetric(), config.isSpan(),
+        return new io.informant.config.AdhocPointcutConfig(config.isMetric(), config.isSpan(),
                 config.isTrace(), typeName, methodName, config.getMethodArgTypeNames(),
                 methodReturnTypeName, methodModifiers, config.getMetricName(),
                 config.getSpanText(), config.getTraceGrouping());

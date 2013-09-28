@@ -27,7 +27,7 @@ import io.informant.container.config.ConfigService;
 import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
-import io.informant.container.config.PointcutConfig;
+import io.informant.container.config.AdhocPointcutConfig;
 import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserOverridesConfig;
 import io.informant.markers.ThreadSafe;
@@ -120,20 +120,20 @@ class JavaagentConfigService implements ConfigService {
                 mapper.writeValueAsString(config));
     }
 
-    public List<PointcutConfig> getAdhocPointcutConfigs() throws Exception {
+    public List<AdhocPointcutConfig> getAdhocPointcutConfigs() throws Exception {
         return ObjectMappers.readRequiredValue(mapper,
                 httpClient.get("/backend/config/adhoc-pointcut-section"),
                 AdhocPointcutConfigSection.class).getConfigs();
     }
 
     // returns new version
-    public String addAdhocPointcutConfig(PointcutConfig adhocPointcutConfig) throws Exception {
+    public String addAdhocPointcutConfig(AdhocPointcutConfig adhocPointcutConfig) throws Exception {
         return httpClient.post("/backend/config/adhoc-pointcut/+",
                 mapper.writeValueAsString(adhocPointcutConfig));
     }
 
     // returns new version
-    public String updateAdhocPointcutConfig(String version, PointcutConfig adhocPointcutConfig)
+    public String updateAdhocPointcutConfig(String version, AdhocPointcutConfig adhocPointcutConfig)
             throws Exception {
         return httpClient.post("/backend/config/adhoc-pointcut/" + version,
                 mapper.writeValueAsString(adhocPointcutConfig));

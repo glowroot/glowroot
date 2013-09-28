@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 
-import io.informant.container.config.PointcutConfig;
+import io.informant.container.config.AdhocPointcutConfig;
 
 import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -33,13 +33,13 @@ import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
  */
 class AdhocPointcutConfigSection {
 
-    private final List<PointcutConfig> configs;
+    private final List<AdhocPointcutConfig> configs;
     private final boolean jvmOutOfSync;
     private final boolean jvmRetransformClassesSupported;
 
     @JsonCreator
     AdhocPointcutConfigSection(
-            @JsonProperty("configs") @Nullable List<PointcutConfig> configs,
+            @JsonProperty("configs") @Nullable List<AdhocPointcutConfig> configs,
             @JsonProperty("jvmOutOfSync") @Nullable Boolean jvmOutOfSync,
             @JsonProperty("jvmRetransformClassesSupported") @Nullable Boolean jvmRetransformClassesSupported)
             throws JsonMappingException {
@@ -51,7 +51,7 @@ class AdhocPointcutConfigSection {
         this.jvmRetransformClassesSupported = jvmRetransformClassesSupported;
     }
 
-    List<PointcutConfig> getConfigs() {
+    List<AdhocPointcutConfig> getConfigs() {
         return configs;
     }
 

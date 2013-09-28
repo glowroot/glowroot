@@ -27,7 +27,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
-import io.informant.config.PointcutConfig;
+import io.informant.config.AdhocPointcutConfig;
 import io.informant.weaving.TypeNames;
 
 import static io.informant.common.Nullness.assertNonNull;
@@ -57,10 +57,10 @@ public class DynamicAdviceGenerator {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
-    private final PointcutConfig adhocPointcutConfig;
+    private final AdhocPointcutConfig adhocPointcutConfig;
     private final String adviceTypeName;
 
-    public DynamicAdviceGenerator(PointcutConfig adhocPointcutConfig) {
+    public DynamicAdviceGenerator(AdhocPointcutConfig adhocPointcutConfig) {
         this.adhocPointcutConfig = adhocPointcutConfig;
         adviceTypeName = "io/informant/dynamicadvice/GeneratedAdvice" + counter.incrementAndGet();
     }

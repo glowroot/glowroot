@@ -44,7 +44,7 @@ import io.informant.config.GeneralConfig;
 import io.informant.config.PluginConfig;
 import io.informant.config.PluginDescriptor;
 import io.informant.config.PluginDescriptorCache;
-import io.informant.config.PointcutConfig;
+import io.informant.config.AdhocPointcutConfig;
 import io.informant.config.StorageConfig;
 import io.informant.config.UserOverridesConfig;
 import io.informant.config.WithVersionJsonView;
@@ -329,8 +329,8 @@ class ConfigJsonService {
     @JsonServiceMethod
     String addAdhocPointcutConfig(String content) throws JsonProcessingException, IOException {
         logger.debug("addAdhocPointcutConfig(): content={}", content);
-        PointcutConfig adhocPointcutConfig =
-                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
+        AdhocPointcutConfig adhocPointcutConfig =
+                ObjectMappers.readRequiredValue(mapper, content, AdhocPointcutConfig.class);
         return configService.insertAdhocPointcutConfig(adhocPointcutConfig);
     }
 
@@ -339,8 +339,8 @@ class ConfigJsonService {
             throws JsonProcessingException, IOException {
         logger.debug("updateAdhocPointcutConfig(): priorVersion={}, content={}", priorVersion,
                 content);
-        PointcutConfig adhocPointcutConfig =
-                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
+        AdhocPointcutConfig adhocPointcutConfig =
+                ObjectMappers.readRequiredValue(mapper, content, AdhocPointcutConfig.class);
         return configService.updateAdhocPointcutConfig(priorVersion, adhocPointcutConfig);
     }
 
