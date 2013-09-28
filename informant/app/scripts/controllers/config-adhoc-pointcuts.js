@@ -280,16 +280,24 @@ informant.controller('ConfigAdhocPointcutCtrl', [
           });
     }
 
-    $scope.$watch('pointcut.config.metric', function (metric) {
-      if (!metric) {
+    $scope.$watch('pointcut.config.metric', function (newValue, oldValue) {
+      if (newValue === oldValue) {
+        // called due to watcher initialization
+        return;
+      }
+      if (!newValue) {
         $scope.pointcut.config.span = false;
         $scope.pointcut.config.trace = false;
       }
     });
 
-    $scope.$watch('pointcut.config.span', function (span) {
-      if (span) {
-        updateSpanText();
+    $scope.$watch('pointcut.config.span', function (newValue, oldValue) {
+      if (newValue === oldValue) {
+        // called due to watcher initialization
+        return;
+      }
+      if (newValue) {
+        initSpanText();
       } else {
         $scope.pointcut.config.trace = false;
         $scope.pointcut.config.spanText = '';
@@ -297,25 +305,33 @@ informant.controller('ConfigAdhocPointcutCtrl', [
       }
     });
 
-    $scope.$watch('pointcut.config.trace', function (trace) {
-      if (trace) {
-        updateSpanText();
-        updateTraceGrouping();
+    $scope.$watch('pointcut.config.trace', function (newValue, oldValue) {
+      if (newValue === oldValue) {
+        // called due to watcher initialization
+        return;
+      }
+      if (newValue) {
+        initSpanText();
+        initTraceGrouping();
       } else {
         $scope.pointcut.config.traceGrouping = '';
       }
     });
 
-    $scope.$watch('pointcut.selectedSignature', function () {
+    $scope.$watch('pointcut.selectedSignature', function (newValue, oldValue) {
+      if (newValue === oldValue) {
+        // called due to watcher initialization
+        return;
+      }
       if ($scope.pointcut.config.span) {
-        updateSpanText();
+        initSpanText();
       }
       if ($scope.pointcut.config.trace) {
-        updateTraceGrouping();
+        initTraceGrouping();
       }
     });
 
-    function updateSpanText() {
+    function initSpanText() {
       var signature = $scope.pointcut.selectedSignature;
       if (!signature) {
         // no radio button selected
@@ -357,7 +373,7 @@ informant.controller('ConfigAdhocPointcutCtrl', [
           signature.argTypeNames.length === 1 && signature.argTypeNames[0] === '..';
     }
 
-    function updateTraceGrouping() {
+    function initTraceGrouping() {
       var signature = $scope.pointcut.selectedSignature;
       if (!signature) {
         // no radio button selected
