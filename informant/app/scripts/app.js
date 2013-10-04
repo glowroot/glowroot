@@ -45,67 +45,8 @@ informant.factory('httpInterceptor', [
 ]);
 
 informant.config([
-  '$stateProvider',
-  '$urlRouterProvider',
   '$httpProvider',
-  function ($stateProvider, $urlRouterProvider, $httpProvider) {
-    $urlRouterProvider.otherwise('/');
-    $stateProvider.state('home', {
-      url: '/',
-      templateUrl: 'views/home.html',
-      controller: 'HomeCtrl'
-    });
-    $stateProvider.state('search', {
-      url: '/search.html',
-      templateUrl: 'views/search.html',
-      controller: 'SearchCtrl'
-    });
-    $stateProvider.state('config', {
-      url: '/config',
-      templateUrl: 'views/config.html',
-      controller: 'ConfigCtrl'
-    });
-    $stateProvider.state('config.general', {
-      url: '/general.html',
-      templateUrl: 'views/config-general.html',
-      controller: 'ConfigGeneralCtrl'
-    });
-    $stateProvider.state('config.coarseProfiling', {
-      url: '/coarse-grained-profiling.html',
-      templateUrl: 'views/config-coarse-profiling.html',
-      controller: 'ConfigCoarseProfilingCtrl'
-    });
-    $stateProvider.state('config.fineProfiling', {
-      url: '/fine-grained-profiling.html',
-      templateUrl: 'views/config-fine-profiling.html',
-      controller: 'ConfigFineProfilingCtrl'
-    });
-    $stateProvider.state('config.userOverrides', {
-      url: '/user-specific-overrides.html',
-      templateUrl: 'views/config-user-overrides.html',
-      controller: 'ConfigUserOverridesCtrl'
-    });
-    $stateProvider.state('config.storage', {
-      url: '/storage.html',
-      templateUrl: 'views/config-storage.html',
-      controller: 'ConfigStorageCtrl'
-    });
-    $stateProvider.state('config.plugins', {
-      url: '/plugins.html',
-      templateUrl: 'views/config-plugin-list.html',
-      controller: 'ConfigPluginListCtrl'
-    });
-    $stateProvider.state('config.adhocPointcuts', {
-      url: '/adhoc-pointcuts.html',
-      templateUrl: 'views/config-adhoc-pointcut-list.html',
-      controller: 'ConfigAdhocPointcutListCtrl'
-    });
-    $stateProvider.state('threadDump', {
-      url: '/thread-dump.html',
-      templateUrl: 'views/thread-dump.html',
-      controller: 'ThreadDumpCtrl'
-    });
-
+  function ($httpProvider) {
     $httpProvider.interceptors.push('httpInterceptor');
   }
 ]);

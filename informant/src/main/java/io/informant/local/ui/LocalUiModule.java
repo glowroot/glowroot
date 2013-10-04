@@ -100,7 +100,7 @@ public class LocalUiModule {
                         traceModule.getDynamicAdviceCache(), instrumentation);
         AdhocPointcutConfigJsonService adhocPointcutConfigJsonService =
                 new AdhocPointcutConfigJsonService(parsedTypeCache);
-        ThreadsJsonService threadsJsonService = new ThreadsJsonService();
+        JvmJsonService jvmJsonService = new JvmJsonService();
         AdminJsonService adminJsonService = new AdminJsonService(snapshotDao,
                 configService, traceModule.getDynamicAdviceCache(), parsedTypeCache,
                 instrumentation, traceCollector, dataSource, traceRegistry);
@@ -110,8 +110,8 @@ public class LocalUiModule {
         int port = getHttpServerPort(properties);
         httpServer = buildHttpServer(port, numWorkerThreads, new VersionJsonService(version),
                 aggregateJsonService, tracePointJsonService, traceSummaryJsonService,
-                snapshotHttpService, traceExportHttpService, configJsonService,
-                adhocPointcutConfigJsonService, threadsJsonService, adminJsonService);
+                snapshotHttpService, traceExportHttpService, jvmJsonService, configJsonService,
+                adhocPointcutConfigJsonService, adminJsonService);
     }
 
     @OnlyUsedByTests
@@ -155,10 +155,10 @@ public class LocalUiModule {
             VersionJsonService versionJsonService, AggregateJsonService aggregateJsonService,
             TracePointJsonService tracePointJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
-            SnapshotHttpService snapshotHttpService,
-            TraceExportHttpService traceExportHttpService, ConfigJsonService configJsonService,
+            SnapshotHttpService snapshotHttpService, TraceExportHttpService traceExportHttpService,
+            JvmJsonService jvmJsonService, ConfigJsonService configJsonService,
             AdhocPointcutConfigJsonService adhocPointcutConfigJsonService,
-            ThreadsJsonService threadsJsonService, AdminJsonService adminJsonService) {
+            AdminJsonService adminJsonService) {
 
         String resourceBase = "io/informant/local/ui/app-dist";
 
@@ -168,6 +168,7 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/search.html$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/config.html$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/pointcuts.html$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/jvm-options.html$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/thread-dump.html$"), resourceBase + "/index.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");
@@ -196,6 +197,27 @@ public class LocalUiModule {
                 tracePointJsonService, "getPoints"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/trace/summary/(.+)$",
                 traceSummaryJsonService, "getSummary"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/supported",
+                jvmJsonService, "getSupported"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/general",
+                jvmJsonService, "getGeneralInfo"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/system-properties",
+                jvmJsonService, "getSystemProperties"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/thread-dump$",
+                jvmJsonService, "getThreadDump"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/heap-dump-defaults",
+                jvmJsonService, "getHeapDumpDefaults"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/jvm/check-disk-space",
+                jvmJsonService, "checkDiskSpace"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/jvm/dump-heap$",
+                jvmJsonService, "dumpHeap"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/diagnostic-options",
+                jvmJsonService, "getDiagnosticOptions"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST,
+                "^/backend/jvm/update-diagnostic-options", jvmJsonService,
+                "updateDiagnosticOptions"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/all-options",
+                jvmJsonService, "getAllOptions"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config$",
                 configJsonService, "getConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/general$",
@@ -243,8 +265,6 @@ public class LocalUiModule {
         jsonServiceMappings.add(new JsonServiceMapping(GET,
                 "^/backend/adhoc-pointcut/matching-methods",
                 adhocPointcutConfigJsonService, "getMatchingMethods"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/threads/dump$",
-                threadsJsonService, "getThreadDump"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/admin/data/delete-all$",
                 adminJsonService, "deleteAllData"));
         jsonServiceMappings.add(new JsonServiceMapping(POST,

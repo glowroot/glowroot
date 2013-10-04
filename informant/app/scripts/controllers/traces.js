@@ -16,16 +16,16 @@
 
 /* global informant, Informant, TraceRenderer, $, Spinner, alert */
 
-informant.controller('SearchCtrl', [
+informant.controller('TracesCtrl', [
   '$scope',
   '$http',
   '$q',
   'traceModal',
   function ($scope, $http, $q, traceModal) {
     // \u00b7 is &middot;
-    document.title = 'Trace search \u00b7 Informant';
-    $scope.$parent.title = 'Trace search';
-    $scope.$parent.activeNavbarItem = 'search';
+    document.title = 'Traces \u00b7 Informant';
+    $scope.$parent.title = 'Traces';
+    $scope.$parent.activeNavbarItem = 'traces';
 
     var plot;
 

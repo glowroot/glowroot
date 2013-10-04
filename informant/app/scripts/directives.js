@@ -22,26 +22,15 @@ informant.factory('ixButtonGroupControllerFactory', [
     return {
       create: function (element) {
         var $element = $(element);
-        var $buttonMessage = $element.find('.button-message');
-        var $buttonSpinner = $element.find('.button-spinner');
         var alreadyExecuting = false;
         return {
-          onClick: function (fn, validate) {
+          onClick: function (fn) {
             // handle crazy user clicking on the button
             if (alreadyExecuting) {
               return;
             }
-            // validate form
-            if (validate) {
-              var form = element.parent().controller('form');
-              if (!form.$valid) {
-                $buttonMessage.text('Please fix form errors');
-                $buttonMessage.removeClass('button-message-success');
-                $buttonMessage.addClass('button-message-error');
-                $buttonMessage.removeClass('hide');
-                return;
-              }
-            }
+            var $buttonMessage = $element.find('.button-message');
+            var $buttonSpinner = $element.find('.button-spinner');
             // in case button is clicked again before message fades out
             $buttonMessage.addClass('hide');
             Informant.showSpinner($buttonSpinner);
@@ -99,32 +88,21 @@ informant.directive('ixButton', [
         ixLabel: '@',
         ixClick: '&',
         ixShow: '&',
-        ixDontValidateForm: '@',
         ixBtnClass: '@',
         ixDisabled: '&'
       },
-      template: function (tElement, tAttrs) {
-        var ixButtonGroup = tElement.parent().controller('ixButtonGroup');
-        var ngShow = tAttrs.hasOwnProperty('ixShow') ? ' ng-show="ixShow()"' : '';
-        if (ixButtonGroup) {
-          return '<button class="btn" ng-class="ixBtnClass || \'btn-primary\'" ng-click="onClick()"' +
-              ngShow + ' ng-disabled="ixDisabled()">{{ixLabel}}</button>';
-        } else {
-          return '<button class="btn" ng-class="ixBtnClass || \'btn-primary\'" ng-click="onClick()"' +
-              ngShow + ' ng-disabled="ixDisabled()">{{ixLabel}}</button>' +
-              '<span class="button-message hide"></span>' +
-              '<span class="button-spinner inline-block hide"></span>';
-        }
-      },
+      templateUrl: 'template/ix-button.html',
       require: '^?ixButtonGroup',
       link: function (scope, iElement, iAttrs, ixButtonGroup) {
-        var form = iElement.parent().controller('form');
+        scope.ngShow = function () {
+          return iAttrs.ixShow ? scope.ixShow() : true;
+        };
         if (!ixButtonGroup) {
           scope.noGroup = true;
           ixButtonGroup = ixButtonGroupControllerFactory.create(iElement);
         }
         scope.onClick = function () {
-          ixButtonGroup.onClick(scope.ixClick, form && !scope.ixDontValidateForm);
+          ixButtonGroup.onClick(scope.ixClick);
         };
       }
     };
@@ -275,5 +253,23 @@ informant.directive('ixSetFocus', function () {
             iElement.focus();
           }
         }, true);
+  };
+});
+
+informant.directive('ixDisplayWhitespace', function () {
+  return {
+    scope: {
+      ixBind: '&'
+    },
+    link: function (scope, iElement, iAttrs) {
+      var text = scope.ixBind();
+      iElement.text(text);
+      var html = iElement.html();
+      html = html.replace('\n', '<em>\\n</em>')
+          .replace('\r', '<em>\\r</em>')
+          .replace('\t', '<em>\\t</em>');
+      html = html.replace('</em><em>', '');
+      iElement.html(html);
+    }
   };
 });

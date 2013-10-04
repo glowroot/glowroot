@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-.thread-dump-flat-pre {
-  // slightly modified version of bootstrap's pre
-  // intentionally not breaking long single-words for stack trace formatting, though this requires
-  // that the container has overflow: visible
-  display: inline-block;
-  font-family: Monaco, Menlo, Consolas, Courier New, monospace;
-  color: #333;
-  padding: 0 20px;
-  font-size: 13px;
-  line-height: 20px;
-  word-break: break-all;
-  white-space: pre;
-  background-color: #eee;
-  border-radius: 8px;
-}
+/* global informant */
+
+informant.controller('JvmSystemPropertiesCtrl', [
+  '$scope',
+  '$http',
+  function ($scope, $http) {
+    $http.get('backend/jvm/system-properties')
+        .success(function (data) {
+          $scope.properties = data;
+        })
+        .error(function (error) {
+          // TODO
+        });
+  }
+]);

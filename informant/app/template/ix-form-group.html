@@ -1,5 +1,7 @@
 <div class="form-group" ng-class="{'has-error': formCtrl[ixId].$invalid}">
-  <label class="control-label col-lg-3" for="{{ixId}}">
+  <label class="control-label col-lg-3"
+         ng-class="{ 'checkbox-control-label': ixType === 'checkbox' }"
+         for="{{ixId}}">
     {{ixLabel}}
   </label>
   <div class="col-lg-9">

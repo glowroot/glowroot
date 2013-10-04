@@ -79,8 +79,8 @@ html.lt-ie9 .lt-ie9-width-auto {
   color: $informant-red;
 }
 
-// this is to dynamically hide the error message immediately after it is fixed
-form.ng-valid .button-message-error {
+// this is to dynamically hide the validation error message immediately after it is fixed
+form.ng-valid .button-validation-error {
   display: none;
 }
 

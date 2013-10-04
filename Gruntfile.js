@@ -39,7 +39,7 @@ module.exports = function (grunt) {
         files: [
           '<%= yeoman.app %>/index.html',
           '<%= yeoman.app %>/scripts/**/*.js',
-          '<%= yeoman.app %>/views/*.html',
+          '<%= yeoman.app %>/views/**/*.html',
           '<%= yeoman.app %>/template/**/*.html',
           // watch:sass output
           '.tmp/app/styles/main.css',
@@ -270,7 +270,7 @@ module.exports = function (grunt) {
         },
         cwd: '<%= yeoman.app %>',
         src: [
-          'views/*.html',
+          'views/**/*.html',
           'template/**/*.html'
         ],
         dest: '.tmp/app/scripts/generated/angular-templates.js'

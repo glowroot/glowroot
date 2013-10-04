@@ -33,7 +33,8 @@
                  ix-form-group
                  ix-label="{{property.prompt}}"
                  ix-model="property.value"
-                 ix-width="25em">
+                 ix-width="25em"
+                 ng-class="{ 'ix-form-group-without-help-block': property.description === null }">
               <div class="help-block">
                 {{property.description}}
               </div>
@@ -42,7 +43,8 @@
                  ix-form-group
                  ix-label="{{property.prompt}}"
                  ix-model="property.value"
-                 ix-type="checkbox">
+                 ix-type="checkbox"
+                 ng-class="{ 'ix-form-group-without-help-block': property.description === null }">
               <div class="help-block">
                 {{property.description}}
               </div>
@@ -53,14 +55,15 @@
                  ix-model="property.value"
                  ix-number="true"
                  ix-pattern="pattern.double"
-                 ix-width="7em">
+                 ix-width="7em"
+                 ng-class="{ 'ix-form-group-without-help-block': property.description === null }">
               <div class="help-block">
                 {{property.description}}
               </div>
             </div>
           </div>
         </div>
-        <div class="form-group">
+        <div class="form-group form-buttons">
           <div class="col-lg-offset-3 col-lg-9">
             <div ix-button
                  ix-label="Save changes"

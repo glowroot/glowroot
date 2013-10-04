@@ -16,14 +16,10 @@
 
 /* global informant, Informant, $, Handlebars, JST */
 
-informant.controller('ThreadDumpCtrl', [
+informant.controller('JvmThreadDumpCtrl', [
   '$scope',
   '$http',
   function ($scope, $http) {
-    // \u00b7 is &middot;
-    document.title = 'Thread dump \u00b7 Informant';
-    $scope.$parent.title = 'Thread dump';
-    $scope.$parent.activeNavbarItem = 'thread-dump';
 
     Handlebars.registerHelper('ifBlocked', function (state, options) {
       if (state === 'BLOCKED') {
@@ -42,7 +38,7 @@ informant.controller('ThreadDumpCtrl', [
     });
 
     $scope.refresh = function (scroll, deferred) {
-      $http.get('backend/threads/dump')
+      $http.get('backend/jvm/thread-dump')
           .success(function (data) {
             // $.trim() is needed because this template is sensitive to surrounding spaces
             var html = $.trim(JST['thread-dump'](data));

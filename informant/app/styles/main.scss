@@ -50,6 +50,8 @@ $state-danger-text: $informant-red;
 @import "../bower_components/sass-bootstrap/lib/navbar";
 // panels are used by config views
 @import "../bower_components/sass-bootstrap/lib/panels";
+// panels are used by jvm heapdump view
+@import "../bower_components/sass-bootstrap/lib/wells";
 
 // basic bootstrap foundation
 @import "../bower_components/sass-bootstrap/lib/grid";
@@ -65,6 +67,7 @@ $state-danger-text: $informant-red;
 @import "home";
 @import "search";
 @import "config";
+@import "jvm";
 @import "sidebar";
 @import "thread-dump";
 @import "common";

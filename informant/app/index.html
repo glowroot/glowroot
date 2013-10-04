@@ -77,20 +77,19 @@
                ix-url="">
           </div>
           <div ix-navbar-item
-               ix-display="Trace search"
-               ix-item-name="search"
-               ix-url="search.html">
+               ix-display="Traces"
+               ix-item-name="traces"
+               ix-url="traces">
+          </div>
+          <div ix-navbar-item
+               ix-display="JVM"
+               ix-item-name="jvm"
+               ix-url="jvm/general">
           </div>
           <div ix-navbar-item
                ix-display="Configuration"
                ix-item-name="config"
-               ix-url="config/general.html">
-          </div>
-          <div ix-navbar-item
-               ix-display="Thread dump"
-               ix-item-name="thread-dump"
-               ix-url="thread-dump.html"
-               ng-show="$parent.activeNavbarItem === 'thread-dump'">
+               ix-url="config/general">
           </div>
         </ul>
       </nav>
@@ -162,20 +161,28 @@
 
   <!-- build:js({informant/app,.tmp/app}) scripts/app.js -->
   <script src="scripts/app.js"></script>
+  <script src="scripts/routes.js"></script>
   <script src="scripts/directives.js"></script>
+  <script src="scripts/filters.js"></script>
   <script src="scripts/trace-renderer.js"></script>
   <script src="scripts/services/trace-modal.js"></script>
   <script src="scripts/controllers/home.js"></script>
-  <script src="scripts/controllers/search.js"></script>
+  <script src="scripts/controllers/traces.js"></script>
   <script src="scripts/controllers/config.js"></script>
-  <script src="scripts/controllers/config-general.js"></script>
-  <script src="scripts/controllers/config-coarse-profiling.js"></script>
-  <script src="scripts/controllers/config-fine-profiling.js"></script>
-  <script src="scripts/controllers/config-user-overrides.js"></script>
-  <script src="scripts/controllers/config-storage.js"></script>
-  <script src="scripts/controllers/config-plugin-list.js"></script>
-  <script src="scripts/controllers/config-adhoc-pointcut-list.js"></script>
-  <script src="scripts/controllers/thread-dump.js"></script>
+  <script src="scripts/controllers/config/general.js"></script>
+  <script src="scripts/controllers/config/coarse-profiling.js"></script>
+  <script src="scripts/controllers/config/fine-profiling.js"></script>
+  <script src="scripts/controllers/config/user-overrides.js"></script>
+  <script src="scripts/controllers/config/storage.js"></script>
+  <script src="scripts/controllers/config/plugin-list.js"></script>
+  <script src="scripts/controllers/config/adhoc-pointcut-list.js"></script>
+  <script src="scripts/controllers/jvm.js"></script>
+  <script src="scripts/controllers/jvm/general.js"></script>
+  <script src="scripts/controllers/jvm/system-properties.js"></script>
+  <script src="scripts/controllers/jvm/thread-dump.js"></script>
+  <script src="scripts/controllers/jvm/heap-dump.js"></script>
+  <script src="scripts/controllers/jvm/diagnostic-options.js"></script>
+  <script src="scripts/controllers/jvm/all-options.js"></script>
   <!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->
   <script src="scripts/generated/handlebars-templates.js"></script>
   <!-- angular-templates.js is generated at build time by grunt-angular-templates -->

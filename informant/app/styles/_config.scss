@@ -38,7 +38,12 @@
 }
 
 .ix-form-group-without-help-block {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+}
+
+.form-buttons {
+ /* give button same space as form elements */
+  padding-top: 10px;
 }
 
 .help-block {
@@ -55,7 +60,15 @@
   height: 34px;
 }
 
-// add more padding to the config panels
-.panel-body .form-horizontal {
-  padding: 30px 0;
+// add more padding to the panels
+.panel-body {
+  padding: 30px;
+}
+
+.form-horizontal .control-label {
+  padding-bottom: 7px;
+}
+
+.checkbox-control-label {
+  padding-bottom: 0px !important;
 }

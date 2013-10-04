@@ -41,6 +41,8 @@ import static io.informant.common.ObjectMappers.checkRequiredProperty;
 @Immutable
 public class PluginDescriptor {
 
+    private static final ObjectMapper mapper = ObjectMappers.create();
+
     private final String groupId;
     private final String artifactId;
     private final String version;
@@ -129,7 +131,6 @@ public class PluginDescriptor {
     // only used by packager-maven-plugin, placed in informant to avoid shading issues
     public static PluginDescriptor readValue(String content) throws JsonProcessingException,
             IOException {
-        ObjectMapper mapper = ObjectMappers.create();
         return ObjectMappers.readRequiredValue(mapper, content, PluginDescriptor.class);
     }
 
