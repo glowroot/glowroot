@@ -240,6 +240,36 @@
           <createSourcesJar>true</createSourcesJar>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>1.5</version>
+        <executions>
+          <execution>
+            <id>add-third-party</id>
+            <goals>
+              <goal>add-third-party</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <thirdPartyFilename>META-INF/THIRD-PARTY-JAVA-LIBRARIES.txt</thirdPartyFilename>
+          <useMissingFile>true</useMissingFile>
+          <excludedArtifacts>informant-plugin-api</excludedArtifacts>
+          <excludedScopes>test,provided</excludedScopes>
+          <licenseMerges>
+            <licenseMerge>
+              Apache License, Version 2.0
+              |The Apache Software License, Version 2.0
+              |Apache License 2.0
+            </licenseMerge>
+            <licenseMerge>
+              BSD License
+              |BSD
+            </licenseMerge>
+          </licenseMerges>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
@@ -442,43 +472,6 @@
                 <version>4.10</version>
               </dependency>
             </dependencies>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>license-maven-plugin</artifactId>
-            <version>1.5</version>
-            <executions>
-              <execution>
-                <id>add-third-party</id>
-                <goals>
-                  <goal>add-third-party</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <thirdPartyFilename>META-INF/THIRD-PARTY-JAVA-LIBRARIES.txt</thirdPartyFilename>
-              <useMissingFile>true</useMissingFile>
-              <excludedGroups>io.informant</excludedGroups>
-              <excludedScopes>test,provided</excludedScopes>
-              <licenseMerges>
-                <licenseMerge>
-                  Apache License, Version 2.0
-                  |The Apache Software License, Version 2.0
-                  |Apache License 2.0
-                </licenseMerge>
-                <licenseMerge>
-                  BSD License
-                  |BSD
-                </licenseMerge>
-              </licenseMerges>
-            </configuration>
           </plugin>
         </plugins>
       </build>
