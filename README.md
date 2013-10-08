@@ -28,13 +28,8 @@ Then install Grunt from the command line using the Node.js package manager:
 
     npm install -g grunt-cli
 
-Lastly, from inside the project's root directory, install Informant's Node.js dependencies:
-
-    npm install
-
 Now building is easy:
 
-    grunt
     mvn clean install
 
 Binary and source distributions are built under package/target.
@@ -53,7 +48,6 @@ and connect your browser to `http://localhost:9000`.
 
 #### How to run automated tests
 
-    grunt
     mvn clean test
 
 ## License
