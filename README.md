@@ -3,14 +3,14 @@
 
 Root cause performance and error monitoring
 
-Supports JDK5 or later (dynamic pointcut reloading in JDK6 and later).
+Supports JDK5 and later (dynamic pointcut reloading in JDK6 and later).
 
 ## Quick start
 
-1. Download informant.jar and place in an empty directory of your choosing
-2. Add -javaagent:informant.jar to your application's JVM args
+1. Download [informant.jar](https://oss.sonatype.org/content/repositories/snapshots/io/informant/informant-package/0.5-SNAPSHOT/informant-package-0.5-20131008.080712-1.jar) and place in an empty directory of your choosing
+2. Add `-javaagent:informant.jar` to your application's JVM arguments
 3. Start your application
-4. Connect to http://localhost:4000
+4. Connect to `http://localhost:4000`
 
 ## Questions, bugs, feature requests
 
