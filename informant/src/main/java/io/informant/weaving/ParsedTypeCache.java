@@ -27,11 +27,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
+import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.cache.CacheBuilder;
@@ -112,60 +114,24 @@ public class ParsedTypeCache {
     private final ConcurrentMap<String, ParsedType> bootLoaderParsedTypeCache =
             new ConcurrentHashMap<String, ParsedType>();
 
-    private final SortedMap<String, String> typeNameUppers = Maps.newTreeMap();
+    @GuardedBy("typeNameUppers")
+    private final SortedMap<String, SortedSet<String>> typeNameUppers = Maps.newTreeMap();
 
-    // returns the first <limit> matching type names, ordered alphabetically (case-insensitive)
     public List<String> getMatchingTypeNames(String partialTypeName, int limit) {
         String partialTypeNameUpper = partialTypeName.toUpperCase(Locale.ENGLISH);
-        List<String> typeNames = Lists.newArrayList();
-        for (Entry<String, String> entry : typeNameUppers.entrySet()) {
-            String typeNameUpper = entry.getKey();
-            String typeName = entry.getValue();
-            if (typeNameUpper.contains(partialTypeNameUpper) && !typeNames.contains(typeName)) {
-                typeNames.add(typeName);
-                if (typeNames.size() == limit) {
-                    return typeNames;
+        Set<String> typeNames = Sets.newTreeSet();
+        synchronized (typeNameUppers) {
+            for (Entry<String, SortedSet<String>> entry : typeNameUppers.entrySet()) {
+                String typeNameUpper = entry.getKey();
+                if (typeNameUpper.contains(partialTypeNameUpper)) {
+                    typeNames.addAll(entry.getValue());
+                    if (typeNames.size() >= limit) {
+                        return Lists.newArrayList(typeNames).subList(0, limit);
+                    }
                 }
             }
         }
-        return typeNames;
-    }
-
-    // returns the first <limit> matching method names, ordered alphabetically (case-insensitive)
-    public ImmutableList<String> getMatchingMethodNames(String typeName, String partialMethodName,
-            int limit) {
-        String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
-        Set<String> methodNames = Sets.newTreeSet();
-        for (ParsedType parsedType : getMatchingParsedTypes(typeName)) {
-            for (ParsedMethod parsedMethod : parsedType.getMethods()) {
-                String methodName = parsedMethod.getName();
-                if (methodName.toUpperCase(Locale.ENGLISH).contains(partialMethodNameUpper)) {
-                    methodNames.add(methodName);
-                }
-            }
-        }
-        ImmutableList<String> sortedMethodNames = Ordering.from(String.CASE_INSENSITIVE_ORDER)
-                .immutableSortedCopy(methodNames);
-        if (methodNames.size() > limit) {
-            return sortedMethodNames.subList(0, limit);
-        } else {
-            return sortedMethodNames;
-        }
-    }
-
-    public List<ParsedMethod> getMatchingParsedMethods(String typeName, String methodName) {
-        List<ParsedType> parsedTypes = getMatchingParsedTypes(typeName);
-        // use set to remove duplicate methods (e.g. same type loaded by multiple class loaders)
-        Set<ParsedMethod> parsedMethods = Sets.newHashSet();
-        for (ParsedType parsedType : parsedTypes) {
-            for (ParsedMethod parsedMethod : parsedType.getMethods()) {
-                if (parsedMethod.getName().equals(methodName)) {
-                    parsedMethods.add(parsedMethod);
-                }
-            }
-        }
-        // order methods by accessibility, then by name, then by number of args
-        return ParsedMethodOrdering.INSTANCE.sortedCopy(parsedMethods);
+        return Lists.newArrayList(typeNames);
     }
 
     public List<Class<?>> getClassesWithAdhocPointcuts() {
@@ -194,11 +160,30 @@ public class ParsedTypeCache {
         return classes;
     }
 
+    public List<ParsedType> getParsedTypes(String typeName) {
+        List<ParsedType> parsedTypes = Lists.newArrayList();
+        ParsedType parsedType = bootLoaderParsedTypeCache.get(typeName);
+        if (parsedType != null) {
+            parsedTypes.add(parsedType);
+        }
+        for (Map<String, ParsedType> loaderParsedTypes : this.parsedTypeCache.asMap().values()) {
+            parsedType = loaderParsedTypes.get(typeName);
+            if (parsedType != null) {
+                parsedTypes.add(parsedType);
+            }
+        }
+        return parsedTypes;
+    }
+
+    public List<ClassLoader> getClassLoaders() {
+        return ImmutableList.copyOf(parsedTypeCache.asMap().keySet());
+    }
+
     void add(ParsedType parsedType, @Nullable ClassLoader loader) {
         ConcurrentMap<String, ParsedType> parsedTypes = getParsedTypes(loader);
         String typeName = parsedType.getName();
         parsedTypes.put(typeName, parsedType);
-        typeNameUppers.put(typeName.toUpperCase(Locale.ENGLISH), typeName);
+        addTypeNameUpper(typeName);
     }
 
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
@@ -215,21 +200,6 @@ public class ParsedTypeCache {
     ParsedType getParsedType(String typeName, @Nullable ClassLoader loader)
             throws ClassNotFoundException, IOException {
         return getOrCreateParsedType(typeName, loader);
-    }
-
-    private List<ParsedType> getMatchingParsedTypes(String typeName) {
-        List<ParsedType> parsedTypes = Lists.newArrayList();
-        ParsedType parsedType = bootLoaderParsedTypeCache.get(typeName);
-        if (parsedType != null) {
-            parsedTypes.add(parsedType);
-        }
-        for (Map<String, ParsedType> loaderParsedTypes : this.parsedTypeCache.asMap().values()) {
-            parsedType = loaderParsedTypes.get(typeName);
-            if (parsedType != null) {
-                parsedTypes.add(parsedType);
-            }
-        }
-        return parsedTypes;
     }
 
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
@@ -273,7 +243,7 @@ public class ParsedTypeCache {
                 // (rare) concurrent ParsedType creation, use the one that made it into the map
                 parsedType = storedParsedType;
             }
-            typeNameUppers.put(typeName.toUpperCase(Locale.ENGLISH), typeName);
+            addTypeNameUpper(typeName);
         }
         return parsedType;
     }
@@ -439,6 +409,18 @@ public class ParsedTypeCache {
         }
     }
 
+    private void addTypeNameUpper(String typeName) {
+        String typeNameUpper = typeName.toUpperCase(Locale.ENGLISH);
+        synchronized (typeNameUppers) {
+            SortedSet<String> typeNames = typeNameUppers.get(typeNameUpper);
+            if (typeNames == null) {
+                typeNames = Sets.newTreeSet();
+                typeNameUppers.put(typeNameUpper, typeNames);
+            }
+            typeNames.add(typeName);
+        }
+    }
+
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
@@ -467,9 +449,9 @@ public class ParsedTypeCache {
     }
 
     @Immutable
-    private static class ParsedMethodOrdering extends Ordering<ParsedMethod> {
+    public static class ParsedMethodOrdering extends Ordering<ParsedMethod> {
 
-        private static final ParsedMethodOrdering INSTANCE = new ParsedMethodOrdering();
+        public static final ParsedMethodOrdering INSTANCE = new ParsedMethodOrdering();
 
         @Override
         public int compare(@Nullable ParsedMethod left, @Nullable ParsedMethod right) {
@@ -498,7 +480,7 @@ public class ParsedTypeCache {
         }
     }
 
-    private static class ParsedTypeClassVisitor extends ClassVisitor {
+    public static class ParsedTypeClassVisitor extends ClassVisitor {
 
         private boolean iface;
         @Nullable
@@ -508,7 +490,7 @@ public class ParsedTypeCache {
         private String/*@Nullable*/[] interfaceNames;
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
 
-        private ParsedTypeClassVisitor() {
+        public ParsedTypeClassVisitor() {
             super(ASM4);
         }
 
@@ -538,7 +520,7 @@ public class ParsedTypeCache {
             return null;
         }
 
-        private ParsedType build() {
+        public ParsedType build() {
             assertNonNull(name, "Call to visit() is required");
             return ParsedType.from(iface, TypeNames.fromInternal(name),
                     TypeNames.fromInternal(superName), TypeNames.fromInternal(interfaceNames),

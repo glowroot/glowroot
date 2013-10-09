@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
@@ -29,13 +30,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
 import io.informant.markers.Singleton;
 import io.informant.weaving.ParsedMethod;
+import io.informant.weaving.ParsedType;
 import io.informant.weaving.ParsedTypeCache;
+import io.informant.weaving.ParsedTypeCache.ParsedMethodOrdering;
 
 import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
@@ -56,9 +63,12 @@ class AdhocPointcutConfigJsonService {
     private static final Splitter splitter = Splitter.on(' ').omitEmptyStrings();
 
     private final ParsedTypeCache parsedTypeCache;
+    private final ClasspathCache classpathCache;
 
-    AdhocPointcutConfigJsonService(ParsedTypeCache parsedTypeCache) {
+    AdhocPointcutConfigJsonService(ParsedTypeCache parsedTypeCache,
+            ClasspathCache classpathTypeCache) {
         this.parsedTypeCache = parsedTypeCache;
+        this.classpathCache = classpathTypeCache;
     }
 
     @JsonServiceMethod
@@ -66,8 +76,9 @@ class AdhocPointcutConfigJsonService {
         logger.debug("getMatchingTypeNames(): content={}", content);
         TypeNameRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, TypeNameRequest.class);
-        List<String> matchingTypeNames = parsedTypeCache.getMatchingTypeNames(
-                request.getPartialTypeName(), request.getLimit());
+        List<String> matchingTypeNames = getMatchingTypeNames(request.getPartialTypeName(),
+                request.getLimit());
+
         return mapper.writeValueAsString(matchingTypeNames);
     }
 
@@ -76,8 +87,8 @@ class AdhocPointcutConfigJsonService {
         logger.debug("getMatchingMethodNames(): content={}", content);
         MethodNameRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, MethodNameRequest.class);
-        List<String> matchingMethodNames = parsedTypeCache.getMatchingMethodNames(
-                request.getTypeName(), request.getPartialMethodName(), request.getLimit());
+        List<String> matchingMethodNames = getMatchingMethodNames(request.getTypeName(),
+                request.getPartialMethodName(), request.getLimit());
         return mapper.writeValueAsString(matchingMethodNames);
     }
 
@@ -86,8 +97,8 @@ class AdhocPointcutConfigJsonService {
         logger.debug("getMatchingMethods(): content={}", content);
         MethodRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, MethodRequest.class);
-        List<ParsedMethod> parsedMethods = parsedTypeCache.getMatchingParsedMethods(
-                request.getTypeName(), request.getMethodName());
+        List<ParsedMethod> parsedMethods = getParsedMethods(request.getTypeName(),
+                request.getMethodName());
         ArrayNode matchingMethods = mapper.createArrayNode();
         for (ParsedMethod parsedMethod : parsedMethods) {
             ObjectNode matchingMethod = mapper.createObjectNode();
@@ -107,6 +118,64 @@ class AdhocPointcutConfigJsonService {
             matchingMethods.add(matchingMethod);
         }
         return mapper.writeValueAsString(matchingMethods);
+    }
+
+    // returns the first <limit> matching type names, ordered alphabetically (case-insensitive)
+    private ImmutableList<String> getMatchingTypeNames(String partialTypeName, int limit) {
+        Set<String> typeNames = Sets.newHashSet();
+        typeNames.addAll(parsedTypeCache.getMatchingTypeNames(partialTypeName, limit));
+        typeNames.addAll(classpathCache.getMatchingTypeNames(partialTypeName, limit));
+        ImmutableList<String> sortedTypeNames =
+                Ordering.from(String.CASE_INSENSITIVE_ORDER).immutableSortedCopy(typeNames);
+        if (sortedTypeNames.size() > limit) {
+            return sortedTypeNames.subList(0, limit);
+        } else {
+            return sortedTypeNames;
+        }
+    }
+
+    // returns the first <limit> matching method names, ordered alphabetically (case-insensitive)
+    private ImmutableList<String> getMatchingMethodNames(String typeName, String partialMethodName,
+            int limit) {
+        String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
+        Set<String> methodNames = Sets.newHashSet();
+        for (ParsedType parsedType : getParsedTypes(typeName)) {
+            for (ParsedMethod parsedMethod : parsedType.getMethods()) {
+                String methodName = parsedMethod.getName();
+                if (methodName.toUpperCase(Locale.ENGLISH).contains(partialMethodNameUpper)) {
+                    methodNames.add(methodName);
+                }
+            }
+        }
+        ImmutableList<String> sortedMethodNames =
+                Ordering.from(String.CASE_INSENSITIVE_ORDER).immutableSortedCopy(methodNames);
+        if (methodNames.size() > limit) {
+            return sortedMethodNames.subList(0, limit);
+        } else {
+            return sortedMethodNames;
+        }
+    }
+
+    private List<ParsedMethod> getParsedMethods(String typeName, String methodName) {
+        List<ParsedType> parsedTypes = getParsedTypes(typeName);
+        // use set to remove duplicate methods (e.g. same type loaded by multiple class loaders)
+        Set<ParsedMethod> parsedMethods = Sets.newHashSet();
+        for (ParsedType parsedType : parsedTypes) {
+            for (ParsedMethod parsedMethod : parsedType.getMethods()) {
+                if (parsedMethod.getName().equals(methodName)) {
+                    parsedMethods.add(parsedMethod);
+                }
+            }
+        }
+        // order methods by accessibility, then by name, then by number of args
+        return ParsedMethodOrdering.INSTANCE.sortedCopy(parsedMethods);
+    }
+
+    private List<ParsedType> getParsedTypes(String typeName) {
+        List<ParsedType> parsedTypes = Lists.newArrayList();
+        parsedTypes.addAll(parsedTypeCache.getParsedTypes(typeName));
+        parsedTypes.addAll(classpathCache.getParsedTypes(typeName));
+        return parsedTypes;
     }
 
     private static class TypeNameRequest {

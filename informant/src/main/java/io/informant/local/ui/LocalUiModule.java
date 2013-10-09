@@ -98,8 +98,9 @@ public class LocalUiModule {
         ConfigJsonService configJsonService =
                 new ConfigJsonService(configService, rollingFile, pluginDescriptorCache, dataDir,
                         traceModule.getDynamicAdviceCache(), instrumentation);
+        ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
         AdhocPointcutConfigJsonService adhocPointcutConfigJsonService =
-                new AdhocPointcutConfigJsonService(parsedTypeCache);
+                new AdhocPointcutConfigJsonService(parsedTypeCache, classpathCache);
         JvmJsonService jvmJsonService = new JvmJsonService();
         AdminJsonService adminJsonService = new AdminJsonService(snapshotDao,
                 configService, traceModule.getDynamicAdviceCache(), parsedTypeCache,

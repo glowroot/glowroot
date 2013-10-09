@@ -28,7 +28,7 @@ import io.informant.markers.NotThreadSafe;
  */
 // a ParsedType is never created for Object.class
 @Immutable
-class ParsedType {
+public class ParsedType {
 
     private final boolean iface;
     private final String name;
@@ -76,7 +76,7 @@ class ParsedType {
         return interfaceNames;
     }
 
-    ImmutableList<ParsedMethod> getMethods() {
+    public ImmutableList<ParsedMethod> getMethods() {
         return methods;
     }
 
