@@ -45,18 +45,6 @@ informant.controller('JvmCtrl', [
       $sidebar.affix({ offset: offset });
     }
 
-    // use local storage to make good initial guess on what sidebar items to display
-    // override once server responds (which should generally be very quick)
-    $scope.sidebar = localStorage.getItem('backend/jvm/supported');
-
-    $http.get('backend/jvm/supported')
-        .success(function (data) {
-          $scope.sidebar = data;
-          localStorage.setItem('backend/jvm/supported', data);
-          setTimeout(setUpSidebar, 100);
-        })
-        .error(function (error) {
-          // TODO
-        });
+    setTimeout(setUpSidebar, 100);
   }
 ]);

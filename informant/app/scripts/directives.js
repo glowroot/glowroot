@@ -227,12 +227,16 @@ informant.directive('ixNavbarItem', [
       scope: {
         ixDisplay: '@',
         ixItemName: '@',
-        ixUrl: '@'
+        ixUrl: '@',
+        ixShow: '&'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
       replace: true,
       templateUrl: 'template/ix-navbar-item.html',
       link: function (scope, iElement, iAttrs) {
+        scope.ngShow = function () {
+          return iAttrs.ixShow ? scope.ixShow() : true;
+        };
         scope.collapseNavbar = function () {
           // need to collapse the navbar in mobile view
           var $navbarCollapse = $('.navbar-collapse');

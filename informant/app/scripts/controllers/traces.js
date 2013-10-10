@@ -292,8 +292,8 @@ informant.controller('TracesCtrl', [
                     x: 5
                   },
                   viewport: $(window),
-                  // container is the dom node where qtip div is attached, this needs to be inside the traces angular
-                  // template so that its lifecycle is tied to the traces angular template
+                  // container is the dom node where qtip div is attached
+                  // this needs to be inside the angular template so that its lifecycle is tied to the angular template
                   container: $chartContainer
                 },
                 style: {

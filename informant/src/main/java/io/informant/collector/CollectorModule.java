@@ -31,6 +31,9 @@ import io.informant.markers.ThreadSafe;
 @ThreadSafe
 public class CollectorModule {
 
+    private static final boolean aggregatesEnabled =
+            Boolean.valueOf(System.getProperty("informant.experimental.aggregates"));
+
     private static final long fixedAggregateIntervalSeconds;
 
     static {
@@ -45,14 +48,14 @@ public class CollectorModule {
             SnapshotRepository snapshotRepository, AggregateRepository aggregateRepository,
             ScheduledExecutorService scheduledExecutor) {
         ConfigService configService = configModule.getConfigService();
-        aggregator = new Aggregator(scheduledExecutor, aggregateRepository, clock,
-                fixedAggregateIntervalSeconds);
+        if (aggregatesEnabled) {
+            aggregator = new Aggregator(scheduledExecutor, aggregateRepository, clock,
+                    fixedAggregateIntervalSeconds);
+        } else {
+            aggregator = null;
+        }
         traceCollector = new TraceCollectorImpl(scheduledExecutor, configService,
                 snapshotRepository, aggregator, clock, ticker);
-    }
-
-    public Aggregator getAggregator() {
-        return aggregator;
     }
 
     public TraceCollectorImpl getTraceCollector() {
@@ -61,5 +64,9 @@ public class CollectorModule {
 
     public long getFixedAggregateIntervalSeconds() {
         return fixedAggregateIntervalSeconds;
+    }
+
+    public boolean getAggregatesEnabled() {
+        return aggregatesEnabled;
     }
 }

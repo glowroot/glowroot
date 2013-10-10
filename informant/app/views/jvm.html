@@ -33,19 +33,19 @@
     <a class="list-group-item"
        ng-class="{active: isCurrentView('jvm.heapDump')}"
        href="#/jvm/heap-dump"
-       ng-show="sidebar.heapDumpSupported">
+       ng-show="layout.jvmHeapDump">
       Heap dump
     </a>
     <a class="list-group-item"
        ng-class="{active: isCurrentView('jvm.diagnosticOptions')}"
        href="#/jvm/diagnostic-options"
-       ng-show="sidebar.vmOptionsSupported">
+       ng-show="layout.jvmDiagnosticOptions">
       Diagnostic options
     </a>
     <a class="list-group-item"
        ng-class="{active: isCurrentView('jvm.allOptions')}"
        href="#/jvm/all-options"
-       ng-show="sidebar.vmOptionsSupported">
+       ng-show="layout.jvmAllOptions">
       All options
     </a>
   </ul>

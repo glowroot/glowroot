@@ -72,18 +72,6 @@ class JvmJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     @JsonServiceMethod
-    String getSupported() throws IOException, JMException {
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeBooleanField("heapDumpSupported", isHotSpotDiagnosticMBeanAvailable());
-        jg.writeBooleanField("vmOptionsSupported", isHotSpotDiagnosticMBeanAvailable());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
-    }
-
-    @JsonServiceMethod
     String getGeneralInfo() throws IOException, JMException {
         logger.debug("getGeneralInfo()");
         String runtimeName = ManagementFactory.getRuntimeMXBean().getName();
@@ -339,17 +327,6 @@ class JvmJsonService {
 
     private boolean isAtLeastJdk6() {
         return !System.getProperty("java.version").startsWith("1.5");
-    }
-
-    private boolean isHotSpotDiagnosticMBeanAvailable() {
-        try {
-            ObjectName hotSpotDiagnostic =
-                    ObjectName.getInstance("com.sun.management:type=HotSpotDiagnostic");
-            ManagementFactory.getPlatformMBeanServer().getObjectInstance(hotSpotDiagnostic);
-            return true;
-        } catch (JMException e) {
-            return false;
-        }
     }
 
     private static class VMOption {

@@ -16,7 +16,7 @@
 
 /* global informant, Informant, $ */
 
-informant.controller('HomeCtrl', [
+informant.controller('AggregatesCtrl', [
   '$scope',
   '$filter',
   '$http',
@@ -24,9 +24,9 @@ informant.controller('HomeCtrl', [
   'traceModal',
   function ($scope, $filter, $http, $q, traceModal) {
     // \u00b7 is &middot;
-    document.title = 'Home \u00b7 Informant';
-    $scope.$parent.title = 'Home';
-    $scope.$parent.activeNavbarItem = 'home';
+    document.title = 'Aggregates \u00b7 Informant';
+    $scope.$parent.title = 'Aggregates';
+    $scope.$parent.activeNavbarItem = 'aggregates';
 
     var plot;
 
@@ -192,10 +192,10 @@ informant.controller('HomeCtrl', [
       } else {
         traceCount = traceCount + ' traces';
       }
-      var text = '<span class="home-tooltip-label">From:</span>' + from + '<br>' +
-          '<span class="home-tooltip-label">To:</span>' + to + '<br>' +
-          '<span class="home-tooltip-label">Average:</span>' + average + ' seconds<br>' +
-          '<span class="home-tooltip-label"></span>(' + traceCount + ')';
+      var text = '<span class="aggregates-tooltip-label">From:</span>' + from + '<br>' +
+          '<span class="aggregates-tooltip-label">To:</span>' + to + '<br>' +
+          '<span class="aggregates-tooltip-label">Average:</span>' + average + ' seconds<br>' +
+          '<span class="aggregates-tooltip-label"></span>(' + traceCount + ')';
       $chart.qtip({
         content: {
           text: text
@@ -207,8 +207,8 @@ informant.controller('HomeCtrl', [
             y: -10
           },
           viewport: $(window),
-          // container is the dom node where qtip div is attached, this needs to be inside the home angular template so
-          // that its lifecycle is tied to the home angular template
+          // container is the dom node where qtip div is attached
+          // this needs to be inside the angular template so that its lifecycle is tied to the angular template
           container: $('.chart-container')
         },
         style: {

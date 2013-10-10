@@ -20,16 +20,51 @@ informant.config([
   '$stateProvider',
   '$urlRouterProvider',
   function ($stateProvider, $urlRouterProvider) {
-    $urlRouterProvider.otherwise('/');
-    $stateProvider.state('home', {
-      url: '/',
-      templateUrl: 'views/home.html',
-      controller: 'HomeCtrl'
-    });
+    $urlRouterProvider.otherwise('/traces');
     $stateProvider.state('traces', {
       url: '/traces',
       templateUrl: 'views/traces.html',
       controller: 'TracesCtrl'
+    });
+    $stateProvider.state('aggregates', {
+      url: '/aggregates',
+      templateUrl: 'views/aggregates.html',
+      controller: 'AggregatesCtrl'
+    });
+    $stateProvider.state('jvm', {
+      url: '/jvm',
+      templateUrl: 'views/jvm.html',
+      controller: 'JvmCtrl'
+    });
+    $stateProvider.state('jvm.general', {
+      url: '/general',
+      templateUrl: 'views/jvm/general.html',
+      controller: 'JvmGeneralCtrl'
+    });
+    $stateProvider.state('jvm.systemProperties', {
+      url: '/system-properties',
+      templateUrl: 'views/jvm/system-properties.html',
+      controller: 'JvmSystemPropertiesCtrl'
+    });
+    $stateProvider.state('jvm.threadDump', {
+      url: '/thread-dump',
+      templateUrl: 'views/jvm/thread-dump.html',
+      controller: 'JvmThreadDumpCtrl'
+    });
+    $stateProvider.state('jvm.heapDump', {
+      url: '/heap-dump',
+      templateUrl: 'views/jvm/heap-dump.html',
+      controller: 'JvmHeapDumpCtrl'
+    });
+    $stateProvider.state('jvm.diagnosticOptions', {
+      url: '/diagnostic-options',
+      templateUrl: 'views/jvm/diagnostic-options.html',
+      controller: 'JvmDiagnosticOptionsCtrl'
+    });
+    $stateProvider.state('jvm.allOptions', {
+      url: '/all-options',
+      templateUrl: 'views/jvm/all-options.html',
+      controller: 'JvmAllOptionsCtrl'
     });
     $stateProvider.state('config', {
       url: '/config',
@@ -75,41 +110,6 @@ informant.config([
       url: '/advanced',
       templateUrl: 'views/config/advanced.html',
       controller: 'ConfigGeneralCtrl'
-    });
-    $stateProvider.state('jvm', {
-      url: '/jvm',
-      templateUrl: 'views/jvm.html',
-      controller: 'JvmCtrl'
-    });
-    $stateProvider.state('jvm.general', {
-      url: '/general',
-      templateUrl: 'views/jvm/general.html',
-      controller: 'JvmGeneralCtrl'
-    });
-    $stateProvider.state('jvm.systemProperties', {
-      url: '/system-properties',
-      templateUrl: 'views/jvm/system-properties.html',
-      controller: 'JvmSystemPropertiesCtrl'
-    });
-    $stateProvider.state('jvm.threadDump', {
-      url: '/thread-dump',
-      templateUrl: 'views/jvm/thread-dump.html',
-      controller: 'JvmThreadDumpCtrl'
-    });
-    $stateProvider.state('jvm.heapDump', {
-      url: '/heap-dump',
-      templateUrl: 'views/jvm/heap-dump.html',
-      controller: 'JvmHeapDumpCtrl'
-    });
-    $stateProvider.state('jvm.diagnosticOptions', {
-      url: '/diagnostic-options',
-      templateUrl: 'views/jvm/diagnostic-options.html',
-      controller: 'JvmDiagnosticOptionsCtrl'
-    });
-    $stateProvider.state('jvm.allOptions', {
-      url: '/all-options',
-      templateUrl: 'views/jvm/all-options.html',
-      controller: 'JvmAllOptionsCtrl'
     });
   }
 ]);

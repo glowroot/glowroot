@@ -53,8 +53,26 @@ informant.config([
 
 informant.run([
   '$rootScope',
+  '$http',
   '$timeout',
-  function ($rootScope, $timeout) {
+  function ($rootScope, $http, $timeout) {
+
+    // use local storage to make good initial guess on layout
+    // override once server responds (which should generally be very quick)
+    var data = localStorage.getItem('backend/layout');
+    if (data) {
+      $rootScope.layout = JSON.parse(data);
+    }
+
+    $http.get('backend/layout')
+        .success(function (data) {
+          $rootScope.layout = data;
+          localStorage.setItem('backend/layout', JSON.stringify(data));
+        })
+        .error(function (error) {
+          // TODO
+        });
+
     // qtip adds some code to the beginning of jquery's cleanData function which causes the trace
     // detail modal to close slowly when it has 5000 spans
     // this extra cleanup code is not needed anyways since cleanup is performed explicitly
@@ -78,20 +96,6 @@ informant.run([
         });
       }
     });
-  }
-]);
-
-informant.controller('FooterCtrl', [
-  '$scope',
-  '$http',
-  function ($scope, $http) {
-    $http.get('backend/version')
-        .success(function (data) {
-          $scope.version = data;
-        })
-        .error(function (error) {
-          // TODO
-        });
   }
 ]);
 

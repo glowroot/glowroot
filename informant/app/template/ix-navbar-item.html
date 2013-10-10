@@ -1,4 +1,5 @@
-<li ng-class="{active: $parent.activeNavbarItem === ixItemName}">
+<li ng-class="{active: $parent.activeNavbarItem === ixItemName}"
+    ng-show="ngShow()">
   <a ng-href="#{{ixUrl}}" ng-click="collapseNavbar()">
     {{ixDisplay}}
   </a>

@@ -105,11 +105,13 @@ public class LocalUiModule {
         AdminJsonService adminJsonService = new AdminJsonService(snapshotDao,
                 configService, traceModule.getDynamicAdviceCache(), parsedTypeCache,
                 instrumentation, traceCollector, dataSource, traceRegistry);
+        LayoutJsonService layoutJsonService =
+                new LayoutJsonService(version, collectorModule.getAggregatesEnabled());
 
         // for now only a single http worker thread to keep # of threads down
         final int numWorkerThreads = 1;
         int port = getHttpServerPort(properties);
-        httpServer = buildHttpServer(port, numWorkerThreads, new VersionJsonService(version),
+        httpServer = buildHttpServer(port, numWorkerThreads, layoutJsonService,
                 aggregateJsonService, tracePointJsonService, traceSummaryJsonService,
                 snapshotHttpService, traceExportHttpService, jvmJsonService, configJsonService,
                 adhocPointcutConfigJsonService, adminJsonService);
@@ -153,7 +155,7 @@ public class LocalUiModule {
 
     @Nullable
     private static HttpServer buildHttpServer(int port, int numWorkerThreads,
-            VersionJsonService versionJsonService, AggregateJsonService aggregateJsonService,
+            LayoutJsonService layoutJsonService, AggregateJsonService aggregateJsonService,
             TracePointJsonService tracePointJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
             SnapshotHttpService snapshotHttpService, TraceExportHttpService traceExportHttpService,
@@ -188,8 +190,8 @@ public class LocalUiModule {
         // calling the method in json service, e.g. /backend/trace/summary/abc123 below calls the
         // method getSummary("abc123") in TraceSummaryJsonService
         ImmutableList.Builder<JsonServiceMapping> jsonServiceMappings = ImmutableList.builder();
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/version$",
-                versionJsonService, "getVersion"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/layout$",
+                layoutJsonService, "getLayout"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/aggregate/points$",
                 aggregateJsonService, "getPoints"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/aggregate/groupings",

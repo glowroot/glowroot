@@ -72,14 +72,15 @@
       <nav class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
           <div ix-navbar-item
-               ix-display="Overview"
-               ix-item-name="home"
-               ix-url="">
-          </div>
-          <div ix-navbar-item
                ix-display="Traces"
                ix-item-name="traces"
                ix-url="traces">
+          </div>
+          <div ix-navbar-item
+               ix-display="Aggregates"
+               ix-item-name="aggregates"
+               ix-url="aggregates"
+               ix-show="layout.aggregates">
           </div>
           <div ix-navbar-item
                ix-display="JVM"
@@ -104,8 +105,8 @@
     <div ui-view></div>
     <div id="push"></div>
   </div>
-  <div class="ng-cloak" id="footer" ng-controller="FooterCtrl">
-    version {{version}}
+  <div class="ng-cloak" id="footer">
+    {{layout.footerMessage}}
   </div>
 
   <!-- jquery and angular are replaced by google cdn links during grunt build -->
@@ -166,7 +167,7 @@
   <script src="scripts/filters.js"></script>
   <script src="scripts/trace-renderer.js"></script>
   <script src="scripts/services/trace-modal.js"></script>
-  <script src="scripts/controllers/home.js"></script>
+  <script src="scripts/controllers/aggregates.js"></script>
   <script src="scripts/controllers/traces.js"></script>
   <script src="scripts/controllers/config.js"></script>
   <script src="scripts/controllers/config/general.js"></script>

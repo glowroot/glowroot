@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import checkers.lock.quals.GuardedBy;
+import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
@@ -51,6 +52,7 @@ public class TraceCollectorImpl implements TraceCollector {
     private final ExecutorService executorService;
     private final ConfigService configService;
     private final SnapshotRepository snapshotRepository;
+    @Nullable
     private final Aggregator aggregator;
     private final Clock clock;
     private final Ticker ticker;
@@ -61,7 +63,7 @@ public class TraceCollectorImpl implements TraceCollector {
     private int countSinceLastWarning;
 
     TraceCollectorImpl(ExecutorService executorService, ConfigService configService,
-            SnapshotRepository snapshotRepository, Aggregator aggregator, Clock clock,
+            SnapshotRepository snapshotRepository, @Nullable Aggregator aggregator, Clock clock,
             Ticker ticker) {
         this.executorService = executorService;
         this.configService = configService;
@@ -106,7 +108,12 @@ public class TraceCollectorImpl implements TraceCollector {
         // this is a reasonable place to get the capture time since this code is still being
         // executed by the trace thread
         String grouping = Objects.firstNonNull(trace.getGrouping(), "<no grouping provided>");
-        final long captureTime = aggregator.add(grouping, trace.getDuration());
+        final long captureTime;
+        if (aggregator == null) {
+            captureTime = clock.currentTimeMillis();
+        } else {
+            captureTime = aggregator.add(grouping, trace.getDuration());
+        }
         if (shouldStore(trace)) {
             // onCompleteAndShouldStore must be called by the trace thread
             trace.onCompleteAndShouldStore();
