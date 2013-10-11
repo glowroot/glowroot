@@ -51,4 +51,10 @@ public class MessageTest {
                 (ReadableMessage) Message.from("one {} two {}{}", "test", "2", "3");
         assertThat(message.getText()).isEqualTo("one test two 23");
     }
+
+    @Test
+    public void shouldFormatConstantWithEmptyMethodBody() {
+        ReadableMessage message = (ReadableMessage) Message.from("public void run() {}");
+        assertThat(message.getText()).isEqualTo("public void run() {}");
+    }
 }
