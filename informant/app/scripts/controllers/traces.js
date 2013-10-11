@@ -278,23 +278,31 @@ informant.controller('TracesCtrl', [
                     ' style="font-size: 12px;">show detail</button></div>';
                 text = html + showDetailHtml;
               }
+              var $chartContainer = $('.chart-container');
+              var chartOffset = $chartContainer.offset();
+              // the +2 makes tooltip spacing from the data point the same when tooltip is both left and right of the
+              // data point
+              var target = [ x - chartOffset.left + 2, y - chartOffset.top ];
               $chart.qtip({
                 content: {
                   text: text
                 },
                 position: {
                   my: 'left center',
-                  target: [ x, y ],
+                  target: target,
                   adjust: {
                     x: 5
                   },
-                  viewport: $(window)
+                  viewport: $(window),
+                  // container is the dom node where qtip div is attached, this needs to be inside the traces angular
+                  // template so that its lifecycle is tied to the traces angular template
+                  container: $chartContainer
                 },
                 style: {
                   classes: 'ui-tooltip-bootstrap qtip-override qtip-border-color-' + item.seriesIndex
                 },
                 hide: {
-                  event: 'unfocus'
+                  event: false
                 },
                 show: {
                   event: false
@@ -305,6 +313,7 @@ informant.controller('TracesCtrl', [
                   }
                 }
               });
+
               $chart.qtip('show');
               $('#showDetail').click(function () {
                 var $qtip = $('.qtip');
@@ -331,8 +340,11 @@ informant.controller('TracesCtrl', [
       $chart.qtip('hide');
     }
 
-    $chart.mousedown(function () {
-      hideTooltip();
+    $('body').mousedown(function (e) {
+      if ($(e.target).parents('.qtip').length === 0) {
+        // click occurred outside of qtip
+        hideTooltip();
+      }
     });
 
     $(document).keyup(function (e) {

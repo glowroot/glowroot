@@ -208,7 +208,10 @@ informant.controller('HomeCtrl', [
           adjust: {
             y: -10
           },
-          viewport: $(window)
+          viewport: $(window),
+          // container is the dom node where qtip div is attached, this needs to be inside the home angular template so
+          // that its lifecycle is tied to the home angular template
+          container: $('.chart-container')
         },
         style: {
           classes: 'ui-tooltip-bootstrap qtip-override qtip-border-color-0'

@@ -67,6 +67,11 @@ $trace-point-error: $informant-red;
 }
 
 .qtip-override {
+  // min and max need to be the same for consistent qtip rendering
+  // otherwise, when a line-wrappable qtip is sort of near the right hand edge, the max-width won't allow it to overlap
+  // the chart-container, and then line wrapping kicks in and the qtip becomes taller, and then the left middle point
+  // marker gets pushed down past the point
+  min-width: 500px;
   max-width: 500px;
   font-size: 12px;
   line-height: 16px;
