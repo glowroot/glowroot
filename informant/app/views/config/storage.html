@@ -13,13 +13,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<!-- ng-if is needed to prevent panel from displaying very briefly with red validation errors on load
-     due to required input fields being initially empty (note: ng-show is not good enough, at least on IE) -->
-<div class="panel panel-default" ng-if="config">
+<div class="panel panel-default">
   <div class="panel-heading">
     <h2>Storage</h2>
   </div>
   <div class="panel-body">
+    <div class="panel-loading" ng-class="{hide: config}">
+      <div class="hide" id="initialLoadSpinner"></div>
+    </div>
     <form class="form-horizontal" name="formCtrl">
       <div class="form-group" ng-class="{'has-error': formCtrl.snapshotExpirationDays.$invalid}">
         <label class="col-lg-3 control-label" for="snapshotExpirationDays">
@@ -35,7 +36,7 @@
                        name="snapshotExpirationDays"
                        id="snapshotExpirationDays"
                        ng-pattern="pattern.integer"
-                       ng-required="true"
+                       ng-required="loaded"
                        style="width: 7em;">
                 <span class="input-group-addon">days</span>
               </div>
@@ -60,7 +61,7 @@
            ix-model="config.rollingSizeMb"
            ix-number="true"
            ix-pattern="pattern.integer"
-           ix-required="true"
+           ix-required="loaded"
            ix-width="7em"
            ix-addon="MB">
         <div class="help-block">

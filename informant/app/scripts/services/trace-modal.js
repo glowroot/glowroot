@@ -59,6 +59,7 @@ informant.factory('traceModal', [
       var width = $(window).width() - 50;
       var height = $(window).height() - 50;
       var detailLoaded = false;
+      var spinner;
       $modal.animate({
         left: '25px',
         top: '25px',
@@ -69,7 +70,7 @@ informant.factory('traceModal', [
         lineHeight: '20px'
       }, 400, function () {
         if (!detailLoaded) {
-          Informant.showSpinner('#detailSpinner');
+          spinner = Informant.showSpinner('#detailSpinner');
         }
         // hiding the flot chart is needed to prevent a strange issue in chrome that occurs when
         // expanding a section of the details to trigger vertical scrollbar to be active, then
@@ -92,7 +93,9 @@ informant.factory('traceModal', [
         $http.get('backend/trace/detail/' + summaryTrace.id)
             .success(function (data) {
               detailLoaded = true;
-              Informant.hideSpinner('#detailSpinner');
+              if (spinner) {
+                spinner.stop();
+              }
               if (data.expired) {
                 $('#modalContent').html('expired');
               } else {
@@ -108,12 +111,9 @@ informant.factory('traceModal', [
     }
 
     function hideModal() {
-
       var $modalContent = $('#modalContent');
       var modalVanishPoint = $modalContent.data('vanishPoint');
 
-      // just in case spinner is still showing
-      Informant.hideSpinner('#detailSpinner');
       // reset overflow so the background can scroll again
       $body.css('overflow', '');
       $body.removeClass('modal-open-full-screen');

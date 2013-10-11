@@ -33,18 +33,18 @@ informant.factory('ixButtonGroupControllerFactory', [
             var $buttonSpinner = $element.find('.button-spinner');
             // in case button is clicked again before message fades out
             $buttonMessage.addClass('hide');
-            Informant.showSpinner($buttonSpinner);
+            var spinner = Informant.showSpinner($buttonSpinner);
 
             var deferred = $q.defer();
             deferred.promise.then(function (success) {
-              Informant.hideSpinner($buttonSpinner);
+              spinner.stop();
               $buttonMessage.text(success);
               $buttonMessage.removeClass('button-message-error');
               $buttonMessage.addClass('button-message-success');
               Informant.showAndFadeSuccessMessage($buttonMessage);
               alreadyExecuting = false;
             }, function (error) {
-              Informant.hideSpinner($buttonSpinner);
+              spinner.stop();
               $buttonMessage.text(error);
               $buttonMessage.removeClass('button-message-success');
               $buttonMessage.addClass('button-message-error');

@@ -18,7 +18,10 @@
     <h2>Diagnostic options</h2>
   </div>
   <div class="panel-body">
-    <form class="form-horizontal" name="formCtrl">
+    <div class="panel-loading" ng-class="{hide: options}">
+      <div class="hide" id="initialLoadSpinner"></div>
+    </div>
+    <form class="form-horizontal jvm-diagnostic-options-form" name="formCtrl">
       <div ng-repeat="option in options">
         <div class="row">
           <div class="checkbox jvm-diagnostic-option col-lg-offset-3 col-lg-9">

@@ -21,13 +21,10 @@ informant.controller('ConfigAdhocPointcutListCtrl', [
   '$http',
   '$timeout',
   function ($scope, $http, $timeout) {
-    // TODO CONVERT TO ANGULARJS, global $http error handler?
-    Informant.configureAjaxError();
-    // TODO fix initial load spinner
-    Informant.showSpinner('#initialLoadSpinner');
+    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/config/adhoc-pointcut-section')
         .success(function (data) {
-          Informant.hideSpinner('#initialLoadSpinner');
+          spinner.stop();
           $scope.pointcuts = [];
           var i;
           for (i = 0; i < data.configs.length; i++) {

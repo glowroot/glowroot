@@ -50,13 +50,13 @@ informant.controller('HomeCtrl', [
         from: $scope.filter.from,
         to: $scope.filter.to
       };
-      Informant.showSpinner('#chartSpinner');
+      var spinner = Informant.showSpinner('#chartSpinner');
       $http.post('backend/aggregate/points', query)
           .success(function (data) {
             if (refreshId !== currentRefreshId) {
               return;
             }
-            Informant.hideSpinner('#chartSpinner');
+            spinner.stop();
             $scope.refreshChartError = false;
             fixedAggregateIntervalMillis = data.fixedAggregateIntervalSeconds * 1000;
             plot.getAxes().xaxis.options.borderGridLock = fixedAggregateIntervalMillis;
@@ -81,7 +81,7 @@ informant.controller('HomeCtrl', [
             if (refreshId !== currentRefreshId) {
               return;
             }
-            Informant.hideSpinner('#chartSpinner');
+            spinner.stop();
             $scope.chartLimitExceeded = false;
             if (status === 0) {
               $scope.refreshChartError = 'Unable to connect to server';
@@ -116,7 +116,6 @@ informant.controller('HomeCtrl', [
         // no need to fetch new data
         // increment currentRefreshId to cancel any refresh in action
         currentRefreshId++;
-        Informant.hideSpinner('#chartSpinner');
         $scope.$apply(function () {
           updateGroupings();
         });
@@ -135,7 +134,6 @@ informant.controller('HomeCtrl', [
       // no need to fetch new data
       // increment currentRefreshId to cancel any refresh in action
       currentRefreshId++;
-      Informant.hideSpinner('#chartSpinner');
       $scope.$apply(function () {
         updateGroupings();
       });

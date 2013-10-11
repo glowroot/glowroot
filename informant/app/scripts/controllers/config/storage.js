@@ -56,11 +56,10 @@ informant.controller('ConfigStorageCtrl', [
           });
     };
 
-    // TODO fix initial load spinner
-    Informant.showSpinner('#initialLoadSpinner');
+    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/config/storage-section')
         .success(function (data) {
-          Informant.hideSpinner('#initialLoadSpinner');
+          spinner.stop();
           $scope.config = data.config;
           originalConfig = angular.copy($scope.config);
 

@@ -19,7 +19,8 @@
 informant.controller('JvmThreadDumpCtrl', [
   '$scope',
   '$http',
-  function ($scope, $http) {
+  '$q',
+  function ($scope, $http, $q) {
 
     Handlebars.registerHelper('ifBlocked', function (state, options) {
       if (state === 'BLOCKED') {
@@ -62,7 +63,12 @@ informant.controller('JvmThreadDumpCtrl', [
           });
     };
 
-    Informant.configureAjaxError();
-    $scope.refresh(false);
+    var deferred = $q.defer();
+    var spinner = Informant.showSpinner('#initialLoadSpinner');
+    deferred.promise.then(function () {
+      $scope.loaded = true;
+      spinner.stop();
+    });
+    $scope.refresh(false, deferred);
   }
 ]);

@@ -13,13 +13,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<!-- ng-if is needed to prevent panel from displaying very briefly with red validation errors on load
-     due to required input fields being initially empty (note: ng-show is not good enough, at least on IE) -->
-<div class="panel panel-default" ng-if="config">
+<div class="panel panel-default">
   <div class="panel-heading">
     <h2>Fine-grained profiling</h2>
   </div>
   <div class="panel-body">
+    <div class="panel-loading" ng-class="{hide: config}">
+      <div class="hide" id="initialLoadSpinner"></div>
+    </div>
     <form class="form-horizontal" name="formCtrl">
       <div ix-form-group
            ix-label="Enabled"
@@ -32,7 +33,7 @@
            ix-model="config.tracePercentage"
            ix-number="true"
            ix-pattern="pattern.percentage"
-           ix-required="true"
+           ix-required="loaded"
            ix-width="7em"
            ix-addon="%">
         <div class="help-block">
@@ -44,7 +45,7 @@
            ix-model="config.intervalMillis"
            ix-number="true"
            ix-pattern="pattern.integer"
-           ix-required="true"
+           ix-required="loaded"
            ix-width="7em"
            ix-addon="milliseconds">
         <div class="help-block">
@@ -57,7 +58,7 @@
            ix-model="config.totalSeconds"
            ix-number="true"
            ix-pattern="pattern.integer"
-           ix-required="true"
+           ix-required="loaded"
            ix-width="7em"
            ix-addon="seconds">
         <div class="help-block">

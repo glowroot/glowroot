@@ -13,9 +13,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<!-- ng-show is needed to prevent panel from displaying very briefly with 'Heap dump', 'Diagnostic options' and
-     'All options' in the list when they are not available (jdk5) -->
-<div class="panel panel-default ix-sidebar hidden-print" ng-show="data">
+<div class="panel panel-default ix-sidebar hidden-print">
   <ul class="list-group">
     <a class="list-group-item"
        ng-class="{active: isCurrentView('jvm.general')}"
@@ -35,19 +33,19 @@
     <a class="list-group-item"
        ng-class="{active: isCurrentView('jvm.heapDump')}"
        href="#/jvm/heap-dump"
-       ng-show="data.heapDumpSupported">
+       ng-show="sidebar.heapDumpSupported">
       Heap dump
     </a>
     <a class="list-group-item"
        ng-class="{active: isCurrentView('jvm.diagnosticOptions')}"
        href="#/jvm/diagnostic-options"
-       ng-show="data.vmOptionsSupported">
+       ng-show="sidebar.vmOptionsSupported">
       Diagnostic options
     </a>
     <a class="list-group-item"
        ng-class="{active: isCurrentView('jvm.allOptions')}"
        href="#/jvm/all-options"
-       ng-show="data.vmOptionsSupported">
+       ng-show="sidebar.vmOptionsSupported">
       All options
     </a>
   </ul>

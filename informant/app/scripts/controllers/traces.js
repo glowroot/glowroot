@@ -51,13 +51,13 @@ informant.controller('TracesCtrl', [
       var low = $scope.filter.low;
       var high = $scope.filter.high;
       var refreshId = ++currentRefreshId;
-      Informant.showSpinner('#chartSpinner');
+      var spinner = Informant.showSpinner('#chartSpinner');
       $http.post('backend/trace/points', $scope.filter)
           .success(function (data) {
             if (refreshId !== currentRefreshId) {
               return;
             }
-            Informant.hideSpinner('#chartSpinner');
+            spinner.stop();
             $scope.refreshChartError = false;
             $scope.chartLimitExceeded = data.limitExceeded;
             $scope.chartLimit = limit;
@@ -85,7 +85,7 @@ informant.controller('TracesCtrl', [
             if (refreshId !== currentRefreshId) {
               return;
             }
-            Informant.hideSpinner('#chartSpinner');
+            spinner.stop();
             $scope.chartLimitExceeded = false;
             if (status === 0) {
               $scope.refreshChartError = 'Unable to connect to server';
@@ -123,7 +123,6 @@ informant.controller('TracesCtrl', [
         // no need to fetch new data
         // increment currentRefreshId to cancel any refresh in action
         currentRefreshId++;
-        Informant.hideSpinner('#chartSpinner');
       }
     });
 
@@ -146,7 +145,6 @@ informant.controller('TracesCtrl', [
         // no need to fetch new data
         // increment currentRefreshId to cancel any refresh in action
         currentRefreshId++;
-        Informant.hideSpinner('#chartSpinner');
       }
     });
 

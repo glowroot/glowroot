@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-/* global informant */
+/* global informant, Informant */
 
-informant.controller('JvmArgumentsCtrl', [
+informant.controller('JvmGeneralCtrl', [
   '$scope',
   '$http',
   function ($scope, $http) {
+    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/jvm/general')
         .success(function (data) {
+          spinner.stop();
           $scope.data = data;
         })
         .error(function (error) {

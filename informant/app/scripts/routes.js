@@ -84,7 +84,7 @@ informant.config([
     $stateProvider.state('jvm.general', {
       url: '/general',
       templateUrl: 'views/jvm/general.html',
-      controller: 'JvmArgumentsCtrl'
+      controller: 'JvmGeneralCtrl'
     });
     $stateProvider.state('jvm.systemProperties', {
       url: '/system-properties',

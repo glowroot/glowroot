@@ -18,6 +18,9 @@
     <h2>All options</h2>
   </div>
   <div class="panel-body">
+    <div class="panel-loading" ng-class="{hide: options}">
+      <div class="hide" id="initialLoadSpinner"></div>
+    </div>
     <div ng-repeat="option in options">
       <div class="row system-property">
         <div class="col-lg-5 break-word">

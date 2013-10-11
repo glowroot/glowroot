@@ -124,34 +124,22 @@ Informant = (function () {
 
   function showSpinner(selector, opts) {
     opts = opts || { lines: 10, width: 4, radius: 8 };
-    $(selector).each(function () {
-      var data = $(this).data();
-      data.spinner = new Spinner(opts);
-      var outerThis = this;
+    var element = $(selector)[0];
+    var spinner = new Spinner(opts);
 
-      function displaySpinner() {
-        // data.spinner may have been cleared already by hideSpinner() before setTimeout triggered
-        if (data.spinner) {
-          $(outerThis).removeClass('hide');
-          data.spinner.spin(outerThis);
-        }
+    // small delay so that if there is an immediate response the spinner doesn't blink
+    var timer = setTimeout(function () {
+      $(element).removeClass('hide');
+      spinner.spin(element);
+    }, 100);
+
+    return {
+      stop: function () {
+        clearTimeout(timer);
+        $(element).addClass('hide');
+        spinner.stop();
       }
-
-      // small delay so that if there is an immediate response the spinner doesn't blink
-      setTimeout(displaySpinner, 100);
-    });
-  }
-
-  function hideSpinner(selector) {
-    $(selector).each(function () {
-      var $this = $(this);
-      var data = $this.data();
-      if (data.spinner) {
-        data.spinner.stop();
-        delete data.spinner;
-      }
-      $this.addClass('hide');
-    });
+    };
   }
 
   function configureAjaxError() {
@@ -207,7 +195,6 @@ Informant = (function () {
     },
     fadeOut: fadeOut,
     showSpinner: showSpinner,
-    hideSpinner: hideSpinner,
     configureAjaxError: configureAjaxError
   };
 })();

@@ -45,3 +45,8 @@
 .jvm-diagnostic-option-name {
   padding-left: 10px;
 }
+
+.jvm-diagnostic-options-form {
+  // need a little padding for small screens, otherwise checkboxes too close to left side
+  padding-left: 20px;
+}

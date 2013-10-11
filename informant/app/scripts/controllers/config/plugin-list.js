@@ -20,11 +20,10 @@ informant.controller('ConfigPluginListCtrl', [
   '$scope',
   '$http',
   function ($scope, $http) {
-    // TODO fix initial load spinner
-    Informant.showSpinner('#initialLoadSpinner');
+    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/config/plugin-section')
         .success(function (data) {
-          Informant.hideSpinner('#initialLoadSpinner');
+          spinner.stop();
 
           $scope.config = data;
           $scope.plugins = [];

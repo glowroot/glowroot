@@ -42,11 +42,10 @@ informant.controller('ConfigUserOverridesCtrl', [
           });
     };
 
-    // TODO fix initial load spinner
-    Informant.showSpinner('#initialLoadSpinner');
+    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/config/user-overrides')
         .success(function (data) {
-          Informant.hideSpinner('#initialLoadSpinner');
+          spinner.stop();
           $scope.config = data;
           originalConfig = angular.copy($scope.config);
         })
