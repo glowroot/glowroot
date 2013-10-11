@@ -310,6 +310,7 @@ public class UnresolvedMethod {
         if (method == null) {
             // just a cache, ok if two threads happen to load and store in parallel
             method = resolveMethod(loader);
+            method.setAccessible(true);
             resolvedMethods.put(key, method);
         }
         if (method.equals(SENTINEL_METHOD)) {
@@ -322,7 +323,9 @@ public class UnresolvedMethod {
         try {
             Class<?> resolvedClass = Class.forName(typeName, false, loader);
             if (parameterTypes != null) {
-                return resolvedClass.getMethod(methodName,
+                // TODO the problem with using getDeclaredMethod() is that it will miss public
+                // methods in super classes
+                return resolvedClass.getDeclaredMethod(methodName,
                         Iterables.toArray(parameterTypes, Class.class));
             } else if (parameterTypeNames == null) {
                 throw new IllegalStateException("Fields 'parameterTypes' and"
@@ -334,7 +337,7 @@ public class UnresolvedMethod {
                     resolvedParameterTypes[i] = Class.forName(parameterTypeNames.get(i),
                             false, loader);
                 }
-                return resolvedClass.getMethod(methodName, resolvedParameterTypes);
+                return resolvedClass.getDeclaredMethod(methodName, resolvedParameterTypes);
             }
         } catch (ClassNotFoundException e) {
             // this is only logged once because the sentinel method is returned and cached

@@ -40,7 +40,7 @@ class HttpServletRequest {
     private static final UnresolvedMethod getRequestURIMethod =
             UnresolvedMethod.from("javax.servlet.http.HttpServletRequest", "getRequestURI");
     private static final UnresolvedMethod getParameterMapMethod =
-            UnresolvedMethod.from("javax.servlet.http.HttpServletRequest", "getParameterMap");
+            UnresolvedMethod.from("javax.servlet.ServletRequest", "getParameterMap");
 
     private final Object realRequest;
 
