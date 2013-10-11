@@ -76,6 +76,8 @@ class WeavingClassVisitor extends ClassVisitor {
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final CodeSource codeSource;
+    private final boolean generateMetricNameWrapperMethods;
+
     private ImmutableList<AdviceMatcher> adviceMatchers = ImmutableList.of();
     private ImmutableList<MixinType> matchedMixinTypes = ImmutableList.of();
     @LazyNonNull
@@ -91,7 +93,8 @@ class WeavingClassVisitor extends ClassVisitor {
 
     public WeavingClassVisitor(ClassVisitor cv, ImmutableList<MixinType> mixinTypes,
             @ReadOnly Iterable<Advice> advisors, @Nullable ClassLoader loader,
-            ParsedTypeCache parsedTypeCache, @Nullable CodeSource codeSource) {
+            ParsedTypeCache parsedTypeCache, @Nullable CodeSource codeSource,
+            boolean generateMetricNameWrapperMethods) {
         super(ASM4, cv);
         this.cv = cv;
         this.mixinTypes = mixinTypes;
@@ -99,6 +102,7 @@ class WeavingClassVisitor extends ClassVisitor {
         this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
         this.codeSource = codeSource;
+        this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
     }
 
     @Override
@@ -296,17 +300,25 @@ class WeavingClassVisitor extends ClassVisitor {
     private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
             String signature, String[] exceptions, List<Advice> matchingAdvisors) {
         assertNonNull(type, "Call to visit() is required");
-        String innerWrappedName = wrapWithSyntheticMetricMarkerMethods(access, name, desc,
-                signature, exceptions, matchingAdvisors);
-        String methodName = name;
-        int methodAccess = access;
-        if (innerWrappedName != null) {
-            methodName = innerWrappedName;
-            methodAccess = ACC_PRIVATE + ACC_FINAL + (access & ACC_STATIC);
+        if (generateMetricNameWrapperMethods) {
+            String innerWrappedName = wrapWithSyntheticMetricMarkerMethods(access, name, desc,
+                    signature, exceptions, matchingAdvisors);
+            String methodName = name;
+            int methodAccess = access;
+            if (innerWrappedName != null) {
+                methodName = innerWrappedName;
+                methodAccess = ACC_PRIVATE + ACC_FINAL + (access & ACC_STATIC);
+            }
+            MethodVisitor mv =
+                    cv.visitMethod(methodAccess, methodName, desc, signature, exceptions);
+            assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
+            return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type,
+                    matchingAdvisors);
+        } else {
+            MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
+            assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
+            return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors);
         }
-        MethodVisitor mv = cv.visitMethod(methodAccess, methodName, desc, signature, exceptions);
-        assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
-        return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type, matchingAdvisors);
     }
 
     // returns null if no synthetic metric marker methods were needed

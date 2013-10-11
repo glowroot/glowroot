@@ -316,56 +316,6 @@ TraceRenderer = (function () {
     } else {
       if (!$selector.find('.mst-interesting').html()) {
         // first time only, process merged stack tree and populate dropdown
-        calculateMetricNameCounts(rootNode);
-        // build tree
-        var tree = { name: '', childNodes: {} };
-        $.each(rootNode.metricNameCounts, function (metricName) {
-          // only really need to look at leafs (' / other') to hit all nodes
-          if (metricName.match(/ \/ other$/)) {
-            var parts = metricName.split(' / ');
-            var node = tree;
-            var partialName = '';
-            $.each(parts, function (i, part) {
-              if (i > 0) {
-                partialName += ' / ';
-              }
-              partialName += part;
-              if (!node.childNodes[part]) {
-                node.childNodes[part] = { name: partialName, childNodes: {} };
-              }
-              node = node.childNodes[part];
-            });
-          }
-        });
-        var nodesDepthFirst = function (node) {
-          var all = [ node ];
-          // order by count desc
-          var childNodes = [];
-          $.each(node.childNodes, function (name, childNode) {
-            childNodes.push(childNode);
-          });
-          childNodes.sort(function (a, b) {
-            return rootNode.metricNameCounts[b.name] - rootNode.metricNameCounts[a.name];
-          });
-          if (childNodes.length === 1 && childNodes[0].name.match(/ \/ other$/)) {
-            // skip if single 'other' node (in which case it will be represented by current node)
-            return all;
-          }
-          $.each(childNodes, function (i, childNode) {
-            all = all.concat(nodesDepthFirst(childNode));
-          });
-          return all;
-        };
-
-        var orderedNodes = nodesDepthFirst(tree);
-        // remove the root '' since all nodes are already under the single root span metric
-        orderedNodes.splice(0, 1);
-        // build filter dropdown
-        $selector.find('.mst-filter').html('');
-        $.each(orderedNodes, function (i, node) {
-          $selector.find('.mst-filter').append($('<option />').val(node.name)
-              .text(node.name + ' (' + rootNode.metricNameCounts[node.name] + ')'));
-        });
         var interestingRootNode = rootNode;
         var uninterestingHtml = '';
         while (true) {
@@ -386,11 +336,6 @@ TraceRenderer = (function () {
               interestingRootNode.stackTraceElement + '<br>';
           interestingRootNode = childNode;
         }
-        $selector.find('.mst-filter').change(function () {
-          // update merged stack tree based on filter
-          var interestingHtml = curr(interestingRootNode, 0, $(this).val());
-          $selector.find('.mst-interesting').html(interestingHtml);
-        });
         // build initial merged stack tree
         var interestingHtml = curr(interestingRootNode, 0);
         if (uninterestingHtml) {
@@ -398,6 +343,65 @@ TraceRenderer = (function () {
           $selector.find('.mst-common').removeClass('hide');
         }
         $selector.find('.mst-interesting').html(interestingHtml);
+
+        var mergedCounts = calculateMetricNameCounts(rootNode);
+        if (!$.isEmptyObject(mergedCounts)) {
+          // build tree
+          var tree = { name: '', childNodes: {} };
+          $.each(rootNode.metricNameCounts, function (metricName) {
+            // only really need to look at leafs (' / other') to hit all nodes
+            if (metricName.match(/ \/ other$/)) {
+              var parts = metricName.split(' / ');
+              var node = tree;
+              var partialName = '';
+              $.each(parts, function (i, part) {
+                if (i > 0) {
+                  partialName += ' / ';
+                }
+                partialName += part;
+                if (!node.childNodes[part]) {
+                  node.childNodes[part] = { name: partialName, childNodes: {} };
+                }
+                node = node.childNodes[part];
+              });
+            }
+          });
+          var nodesDepthFirst = function (node) {
+            var all = [ node ];
+            // order by count desc
+            var childNodes = [];
+            $.each(node.childNodes, function (name, childNode) {
+              childNodes.push(childNode);
+            });
+            childNodes.sort(function (a, b) {
+              return rootNode.metricNameCounts[b.name] - rootNode.metricNameCounts[a.name];
+            });
+            if (childNodes.length === 1 && childNodes[0].name.match(/ \/ other$/)) {
+              // skip if single 'other' node (in which case it will be represented by current node)
+              return all;
+            }
+            $.each(childNodes, function (i, childNode) {
+              all = all.concat(nodesDepthFirst(childNode));
+            });
+            return all;
+          };
+
+          var orderedNodes = nodesDepthFirst(tree);
+          // remove the root '' since all nodes are already under the single root span metric
+          orderedNodes.splice(0, 1);
+          // build filter dropdown
+          var $mstFilter = $selector.find('.mst-filter');
+          $mstFilter.removeClass('hide');
+          $.each(orderedNodes, function (i, node) {
+            $mstFilter.append($('<option />').val(node.name)
+                .text(node.name + ' (' + rootNode.metricNameCounts[node.name] + ')'));
+          });
+          $mstFilter.change(function () {
+            // update merged stack tree based on filter
+            var interestingHtml = curr(interestingRootNode, 0, $(this).val());
+            $selector.find('.mst-interesting').html(interestingHtml);
+          });
+        }
       }
       $selector.removeClass('hide');
     }
@@ -405,7 +409,7 @@ TraceRenderer = (function () {
 
   function calculateMetricNameCounts(node) {
     var mergedCounts = {};
-    if (node.leafThreadState) {
+    if (node.leafThreadState && node.metricNames.length) {
       var partial = '';
       $.each(node.metricNames, function (i, metricName) {
         if (i > 0) {

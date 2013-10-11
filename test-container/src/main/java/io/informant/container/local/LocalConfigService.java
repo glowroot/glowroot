@@ -66,6 +66,7 @@ class LocalConfigService implements ConfigService {
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
         config.setStuckThresholdSeconds(coreConfig.getStuckThresholdSeconds());
         config.setMaxSpans(coreConfig.getMaxSpans());
+        config.setGenerateMetricNameWrapperMethods(coreConfig.isGenerateMetricNameWrapperMethods());
         config.setWarnOnSpanOutsideTrace(coreConfig.isWarnOnSpanOutsideTrace());
         return config;
     }
@@ -76,6 +77,7 @@ class LocalConfigService implements ConfigService {
                         config.getStoreThresholdMillis(),
                         config.getStuckThresholdSeconds(),
                         config.getMaxSpans(),
+                        config.isGenerateMetricNameWrapperMethods(),
                         config.isWarnOnSpanOutsideTrace());
         return configService.updateGeneralConfig(updatedConfig, config.getVersion());
     }

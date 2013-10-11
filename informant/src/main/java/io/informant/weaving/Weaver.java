@@ -18,7 +18,6 @@ package io.informant.weaving;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.CodeSource;
-import java.security.ProtectionDomain;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.annotations.VisibleForTesting;
@@ -62,35 +61,40 @@ class Weaver {
     @Nullable
     private final ClassLoader loader;
     private final ParsedTypeCache parsedTypeCache;
-
     private final MetricTimerService metricTimerService;
+    private final boolean generateMetricNameWrapperMethods;
+
     private final MetricName weavingMetricName;
 
     Weaver(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> adhocAdvisors,
             @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
-            MetricTimerService metricTimerService) {
+            MetricTimerService metricTimerService, boolean generateMetricNameWrapperMethods) {
         this.mixinTypes = mixinTypes;
         this.pluginAdvisors = pluginAdvisors;
         this.adhocAdvisors = adhocAdvisors;
         this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
         this.metricTimerService = metricTimerService;
+        this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
         weavingMetricName = metricTimerService.getMetricName("informant weaving");
     }
 
-    byte[] weave(byte[] classBytes, String className) {
-        return weave$informant$metric$informant$weaving$0(classBytes, null, className);
-    }
-
-    byte[] weave(byte[] classBytes, ProtectionDomain protectionDomain, String className) {
-        return weave$informant$metric$informant$weaving$0(classBytes,
-                protectionDomain.getCodeSource(), className);
+    byte[] weave(byte[] classBytes, String className, @Nullable CodeSource codeSource) {
+        if (generateMetricNameWrapperMethods) {
+            return weave$informant$metric$informant$weaving$0(classBytes, className, codeSource);
+        } else {
+            return weaveInternal(classBytes, className, codeSource);
+        }
     }
 
     // weird method name is following "metric marker" method naming
-    private byte[] weave$informant$metric$informant$weaving$0(byte[] classBytes,
-            @Nullable CodeSource codeSource, String className) {
+    private byte[] weave$informant$metric$informant$weaving$0(byte[] classBytes, String className,
+            @Nullable CodeSource codeSource) {
+        return weaveInternal(classBytes, className, codeSource);
+    }
+
+    private byte[] weaveInternal(byte[] classBytes, String className, CodeSource codeSource) {
         MetricTimer metricTimer = metricTimerService.startMetricTimer(weavingMetricName);
         try {
             // from http://www.oracle.com/technetwork/java/javase/compatibility-417013.html:
@@ -106,11 +110,11 @@ class Weaver {
             // verification."
             //
             ClassWriter cw = new ComputeFramesClassWriter(
-                    ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES, parsedTypeCache, loader,
-                    codeSource, className);
+                    ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES,
+                    parsedTypeCache, loader, codeSource, className);
             Iterable<Advice> advisors = Iterables.concat(pluginAdvisors, adhocAdvisors.get());
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors, loader,
-                    parsedTypeCache, codeSource);
+                    parsedTypeCache, codeSource, generateMetricNameWrapperMethods);
             ClassReader cr = new ClassReader(classBytes);
             try {
                 cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);

@@ -44,7 +44,7 @@ public class PreInitializeClassesTest {
                 "io/informant/weaving/WeavingClassFileTransformer", "<init>",
                 "(Ljava/util/List;Ljava/util/List;Lcom/google/common/base/Supplier;"
                         + "Lio/informant/weaving/ParsedTypeCache;"
-                        + "Lio/informant/weaving/MetricTimerService;)V"));
+                        + "Lio/informant/weaving/MetricTimerService;Z)V"));
         // "call" WeavingClassFileTransformer.transform()
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "io/informant/weaving/WeavingClassFileTransformer", "transform",

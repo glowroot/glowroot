@@ -111,8 +111,7 @@ public class WeaverTest {
         // when
         try {
             test.execute1();
-        } catch (Throwable t) {
-        }
+        } catch (Throwable t) {}
         // then
         assertThat(BasicAdvice.onBeforeCount.get()).isEqualTo(1);
         assertThat(BasicAdvice.onReturnCount.get()).isEqualTo(0);
@@ -144,8 +143,7 @@ public class WeaverTest {
         // when
         try {
             test.execute1();
-        } catch (Throwable t) {
-        }
+        } catch (Throwable t) {}
         // then
         assertThat(BasicAdvice.onBeforeCount.get()).isEqualTo(0);
         assertThat(BasicAdvice.onReturnCount.get()).isEqualTo(0);
@@ -178,8 +176,7 @@ public class WeaverTest {
         // when
         try {
             test.execute1();
-        } catch (Throwable t) {
-        }
+        } catch (Throwable t) {}
         // then
         assertThat(BindTargetAdvice.isEnabledTarget.get()).isEqualTo(test);
         assertThat(BindTargetAdvice.onBeforeTarget.get()).isEqualTo(test);
@@ -214,8 +211,7 @@ public class WeaverTest {
         // when
         try {
             test.executeWithArgs("one", 2);
-        } catch (Throwable t) {
-        }
+        } catch (Throwable t) {}
         // then
         Object[] parameters = new Object[] {"one", 2};
         assertThat(BindMethodArgAdvice.isEnabledParams.get()).isEqualTo(parameters);
@@ -252,8 +248,7 @@ public class WeaverTest {
         // when
         try {
             test.executeWithArgs("one", 2);
-        } catch (Throwable t) {
-        }
+        } catch (Throwable t) {}
         // then
         Object[] parameters = new Object[] {"one", 2};
         assertThat(BindMethodArgArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
@@ -341,8 +336,7 @@ public class WeaverTest {
         // when
         try {
             test.execute1();
-        } catch (Throwable t) {
-        }
+        } catch (Throwable t) {}
         // then
         assertThat(BindTravelerAdvice.onReturnTraveler.get()).isNull();
         assertThat(BindTravelerAdvice.onThrowTraveler.get()).isEqualTo("a traveler");
@@ -437,8 +431,7 @@ public class WeaverTest {
         // when
         try {
             test.execute1();
-        } catch (Throwable t) {
-        }
+        } catch (Throwable t) {}
         // then
         assertThat(BindThrowableAdvice.throwable.get()).isNotNull();
     }
@@ -1056,6 +1049,7 @@ public class WeaverTest {
             loader.setMixinTypes(ImmutableList.of(MixinType.from(mixin, adviceClass)));
         }
         loader.setMetricTimerService(NopMetricTimerService.INSTANCE);
+        loader.setGenerateMetricNameWrapperMethods(true);
         // adviceClass is passed as bridgeable so that the static threadlocals will be accessible
         // for test verification
         loader.addBridgeClasses(bridgeClass, adviceClass);

@@ -71,6 +71,11 @@ informant.config([
       templateUrl: 'views/config/adhoc-pointcut-list.html',
       controller: 'ConfigAdhocPointcutListCtrl'
     });
+    $stateProvider.state('config.advanced', {
+      url: '/advanced',
+      templateUrl: 'views/config/advanced.html',
+      controller: 'ConfigGeneralCtrl'
+    });
     $stateProvider.state('jvm', {
       url: '/jvm',
       templateUrl: 'views/jvm.html',

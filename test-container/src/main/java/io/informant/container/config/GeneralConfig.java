@@ -33,6 +33,7 @@ public class GeneralConfig {
     private int storeThresholdMillis;
     private int stuckThresholdSeconds;
     private int maxSpans;
+    private boolean generateMetricNameWrapperMethods;
     private boolean warnOnSpanOutsideTrace;
 
     private final String version;
@@ -73,6 +74,14 @@ public class GeneralConfig {
         this.maxSpans = maxSpans;
     }
 
+    public boolean isGenerateMetricNameWrapperMethods() {
+        return generateMetricNameWrapperMethods;
+    }
+
+    public void setGenerateMetricNameWrapperMethods(boolean generateMetricNameWrapperMethods) {
+        this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
+    }
+
     public boolean isWarnOnSpanOutsideTrace() {
         return warnOnSpanOutsideTrace;
     }
@@ -96,6 +105,8 @@ public class GeneralConfig {
                     && Objects.equal(storeThresholdMillis, that.storeThresholdMillis)
                     && Objects.equal(stuckThresholdSeconds, that.stuckThresholdSeconds)
                     && Objects.equal(maxSpans, that.maxSpans)
+                    && Objects.equal(generateMetricNameWrapperMethods,
+                            that.generateMetricNameWrapperMethods)
                     && Objects.equal(warnOnSpanOutsideTrace, that.warnOnSpanOutsideTrace);
         }
         return false;
@@ -117,22 +128,26 @@ public class GeneralConfig {
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
                 .add("maxSpans", maxSpans)
+                .add("generateMetricNameWrapperMethods", generateMetricNameWrapperMethods)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
                 .add("version", version)
                 .toString();
     }
 
     @JsonCreator
-    static GeneralConfig readValue(@JsonProperty("enabled") @Nullable Boolean enabled,
+    static GeneralConfig readValue(
+            @JsonProperty("enabled") @Nullable Boolean enabled,
             @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
             @JsonProperty("stuckThresholdSeconds") @Nullable Integer stuckThresholdSeconds,
             @JsonProperty("maxSpans") @Nullable Integer maxSpans,
             @JsonProperty("warnOnSpanOutsideTrace") @Nullable Boolean warnOnSpanOutsideTrace,
+            @JsonProperty("generateMetricNameWrapperMethods") @Nullable Boolean generateMetricNameWrapperMethods,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(enabled, "enabled");
         checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
         checkRequiredProperty(stuckThresholdSeconds, "stuckThresholdSeconds");
         checkRequiredProperty(maxSpans, "maxSpans");
+        checkRequiredProperty(generateMetricNameWrapperMethods, "generateMetricNameWrapperMethods");
         checkRequiredProperty(warnOnSpanOutsideTrace, "warnOnSpanOutsideTrace");
         checkRequiredProperty(version, "version");
         GeneralConfig config = new GeneralConfig(version);

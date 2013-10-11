@@ -75,10 +75,11 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     private IsolatedWeavingClassLoader(ImmutableList<MixinType> mixinTypes,
             ImmutableList<Advice> advisors, MetricTimerService metricTimerService,
-            ImmutableList<Class<?>> bridgeClasses, ImmutableList<String> excludePackages) {
+            ImmutableList<Class<?>> bridgeClasses, ImmutableList<String> excludePackages,
+            boolean generateMetricNameWrapperMethods) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
         weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE, this, new ParsedTypeCache(),
-                metricTimerService);
+                metricTimerService, generateMetricNameWrapperMethods);
         this.bridgeClasses = bridgeClasses;
         this.excludePackages = excludePackages;
     }
@@ -135,7 +136,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             // the weaving itself)
             inWeaving.set(true);
             try {
-                wovenBytes = weaver.weave(bytes, name);
+                wovenBytes = weaver.weave(bytes, name, null);
                 if (wovenBytes != bytes) {
                     logger.debug("findClass(): transformed {}", name);
                 }
@@ -193,6 +194,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         private ImmutableList<MixinType> mixinTypes = ImmutableList.of();
         private ImmutableList<Advice> advisors = ImmutableList.of();
         private MetricTimerService metricTimerService;
+        private boolean generateMetricNameWrapperMethods;
         private final ImmutableList.Builder<Class<?>> bridgeClasses = ImmutableList.builder();
         private final ImmutableList.Builder<String> excludePackages = ImmutableList.builder();
 
@@ -210,6 +212,10 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.metricTimerService = metricTimerService;
         }
 
+        public void setGenerateMetricNameWrapperMethods(boolean generateMetricNameWrapperMethods) {
+            this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
+        }
+
         public void addBridgeClasses(Class<?>... bridgeClasses) {
             this.bridgeClasses.add(bridgeClasses);
         }
@@ -224,7 +230,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                         public IsolatedWeavingClassLoader run() {
                             return new IsolatedWeavingClassLoader(mixinTypes, advisors,
                                     metricTimerService, bridgeClasses.build(),
-                                    excludePackages.build());
+                                    excludePackages.build(), generateMetricNameWrapperMethods);
                         }
                     });
         }

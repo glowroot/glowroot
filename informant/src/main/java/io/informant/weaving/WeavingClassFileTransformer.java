@@ -46,6 +46,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private final ParsedTypeCache parsedTypeCache;
     private final MetricTimerService metricTimerService;
+    private final boolean generateMetricNameWrapperMethods;
 
     // it is important to only have a single weaver per class loader because storing state of each
     // previously parsed class in order to re-construct class hierarchy in case one or more .class
@@ -58,7 +59,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                         @Override
                         public Weaver load(ClassLoader loader) {
                             return new Weaver(mixinTypes, pluginAdvisors, adhocAdvisors, loader,
-                                    parsedTypeCache, metricTimerService);
+                                    parsedTypeCache, metricTimerService,
+                                    generateMetricNameWrapperMethods);
                         }
                     });
     // the weaver for the bootstrap class loader (null) has to be stored separately since
@@ -74,14 +76,16 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // note: an exception is made for WeavingMetric, see PreInitializeClassesTest for explanation
     public WeavingClassFileTransformer(@ReadOnly List<MixinType> mixinTypes,
             @ReadOnly List<Advice> pluginAdvisors, Supplier<ImmutableList<Advice>> adhocAdvisors,
-            ParsedTypeCache parsedTypeCache, MetricTimerService metricTimerService) {
+            ParsedTypeCache parsedTypeCache, MetricTimerService metricTimerService,
+            boolean generateMetricNameWrapperMethods) {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
         this.adhocAdvisors = adhocAdvisors;
         this.parsedTypeCache = parsedTypeCache;
         this.metricTimerService = metricTimerService;
+        this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
         bootLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors, this.adhocAdvisors,
-                null, parsedTypeCache, metricTimerService);
+                null, parsedTypeCache, metricTimerService, generateMetricNameWrapperMethods);
         PreInitializeClasses.preInitializeClasses(WeavingClassFileTransformer.class
                 .getClassLoader());
     }
@@ -107,7 +111,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         } else {
             weaver = weavers.getUnchecked(loader);
         }
-        byte[] transformedBytes = weaver.weave(bytes, protectionDomain, className);
+        byte[] transformedBytes = weaver.weave(bytes, className, protectionDomain.getCodeSource());
         if (transformedBytes != bytes) {
             logger.debug("transform(): transformed {}", className);
         }

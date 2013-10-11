@@ -94,7 +94,8 @@ public class TraceModule {
                 configModule.getPluginDescriptorCache().getMixinTypes(),
                 configModule.getPluginDescriptorCache().getAdvisors(),
                 adhocAdviceCache.getAdhocAdvisorsSupplier(), parsedTypeCache,
-                metricTimerService);
+                metricTimerService, configModule.getConfigService().getGeneralConfig()
+                        .isGenerateMetricNameWrapperMethods());
     }
 
     public PluginServices getPluginServices(String pluginId) {
