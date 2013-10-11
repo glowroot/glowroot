@@ -233,8 +233,7 @@ informant.directive('ixNavbarItem', [
       replace: true,
       templateUrl: 'template/ix-navbar-item.html',
       link: function (scope, iElement, iAttrs) {
-        scope.gotoItem = function (url) {
-          $location.path(url).hash('');
+        scope.collapseNavbar = function () {
           // need to collapse the navbar in mobile view
           var $navbarCollapse = $('.navbar-collapse');
           $navbarCollapse.removeClass('in');
