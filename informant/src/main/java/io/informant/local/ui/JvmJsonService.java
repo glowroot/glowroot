@@ -24,7 +24,6 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
@@ -48,6 +47,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
+import com.google.common.primitives.Ints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +70,15 @@ class JvmJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(JvmJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
+
+    private static final Ordering<ThreadInfo> orderingByStackSize = new Ordering<ThreadInfo>() {
+        @Override
+        public int compare(@Nullable ThreadInfo left, @Nullable ThreadInfo right) {
+            assertNonNull(left, "Ordering of non-null elements only");
+            assertNonNull(right, "Ordering of non-null elements only");
+            return -Ints.compare(left.getStackTrace().length, right.getStackTrace().length);
+        }
+    };
 
     @JsonServiceMethod
     String getGeneralInfo() throws IOException, JMException {
@@ -146,15 +155,13 @@ class JvmJsonService {
         logger.debug("getThreadDump()");
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
         List<ThreadInfo> threadInfos = Lists.newArrayList();
-        long[] threadIds = threadBean.getAllThreadIds();
-        // sort thread ids for consistent results across F5 refresh
-        Arrays.sort(threadIds);
-        for (long threadId : threadIds) {
+        for (long threadId : threadBean.getAllThreadIds()) {
             ThreadInfo threadInfo = threadBean.getThreadInfo(threadId, Integer.MAX_VALUE);
             if (threadInfo != null) {
                 threadInfos.add(threadInfo);
             }
         }
+        threadInfos = orderingByStackSize.sortedCopy(threadInfos);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartArray();
