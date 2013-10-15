@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-/* global informant, Informant */
+/* global informant */
 
 informant.controller('JvmAllOptionsCtrl', [
   '$scope',
   '$http',
   function ($scope, $http) {
-
-    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/jvm/all-options')
         .success(function (data) {
-          spinner.stop();
+          $scope.loaded = true;
           $scope.options = data;
         })
         .error(function (error) {
-          // TODO
+          $scope.loadingError = true;
+          // TODO display error
         });
   }
 ]);

@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-/* global informant, Informant */
+/* global informant */
 
 informant.controller('JvmSystemPropertiesCtrl', [
   '$scope',
   '$http',
   function ($scope, $http) {
-    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/jvm/system-properties')
         .success(function (data) {
-          spinner.stop();
+          $scope.loaded = true;
           $scope.properties = data;
         })
         .error(function (error) {
-          // TODO
+          $scope.loadingError = true;
+          // TODO display error
         });
   }
 ]);

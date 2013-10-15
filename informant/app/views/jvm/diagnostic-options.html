@@ -18,8 +18,8 @@
     <h2>Diagnostic options</h2>
   </div>
   <div class="panel-body">
-    <div class="panel-loading" ng-class="{hide: options}">
-      <div class="hide" id="initialLoadSpinner"></div>
+    <div class="panel-loading" ng-class="{hide: loaded}">
+      <div ix-spinner ix-show="!loaded && !loadingError"></div>
     </div>
     <form class="form-horizontal jvm-diagnostic-options-form" name="formCtrl">
       <div ng-repeat="option in options">

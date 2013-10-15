@@ -13,7 +13,10 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="plugin-list-spinner hide" id="initialLoadSpinner"></div>
+<div ix-spinner
+     ix-show="!loaded && !loadingError"
+     class="plugin-list-spinner hide">
+</div>
 <div ng-repeat="pointcut in pointcuts"
      ng-controller="ConfigAdhocPointcutCtrl"
      class="panel panel-default">
@@ -35,10 +38,16 @@
                  ng-required="true"
                  typeahead="suggestion for suggestion in typeNames($viewValue)"
                  typeahead-on-select="onSelectTypeName()"
+                 typeahead-loading="typeNamesLoading"
                  name="__typeName{{$id}}"
                  id="__typeName{{$id}}"
                  ix-set-focus="pointcut.isFocus"
-                 style="max-width: 40em;">
+                 style="max-width: 40em; display: inline-block">
+          <div ix-spinner
+               ix-spinner-inline="true"
+               ix-show="typeNamesLoading"
+               class="inline-spinner">
+          </div>
         </div>
       </div>
       <div class="form-group"
@@ -54,10 +63,16 @@
                  ng-required="true"
                  typeahead="suggestion for suggestion in methodNames($viewValue)"
                  typeahead-on-select="onSelectMethodName()"
+                 typeahead-loading="methodNamesLoading"
                  ng-blur="onSelectMethodName()"
                  name="__methodName{{$id}}"
                  id="__methodName{{$id}}"
-                 style="max-width: 40em;">
+                 style="max-width: 40em; display: inline-block;">
+          <div ix-spinner
+               ix-spinner-inline="true"
+               ix-show="methodNamesLoading"
+               class="inline-spinner">
+          </div>
         </div>
       </div>
       <div class="form-group">
@@ -65,6 +80,11 @@
           Signature
         </label>
         <div class="col-lg-10">
+          <div ix-spinner
+               ix-show="signaturesLoading"
+               class="hide"
+               style="width: 40px; height: 40px;">
+          </div>
           <div ng-repeat="signature in pointcut.signatures">
             <div class="radio">
               <label>

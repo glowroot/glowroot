@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, angular */
+/* global informant, angular */
 
 informant.controller('ConfigStorageCtrl', [
   '$scope',
@@ -56,10 +56,9 @@ informant.controller('ConfigStorageCtrl', [
           });
     };
 
-    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/config/storage-section')
         .success(function (data) {
-          spinner.stop();
+          $scope.loaded = true;
           $scope.config = data.config;
           originalConfig = angular.copy($scope.config);
 
@@ -72,7 +71,8 @@ informant.controller('ConfigStorageCtrl', [
           });
         })
         .error(function (error) {
-          // TODO
+          $scope.loadingError = true;
+          // TODO display error
         });
   }
 ]);

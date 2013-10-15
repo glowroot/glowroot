@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, $ */
+/* global informant, Informant, $, Spinner */
 
 informant.factory('ixButtonGroupControllerFactory', [
   '$q',
@@ -274,5 +274,30 @@ informant.directive('ixDisplayWhitespace', function () {
       html = html.replace('</em><em>', '');
       iElement.html(html);
     }
+  };
+});
+
+informant.directive('ixSpinner', function () {
+  return function (scope, iElement, iAttrs) {
+    var spinner;
+    var timer;
+    scope.$watch(iAttrs.ixShow,
+        function (newValue) {
+          if (newValue) {
+            if (spinner === undefined) {
+              var left = iAttrs.ixSpinnerInline ? 10 : 'auto';
+              spinner = new Spinner({ lines: 10, radius: 8, width: 4, left: left });
+            }
+            // small delay so that if there is an immediate response the spinner doesn't blink
+            timer = setTimeout(function () {
+              iElement.removeClass('hide');
+              spinner.spin(iElement[0]);
+            }, 100);
+          } else if (spinner !== undefined) {
+            clearTimeout(timer);
+            iElement.addClass('hide');
+            spinner.stop();
+          }
+        });
   };
 });

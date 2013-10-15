@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, angular */
+/* global informant, angular */
 
 informant.controller('ConfigGeneralCtrl', [
   '$scope',
@@ -42,15 +42,15 @@ informant.controller('ConfigGeneralCtrl', [
           });
     };
 
-    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/config/general')
         .success(function (data) {
-          spinner.stop();
+          $scope.loaded = true;
           $scope.config = data;
           originalConfig = angular.copy($scope.config);
         })
         .error(function (error) {
-          // TODO
+          $scope.loadingError = true;
+          // TODO display error
         });
   }
 ]);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, angular */
+/* global informant, angular */
 
 informant.controller('ConfigFineProfilingCtrl', [
   '$scope',
@@ -42,10 +42,9 @@ informant.controller('ConfigFineProfilingCtrl', [
           });
     };
 
-    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/config/fine-profiling-section')
         .success(function (data) {
-          spinner.stop();
+          $scope.loaded = true;
           $scope.config = data.config;
           originalConfig = angular.copy($scope.config);
 
@@ -73,7 +72,8 @@ informant.controller('ConfigFineProfilingCtrl', [
               }, true);
         })
         .error(function (error) {
-          // TODO
+          $scope.loadingError = true;
+          // TODO display error
         });
   }
 ]);

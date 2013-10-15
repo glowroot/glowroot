@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, angular */
+/* global informant, angular */
 
 informant.controller('ConfigAdhocPointcutListCtrl', [
   '$scope',
   '$http',
   '$timeout',
   function ($scope, $http, $timeout) {
-    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/config/adhoc-pointcut-section')
         .success(function (data) {
-          spinner.stop();
+          $scope.loaded = true;
           $scope.pointcuts = [];
           var i;
           for (i = 0; i < data.configs.length; i++) {
@@ -50,13 +49,10 @@ informant.controller('ConfigAdhocPointcutListCtrl', [
             dirty: data.jvmOutOfSync
           };
           $scope.jvmRetransformClassesSupported = data.jvmRetransformClassesSupported;
-          // this is to hide 'New adhoc pointcut' section until pointcuts are loaded
-          // in order to prevent jitter of seeing that section very briefly before it gets pushed down by
-          // existing adhoc pointcut sections
-          $scope.loaded = true;
         })
         .error(function (error) {
-          // TODO
+          $scope.loadingError = true;
+          // TODO display error
         });
 
     $scope.addPointcut = function () {
@@ -110,9 +106,12 @@ informant.controller('ConfigAdhocPointcutCtrl', [
 
     $scope.typeNames = function (suggestion) {
       var url = 'backend/adhoc-pointcut/matching-type-names?partial-type-name=' + suggestion + '&limit=7';
+      // use 'then' method to return promise
       return $http.get(url)
           .then(function (response) {
             return response.data;
+          }, function() {
+            // TODO handle error
           });
     };
 
@@ -139,8 +138,9 @@ informant.controller('ConfigAdhocPointcutCtrl', [
           $scope.pointcut.config.typeName + '&partial-method-name=' + suggestion + '&limit=7';
       return $http.get(url)
           .then(function (response) {
-            // TODO handle error response
             return response.data;
+          }, function() {
+            // TODO handle error
           });
     };
 
@@ -253,8 +253,10 @@ informant.controller('ConfigAdhocPointcutCtrl', [
     function matchingMethods(methodName) {
       var url = 'backend/adhoc-pointcut/matching-methods?type-name=' +
           $scope.pointcut.config.typeName + '&method-name=' + methodName;
+      $scope.signaturesLoading = true;
       $http.get(url)
           .success(function (data) {
+            $scope.signaturesLoading = false;
             $scope.pointcut.signatures = data;
             if (data.length !== 1) {
               // this includes the case where data.length === 0, which is possible if the user enters a
@@ -273,7 +275,8 @@ informant.controller('ConfigAdhocPointcutCtrl', [
             }
           })
           .error(function () {
-            // TODO
+            $scope.signaturesLoading = false;
+            // TODO display error
           });
     }
 

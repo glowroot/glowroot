@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, angular */
+/* global informant, angular */
 
 informant.controller('ConfigUserOverridesCtrl', [
   '$scope',
@@ -42,15 +42,15 @@ informant.controller('ConfigUserOverridesCtrl', [
           });
     };
 
-    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/config/user-overrides')
         .success(function (data) {
-          spinner.stop();
+          $scope.loaded = true;
           $scope.config = data;
           originalConfig = angular.copy($scope.config);
         })
         .error(function (error) {
-          // TODO
+          $scope.loadingError = true;
+          // TODO display error
         });
   }
 ]);

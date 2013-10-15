@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, angular */
+/* global informant, angular */
 
 informant.controller('ConfigPluginListCtrl', [
   '$scope',
   '$http',
   function ($scope, $http) {
-    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/config/plugin-section')
         .success(function (data) {
-          spinner.stop();
-
+          $scope.loaded = true;
           $scope.config = data;
           $scope.plugins = [];
           var i, j;
@@ -41,7 +39,8 @@ informant.controller('ConfigPluginListCtrl', [
           }
         })
         .error(function (error) {
-          // TODO
+          $scope.loadingError = true;
+          // TODO display error
         });
   }
 ]);

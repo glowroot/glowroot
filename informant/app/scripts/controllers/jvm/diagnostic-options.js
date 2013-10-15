@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, angular */
+/* global informant, angular */
 
 informant.controller('JvmDiagnosticOptionsCtrl', [
   '$scope',
@@ -56,15 +56,15 @@ informant.controller('JvmDiagnosticOptionsCtrl', [
           });
     };
 
-    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/jvm/diagnostic-options')
         .success(function (data) {
-          spinner.stop();
+          $scope.loaded = true;
           $scope.options = data;
           originalOptions = angular.copy($scope.options);
         })
         .error(function (error) {
-          // TODO
+          $scope.loadingError = true;
+          // TODO display error
         });
   }
 ]);

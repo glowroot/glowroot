@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, $, Handlebars, JST */
+/* global informant, $, Handlebars, JST */
 
 informant.controller('JvmThreadDumpCtrl', [
   '$scope',
@@ -64,10 +64,11 @@ informant.controller('JvmThreadDumpCtrl', [
     };
 
     var deferred = $q.defer();
-    var spinner = Informant.showSpinner('#initialLoadSpinner');
     deferred.promise.then(function () {
       $scope.loaded = true;
-      spinner.stop();
+    }, function() {
+      $scope.loadingError = true;
+      // TODO display error
     });
     $scope.refresh(false, deferred);
   }

@@ -19,8 +19,8 @@
   </div>
   <!-- min-height is needed for initial load spinner since no other content on page at that time -->
   <div class="panel-body" style="min-height: 100px;">
-    <div class="panel-loading" ng-class="{hide: properties}">
-      <div class="hide" id="initialLoadSpinner"></div>
+    <div class="panel-loading" ng-class="{hide: loaded}">
+      <div ix-spinner ix-show="!loaded && !loadingError"></div>
     </div>
     <div ng-repeat="(key, value) in properties">
       <div class="row system-property">

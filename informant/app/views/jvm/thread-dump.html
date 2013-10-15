@@ -28,7 +28,10 @@
            style="margin-bottom: 20px;">
       </div>
       <span class="button-success-message hide" id="refresh1SuccessMessage">Refreshed</span>
-      <div class="hide thread-dump-spinner" id="initialLoadSpinner"></div>
+      <div ix-spinner
+           ix-show="!loaded"
+           class="thread-dump-spinner hide">
+      </div>
       <span class="thread-dump-flat-pre"
             ng-class="{hide: !loaded}"
             id="threadDump">

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, $, alert */
+/* global informant, $ */
 
 informant.controller('JvmHeapDumpCtrl', [
   '$scope',
@@ -68,18 +68,14 @@ informant.controller('JvmHeapDumpCtrl', [
           });
     };
 
-    var spinner = Informant.showSpinner('#initialLoadSpinner');
     $http.get('backend/jvm/heap-dump-defaults')
         .success(function (data) {
-          spinner.stop();
+          $scope.loaded = true;
           $scope.data = data;
         })
-        .error(function (data, status) {
-          if (status === 0) {
-            alert('Unable to connect to server');
-          } else {
-            alert('An error occurred');
-          }
+        .error(function (error) {
+          $scope.loadingError = true;
+          // TODO display error
         });
   }
 ]);
