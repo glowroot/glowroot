@@ -270,6 +270,7 @@ informant.controller('TracesCtrl', [
                 text = 'expired';
               } else {
                 summaryTrace = data;
+                summaryTrace.truncateMetrics = true;
                 var html = TraceRenderer.renderSummary(summaryTrace);
                 var showDetailHtml = '<div style="margin-top: 0.5em;">' +
                     '<button class="flat-btn flat-btn-big-pad1aligned informant-red" id="showDetail"' +

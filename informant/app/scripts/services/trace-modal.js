@@ -27,6 +27,7 @@ informant.factory('traceModal', [
     function displayModal(summaryTrace, initialFixedOffset, initialWidth, initialHeight, modalVanishPoint) {
 
       var savedShowExport = summaryTrace.showExport;
+      summaryTrace.truncateMetrics = false;
       summaryTrace.showExport = true;
       var summaryHtml = TraceRenderer.renderSummary(summaryTrace) +
           '<br><div class="indent2"><span class="button-spinner inline-block hide"' +

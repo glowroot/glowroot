@@ -34,16 +34,30 @@ TraceRenderer = (function () {
     return buffer;
   });
 
-  Handlebars.registerHelper('eachMetricOrdered', function (metrics, options) {
-    // mutating original list seems fine here
+  // the number of metrics displayed on the summary popup is limited to prevent vertical scrolling
+  var traceSummaryMetricLimit = 10;
+
+  Handlebars.registerHelper('eachMetricOrdered', function (trace, options) {
+    // make local copy of metrics
+    var metrics = trace.metrics.slice();
     metrics.sort(function (a, b) {
       return b.total - a.total;
     });
+    if (trace.truncateMetrics && metrics.length > traceSummaryMetricLimit) {
+      metrics.length = traceSummaryMetricLimit;
+    }
     var buffer = '';
     $.each(metrics, function (index, metric) {
       buffer += options.fn(metric);
     });
     return buffer;
+  });
+
+  Handlebars.registerHelper('ifMetricsTruncated', function (trace, options) {
+    if (trace.truncateMetrics && trace.metrics.length > traceSummaryMetricLimit) {
+      return options.fn(this);
+    }
+    return options.inverse(this);
   });
 
   Handlebars.registerHelper('eachGarbageCollectorInfoOrdered', function (gcInfos, options) {
