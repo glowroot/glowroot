@@ -154,11 +154,14 @@ class JvmJsonService {
     String getThreadDump() throws IOException {
         logger.debug("getThreadDump()");
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        long currentThreadId = Thread.currentThread().getId();
         List<ThreadInfo> threadInfos = Lists.newArrayList();
         for (long threadId : threadBean.getAllThreadIds()) {
-            ThreadInfo threadInfo = threadBean.getThreadInfo(threadId, Integer.MAX_VALUE);
-            if (threadInfo != null) {
-                threadInfos.add(threadInfo);
+            if (threadId != currentThreadId) {
+                ThreadInfo threadInfo = threadBean.getThreadInfo(threadId, Integer.MAX_VALUE);
+                if (threadInfo != null) {
+                    threadInfos.add(threadInfo);
+                }
             }
         }
         threadInfos = orderingByStackSize.sortedCopy(threadInfos);
