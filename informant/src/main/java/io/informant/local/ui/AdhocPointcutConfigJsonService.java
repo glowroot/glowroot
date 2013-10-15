@@ -142,6 +142,12 @@ class AdhocPointcutConfigJsonService {
         for (ParsedType parsedType : getParsedTypes(typeName)) {
             for (ParsedMethod parsedMethod : parsedType.getMethods()) {
                 String methodName = parsedMethod.getName();
+                if (methodName.equals("<init>") || methodName.equals("<clinit>")) {
+                    // static initializers are not supported by weaver
+                    // (see AdviceMatcher.isMethodNameMatch())
+                    // and constructors do not support @OnBefore advice at this time
+                    continue;
+                }
                 if (methodName.toUpperCase(Locale.ENGLISH).contains(partialMethodNameUpper)) {
                     methodNames.add(methodName);
                 }

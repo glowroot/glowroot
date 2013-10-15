@@ -336,6 +336,10 @@ public class Advice {
                     initOnAfterAdvice(adviceClass, method);
                 }
             }
+            if (pointcut.methodName().equals("<init>") && onBeforeAdvice != null) {
+                throw new AdviceConstructionException(
+                        "@OnBefore is not supported on constructors at this time");
+            }
             generatedAdviceFlowClass = buildGeneratedAdviceFlowClass();
             return new Advice(pointcut, adviceType, pointcutTypePattern, pointcutMethodPattern,
                     isEnabledAdvice, onBeforeAdvice, onReturnAdvice, onThrowAdvice, onAfterAdvice,
