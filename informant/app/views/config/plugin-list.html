@@ -33,36 +33,39 @@
         </div>
         <div ng-repeat="property in plugin.descriptor.properties">
           <div ng-switch on="property.type" ng-hide="property.hidden">
-            <div ng-switch-when="string"
-                 ix-form-group
-                 ix-label="{{property.prompt}}"
-                 ix-model="property.value"
-                 ix-width="25em"
-                 ng-class="{ 'ix-form-group-without-help-block': property.description === null }">
-              <div class="help-block">
-                {{property.description}}
+            <div ng-switch-when="string">
+              <div ix-form-group
+                   ix-label="{{property.prompt}}"
+                   ix-model="property.value"
+                   ix-width="25em"
+                   ng-class="{ 'ix-form-group-without-help-block': property.description === null }">
+                <div class="help-block">
+                  {{property.description}}
+                </div>
               </div>
             </div>
-            <div ng-switch-when="boolean"
-                 ix-form-group
-                 ix-label="{{property.prompt}}"
-                 ix-model="property.value"
-                 ix-type="checkbox"
-                 ng-class="{ 'ix-form-group-without-help-block': property.description === null }">
-              <div class="help-block">
-                {{property.description}}
+            <div ng-switch-when="boolean">
+              <div ix-form-group
+                   ix-label="{{property.prompt}}"
+                   ix-model="property.value"
+                   ix-type="checkbox"
+                   ng-class="{ 'ix-form-group-without-help-block': property.description === null }">
+                <div class="help-block">
+                  {{property.description}}
+                </div>
               </div>
             </div>
-            <div ng-switch-when="double"
-                 ix-form-group
-                 ix-label="{{property.prompt}}"
-                 ix-model="property.value"
-                 ix-number="true"
-                 ix-pattern="pattern.double"
-                 ix-width="7em"
-                 ng-class="{ 'ix-form-group-without-help-block': property.description === null }">
-              <div class="help-block">
-                {{property.description}}
+            <div ng-switch-when="double">
+              <div ix-form-group
+                   ix-label="{{property.prompt}}"
+                   ix-model="property.value"
+                   ix-number="true"
+                   ix-pattern="pattern.double"
+                   ix-width="7em"
+                   ng-class="{ 'ix-form-group-without-help-block': property.description === null }">
+                <div class="help-block">
+                  {{property.description}}
+                </div>
               </div>
             </div>
           </div>
