@@ -19,7 +19,8 @@
 informant.controller('ConfigPluginListCtrl', [
   '$scope',
   '$http',
-  function ($scope, $http) {
+  'httpErrors',
+  function ($scope, $http, httpErrors) {
     $http.get('backend/config/plugin-section')
         .success(function (data) {
           $scope.loaded = true;
@@ -38,9 +39,8 @@ informant.controller('ConfigPluginListCtrl', [
             $scope.plugins.push(plugin);
           }
         })
-        .error(function (error) {
-          $scope.loadingError = true;
-          // TODO display error
+        .error(function (data, status) {
+          $scope.loadingError = httpErrors.get(data, status);
         });
   }
 ]);

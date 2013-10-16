@@ -25,32 +25,6 @@ var informant = angular.module('informant', [
 
 var Informant;
 
-informant.factory('httpInterceptor', [
-  '$q',
-  '$timeout',
-  function ($q, $timeout) {
-    return {
-      'responseError': function (rejection) {
-        if (rejection.status === 0) {
-          // small timeout to prevent error message from flashing if this is a result of user hitting F5
-          $timeout(function () {
-            $q.reject(rejection);
-          }, 100);
-        } else {
-          $q.reject(rejection);
-        }
-      }
-    };
-  }
-]);
-
-informant.config([
-  '$httpProvider',
-  function ($httpProvider) {
-    $httpProvider.interceptors.push('httpInterceptor');
-  }
-]);
-
 informant.run([
   '$rootScope',
   '$http',

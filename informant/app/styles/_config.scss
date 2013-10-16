@@ -64,6 +64,8 @@
 .panel-body {
   position: relative;
   padding: 30px;
+  // min-height is needed for initial load spinner since no other content on page at that time
+  min-height: 150px;
 }
 
 .panel-loading {
@@ -75,8 +77,6 @@
   height: 100%;
   border-radius: 0 0 4px 4px;
   z-index: 999;
-  // top padding is to push the spinner down a bit
-  padding-top: 50px;
 }
 
 .plugin-list-spinner {

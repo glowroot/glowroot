@@ -19,7 +19,8 @@
 informant.controller('ConfigFineProfilingCtrl', [
   '$scope',
   '$http',
-  function ($scope, $http) {
+  'httpErrors',
+  function ($scope, $http, httpErrors) {
     var originalConfig;
 
     $scope.hasChanges = function () {
@@ -71,9 +72,8 @@ informant.controller('ConfigFineProfilingCtrl', [
                 }
               }, true);
         })
-        .error(function (error) {
-          $scope.loadingError = true;
-          // TODO display error
+        .error(function (data, status) {
+          $scope.loadingError = httpErrors.get(data, status);
         });
   }
 ]);

@@ -19,7 +19,8 @@
 informant.controller('JvmDiagnosticOptionsCtrl', [
   '$scope',
   '$http',
-  function ($scope, $http) {
+  'httpErrors',
+  function ($scope, $http, httpErrors) {
     var originalOptions;
 
     $scope.hasChanges = function () {
@@ -62,9 +63,8 @@ informant.controller('JvmDiagnosticOptionsCtrl', [
           $scope.options = data;
           originalOptions = angular.copy($scope.options);
         })
-        .error(function (error) {
-          $scope.loadingError = true;
-          // TODO display error
+        .error(function (data, status) {
+          $scope.loadingError = httpErrors.get(data, status);
         });
   }
 ]);

@@ -19,7 +19,8 @@
 informant.controller('ConfigCoarseProfilingCtrl', [
   '$scope',
   '$http',
-  function ($scope, $http) {
+  'httpErrors',
+  function ($scope, $http, httpErrors) {
     var originalConfig;
 
     $scope.hasChanges = function () {
@@ -48,9 +49,8 @@ informant.controller('ConfigCoarseProfilingCtrl', [
           $scope.config = data;
           originalConfig = angular.copy($scope.config);
         })
-        .error(function (error) {
-          $scope.loadingError = true;
-          // TODO display error
+        .error(function (data, status) {
+          $scope.loadingError = httpErrors.get(data, status);
         });
   }
 ]);

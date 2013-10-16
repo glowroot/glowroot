@@ -19,7 +19,8 @@
 informant.controller('JvmHeapDumpCtrl', [
   '$scope',
   '$http',
-  function ($scope, $http) {
+  'httpErrors',
+  function ($scope, $http, httpErrors) {
     $('#directory').keypress(function (e) {
       if (e.which === 13) {
         return false;
@@ -73,9 +74,8 @@ informant.controller('JvmHeapDumpCtrl', [
           $scope.loaded = true;
           $scope.data = data;
         })
-        .error(function (error) {
-          $scope.loadingError = true;
-          // TODO display error
+        .error(function (data, status) {
+          $scope.loadingError = httpErrors.get(data, status);
         });
   }
 ]);

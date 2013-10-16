@@ -19,15 +19,15 @@
 informant.controller('JvmSystemPropertiesCtrl', [
   '$scope',
   '$http',
-  function ($scope, $http) {
+  'httpErrors',
+  function ($scope, $http, httpErrors) {
     $http.get('backend/jvm/system-properties')
         .success(function (data) {
           $scope.loaded = true;
           $scope.properties = data;
         })
-        .error(function (error) {
-          $scope.loadingError = true;
-          // TODO display error
+        .error(function (data, status) {
+          $scope.loadingError = httpErrors.get(data, status);
         });
   }
 ]);

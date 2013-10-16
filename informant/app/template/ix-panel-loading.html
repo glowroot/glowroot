@@ -1,0 +1,10 @@
+<div class="panel-loading" ng-class="{hide: loaded}">
+  <div ix-spinner
+       ix-show="!loaded && !loadingError"
+       class="spinner">
+  </div>
+  <div class="loading-error" ng-show="loadingError">
+    {{loadingError.header}}<br>
+    <a href="#">view stack trace</a>
+  </div>
+</div>

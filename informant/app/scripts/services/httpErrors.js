@@ -16,18 +16,21 @@
 
 /* global informant */
 
-informant.controller('JvmGeneralCtrl', [
-  '$scope',
-  '$http',
-  'httpErrors',
-  function ($scope, $http, httpErrors) {
-    $http.get('backend/jvm/general')
-        .success(function (data) {
-          $scope.loaded = true;
-          $scope.data = data;
-        })
-        .error(function (data, status) {
-          $scope.loadingError = httpErrors.get(data, status);
-        });
+informant.factory('httpErrors', [
+  function () {
+    return {
+      get: function (data, status) {
+        if (status === 0) {
+          return {
+            header: 'Unable to connect to server.'
+          };
+        } else {
+          return {
+            header: 'An error occurred loading the data for this page.',
+            detail: data
+          };
+        }
+      }
+    };
   }
 ]);

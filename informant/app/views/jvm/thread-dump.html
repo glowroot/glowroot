@@ -29,8 +29,12 @@
       </div>
       <span class="button-success-message hide" id="refresh1SuccessMessage">Refreshed</span>
       <div ix-spinner
-           ix-show="!loaded"
-           class="thread-dump-spinner hide">
+           ix-show="!loaded && !loadingError"
+           class="thread-dump-spinner">
+      </div>
+      <div class="loading-error" ng-show="loadingError">
+        {{loadingError.header}}<br>
+        <a href="#">view stack trace</a>
       </div>
       <span class="thread-dump-flat-pre"
             ng-class="{hide: !loaded}"

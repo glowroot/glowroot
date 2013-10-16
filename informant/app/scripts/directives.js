@@ -281,6 +281,7 @@ informant.directive('ixSpinner', function () {
   return function (scope, iElement, iAttrs) {
     var spinner;
     var timer;
+    iElement.addClass('hide');
     scope.$watch(iAttrs.ixShow,
         function (newValue) {
           if (newValue) {

@@ -17,11 +17,8 @@
   <div class="panel-heading">
     <h2>All options</h2>
   </div>
-  <!-- min-height is needed for initial load spinner since no other content on page at that time -->
-  <div class="panel-body" style="min-height: 100px;">
-    <div class="panel-loading" ng-class="{hide: loaded}">
-      <div ix-spinner ix-show="!loaded && !loadingError"></div>
-    </div>
+  <div class="panel-body">
+    <div ng-include src="'template/ix-panel-loading.html'"></div>
     <div ng-repeat="option in options">
       <div class="row system-property">
         <div class="col-lg-5 break-word">

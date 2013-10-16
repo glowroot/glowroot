@@ -20,7 +20,8 @@ informant.controller('ConfigAdhocPointcutListCtrl', [
   '$scope',
   '$http',
   '$timeout',
-  function ($scope, $http, $timeout) {
+  'httpErrors',
+  function ($scope, $http, $timeout, httpErrors) {
     $http.get('backend/config/adhoc-pointcut-section')
         .success(function (data) {
           $scope.loaded = true;
@@ -50,9 +51,8 @@ informant.controller('ConfigAdhocPointcutListCtrl', [
           };
           $scope.jvmRetransformClassesSupported = data.jvmRetransformClassesSupported;
         })
-        .error(function (error) {
-          $scope.loadingError = true;
-          // TODO display error
+        .error(function (data, status) {
+          $scope.loadingError = httpErrors.get(data, status);
         });
 
     $scope.addPointcut = function () {
@@ -110,7 +110,7 @@ informant.controller('ConfigAdhocPointcutCtrl', [
       return $http.get(url)
           .then(function (response) {
             return response.data;
-          }, function() {
+          }, function () {
             // TODO handle error
           });
     };
@@ -139,7 +139,7 @@ informant.controller('ConfigAdhocPointcutCtrl', [
       return $http.get(url)
           .then(function (response) {
             return response.data;
-          }, function() {
+          }, function () {
             // TODO handle error
           });
     };

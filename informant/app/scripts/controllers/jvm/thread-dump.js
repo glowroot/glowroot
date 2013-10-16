@@ -20,7 +20,8 @@ informant.controller('JvmThreadDumpCtrl', [
   '$scope',
   '$http',
   '$q',
-  function ($scope, $http, $q) {
+  'httpErrors',
+  function ($scope, $http, $q, httpErrors) {
 
     Handlebars.registerHelper('ifBlocked', function (state, options) {
       if (state === 'BLOCKED') {
@@ -47,28 +48,18 @@ informant.controller('JvmThreadDumpCtrl', [
             if (scroll) {
               $(window).scrollTop(document.body.scrollHeight);
             }
-            if (deferred) {
-              deferred.resolve('Refreshed');
-            }
+            deferred.resolve('Refreshed');
           })
           .error(function (data, status) {
-            // TODO handle for initial load (!deferred)
-            if (deferred) {
-              if (status === 0) {
-                deferred.reject('Unable to connect to server');
-              } else {
-                deferred.reject('An error occurred');
-              }
-            }
+            deferred.reject(httpErrors.get(data, status));
           });
     };
 
     var deferred = $q.defer();
     deferred.promise.then(function () {
       $scope.loaded = true;
-    }, function() {
-      $scope.loadingError = true;
-      // TODO display error
+    }, function (rejection) {
+      $scope.loadingError = rejection;
     });
     $scope.refresh(false, deferred);
   }

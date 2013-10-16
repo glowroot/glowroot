@@ -132,3 +132,34 @@ body {
   display: inline-block;
   vertical-align: middle;
 }
+
+.loading-error {
+  color: #660099;
+  font-size: 24px;
+  padding-left: 30px;
+  font-weight: bold;
+  font-family: monospace;
+}
+
+.panel-loading .spinner {
+  padding-top: 50px;
+}
+
+// margin at top of config pages pushes down entire sidebar
+.loading-error {
+  margin-top: 0;
+}
+
+// put back margin inside of panels
+.panel-loading .loading-error {
+  margin-top: 20px;
+}
+
+.loading-error a {
+  color: #660099;
+  text-decoration: underline;
+}
+
+.loading-error a:hover {
+  color: lighten(#660099, 15);
+}
