@@ -171,7 +171,7 @@ class JvmJsonService {
         for (ThreadInfo threadInfo : threadInfos) {
             jg.writeStartObject();
             jg.writeStringField("name", threadInfo.getThreadName());
-            jg.writeStringField("state", threadInfo.getThreadName());
+            jg.writeStringField("state", threadInfo.getThreadState().name());
             jg.writeStringField("lockName", threadInfo.getLockName());
             jg.writeArrayFieldStart("stackTrace");
             for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
