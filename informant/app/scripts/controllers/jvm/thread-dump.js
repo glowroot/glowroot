@@ -39,15 +39,12 @@ informant.controller('JvmThreadDumpCtrl', [
       }
     });
 
-    $scope.refresh = function (scroll, deferred) {
+    $scope.refresh = function (deferred) {
       $http.get('backend/jvm/thread-dump')
           .success(function (data) {
             // $.trim() is needed because this template is sensitive to surrounding spaces
             var html = $.trim(JST['thread-dump'](data));
             $('#threadDump').html(html);
-            if (scroll) {
-              $(window).scrollTop(document.body.scrollHeight);
-            }
             deferred.resolve('Refreshed');
           })
           .error(function (data, status) {
@@ -61,6 +58,6 @@ informant.controller('JvmThreadDumpCtrl', [
     }, function (rejection) {
       $scope.loadingError = rejection;
     });
-    $scope.refresh(false, deferred);
+    $scope.refresh(deferred);
   }
 ]);

@@ -63,7 +63,7 @@
             <table class="heap-dump-response">
               <tr>
                 <td>Free disk space</td>
-                <td><strong>{{checkDiskSpaceResponse | bytes}}</strong></td>
+                <td><strong>{{checkDiskSpaceResponse | ixBytes}}</strong></td>
               </tr>
             </table>
           </div>
@@ -80,7 +80,7 @@
               </tr>
               <tr>
                 <td>File size</td>
-                <td><strong>{{heapDumpResponse.size | bytes}}</strong></td>
+                <td><strong>{{heapDumpResponse.size | ixBytes}}</strong></td>
               </tr>
             </table>
           </div>

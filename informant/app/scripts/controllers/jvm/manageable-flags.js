@@ -16,36 +16,36 @@
 
 /* global informant, angular */
 
-informant.controller('JvmDiagnosticOptionsCtrl', [
+informant.controller('JvmManageableFlagsCtrl', [
   '$scope',
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
-    var originalOptions;
+    var originalFlags;
 
     $scope.hasChanges = function () {
-      return originalOptions && !angular.equals($scope.options, originalOptions);
+      return originalFlags && !angular.equals($scope.flags, originalFlags);
     };
 
     $scope.update = function (deferred) {
       // only pass diff to limit clobbering
-      // (and also because setting VMOption to same value will update the VMOption origin to MANAGEMENT)
-      var originalOptionsHash = {};
-      angular.forEach(originalOptions, function(option) {
-        originalOptionsHash[option.name] = option.value;
+      // (and also because setting flag to same value will update the flag origin to MANAGEMENT)
+      var originalFlagsHash = {};
+      angular.forEach(originalFlags, function(flag) {
+        originalFlagsHash[flag.name] = flag.value;
       });
-      var updatedOptions = {};
-      angular.forEach($scope.options, function(option) {
-        var originalOptionValue = originalOptionsHash[option.name];
-        var updatedOptionValue = option.value;
-        if (updatedOptionValue !== originalOptionValue) {
-          updatedOptions[option.name] = updatedOptionValue;
+      var updatedFlags = {};
+      angular.forEach($scope.flags, function(flag) {
+        var originalFlagValue = originalFlagsHash[flag.name];
+        var updatedFlagValue = flag.value;
+        if (updatedFlagValue !== originalFlagValue) {
+          updatedFlags[flag.name] = updatedFlagValue;
         }
       });
-      $http.post('backend/jvm/update-diagnostic-options', updatedOptions)
+      $http.post('backend/jvm/update-manageable-flags', updatedFlags)
           .success(function (data) {
-            $scope.options = data;
-            originalOptions = angular.copy($scope.options);
+            $scope.flags = data;
+            originalFlags = angular.copy($scope.flags);
             deferred.resolve('Updated');
           })
           .error(function (data, status) {
@@ -57,11 +57,11 @@ informant.controller('JvmDiagnosticOptionsCtrl', [
           });
     };
 
-    $http.get('backend/jvm/diagnostic-options')
+    $http.get('backend/jvm/manageable-flags')
         .success(function (data) {
           $scope.loaded = true;
-          $scope.options = data;
-          originalOptions = angular.copy($scope.options);
+          $scope.flags = data;
+          originalFlags = angular.copy($scope.flags);
         })
         .error(function (data, status) {
           $scope.loadingError = httpErrors.get(data, status);

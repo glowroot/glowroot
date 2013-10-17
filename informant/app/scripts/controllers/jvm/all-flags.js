@@ -16,15 +16,15 @@
 
 /* global informant */
 
-informant.controller('JvmAllOptionsCtrl', [
+informant.controller('JvmAllFlagsCtrl', [
   '$scope',
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
-    $http.get('backend/jvm/all-options')
+    $http.get('backend/jvm/all-flags')
         .success(function (data) {
           $scope.loaded = true;
-          $scope.options = data;
+          $scope.flags = data;
         })
         .error(function (data, status) {
           $scope.loadingError = httpErrors.get(data, status);

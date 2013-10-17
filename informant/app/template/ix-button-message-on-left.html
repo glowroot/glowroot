@@ -1,0 +1,14 @@
+<span class="ix-button">
+  <!-- using ng-if instead of ng-show so jquery selector only picks up one .button-message inside a button group -->
+  <span ng-if="noGroup">
+    <span class="button-message hide"></span>
+    <span class="button-spinner inline-block hide"></span>
+  </span>
+  <button class="btn"
+          ng-class="ixBtnClass || 'btn-primary'"
+          ng-click="onClick()"
+          ng-show="ngShow()"
+          ng-disabled="ixDisabled()">
+    {{ixLabel}}
+  </button>
+</span>

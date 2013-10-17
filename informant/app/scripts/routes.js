@@ -51,20 +51,30 @@ informant.config([
       templateUrl: 'views/jvm/thread-dump.html',
       controller: 'JvmThreadDumpCtrl'
     });
+    $stateProvider.state('jvm.heapHistogram', {
+      url: '/heap-histogram',
+      templateUrl: 'views/jvm/heap-histogram.html',
+      controller: 'JvmHeapHistogramCtrl'
+    });
     $stateProvider.state('jvm.heapDump', {
       url: '/heap-dump',
       templateUrl: 'views/jvm/heap-dump.html',
       controller: 'JvmHeapDumpCtrl'
     });
-    $stateProvider.state('jvm.diagnosticOptions', {
-      url: '/diagnostic-options',
-      templateUrl: 'views/jvm/diagnostic-options.html',
-      controller: 'JvmDiagnosticOptionsCtrl'
+    $stateProvider.state('jvm.manageableFlags', {
+      url: '/manageable-flags',
+      templateUrl: 'views/jvm/manageable-flags.html',
+      controller: 'JvmManageableFlagsCtrl'
     });
-    $stateProvider.state('jvm.allOptions', {
-      url: '/all-options',
-      templateUrl: 'views/jvm/all-options.html',
-      controller: 'JvmAllOptionsCtrl'
+    $stateProvider.state('jvm.allFlags', {
+      url: '/all-flags',
+      templateUrl: 'views/jvm/all-flags.html',
+      controller: 'JvmAllFlagsCtrl'
+    });
+    $stateProvider.state('jvm.capabilities', {
+      url: '/capabilities',
+      templateUrl: 'views/jvm/capabilities.html',
+      controller: 'JvmCapabilitiesCtrl'
     });
     $stateProvider.state('config', {
       url: '/config',

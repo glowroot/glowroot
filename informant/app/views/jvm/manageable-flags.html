@@ -15,24 +15,24 @@
 -->
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>Diagnostic options</h2>
+    <h2>Manageable flags</h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/ix-panel-loading.html'"></div>
-    <form class="form-horizontal jvm-diagnostic-options-form" name="formCtrl">
-      <div ng-repeat="option in options">
+    <form class="form-horizontal jvm-manageable-flags-form" name="formCtrl">
+      <div ng-repeat="flag in flags">
         <div class="row">
-          <div class="checkbox jvm-diagnostic-option col-lg-offset-3 col-lg-9">
-            <label for="{{option.name}}">
+          <div class="checkbox jvm-manageable-flag col-lg-offset-3 col-lg-9">
+            <label for="{{flag.name}}">
               <input type="checkbox"
                      class="ix-form-checkbox"
-                     ng-model="option.value"
-                     name="{{option.name}}"
-                     id="{{option.name}}">
-            <span class="jvm-diagnostic-option-name">
-              {{option.name}}
-              <span ng-show="option.origin !== 'DEFAULT'">
-                ({{option.origin}})
+                     ng-model="flag.value"
+                     name="{{flag.name}}"
+                     id="{{flag.name}}">
+            <span class="jvm-manageable-flag-name">
+              {{flag.name}}
+              <span ng-show="flag.origin !== 'DEFAULT'">
+                ({{flag.origin}})
               </span>
             </span>
             </label>
@@ -41,7 +41,7 @@
       </div>
       <div class="form-group" style="margin-bottom: 5px;">
         <div class="col-lg-offset-3 col-lg-9 help-block">
-          These options are updated in the running JVM only. To make options permanent, they must be added to the jvm
+          These flags are updated in the running JVM only. To update flags permanently, they must be added to the jvm
           args, e.g. <code>-XX:+PrintGCDetails</code>.
         </div>
       </div>

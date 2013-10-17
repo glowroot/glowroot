@@ -1,0 +1,112 @@
+<!--
+  Copyright 2013 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h2>Heap histogram</h2>
+  </div>
+  <div class="panel-body">
+    <div ng-include src="'template/ix-panel-loading.html'"></div>
+    <div ix-button
+         ix-button-message-left
+         ix-label="New snapshot"
+         ix-click="refresh(deferred)"
+         style="margin-bottom: 10px; float: right;">
+    </div>
+    <div ix-button
+         ix-button-message-left
+         ix-label="Export to csv"
+         ix-click="exportAsCsv(deferred)"
+         ix-btn-class="btn-default"
+         style="clear: right; float: right;">
+    </div>
+    <table>
+      <tbody>
+      <tr>
+        <td style="padding-right: 10px;">Total classes:</td>
+        <td>{{histogram.items.length}}</td>
+      </tr>
+      <tr>
+        <td style="padding-right: 10px;">Total memory:</td>
+        <td>{{histogram.totalBytes}}</td>
+      </tr>
+      <tr>
+        <td style="padding-right: 10px;">Total count:</td>
+        <td>{{histogram.totalCount}}</td>
+      </tr>
+      </tbody>
+    </table>
+    <br>
+    <br>
+    <form class="form-horizontal well">
+      <div class="row">
+        <div class="col-md-9">
+          <div class="input-group" style="width: 100%;">
+            <div ix-input-group-dropdown
+                 ix-model="filterComparator"
+                 ix-items="filterComparatorOptions">
+            </div>
+            <input type="text"
+                   ng-model="filterValue"
+                   class="form-control"
+                   placeholder="Filter by class name">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select ng-model="filterLimit"
+                  class="heap-histogram-limit form-control inline-block"
+                  style="max-width: 8em;">
+            <option value="" disabled>Display limit</option>
+            <option value="" disabled>&mdash;&mdash;&mdash;&mdash;&mdash;</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="500">500</option>
+            <option value="1000">1,000</option>
+            <option value="2000">2,000</option>
+            <option value="5000">5,000</option>
+          </select>
+        </div>
+      </div>
+    </form>
+    <table class="table table-sortable" style="table-layout: fixed;">
+      <thead>
+      <tr>
+        <th style="width: 70%;" ng-click="sortOn('className')">Class name</th>
+        <th style="width: 15%;" ng-click="sortOn('bytes')">Bytes</th>
+        <th style="width: 15%;" ng-click="sortOn('count')">Count</th>
+      </tr>
+      </thead>
+      <tfoot>
+      <tr>
+        <th>Total</th>
+        <th>{{filteredTotalBytes}}</th>
+        <th>{{filteredTotalCount}}</th>
+      </tr>
+      </tfoot>
+      <tbody>
+      <tr ng-repeat="item in displayedItems track by item.className">
+        <td style="word-wrap: break-word;">{{item.className}}</td>
+        <td>{{item.bytes}}</td>
+        <td>{{item.count}}</td>
+      </tr>
+      <tr ng-show="limitApplied">
+        <td>... <em>display limit applied</em></td>
+        <td></td>
+        <td></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

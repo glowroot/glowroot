@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@import "../bower_components/sass-bootstrap/lib/variables";
+
 .jvm-general-row {
   padding-top: 5px;
   padding-bottom: 5px;
@@ -37,16 +39,31 @@
   padding-right: 10px;
 }
 
-.jvm-diagnostic-option {
+.jvm-manageable-flag {
   padding-top: 5px;
   padding-bottom: 5px;
 }
 
-.jvm-diagnostic-option-name {
+.jvm-manageable-flag-name {
   padding-left: 10px;
 }
 
-.jvm-diagnostic-options-form {
+.jvm-manageable-flags-form {
   // need a little padding for small screens, otherwise checkboxes too close to left side
   padding-left: 20px;
+}
+
+.table-sortable th {
+  cursor: pointer;
+}
+
+.heap-histogram-limit {
+  margin-top: 10px;
+}
+
+@media (min-width: $screen-md) {
+  .heap-histogram-limit {
+    float: right;
+    margin-top: 0px;
+  }
 }

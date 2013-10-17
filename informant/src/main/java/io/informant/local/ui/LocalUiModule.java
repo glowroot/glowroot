@@ -168,11 +168,6 @@ public class LocalUiModule {
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
         uriMappings.put(Pattern.compile("^/$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/search.html$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/config.html$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/pointcuts.html$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/jvm-options.html$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/thread-dump.html$"), resourceBase + "/index.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");
         uriMappings.put(Pattern.compile("^/styles/(.*)$"), resourceBase + "/styles/$1");
@@ -208,19 +203,23 @@ public class LocalUiModule {
                 jvmJsonService, "getSystemProperties"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/thread-dump$",
                 jvmJsonService, "getThreadDump"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/heap-histogram",
+                jvmJsonService, "getHeapHistogram"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/heap-dump-defaults",
                 jvmJsonService, "getHeapDumpDefaults"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/jvm/check-disk-space",
                 jvmJsonService, "checkDiskSpace"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/jvm/dump-heap$",
                 jvmJsonService, "dumpHeap"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/diagnostic-options",
-                jvmJsonService, "getDiagnosticOptions"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/manageable-flags",
+                jvmJsonService, "getManageableFlags"));
         jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/jvm/update-diagnostic-options", jvmJsonService,
-                "updateDiagnosticOptions"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/all-options",
-                jvmJsonService, "getAllOptions"));
+                "^/backend/jvm/update-manageable-flags", jvmJsonService,
+                "updateManageableFlags"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/all-flags",
+                jvmJsonService, "getAllFlags"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/capabilities",
+                jvmJsonService, "getCapabilities"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config$",
                 configJsonService, "getConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/general$",

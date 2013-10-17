@@ -16,10 +16,8 @@
 package io.informant.local.ui;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 
 import javax.management.JMException;
-import javax.management.ObjectName;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
+import io.informant.jvm.Flags;
+import io.informant.jvm.HeapHistograms;
+import io.informant.jvm.HotSpotDiagnostic;
 import io.informant.markers.Singleton;
 
 /**
@@ -54,28 +55,18 @@ class LayoutJsonService {
     @JsonServiceMethod
     String getLayout() throws IOException, JMException {
         logger.debug("getLayout()");
-        boolean hotSpotDiagnosticMBeanAvailable = isHotSpotDiagnosticMBeanAvailable();
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeBooleanField("aggregates", aggregatesEnabled);
-        jg.writeBooleanField("jvmHeapDump", hotSpotDiagnosticMBeanAvailable);
-        jg.writeBooleanField("jvmDiagnosticOptions", hotSpotDiagnosticMBeanAvailable);
-        jg.writeBooleanField("jvmAllOptions", hotSpotDiagnosticMBeanAvailable);
+        jg.writeBooleanField("jvmHeapHistogram", HeapHistograms.getAvailability().isAvailable());
+        jg.writeBooleanField("jvmHeapDump", HotSpotDiagnostic.getAvailability().isAvailable());
+        jg.writeBooleanField("jvmManageableFlags",
+                HotSpotDiagnostic.getAvailability().isAvailable());
+        jg.writeBooleanField("jvmAllFlags", Flags.getAvailability().isAvailable());
         jg.writeStringField("footerMessage", "version " + version);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
-    }
-
-    private boolean isHotSpotDiagnosticMBeanAvailable() {
-        try {
-            ObjectName hotSpotDiagnostic =
-                    ObjectName.getInstance("com.sun.management:type=HotSpotDiagnostic");
-            ManagementFactory.getPlatformMBeanServer().getObjectInstance(hotSpotDiagnostic);
-            return true;
-        } catch (JMException e) {
-            return false;
-        }
     }
 }

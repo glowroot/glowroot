@@ -671,6 +671,9 @@ class PreInitializeClasses {
         types.add("io.informant.api.weaving.OnThrow");
         types.add("io.informant.api.weaving.Pointcut");
         types.add("io.informant.common.Nullness");
+        types.add("io.informant.jvm.ThreadAllocatedBytes");
+        types.add("io.informant.jvm.ThreadContentionTime");
+        types.add("io.informant.jvm.ThreadCpuTime");
         types.add("io.informant.local.store.DataSource");
         types.add("io.informant.local.store.DataSource$1");
         types.add("io.informant.local.store.DataSource$ShutdownHookThread");

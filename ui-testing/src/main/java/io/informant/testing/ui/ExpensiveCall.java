@@ -16,6 +16,7 @@
 package io.informant.testing.ui;
 
 import java.util.Random;
+import java.util.concurrent.Executors;
 
 import checkers.igj.quals.Immutable;
 
@@ -73,87 +74,95 @@ public class ExpensiveCall {
     }
 
     private void execute0() {
-        try {
-            Thread.sleep(random.nextInt(maxTimeMillis));
-        } catch (InterruptedException e) {
-            throw new IllegalStateException(e);
-        }
+        expensive();
     }
 
     private void execute1() {
-        try {
-            Thread.sleep(random.nextInt(maxTimeMillis));
-        } catch (InterruptedException e) {
-            throw new IllegalStateException(e);
-        }
+        expensive();
     }
 
     private void execute2() {
-        try {
-            Thread.sleep(random.nextInt(maxTimeMillis));
-        } catch (InterruptedException e) {
-            throw new IllegalStateException(e);
-        }
+        expensive();
     }
 
     private void execute3() {
-        try {
-            Thread.sleep(random.nextInt(maxTimeMillis));
-        } catch (InterruptedException e) {
-            throw new IllegalStateException(e);
-        }
+        expensive();
     }
 
     private void execute4() {
-        try {
-            Thread.sleep(random.nextInt(maxTimeMillis));
-        } catch (InterruptedException e) {
-            throw new IllegalStateException(e);
-        }
+        expensive();
     }
 
     private void execute5() {
-        try {
-            Thread.sleep(random.nextInt(maxTimeMillis));
-        } catch (InterruptedException e) {
-            throw new IllegalStateException(e);
-        }
+        expensive();
     }
 
     private void execute6() {
-        try {
-            Thread.sleep(random.nextInt(maxTimeMillis));
-        } catch (InterruptedException e) {
-            throw new IllegalStateException(e);
-        }
+        expensive();
     }
 
     private void execute7() {
-        try {
-            Thread.sleep(random.nextInt(maxTimeMillis));
-        } catch (InterruptedException e) {
-            throw new IllegalStateException(e);
-        }
+        expensive();
     }
 
     private void execute8() {
-        try {
-            Thread.sleep(random.nextInt(maxTimeMillis));
-        } catch (InterruptedException e) {
-            throw new IllegalStateException(e);
-        }
+        expensive();
     }
 
     private void execute9() {
-        try {
-            Thread.sleep(random.nextInt(maxTimeMillis));
-        } catch (InterruptedException e) {
-            throw new IllegalStateException(e);
-        }
+        expensive();
     }
 
     public String getSpanText() {
         return getSpanText(random.nextInt(5) > 0);
+    }
+
+    // this is just to prevent jvm from optimizing away for the loop below
+    public static volatile long dummy;
+
+    // need
+    private static final Object lock = new Object();
+
+    static {
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            public void run() {
+                try {
+                    while (true) {
+                        synchronized (lock) {
+                            Thread.sleep(random.nextInt(10));
+                        }
+                        Thread.sleep(1);
+                    }
+                } catch (InterruptedException e) {
+                }
+            }
+        });
+    }
+
+    private void expensive() {
+        int millis = random.nextInt(maxTimeMillis) / 4;
+        // spend a quarter of the time taxing the cpu and doing memory allocation
+        long start = System.currentTimeMillis();
+        while (System.currentTimeMillis() - start < millis) {
+            for (int i = 0; i < 100000; i++) {
+                dummy += random.nextInt(1024);
+                if (i % 100 == 0) {
+                    dummy += new byte[random.nextInt(1024)].length;
+                }
+            }
+        }
+        // spend the rest of the time in both blocking and waiting states
+        start = System.currentTimeMillis();
+        try {
+            while (System.currentTimeMillis() - start < 3 * millis) {
+                synchronized (lock) {
+                    Thread.sleep(random.nextInt(10));
+                    dummy++;
+                }
+                Thread.sleep(1);
+            }
+        } catch (InterruptedException e) {
+        }
     }
 
     private String getSpanText(boolean spaces) {

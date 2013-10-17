@@ -35,29 +35,44 @@ import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
 @Immutable
 public class JvmInfo {
 
-    private final long threadCpuTime;
-    private final long threadBlockedTime;
-    private final long threadWaitedTime;
+    @Nullable
+    private final Long threadCpuTime;
+    @Nullable
+    private final Long threadBlockedTime;
+    @Nullable
+    private final Long threadWaitedTime;
+    @Nullable
+    private final Long threadAllocatedBytes;
     private final ImmutableList<GarbageCollectorInfo> garbageCollectorInfos;
 
-    private JvmInfo(long threadCpuTime, long threadBlockedTime, long threadWaitedTime,
+    private JvmInfo(@Nullable Long threadCpuTime, @Nullable Long threadBlockedTime,
+            @Nullable Long threadWaitedTime, @Nullable Long threadAllocatedBytes,
             @ReadOnly List<GarbageCollectorInfo> garbageCollectorInfos) {
         this.threadCpuTime = threadCpuTime;
         this.threadBlockedTime = threadBlockedTime;
         this.threadWaitedTime = threadWaitedTime;
+        this.threadAllocatedBytes = threadAllocatedBytes;
         this.garbageCollectorInfos = ImmutableList.copyOf(garbageCollectorInfos);
     }
 
-    public long getThreadCpuTime() {
+    @Nullable
+    public Long getThreadCpuTime() {
         return threadCpuTime;
     }
 
-    public long getThreadBlockedTime() {
+    @Nullable
+    public Long getThreadBlockedTime() {
         return threadBlockedTime;
     }
 
-    public long getThreadWaitedTime() {
+    @Nullable
+    public Long getThreadWaitedTime() {
         return threadWaitedTime;
+    }
+
+    @Nullable
+    public Long getThreadAllocatedBytes() {
+        return threadAllocatedBytes;
     }
 
     public ImmutableList<GarbageCollectorInfo> getGarbageCollectorInfos() {
@@ -70,6 +85,7 @@ public class JvmInfo {
                 .add("threadCpuTime", threadCpuTime)
                 .add("threadBlockedTime", threadBlockedTime)
                 .add("threadWaitedTime", threadWaitedTime)
+                .add("threadAllocatedBytes", threadAllocatedBytes)
                 .add("garbageCollectorInfos", garbageCollectorInfos)
                 .toString();
     }
@@ -79,13 +95,12 @@ public class JvmInfo {
             @JsonProperty("threadCpuTime") @Nullable Long threadCpuTime,
             @JsonProperty("threadBlockedTime") @Nullable Long threadBlockedTime,
             @JsonProperty("threadWaitedTime") @Nullable Long threadWaitedTime,
+            @JsonProperty("threadAllocatedBytes") @Nullable Long threadAllocatedBytes,
             @JsonProperty("garbageCollectorInfos") @Nullable List<GarbageCollectorInfo> infos)
             throws JsonMappingException {
-        checkRequiredProperty(threadCpuTime, "threadCpuTime");
-        checkRequiredProperty(threadBlockedTime, "threadBlockedTime");
-        checkRequiredProperty(threadWaitedTime, "threadWaitedTime");
         checkRequiredProperty(infos, "garbageCollectorInfos");
-        return new JvmInfo(threadCpuTime, threadBlockedTime, threadWaitedTime, infos);
+        return new JvmInfo(threadCpuTime, threadBlockedTime, threadWaitedTime,
+                threadAllocatedBytes, infos);
     }
 
     @Immutable

@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
+import io.informant.config.AdhocPointcutConfig;
 import io.informant.config.CoarseProfilingConfig;
 import io.informant.config.ConfigService;
 import io.informant.config.ConfigService.OptimisticLockException;
@@ -44,10 +45,10 @@ import io.informant.config.GeneralConfig;
 import io.informant.config.PluginConfig;
 import io.informant.config.PluginDescriptor;
 import io.informant.config.PluginDescriptorCache;
-import io.informant.config.AdhocPointcutConfig;
 import io.informant.config.StorageConfig;
 import io.informant.config.UserOverridesConfig;
 import io.informant.config.WithVersionJsonView;
+import io.informant.jvm.JDK6;
 import io.informant.local.store.RollingFile;
 import io.informant.markers.Singleton;
 import io.informant.trace.AdhocAdviceCache;
@@ -180,7 +181,7 @@ class ConfigJsonService {
             jg.writeBooleanField("jvmRetransformClassesSupported", false);
         } else {
             jg.writeBooleanField("jvmRetransformClassesSupported",
-                    RetransformClasses.isRetransformClassesSupported(instrumentation));
+                    JDK6.isRetransformClassesSupported(instrumentation));
         }
         jg.writeEndObject();
         jg.close();

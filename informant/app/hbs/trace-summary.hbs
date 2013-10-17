@@ -69,13 +69,30 @@ breakdown (in milliseconds):
     {{/ifMetricsTruncated}}
   </tbody>
 </table>
-thread info
-<br>
-<div class="indent2">
-  cpu time: {{nanosToMillis jvmInfo.threadCpuTime}} milliseconds
-</div>
-<div class="indent2">blocked time: {{jvmInfo.threadBlockedTime}} milliseconds</div>
-<div class="indent2">waited time: {{jvmInfo.threadWaitedTime}} milliseconds</div>
+{{#ifThreadInfo jvmInfo}}
+  thread info
+  <br>
+  {{#ifExists jvmInfo.threadCpuTime}}
+    <div class="indent2">
+      cpu time: {{nanosToMillis jvmInfo.threadCpuTime}} milliseconds
+    </div>
+  {{/ifExists}}
+  {{#ifExists jvmInfo.threadBlockedTime}}
+    <div class="indent2">
+      blocked time: {{jvmInfo.threadBlockedTime}} milliseconds
+    </div>
+  {{/ifExists}}
+  {{#ifExists jvmInfo.threadWaitedTime}}
+    <div class="indent2">
+      waited time: {{jvmInfo.threadWaitedTime}} milliseconds
+    </div>
+  {{/ifExists}}
+  {{#ifExists jvmInfo.threadAllocatedBytes}}
+    <div class="indent2">
+      allocated memory: {{formatAllocatedBytes jvmInfo.threadAllocatedBytes}}
+    </div>
+  {{/ifExists}}
+{{/ifThreadInfo}}
 {{#if jvmInfo.garbageCollectorInfos}}
   gc info
   <br>

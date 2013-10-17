@@ -33,7 +33,7 @@ class ConfigAdhocPointcutListPage {
     }
 
     WebElement getAddPointcutButton() {
-        return getNewAdhocPointcutSection().findElement(xpath("//button[text()='Add Pointcut']"));
+        return getNewAdhocPointcutSection().findElement(xpath("//button[text()='Add pointcut']"));
     }
 
     int getNumSections() {

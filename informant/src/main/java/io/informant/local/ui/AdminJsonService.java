@@ -17,6 +17,7 @@ package io.informant.local.ui;
 
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
@@ -29,8 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.collector.TraceCollectorImpl;
-import io.informant.config.ConfigService;
 import io.informant.config.AdhocPointcutConfig;
+import io.informant.config.ConfigService;
+import io.informant.jvm.JDK6;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.SnapshotDao;
 import io.informant.markers.OnlyUsedByTests;
@@ -82,9 +84,10 @@ class AdminJsonService {
     }
 
     @JsonServiceMethod
-    void reweaveAdhocPointcuts() {
-        if (System.getProperty("java.version").startsWith("1.5")) {
-            logger.warn("retransformClasses is not available in java 1.5");
+    void reweaveAdhocPointcuts() throws IllegalArgumentException, IllegalAccessException,
+            InvocationTargetException {
+        if (!JDK6.isRetransformClassesSupported(instrumentation)) {
+            logger.warn("retransformClasses is not supported");
             return;
         }
         if (instrumentation == null) {
@@ -103,7 +106,7 @@ class AdminJsonService {
         if (classes.isEmpty()) {
             return;
         }
-        RetransformClasses.retransformClasses(instrumentation, classes);
+        JDK6.retransformClasses(instrumentation, classes);
     }
 
     @JsonServiceMethod

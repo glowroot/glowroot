@@ -60,6 +60,8 @@ $state-danger-text: $informant-red;
 @import "../bower_components/sass-bootstrap/lib/type";
 @import "../bower_components/sass-bootstrap/lib/utilities";
 @import "../bower_components/sass-bootstrap/lib/responsive-utilities";
+// tables are used on jvm/heap-histogram
+@import "../bower_components/sass-bootstrap/lib/tables";
 
 @import "bootstrap-datepicker-overrides";
 @import "common-trace";
@@ -162,4 +164,8 @@ body {
 
 .loading-error a:hover {
   color: lighten(#660099, 15);
+}
+
+.secondary-text {
+  color: #737373;
 }

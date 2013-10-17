@@ -15,19 +15,19 @@
 -->
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>All options</h2>
+    <h2>All flags</h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/ix-panel-loading.html'"></div>
-    <div ng-repeat="option in options">
+    <div ng-repeat="flag in flags">
       <div class="row system-property">
         <div class="col-lg-5 break-word">
-          <label>{{option.name}}</label>
+          <label>{{flag.name}}</label>
         </div>
         <div class="col-lg-7 break-word">
-          {{option.value}}
-          <span ng-show="option.origin !== 'DEFAULT'">
-            ({{option.origin}})
+          {{flag.value}}
+          <span ng-show="flag.origin !== 'DEFAULT'">
+            ({{flag.origin}})
           </span>
         </div>
       </div>

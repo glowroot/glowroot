@@ -60,6 +60,27 @@ TraceRenderer = (function () {
     return options.inverse(this);
   });
 
+  Handlebars.registerHelper('ifThreadInfo', function (jvmInfo, options) {
+    if (jvmInfo.threadCpuTime || jvmInfo.threadBlockedTime || jvmInfo.threadWaitedTime ||
+        jvmInfo.threadAllocatedBytes) {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
+  Handlebars.registerHelper('ifExists', function (value, options) {
+    if (value !== undefined) {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
+  Handlebars.registerHelper('formatAllocatedBytes', function (bytes) {
+    var units = ['bytes', 'KB', 'MB', 'GB', 'TB'];
+    var number = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, Math.floor(number))).toFixed(2) + ' ' + units[number];
+  });
+
   Handlebars.registerHelper('eachGarbageCollectorInfoOrdered', function (gcInfos, options) {
     // mutating original list seems fine here
     gcInfos.sort(function (a, b) {

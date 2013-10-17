@@ -24,10 +24,9 @@
     <div style="margin-right: 20px; min-width: 100%;">
       <div ix-button
            ix-label="Refresh"
-           ix-click="refresh(false, deferred)"
+           ix-click="refresh(deferred)"
            style="margin-bottom: 20px;">
       </div>
-      <span class="button-success-message hide" id="refresh1SuccessMessage">Refreshed</span>
       <div ix-spinner
            ix-show="!loaded && !loadingError"
            class="thread-dump-spinner">
@@ -40,11 +39,6 @@
             ng-class="{hide: !loaded}"
             id="threadDump">
       </span>
-      <div ix-button
-           ix-label="Refresh"
-           ix-click="refresh(true, deferred)"
-           style="margin-top: 20px;">
-      </div>
     </div>
   </div>
 </div>

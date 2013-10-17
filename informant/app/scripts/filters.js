@@ -16,7 +16,7 @@
 
 /* global informant, moment */
 
-informant.filter('bytes', function () {
+informant.filter('ixBytes', function () {
   return function (bytes, precision) {
     if (isNaN(parseFloat(bytes)) || !isFinite(bytes)) {
       return '-';
@@ -24,7 +24,7 @@ informant.filter('bytes', function () {
     if (typeof precision === 'undefined') {
       precision = 1;
     }
-    var units = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'];
+    var units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
     var number = Math.floor(Math.log(bytes) / Math.log(1024));
     return (bytes / Math.pow(1024, Math.floor(number))).toFixed(precision) + ' ' + units[number];
   };
@@ -50,5 +50,11 @@ informant.filter('ixDuration', function () {
       parts.push(Math.floor(duration.seconds()) + 's');
     }
     return parts.join(' ');
+  };
+});
+
+informant.filter('ixOnOff', function () {
+  return function (input) {
+    return input ? 'ON' : 'OFF';
   };
 });

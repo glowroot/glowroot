@@ -91,7 +91,13 @@ informant.directive('ixButton', [
         ixBtnClass: '@',
         ixDisabled: '&'
       },
-      templateUrl: 'template/ix-button.html',
+      templateUrl: function (tElement, tAttrs) {
+        if (tAttrs.hasOwnProperty('ixButtonMessageLeft')) {
+          return 'template/ix-button-message-on-left.html';
+        } else {
+          return 'template/ix-button.html';
+        }
+      },
       require: '^?ixButtonGroup',
       link: function (scope, iElement, iAttrs, ixButtonGroup) {
         scope.ngShow = function () {

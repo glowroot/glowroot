@@ -22,7 +22,6 @@ import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
@@ -32,15 +31,15 @@ import java.util.Map.Entry;
 import java.util.Properties;
 
 import javax.management.JMException;
-import javax.management.ObjectName;
-import javax.management.openmbean.CompositeData;
 
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -53,8 +52,17 @@ import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
 import io.informant.config.WithVersionJsonView;
+import io.informant.jvm.Availability;
+import io.informant.jvm.Flags;
+import io.informant.jvm.HeapHistograms;
+import io.informant.jvm.HotSpotDiagnostic;
+import io.informant.jvm.HotSpotDiagnostic.VMOption;
+import io.informant.jvm.JDK6;
+import io.informant.jvm.ProcessId;
+import io.informant.jvm.ThreadAllocatedBytes;
+import io.informant.jvm.ThreadContentionTime;
+import io.informant.jvm.ThreadCpuTime;
 import io.informant.markers.Singleton;
-import io.informant.markers.UsedByReflection;
 
 import static io.informant.common.Nullness.assertNonNull;
 
@@ -83,19 +91,12 @@ class JvmJsonService {
     @JsonServiceMethod
     String getGeneralInfo() throws IOException, JMException {
         logger.debug("getGeneralInfo()");
-        String runtimeName = ManagementFactory.getRuntimeMXBean().getName();
-        int index = runtimeName.indexOf('@');
-        String pid;
-        if (index > 0) {
-            pid = runtimeName.substring(0, index);
-        } else {
-            pid = "<unknown>";
-        }
+        String pid = ProcessId.getPid();
         String command = System.getProperty("sun.java.command");
         String mainClass = null;
         List<String> arguments = ImmutableList.of();
         if (command != null) {
-            index = command.indexOf(' ');
+            int index = command.indexOf(' ');
             if (index > 0) {
                 mainClass = command.substring(0, index);
                 arguments = Lists
@@ -116,7 +117,7 @@ class JvmJsonService {
         jg.writeStartObject();
         jg.writeNumberField("startTime", runtimeMXBean.getStartTime());
         jg.writeNumberField("uptime", runtimeMXBean.getUptime());
-        jg.writeStringField("pid", pid);
+        jg.writeStringField("pid", Objects.firstNonNull(pid, "<unknown>"));
         jg.writeStringField("mainClass", mainClass);
         jg.writeFieldName("mainClassArguments");
         writer.writeValue(jg, arguments);
@@ -186,14 +187,16 @@ class JvmJsonService {
     }
 
     @JsonServiceMethod
+    String getHeapHistogram() throws IOException, SecurityException, NoSuchMethodException,
+            IllegalAccessException, InvocationTargetException {
+        logger.debug("getHeapHistogram()");
+        return HeapHistograms.heapHistogramJson();
+    }
+
+    @JsonServiceMethod
     String getHeapDumpDefaults() throws IOException, JMException {
         logger.debug("getHeapDumpDefaults()");
-        ObjectName hotSpotDiagnostic =
-                ObjectName.getInstance("com.sun.management:type=HotSpotDiagnostic");
-        CompositeData option = (CompositeData) ManagementFactory.getPlatformMBeanServer()
-                .invoke(hotSpotDiagnostic, "getVMOption", new Object[] {"HeapDumpPath"},
-                        new String[] {"java.lang.String"});
-        String heapDumpPath = (String) option.get("value");
+        String heapDumpPath = HotSpotDiagnostic.getVMOption("HeapDumpPath").getValue();
         if (Strings.isNullOrEmpty(heapDumpPath)) {
             heapDumpPath = new File(System.getProperty("java.io.tmpdir")).getAbsolutePath();
         }
@@ -201,14 +204,14 @@ class JvmJsonService {
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeStringField("directory", heapDumpPath);
-        jg.writeBooleanField("checkDiskSpaceSupported", isAtLeastJdk6());
+        jg.writeBooleanField("checkDiskSpaceSupported", JDK6.isSupported());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
     @JsonServiceMethod
-    String checkDiskSpace(String content) throws IOException, JMException, NoSuchMethodException,
+    String checkDiskSpace(String content) throws IOException, JMException,
             SecurityException, IllegalAccessException, InvocationTargetException {
         logger.debug("checkDiskSpace(): content={}", content);
         ObjectNode rootNode = (ObjectNode) mapper.readTree(content);
@@ -220,8 +223,7 @@ class JvmJsonService {
         if (!dir.isDirectory()) {
             return "{\"error\": \"Path is not a directory\"}";
         }
-        Method getFreeSpaceMethod = File.class.getDeclaredMethod("getFreeSpace");
-        long diskSpace = (Long) getFreeSpaceMethod.invoke(new File(directory));
+        long diskSpace = JDK6.getFreeSpace(new File(directory));
         return Long.toString(diskSpace);
     }
 
@@ -244,11 +246,7 @@ class JvmJsonService {
             i++;
             file = new File(dir, "heapdump-" + date + "-" + i + ".hprof");
         }
-        ObjectName hotSpotDiagnostic =
-                ObjectName.getInstance("com.sun.management:type=HotSpotDiagnostic");
-        ManagementFactory.getPlatformMBeanServer().invoke(hotSpotDiagnostic, "dumpHeap",
-                new Object[] {file.getAbsolutePath(), false},
-                new String[] {"java.lang.String", "boolean"});
+        HotSpotDiagnostic.dumpHeap(file.getAbsolutePath());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -261,118 +259,90 @@ class JvmJsonService {
     }
 
     @JsonServiceMethod
-    String getDiagnosticOptions() throws IOException, JMException {
-        logger.debug("getDiagnosticOptions()");
-        ObjectName hotSpotDiagnostic =
-                ObjectName.getInstance("com.sun.management:type=HotSpotDiagnostic");
-        CompositeData[] diagnosticOptions =
-                (CompositeData[]) ManagementFactory.getPlatformMBeanServer().getAttribute(
-                        hotSpotDiagnostic, "DiagnosticOptions");
-
-        List<VMOption> options = Lists.newArrayList();
-        for (CompositeData diagnosticOption : diagnosticOptions) {
-            String name = (String) diagnosticOption.get("name");
-            String value = (String) diagnosticOption.get("value");
-            String origin = (String) diagnosticOption.get("origin");
+    String getManageableFlags() throws IOException, JMException {
+        logger.debug("getManageableFlags()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartArray();
+        // don't sort these, there are not many and they seem to be sorted in meaningful order
+        // already
+        for (VMOption option : HotSpotDiagnostic.getDiagnosticOptions()) {
             // only handle true/false values for now
-            if ("true".equals(value) || "false".equals(value)) {
+            if ("true".equals(option.getValue()) || "false".equals(option.getValue())) {
                 // filter out seemingly less useful options (keep only HeapDump... and Print...)
-                if (name.startsWith("HeapDump") || name.startsWith("Print")) {
-                    options.add(new VMOption(name, Boolean.valueOf(value), origin));
+                if (option.getName().startsWith("HeapDump")
+                        || option.getName().startsWith("Print")) {
+                    jg.writeStartObject();
+                    jg.writeStringField("name", option.getName());
+                    jg.writeBooleanField("value", Boolean.parseBoolean(option.getValue()));
+                    jg.writeStringField("origin", option.getOrigin());
+                    jg.writeEndObject();
                 }
             }
         }
-        // don't sort these, there are not many and they seem to be sorted in meaningful order
-        // already
-        return mapper.writeValueAsString(options);
+        jg.writeEndArray();
+        jg.close();
+        return sb.toString();
     }
 
     @JsonServiceMethod
-    String updateDiagnosticOptions(String content) throws IOException, JMException {
-        logger.debug("updateDiagnosticOptions(): content={}", content);
-        ObjectName hotSpotDiagnostic =
-                ObjectName.getInstance("com.sun.management:type=HotSpotDiagnostic");
+    String updateManageableFlags(String content) throws IOException, JMException {
+        logger.debug("updateManageableFlags(): content={}", content);
         Map<String, Object> values =
                 mapper.readValue(content, new TypeReference<Map<String, Object>>() {});
         for (Entry<String, Object> value : values.entrySet()) {
-            ManagementFactory.getPlatformMBeanServer().invoke(hotSpotDiagnostic, "setVMOption",
-                    new Object[] {value.getKey(), value.getValue().toString()},
-                    new String[] {"java.lang.String", "java.lang.String"});
+            HotSpotDiagnostic.setVMOption(value.getKey(), value.getValue().toString());
         }
-        return getDiagnosticOptions();
+        return getManageableFlags();
     }
 
     @JsonServiceMethod
-    String getAllOptions() throws IOException, JMException, ClassNotFoundException,
+    String getAllFlags() throws IOException, JMException, ClassNotFoundException,
             NoSuchMethodException, SecurityException, IllegalAccessException,
             InvocationTargetException {
-        logger.debug("getAllOptions()");
-        Class<?> flagClass = Class.forName("sun.management.Flag");
-        Method getAllFlagsMethod = flagClass.getDeclaredMethod("getAllFlags");
-        getAllFlagsMethod.setAccessible(true);
-        List<?> flags = (List<?>) getAllFlagsMethod.invoke(null);
 
-        ObjectName hotSpotDiagnostic =
-                ObjectName.getInstance("com.sun.management:type=HotSpotDiagnostic");
-
-        Method getVMOptionMethod = flagClass.getDeclaredMethod("getVMOption");
-        getVMOptionMethod.setAccessible(true);
-        Class<?> vmOptionClass = Class.forName("com.sun.management.VMOption");
-        Method getNameMethod = vmOptionClass.getDeclaredMethod("getName");
-        getNameMethod.setAccessible(true);
-
+        logger.debug("getAllFlags()");
         List<VMOption> options = Lists.newArrayList();
-        for (Object flag : flags) {
-            String name = (String) getNameMethod.invoke(getVMOptionMethod.invoke(flag));
-            CompositeData option = (CompositeData) ManagementFactory.getPlatformMBeanServer()
-                    .invoke(hotSpotDiagnostic, "getVMOption", new Object[] {name},
-                            new String[] {"java.lang.String"});
-
-            String value = (String) option.get("value");
-            String origin = (String) option.get("origin");
-            options.add(new VMOption(name, value, origin));
+        for (String name : Flags.getFlagNames()) {
+            options.add(HotSpotDiagnostic.getVMOption(name));
         }
         return mapper.writeValueAsString(VMOption.orderingByName.sortedCopy(options));
     }
 
-    private boolean isAtLeastJdk6() {
-        return !System.getProperty("java.version").startsWith("1.5");
-    }
-
-    private static class VMOption {
-
-        private static final Ordering<VMOption> orderingByName = new Ordering<VMOption>() {
-            @Override
-            public int compare(@Nullable VMOption left, @Nullable VMOption right) {
-                assertNonNull(left, "Ordering of non-null elements only");
-                assertNonNull(right, "Ordering of non-null elements only");
-                return left.name.compareTo(right.name);
+    @JsonServiceMethod
+    String getCapabilities() throws JsonGenerationException, IOException {
+        logger.debug("getCapabilities()");
+        Availability hotSpotDiagnosticAvailability = HotSpotDiagnostic.getAvailability();
+        Availability allFlagsAvailability;
+        if (!hotSpotDiagnosticAvailability.isAvailable()) {
+            allFlagsAvailability = hotSpotDiagnosticAvailability;
+        } else {
+            Availability flagsAvailability = Flags.getAvailability();
+            if (!flagsAvailability.isAvailable()) {
+                allFlagsAvailability = flagsAvailability;
+            } else {
+                allFlagsAvailability = Availability.available();
             }
-        };
-
-        private final String name;
-        private final Object value;
-        private final String origin;
-
-        private VMOption(String name, Object value, String origin) {
-            this.name = name;
-            this.value = value;
-            this.origin = origin;
         }
-
-        @UsedByReflection
-        public String getName() {
-            return name;
-        }
-
-        @UsedByReflection
-        public Object getValue() {
-            return value;
-        }
-
-        @UsedByReflection
-        public String getOrigin() {
-            return origin;
-        }
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeFieldName("threadCpuTime");
+        mapper.writeValue(jg, ThreadCpuTime.getAvailability());
+        jg.writeFieldName("threadContentionTime");
+        mapper.writeValue(jg, ThreadContentionTime.getAvailability());
+        jg.writeFieldName("threadAllocatedBytes");
+        mapper.writeValue(jg, ThreadAllocatedBytes.getAvailability());
+        jg.writeFieldName("heapHistogram");
+        mapper.writeValue(jg, HeapHistograms.getAvailability());
+        jg.writeFieldName("heapDump");
+        mapper.writeValue(jg, hotSpotDiagnosticAvailability);
+        jg.writeFieldName("manageableFlags");
+        mapper.writeValue(jg, hotSpotDiagnosticAvailability);
+        jg.writeFieldName("allFlags");
+        mapper.writeValue(jg, allFlagsAvailability);
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
     }
 }
