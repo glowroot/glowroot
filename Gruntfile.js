@@ -69,7 +69,10 @@ module.exports = function (grunt) {
         }
       ],
       rules: {
-        '^/[^/]*.html$': '/index.html'
+        '^/traces$': '/index.html',
+        '^/aggregates$': '/index.html',
+        '^/jvm/.*$': '/index.html',
+        '^/config/.*$': '/index.html'
       },
       livereload: {
         options: {

@@ -25,11 +25,18 @@ var informant = angular.module('informant', [
 
 var Informant;
 
+informant.config([
+  '$locationProvider',
+  function ($locationProvider) {
+    $locationProvider.html5Mode(true);
+  }
+]);
+
 informant.run([
   '$rootScope',
   '$http',
   '$timeout',
-  function ($rootScope, $http, $timeout) {
+  function ($rootScope, $http) {
 
     // use local storage to make good initial guess on layout
     // override once server responds (which should generally be very quick)

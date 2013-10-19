@@ -168,10 +168,14 @@ public class LocalUiModule {
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
         uriMappings.put(Pattern.compile("^/$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/traces$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/aggregates$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/jvm/.*$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/config/.*$"), resourceBase + "/index.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");
         uriMappings.put(Pattern.compile("^/styles/(.*)$"), resourceBase + "/styles/$1");
-        uriMappings.put(Pattern.compile("^/favicon.ico$"), resourceBase + "/favicon.ico");
+        uriMappings.put(Pattern.compile("^/favicon\\.ico$"), resourceBase + "/favicon.ico");
         uriMappings.put(Pattern.compile("^/bower_components/(.*)$"),
                 resourceBase + "/bower_components/$1");
         uriMappings.put(Pattern.compile("^/sources/(.*)$"), resourceBase + "/sources/$1");
