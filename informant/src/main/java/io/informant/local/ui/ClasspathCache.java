@@ -106,21 +106,21 @@ class ClasspathCache {
         return parsedTypes;
     }
 
-    private ParsedType createParsedType(URL url) throws IOException {
-        ParsedTypeClassVisitor cv = new ParsedTypeClassVisitor();
-        byte[] bytes = Resources.toByteArray(url);
-        ClassReader cr = new ClassReader(bytes);
-        cr.accept(cv, 0);
-        return cv.build();
-    }
-
-    private void updateCache() {
+    void updateCache() {
         for (ClassLoader loader : getKnownClassLoaders()) {
             if (!(loader instanceof URLClassLoader)) {
                 continue;
             }
             updateCache(loader);
         }
+    }
+
+    private ParsedType createParsedType(URL url) throws IOException {
+        ParsedTypeClassVisitor cv = new ParsedTypeClassVisitor();
+        byte[] bytes = Resources.toByteArray(url);
+        ClassReader cr = new ClassReader(bytes);
+        cr.accept(cv, 0);
+        return cv.build();
     }
 
     private void updateCache(ClassLoader loader) {
@@ -186,7 +186,7 @@ class ClasspathCache {
         for (File file : files) {
             String name = file.getName();
             if (file.isFile() && name.endsWith(".class")) {
-                URL fileUrl = new File(dir, name).toURL();
+                URL fileUrl = new File(dir, name).toURI().toURL();
                 addTypeName(prefix + name.substring(0, name.lastIndexOf('.')), fileUrl);
             } else if (file.isDirectory()) {
                 loadTypeNamesFromDirectory(file, prefix + name + ".");

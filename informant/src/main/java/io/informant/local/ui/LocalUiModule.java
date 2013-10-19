@@ -262,6 +262,9 @@ public class LocalUiModule {
                 "updateAdhocPointcutConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/adhoc-pointcut/-$",
                 configJsonService, "removeAdhocPointcutConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST,
+                "^/backend/adhoc-pointcut/pre-load-auto-complete", adhocPointcutConfigJsonService,
+                "preLoadAutoComplete"));
         jsonServiceMappings.add(new JsonServiceMapping(GET,
                 "^/backend/adhoc-pointcut/matching-type-names", adhocPointcutConfigJsonService,
                 "getMatchingTypeNames"));

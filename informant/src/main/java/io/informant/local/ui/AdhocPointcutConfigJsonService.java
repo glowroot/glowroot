@@ -72,6 +72,22 @@ class AdhocPointcutConfigJsonService {
     }
 
     @JsonServiceMethod
+    void preLoadAutoComplete() throws IOException {
+        logger.debug("preLoadAutoComplete()");
+        // HttpServer is configured with a very small thread pool to keep number of threads down
+        // (currently only a single thread), so spawn a background thread to perform the pre-loading
+        // so it doesn't block other http requests
+        Thread thread = new Thread(new Runnable() {
+            public void run() {
+                classpathCache.updateCache();
+            }
+        });
+        thread.setDaemon(true);
+        thread.setName("Informant-Temporary-Thread");
+        thread.start();
+    }
+
+    @JsonServiceMethod
     String getMatchingTypeNames(String content) throws IOException {
         logger.debug("getMatchingTypeNames(): content={}", content);
         TypeNameRequest request =

@@ -50,6 +50,8 @@ informant.controller('ConfigAdhocPointcutListCtrl', [
             dirty: data.jvmOutOfSync
           };
           $scope.jvmRetransformClassesSupported = data.jvmRetransformClassesSupported;
+          // pre-load cache for class name and method name auto completion
+          $http.post('backend/adhoc-pointcut/pre-load-auto-complete');
         })
         .error(function (data, status) {
           $scope.loadingError = httpErrors.get(data, status);
