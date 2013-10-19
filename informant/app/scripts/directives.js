@@ -308,3 +308,22 @@ informant.directive('ixSpinner', function () {
         });
   };
 });
+
+informant.directive('ixTypeaheadOpenOnEmpty', function () {
+  return {
+    require: ['typeahead', 'ngModel'],
+    link: function (scope, element, attr, ctrls) {
+      element.bind('keyup', function (e) {
+        var typeaheadCtrl = ctrls[0];
+        var ngModelCtrl = ctrls[1];
+        if (e.which === 40 && (ngModelCtrl.$viewValue === undefined || ngModelCtrl.$viewValue === '') &&
+            typeaheadCtrl.active === -1) {
+          // down arrow key was pressed, and text input is empty, and the typeahead select is not already open
+          scope.$apply(function () {
+            typeaheadCtrl.getMatches('');
+          });
+        }
+      });
+    }
+  };
+});

@@ -107,7 +107,7 @@ informant.controller('ConfigAdhocPointcutCtrl', [
     };
 
     $scope.typeNames = function (suggestion) {
-      var url = 'backend/adhoc-pointcut/matching-type-names?partial-type-name=' + suggestion + '&limit=7';
+      var url = 'backend/adhoc-pointcut/matching-type-names?partial-type-name=' + suggestion + '&limit=10';
       // use 'then' method to return promise
       return $http.get(url)
           .then(function (response) {
@@ -137,7 +137,7 @@ informant.controller('ConfigAdhocPointcutCtrl', [
         return [ suggestion ];
       }
       var url = 'backend/adhoc-pointcut/matching-method-names?type-name=' +
-          $scope.pointcut.config.typeName + '&partial-method-name=' + suggestion + '&limit=7';
+          $scope.pointcut.config.typeName + '&partial-method-name=' + suggestion + '&limit=10';
       return $http.get(url)
           .then(function (response) {
             return response.data;
@@ -158,7 +158,11 @@ informant.controller('ConfigAdhocPointcutCtrl', [
 
       if (methodName !== $scope.pointcut.selectedMethodName) {
         $scope.pointcut.selectedMethodName = methodName;
-        if (methodName.indexOf('*') !== -1) {
+        if (methodName === undefined) {
+          // this can happen if user clears the text input and tabs away (onSelectMethodName is called on blur)
+          $scope.pointcut.signatures = [];
+          $scope.pointcut.selectedSignature = undefined;
+        } else if (methodName.indexOf('*') !== -1) {
           $scope.pointcut.signatures = [
             {
               name: methodName,

@@ -3,7 +3,7 @@
   "devDependencies": {
     "angular": "trask/angular.js#556ac9be13c0961bae2aa48e2b0ab1624bce8d9c",
     "angular-ui-router": "trask/angular-ui-router#0.2.0+patch.1",
-    "angular-ui-bootstrap": "angular-ui/bootstrap#bootstrap3_bis2",
+    "angular-ui-bootstrap": "trask/angular-ui-bootstrap#bootstrap3_bis2+patch.1",
     "bootstrap-datepicker": "trask/bootstrap-datepicker#1.2.0+patch",
     "flot": "trask/flot#0.9-work+patch",
     "handlebars": "1.0.0",
