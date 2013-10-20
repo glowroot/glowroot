@@ -1,0 +1,222 @@
+<!--
+  Copyright 2012-2013 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h2>Memory overview</h2>
+  </div>
+  <div class="panel-body memory-overview-panel-body">
+    <div ix-button
+         ix-button-message-left
+         ix-label="Perform GC"
+         ix-click="performGC(deferred)"
+         ix-btn-class="btn-default"
+         style="margin-bottom: 10px; float: right;">
+    </div>
+    <div ix-button
+         ix-button-message-left
+         ix-label="Reset peak usage"
+         ix-click="resetPeakUsage(deferred)"
+         ix-btn-class="btn-default"
+         style="clear: right; float: right;">
+    </div>
+    <div ix-button
+         ix-label="Refresh"
+         ix-click="refresh(deferred)"
+         style="margin-bottom: 20px;">
+    </div>
+    <div ix-spinner
+         ix-show="!loaded && !loadingError"
+         class="thread-dump-spinner">
+    </div>
+    <div class="loading-error" ng-show="loadingError">
+      {{loadingError.header}}<br>
+      <a href="#">view stack trace</a>
+    </div>
+
+    <br>
+    <h3>Heap memory</h3>
+    <br>
+    <table class="table memory-pool-table">
+      <thead>
+      <tr>
+        <th>Memory pool</th>
+        <th></th>
+        <th>Used</th>
+        <th class="xs-word-break">Committed</th>
+        <th>Max</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr ng-repeat-start="memoryPool in data.heapMemoryPools"
+          class="memory-pool-current-row">
+        <td>
+          {{memoryPool.name}}
+        </td>
+        <td>
+          Current
+        </td>
+        <td>
+          {{memoryPool.usage.used | ixBytes}}
+        </td>
+        <td>
+          {{memoryPool.usage.committed | ixBytes}}
+        </td>
+        <td>
+          {{memoryPool.usage.max | ixBytes}}
+        </td>
+      </tr>
+      <tr class="secondary-text">
+        <td rowspan="2"></td>
+        <td>
+          Peak
+        </td>
+        <td>
+          {{memoryPool.peakUsage.used | ixBytes}}
+        </td>
+        <td>
+          {{memoryPool.peakUsage.committed | ixBytes}}
+        </td>
+        <td>
+          {{memoryPool.peakUsage.max | ixBytes}}
+        </td>
+      </tr>
+      <tr ng-repeat-end class="secondary-text">
+        <td>
+          After last collection
+        </td>
+        <td>
+          {{memoryPool.collectionUsage.used | ixBytes}}
+        </td>
+        <td>
+          {{memoryPool.collectionUsage.committed | ixBytes}}
+        </td>
+        <td>
+          {{memoryPool.collectionUsage.max | ixBytes}}
+        </td>
+      </tr>
+      </tbody>
+      <tfoot>
+      <tr>
+        <td>Total</td>
+        <td>Current</td>
+        <td>{{data.heapUsage.used | ixBytes}}</td>
+        <td>{{data.heapUsage.committed | ixBytes}}</td>
+        <td>{{data.heapUsage.max | ixBytes}}</td>
+      </tr>
+      </tfoot>
+    </table>
+
+    <!-- TODO consolidate duplicate code between heap and non-heap sections -->
+    <br>
+    <h3>Non-heap memory</h3>
+    <br>
+    <table class="table memory-pool-table">
+      <thead>
+      <tr>
+        <th>Memory pool</th>
+        <th></th>
+        <th>Used</th>
+        <th class="xs-word-break">Committed</th>
+        <th>Max</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr ng-repeat-start="memoryPool in data.nonHeapMemoryPools"
+          class="memory-pool-current-row">
+        <td>
+          {{memoryPool.name}}
+        </td>
+        <td>
+          Current
+        </td>
+        <td>
+          {{memoryPool.usage.used | ixBytes}}
+        </td>
+        <td>
+          {{memoryPool.usage.committed | ixBytes}}
+        </td>
+        <td>
+          {{memoryPool.usage.max | ixBytes}}
+        </td>
+      </tr>
+      <tr class="secondary-text">
+        <td rowspan="2"></td>
+        <td>
+          Peak
+        </td>
+        <td>
+          {{memoryPool.peakUsage.used | ixBytes}}
+        </td>
+        <td>
+          {{memoryPool.peakUsage.committed | ixBytes}}
+        </td>
+        <td>
+          {{memoryPool.peakUsage.max | ixBytes}}
+        </td>
+      </tr>
+      <tr ng-repeat-end class="secondary-text">
+        <td>
+          After last collection
+        </td>
+        <td>
+          {{memoryPool.collectionUsage.used | ixBytes}}
+        </td>
+        <td>
+          {{memoryPool.collectionUsage.committed | ixBytes}}
+        </td>
+        <td>
+          {{memoryPool.collectionUsage.max | ixBytes}}
+        </td>
+      </tr>
+      </tbody>
+      <tfoot>
+      <tr>
+        <td>Total</td>
+        <td>Current</td>
+        <td>{{data.nonHeapUsage.used | ixBytes}}</td>
+        <td>{{data.nonHeapUsage.committed | ixBytes}}</td>
+        <td>{{data.nonHeapUsage.max | ixBytes}}</td>
+      </tr>
+      </tfoot>
+    </table>
+
+    <br>
+    <h3>Garbage collectors</h3>
+    <br>
+    <table class="table">
+      <thead>
+      <tr>
+        <th>Collector name</th>
+        <th>Collection count</th>
+        <th>Collection time<br>(milliseconds)</th>
+        <th>Memory pools</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr ng-repeat="garbageCollector in data.garbageCollectors">
+        <td>{{garbageCollector.name}}</td>
+        <td>{{garbageCollector.collectionCount}}</td>
+        <td>{{garbageCollector.collectionTime}}</td>
+        <td>
+          <span ng-repeat="name in garbageCollector.memoryPoolNames">
+            {{name}}<br>
+          </span>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -207,6 +207,12 @@ public class LocalUiModule {
                 jvmJsonService, "getSystemProperties"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/thread-dump$",
                 jvmJsonService, "getThreadDump"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/memory-overview",
+                jvmJsonService, "getMemoryOverview"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/jvm/perform-gc",
+                jvmJsonService, "performGC"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST,
+                "^/backend/jvm/reset-peak-memory-usage", jvmJsonService, "resetPeakMemoryUsage"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/heap-histogram",
                 jvmJsonService, "getHeapHistogram"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/heap-dump-defaults",

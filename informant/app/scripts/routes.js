@@ -51,6 +51,11 @@ informant.config([
       templateUrl: 'views/jvm/thread-dump.html',
       controller: 'JvmThreadDumpCtrl'
     });
+    $stateProvider.state('jvm.memoryOverview', {
+      url: '/memory-overview',
+      templateUrl: 'views/jvm/memory-overview.html',
+      controller: 'JvmMemoryOverviewCtrl'
+    });
     $stateProvider.state('jvm.heapHistogram', {
       url: '/heap-histogram',
       templateUrl: 'views/jvm/heap-histogram.html',

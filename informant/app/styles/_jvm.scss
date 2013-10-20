@@ -57,6 +57,30 @@
   cursor: pointer;
 }
 
+.memory-overview-panel-body h3 {
+  // padding-left it to match up with Memory pool table heading, looks a little better
+  padding-left: 8px;
+  font-size: 28px;
+}
+
+.memory-pool-table tfoot {
+  font-weight: bold;
+}
+
+.memory-pool-table .memory-pool-current-row {
+  background-color: whitesmoke;
+}
+
+.xs-word-break {
+  word-break: break-all;
+}
+
+@media (min-width: $screen-sm) {
+  .xs-word-break {
+    word-break: normal;
+  }
+}
+
 .heap-histogram-limit {
   margin-top: 10px;
 }

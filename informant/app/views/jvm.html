@@ -31,6 +31,11 @@
       Thread dump
     </a>
     <a class="list-group-item"
+       ng-class="{active: isCurrentView('jvm.memoryOverview')}"
+       href="#/jvm/memory-overview">
+      Memory overview
+    </a>
+    <a class="list-group-item"
        ng-class="{active: isCurrentView('jvm.heapHistogram')}"
        href="#/jvm/heap-histogram"
        ng-show="layout.jvmHeapHistogram">

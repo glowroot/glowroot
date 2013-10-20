@@ -21,6 +21,10 @@ informant.filter('ixBytes', function () {
     if (isNaN(parseFloat(bytes)) || !isFinite(bytes)) {
       return '-';
     }
+    if (bytes === 0) {
+      // no unit needed
+      return '0';
+    }
     if (typeof precision === 'undefined') {
       precision = 1;
     }

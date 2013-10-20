@@ -17,7 +17,12 @@ package io.informant.local.ui;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryPoolMXBean;
+import java.lang.management.MemoryType;
+import java.lang.management.MemoryUsage;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -187,6 +192,77 @@ class JvmJsonService {
     }
 
     @JsonServiceMethod
+    String getMemoryOverview() throws IOException {
+        logger.debug("getMemoryOverview()");
+        MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
+        MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
+        MemoryUsage nonHeapMemoryUsage = memoryMXBean.getNonHeapMemoryUsage();
+        List<MemoryPoolMXBean> memoryPoolMXBeans = ManagementFactory.getMemoryPoolMXBeans();
+        List<GarbageCollectorMXBean> garbageCollectorMXBeans =
+                ManagementFactory.getGarbageCollectorMXBeans();
+
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+
+        jg.writeFieldName("heapUsage");
+        writeMemoryUsage(jg, heapMemoryUsage);
+        jg.writeFieldName("nonHeapUsage");
+        writeMemoryUsage(jg, nonHeapMemoryUsage);
+
+        jg.writeArrayFieldStart("heapMemoryPools");
+        for (MemoryPoolMXBean memoryPoolMXBean : memoryPoolMXBeans) {
+            if (memoryPoolMXBean.getType() == MemoryType.HEAP) {
+                writeMemoryPool(jg, memoryPoolMXBean);
+            }
+        }
+        jg.writeEndArray();
+
+        jg.writeArrayFieldStart("nonHeapMemoryPools");
+        for (MemoryPoolMXBean memoryPoolMXBean : memoryPoolMXBeans) {
+            if (memoryPoolMXBean.getType() == MemoryType.NON_HEAP) {
+                writeMemoryPool(jg, memoryPoolMXBean);
+            }
+        }
+        jg.writeEndArray();
+
+        jg.writeArrayFieldStart("garbageCollectors");
+        for (GarbageCollectorMXBean garbageCollectorMXBean : garbageCollectorMXBeans) {
+            jg.writeStartObject();
+            jg.writeStringField("name", garbageCollectorMXBean.getName());
+            jg.writeNumberField("collectionCount", garbageCollectorMXBean.getCollectionCount());
+            jg.writeNumberField("collectionTime", garbageCollectorMXBean.getCollectionTime());
+            jg.writeArrayFieldStart("memoryPoolNames");
+            for (String name : garbageCollectorMXBean.getMemoryPoolNames()) {
+                jg.writeString(name);
+            }
+            jg.writeEndArray();
+            jg.writeEndObject();
+        }
+        jg.writeEndArray();
+
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    @JsonServiceMethod
+    String performGC() throws IOException {
+        logger.debug("performGC()");
+        System.gc();
+        return getMemoryOverview();
+    }
+
+    @JsonServiceMethod
+    String resetPeakMemoryUsage() throws IOException {
+        logger.debug("resetPeakMemoryUsage()");
+        for (MemoryPoolMXBean memoryPoolMXBean : ManagementFactory.getMemoryPoolMXBeans()) {
+            memoryPoolMXBean.resetPeakUsage();
+        }
+        return getMemoryOverview();
+    }
+
+    @JsonServiceMethod
     String getHeapHistogram() throws IOException, SecurityException, NoSuchMethodException,
             IllegalAccessException, InvocationTargetException {
         logger.debug("getHeapHistogram()");
@@ -344,5 +420,38 @@ class JvmJsonService {
         jg.writeEndObject();
         jg.close();
         return sb.toString();
+    }
+
+    private void writeMemoryUsage(JsonGenerator jg, MemoryUsage memoryUsage)
+            throws JsonGenerationException, IOException {
+        jg.writeStartObject();
+        jg.writeNumberField("used", memoryUsage.getUsed());
+        jg.writeNumberField("committed", memoryUsage.getCommitted());
+        jg.writeNumberField("max", memoryUsage.getMax());
+        jg.writeEndObject();
+    }
+
+    private void writeMemoryPool(JsonGenerator jg, MemoryPoolMXBean memoryPoolMXBean)
+            throws IOException, JsonGenerationException {
+        jg.writeStartObject();
+        jg.writeStringField("name", memoryPoolMXBean.getName());
+        jg.writeStringField("type", memoryPoolMXBean.getType().toString());
+        jg.writeFieldName("usage");
+        writeMemoryUsage(jg, memoryPoolMXBean.getUsage());
+        jg.writeFieldName("peakUsage");
+        writeMemoryUsage(jg, memoryPoolMXBean.getPeakUsage());
+        MemoryUsage collectionUsage = memoryPoolMXBean.getCollectionUsage();
+        if (collectionUsage == null) {
+            jg.writeBooleanField("unsupported", true);
+        } else {
+            jg.writeFieldName("collectionUsage");
+            writeMemoryUsage(jg, collectionUsage);
+        }
+        jg.writeArrayFieldStart("memoryManagerNames");
+        for (String name : memoryPoolMXBean.getMemoryManagerNames()) {
+            jg.writeString(name);
+        }
+        jg.writeEndArray();
+        jg.writeEndObject();
     }
 }
