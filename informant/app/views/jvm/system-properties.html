@@ -19,13 +19,13 @@
   </div>
   <div class="panel-body">
     <div ng-include src="'template/ix-panel-loading.html'"></div>
-    <div ng-repeat="(key, value) in properties">
+    <div ng-repeat="property in properties">
       <div class="row system-property">
         <div class="col-lg-3 break-word">
-          <label>{{key}}</label>
+          <label>{{property.name}}</label>
         </div>
         <div ix-display-whitespace
-             ix-bind="value"
+             ix-bind="property.value"
              class="col-lg-9 break-word">
         </div>
       </div>

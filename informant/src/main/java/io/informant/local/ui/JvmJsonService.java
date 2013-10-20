@@ -49,6 +49,7 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import com.google.common.primitives.Ints;
@@ -140,18 +141,24 @@ class JvmJsonService {
     String getSystemProperties() throws IOException {
         logger.debug("getSystemProperties()");
         Properties properties = System.getProperties();
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
+        Map<String, String> sortedProperties = Maps.newTreeMap(String.CASE_INSENSITIVE_ORDER);
         for (Enumeration<?> e = properties.propertyNames(); e.hasMoreElements();) {
             Object obj = e.nextElement();
             if (obj instanceof String) {
                 String propertyName = (String) obj;
-                String propertyValue = properties.getProperty(propertyName);
-                jg.writeStringField(propertyName, propertyValue);
+                sortedProperties.put(propertyName, properties.getProperty(propertyName));
             }
         }
-        jg.writeEndObject();
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartArray();
+        for (Entry<String, String> entry : sortedProperties.entrySet()) {
+            jg.writeStartObject();
+            jg.writeStringField("name", entry.getKey());
+            jg.writeStringField("value", entry.getValue());
+            jg.writeEndObject();
+        }
+        jg.writeEndArray();
         jg.close();
         return sb.toString();
     }
