@@ -4,6 +4,12 @@ var LIVERELOAD_PORT = 35729;
 var mountFolder = function (connect, dir) {
   return connect.static(require('path').resolve(dir));
 };
+var setXUACompatibleHeader = function (req, res, next) {
+  // X-UA-Compatible must be set via header (as opposed to via meta tag)
+  // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
+  res.setHeader('X-UA-Compatible', 'IE=edge');
+  next();
+};
 
 module.exports = function (grunt) {
 
@@ -78,12 +84,7 @@ module.exports = function (grunt) {
         options: {
           middleware: function (connect) {
             return [
-              function (req, res, next) {
-                // X-UA-Compatible must be set via header (as opposed to via meta tag)
-                // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
-                res.setHeader('X-UA-Compatible', 'IE=edge');
-                next();
-              },
+              setXUACompatibleHeader,
               require('connect-livereload')({port: LIVERELOAD_PORT}),
               require('grunt-connect-rewrite/lib/utils').rewriteRequest,
               require('grunt-connect-proxy/lib/utils').proxyRequest,
@@ -101,6 +102,7 @@ module.exports = function (grunt) {
         options: {
           middleware: function (connect) {
             return [
+              setXUACompatibleHeader,
               mountFolder(connect, yeomanConfig.dist)
             ];
           }
