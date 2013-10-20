@@ -21,10 +21,10 @@
     <div ng-include src="'template/ix-panel-loading.html'"></div>
     <div ng-repeat="flag in flags">
       <div class="row system-property">
-        <div class="col-lg-5 break-word">
+        <div class="col-md-5 break-word">
           <label>{{flag.name}}</label>
         </div>
-        <div class="col-lg-7 break-word">
+        <div class="col-md-7 break-word">
           {{flag.value}}
           <span ng-show="flag.origin !== 'DEFAULT'">
             ({{flag.origin}})

@@ -20,44 +20,44 @@
   <div class="panel-body">
     <div ng-include src="'template/ix-panel-loading.html'"></div>
     <div class="row jvm-general-row">
-      <div class="col-lg-2">
+      <div class="col-md-2">
         <label>Start time</label>
       </div>
-      <div class="col-lg-10">
+      <div class="col-md-10">
         {{data.startTime | date:'medium'}}
       </div>
     </div>
     <div class="row jvm-general-row">
-      <div class="col-lg-2">
+      <div class="col-md-2">
         <label>Uptime</label>
       </div>
-      <div class="col-lg-10">
+      <div class="col-md-10">
         {{data.uptime | ixDuration}}
       </div>
     </div>
     <div class="row jvm-general-row">
-      <div class="col-lg-2">
+      <div class="col-md-2">
         <label>Process ID</label>
       </div>
-      <div class="col-lg-10">
+      <div class="col-md-10">
         {{data.pid}}
       </div>
     </div>
     <!-- mainClass is not available on JDK5 -->
     <div ng-show="data.mainClass !== null">
       <div class="row jvm-general-row">
-        <div class="col-lg-2">
+        <div class="col-md-2">
           <label>Main class</label>
         </div>
-        <div class="col-lg-10">
+        <div class="col-md-10">
           {{data.mainClass}}
         </div>
       </div>
       <div class="row jvm-general-row">
-        <div class="col-lg-2">
+        <div class="col-md-2">
           <label>Main class args</label>
         </div>
-        <div class="col-lg-10">
+        <div class="col-md-10">
           <div ng-switch="data.mainClassArguments.length">
             <div ng-switch-when="0">
               <em>none</em>
@@ -74,34 +74,34 @@
       </div>
     </div>
     <div class="row jvm-general-row">
-      <div class="col-lg-2">
+      <div class="col-md-2">
         <label>JVM</label>
       </div>
-      <div class="col-lg-10">
+      <div class="col-md-10">
         <div>{{data.jvm}}</div>
       </div>
     </div>
     <div class="row jvm-general-row">
-      <div class="col-lg-2">
+      <div class="col-md-2">
         <label>Java</label>
       </div>
-      <div class="col-lg-10">
+      <div class="col-md-10">
         <div>{{data.java}}</div>
       </div>
     </div>
     <div class="row jvm-general-row">
-      <div class="col-lg-2">
+      <div class="col-md-2">
         <label>Java Home</label>
       </div>
-      <div class="col-lg-10">
+      <div class="col-md-10">
         <div>{{data.javaHome}}</div>
       </div>
     </div>
     <div class="row jvm-general-row">
-      <div class="col-lg-2">
+      <div class="col-md-2">
         <label>JVM args</label>
       </div>
-      <div class="col-lg-10">
+      <div class="col-md-10">
         <div ng-repeat="argument in data.jvmArguments">
           <div class="jvm-argument break-word">
             {{argument}}
