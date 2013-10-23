@@ -26,12 +26,12 @@ import org.junit.Test;
 
 import io.informant.Containers;
 import io.informant.container.Container;
+import io.informant.container.config.AdhocPointcutConfig;
+import io.informant.container.config.AdhocPointcutConfig.MethodModifier;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
-import io.informant.container.config.AdhocPointcutConfig;
-import io.informant.container.config.AdhocPointcutConfig.MethodModifier;
 import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserOverridesConfig;
 
@@ -179,7 +179,9 @@ public class ConfigTest {
         config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
         config.setStuckThresholdSeconds(config.getStuckThresholdSeconds() + 1);
         config.setMaxSpans(config.getMaxSpans() + 1);
+        config.setGenerateMetricNameWrapperMethods(!config.isGenerateMetricNameWrapperMethods());
         config.setWarnOnSpanOutsideTrace(!config.isWarnOnSpanOutsideTrace());
+        config.setWeavingDisabled(!config.isWeavingDisabled());
     }
 
     private static void updateAllFields(CoarseProfilingConfig config) {

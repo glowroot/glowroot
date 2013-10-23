@@ -68,6 +68,7 @@ class LocalConfigService implements ConfigService {
         config.setMaxSpans(coreConfig.getMaxSpans());
         config.setGenerateMetricNameWrapperMethods(coreConfig.isGenerateMetricNameWrapperMethods());
         config.setWarnOnSpanOutsideTrace(coreConfig.isWarnOnSpanOutsideTrace());
+        config.setWeavingDisabled(coreConfig.isWeavingDisabled());
         return config;
     }
 
@@ -78,7 +79,8 @@ class LocalConfigService implements ConfigService {
                         config.getStuckThresholdSeconds(),
                         config.getMaxSpans(),
                         config.isGenerateMetricNameWrapperMethods(),
-                        config.isWarnOnSpanOutsideTrace());
+                        config.isWarnOnSpanOutsideTrace(),
+                        config.isWeavingDisabled());
         return configService.updateGeneralConfig(updatedConfig, config.getVersion());
     }
 

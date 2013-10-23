@@ -35,6 +35,7 @@ public class GeneralConfig {
     private int maxSpans;
     private boolean generateMetricNameWrapperMethods;
     private boolean warnOnSpanOutsideTrace;
+    private boolean weavingDisabled;
 
     private final String version;
 
@@ -90,6 +91,14 @@ public class GeneralConfig {
         this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
     }
 
+    public boolean isWeavingDisabled() {
+        return weavingDisabled;
+    }
+
+    public void setWeavingDisabled(boolean weavingDisabled) {
+        this.weavingDisabled = weavingDisabled;
+    }
+
     public String getVersion() {
         return version;
     }
@@ -107,7 +116,8 @@ public class GeneralConfig {
                     && Objects.equal(maxSpans, that.maxSpans)
                     && Objects.equal(generateMetricNameWrapperMethods,
                             that.generateMetricNameWrapperMethods)
-                    && Objects.equal(warnOnSpanOutsideTrace, that.warnOnSpanOutsideTrace);
+                    && Objects.equal(warnOnSpanOutsideTrace, that.warnOnSpanOutsideTrace)
+                    && Objects.equal(weavingDisabled, that.weavingDisabled);
         }
         return false;
     }
@@ -117,8 +127,8 @@ public class GeneralConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(enabled, storeThresholdMillis, stuckThresholdSeconds,
-                maxSpans, warnOnSpanOutsideTrace);
+        return Objects.hashCode(enabled, storeThresholdMillis, stuckThresholdSeconds, maxSpans,
+                generateMetricNameWrapperMethods, warnOnSpanOutsideTrace, weavingDisabled);
     }
 
     @Override
@@ -130,6 +140,7 @@ public class GeneralConfig {
                 .add("maxSpans", maxSpans)
                 .add("generateMetricNameWrapperMethods", generateMetricNameWrapperMethods)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
+                .add("weavingDisabled", weavingDisabled)
                 .add("version", version)
                 .toString();
     }
@@ -140,8 +151,9 @@ public class GeneralConfig {
             @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
             @JsonProperty("stuckThresholdSeconds") @Nullable Integer stuckThresholdSeconds,
             @JsonProperty("maxSpans") @Nullable Integer maxSpans,
-            @JsonProperty("warnOnSpanOutsideTrace") @Nullable Boolean warnOnSpanOutsideTrace,
             @JsonProperty("generateMetricNameWrapperMethods") @Nullable Boolean generateMetricNameWrapperMethods,
+            @JsonProperty("warnOnSpanOutsideTrace") @Nullable Boolean warnOnSpanOutsideTrace,
+            @JsonProperty("weavingDisabled") @Nullable Boolean weavingDisabled,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(enabled, "enabled");
         checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
@@ -149,13 +161,16 @@ public class GeneralConfig {
         checkRequiredProperty(maxSpans, "maxSpans");
         checkRequiredProperty(generateMetricNameWrapperMethods, "generateMetricNameWrapperMethods");
         checkRequiredProperty(warnOnSpanOutsideTrace, "warnOnSpanOutsideTrace");
+        checkRequiredProperty(weavingDisabled, "weavingDisabled");
         checkRequiredProperty(version, "version");
         GeneralConfig config = new GeneralConfig(version);
         config.setEnabled(enabled);
         config.setStoreThresholdMillis(storeThresholdMillis);
         config.setStuckThresholdSeconds(stuckThresholdSeconds);
         config.setMaxSpans(maxSpans);
+        config.setGenerateMetricNameWrapperMethods(generateMetricNameWrapperMethods);
         config.setWarnOnSpanOutsideTrace(warnOnSpanOutsideTrace);
+        config.setWeavingDisabled(weavingDisabled);
         return config;
     }
 }

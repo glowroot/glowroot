@@ -82,12 +82,14 @@ public class InformantModule {
         uiModule = new LocalUiModule(ticker, clock, dataDir, configModule, storageModule,
                 collectorModule, traceModule, instrumentation, properties, version);
 
-        ClassFileTransformer transformer = traceModule.createWeavingClassFileTransformer();
-        if (instrumentation != null) {
-            if (JDK6.isSupported() && JDK6.isRetransformClassesSupported(instrumentation)) {
-                JDK6.addRetransformingTransformer(instrumentation, transformer);
-            } else {
-                instrumentation.addTransformer(transformer);
+        if (!configModule.getConfigService().getGeneralConfig().isWeavingDisabled()) {
+            ClassFileTransformer transformer = traceModule.createWeavingClassFileTransformer();
+            if (instrumentation != null) {
+                if (JDK6.isSupported() && JDK6.isRetransformClassesSupported(instrumentation)) {
+                    JDK6.addRetransformingTransformer(instrumentation, transformer);
+                } else {
+                    instrumentation.addTransformer(transformer);
+                }
             }
         }
     }

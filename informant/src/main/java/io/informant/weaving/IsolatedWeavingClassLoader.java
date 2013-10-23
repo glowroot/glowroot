@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -55,10 +56,11 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                 }
             };
 
-    private final Weaver weaver;
     // bridge classes can be either interfaces or base classes
     private final ImmutableList<Class<?>> bridgeClasses;
     private final ImmutableList<String> excludePackages;
+    @Nullable
+    private final Weaver weaver;
     // guarded by 'this'
     private final Map<String, Class<?>> classes = Maps.newConcurrentMap();
 
@@ -76,12 +78,16 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     private IsolatedWeavingClassLoader(ImmutableList<MixinType> mixinTypes,
             ImmutableList<Advice> advisors, MetricTimerService metricTimerService,
             ImmutableList<Class<?>> bridgeClasses, ImmutableList<String> excludePackages,
-            boolean generateMetricNameWrapperMethods) {
+            boolean weavingDisabled, boolean generateMetricNameWrapperMethods) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
-        weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE, this, new ParsedTypeCache(),
-                metricTimerService, generateMetricNameWrapperMethods);
         this.bridgeClasses = bridgeClasses;
         this.excludePackages = excludePackages;
+        if (weavingDisabled) {
+            weaver = null;
+        } else {
+            weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE, this,
+                    new ParsedTypeCache(), metricTimerService, generateMetricNameWrapperMethods);
+        }
     }
 
     public <S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
@@ -126,29 +132,33 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-        return weaveClass(name, bytes);
-    }
-
-    private Class<?> weaveClass(String name, byte[] bytes) throws ClassFormatError {
-        byte[] wovenBytes = bytes;
-        if (!inWeaving.get()) {
-            // don't do recursive weaving (i.e. don't weave any of the classes which are performing
-            // the weaving itself)
-            inWeaving.set(true);
-            try {
-                wovenBytes = weaver.weave(bytes, name, null);
-                if (wovenBytes != bytes) {
-                    logger.debug("findClass(): transformed {}", name);
-                }
-            } finally {
-                inWeaving.remove();
-            }
+        if (weaver != null) {
+            bytes = weaveClass(name, bytes);
         }
         String packageName = Reflection.getPackageName(name);
         if (getPackage(packageName) == null) {
             definePackage(packageName, null, null, null, null, null, null, null);
         }
-        return super.defineClass(name, wovenBytes, 0, wovenBytes.length);
+        return super.defineClass(name, bytes, 0, bytes.length);
+    }
+
+    private byte[] weaveClass(String name, byte[] bytes) throws ClassFormatError {
+        if (inWeaving.get()) {
+            return bytes;
+        } else {
+            // don't do recursive weaving (i.e. don't weave any of the classes which are performing
+            // the weaving itself)
+            inWeaving.set(true);
+            try {
+                byte[] wovenBytes = weaver.weave(bytes, name, null);
+                if (wovenBytes != bytes) {
+                    logger.debug("findClass(): transformed {}", name);
+                }
+                return wovenBytes;
+            } finally {
+                inWeaving.remove();
+            }
+        }
     }
 
     private <S> boolean isBridgeable(String name) {
@@ -194,6 +204,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         private ImmutableList<MixinType> mixinTypes = ImmutableList.of();
         private ImmutableList<Advice> advisors = ImmutableList.of();
         private MetricTimerService metricTimerService;
+        private boolean weavingDisabled;
         private boolean generateMetricNameWrapperMethods;
         private final ImmutableList.Builder<Class<?>> bridgeClasses = ImmutableList.builder();
         private final ImmutableList.Builder<String> excludePackages = ImmutableList.builder();
@@ -210,6 +221,10 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
         public void setMetricTimerService(MetricTimerService metricTimerService) {
             this.metricTimerService = metricTimerService;
+        }
+
+        public void setWeavingDisabled(boolean weavingDisabled) {
+            this.weavingDisabled = weavingDisabled;
         }
 
         public void setGenerateMetricNameWrapperMethods(boolean generateMetricNameWrapperMethods) {
@@ -230,7 +245,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                         public IsolatedWeavingClassLoader run() {
                             return new IsolatedWeavingClassLoader(mixinTypes, advisors,
                                     metricTimerService, bridgeClasses.build(),
-                                    excludePackages.build(), generateMetricNameWrapperMethods);
+                                    excludePackages.build(), weavingDisabled,
+                                    generateMetricNameWrapperMethods);
                         }
                     });
         }

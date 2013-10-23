@@ -100,6 +100,8 @@ public class GenericLocalContainer<T> {
                 "io.informant.common", "io.informant.config", "io.informant.dynamicadvice",
                 "io.informant.local", "io.informant.trace", "io.informant.weaving",
                 "io.informant.shaded", "io.informant.testkit");
+        loader.setWeavingDisabled(informantModule.getConfigModule().getConfigService()
+                .getGeneralConfig().isWeavingDisabled());
         isolatedWeavingClassLoader = loader.build();
         this.appInterface = appInterface;
         this.appExecutor = appExecutor;
