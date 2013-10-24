@@ -29,6 +29,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 
 import io.informant.api.weaving.MethodModifier;
+import io.informant.config.JsonViews.UiView;
 
 import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
@@ -127,7 +128,7 @@ public class AdhocPointcutConfig {
         return traceGrouping;
     }
 
-    @JsonView(WithVersionJsonView.class)
+    @JsonView(UiView.class)
     public String getVersion() {
         return version;
     }

@@ -21,6 +21,8 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 
+import io.informant.config.JsonViews.UiView;
+
 /**
  * Immutable structure to hold the user overrides config.
  * 
@@ -78,7 +80,7 @@ public class UserOverridesConfig {
         return fineProfiling;
     }
 
-    @JsonView(WithVersionJsonView.class)
+    @JsonView(UiView.class)
     public String getVersion() {
         return version;
     }

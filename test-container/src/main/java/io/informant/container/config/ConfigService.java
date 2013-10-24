@@ -47,6 +47,11 @@ public interface ConfigService {
 
     String updateStorageConfig(StorageConfig config) throws Exception;
 
+    UserInterfaceConfig getUserInterfaceConfig() throws Exception;
+
+    // throws CurrentPasswordIncorrectException
+    String updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception;
+
     @Nullable
     PluginConfig getPluginConfig(String pluginId) throws Exception;
 
@@ -64,4 +69,7 @@ public interface ConfigService {
     void reweaveAdhocPointcuts() throws Exception;
 
     void compactData() throws Exception;
+
+    @SuppressWarnings("serial")
+    public class CurrentPasswordIncorrectException extends Exception {}
 }

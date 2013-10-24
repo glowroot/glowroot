@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
+import io.informant.config.JsonViews.FileView;
 
 /**
  * @author Trask Stalnaker
@@ -60,6 +61,7 @@ class ConfigMapper {
     private static final String FINE_PROFILING = "fine-profiling";
     private static final String USER = "user";
     private static final String STORAGE = "storage";
+    private static final String USER_INTERFACE = "ui";
     private static final String PLUGINS = "plugins";
     private static final String ADHOC_POINTCUTS = "adhoc-pointcuts";
 
@@ -76,13 +78,15 @@ class ConfigMapper {
         FineProfilingConfig fineProfilingConfig = readFineProfilingNode(rootNode);
         UserOverridesConfig userOverridesConfig = readUserNode(rootNode);
         StorageConfig storageConfig = readStorageNode(rootNode);
+        UserInterfaceConfig userInterfaceConfig = readUserInterfaceNode(rootNode);
         Map<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
         ImmutableList<PluginConfig> pluginConfigs =
                 createPluginConfigs(pluginNodes, pluginDescriptors);
         ImmutableList<AdhocPointcutConfig> adhocPointcutConfigs =
                 createAdhocPointcutConfigs(rootNode);
         return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig,
-                userOverridesConfig, storageConfig, pluginConfigs, adhocPointcutConfigs);
+                userOverridesConfig, storageConfig, userInterfaceConfig, pluginConfigs,
+                adhocPointcutConfigs);
     }
 
     static void writeValue(File configFile, Config config) throws IOException {
@@ -94,7 +98,7 @@ class ConfigMapper {
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))
                 .useDefaultPrettyPrinter();
         // this view will exclude version properties
-        ObjectWriter writer = mapper.writerWithView(Object.class);
+        ObjectWriter writer = mapper.writerWithView(FileView.class);
         jg.writeStartObject();
         jg.writeFieldName(GENERAL);
         writer.writeValue(jg, config.getGeneralConfig());
@@ -106,6 +110,8 @@ class ConfigMapper {
         writer.writeValue(jg, config.getUserOverridesConfig());
         jg.writeFieldName(STORAGE);
         writer.writeValue(jg, config.getStorageConfig());
+        jg.writeFieldName(USER_INTERFACE);
+        writer.writeValue(jg, config.getUserInterfaceConfig());
 
         jg.writeArrayFieldStart(PLUGINS);
         for (PluginConfig pluginConfig : config.getPluginConfigs()) {
@@ -181,6 +187,20 @@ class ConfigMapper {
             return defaultConfig;
         } else {
             StorageConfig.Overlay overlay = StorageConfig.overlay(defaultConfig);
+            mapper.readerForUpdating(overlay).readValue(configNode);
+            return overlay.build();
+        }
+    }
+
+    private static UserInterfaceConfig readUserInterfaceNode(ObjectNode rootNode)
+            throws IOException {
+        ObjectNode configNode = (ObjectNode) rootNode.get(USER_INTERFACE);
+        UserInterfaceConfig defaultConfig = UserInterfaceConfig.getDefault();
+        if (configNode == null) {
+            return defaultConfig;
+        } else {
+            UserInterfaceConfig.FileOverlay overlay =
+                    UserInterfaceConfig.fileOverlay(defaultConfig);
             mapper.readerForUpdating(overlay).readValue(configNode);
             return overlay.build();
         }

@@ -80,6 +80,12 @@ public class LocalUiModule {
 
         TraceRegistry traceRegistry = traceModule.getTraceRegistry();
 
+        LayoutJsonService layoutJsonService = new LayoutJsonService(version,
+                collectorModule.getAggregatesEnabled(), configService);
+        HttpSessionManager httpSessionManager = new HttpSessionManager(configService, clock,
+                layoutJsonService);
+        IndexHtmlService indexHtmlService =
+                new IndexHtmlService(httpSessionManager, layoutJsonService);
         AggregateJsonService aggregateJsonService =
                 new AggregateJsonService(storageModule.getAggregateDao(),
                         collectorModule.getFixedAggregateIntervalSeconds());
@@ -97,7 +103,7 @@ public class LocalUiModule {
         // page anyways)
         ConfigJsonService configJsonService =
                 new ConfigJsonService(configService, rollingFile, pluginDescriptorCache, dataDir,
-                        traceModule.getDynamicAdviceCache(), instrumentation);
+                        traceModule.getDynamicAdviceCache(), httpSessionManager, instrumentation);
         ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
         AdhocPointcutConfigJsonService adhocPointcutConfigJsonService =
                 new AdhocPointcutConfigJsonService(parsedTypeCache, classpathCache);
@@ -105,16 +111,14 @@ public class LocalUiModule {
         AdminJsonService adminJsonService = new AdminJsonService(snapshotDao,
                 configService, traceModule.getDynamicAdviceCache(), parsedTypeCache,
                 instrumentation, traceCollector, dataSource, traceRegistry);
-        LayoutJsonService layoutJsonService =
-                new LayoutJsonService(version, collectorModule.getAggregatesEnabled());
 
         // for now only a single http worker thread to keep # of threads down
         final int numWorkerThreads = 1;
         int port = getHttpServerPort(properties);
-        httpServer = buildHttpServer(port, numWorkerThreads, layoutJsonService,
+        httpServer = buildHttpServer(port, numWorkerThreads, indexHtmlService, layoutJsonService,
                 aggregateJsonService, tracePointJsonService, traceSummaryJsonService,
                 snapshotHttpService, traceExportHttpService, jvmJsonService, configJsonService,
-                adhocPointcutConfigJsonService, adminJsonService);
+                adhocPointcutConfigJsonService, adminJsonService, httpSessionManager);
     }
 
     @OnlyUsedByTests
@@ -155,13 +159,13 @@ public class LocalUiModule {
 
     @Nullable
     private static HttpServer buildHttpServer(int port, int numWorkerThreads,
-            LayoutJsonService layoutJsonService, AggregateJsonService aggregateJsonService,
-            TracePointJsonService tracePointJsonService,
+            IndexHtmlService indexHtmlService, LayoutJsonService layoutJsonService,
+            AggregateJsonService aggregateJsonService, TracePointJsonService tracePointJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
             SnapshotHttpService snapshotHttpService, TraceExportHttpService traceExportHttpService,
             JvmJsonService jvmJsonService, ConfigJsonService configJsonService,
             AdhocPointcutConfigJsonService adhocPointcutConfigJsonService,
-            AdminJsonService adminJsonService) {
+            AdminJsonService adminJsonService, HttpSessionManager httpSessionManager) {
 
         String resourceBase = "io/informant/local/ui/app-dist";
 
@@ -172,6 +176,7 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/aggregates$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/jvm/.*$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/config/.*$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/login$"), resourceBase + "/index.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");
         uriMappings.put(Pattern.compile("^/styles/(.*)$"), resourceBase + "/styles/$1");
@@ -253,6 +258,10 @@ public class LocalUiModule {
                 configJsonService, "getStorageSection"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/storage",
                 configJsonService, "updateStorageConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/user-interface",
+                configJsonService, "getUserInterface"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/user-interface",
+                configJsonService, "updateUserInterfaceConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/plugin-section$",
                 configJsonService, "getPluginSection"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/plugin/(.+)$",
@@ -298,8 +307,8 @@ public class LocalUiModule {
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/admin/num-active-traces",
                 adminJsonService, "getNumActiveTraces"));
         try {
-            return new HttpServer(port, numWorkerThreads, uriMappings.build(),
-                    jsonServiceMappings.build());
+            return new HttpServer(port, numWorkerThreads, indexHtmlService, uriMappings.build(),
+                    jsonServiceMappings.build(), httpSessionManager);
         } catch (ChannelException e) {
             // don't rethrow, allow everything else to proceed normally, but informant ui will not
             // be available

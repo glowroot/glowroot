@@ -18,7 +18,8 @@
       <div ng-switch-default>
         <div ng-style="{display : ixWidth ? 'inline' : 'block'}">
           <div ng-class="{'input-group' : ixAddon}">
-            <input type="text"
+            <!-- ixType "text" and "password" are both used -->
+            <input type="{{ixType}}"
                    class="form-control"
                    ng-model="$parent.ngModel"
                    name="{{ixId}}"

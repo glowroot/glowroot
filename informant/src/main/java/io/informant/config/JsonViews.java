@@ -19,4 +19,9 @@ package io.informant.config;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class WithVersionJsonView {}
+public class JsonViews {
+
+    public static class UiView {}
+
+    public static class FileView {}
+}

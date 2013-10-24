@@ -1,0 +1,81 @@
+/*
+ * Copyright 2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.informant.local.ui;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Resources;
+import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
+import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
+import org.jboss.netty.handler.codec.http.HttpRequest;
+import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
+import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+
+/**
+ * @author Trask Stalnaker
+ * @since 0.5
+ */
+class IndexHtmlService {
+
+    private static final Logger logger = LoggerFactory.getLogger(IndexHtmlService.class);
+
+    private final HttpSessionManager httpSessionManager;
+    private final LayoutJsonService layoutJsonService;
+
+    IndexHtmlService(HttpSessionManager httpSessionManager, LayoutJsonService layoutJsonService) {
+        this.httpSessionManager = httpSessionManager;
+        this.layoutJsonService = layoutJsonService;
+    }
+
+    HttpResponse handleRequest(String path, HttpRequest request) throws IOException {
+        URL url;
+        try {
+            url = Resources.getResource(path);
+        } catch (IllegalArgumentException e) {
+            logger.warn("unexpected path '{}'", path);
+            return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
+        }
+        String indexHtml = Resources.toString(url, Charsets.UTF_8);
+        Pattern scriptPattern = Pattern.compile("<script></script>");
+        Matcher scriptMatcher = scriptPattern.matcher(indexHtml);
+        String layout;
+        if (httpSessionManager.needsAuthentication(request)) {
+            layout = layoutJsonService.getUnauthenticatedLayout();
+        } else {
+            layout = layoutJsonService.getLayout();
+        }
+        indexHtml = scriptMatcher.replaceFirst("<script>var layout=" + layout + ";</script>");
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        HttpServices.preventCaching(response);
+        response.setHeader(Names.CONTENT_TYPE, "text/html; charset=UTF-8");
+        response.setHeader(Names.CONTENT_LENGTH, indexHtml.length());
+        // X-UA-Compatible must be set via header (as opposed to via meta tag)
+        // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
+        response.setHeader("X-UA-Compatible", "IE=edge");
+        response.setContent(ChannelBuffers.copiedBuffer(indexHtml, Charsets.UTF_8));
+        return response;
+    }
+}

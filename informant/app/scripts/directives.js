@@ -136,6 +136,10 @@ informant.directive('ixFormGroup', function () {
       scope.formCtrl = formCtrl;
       // just need a unique id
       scope.ixId = scope.$id;
+      if (!scope.ixType) {
+        // default
+        scope.ixType = 'text';
+      }
       scope.$watch('ixModel', function (newValue) {
         scope.ngModel = newValue;
       });
@@ -312,8 +316,8 @@ informant.directive('ixSpinner', function () {
 informant.directive('ixTypeaheadOpenOnEmpty', function () {
   return {
     require: ['typeahead', 'ngModel'],
-    link: function (scope, element, attr, ctrls) {
-      element.bind('keyup', function (e) {
+    link: function (scope, iElement, iAttrs, ctrls) {
+      iElement.bind('keyup', function (e) {
         var typeaheadCtrl = ctrls[0];
         var ngModelCtrl = ctrls[1];
         if (e.which === 40 && (ngModelCtrl.$viewValue === undefined || ngModelCtrl.$viewValue === '') &&

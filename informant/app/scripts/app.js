@@ -20,39 +20,59 @@ var informant = angular.module('informant', [
   'ui.router',
   'ui.bootstrap.dropdownToggle',
   'ui.bootstrap.typeahead',
-  'ui.bootstrap.bindHtml'
+  'ui.bootstrap.bindHtml',
+  'ui.bootstrap.modal'
 ]);
 
 var Informant;
 
 informant.config([
   '$locationProvider',
-  function ($locationProvider) {
+  '$httpProvider',
+  function ($locationProvider, $httpProvider) {
     $locationProvider.html5Mode(true);
+    var interceptor = ['$location', '$q', 'login', function ($location, $q, login) {
+      return {
+        responseError: function (response) {
+          if (response.status === 401) {
+            var path = $location.path();
+            // only act on the first 401 response in case more than one request was triggered
+            if (path === '/login') {
+              // return a never-resolving promise
+              return $q.defer().promise;
+            }
+            if (response.data.timedOut) {
+              login.showLogin('Your session has timed out');
+            } else {
+              login.showLogin();
+            }
+            // return a never-resolving promise
+            return $q.defer().promise;
+          }
+          return $q.reject(response);
+        }
+      };
+    }];
+    $httpProvider.interceptors.push(interceptor);
   }
 ]);
 
 informant.run([
   '$rootScope',
   '$http',
-  '$timeout',
-  function ($rootScope, $http) {
+  '$location',
+  'login',
+  function ($rootScope, $http, $location, login) {
 
-    // use local storage to make good initial guess on layout
-    // override once server responds (which should generally be very quick)
-    var data = localStorage.getItem('backend/layout');
-    if (data) {
-      $rootScope.layout = JSON.parse(data);
-    }
-
-    $http.get('backend/layout')
-        .success(function (data) {
-          $rootScope.layout = data;
-          localStorage.setItem('backend/layout', JSON.stringify(data));
-        })
-        .error(function (error) {
-          // TODO
-        });
+    $rootScope.signOut = function () {
+      $http.post('backend/sign-out')
+          .success(function () {
+            login.showLogin('You have been signed out');
+          })
+          .error(function (error) {
+            // TODO
+          });
+    };
 
     // qtip adds some code to the beginning of jquery's cleanData function which causes the trace
     // detail modal to close slowly when it has 5000 spans
@@ -77,6 +97,30 @@ informant.run([
         });
       }
     });
+
+    function setInitialLayout(data) {
+      $rootScope.layout = data;
+      if ($rootScope.layout.needsAuthentication) {
+        login.showLogin();
+      } else if ($location.path() === '/login') {
+        // authentication is not needed
+        $location.path('/').replace();
+      }
+      if ($rootScope.layout.passwordEnabled) {
+        // received authenticated layout and password is enabled, so show sign out button
+        $rootScope.showSignOutButton = true;
+      }
+    }
+
+    if (window.layout) {
+      setInitialLayout(window.layout);
+    } else {
+      // running in dev under 'grunt server'
+      $http.get('backend/layout')
+          .success(function (data) {
+            setInitialLayout(data);
+          });
+    }
   }
 ]);
 

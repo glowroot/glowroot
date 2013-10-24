@@ -22,6 +22,7 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.collect.Lists;
 
 import io.informant.InformantModule;
+import io.informant.config.UserInterfaceConfig.Overlay;
 import io.informant.container.config.AdhocPointcutConfig;
 import io.informant.container.config.AdhocPointcutConfig.MethodModifier;
 import io.informant.container.config.CoarseProfilingConfig;
@@ -30,6 +31,7 @@ import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
 import io.informant.container.config.StorageConfig;
+import io.informant.container.config.UserInterfaceConfig;
 import io.informant.container.config.UserOverridesConfig;
 import io.informant.local.store.DataSource;
 import io.informant.markers.ThreadSafe;
@@ -153,6 +155,31 @@ class LocalConfigService implements ConfigService {
                 new io.informant.config.StorageConfig(config.getSnapshotExpirationHours(),
                         config.getRollingSizeMb());
         return configService.updateStorageConfig(updatedConfig, config.getVersion());
+    }
+
+    public UserInterfaceConfig getUserInterfaceConfig() {
+        io.informant.config.UserInterfaceConfig coreConfig = configService.getUserInterfaceConfig();
+        UserInterfaceConfig config = new UserInterfaceConfig(coreConfig.getVersion());
+        config.setPasswordEnabled(coreConfig.isPasswordEnabled());
+        config.setSessionTimeoutMinutes(coreConfig.getSessionTimeoutMinutes());
+        return config;
+    }
+
+    public String updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception {
+        // need to use overlay in order to preserve existing passwordHash
+        io.informant.config.UserInterfaceConfig coreConfig = configService.getUserInterfaceConfig();
+        Overlay overlay = io.informant.config.UserInterfaceConfig.overlay(coreConfig);
+        overlay.setPasswordEnabled(config.isPasswordEnabled());
+        overlay.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes());
+        overlay.setCurrentPassword(config.getCurrentPassword());
+        overlay.setNewPassword(config.getNewPassword());
+        io.informant.config.UserInterfaceConfig updatedCoreConfig;
+        try {
+            updatedCoreConfig = overlay.build();
+        } catch (io.informant.config.UserInterfaceConfig.CurrentPasswordIncorrectException e) {
+            throw new CurrentPasswordIncorrectException();
+        }
+        return configService.updateUserInterfaceConfig(updatedCoreConfig, config.getVersion());
     }
 
     @Nullable

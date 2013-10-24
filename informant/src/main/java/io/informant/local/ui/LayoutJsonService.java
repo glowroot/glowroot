@@ -17,8 +17,6 @@ package io.informant.local.ui;
 
 import java.io.IOException;
 
-import javax.management.JMException;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.CharStreams;
@@ -26,13 +24,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
+import io.informant.config.ConfigService;
 import io.informant.jvm.Flags;
 import io.informant.jvm.HeapHistograms;
 import io.informant.jvm.HotSpotDiagnostic;
 import io.informant.markers.Singleton;
 
 /**
- * Json service to read basic ui layout info, bound to /backend/layout.
+ * Service to read basic ui layout info.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -46,15 +45,19 @@ class LayoutJsonService {
 
     private final String version;
     private final boolean aggregatesEnabled;
+    private final ConfigService configService;
 
-    LayoutJsonService(String version, boolean aggregatesEnabled) {
+    LayoutJsonService(String version, boolean aggregatesEnabled, ConfigService configService) {
         this.version = version;
         this.aggregatesEnabled = aggregatesEnabled;
+        this.configService = configService;
     }
 
+    // this is only used when running under 'grunt server' and is just to get get back layout data
+    // (or find out login is needed if required)
     @JsonServiceMethod
-    String getLayout() throws IOException, JMException {
-        logger.debug("getLayout()");
+    String getLayout() throws IOException {
+        logger.debug("getAuthenticatedLayout()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
@@ -64,6 +67,20 @@ class LayoutJsonService {
         jg.writeBooleanField("jvmManageableFlags",
                 HotSpotDiagnostic.getAvailability().isAvailable());
         jg.writeBooleanField("jvmAllFlags", Flags.getAvailability().isAvailable());
+        jg.writeStringField("footerMessage", "version " + version);
+        jg.writeBooleanField("passwordEnabled",
+                configService.getUserInterfaceConfig().isPasswordEnabled());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    String getUnauthenticatedLayout() throws IOException {
+        logger.debug("getUnauthenticatedLayout()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeBooleanField("needsAuthentication", true);
         jg.writeStringField("footerMessage", "version " + version);
         jg.writeEndObject();
         jg.close();

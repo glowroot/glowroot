@@ -111,6 +111,11 @@ informant.config([
       templateUrl: 'views/config/storage.html',
       controller: 'ConfigStorageCtrl'
     });
+    $stateProvider.state('config.userInterface', {
+      url: '/user-interface',
+      templateUrl: 'views/config/user-interface.html',
+      controller: 'ConfigUserInterfaceCtrl'
+    });
     $stateProvider.state('config.plugins', {
       url: '/plugins',
       templateUrl: 'views/config/plugin-list.html',
@@ -125,6 +130,11 @@ informant.config([
       url: '/advanced',
       templateUrl: 'views/config/advanced.html',
       controller: 'ConfigGeneralCtrl'
+    });
+    $stateProvider.state('login', {
+      url: '/login',
+      templateUrl: 'views/login.html',
+      controller: 'LoginCtrl'
     });
   }
 ]);

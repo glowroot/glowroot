@@ -42,7 +42,6 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
@@ -57,7 +56,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
-import io.informant.config.WithVersionJsonView;
 import io.informant.jvm.Availability;
 import io.informant.jvm.Flags;
 import io.informant.jvm.HeapHistograms;
@@ -119,19 +117,18 @@ class JvmJsonService {
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
         jg.writeStartObject();
         jg.writeNumberField("startTime", runtimeMXBean.getStartTime());
         jg.writeNumberField("uptime", runtimeMXBean.getUptime());
         jg.writeStringField("pid", Objects.firstNonNull(pid, "<unknown>"));
         jg.writeStringField("mainClass", mainClass);
         jg.writeFieldName("mainClassArguments");
-        writer.writeValue(jg, arguments);
+        mapper.writeValue(jg, arguments);
         jg.writeStringField("jvm", jvm);
         jg.writeStringField("java", java);
         jg.writeStringField("javaHome", javaHome);
         jg.writeFieldName("jvmArguments");
-        writer.writeValue(jg, runtimeMXBean.getInputArguments());
+        mapper.writeValue(jg, runtimeMXBean.getInputArguments());
         jg.writeEndObject();
         jg.close();
         return sb.toString();

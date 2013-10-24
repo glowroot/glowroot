@@ -78,7 +78,8 @@ module.exports = function (grunt) {
         '^/traces$': '/index.html',
         '^/aggregates$': '/index.html',
         '^/jvm/.*$': '/index.html',
-        '^/config/.*$': '/index.html'
+        '^/config/.*$': '/index.html',
+        '^/login$': '/index.html'
       },
       livereload: {
         options: {
@@ -265,7 +266,7 @@ module.exports = function (grunt) {
         },
         cwd: '<%= yeoman.app %>/bower_components/angular-ui-bootstrap',
         src: [
-          'template/typeahead/typeahead-*.html'
+          'template/typeahead/*.html'
         ],
         dest: '.tmp/app/scripts/generated/angular-ui-bootstrap-templates.js'
       },

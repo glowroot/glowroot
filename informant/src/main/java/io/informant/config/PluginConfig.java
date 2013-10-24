@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.api.Optional;
+import io.informant.config.JsonViews.UiView;
 import io.informant.config.PropertyDescriptor.BooleanPropertyDescriptor;
 import io.informant.config.PropertyDescriptor.DoublePropertyDescriptor;
 import io.informant.config.PropertyDescriptor.StringPropertyDescriptor;
@@ -155,7 +156,7 @@ public class PluginConfig {
         return properties;
     }
 
-    @JsonView(WithVersionJsonView.class)
+    @JsonView(UiView.class)
     public String getVersion() {
         return version;
     }

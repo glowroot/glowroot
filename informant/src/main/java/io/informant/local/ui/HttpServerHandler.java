@@ -20,7 +20,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.channels.ClosedChannelException;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +35,8 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.ObjectArrays;
 import com.google.common.io.Resources;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -60,17 +59,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
+import io.informant.markers.Singleton;
 
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_MODIFIED;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Singleton
 class HttpServerHandler extends SimpleChannelUpstreamHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerHandler.class);
@@ -99,13 +101,18 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
 
     private final ChannelGroup allChannels;
 
+    private final IndexHtmlService indexHtmlService;
     private final ImmutableMap<Pattern, Object> uriMappings;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
+    private final HttpSessionManager httpSessionManager;
 
-    HttpServerHandler(ImmutableMap<Pattern, Object> uriMappings,
-            ImmutableList<JsonServiceMapping> jsonServiceMappings) {
+    HttpServerHandler(IndexHtmlService indexHtmlService, ImmutableMap<Pattern, Object> uriMappings,
+            ImmutableList<JsonServiceMapping> jsonServiceMappings,
+            HttpSessionManager httpSessionManager) {
+        this.indexHtmlService = indexHtmlService;
         this.uriMappings = uriMappings;
         this.jsonServiceMappings = jsonServiceMappings;
+        this.httpSessionManager = httpSessionManager;
         allChannels = new DefaultChannelGroup();
     }
 
@@ -170,10 +177,19 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();
         logger.debug("handleRequest(): path={}", path);
+        if (path.equals("/backend/login")) {
+            return httpSessionManager.login(request);
+        }
+        if (path.equals("/backend/sign-out")) {
+            return httpSessionManager.signOut(request);
+        }
         for (Entry<Pattern, Object> uriMappingEntry : uriMappings.entrySet()) {
             Matcher matcher = uriMappingEntry.getKey().matcher(path);
             if (matcher.matches()) {
                 if (uriMappingEntry.getValue() instanceof HttpService) {
+                    if (httpSessionManager.needsAuthentication(request)) {
+                        return handleUnauthorized(request);
+                    }
                     return ((HttpService) uriMappingEntry.getValue())
                             .handleRequest(request, channel);
                 } else {
@@ -189,17 +205,28 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             }
             Matcher matcher = jsonServiceMapping.pattern.matcher(path);
             if (matcher.matches()) {
+                if (httpSessionManager.needsAuthentication(request)) {
+                    return handleUnauthorized(request);
+                }
                 String requestText = getRequestText(request, decoder);
                 String[] args = new String[matcher.groupCount()];
                 for (int i = 0; i < args.length; i++) {
                     args[i] = matcher.group(i + 1);
                 }
-                return handleJsonRequest(jsonServiceMapping.service, jsonServiceMapping.methodName,
-                        args, requestText);
+                return handleJsonRequest(jsonServiceMapping.service,
+                        jsonServiceMapping.methodName, args, requestText);
             }
         }
         logger.warn("unexpected uri '{}'", request.getUri());
         return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
+    }
+
+    private HttpResponse handleUnauthorized(HttpRequest request) {
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, UNAUTHORIZED);
+        if (httpSessionManager.getSessionId(request) != null) {
+            response.setContent(ChannelBuffers.copiedBuffer("{\"timedOut\":true}", Charsets.UTF_8));
+        }
+        return response;
     }
 
     private HttpResponse handleStaticResource(String path, HttpRequest request) throws IOException {
@@ -214,10 +241,11 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             logger.warn("unexpected extension '{}' for path '{}'", extension, path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         if (path.endsWith("/ui/app-dist/index.html")) {
-            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + FIVE_MINUTES));
-        } else if (path.endsWith("/ui/app-dist/favicon.ico")) {
+            return indexHtmlService.handleRequest(path, request);
+        }
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        if (path.endsWith("/ui/app-dist/favicon.ico")) {
             response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + ONE_DAY));
         } else if (path.endsWith(".js.map") || path.startsWith("/sources/")) {
             // javascript source maps and source files are not versioned
@@ -243,24 +271,19 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
         byte[] staticContent = Resources.toByteArray(url);
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
-        if ("html".equals(extension)) {
-            // X-UA-Compatible must be set via header (as opposed to via meta tag)
-            // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
-            response.setHeader("X-UA-Compatible", "IE=edge");
-        }
         response.setHeader(Names.CONTENT_TYPE, mimeType);
         response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
         return response;
     }
-
     private static HttpResponse handleJsonRequest(Object jsonService, String serviceMethodName,
             String[] args, String requestText) {
 
         logger.debug("handleJsonRequest(): serviceMethodName={}, args={}, requestText={}",
                 serviceMethodName, args, requestText);
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         Object responseText;
         try {
-            responseText = callMethod(jsonService, serviceMethodName, args, requestText);
+            responseText = callMethod(jsonService, serviceMethodName, args, requestText, response);
         } catch (SecurityException e) {
             logger.warn(e.getMessage(), e);
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
@@ -277,57 +300,64 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             logger.warn(e.getCause().getMessage(), e.getCause());
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
-        HttpResponse response;
         if (responseText == null) {
-            response = new DefaultHttpResponse(HTTP_1_1, OK);
             response.setContent(ChannelBuffers.EMPTY_BUFFER);
             HttpServices.preventCaching(response);
-        } else if (responseText instanceof String) {
-            response = new DefaultHttpResponse(HTTP_1_1, OK);
+            return response;
+        }
+        if (responseText instanceof String) {
             response.setContent(ChannelBuffers.copiedBuffer(responseText.toString(),
                     Charsets.ISO_8859_1));
             response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
             HttpServices.preventCaching(response);
-        } else if (responseText instanceof byte[]) {
-            response = new DefaultHttpResponse(HTTP_1_1, OK);
+            return response;
+        }
+        if (responseText instanceof byte[]) {
             response.setContent(ChannelBuffers.wrappedBuffer((byte[]) responseText));
             response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
             HttpServices.preventCaching(response);
-        } else {
-            logger.warn("unexpected type of json service response '{}'", responseText.getClass()
-                    .getName());
-            response = new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+            return response;
         }
-        return response;
+        logger.warn("unexpected type of json service response '{}'",
+                responseText.getClass().getName());
+        return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
     }
 
     @Nullable
-    private static Object callMethod(Object object, String methodName, Object[] args,
-            String optionalArg) throws NoSuchMethodException, IllegalAccessException,
-            InvocationTargetException {
-
-        boolean withOptionalArg = true;
-        Method method;
+    private static Object callMethod(Object object, String methodName, String[] args,
+            String requestText, HttpResponse response) throws NoSuchMethodException,
+            IllegalAccessException, InvocationTargetException {
+        List<Class<?>> parameterTypes = Lists.newArrayList();
+        List<Object> parameters = Lists.newArrayList();
+        for (int i = 0; i < args.length; i++) {
+            parameterTypes.add(String.class);
+            parameters.add(args[i]);
+        }
+        parameterTypes.add(String.class);
+        parameters.add(requestText);
+        parameterTypes.add(HttpResponse.class);
+        parameters.add(response);
         try {
-            method = object.getClass().getDeclaredMethod(methodName,
-                    getParameterTypes(args.length + 1));
+            Method method = object.getClass().getDeclaredMethod(methodName,
+                    parameterTypes.toArray(new Class[parameterTypes.size()]));
+            return method.invoke(object, parameters.toArray(new Object[parameters.size()]));
         } catch (NoSuchMethodException e) {
-            method = object.getClass()
-                    .getDeclaredMethod(methodName, getParameterTypes(args.length));
-            withOptionalArg = false;
+            try {
+                // try again without response arg
+                parameterTypes.remove(parameterTypes.size() - 1);
+                parameters.remove(parameters.size() - 1);
+                Method method = object.getClass().getDeclaredMethod(methodName,
+                        parameterTypes.toArray(new Class[parameterTypes.size()]));
+                return method.invoke(object, parameters.toArray(new Object[parameters.size()]));
+            } catch (NoSuchMethodException f) {
+                // try again without requestText and response args
+                parameterTypes.remove(parameterTypes.size() - 1);
+                parameters.remove(parameters.size() - 1);
+                Method method = object.getClass().getDeclaredMethod(methodName,
+                        parameterTypes.toArray(new Class[parameterTypes.size()]));
+                return method.invoke(object, parameters.toArray(new Object[parameters.size()]));
+            }
         }
-        if (withOptionalArg) {
-            Object[] argsWithOptional = ObjectArrays.concat(args, optionalArg);
-            return method.invoke(object, argsWithOptional);
-        } else {
-            return method.invoke(object, args);
-        }
-    }
-
-    private static Class<?>[] getParameterTypes(int length) {
-        Class<?>[] parameterTypes = new Class<?>[length];
-        Arrays.fill(parameterTypes, String.class);
-        return parameterTypes;
     }
 
     private static String getRequestText(HttpRequest request, QueryStringDecoder decoder)

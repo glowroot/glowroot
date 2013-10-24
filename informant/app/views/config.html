@@ -41,6 +41,11 @@
       Storage
     </a>
     <a class="list-group-item"
+       ng-class="{active: isCurrentView('config.userInterface')}"
+       href="#/config/user-interface">
+      User interface
+    </a>
+    <a class="list-group-item"
        ng-class="{active: isCurrentView('config.plugins')}"
        href="#/config/plugins">
       Plugins

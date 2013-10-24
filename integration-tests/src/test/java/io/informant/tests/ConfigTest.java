@@ -33,6 +33,7 @@ import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
 import io.informant.container.config.StorageConfig;
+import io.informant.container.config.UserInterfaceConfig;
 import io.informant.container.config.UserOverridesConfig;
 
 import static org.fest.assertions.api.Assertions.assertThat;
@@ -124,6 +125,74 @@ public class ConfigTest {
     }
 
     @Test
+    public void shouldUpdateUserInterfaceConfig() throws Exception {
+        // given
+        UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
+        // when
+        updateAllFields(config);
+        container.getConfigService().updateUserInterfaceConfig(config);
+        // then
+        UserInterfaceConfig updatedConfig = container.getConfigService().getUserInterfaceConfig();
+        assertThat(updatedConfig).isEqualTo(config);
+    }
+
+    @Test
+    public void shouldCheckDefaultUserInterfacePassword() throws Exception {
+        // given
+        UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
+        // when
+        // then
+        assertThat(config.isPasswordEnabled()).isFalse();
+    }
+
+    @Test
+    public void shouldEnableUserInterfacePassword() throws Exception {
+        // given
+        UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
+        config.setPasswordEnabled(true);
+        config.setNewPassword("abc");
+        // when
+        container.getConfigService().updateUserInterfaceConfig(config);
+        // then
+        UserInterfaceConfig updatedConfig = container.getConfigService().getUserInterfaceConfig();
+        assertThat(updatedConfig.isPasswordEnabled()).isTrue();
+    }
+
+    @Test
+    public void shouldChangeUserInterfacePassword() throws Exception {
+        // given
+        UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
+        config.setPasswordEnabled(true);
+        config.setNewPassword("xyz");
+        container.getConfigService().updateUserInterfaceConfig(config);
+        // when
+        config = container.getConfigService().getUserInterfaceConfig();
+        config.setCurrentPassword("xyz");
+        config.setNewPassword("123");
+        container.getConfigService().updateUserInterfaceConfig(config);
+        // then
+        UserInterfaceConfig updatedConfig = container.getConfigService().getUserInterfaceConfig();
+        assertThat(updatedConfig.isPasswordEnabled()).isTrue();
+    }
+
+    @Test
+    public void shouldDisableUserInterfacePassword() throws Exception {
+        // given
+        UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
+        config.setPasswordEnabled(true);
+        config.setNewPassword("efg");
+        container.getConfigService().updateUserInterfaceConfig(config);
+        // when
+        config = container.getConfigService().getUserInterfaceConfig();
+        config.setPasswordEnabled(false);
+        config.setCurrentPassword("efg");
+        container.getConfigService().updateUserInterfaceConfig(config);
+        // then
+        UserInterfaceConfig updatedConfig = container.getConfigService().getUserInterfaceConfig();
+        assertThat(updatedConfig.isPasswordEnabled()).isFalse();
+    }
+
+    @Test
     public void shouldUpdatePluginConfig() throws Exception {
         // given
         PluginConfig config = container.getConfigService().getPluginConfig(PLUGIN_ID);
@@ -208,6 +277,10 @@ public class ConfigTest {
     private static void updateAllFields(StorageConfig config) {
         config.setSnapshotExpirationHours(config.getSnapshotExpirationHours() + 1);
         config.setRollingSizeMb(config.getRollingSizeMb() + 1);
+    }
+
+    private static void updateAllFields(UserInterfaceConfig config) {
+        config.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes() + 1);
     }
 
     private static void updateAllFields(PluginConfig config) {

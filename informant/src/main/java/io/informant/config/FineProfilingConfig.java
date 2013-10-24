@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 
+import io.informant.config.JsonViews.UiView;
+
 /**
  * Immutable structure to hold the fine-grained profiling config.
  * 
@@ -87,7 +89,7 @@ public class FineProfilingConfig {
         return storeThresholdMillis;
     }
 
-    @JsonView(WithVersionJsonView.class)
+    @JsonView(UiView.class)
     public String getVersion() {
         return version;
     }

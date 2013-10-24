@@ -19,16 +19,18 @@ import java.util.List;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.informant.container.common.ObjectMappers;
+import io.informant.container.config.AdhocPointcutConfig;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.ConfigService;
 import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
-import io.informant.container.config.AdhocPointcutConfig;
 import io.informant.container.config.StorageConfig;
+import io.informant.container.config.UserInterfaceConfig;
 import io.informant.container.config.UserOverridesConfig;
 import io.informant.markers.ThreadSafe;
 
@@ -105,6 +107,29 @@ class JavaagentConfigService implements ConfigService {
     // returns new version
     public String updateStorageConfig(StorageConfig config) throws Exception {
         return httpClient.post("/backend/config/storage", mapper.writeValueAsString(config));
+    }
+
+    public UserInterfaceConfig getUserInterfaceConfig() throws Exception {
+        return ObjectMappers.readRequiredValue(mapper,
+                httpClient.get("/backend/config/user-interface"), UserInterfaceConfig.class);
+    }
+
+    // returns new version
+    public String updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception {
+        String response = httpClient.post("/backend/config/user-interface",
+                mapper.writeValueAsString(config));
+        if (response.matches("[0-9a-f]{40}")) {
+            // version number
+            return response;
+        }
+        JsonNode node = mapper.readTree(response);
+        boolean currentPasswordIncorrect = node.get("currentPasswordIncorrect").asBoolean();
+        if (currentPasswordIncorrect) {
+            throw new CurrentPasswordIncorrectException();
+        } else {
+            // currently there are no other expected responses
+            throw new IllegalStateException("Unexpected response: " + node);
+        }
     }
 
     @Nullable

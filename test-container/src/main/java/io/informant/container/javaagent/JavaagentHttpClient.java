@@ -15,11 +15,15 @@
  */
 package io.informant.container.javaagent;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.ExecutionException;
 
+import checkers.nullness.quals.Nullable;
 import com.google.common.net.MediaType;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
+import com.ning.http.client.Cookie;
 import com.ning.http.client.Response;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
@@ -37,6 +41,8 @@ class JavaagentHttpClient {
 
     private final int uiPort;
     private final AsyncHttpClient asyncHttpClient;
+    @Nullable
+    private volatile Cookie sessionIdCookie;
 
     JavaagentHttpClient(int uiPort, AsyncHttpClient asyncHttpClient) {
         this.uiPort = uiPort;
@@ -46,14 +52,14 @@ class JavaagentHttpClient {
     String get(String path) throws Exception {
         BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + uiPort
                 + path);
-        Response response = request.execute().get();
+        Response response = execute(request);
         return validateAndReturnBody(response);
     }
 
     InputStream getAsStream(String path) throws Exception {
         BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + uiPort
                 + path);
-        Response response = request.execute().get();
+        Response response = execute(request);
         return validateAndReturnBodyAsStream(response);
     }
 
@@ -61,8 +67,35 @@ class JavaagentHttpClient {
         BoundRequestBuilder request = asyncHttpClient.preparePost("http://localhost:" + uiPort
                 + path);
         request.setBody(data);
-        Response response = request.execute().get();
+        Response response = execute(request);
         return validateAndReturnBody(response);
+    }
+
+    private Response execute(BoundRequestBuilder request) throws InterruptedException,
+            ExecutionException, IOException {
+        populateSessionIdCookie(request);
+        Response response = request.execute().get();
+        extractSessionIdCookie(response);
+        return response;
+    }
+
+    private void populateSessionIdCookie(BoundRequestBuilder request) {
+        if (sessionIdCookie != null) {
+            request.addCookie(sessionIdCookie);
+        }
+    }
+
+    private void extractSessionIdCookie(Response response) {
+        for (Cookie cookie : response.getCookies()) {
+            if (cookie.getName().equals("INFORMANT_SESSION_ID")) {
+                if (cookie.getValue().equals("")) {
+                    sessionIdCookie = null;
+                } else {
+                    sessionIdCookie = cookie;
+                }
+                return;
+            }
+        }
     }
 
     private static String validateAndReturnBody(Response response) throws Exception {

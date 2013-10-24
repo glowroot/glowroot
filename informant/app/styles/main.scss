@@ -169,3 +169,20 @@ body {
 .secondary-text {
   color: #737373;
 }
+
+.login-modal .modal-dialog {
+  width: 400px;
+}
+
+.login-modal .modal-body {
+  // this overrides .modal-body which has "padding-left: 0" since it is used on trace modal
+  padding: 30px;
+}
+
+.btn-signout {
+  background-color: #ddd;
+}
+
+.btn-signout:hover {
+  background-color: #fff;
+}

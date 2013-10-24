@@ -18,6 +18,8 @@ package io.informant.local.ui;
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.jar.Attributes;
@@ -32,6 +34,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
+import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,12 +45,14 @@ import io.informant.config.ConfigService;
 import io.informant.config.ConfigService.OptimisticLockException;
 import io.informant.config.FineProfilingConfig;
 import io.informant.config.GeneralConfig;
+import io.informant.config.JsonViews.UiView;
 import io.informant.config.PluginConfig;
 import io.informant.config.PluginDescriptor;
 import io.informant.config.PluginDescriptorCache;
 import io.informant.config.StorageConfig;
+import io.informant.config.UserInterfaceConfig;
+import io.informant.config.UserInterfaceConfig.CurrentPasswordIncorrectException;
 import io.informant.config.UserOverridesConfig;
-import io.informant.config.WithVersionJsonView;
 import io.informant.jvm.JDK6;
 import io.informant.local.store.RollingFile;
 import io.informant.markers.Singleton;
@@ -71,17 +76,20 @@ class ConfigJsonService {
     private final PluginDescriptorCache pluginDescriptorCache;
     private final File dataDir;
     private final AdhocAdviceCache adhocAdviceCache;
+    private final HttpSessionManager httpSessionManager;
     @Nullable
     private final Instrumentation instrumentation;
 
     ConfigJsonService(ConfigService configService, RollingFile rollingFile,
             PluginDescriptorCache pluginDescriptorCache, File dataDir,
-            AdhocAdviceCache adhocAdviceCache, @Nullable Instrumentation instrumentation) {
+            AdhocAdviceCache adhocAdviceCache, HttpSessionManager httpSessionManager,
+            @Nullable Instrumentation instrumentation) {
         this.configService = configService;
         this.rollingFile = rollingFile;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.dataDir = dataDir;
         this.adhocAdviceCache = adhocAdviceCache;
+        this.httpSessionManager = httpSessionManager;
         this.instrumentation = instrumentation;
     }
 
@@ -90,7 +98,7 @@ class ConfigJsonService {
         logger.debug("getGeneralConfig()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
         writer.writeValue(jg, configService.getGeneralConfig());
         jg.close();
         return sb.toString();
@@ -101,7 +109,7 @@ class ConfigJsonService {
         logger.debug("getCoarseProfilingConfig()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
         writer.writeValue(jg, configService.getCoarseProfilingConfig());
         jg.close();
         return sb.toString();
@@ -112,7 +120,7 @@ class ConfigJsonService {
         logger.debug("getFineProfilingSection()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
         jg.writeStartObject();
         jg.writeFieldName("config");
         writer.writeValue(jg, configService.getFineProfilingConfig());
@@ -128,7 +136,7 @@ class ConfigJsonService {
         logger.debug("getUserOverridesConfig()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
         writer.writeValue(jg, configService.getUserOverridesConfig());
         jg.close();
         return sb.toString();
@@ -139,7 +147,7 @@ class ConfigJsonService {
         logger.debug("getStorageSection()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
         jg.writeStartObject();
         jg.writeFieldName("config");
         writer.writeValue(jg, configService.getStorageConfig());
@@ -150,11 +158,22 @@ class ConfigJsonService {
     }
 
     @JsonServiceMethod
+    String getUserInterface() throws IOException, SQLException {
+        logger.debug("getUserInterface()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
+        writer.writeValue(jg, configService.getUserInterfaceConfig());
+        jg.close();
+        return sb.toString();
+    }
+
+    @JsonServiceMethod
     String getPluginSection() throws IOException, SQLException {
         logger.debug("getPluginSection()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
         jg.writeStartObject();
         jg.writeFieldName("descriptors");
         writer.writeValue(jg, pluginDescriptorCache.getPluginDescriptors());
@@ -170,7 +189,7 @@ class ConfigJsonService {
         logger.debug("getAdhocPointcutSection()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
         jg.writeStartObject();
         jg.writeFieldName("configs");
         writer.writeValue(jg, configService.getAdhocPointcutConfigs());
@@ -227,9 +246,9 @@ class ConfigJsonService {
         configNode.remove("version");
 
         GeneralConfig config = configService.getGeneralConfig();
-        GeneralConfig.Overlay builder = GeneralConfig.overlay(config);
-        mapper.readerForUpdating(builder).readValue(configNode);
-        return configService.updateGeneralConfig(builder.build(), priorVersion);
+        GeneralConfig.Overlay overlay = GeneralConfig.overlay(config);
+        mapper.readerForUpdating(overlay).readValue(configNode);
+        return configService.updateGeneralConfig(overlay.build(), priorVersion);
     }
 
     @JsonServiceMethod
@@ -244,10 +263,9 @@ class ConfigJsonService {
         String priorVersion = versionNode.asText();
         configNode.remove("version");
 
-        CoarseProfilingConfig.Overlay overlay =
-                CoarseProfilingConfig.overlay(configService.getCoarseProfilingConfig());
+        CoarseProfilingConfig config = configService.getCoarseProfilingConfig();
+        CoarseProfilingConfig.Overlay overlay = CoarseProfilingConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
-
         return configService.updateCoarseProfilingConfig(overlay.build(), priorVersion);
     }
 
@@ -263,10 +281,9 @@ class ConfigJsonService {
         String priorVersion = versionNode.asText();
         configNode.remove("version");
 
-        FineProfilingConfig.Overlay overlay =
-                FineProfilingConfig.overlay(configService.getFineProfilingConfig());
+        FineProfilingConfig config = configService.getFineProfilingConfig();
+        FineProfilingConfig.Overlay overlay = FineProfilingConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
-
         return configService.updateFineProfilingConfig(overlay.build(), priorVersion);
     }
 
@@ -281,10 +298,9 @@ class ConfigJsonService {
         String priorVersion = versionNode.asText();
         configNode.remove("version");
 
-        UserOverridesConfig.Overlay overlay = UserOverridesConfig.overlay(configService
-                .getUserOverridesConfig());
+        UserOverridesConfig config = configService.getUserOverridesConfig();
+        UserOverridesConfig.Overlay overlay = UserOverridesConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
-
         return configService.updateUserOverridesConfig(overlay.build(), priorVersion);
     }
 
@@ -300,11 +316,44 @@ class ConfigJsonService {
         configNode.remove("version");
 
         StorageConfig config = configService.getStorageConfig();
-        StorageConfig.Overlay builder = StorageConfig.overlay(config);
-        mapper.readerForUpdating(builder).readValue(configNode);
-        String updatedVersion = configService.updateStorageConfig(builder.build(), priorVersion);
+        StorageConfig.Overlay overlay = StorageConfig.overlay(config);
+        mapper.readerForUpdating(overlay).readValue(configNode);
+        String updatedVersion = configService.updateStorageConfig(overlay.build(), priorVersion);
         // resize() doesn't do anything if the new and old value are the same
         rollingFile.resize(configService.getStorageConfig().getRollingSizeMb() * 1024);
+        return updatedVersion;
+    }
+
+    @JsonServiceMethod
+    String updateUserInterfaceConfig(String content, HttpResponse response)
+            throws OptimisticLockException,
+            IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        logger.debug("updateUserInterfaceConfig(): content={}", content);
+        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
+        JsonNode versionNode = configNode.get("version");
+        if (versionNode == null || !versionNode.isTextual()) {
+            throw new IllegalStateException("Version is missing or is not a string value");
+        }
+        String priorVersion = versionNode.asText();
+        configNode.remove("version");
+
+        UserInterfaceConfig config = configService.getUserInterfaceConfig();
+        UserInterfaceConfig.Overlay overlay = UserInterfaceConfig.overlay(config);
+        mapper.readerForUpdating(overlay).readValue(configNode);
+        UserInterfaceConfig updatedConfig;
+        try {
+            updatedConfig = overlay.build();
+        } catch (CurrentPasswordIncorrectException e) {
+            return "{\"currentPasswordIncorrect\":true}";
+        }
+        String updatedVersion =
+                configService.updateUserInterfaceConfig(updatedConfig, priorVersion);
+        // only create/delete session on successful update
+        if (!config.isPasswordEnabled() && updatedConfig.isPasswordEnabled()) {
+            httpSessionManager.createSession(response);
+        } else if (config.isPasswordEnabled() && !updatedConfig.isPasswordEnabled()) {
+            httpSessionManager.deleteSession(response);
+        }
         return updatedVersion;
     }
 

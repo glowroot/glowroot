@@ -23,6 +23,7 @@ informant.controller('JvmHeapDumpCtrl', [
   function ($scope, $http, httpErrors) {
     $('#directory').keypress(function (e) {
       if (e.which === 13) {
+        // don't want to accidentally trigger heap dump
         return false;
       }
     });
