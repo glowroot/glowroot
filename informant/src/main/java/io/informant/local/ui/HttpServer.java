@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
@@ -89,7 +90,15 @@ class HttpServer {
         });
         InetSocketAddress localAddress = new InetSocketAddress(port);
         logger.debug("<init>(): binding http server to port {}", port);
-        serverChannel = bootstrap.bind(localAddress);
+        Channel serverChannel;
+        try {
+            serverChannel = bootstrap.bind(localAddress);
+        } catch (ChannelException e) {
+            serverChannel = bootstrap.bind(new InetSocketAddress(0));
+            logger.error("unable to bind http listener to port {}, bound to port {} instead", port,
+                    ((InetSocketAddress) serverChannel.getLocalAddress()).getPort());
+        }
+        this.serverChannel = serverChannel;
         this.port = ((InetSocketAddress) serverChannel.getLocalAddress()).getPort();
         logger.debug("<init>(): http server bound");
     }

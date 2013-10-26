@@ -310,8 +310,9 @@ public class LocalUiModule {
             return new HttpServer(port, numWorkerThreads, indexHtmlService, uriMappings.build(),
                     jsonServiceMappings.build(), httpSessionManager);
         } catch (ChannelException e) {
-            // don't rethrow, allow everything else to proceed normally, but informant ui will not
-            // be available
+            // binding to the specified port failed and binding to port 0 (any port) failed
+            logger.error("unable to bind http listener to any port, the user interface will not be"
+                    + " available");
             return null;
         }
     }
