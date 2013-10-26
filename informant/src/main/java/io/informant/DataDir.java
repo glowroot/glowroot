@@ -23,7 +23,6 @@ import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,41 +73,39 @@ class DataDir {
 
     private static File getDataDir(@ReadOnly Map<String, String> properties,
             boolean disableWarnings) {
-        String dataDirOverride = properties.get("data.dir");
-        if (dataDirOverride != null) {
-            // used by unit tests
-            return new File(dataDirOverride);
+        String dataDirPath = properties.get("data.dir");
+        if (dataDirPath == null) {
+            return getBaseDir(disableWarnings);
         }
-        File baseDir = BASE_DIR;
-        if (baseDir == null) {
-            if (!disableWarnings) {
-                logger.warn("could not determine location of informant.jar, using process current"
-                        + " directory as the base directory");
-            }
-            baseDir = new File(".");
+        File dataDir = new File(dataDirPath);
+        File baseDir = null;
+        if (!dataDir.isAbsolute()) {
+            // resolve path relative to base dir instead of process current dir
+            baseDir = getBaseDir(disableWarnings);
+            dataDir = new File(baseDir, dataDirPath);
         }
-        String id = properties.get("id");
-        if (Strings.isNullOrEmpty(id)) {
-            return baseDir;
-        }
-        if (!id.matches("[a-zA-Z0-9 -_]+")) {
-            if (!disableWarnings) {
-                logger.warn("invalid informant.id '{}', id must include only alphanumeric"
-                        + " characters, spaces, dashes underscores and forward slashes, proceeding"
-                        + " instead with empty id", id);
-            }
-            return baseDir;
-        }
-        File dataDir = new File(baseDir, id);
         try {
             Files.createParentDirs(dataDir);
-            return dataDir;
         } catch (IOException e) {
-            if (!disableWarnings) {
-                logger.warn("unable to create directory '{}', writing to base dir instead '{}'",
-                        dataDir.getPath(), baseDir.getPath());
+            if (baseDir == null) {
+                baseDir = getBaseDir(disableWarnings);
             }
-            return baseDir;
+            logger.warn("unable to create data directory '{}', using '{}' instead",
+                    dataDir.getAbsolutePath(), baseDir.getAbsolutePath());
         }
+        return dataDir;
+    }
+
+    private static File getBaseDir(boolean disableWarnings) {
+        if (BASE_DIR == null) {
+            if (!disableWarnings) {
+                // warning is logged lazily (instead of in static initializer) so that unit tests
+                // have a chance to pass in absolute data dir path and bypass this warning
+                logger.warn("could not determine location of informant.jar, using process current"
+                        + " directory as the data directory");
+            }
+            return new File(".");
+        }
+        return BASE_DIR;
     }
 }
