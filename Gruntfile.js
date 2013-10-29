@@ -308,7 +308,8 @@ module.exports = function (grunt) {
             return undefined;
           }
           // strip path and add .map
-          return file.replace(/.*[/\\]scripts[/\\]([^/\\]+)$/, '/sources/$1') + '.map';
+          // use relative url so it will work using different <base href=""> urls
+          return file.replace(/.*[/\\]scripts[/\\]([^/\\]+)$/, '../sources/$1') + '.map';
         }
       }
     },

@@ -84,8 +84,9 @@ public class LocalUiModule {
                 collectorModule.getAggregatesEnabled(), configService);
         HttpSessionManager httpSessionManager = new HttpSessionManager(configService, clock,
                 layoutJsonService);
+        String baseHref = getBaseHref(properties);
         IndexHtmlService indexHtmlService =
-                new IndexHtmlService(httpSessionManager, layoutJsonService);
+                new IndexHtmlService(baseHref, httpSessionManager, layoutJsonService);
         AggregateJsonService aggregateJsonService =
                 new AggregateJsonService(storageModule.getAggregateDao(),
                         collectorModule.getFixedAggregateIntervalSeconds());
@@ -155,6 +156,11 @@ public class LocalUiModule {
                     + " '{}'", uiPort, DEFAULT_UI_PORT);
             return DEFAULT_UI_PORT;
         }
+    }
+
+    private static String getBaseHref(@ReadOnly Map<String, String> properties) {
+        String baseHref = properties.get("ui.base");
+        return baseHref == null ? "/" : baseHref;
     }
 
     @Nullable

@@ -42,10 +42,13 @@ class IndexHtmlService {
 
     private static final Logger logger = LoggerFactory.getLogger(IndexHtmlService.class);
 
+    private final String baseHref;
     private final HttpSessionManager httpSessionManager;
     private final LayoutJsonService layoutJsonService;
 
-    IndexHtmlService(HttpSessionManager httpSessionManager, LayoutJsonService layoutJsonService) {
+    IndexHtmlService(String baseHref, HttpSessionManager httpSessionManager,
+            LayoutJsonService layoutJsonService) {
+        this.baseHref = baseHref;
         this.httpSessionManager = httpSessionManager;
         this.layoutJsonService = layoutJsonService;
     }
@@ -68,6 +71,11 @@ class IndexHtmlService {
             layout = layoutJsonService.getLayout();
         }
         indexHtml = scriptMatcher.replaceFirst("<script>var layout=" + layout + ";</script>");
+        if (!baseHref.equals("/")) {
+            Pattern baseHrefPattern = Pattern.compile("<base href=\"/\">");
+            Matcher baseHrefMatcher = baseHrefPattern.matcher(indexHtml);
+            indexHtml = baseHrefMatcher.replaceFirst("<base href=\"" + baseHref + "\">");
+        }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         HttpServices.preventCaching(response);
         response.setHeader(Names.CONTENT_TYPE, "text/html; charset=UTF-8");
