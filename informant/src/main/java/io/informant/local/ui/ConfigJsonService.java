@@ -17,7 +17,6 @@ package io.informant.local.ui;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.instrument.Instrumentation;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.sql.SQLException;
@@ -25,7 +24,6 @@ import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.JarInputStream;
 
-import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -40,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
 import io.informant.config.AdhocPointcutConfig;
+import io.informant.config.AdvancedConfig;
 import io.informant.config.CoarseProfilingConfig;
 import io.informant.config.ConfigService;
 import io.informant.config.ConfigService.OptimisticLockException;
@@ -53,10 +52,10 @@ import io.informant.config.StorageConfig;
 import io.informant.config.UserInterfaceConfig;
 import io.informant.config.UserInterfaceConfig.CurrentPasswordIncorrectException;
 import io.informant.config.UserOverridesConfig;
-import io.informant.jvm.JDK6;
 import io.informant.local.store.RollingFile;
 import io.informant.markers.Singleton;
 import io.informant.trace.AdhocAdviceCache;
+import io.informant.trace.TraceModule;
 
 /**
  * Json service to read and update config data, bound to /backend/config.
@@ -77,20 +76,19 @@ class ConfigJsonService {
     private final File dataDir;
     private final AdhocAdviceCache adhocAdviceCache;
     private final HttpSessionManager httpSessionManager;
-    @Nullable
-    private final Instrumentation instrumentation;
+    private final TraceModule traceModule;
 
     ConfigJsonService(ConfigService configService, RollingFile rollingFile,
             PluginDescriptorCache pluginDescriptorCache, File dataDir,
             AdhocAdviceCache adhocAdviceCache, HttpSessionManager httpSessionManager,
-            @Nullable Instrumentation instrumentation) {
+            TraceModule traceModule) {
         this.configService = configService;
         this.rollingFile = rollingFile;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.dataDir = dataDir;
         this.adhocAdviceCache = adhocAdviceCache;
         this.httpSessionManager = httpSessionManager;
-        this.instrumentation = instrumentation;
+        this.traceModule = traceModule;
     }
 
     @JsonServiceMethod
@@ -195,13 +193,25 @@ class ConfigJsonService {
         writer.writeValue(jg, configService.getAdhocPointcutConfigs());
         jg.writeBooleanField("jvmOutOfSync", adhocAdviceCache
                 .isAdhocPointcutConfigsOutOfSync(configService.getAdhocPointcutConfigs()));
-        if (instrumentation == null) {
-            // debugging with IsolatedWeavingClassLoader instead of javaagent
-            jg.writeBooleanField("jvmRetransformClassesSupported", false);
-        } else {
-            jg.writeBooleanField("jvmRetransformClassesSupported",
-                    JDK6.isRetransformClassesSupported(instrumentation));
-        }
+        jg.writeBooleanField("jvmRetransformClassesSupported",
+                traceModule.isJvmRetransformClassesSupported());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    @JsonServiceMethod
+    String getAdvancedSection() throws IOException, SQLException {
+        logger.debug("getAdvancedSection()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
+        jg.writeStartObject();
+        jg.writeFieldName("config");
+        writer.writeValue(jg, configService.getAdvancedConfig());
+        jg.writeBooleanField("generateMetricNameWrapperMethodsActive",
+                traceModule.isGenerateMetricNameWrapperMethods());
+        jg.writeBooleanField("weavingDisabledActive", traceModule.isWeavingDisabled());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -355,6 +365,23 @@ class ConfigJsonService {
             httpSessionManager.deleteSession(response);
         }
         return updatedVersion;
+    }
+
+    @JsonServiceMethod
+    String updateAdvancedConfig(String content) throws OptimisticLockException, IOException {
+        logger.debug("updateAdvancedConfig(): content={}", content);
+        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
+        JsonNode versionNode = configNode.get("version");
+        if (versionNode == null || !versionNode.isTextual()) {
+            throw new IllegalStateException("Version is missing or is not a string value");
+        }
+        String priorVersion = versionNode.asText();
+        configNode.remove("version");
+
+        AdvancedConfig config = configService.getAdvancedConfig();
+        AdvancedConfig.Overlay overlay = AdvancedConfig.overlay(config);
+        mapper.readerForUpdating(overlay).readValue(configNode);
+        return configService.updateAdvancedConfig(overlay.build(), priorVersion);
     }
 
     @JsonServiceMethod

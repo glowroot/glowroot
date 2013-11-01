@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.informant.container.common.ObjectMappers;
 import io.informant.container.config.AdhocPointcutConfig;
+import io.informant.container.config.AdvancedConfig;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.ConfigService;
 import io.informant.container.config.FineProfilingConfig;
@@ -130,6 +131,17 @@ class JavaagentConfigService implements ConfigService {
             // currently there are no other expected responses
             throw new IllegalStateException("Unexpected response: " + node);
         }
+    }
+
+    public AdvancedConfig getAdvancedConfig() throws Exception {
+        return ObjectMappers.readRequiredValue(mapper,
+                httpClient.get("/backend/config/advanced-section"),
+                AdvancedConfigSection.class).getConfig();
+    }
+
+    // returns new version
+    public String updateAdvancedConfig(AdvancedConfig config) throws Exception {
+        return httpClient.post("/backend/config/advanced", mapper.writeValueAsString(config));
     }
 
     @Nullable

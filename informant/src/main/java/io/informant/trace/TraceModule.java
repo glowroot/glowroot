@@ -15,6 +15,8 @@
  */
 package io.informant.trace;
 
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.Instrumentation;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -27,6 +29,7 @@ import io.informant.api.PluginServices;
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
+import io.informant.jvm.JDK6;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 import io.informant.weaving.MetricTimerService;
@@ -55,6 +58,10 @@ public class TraceModule {
     private final CoarseProfiler coarseProfiler;
     private final FineProfileScheduler fineProfileScheduler;
 
+    private final boolean weavingDisabled;
+    private final boolean generateMetricNameWrapperMethods;
+    private final boolean jvmRetransformClassesSupported;
+
     private final LoadingCache<String, PluginServices> pluginServices =
             CacheBuilder.newBuilder().build(new CacheLoader<String, PluginServices>() {
                 @Override
@@ -66,7 +73,8 @@ public class TraceModule {
             });
 
     public TraceModule(Ticker ticker, Clock clock, ConfigModule configModule,
-            TraceCollector traceCollector, ScheduledExecutorService scheduledExecutor) {
+            TraceCollector traceCollector, Instrumentation instrumentation,
+            ScheduledExecutorService scheduledExecutor) {
         this.ticker = ticker;
         this.clock = clock;
         this.configModule = configModule;
@@ -87,15 +95,28 @@ public class TraceModule {
                 ticker);
         stuckTraceCollector.start();
         coarseProfiler.start();
-    }
 
-    public WeavingClassFileTransformer createWeavingClassFileTransformer() {
-        return new WeavingClassFileTransformer(
-                configModule.getPluginDescriptorCache().getMixinTypes(),
-                configModule.getPluginDescriptorCache().getAdvisors(),
-                adhocAdviceCache.getAdhocAdvisorsSupplier(), parsedTypeCache,
-                metricTimerService, configModule.getConfigService().getGeneralConfig()
-                        .isGenerateMetricNameWrapperMethods());
+        weavingDisabled = configModule.getConfigService().getAdvancedConfig().isWeavingDisabled();
+        generateMetricNameWrapperMethods = configModule.getConfigService().getAdvancedConfig()
+                .isGenerateMetricNameWrapperMethods();
+        // instrumentation is null when debugging with IsolatedWeavingClassLoader
+        // instead of javaagent
+        if (instrumentation != null && !weavingDisabled) {
+            ClassFileTransformer transformer = new WeavingClassFileTransformer(
+                    configModule.getPluginDescriptorCache().getMixinTypes(),
+                    configModule.getPluginDescriptorCache().getAdvisors(),
+                    adhocAdviceCache.getAdhocAdvisorsSupplier(), parsedTypeCache,
+                    metricTimerService, generateMetricNameWrapperMethods);
+            if (JDK6.isSupported() && JDK6.isRetransformClassesSupported(instrumentation)) {
+                JDK6.addRetransformingTransformer(instrumentation, transformer);
+                jvmRetransformClassesSupported = true;
+            } else {
+                instrumentation.addTransformer(transformer);
+                jvmRetransformClassesSupported = false;
+            }
+        } else {
+            jvmRetransformClassesSupported = false;
+        }
     }
 
     public PluginServices getPluginServices(String pluginId) {
@@ -116,6 +137,18 @@ public class TraceModule {
 
     public MetricTimerService getMetricTimerService() {
         return metricTimerService;
+    }
+
+    public boolean isWeavingDisabled() {
+        return weavingDisabled;
+    }
+
+    public boolean isGenerateMetricNameWrapperMethods() {
+        return generateMetricNameWrapperMethods;
+    }
+
+    public boolean isJvmRetransformClassesSupported() {
+        return jvmRetransformClassesSupported;
     }
 
     @OnlyUsedByTests

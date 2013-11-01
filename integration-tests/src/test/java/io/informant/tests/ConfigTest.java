@@ -28,6 +28,7 @@ import io.informant.Containers;
 import io.informant.container.Container;
 import io.informant.container.config.AdhocPointcutConfig;
 import io.informant.container.config.AdhocPointcutConfig.MethodModifier;
+import io.informant.container.config.AdvancedConfig;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
@@ -193,6 +194,18 @@ public class ConfigTest {
     }
 
     @Test
+    public void shouldUpdateAdvancedConfig() throws Exception {
+        // given
+        AdvancedConfig config = container.getConfigService().getAdvancedConfig();
+        // when
+        updateAllFields(config);
+        container.getConfigService().updateAdvancedConfig(config);
+        // then
+        AdvancedConfig updatedConfig = container.getConfigService().getAdvancedConfig();
+        assertThat(updatedConfig).isEqualTo(config);
+    }
+
+    @Test
     public void shouldUpdatePluginConfig() throws Exception {
         // given
         PluginConfig config = container.getConfigService().getPluginConfig(PLUGIN_ID);
@@ -248,9 +261,6 @@ public class ConfigTest {
         config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
         config.setStuckThresholdSeconds(config.getStuckThresholdSeconds() + 1);
         config.setMaxSpans(config.getMaxSpans() + 1);
-        config.setGenerateMetricNameWrapperMethods(!config.isGenerateMetricNameWrapperMethods());
-        config.setWarnOnSpanOutsideTrace(!config.isWarnOnSpanOutsideTrace());
-        config.setWeavingDisabled(!config.isWeavingDisabled());
     }
 
     private static void updateAllFields(CoarseProfilingConfig config) {
@@ -281,6 +291,12 @@ public class ConfigTest {
 
     private static void updateAllFields(UserInterfaceConfig config) {
         config.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes() + 1);
+    }
+
+    private static void updateAllFields(AdvancedConfig config) {
+        config.setGenerateMetricNameWrapperMethods(!config.isGenerateMetricNameWrapperMethods());
+        config.setWarnOnSpanOutsideTrace(!config.isWarnOnSpanOutsideTrace());
+        config.setWeavingDisabled(!config.isWeavingDisabled());
     }
 
     private static void updateAllFields(PluginConfig config) {

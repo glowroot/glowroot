@@ -129,7 +129,7 @@ informant.config([
     $stateProvider.state('config.advanced', {
       url: '/advanced',
       templateUrl: 'views/config/advanced.html',
-      controller: 'ConfigGeneralCtrl'
+      controller: 'ConfigAdvancedCtrl'
     });
     $stateProvider.state('login', {
       url: '/login',

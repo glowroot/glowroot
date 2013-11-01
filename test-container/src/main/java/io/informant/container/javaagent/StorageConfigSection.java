@@ -17,7 +17,6 @@ package io.informant.container.javaagent;
 
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
@@ -30,7 +29,6 @@ import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@JsonIgnoreProperties("pluginDescriptors")
 class StorageConfigSection {
 
     private final StorageConfig config;

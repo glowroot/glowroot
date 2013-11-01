@@ -3,8 +3,7 @@
     "enabled" : true,
     "storeThresholdMillis" : 0,
     "stuckThresholdSeconds" : 180,
-    "maxSpans" : 5000,
-    "warnOnSpanOutsideTrace" : false
+    "maxSpans" : 2000
   },
   "coarse-profiling" : {
     "enabled" : true,
@@ -29,15 +28,25 @@
     "snapshotExpirationHours" : -1,
     "rollingSizeMb" : 1000
   },
+  "ui" : {
+    "passwordEnabled" : false,
+    "sessionTimeoutMinutes" : 30,
+    "passwordHash" : ""
+  },
+  "advanced" : {
+    "generateMetricNameWrapperMethods" : false,
+    "warnOnSpanOutsideTrace" : false,
+    "weavingDisabled" : false
+  },
   "plugins" : [ {
     "groupId" : "io.informant",
     "artifactId" : "informant-integration-tests",
     "enabled" : true,
     "properties" : {
-      "captureSpanStackTraces" : false,
       "hasDefaultVal" : "one",
-      "starredGrouping" : false,
-      "alternateGrouping" : ""
+      "captureSpanStackTraces" : false,
+      "alternateGrouping" : "",
+      "starredGrouping" : false
     }
   }, {
     "groupId" : "io.informant",

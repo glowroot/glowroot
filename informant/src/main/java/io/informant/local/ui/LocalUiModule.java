@@ -104,7 +104,7 @@ public class LocalUiModule {
         // page anyways)
         ConfigJsonService configJsonService =
                 new ConfigJsonService(configService, rollingFile, pluginDescriptorCache, dataDir,
-                        traceModule.getDynamicAdviceCache(), httpSessionManager, instrumentation);
+                        traceModule.getDynamicAdviceCache(), httpSessionManager, traceModule);
         ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
         AdhocPointcutConfigJsonService adhocPointcutConfigJsonService =
                 new AdhocPointcutConfigJsonService(parsedTypeCache, classpathCache);
@@ -268,6 +268,10 @@ public class LocalUiModule {
                 configJsonService, "getUserInterface"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/user-interface",
                 configJsonService, "updateUserInterfaceConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/advanced-section",
+                configJsonService, "getAdvancedSection"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/advanced",
+                configJsonService, "updateAdvancedConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/plugin-section$",
                 configJsonService, "getPluginSection"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/plugin/(.+)$",

@@ -25,6 +25,12 @@
            ix-model="config.generateMetricNameWrapperMethods"
            ix-type="checkbox">
         <div class="help-block">
+          <div class="informant-yellow"
+               ng-show="originalConfig.generateMetricNameWrapperMethods !== generateMetricNameWrapperMethodsActive"
+               style="padding-bottom: 5px;">
+            Active value is <code>{{generateMetricNameWrapperMethodsActive ? 'ON' : 'OFF'}}</code>. The newly configured
+            value will take effect on next JVM restart.
+          </div>
           When enabled, all methods that are woven for metric timing are renamed with suffix
           <code>$informant$metric$&lt;metric name&gt;</code>
           and a new method is generated in its place that simply calls the renamed method. The purpose of this is so
@@ -32,7 +38,7 @@
           profiles can be filtered in the UI by metric names. For example, a trace profile can be filtered to see only
           the profile of code that is executing jdbc queries. Or, even more useful, filter to see only the profile of
           code that has no metric timings, which helps to discover new bottlenecks that would be worth timing via adhoc
-          pointcuts. <em>(Changes to this setting will take effect on next JVM restart.)</em>
+          pointcuts. <em>Changes to this setting will take effect on next JVM restart.</em>
         </div>
       </div>
       <div ix-form-group
@@ -50,8 +56,14 @@
            ix-model="config.weavingDisabled"
            ix-type="checkbox">
         <div class="help-block">
+          <div class="informant-yellow"
+               ng-show="originalConfig.weavingDisabled !== weavingDisabledActive"
+               style="padding-bottom: 5px;">
+            Active value is <code>{{weavingDisabledActive ? 'ON' : 'OFF'}}</code>. The newly configured value will take
+            effect on next JVM restart.
+          </div>
           When disabled, Informant will not perform any weaving and will not capture any traces.
-          Changing this requires a restart.
+          Changing this requires a restart. <em>Changes to this setting will take effect on next JVM restart.</em>
         </div>
       </div>
       <div class="form-group form-buttons">

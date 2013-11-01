@@ -56,9 +56,6 @@ public class GeneralConfig {
     // used to limit memory requirement, also used to help limit trace capture size,
     // 0 means don't capture any spans, -1 means no limit
     private final int maxSpans;
-    private final boolean generateMetricNameWrapperMethods;
-    private final boolean warnOnSpanOutsideTrace;
-    private final boolean weavingDisabled;
 
     private final String version;
 
@@ -67,11 +64,7 @@ public class GeneralConfig {
         final int storeThresholdMillis = 3000;
         final int stuckThresholdSeconds = 180;
         final int maxSpans = 2000;
-        final boolean generateMetricNameWrapperMethods = false;
-        final boolean warnOnSpanOutsideTrace = false;
-        final boolean weavingDisabled = false;
-        return new GeneralConfig(enabled, storeThresholdMillis, stuckThresholdSeconds, maxSpans,
-                generateMetricNameWrapperMethods, warnOnSpanOutsideTrace, weavingDisabled);
+        return new GeneralConfig(enabled, storeThresholdMillis, stuckThresholdSeconds, maxSpans);
     }
 
     public static Overlay overlay(GeneralConfig base) {
@@ -80,18 +73,13 @@ public class GeneralConfig {
 
     @VisibleForTesting
     public GeneralConfig(boolean enabled, int storeThresholdMillis, int stuckThresholdSeconds,
-            int maxSpans, boolean generateMetricNameWrapperMethods,
-            boolean warnOnSpanOutsideTrace, boolean weavingDisabled) {
+            int maxSpans) {
         this.enabled = enabled;
         this.storeThresholdMillis = storeThresholdMillis;
         this.stuckThresholdSeconds = stuckThresholdSeconds;
         this.maxSpans = maxSpans;
-        this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
-        this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
-        this.weavingDisabled = weavingDisabled;
         this.version = VersionHashes.sha1(enabled, storeThresholdMillis, stuckThresholdSeconds,
-                maxSpans, generateMetricNameWrapperMethods, warnOnSpanOutsideTrace,
-                weavingDisabled);
+                maxSpans);
     }
 
     public boolean isEnabled() {
@@ -110,18 +98,6 @@ public class GeneralConfig {
         return maxSpans;
     }
 
-    public boolean isGenerateMetricNameWrapperMethods() {
-        return generateMetricNameWrapperMethods;
-    }
-
-    public boolean isWarnOnSpanOutsideTrace() {
-        return warnOnSpanOutsideTrace;
-    }
-
-    public boolean isWeavingDisabled() {
-        return weavingDisabled;
-    }
-
     @JsonView(UiView.class)
     public String getVersion() {
         return version;
@@ -134,9 +110,6 @@ public class GeneralConfig {
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
                 .add("maxSpans", maxSpans)
-                .add("generateMetricNameWrapperMethods", generateMetricNameWrapperMethods)
-                .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
-                .add("weavingDisabled", weavingDisabled)
                 .add("version", version)
                 .toString();
     }
@@ -148,18 +121,12 @@ public class GeneralConfig {
         private int storeThresholdMillis;
         private int stuckThresholdSeconds;
         private int maxSpans;
-        private boolean generateMetricNameWrapperMethods;
-        private boolean warnOnSpanOutsideTrace;
-        private boolean weavingDisabled;
 
         private Overlay(GeneralConfig base) {
             enabled = base.enabled;
             storeThresholdMillis = base.storeThresholdMillis;
             stuckThresholdSeconds = base.stuckThresholdSeconds;
             maxSpans = base.maxSpans;
-            generateMetricNameWrapperMethods = base.generateMetricNameWrapperMethods;
-            warnOnSpanOutsideTrace = base.warnOnSpanOutsideTrace;
-            weavingDisabled = base.weavingDisabled;
         }
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
@@ -173,19 +140,9 @@ public class GeneralConfig {
         public void setMaxSpans(int maxSpans) {
             this.maxSpans = maxSpans;
         }
-        public void setGenerateMetricNameWrapperMethods(boolean generateMetricNameWrapperMethods) {
-            this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
-        }
-        public void setWarnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
-            this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
-        }
-        public void setWeavingDisabled(boolean weavingDisabled) {
-            this.weavingDisabled = weavingDisabled;
-        }
         public GeneralConfig build() {
             return new GeneralConfig(enabled, storeThresholdMillis, stuckThresholdSeconds,
-                    maxSpans, generateMetricNameWrapperMethods, warnOnSpanOutsideTrace,
-                    weavingDisabled);
+                    maxSpans);
         }
     }
 }

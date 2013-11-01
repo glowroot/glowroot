@@ -52,6 +52,10 @@ public interface ConfigService {
     // throws CurrentPasswordIncorrectException
     String updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception;
 
+    AdvancedConfig getAdvancedConfig() throws Exception;
+
+    String updateAdvancedConfig(AdvancedConfig config) throws Exception;
+
     @Nullable
     PluginConfig getPluginConfig(String pluginId) throws Exception;
 

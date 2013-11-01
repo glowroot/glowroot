@@ -62,6 +62,7 @@ class ConfigMapper {
     private static final String USER = "user";
     private static final String STORAGE = "storage";
     private static final String USER_INTERFACE = "ui";
+    private static final String ADVANCED = "advanced";
     private static final String PLUGINS = "plugins";
     private static final String ADHOC_POINTCUTS = "adhoc-pointcuts";
 
@@ -79,14 +80,15 @@ class ConfigMapper {
         UserOverridesConfig userOverridesConfig = readUserNode(rootNode);
         StorageConfig storageConfig = readStorageNode(rootNode);
         UserInterfaceConfig userInterfaceConfig = readUserInterfaceNode(rootNode);
+        AdvancedConfig advancedConfig = readAdvancedNode(rootNode);
         Map<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
         ImmutableList<PluginConfig> pluginConfigs =
                 createPluginConfigs(pluginNodes, pluginDescriptors);
         ImmutableList<AdhocPointcutConfig> adhocPointcutConfigs =
                 createAdhocPointcutConfigs(rootNode);
         return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig,
-                userOverridesConfig, storageConfig, userInterfaceConfig, pluginConfigs,
-                adhocPointcutConfigs);
+                userOverridesConfig, storageConfig, userInterfaceConfig, advancedConfig,
+                pluginConfigs, adhocPointcutConfigs);
     }
 
     static void writeValue(File configFile, Config config) throws IOException {
@@ -112,6 +114,8 @@ class ConfigMapper {
         writer.writeValue(jg, config.getStorageConfig());
         jg.writeFieldName(USER_INTERFACE);
         writer.writeValue(jg, config.getUserInterfaceConfig());
+        jg.writeFieldName(ADVANCED);
+        writer.writeValue(jg, config.getAdvancedConfig());
 
         jg.writeArrayFieldStart(PLUGINS);
         for (PluginConfig pluginConfig : config.getPluginConfigs()) {
@@ -201,6 +205,18 @@ class ConfigMapper {
         } else {
             UserInterfaceConfig.FileOverlay overlay =
                     UserInterfaceConfig.fileOverlay(defaultConfig);
+            mapper.readerForUpdating(overlay).readValue(configNode);
+            return overlay.build();
+        }
+    }
+
+    private static AdvancedConfig readAdvancedNode(ObjectNode rootNode) throws IOException {
+        ObjectNode configNode = (ObjectNode) rootNode.get(ADVANCED);
+        AdvancedConfig defaultConfig = AdvancedConfig.getDefault();
+        if (configNode == null) {
+            return defaultConfig;
+        } else {
+            AdvancedConfig.Overlay overlay = AdvancedConfig.overlay(defaultConfig);
             mapper.readerForUpdating(overlay).readValue(configNode);
             return overlay.build();
         }

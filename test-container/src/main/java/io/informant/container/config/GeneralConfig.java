@@ -33,9 +33,6 @@ public class GeneralConfig {
     private int storeThresholdMillis;
     private int stuckThresholdSeconds;
     private int maxSpans;
-    private boolean generateMetricNameWrapperMethods;
-    private boolean warnOnSpanOutsideTrace;
-    private boolean weavingDisabled;
 
     private final String version;
 
@@ -75,30 +72,6 @@ public class GeneralConfig {
         this.maxSpans = maxSpans;
     }
 
-    public boolean isGenerateMetricNameWrapperMethods() {
-        return generateMetricNameWrapperMethods;
-    }
-
-    public void setGenerateMetricNameWrapperMethods(boolean generateMetricNameWrapperMethods) {
-        this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
-    }
-
-    public boolean isWarnOnSpanOutsideTrace() {
-        return warnOnSpanOutsideTrace;
-    }
-
-    public void setWarnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
-        this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
-    }
-
-    public boolean isWeavingDisabled() {
-        return weavingDisabled;
-    }
-
-    public void setWeavingDisabled(boolean weavingDisabled) {
-        this.weavingDisabled = weavingDisabled;
-    }
-
     public String getVersion() {
         return version;
     }
@@ -113,11 +86,7 @@ public class GeneralConfig {
             return Objects.equal(enabled, that.enabled)
                     && Objects.equal(storeThresholdMillis, that.storeThresholdMillis)
                     && Objects.equal(stuckThresholdSeconds, that.stuckThresholdSeconds)
-                    && Objects.equal(maxSpans, that.maxSpans)
-                    && Objects.equal(generateMetricNameWrapperMethods,
-                            that.generateMetricNameWrapperMethods)
-                    && Objects.equal(warnOnSpanOutsideTrace, that.warnOnSpanOutsideTrace)
-                    && Objects.equal(weavingDisabled, that.weavingDisabled);
+                    && Objects.equal(maxSpans, that.maxSpans);
         }
         return false;
     }
@@ -127,8 +96,7 @@ public class GeneralConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(enabled, storeThresholdMillis, stuckThresholdSeconds, maxSpans,
-                generateMetricNameWrapperMethods, warnOnSpanOutsideTrace, weavingDisabled);
+        return Objects.hashCode(enabled, storeThresholdMillis, stuckThresholdSeconds, maxSpans);
     }
 
     @Override
@@ -138,9 +106,6 @@ public class GeneralConfig {
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
                 .add("maxSpans", maxSpans)
-                .add("generateMetricNameWrapperMethods", generateMetricNameWrapperMethods)
-                .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
-                .add("weavingDisabled", weavingDisabled)
                 .add("version", version)
                 .toString();
     }
@@ -151,26 +116,17 @@ public class GeneralConfig {
             @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
             @JsonProperty("stuckThresholdSeconds") @Nullable Integer stuckThresholdSeconds,
             @JsonProperty("maxSpans") @Nullable Integer maxSpans,
-            @JsonProperty("generateMetricNameWrapperMethods") @Nullable Boolean generateMetricNameWrapperMethods,
-            @JsonProperty("warnOnSpanOutsideTrace") @Nullable Boolean warnOnSpanOutsideTrace,
-            @JsonProperty("weavingDisabled") @Nullable Boolean weavingDisabled,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(enabled, "enabled");
         checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
         checkRequiredProperty(stuckThresholdSeconds, "stuckThresholdSeconds");
         checkRequiredProperty(maxSpans, "maxSpans");
-        checkRequiredProperty(generateMetricNameWrapperMethods, "generateMetricNameWrapperMethods");
-        checkRequiredProperty(warnOnSpanOutsideTrace, "warnOnSpanOutsideTrace");
-        checkRequiredProperty(weavingDisabled, "weavingDisabled");
         checkRequiredProperty(version, "version");
         GeneralConfig config = new GeneralConfig(version);
         config.setEnabled(enabled);
         config.setStoreThresholdMillis(storeThresholdMillis);
         config.setStuckThresholdSeconds(stuckThresholdSeconds);
         config.setMaxSpans(maxSpans);
-        config.setGenerateMetricNameWrapperMethods(generateMetricNameWrapperMethods);
-        config.setWarnOnSpanOutsideTrace(warnOnSpanOutsideTrace);
-        config.setWeavingDisabled(weavingDisabled);
         return config;
     }
 }

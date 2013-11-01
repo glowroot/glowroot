@@ -98,6 +98,10 @@ public class ConfigService {
         return config.getUserInterfaceConfig();
     }
 
+    public AdvancedConfig getAdvancedConfig() {
+        return config.getAdvancedConfig();
+    }
+
     @Nullable
     public PluginConfig getPluginConfig(String pluginId) {
         for (PluginConfig pluginConfig : config.getPluginConfigs()) {
@@ -216,6 +220,22 @@ public class ConfigService {
         }
         notifyConfigListeners();
         return userInterfaceConfig.getVersion();
+    }
+
+    public String updateAdvancedConfig(AdvancedConfig advancedConfig, String priorVersion)
+            throws OptimisticLockException, IOException {
+        synchronized (writeLock) {
+            if (!config.getAdvancedConfig().getVersion().equals(priorVersion)) {
+                throw new OptimisticLockException();
+            }
+            Config updatedConfig = Config.builder(config)
+                    .advancedConfig(advancedConfig)
+                    .build();
+            ConfigMapper.writeValue(configFile, updatedConfig);
+            config = updatedConfig;
+        }
+        notifyConfigListeners();
+        return advancedConfig.getVersion();
     }
 
     public String updatePluginConfig(PluginConfig pluginConfig, String priorVersion)
@@ -354,18 +374,33 @@ public class ConfigService {
         }
         String content = Files.toString(configFile, Charsets.UTF_8);
         Config config;
+        String warningMessage = null;
         try {
             config = new ConfigMapper(pluginDescriptorCache.getPluginDescriptors())
                     .readValue(content);
         } catch (JsonProcessingException e) {
-            logger.warn("syntax error in file {}: {}", configFile.getAbsolutePath(),
+            logger.warn("error in config file {}: {}", configFile.getAbsolutePath(),
                     e.getMessage());
+            File backupFile = new File(configFile.getParentFile(), configFile.getName()
+                    + ".invalid-orig");
             config = Config.getDefault(pluginDescriptorCache.getPluginDescriptors());
-            backupInvalidConfigFile(configFile);
+            try {
+                Files.copy(configFile, backupFile);
+                warningMessage = "due to an error in the config file, it has been backed up to"
+                        + " extension '.invalid-orig' and overwritten with the default config";
+            } catch (IOException f) {
+                logger.warn("error making a copy of the invalid config file before overwriting it",
+                        f);
+                warningMessage = "due to an error in the config file, it has been overwritten with"
+                        + " the default config";
+            }
         }
         // it's nice to update config.json on startup if it is missing some/all config
         // properties so that the file contents can be reviewed/updated/copied if desired
         writeToFileIfNeeded(config, configFile, content);
+        if (warningMessage != null) {
+            logger.warn(warningMessage);
+        }
         return config;
     }
 
@@ -378,16 +413,6 @@ public class ConfigService {
             return;
         }
         Files.write(content, configFile, Charsets.UTF_8);
-    }
-
-    // make a copy of the invalid config file since it will be overwritten with default config
-    private static void backupInvalidConfigFile(File configFile) {
-        try {
-            File copy = new File(configFile.getParentFile(), configFile.getName() + ".invalid");
-            Files.copy(configFile, copy);
-        } catch (IOException e) {
-            logger.warn("error making copy of invalid config file before overwriting", e);
-        }
     }
 
     @SuppressWarnings("serial")

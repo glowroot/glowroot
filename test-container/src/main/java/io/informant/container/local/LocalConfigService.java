@@ -25,6 +25,7 @@ import io.informant.InformantModule;
 import io.informant.config.UserInterfaceConfig.Overlay;
 import io.informant.container.config.AdhocPointcutConfig;
 import io.informant.container.config.AdhocPointcutConfig.MethodModifier;
+import io.informant.container.config.AdvancedConfig;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.ConfigService;
 import io.informant.container.config.FineProfilingConfig;
@@ -68,9 +69,6 @@ class LocalConfigService implements ConfigService {
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
         config.setStuckThresholdSeconds(coreConfig.getStuckThresholdSeconds());
         config.setMaxSpans(coreConfig.getMaxSpans());
-        config.setGenerateMetricNameWrapperMethods(coreConfig.isGenerateMetricNameWrapperMethods());
-        config.setWarnOnSpanOutsideTrace(coreConfig.isWarnOnSpanOutsideTrace());
-        config.setWeavingDisabled(coreConfig.isWeavingDisabled());
         return config;
     }
 
@@ -79,10 +77,7 @@ class LocalConfigService implements ConfigService {
                 new io.informant.config.GeneralConfig(config.isEnabled(),
                         config.getStoreThresholdMillis(),
                         config.getStuckThresholdSeconds(),
-                        config.getMaxSpans(),
-                        config.isGenerateMetricNameWrapperMethods(),
-                        config.isWarnOnSpanOutsideTrace(),
-                        config.isWeavingDisabled());
+                        config.getMaxSpans());
         return configService.updateGeneralConfig(updatedConfig, config.getVersion());
     }
 
@@ -180,6 +175,23 @@ class LocalConfigService implements ConfigService {
             throw new CurrentPasswordIncorrectException();
         }
         return configService.updateUserInterfaceConfig(updatedCoreConfig, config.getVersion());
+    }
+
+    public AdvancedConfig getAdvancedConfig() {
+        io.informant.config.AdvancedConfig coreConfig = configService.getAdvancedConfig();
+        AdvancedConfig config = new AdvancedConfig(coreConfig.getVersion());
+        config.setGenerateMetricNameWrapperMethods(coreConfig.isGenerateMetricNameWrapperMethods());
+        config.setWarnOnSpanOutsideTrace(coreConfig.isWarnOnSpanOutsideTrace());
+        config.setWeavingDisabled(coreConfig.isWeavingDisabled());
+        return config;
+    }
+
+    public String updateAdvancedConfig(AdvancedConfig config) throws Exception {
+        io.informant.config.AdvancedConfig updatedConfig =
+                new io.informant.config.AdvancedConfig(config.isGenerateMetricNameWrapperMethods(),
+                        config.isWarnOnSpanOutsideTrace(),
+                        config.isWeavingDisabled());
+        return configService.updateAdvancedConfig(updatedConfig, config.getVersion());
     }
 
     @Nullable

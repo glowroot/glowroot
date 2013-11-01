@@ -120,7 +120,8 @@ public class PluginDescriptorCache {
                 plugins.add(pluginDescriptor);
             } catch (JsonProcessingException e) {
                 // no need to log stack trace
-                logger.error("syntax error in file {}: {}", url.toExternalForm(), e.getMessage());
+                logger.error("error in plugin descriptor {}: {}", url.toExternalForm(),
+                        e.getMessage());
             }
         }
         return plugins;
