@@ -31,7 +31,7 @@ informant.config([
   '$httpProvider',
   function ($locationProvider, $httpProvider) {
     $locationProvider.html5Mode(true);
-    var interceptor = ['$location', '$q', 'login', function ($location, $q, login) {
+    var interceptor = ['$location', '$q', '$timeout', 'login', function ($location, $q, $timeout, login) {
       return {
         responseError: function (response) {
           if (response.status === 401) {
@@ -48,6 +48,16 @@ informant.config([
             }
             // return a never-resolving promise
             return $q.defer().promise;
+          }
+          if (response.status === 0) {
+            // most likely this is because the user hit F5 refresh (which seems not that uncommon if json response is
+            // slow), so delay the reject a bit so it will have no effect if user really did hit F5, but rejection will
+            // still occur (after delay) if caused by some other issue
+            var deferred = $q.defer();
+            $timeout(function () {
+              deferred.reject(response);
+            }, 500);
+            return deferred.promise;
           }
           return $q.reject(response);
         }
