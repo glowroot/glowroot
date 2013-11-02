@@ -16,6 +16,7 @@
 package io.informant.local.ui;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
@@ -25,6 +26,7 @@ import com.google.common.io.CharSource;
 import io.informant.collector.Snapshot;
 import io.informant.collector.SnapshotCreator;
 import io.informant.collector.SnapshotWriter;
+import io.informant.collector.TraceCollectorImpl;
 import io.informant.common.Clock;
 import io.informant.local.store.SnapshotDao;
 import io.informant.markers.Singleton;
@@ -40,13 +42,15 @@ class TraceCommonService {
 
     private final SnapshotDao snapshotDao;
     private final TraceRegistry traceRegistry;
+    private final TraceCollectorImpl traceCollectorImpl;
     private final Clock clock;
     private final Ticker ticker;
 
-    TraceCommonService(SnapshotDao snapshotDao, TraceRegistry traceRegistry, Clock clock,
-            Ticker ticker) {
+    TraceCommonService(SnapshotDao snapshotDao, TraceRegistry traceRegistry,
+            TraceCollectorImpl traceCollectorImpl, Clock clock, Ticker ticker) {
         this.snapshotDao = snapshotDao;
         this.traceRegistry = traceRegistry;
+        this.traceCollectorImpl = traceCollectorImpl;
         this.clock = clock;
         this.ticker = ticker;
     }
@@ -59,9 +63,14 @@ class TraceCommonService {
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {
             if (active.getId().equals(id)) {
-                Snapshot snapshot = SnapshotCreator.createActiveSnapshot(active,
-                        clock.currentTimeMillis(), ticker.read(), summary);
-                return SnapshotWriter.toCharSource(snapshot, true, summary);
+                return toCharSource(active, summary);
+            }
+        }
+        // then check pending traces to make sure the trace is not missed if it is in between active
+        // and stored
+        for (Trace pending : traceCollectorImpl.getPendingCompleteTraces()) {
+            if (pending.getId().equals(id)) {
+                return toCharSource(pending, summary);
             }
         }
         Snapshot snapshot;
@@ -75,5 +84,12 @@ class TraceCommonService {
         } else {
             return SnapshotWriter.toCharSource(snapshot, false, summary);
         }
+    }
+
+    private CharSource toCharSource(Trace trace, boolean summary) throws IOException,
+            UnsupportedEncodingException {
+        Snapshot snapshot = SnapshotCreator.createActiveSnapshot(trace,
+                clock.currentTimeMillis(), ticker.read(), summary);
+        return SnapshotWriter.toCharSource(snapshot, true, summary);
     }
 }

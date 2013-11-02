@@ -91,7 +91,7 @@ public class LocalUiModule {
                 new AggregateJsonService(storageModule.getAggregateDao(),
                         collectorModule.getFixedAggregateIntervalSeconds());
         TraceCommonService traceCommonService =
-                new TraceCommonService(snapshotDao, traceRegistry, clock, ticker);
+                new TraceCommonService(snapshotDao, traceRegistry, traceCollector, clock, ticker);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,
                 traceRegistry, traceCollector, ticker, clock);
         TraceSummaryJsonService traceSummaryJsonService =
