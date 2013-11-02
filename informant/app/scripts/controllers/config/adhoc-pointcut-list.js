@@ -54,7 +54,7 @@ informant.controller('ConfigAdhocPointcutListCtrl', [
           $http.post('backend/adhoc-pointcut/pre-load-auto-complete');
         })
         .error(function (data, status) {
-          $scope.loadingError = httpErrors.get(data, status);
+          $scope.httpError = httpErrors.get(data, status);
         });
 
     $scope.addPointcut = function () {
@@ -86,11 +86,8 @@ informant.controller('ConfigAdhocPointcutListCtrl', [
             deferred.resolve('Success');
           })
           .error(function (data, status) {
-            if (status === 0) {
-              deferred.reject('Unable to connect to server');
-            } else {
-              deferred.reject('An error occurred');
-            }
+            $scope.httpError = httpErrors.get(data, status);
+            deferred.reject($scope.httpError.headline);
           });
     };
   }
@@ -99,7 +96,8 @@ informant.controller('ConfigAdhocPointcutListCtrl', [
 informant.controller('ConfigAdhocPointcutCtrl', [
   '$scope',
   '$http',
-  function ($scope, $http) {
+  'httpErrors',
+  function ($scope, $http, httpErrors) {
     var originalConfig = angular.copy($scope.pointcut.config);
 
     $scope.hasChanges = function () {
@@ -226,10 +224,12 @@ informant.controller('ConfigAdhocPointcutCtrl', [
             deferred.resolve(version ? 'Saved' : 'Added');
           })
           .error(function (data, status) {
-            if (status === 0) {
-              deferred.reject('Unable to connect to server');
+            if (status === 412) {
+              // HTTP Precondition Failed
+              deferred.reject('Someone else has updated this configuration, please reload and try again');
             } else {
-              deferred.reject('An error occurred');
+              $scope.httpError = httpErrors.get(data, status);
+              deferred.reject($scope.httpError.headline);
             }
           });
     };
@@ -244,11 +244,8 @@ informant.controller('ConfigAdhocPointcutCtrl', [
               deferred.resolve('Deleted');
             })
             .error(function (data, status) {
-              if (status === 0) {
-                deferred.reject('Unable to connect to server');
-              } else {
-                deferred.reject('An error occurred');
-              }
+              $scope.httpError = httpErrors.get(data, status);
+              deferred.reject($scope.httpError.headline);
             });
       } else {
         $scope.$parent.removePointcut($scope.pointcut);

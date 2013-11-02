@@ -31,11 +31,8 @@ informant.controller('JvmMemoryOverviewCtrl', [
             deferred.resolve('Complete');
           })
           .error(function (data, status) {
-            if (status === 0) {
-              deferred.reject('Unable to connect to server');
-            } else {
-              deferred.reject('An error occurred');
-            }
+            $scope.httpError = httpErrors.get(data, status);
+            deferred.reject($scope.httpError.headline);
           });
     };
 
@@ -47,11 +44,8 @@ informant.controller('JvmMemoryOverviewCtrl', [
             deferred.resolve('Complete');
           })
           .error(function (data, status) {
-            if (status === 0) {
-              deferred.reject('Unable to connect to server');
-            } else {
-              deferred.reject('An error occurred');
-            }
+            $scope.httpError = httpErrors.get(data, status);
+            deferred.reject($scope.httpError.headline);
           });
     };
 
@@ -60,19 +54,18 @@ informant.controller('JvmMemoryOverviewCtrl', [
           .success(function (data) {
             $scope.loaded = true;
             $scope.data = data;
-            deferred.resolve('Refreshed');
+            if (deferred) {
+              deferred.resolve('Refreshed');
+            }
           })
           .error(function (data, status) {
-            deferred.reject(httpErrors.get(data, status));
+            $scope.httpError = httpErrors.get(data, status);
+            if (deferred) {
+              deferred.reject($scope.httpError.headline);
+            }
           });
     };
 
-    var deferred = $q.defer();
-    deferred.promise.then(function () {
-      $scope.loaded = true;
-    }, function (rejection) {
-      $scope.loadingError = rejection;
-    });
-    $scope.refresh(deferred);
+    $scope.refresh();
   }
 ]);

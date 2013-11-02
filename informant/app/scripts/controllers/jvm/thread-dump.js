@@ -42,22 +42,22 @@ informant.controller('JvmThreadDumpCtrl', [
     $scope.refresh = function (deferred) {
       $http.get('backend/jvm/thread-dump')
           .success(function (data) {
+            $scope.loaded = true;
             // $.trim() is needed because this template is sensitive to surrounding spaces
             var html = $.trim(JST['thread-dump'](data));
             $('#threadDump').html(html);
-            deferred.resolve('Refreshed');
+            if (deferred) {
+              deferred.resolve('Refreshed');
+            }
           })
           .error(function (data, status) {
-            deferred.reject(httpErrors.get(data, status));
+            $scope.httpError = httpErrors.get(data, status);
+            if (deferred) {
+              deferred.reject($scope.httpError.headline);
+            }
           });
     };
 
-    var deferred = $q.defer();
-    deferred.promise.then(function () {
-      $scope.loaded = true;
-    }, function (rejection) {
-      $scope.loadingError = rejection;
-    });
-    $scope.refresh(deferred);
+    $scope.refresh();
   }
 ]);

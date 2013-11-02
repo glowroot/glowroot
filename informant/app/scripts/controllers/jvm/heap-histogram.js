@@ -58,16 +58,22 @@ informant.controller('JvmHeapHistogramCtrl', [
     $scope.refresh = function (deferred) {
       $http.get('backend/jvm/heap-histogram')
           .success(function (data) {
+            $scope.loaded = true;
             $scope.histogram = data;
             if (sortAttribute !== 'bytes' || !sortDesc) {
               // data needs to be sorted
               sort();
             }
             applyFilter();
-            deferred.resolve('Complete');
+            if (deferred) {
+              deferred.resolve('Complete');
+            }
           })
           .error(function (data, status) {
-            deferred.reject(httpErrors.get(data, status));
+            $scope.httpError = httpErrors.get(data, status);
+            if (deferred) {
+              deferred.reject($scope.httpError.headline);
+            }
           });
     };
 
@@ -146,12 +152,6 @@ informant.controller('JvmHeapHistogramCtrl', [
       applyFilter();
     });
 
-    var deferred = $q.defer();
-    deferred.promise.then(function () {
-      $scope.loaded = true;
-    }, function (rejection) {
-      $scope.loadingError = rejection;
-    });
-    $scope.refresh(deferred);
+    $scope.refresh();
   }
 ]);

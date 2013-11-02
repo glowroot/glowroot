@@ -18,7 +18,8 @@
     <h2>User interface</h2>
   </div>
   <div class="panel-body">
-    <div ng-include src="'template/ix-panel-loading.html'"></div>
+    <div ng-include src="'template/ix-loading-overlay.html'"></div>
+    <div ng-include src="'template/ix-http-error-overlay.html'"></div>
     <form class="form-horizontal" name="formCtrl">
       <div ix-form-group
            ix-label="Password enabled"
@@ -78,12 +79,14 @@
   </div>
 </div>
 
+<!-- TODO need to split this out into separate page, submenu 'Change Password' under 'User Interface' -->
 <div class="panel panel-default" ng-show="showChangePasswordSection">
   <div class="panel-heading">
     <h2>Change password</h2>
   </div>
   <div class="panel-body">
-    <div ng-include src="'template/ix-panel-loading.html'"></div>
+    <div ng-include src="'template/ix-loading-overlay.html'"></div>
+    <div ng-include src="'template/ix-http-error-overlay.html'"></div>
     <form class="form-horizontal">
       <div class="form-group">
         <div ix-form-group

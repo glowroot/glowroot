@@ -15,6 +15,8 @@
  */
 package io.informant.local.ui;
 
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -24,3 +26,16 @@ package io.informant.local.ui;
 
 // marker annotation
 @interface JsonServiceMethod {}
+
+@SuppressWarnings("serial")
+class JsonServiceException extends Exception {
+    private final HttpResponseStatus status;
+
+    public JsonServiceException(HttpResponseStatus status) {
+        this.status = status;
+    }
+
+    public HttpResponseStatus getStatus() {
+        return status;
+    }
+}

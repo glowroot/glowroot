@@ -67,9 +67,9 @@ html.lt-ie9 .lt-ie9-width-auto {
 
 .button-message {
   font-size: 16px;
-  margin-left: 10px;
+  margin-left: 14px;
   // margin-right is needed for ix-button-message-on-left
-  margin-right: 10px;
+  margin-right: 14px;
   vertical-align: middle;
 }
 
@@ -87,9 +87,10 @@ form.ng-valid .button-validation-error {
 }
 
 .button-spinner {
-  margin-left: 30px;
+  margin-top: 16px;
+  margin-left: 32px;
   // margin-right is needed for ix-button-message-on-left
-  margin-right: 30px;
+  margin-right: 32px;
   vertical-align: middle;
 }
 

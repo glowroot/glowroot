@@ -41,11 +41,8 @@ informant.controller('JvmHeapDumpCtrl', [
             }
           })
           .error(function (data, status) {
-            if (status === 0) {
-              deferred.reject('Unable to connect to server');
-            } else {
-              deferred.reject('An error occurred');
-            }
+            $scope.httpError = httpErrors.get(data, status);
+            deferred.reject($scope.httpError.headline);
           });
     };
 
@@ -62,11 +59,8 @@ informant.controller('JvmHeapDumpCtrl', [
             }
           })
           .error(function (data, status) {
-            if (status === 0) {
-              deferred.reject('Unable to connect to server');
-            } else {
-              deferred.reject('An error occurred');
-            }
+            $scope.httpError = httpErrors.get(data, status);
+            deferred.reject($scope.httpError.headline);
           });
     };
 
@@ -76,7 +70,7 @@ informant.controller('JvmHeapDumpCtrl', [
           $scope.data = data;
         })
         .error(function (data, status) {
-          $scope.loadingError = httpErrors.get(data, status);
+          $scope.httpError = httpErrors.get(data, status);
         });
   }
 ]);

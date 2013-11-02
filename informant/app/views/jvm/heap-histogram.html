@@ -18,15 +18,16 @@
     <h2>Heap histogram</h2>
   </div>
   <div class="panel-body">
-    <div ng-include src="'template/ix-panel-loading.html'"></div>
+    <div ng-include src="'template/ix-loading-overlay.html'"></div>
+    <div ng-include src="'template/ix-http-error-overlay.html'"></div>
     <div ix-button
-         ix-button-message-left
+         ix-button-right-aligned
          ix-label="New snapshot"
          ix-click="refresh(deferred)"
          style="margin-bottom: 10px; float: right;">
     </div>
     <div ix-button
-         ix-button-message-left
+         ix-button-right-aligned
          ix-label="Export to csv"
          ix-click="exportAsCsv(deferred)"
          ix-btn-class="btn-default"

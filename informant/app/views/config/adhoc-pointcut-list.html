@@ -14,13 +14,10 @@
   limitations under the License.
 -->
 <div ix-spinner
-     ix-show="!loaded && !loadingError"
+     ix-show="!loaded && !httpError"
      class="plugin-list-spinner">
 </div>
-<div class="loading-error" ng-show="loadingError">
-  {{loadingError.header}}<br>
-  <a href="#">view stack trace</a>
-</div>
+<div ng-include src="'template/ix-http-error.html'"></div>
 <div ng-repeat="pointcut in pointcuts"
      ng-controller="ConfigAdhocPointcutCtrl"
      class="panel panel-default">
@@ -196,17 +193,19 @@
       <div class="form-group form-buttons">
         <div class="col-lg-offset-2 col-lg-10">
           <div ix-button-group>
-                <span ix-button
-                      ix-label="{{pointcut.version ? 'Save' : 'Add'}}"
-                      ix-click="pointcutSave(deferred)"
-                      ix-disabled="!hasChanges() || formCtrl.$invalid">
-                </span>
-                <span ix-button
-                      ix-label="Delete"
-                      ix-click="pointcutDelete(deferred)"
-                      ix-btn-class="btn-default"
-                      style="margin-left: 5px;">
-                </span>
+            <div ix-button
+                 ix-label="{{pointcut.version ? 'Save' : 'Add'}}"
+                 ix-click="pointcutSave(deferred)"
+                 ix-disabled="!hasChanges() || formCtrl.$invalid"
+                 class="inline-block">
+            </div>
+            <div ix-button
+                 ix-label="Delete"
+                 ix-click="pointcutDelete(deferred)"
+                 ix-btn-class="btn-default"
+                 class="inline-block"
+                 style="margin-left: 5px;">
+            </div>
           </div>
         </div>
       </div>

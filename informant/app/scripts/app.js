@@ -50,9 +50,12 @@ informant.config([
             return $q.defer().promise;
           }
           if (response.status === 0) {
-            // most likely this is because the user hit F5 refresh (which seems not that uncommon if json response is
-            // slow), so delay the reject a bit so it will have no effect if user really did hit F5, but rejection will
-            // still occur (after delay) if caused by some other issue
+            // this can be caused by the user hitting F5 refresh in the middle of an ajax request (which seems not that
+            // uncommon if ajax response happens to be slow), so defer the rejection a bit so the error will not be
+            // displayed in this case
+            //
+            // the other common case for status === 0 is when the server is down altogether, and the message for this
+            // case is generated downstream in http-errors (after the slight delay)
             var deferred = $q.defer();
             $timeout(function () {
               deferred.reject(response);

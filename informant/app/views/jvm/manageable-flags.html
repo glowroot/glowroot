@@ -18,7 +18,8 @@
     <h2>Manageable flags</h2>
   </div>
   <div class="panel-body">
-    <div ng-include src="'template/ix-panel-loading.html'"></div>
+    <div ng-include src="'template/ix-loading-overlay.html'"></div>
+    <div ng-include src="'template/ix-http-error-overlay.html'"></div>
     <form class="form-horizontal jvm-manageable-flags-form" name="formCtrl">
       <div ng-repeat="flag in flags">
         <div class="row">

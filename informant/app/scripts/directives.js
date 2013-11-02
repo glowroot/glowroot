@@ -67,9 +67,16 @@ informant.directive('ixButtonGroup', [
     return {
       scope: {},
       transclude: true,
-      template: '<span ng-transclude></span>' +
-          '<span class="button-message hide"></span>' +
-          '<span class="button-spinner inline-block hide"></span>',
+      template: '' +
+          '<div class="clearfix">' +
+          '  <div ng-transclude style="float: left;"></div>' +
+          '  <span class="button-spinner inline-block hide" style="float: left;"></span>' +
+          // this needs to be div, and it's child needs to be div, for formatting of multi-line messages
+          // same as done in ix-button.html template
+          '  <div style="overflow-x: hidden;">' +
+          '    <div class="button-message hide" style="padding-top: 5px;"></div>' +
+          '  </div>' +
+          '</div>',
       controller: [
         '$element',
         function ($element) {
@@ -92,8 +99,8 @@ informant.directive('ixButton', [
         ixDisabled: '&'
       },
       templateUrl: function (tElement, tAttrs) {
-        if (tAttrs.hasOwnProperty('ixButtonMessageLeft')) {
-          return 'template/ix-button-message-on-left.html';
+        if (tAttrs.hasOwnProperty('ixButtonRightAligned')) {
+          return 'template/ix-button-right-aligned.html';
         } else {
           return 'template/ix-button.html';
         }

@@ -35,10 +35,12 @@ informant.controller('ConfigCoarseProfilingCtrl', [
             deferred.resolve('Saved');
           })
           .error(function (data, status) {
-            if (status === 0) {
-              deferred.reject('Unable to connect to server');
+            if (status === 412) {
+              // HTTP Precondition Failed
+              deferred.reject('Someone else has updated this configuration, please reload and try again');
             } else {
-              deferred.reject('An error occurred');
+              $scope.httpError = httpErrors.get(data, status);
+              deferred.reject($scope.httpError.headline);
             }
           });
     };
@@ -50,7 +52,7 @@ informant.controller('ConfigCoarseProfilingCtrl', [
           originalConfig = angular.copy($scope.config);
         })
         .error(function (data, status) {
-          $scope.loadingError = httpErrors.get(data, status);
+          $scope.httpError = httpErrors.get(data, status);
         });
   }
 ]);

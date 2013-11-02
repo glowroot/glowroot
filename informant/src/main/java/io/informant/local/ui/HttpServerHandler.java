@@ -16,6 +16,8 @@
 package io.informant.local.ui;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -28,6 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.CaseFormat;
@@ -37,6 +40,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -275,30 +279,37 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
         return response;
     }
+
     private static HttpResponse handleJsonRequest(Object jsonService, String serviceMethodName,
             String[] args, String requestText) {
 
         logger.debug("handleJsonRequest(): serviceMethodName={}, args={}, requestText={}",
                 serviceMethodName, args, requestText);
+
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         Object responseText;
         try {
             responseText = callMethod(jsonService, serviceMethodName, args, requestText, response);
         } catch (SecurityException e) {
             logger.warn(e.getMessage(), e);
-            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+            return newHttpResponseWithStackTrace(e);
         } catch (IllegalArgumentException e) {
             logger.warn(e.getMessage(), e);
-            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+            return newHttpResponseWithStackTrace(e);
         } catch (NoSuchMethodException e) {
             logger.warn(e.getMessage(), e);
-            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+            return newHttpResponseWithStackTrace(e);
         } catch (IllegalAccessException e) {
             logger.warn(e.getMessage(), e);
-            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+            return newHttpResponseWithStackTrace(e);
         } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof JsonServiceException) {
+                // this is an exception that the UI understand how to handle
+                JsonServiceException jsonServiceException = (JsonServiceException) e.getCause();
+                return new DefaultHttpResponse(HTTP_1_1, jsonServiceException.getStatus());
+            }
             logger.warn(e.getCause().getMessage(), e.getCause());
-            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+            return newHttpResponseWithStackTrace(e);
         }
         if (responseText == null) {
             response.setContent(ChannelBuffers.EMPTY_BUFFER);
@@ -321,6 +332,31 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         logger.warn("unexpected type of json service response '{}'",
                 responseText.getClass().getName());
         return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+    }
+
+    private static HttpResponse newHttpResponseWithStackTrace(Exception e) {
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        StringBuilder sb = new StringBuilder();
+        try {
+            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+            jg.writeStartObject();
+            Throwable rootCause = e;
+            while (rootCause.getCause() != null) {
+                rootCause = rootCause.getCause();
+            }
+            jg.writeStringField("message", rootCause.getMessage());
+            jg.writeStringField("stackTrace", sw.toString());
+            jg.writeEndObject();
+            jg.close();
+            DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+            response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.setContent(ChannelBuffers.copiedBuffer(sb.toString(), Charsets.ISO_8859_1));
+            return response;
+        } catch (IOException f) {
+            logger.error(f.getMessage(), f);
+            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Nullable

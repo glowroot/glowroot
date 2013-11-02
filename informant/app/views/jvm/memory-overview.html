@@ -18,35 +18,28 @@
     <h2>Memory overview</h2>
   </div>
   <div class="panel-body memory-overview-panel-body">
+    <div ng-include src="'template/ix-loading-overlay.html'"></div>
+    <div ng-include src="'template/ix-http-error-overlay.html'"></div>
     <div ix-button
-         ix-button-message-left
+         ix-label="Refresh"
+         ix-click="refresh(deferred)"
+         style="margin-bottom: 20px; float: left;">
+    </div>
+    <div ix-button
+         ix-button-right-aligned
          ix-label="Perform GC"
          ix-click="performGC(deferred)"
          ix-btn-class="btn-default"
          style="margin-bottom: 10px; float: right;">
     </div>
     <div ix-button
-         ix-button-message-left
+         ix-button-right-aligned
          ix-label="Reset peak usage"
          ix-click="resetPeakUsage(deferred)"
          ix-btn-class="btn-default"
          style="clear: right; float: right;">
     </div>
-    <div ix-button
-         ix-label="Refresh"
-         ix-click="refresh(deferred)"
-         style="margin-bottom: 20px;">
-    </div>
-    <div ix-spinner
-         ix-show="!loaded && !loadingError"
-         class="thread-dump-spinner">
-    </div>
-    <div class="loading-error" ng-show="loadingError">
-      {{loadingError.header}}<br>
-      <a href="#">view stack trace</a>
-    </div>
-
-    <br>
+    <br style="clear: both;">
     <h3>Heap memory</h3>
     <br>
     <table class="table memory-pool-table">

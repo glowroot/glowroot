@@ -22,12 +22,17 @@ informant.factory('httpErrors', [
       get: function (data, status) {
         if (status === 0) {
           return {
-            header: 'Unable to connect to server.'
+            headline: 'Unable to connect to server'
           };
         } else {
+          var message = data.message;
+          if (!message && !data.stackTrace) {
+            message = data;
+          }
           return {
-            header: 'An error occurred loading the data for this page.',
-            detail: data
+            headline: 'An error occurred',
+            message: message,
+            stackTrace: data.stackTrace
           };
         }
       }

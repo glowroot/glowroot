@@ -135,7 +135,7 @@ body {
   vertical-align: middle;
 }
 
-.loading-error {
+.http-error {
   color: #660099;
   font-size: 24px;
   padding-left: 30px;
@@ -143,27 +143,45 @@ body {
   font-family: monospace;
 }
 
-.panel-loading .spinner {
+.panel-overlay .spinner {
   padding-top: 50px;
 }
 
 // margin at top of config pages pushes down entire sidebar
-.loading-error {
+.http-error {
   margin-top: 0;
 }
 
 // put back margin inside of panels
-.panel-loading .loading-error {
+.panel-overlay .http-error {
   margin-top: 20px;
 }
 
-.loading-error a {
+.http-error a {
   color: #660099;
   text-decoration: underline;
 }
 
-.loading-error a:hover {
+.http-error a:hover {
   color: lighten(#660099, 15);
+}
+
+.http-error-message {
+  font-size: 18px;
+  padding-top: 5px;
+  // not sure what this error message might contain
+  // grunt connect server, for example, returns json string with no spaces so need to break-word
+  word-wrap: break-word;
+}
+
+.http-error-stack-trace {
+  font-size: 14px;
+  overflow-x: visible;
+  // no line wrapping so stack trace will look nice
+  white-space: pre;
+  padding-top: 5px;
+  // padding-bottom gives stack trace a bit of padding from the bottom of the page
+  padding-bottom: 100px;
 }
 
 .secondary-text {

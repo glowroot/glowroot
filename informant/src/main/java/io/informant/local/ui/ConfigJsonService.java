@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -245,7 +246,7 @@ class ConfigJsonService {
     }
 
     @JsonServiceMethod
-    String updateGeneralConfig(String content) throws OptimisticLockException, IOException {
+    String updateGeneralConfig(String content) throws IOException, JsonServiceException {
         logger.debug("updateGeneralConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
@@ -258,11 +259,15 @@ class ConfigJsonService {
         GeneralConfig config = configService.getGeneralConfig();
         GeneralConfig.Overlay overlay = GeneralConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
-        return configService.updateGeneralConfig(overlay.build(), priorVersion);
+        try {
+            return configService.updateGeneralConfig(overlay.build(), priorVersion);
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+        }
     }
 
     @JsonServiceMethod
-    String updateCoarseProfilingConfig(String content) throws OptimisticLockException,
+    String updateCoarseProfilingConfig(String content) throws JsonServiceException,
             IOException {
         logger.debug("updateCoarseProfilingConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
@@ -276,11 +281,15 @@ class ConfigJsonService {
         CoarseProfilingConfig config = configService.getCoarseProfilingConfig();
         CoarseProfilingConfig.Overlay overlay = CoarseProfilingConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
-        return configService.updateCoarseProfilingConfig(overlay.build(), priorVersion);
+        try {
+            return configService.updateCoarseProfilingConfig(overlay.build(), priorVersion);
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+        }
     }
 
     @JsonServiceMethod
-    String updateFineProfilingConfig(String content) throws OptimisticLockException,
+    String updateFineProfilingConfig(String content) throws JsonServiceException,
             IOException {
         logger.debug("updateFineProfilingConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
@@ -294,11 +303,15 @@ class ConfigJsonService {
         FineProfilingConfig config = configService.getFineProfilingConfig();
         FineProfilingConfig.Overlay overlay = FineProfilingConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
-        return configService.updateFineProfilingConfig(overlay.build(), priorVersion);
+        try {
+            return configService.updateFineProfilingConfig(overlay.build(), priorVersion);
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+        }
     }
 
     @JsonServiceMethod
-    String updateUserOverridesConfig(String content) throws OptimisticLockException, IOException {
+    String updateUserOverridesConfig(String content) throws JsonServiceException, IOException {
         logger.debug("updateUserOverridesConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
@@ -311,11 +324,15 @@ class ConfigJsonService {
         UserOverridesConfig config = configService.getUserOverridesConfig();
         UserOverridesConfig.Overlay overlay = UserOverridesConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
-        return configService.updateUserOverridesConfig(overlay.build(), priorVersion);
+        try {
+            return configService.updateUserOverridesConfig(overlay.build(), priorVersion);
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+        }
     }
 
     @JsonServiceMethod
-    String updateStorageConfig(String content) throws OptimisticLockException, IOException {
+    String updateStorageConfig(String content) throws JsonServiceException, IOException {
         logger.debug("updateStorageConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
@@ -328,7 +345,12 @@ class ConfigJsonService {
         StorageConfig config = configService.getStorageConfig();
         StorageConfig.Overlay overlay = StorageConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
-        String updatedVersion = configService.updateStorageConfig(overlay.build(), priorVersion);
+        String updatedVersion;
+        try {
+            updatedVersion = configService.updateStorageConfig(overlay.build(), priorVersion);
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+        }
         // resize() doesn't do anything if the new and old value are the same
         rollingFile.resize(configService.getStorageConfig().getRollingSizeMb() * 1024);
         return updatedVersion;
@@ -336,7 +358,7 @@ class ConfigJsonService {
 
     @JsonServiceMethod
     String updateUserInterfaceConfig(String content, HttpResponse response)
-            throws OptimisticLockException,
+            throws JsonServiceException,
             IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         logger.debug("updateUserInterfaceConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
@@ -356,8 +378,12 @@ class ConfigJsonService {
         } catch (CurrentPasswordIncorrectException e) {
             return "{\"currentPasswordIncorrect\":true}";
         }
-        String updatedVersion =
-                configService.updateUserInterfaceConfig(updatedConfig, priorVersion);
+        String updatedVersion;
+        try {
+            updatedVersion = configService.updateUserInterfaceConfig(updatedConfig, priorVersion);
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+        }
         // only create/delete session on successful update
         if (!config.isPasswordEnabled() && updatedConfig.isPasswordEnabled()) {
             httpSessionManager.createSession(response);
@@ -368,7 +394,7 @@ class ConfigJsonService {
     }
 
     @JsonServiceMethod
-    String updateAdvancedConfig(String content) throws OptimisticLockException, IOException {
+    String updateAdvancedConfig(String content) throws JsonServiceException, IOException {
         logger.debug("updateAdvancedConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
@@ -381,11 +407,15 @@ class ConfigJsonService {
         AdvancedConfig config = configService.getAdvancedConfig();
         AdvancedConfig.Overlay overlay = AdvancedConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
-        return configService.updateAdvancedConfig(overlay.build(), priorVersion);
+        try {
+            return configService.updateAdvancedConfig(overlay.build(), priorVersion);
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+        }
     }
 
     @JsonServiceMethod
-    String updatePluginConfig(String pluginId, String content) throws OptimisticLockException,
+    String updatePluginConfig(String pluginId, String content) throws JsonServiceException,
             IOException {
         logger.debug("updatePluginConfig(): pluginId={}, content={}", pluginId, content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
@@ -400,7 +430,11 @@ class ConfigJsonService {
         }
         PluginConfig.Builder builder = PluginConfig.builder(config);
         builder.overlay(configNode);
-        return configService.updatePluginConfig(builder.build(), priorVersion);
+        try {
+            return configService.updatePluginConfig(builder.build(), priorVersion);
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+        }
     }
 
     @JsonServiceMethod

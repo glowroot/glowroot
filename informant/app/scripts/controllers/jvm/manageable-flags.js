@@ -49,11 +49,8 @@ informant.controller('JvmManageableFlagsCtrl', [
             deferred.resolve('Updated');
           })
           .error(function (data, status) {
-            if (status === 0) {
-              deferred.reject('Unable to connect to server');
-            } else {
-              deferred.reject('An error occurred');
-            }
+            $scope.httpError = httpErrors.get(data, status);
+            deferred.reject($scope.httpError.headline);
           });
     };
 
@@ -64,7 +61,7 @@ informant.controller('JvmManageableFlagsCtrl', [
           originalFlags = angular.copy($scope.flags);
         })
         .error(function (data, status) {
-          $scope.loadingError = httpErrors.get(data, status);
+          $scope.httpError = httpErrors.get(data, status);
         });
   }
 ]);

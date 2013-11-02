@@ -40,7 +40,7 @@ informant.controller('ConfigPluginListCtrl', [
           }
         })
         .error(function (data, status) {
-          $scope.loadingError = httpErrors.get(data, status);
+          $scope.httpError = httpErrors.get(data, status);
         });
   }
 ]);
@@ -48,7 +48,8 @@ informant.controller('ConfigPluginListCtrl', [
 informant.controller('ConfigPluginCtrl', [
   '$scope',
   '$http',
-  function ($scope, $http) {
+  'httpErrors',
+  function ($scope, $http, httpErrors) {
     // need to track entire plugin object since properties are under plugin.descriptor.properties
     // and enabled is under plugin.config.enabled
     var originalPlugin = angular.copy($scope.plugin);
@@ -80,10 +81,12 @@ informant.controller('ConfigPluginCtrl', [
             deferred.resolve('Saved');
           })
           .error(function (data, status) {
-            if (status === 0) {
-              deferred.reject('Unable to connect to server');
+            if (status === 412) {
+              // HTTP Precondition Failed
+              deferred.reject('Someone else has updated this configuration, please reload and try again');
             } else {
-              deferred.reject('An error occurred');
+              $scope.httpError = httpErrors.get(data, status);
+              deferred.reject($scope.httpError.headline);
             }
           });
     };
