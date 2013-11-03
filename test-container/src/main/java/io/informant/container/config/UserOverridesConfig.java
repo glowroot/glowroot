@@ -29,7 +29,6 @@ import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
  */
 public class UserOverridesConfig {
 
-    private boolean enabled;
     @Nullable
     private String userId;
     private int storeThresholdMillis;
@@ -39,14 +38,6 @@ public class UserOverridesConfig {
 
     public UserOverridesConfig(String version) {
         this.version = version;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
     }
 
     @Nullable
@@ -85,8 +76,7 @@ public class UserOverridesConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(enabled, that.enabled)
-                    && Objects.equal(userId, that.userId)
+            return Objects.equal(userId, that.userId)
                     && Objects.equal(storeThresholdMillis, that.storeThresholdMillis)
                     && Objects.equal(fineProfiling, that.fineProfiling);
         }
@@ -98,13 +88,12 @@ public class UserOverridesConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(enabled, userId, storeThresholdMillis, fineProfiling);
+        return Objects.hashCode(userId, storeThresholdMillis, fineProfiling);
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("enabled", enabled)
                 .add("userId", userId)
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("fineProfiling", fineProfiling)
@@ -113,17 +102,14 @@ public class UserOverridesConfig {
     }
 
     @JsonCreator
-    static UserOverridesConfig readValue(@JsonProperty("enabled") @Nullable Boolean enabled,
-            @JsonProperty("userId") @Nullable String userId,
+    static UserOverridesConfig readValue(@JsonProperty("userId") @Nullable String userId,
             @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
             @JsonProperty("fineProfiling") @Nullable Boolean fineProfiling,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(enabled, "enabled");
         checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
         checkRequiredProperty(fineProfiling, "fineProfiling");
         checkRequiredProperty(version, "version");
         UserOverridesConfig config = new UserOverridesConfig(version);
-        config.setEnabled(enabled);
         config.setUserId(userId);
         config.setStoreThresholdMillis(storeThresholdMillis);
         config.setFineProfiling(fineProfiling);

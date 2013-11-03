@@ -31,7 +31,6 @@ import io.informant.config.JsonViews.UiView;
 @Immutable
 public class FineProfilingConfig {
 
-    private final boolean enabled;
     // percentage of traces to apply fine profiling, between 0.0 and 100.0
     private final double tracePercentage;
     private final int intervalMillis;
@@ -44,12 +43,11 @@ public class FineProfilingConfig {
     private final String version;
 
     static FineProfilingConfig getDefault() {
-        final boolean enabled = true;
         final double tracePercentage = 0;
         final int intervalMillis = 50;
         final int totalSeconds = 10;
         final int storeThresholdMillis = -1;
-        return new FineProfilingConfig(enabled, tracePercentage, intervalMillis, totalSeconds,
+        return new FineProfilingConfig(tracePercentage, intervalMillis, totalSeconds,
                 storeThresholdMillis);
     }
 
@@ -58,19 +56,14 @@ public class FineProfilingConfig {
     }
 
     @VisibleForTesting
-    public FineProfilingConfig(boolean enabled, double tracePercentage, int intervalMillis,
+    public FineProfilingConfig(double tracePercentage, int intervalMillis,
             int totalSeconds, int storeThresholdMillis) {
-        this.enabled = enabled;
         this.tracePercentage = tracePercentage;
         this.intervalMillis = intervalMillis;
         this.totalSeconds = totalSeconds;
         this.storeThresholdMillis = storeThresholdMillis;
-        version = VersionHashes.sha1(enabled, tracePercentage, intervalMillis, totalSeconds,
+        version = VersionHashes.sha1(tracePercentage, intervalMillis, totalSeconds,
                 storeThresholdMillis);
-    }
-
-    public boolean isEnabled() {
-        return enabled;
     }
 
     public double getTracePercentage() {
@@ -97,7 +90,6 @@ public class FineProfilingConfig {
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("enabled", enabled)
                 .add("tracePercentage", tracePercentage)
                 .add("intervalMillis", intervalMillis)
                 .add("totalSeconds", totalSeconds)
@@ -109,21 +101,16 @@ public class FineProfilingConfig {
     // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
     public static class Overlay {
 
-        private boolean enabled;
         private double tracePercentage;
         private int intervalMillis;
         private int totalSeconds;
         private int storeThresholdMillis;
 
         private Overlay(FineProfilingConfig base) {
-            enabled = base.enabled;
             tracePercentage = base.tracePercentage;
             intervalMillis = base.intervalMillis;
             totalSeconds = base.totalSeconds;
             storeThresholdMillis = base.storeThresholdMillis;
-        }
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
         }
         public void setTracePercentage(double tracePercentage) {
             this.tracePercentage = tracePercentage;
@@ -138,7 +125,7 @@ public class FineProfilingConfig {
             this.storeThresholdMillis = storeThresholdMillis;
         }
         public FineProfilingConfig build() {
-            return new FineProfilingConfig(enabled, tracePercentage, intervalMillis, totalSeconds,
+            return new FineProfilingConfig(tracePercentage, intervalMillis, totalSeconds,
                     storeThresholdMillis);
         }
     }

@@ -271,14 +271,12 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(FineProfilingConfig config) {
-        config.setEnabled(!config.isEnabled());
         config.setTracePercentage(config.getTracePercentage() + 1);
         config.setIntervalMillis(config.getIntervalMillis() + 1);
         config.setTotalSeconds(config.getTotalSeconds() + 1);
     }
 
     private static void updateAllFields(UserOverridesConfig config) {
-        config.setEnabled(!config.isEnabled());
         config.setUserId(config.getUserId() + "x");
         config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
         config.setFineProfiling(!config.isFineProfiling());

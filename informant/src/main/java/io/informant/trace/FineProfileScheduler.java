@@ -55,16 +55,17 @@ class FineProfileScheduler {
 
     void maybeScheduleFineProfilingUsingUserId(Trace trace, String userId) {
         UserOverridesConfig userOverridesConfig = configService.getUserOverridesConfig();
-        if (userOverridesConfig.isEnabled() && userOverridesConfig.isFineProfiling()
-                && userId.equals(userOverridesConfig.getUserId())) {
+        String overrideUserId = userOverridesConfig.getUserId();
+        if (userId.equals(overrideUserId) && userOverridesConfig.isFineProfiling()) {
             scheduleProfiling(trace);
         }
     }
 
     void maybeScheduleFineProfilingUsingPercentage(Trace trace) {
         FineProfilingConfig fineProfilingConfig = configService.getFineProfilingConfig();
-        if (fineProfilingConfig.isEnabled()
-                && random.nextDouble() * 100 < fineProfilingConfig.getTracePercentage()) {
+        double tracePercentage = fineProfilingConfig.getTracePercentage();
+        // just optimization to check tracePercentage != 0
+        if (tracePercentage != 0 && random.nextDouble() * 100 < tracePercentage) {
             scheduleProfiling(trace);
         }
     }

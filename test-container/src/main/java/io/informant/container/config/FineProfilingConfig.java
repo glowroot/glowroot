@@ -29,7 +29,6 @@ import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
  */
 public class FineProfilingConfig {
 
-    private boolean enabled;
     private double tracePercentage;
     private int intervalMillis;
     private int totalSeconds;
@@ -39,14 +38,6 @@ public class FineProfilingConfig {
 
     public FineProfilingConfig(String version) {
         this.version = version;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
     }
 
     public double getTracePercentage() {
@@ -92,8 +83,7 @@ public class FineProfilingConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(enabled, that.enabled)
-                    && Objects.equal(tracePercentage, that.tracePercentage)
+            return Objects.equal(tracePercentage, that.tracePercentage)
                     && Objects.equal(intervalMillis, that.intervalMillis)
                     && Objects.equal(totalSeconds, that.totalSeconds)
                     && Objects.equal(storeThresholdMillis, that.storeThresholdMillis);
@@ -106,14 +96,13 @@ public class FineProfilingConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(enabled, tracePercentage, intervalMillis, totalSeconds,
+        return Objects.hashCode(tracePercentage, intervalMillis, totalSeconds,
                 storeThresholdMillis);
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("enabled", enabled)
                 .add("tracePercentage", tracePercentage)
                 .add("intervalMillis", intervalMillis)
                 .add("totalSeconds", totalSeconds)
@@ -123,20 +112,18 @@ public class FineProfilingConfig {
     }
 
     @JsonCreator
-    static FineProfilingConfig readValue(@JsonProperty("enabled") @Nullable Boolean enabled,
+    static FineProfilingConfig readValue(
             @JsonProperty("tracePercentage") @Nullable Double tracePercentage,
             @JsonProperty("intervalMillis") @Nullable Integer intervalMillis,
             @JsonProperty("totalSeconds") @Nullable Integer totalSeconds,
             @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(enabled, "enabled");
         checkRequiredProperty(tracePercentage, "tracePercentage");
         checkRequiredProperty(intervalMillis, "intervalMillis");
         checkRequiredProperty(totalSeconds, "totalSeconds");
         checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
         checkRequiredProperty(version, "version");
         FineProfilingConfig config = new FineProfilingConfig(version);
-        config.setEnabled(enabled);
         config.setTracePercentage(tracePercentage);
         config.setIntervalMillis(intervalMillis);
         config.setTotalSeconds(totalSeconds);

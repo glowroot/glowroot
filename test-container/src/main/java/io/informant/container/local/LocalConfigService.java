@@ -104,7 +104,6 @@ class LocalConfigService implements ConfigService {
         io.informant.config.FineProfilingConfig coreConfig =
                 configService.getFineProfilingConfig();
         FineProfilingConfig config = new FineProfilingConfig(coreConfig.getVersion());
-        config.setEnabled(coreConfig.isEnabled());
         config.setTracePercentage(coreConfig.getTracePercentage());
         config.setIntervalMillis(coreConfig.getIntervalMillis());
         config.setTotalSeconds(coreConfig.getTotalSeconds());
@@ -114,16 +113,15 @@ class LocalConfigService implements ConfigService {
 
     public String updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
         io.informant.config.FineProfilingConfig updatedConfig =
-                new io.informant.config.FineProfilingConfig(config.isEnabled(),
-                        config.getTracePercentage(), config.getIntervalMillis(),
-                        config.getTotalSeconds(), config.getStoreThresholdMillis());
+                new io.informant.config.FineProfilingConfig(config.getTracePercentage(),
+                        config.getIntervalMillis(), config.getTotalSeconds(),
+                        config.getStoreThresholdMillis());
         return configService.updateFineProfilingConfig(updatedConfig, config.getVersion());
     }
 
     public UserOverridesConfig getUserOverridesConfig() {
         io.informant.config.UserOverridesConfig coreConfig = configService.getUserOverridesConfig();
         UserOverridesConfig config = new UserOverridesConfig(coreConfig.getVersion());
-        config.setEnabled(coreConfig.isEnabled());
         config.setUserId(coreConfig.getUserId());
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
         config.setFineProfiling(coreConfig.isFineProfiling());
@@ -132,7 +130,7 @@ class LocalConfigService implements ConfigService {
 
     public String updateUserOverridesConfig(UserOverridesConfig config) throws Exception {
         io.informant.config.UserOverridesConfig updatedConfig =
-                new io.informant.config.UserOverridesConfig(config.isEnabled(), config.getUserId(),
+                new io.informant.config.UserOverridesConfig(config.getUserId(),
                         config.getStoreThresholdMillis(), config.isFineProfiling());
         return configService.updateUserOverridesConfig(updatedConfig, config.getVersion());
     }

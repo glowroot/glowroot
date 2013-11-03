@@ -213,7 +213,6 @@ public class ProfilingTest {
         container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
         FineProfilingConfig fineProfilingConfig = container.getConfigService()
                 .getFineProfilingConfig();
-        fineProfilingConfig.setEnabled(false);
         container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);

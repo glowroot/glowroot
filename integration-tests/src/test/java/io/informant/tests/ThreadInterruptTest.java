@@ -55,7 +55,6 @@ public class ThreadInterruptTest {
         container.getConfigService().setStoreThresholdMillis(0);
         FineProfilingConfig fineProfilingConfig = container.getConfigService()
                 .getFineProfilingConfig();
-        fineProfilingConfig.setEnabled(true);
         fineProfilingConfig.setTracePercentage(100);
         fineProfilingConfig.setIntervalMillis(10);
         container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);

@@ -32,7 +32,6 @@ import io.informant.config.JsonViews.UiView;
 @Immutable
 public class UserOverridesConfig {
 
-    private final boolean enabled;
     @Nullable
     private final String userId;
     // store threshold of -1 means use general config store threshold
@@ -42,11 +41,10 @@ public class UserOverridesConfig {
     private final String version;
 
     static UserOverridesConfig getDefault() {
-        final boolean enabled = true;
         final String userId = null;
         final int storeThresholdMillis = 0;
         final boolean fineProfiling = true;
-        return new UserOverridesConfig(enabled, userId, storeThresholdMillis, fineProfiling);
+        return new UserOverridesConfig(userId, storeThresholdMillis, fineProfiling);
     }
 
     public static Overlay overlay(UserOverridesConfig base) {
@@ -54,17 +52,12 @@ public class UserOverridesConfig {
     }
 
     @VisibleForTesting
-    public UserOverridesConfig(boolean enabled, @Nullable String userId, int storeThresholdMillis,
+    public UserOverridesConfig(@Nullable String userId, int storeThresholdMillis,
             boolean fineProfiling) {
-        this.enabled = enabled;
         this.userId = userId;
         this.storeThresholdMillis = storeThresholdMillis;
         this.fineProfiling = fineProfiling;
-        version = VersionHashes.sha1(enabled, userId, storeThresholdMillis, fineProfiling);
-    }
-
-    public boolean isEnabled() {
-        return enabled;
+        version = VersionHashes.sha1(userId, storeThresholdMillis, fineProfiling);
     }
 
     @Nullable
@@ -88,7 +81,6 @@ public class UserOverridesConfig {
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("enabled", enabled)
                 .add("userId", userId)
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("fineProfiling", fineProfiling)
@@ -99,20 +91,15 @@ public class UserOverridesConfig {
     // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
     public static class Overlay {
 
-        private boolean enabled;
         @Nullable
         private String userId;
         private int storeThresholdMillis;
         private boolean fineProfiling;
 
         private Overlay(UserOverridesConfig base) {
-            enabled = base.enabled;
             userId = base.userId;
             storeThresholdMillis = base.storeThresholdMillis;
             fineProfiling = base.fineProfiling;
-        }
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
         }
         public void setUserId(@Nullable String userId) {
             this.userId = userId;
@@ -124,7 +111,7 @@ public class UserOverridesConfig {
             this.fineProfiling = fineProfiling;
         }
         public UserOverridesConfig build() {
-            return new UserOverridesConfig(enabled, userId, storeThresholdMillis, fineProfiling);
+            return new UserOverridesConfig(userId, storeThresholdMillis, fineProfiling);
         }
     }
 }

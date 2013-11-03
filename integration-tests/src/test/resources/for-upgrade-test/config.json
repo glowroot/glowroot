@@ -12,14 +12,12 @@
     "totalSeconds" : 300
   },
   "fine-profiling" : {
-    "enabled" : true,
     "tracePercentage" : 0.0,
     "intervalMillis" : 50,
     "totalSeconds" : 10,
     "storeThresholdMillis" : -1
   },
   "user" : {
-    "enabled" : true,
     "userId" : null,
     "storeThresholdMillis" : 0,
     "fineProfiling" : true
