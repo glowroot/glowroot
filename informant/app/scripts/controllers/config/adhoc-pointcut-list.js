@@ -96,13 +96,15 @@ informant.controller('ConfigAdhocPointcutListCtrl', [
 informant.controller('ConfigAdhocPointcutCtrl', [
   '$scope',
   '$http',
+  'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, httpErrors) {
+  function ($scope, $http, confirmIfHasChanges, httpErrors) {
     var originalConfig = angular.copy($scope.pointcut.config);
 
     $scope.hasChanges = function () {
       return !angular.equals($scope.pointcut.config, originalConfig);
     };
+    $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.typeNames = function (suggestion) {
       var url = 'backend/adhoc-pointcut/matching-type-names?partial-type-name=' + suggestion + '&limit=10';

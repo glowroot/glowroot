@@ -19,23 +19,25 @@
 informant.controller('JvmManageableFlagsCtrl', [
   '$scope',
   '$http',
+  'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, httpErrors) {
+  function ($scope, $http, confirmIfHasChanges, httpErrors) {
     var originalFlags;
 
     $scope.hasChanges = function () {
       return originalFlags && !angular.equals($scope.flags, originalFlags);
     };
+    $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.update = function (deferred) {
       // only pass diff to limit clobbering
       // (and also because setting flag to same value will update the flag origin to MANAGEMENT)
       var originalFlagsHash = {};
-      angular.forEach(originalFlags, function(flag) {
+      angular.forEach(originalFlags, function (flag) {
         originalFlagsHash[flag.name] = flag.value;
       });
       var updatedFlags = {};
-      angular.forEach($scope.flags, function(flag) {
+      angular.forEach($scope.flags, function (flag) {
         var originalFlagValue = originalFlagsHash[flag.name];
         var updatedFlagValue = flag.value;
         if (updatedFlagValue !== originalFlagValue) {

@@ -48,8 +48,9 @@ informant.controller('ConfigPluginListCtrl', [
 informant.controller('ConfigPluginCtrl', [
   '$scope',
   '$http',
+  'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, httpErrors) {
+  function ($scope, $http, confirmIfHasChanges, httpErrors) {
     // need to track entire plugin object since properties are under plugin.descriptor.properties
     // and enabled is under plugin.config.enabled
     var originalPlugin = angular.copy($scope.plugin);
@@ -57,6 +58,7 @@ informant.controller('ConfigPluginCtrl', [
     $scope.hasChanges = function () {
       return !angular.equals($scope.plugin, originalPlugin);
     };
+    $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.save = function (deferred) {
       var properties = {};

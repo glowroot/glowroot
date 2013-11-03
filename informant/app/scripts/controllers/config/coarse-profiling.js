@@ -19,13 +19,15 @@
 informant.controller('ConfigCoarseProfilingCtrl', [
   '$scope',
   '$http',
+  'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, httpErrors) {
+  function ($scope, $http, confirmIfHasChanges, httpErrors) {
     var originalConfig;
 
     $scope.hasChanges = function () {
       return originalConfig && !angular.equals($scope.config, originalConfig);
     };
+    $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.save = function (deferred) {
       $http.post('backend/config/coarse-profiling', $scope.config)

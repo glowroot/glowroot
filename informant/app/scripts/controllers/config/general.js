@@ -19,13 +19,16 @@
 informant.controller('ConfigGeneralCtrl', [
   '$scope',
   '$http',
+  '$modal',
+  'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, httpErrors) {
+  function ($scope, $http, $modal, confirmIfHasChanges, httpErrors) {
     var originalConfig;
 
     $scope.hasChanges = function () {
       return originalConfig && !angular.equals($scope.config, originalConfig);
     };
+    $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.save = function (deferred) {
       $http.post('backend/config/general', $scope.config)

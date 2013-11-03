@@ -20,8 +20,9 @@ informant.controller('ConfigUserInterfaceCtrl', [
   '$scope',
   '$http',
   '$rootScope',
+  'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, $rootScope, httpErrors) {
+  function ($scope, $http, $rootScope, confirmIfHasChanges, httpErrors) {
     var originalConfig;
     // set up objects for data binding
     $scope.passwordData = {};
@@ -58,6 +59,7 @@ informant.controller('ConfigUserInterfaceCtrl', [
       }
       return !angular.equals($scope.config, originalConfig);
     };
+    $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.save = function (deferred) {
       var config = angular.copy($scope.config);
