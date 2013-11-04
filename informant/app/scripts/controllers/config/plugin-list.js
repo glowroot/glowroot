@@ -14,83 +14,25 @@
  * limitations under the License.
  */
 
-/* global informant, angular */
+/* global informant */
 
 informant.controller('ConfigPluginListCtrl', [
   '$scope',
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
-    $http.get('backend/config/plugin-section')
+    $http.get('backend/config/plugin')
         .success(function (data) {
           $scope.loaded = true;
-          $scope.config = data;
           $scope.plugins = [];
-          var i, j;
-          for (i = 0; i < data.descriptors.length; i++) {
+          for (var i = 0; i < data.descriptors.length; i++) {
             var plugin = {};
             plugin.descriptor = data.descriptors[i];
             plugin.id = plugin.descriptor.groupId + ':' + plugin.descriptor.artifactId;
             plugin.config = data.configs[plugin.id];
-            for (j = 0; j < plugin.descriptor.properties.length; j++) {
-              var property = plugin.descriptor.properties[j];
-              property.value = plugin.config.properties[property.name];
-            }
             $scope.plugins.push(plugin);
           }
         })
-        .error(function (data, status) {
-          $scope.httpError = httpErrors.get(data, status);
-        });
-  }
-]);
-
-informant.controller('ConfigPluginCtrl', [
-  '$scope',
-  '$http',
-  'confirmIfHasChanges',
-  'httpErrors',
-  function ($scope, $http, confirmIfHasChanges, httpErrors) {
-    // need to track entire plugin object since properties are under plugin.descriptor.properties
-    // and enabled is under plugin.config.enabled
-    var originalPlugin = angular.copy($scope.plugin);
-
-    $scope.hasChanges = function () {
-      return !angular.equals($scope.plugin, originalPlugin);
-    };
-    $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
-
-    $scope.save = function (deferred) {
-      var properties = {};
-      var i;
-      for (i = 0; i < $scope.plugin.descriptor.properties.length; i++) {
-        var property = $scope.plugin.descriptor.properties[i];
-        if (property.type === 'double') {
-          properties[property.name] = parseFloat(property.value);
-        } else {
-          properties[property.name] = property.value;
-        }
-      }
-      var config = {
-        enabled: $scope.plugin.config.enabled,
-        properties: properties,
-        version: $scope.plugin.config.version
-      };
-      $http.post('backend/config/plugin/' + $scope.plugin.id, config)
-          .success(function (data) {
-            $scope.plugin.config.version = data;
-            originalPlugin = angular.copy($scope.plugin);
-            deferred.resolve('Saved');
-          })
-          .error(function (data, status) {
-            if (status === 412) {
-              // HTTP Precondition Failed
-              deferred.reject('Someone else has updated this configuration, please reload and try again');
-            } else {
-              $scope.httpError = httpErrors.get(data, status);
-              deferred.reject($scope.httpError.headline);
-            }
-          });
-    };
+        .error(httpErrors.handler($scope));
   }
 ]);

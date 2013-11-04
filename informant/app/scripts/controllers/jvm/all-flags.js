@@ -26,8 +26,6 @@ informant.controller('JvmAllFlagsCtrl', [
           $scope.loaded = true;
           $scope.flags = data;
         })
-        .error(function (data, status) {
-          $scope.httpError = httpErrors.get(data, status);
-        });
+        .error(httpErrors.handler($scope));
   }
 ]);

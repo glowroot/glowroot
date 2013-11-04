@@ -48,7 +48,7 @@ public class UpgradeTest {
                 .copyTo(Files.asByteSink(new File(dataDir, "informant.h2.db")));
         Resources.asByteSource(Resources.getResource("for-upgrade-test/informant.rolling.db"))
                 .copyTo(Files.asByteSink(new File(dataDir, "informant.rolling.db")));
-        Container container = Containers.create(dataDir, 0, true);
+        Container container = Containers.create(dataDir, true);
         // when
         Trace trace = container.getTraceService().getLastTrace();
         // then

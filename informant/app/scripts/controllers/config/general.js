@@ -19,43 +19,31 @@
 informant.controller('ConfigGeneralCtrl', [
   '$scope',
   '$http',
-  '$modal',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, $modal, confirmIfHasChanges, httpErrors) {
-    var originalConfig;
-
+  function ($scope, $http, confirmIfHasChanges, httpErrors) {
     $scope.hasChanges = function () {
-      return originalConfig && !angular.equals($scope.config, originalConfig);
+      return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
+
+    function onNewData(data) {
+      $scope.loaded = true;
+      $scope.config = data.config;
+      $scope.originalConfig = angular.copy(data.config);
+    }
 
     $scope.save = function (deferred) {
       $http.post('backend/config/general', $scope.config)
           .success(function (data) {
-            $scope.config.version = data;
-            originalConfig = angular.copy($scope.config);
+            onNewData(data);
             deferred.resolve('Saved');
           })
-          .error(function (data, status) {
-            if (status === 412) {
-              // HTTP Precondition Failed
-              deferred.reject('Someone else has updated this configuration, please reload and try again');
-            } else {
-              $scope.httpError = httpErrors.get(data, status);
-              deferred.reject($scope.httpError.headline);
-            }
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $http.get('backend/config/general')
-        .success(function (data) {
-          $scope.loaded = true;
-          $scope.config = data;
-          originalConfig = angular.copy($scope.config);
-        })
-        .error(function (data, status) {
-          $scope.httpError = httpErrors.get(data, status);
-        });
+        .success(onNewData)
+        .error(httpErrors.handler($scope));
   }
 ]);

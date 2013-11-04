@@ -18,13 +18,27 @@ package io.informant.container.javaagent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.net.MediaType;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
+import com.ning.http.client.AsyncHttpClientConfig;
 import com.ning.http.client.Cookie;
 import com.ning.http.client.Response;
+import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
+import org.fest.reflect.core.Reflection;
+import org.jboss.netty.bootstrap.ClientBootstrap;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
+import org.jboss.netty.handler.codec.http.HttpMessage;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import io.informant.markers.ThreadSafe;
@@ -39,14 +53,18 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 @ThreadSafe
 class JavaagentHttpClient {
 
-    private final int uiPort;
     private final AsyncHttpClient asyncHttpClient;
+    private volatile int uiPort;
     @Nullable
     private volatile Cookie sessionIdCookie;
 
-    JavaagentHttpClient(int uiPort, AsyncHttpClient asyncHttpClient) {
+    JavaagentHttpClient(int uiPort) {
         this.uiPort = uiPort;
-        this.asyncHttpClient = asyncHttpClient;
+        this.asyncHttpClient = createAsyncHttpClient();
+    }
+
+    void updateUiPort(int uiPort) {
+        this.uiPort = uiPort;
     }
 
     String get(String path) throws Exception {
@@ -69,6 +87,10 @@ class JavaagentHttpClient {
         request.setBody(data);
         Response response = execute(request);
         return validateAndReturnBody(response);
+    }
+
+    void close() {
+        asyncHttpClient.close();
     }
 
     private Response execute(BoundRequestBuilder request) throws InterruptedException,
@@ -122,10 +144,10 @@ class JavaagentHttpClient {
         }
     }
 
-    // this method relies on io.informant.testkit.InformantContainer.SaveTheEncodingHandler
-    // being inserted into the Netty pipeline before the decompression handler (which removes the
-    // Content-Encoding header after decompression) so that the original Content-Encoding can be
-    // still be retrieved via the alternate http header X-Original-Content-Encoding
+    // this method relies on SaveTheEncodingHandler being inserted into the Netty pipeline before
+    // the decompression handler (which removes the Content-Encoding header after decompression) so
+    // that the original Content-Encoding can be still be retrieved via the alternate http header
+    // X-Original-Content-Encoding
     private static boolean wasUncompressed(Response response) {
         String contentType = response.getHeader(CONTENT_TYPE);
         if (MediaType.ZIP.toString().equals(contentType)) {
@@ -139,5 +161,59 @@ class JavaagentHttpClient {
         }
         String contentEncoding = response.getHeader("X-Original-Content-Encoding");
         return !"gzip".equals(contentEncoding);
+    }
+
+    private static AsyncHttpClient createAsyncHttpClient() {
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()
+                .setCompressionEnabled(true)
+                .setMaxRequestRetry(0)
+                .setExecutorService(executorService)
+                .setScheduledExecutorService(scheduledExecutor);
+        NettyAsyncHttpProviderConfig providerConfig = new NettyAsyncHttpProviderConfig();
+        providerConfig.addProperty(NettyAsyncHttpProviderConfig.BOSS_EXECUTOR_SERVICE,
+                executorService);
+        builder.setAsyncHttpClientProviderConfig(providerConfig);
+        AsyncHttpClient asyncHttpClient = new AsyncHttpClient(builder.build());
+        addSaveTheEncodingHandlerToNettyPipeline(asyncHttpClient);
+        return asyncHttpClient;
+    }
+
+    // Netty's HttpContentDecoder removes the Content-Encoding header during the decompression step
+    // which makes it difficult to verify that the response from Informant was compressed
+    //
+    // this method adds a ChannelHandler to the netty pipeline, before the decompression handler,
+    // and saves the original Content-Encoding header into another http header so it can be used
+    // later to verify that the response was compressed
+    private static void addSaveTheEncodingHandlerToNettyPipeline(AsyncHttpClient asyncHttpClient) {
+        // the next release of AsyncHttpClient will include a hook to modify the pipeline without
+        // having to resort to this reflection hack, see
+        // https://github.com/AsyncHttpClient/async-http-client/pull/205
+        ClientBootstrap plainBootstrap = Reflection.field("plainBootstrap")
+                .ofType(ClientBootstrap.class).in(asyncHttpClient.getProvider()).get();
+        final ChannelPipelineFactory pipelineFactory = plainBootstrap.getPipelineFactory();
+        plainBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+            public ChannelPipeline getPipeline() throws Exception {
+                ChannelPipeline pipeline = pipelineFactory.getPipeline();
+                pipeline.addBefore("inflater", "saveTheEncoding", new SaveTheEncodingHandler());
+                return pipeline;
+            }
+        });
+    }
+
+    private static class SaveTheEncodingHandler extends SimpleChannelHandler {
+        @Override
+        public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+            Object msg = e.getMessage();
+            if (msg instanceof HttpMessage) {
+                HttpMessage m = (HttpMessage) msg;
+                String contentEncoding = m.getHeader(HttpHeaders.Names.CONTENT_ENCODING);
+                if (contentEncoding != null) {
+                    m.setHeader("X-Original-Content-Encoding", contentEncoding);
+                }
+            }
+            ctx.sendUpstream(e);
+        }
     }
 }

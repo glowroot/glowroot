@@ -288,6 +288,12 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(UserInterfaceConfig config) {
+        if (config.isPasswordEnabled()) {
+            throw new AssertionError("Cannot disable password since that requires knowing current"
+                    + " password");
+        }
+        config.setPasswordEnabled(false);
+        config.setNewPassword("z");
         config.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes() + 1);
     }
 

@@ -26,26 +26,15 @@ import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Pattern;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.AsyncHttpClientConfig;
-import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
-import org.fest.reflect.core.Reflection;
-import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
-import org.jboss.netty.handler.codec.http.HttpHeaders;
-import org.jboss.netty.handler.codec.http.HttpMessage;
+import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +47,7 @@ import io.informant.container.SpyingLogFilter.MessageCount;
 import io.informant.container.SpyingLogFilterCheck;
 import io.informant.container.TempDirs;
 import io.informant.container.config.ConfigService;
+import io.informant.container.javaagent.JavaagentConfigService.PortChangeListener;
 import io.informant.container.trace.TraceService;
 import io.informant.markers.ThreadSafe;
 
@@ -69,7 +59,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @since 0.5
  */
 @ThreadSafe
-public class JavaagentContainer implements Container {
+public class JavaagentContainer implements Container, PortChangeListener {
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentContainer.class);
 
@@ -81,33 +71,28 @@ public class JavaagentContainer implements Container {
     private final SocketCommander socketCommander;
     private final Process process;
     private final ExecutorService consolePipeExecutorService;
-    private final AsyncHttpClient asyncHttpClient;
+    private final JavaagentHttpClient httpClient;
     private final JavaagentConfigService configService;
     private final JavaagentTraceService traceService;
     private final Thread shutdownHook;
-    private final int uiPort;
 
     // the one place ever that StringBuffer's synchronization is useful :-)
     private final StringBuffer consoleOutput = new StringBuffer();
 
     public static JavaagentContainer create() throws Exception {
-        return new JavaagentContainer(null, 0, false, false, false);
+        return new JavaagentContainer(null, false, false, false);
     }
 
     public static JavaagentContainer createWithFileDb() throws Exception {
-        return new JavaagentContainer(null, 0, true, false, false);
-    }
-
-    public static JavaagentContainer createWithFileDb(int uiPort) throws Exception {
-        return new JavaagentContainer(null, uiPort, true, false, false);
+        return new JavaagentContainer(null, true, false, false);
     }
 
     public static JavaagentContainer createWithFileDb(File dataDir) throws Exception {
-        return new JavaagentContainer(dataDir, 0, true, false, false);
+        return new JavaagentContainer(dataDir, true, false, false);
     }
 
-    public JavaagentContainer(@Nullable File dataDir, int uiPort, boolean useFileDb,
-            boolean shared, final boolean scrapeConsoleOutput) throws Exception {
+    public JavaagentContainer(@Nullable File dataDir, boolean useFileDb, boolean shared,
+            final boolean scrapeConsoleOutput) throws Exception {
         if (dataDir == null) {
             this.dataDir = TempDirs.createTempDir("informant-test-datadir");
             deleteDataDirOnClose = true;
@@ -118,8 +103,12 @@ public class JavaagentContainer implements Container {
         this.shared = shared;
         // need to start socket listener before spawning process so process can connect to socket
         serverSocket = new ServerSocket(0);
-        List<String> command = buildCommand(serverSocket.getLocalPort(), this.dataDir, uiPort,
-                useFileDb);
+        // default to port 0 (any available)
+        File configFile = new File(this.dataDir, "config.json");
+        if (!configFile.exists()) {
+            Files.write("{\"ui\":{\"port\":0}}", configFile, Charsets.UTF_8);
+        }
+        List<String> command = buildCommand(serverSocket.getLocalPort(), this.dataDir, useFileDb);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         process = processBuilder.start();
@@ -148,9 +137,9 @@ public class JavaagentContainer implements Container {
         ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
         ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
         socketCommander = new SocketCommander(objectOut, objectIn);
-        this.uiPort = (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT);
-        assertNonNull(this.uiPort, "Get Port returned null port");
-        if (this.uiPort == SocketCommandProcessor.NO_PORT) {
+        int uiPort = (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT);
+        assertNonNull(uiPort, "Get Port returned null port");
+        if (uiPort == SocketCommandProcessor.NO_PORT) {
             socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN);
             socketCommander.close();
             process.waitFor();
@@ -158,9 +147,8 @@ public class JavaagentContainer implements Container {
             consolePipeExecutorService.shutdownNow();
             throw new StartupFailedException();
         }
-        asyncHttpClient = createAsyncHttpClient();
-        JavaagentHttpClient httpClient = new JavaagentHttpClient(this.uiPort, asyncHttpClient);
-        configService = new JavaagentConfigService(httpClient);
+        httpClient = new JavaagentHttpClient(uiPort);
+        configService = new JavaagentConfigService(httpClient, this);
         traceService = new JavaagentTraceService(httpClient);
         shutdownHook = new Thread() {
             @Override
@@ -211,8 +199,16 @@ public class JavaagentContainer implements Container {
         return traceService;
     }
 
-    public int getUiPort() {
-        return uiPort;
+    public int getUiPort() throws Exception {
+        return (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT);
+    }
+
+    public void onMaybePortChange() {
+        try {
+            httpClient.updateUiPort(getUiPort());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public void checkAndReset() throws Exception {
@@ -269,7 +265,7 @@ public class JavaagentContainer implements Container {
         serverSocket.close();
         consolePipeExecutorService.shutdownNow();
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
-        asyncHttpClient.close();
+        httpClient.close();
         if (deleteDataDirOnClose) {
             TempDirs.deleteRecursively(dataDir);
         }
@@ -304,8 +300,8 @@ public class JavaagentContainer implements Container {
         Thread.sleep(1);
     }
 
-    private static List<String> buildCommand(int containerPort, File dataDir, int uiPort,
-            boolean useFileDb) throws Exception {
+    private static List<String> buildCommand(int containerPort, File dataDir, boolean useFileDb)
+            throws Exception {
         List<String> command = Lists.newArrayList();
         String javaExecutable = System.getProperty("java.home") + File.separator + "bin"
                 + File.separator + "java";
@@ -324,7 +320,6 @@ public class JavaagentContainer implements Container {
             command.add("-javaagent:" + javaagentJarFile);
         }
         command.add("-Dinformant.data.dir=" + dataDir.getAbsolutePath());
-        command.add("-Dinformant.ui.port=" + uiPort);
         if (!useFileDb) {
             command.add("-Dinformant.internal.h2.memdb=true");
         }
@@ -349,59 +344,5 @@ public class JavaagentContainer implements Container {
             }
         }
         return javaAgents;
-    }
-
-    private static AsyncHttpClient createAsyncHttpClient() {
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()
-                .setCompressionEnabled(true)
-                .setMaxRequestRetry(0)
-                .setExecutorService(executorService)
-                .setScheduledExecutorService(scheduledExecutor);
-        NettyAsyncHttpProviderConfig providerConfig = new NettyAsyncHttpProviderConfig();
-        providerConfig.addProperty(NettyAsyncHttpProviderConfig.BOSS_EXECUTOR_SERVICE,
-                executorService);
-        builder.setAsyncHttpClientProviderConfig(providerConfig);
-        AsyncHttpClient asyncHttpClient = new AsyncHttpClient(builder.build());
-        addSaveTheEncodingHandlerToNettyPipeline(asyncHttpClient);
-        return asyncHttpClient;
-    }
-
-    // Netty's HttpContentDecoder removes the Content-Encoding header during the decompression step
-    // which makes it difficult to verify that the response from Informant was compressed
-    //
-    // this method adds a ChannelHandler to the netty pipeline, before the decompression handler,
-    // and saves the original Content-Encoding header into another http header so it can be used
-    // later to verify that the response was compressed
-    private static void addSaveTheEncodingHandlerToNettyPipeline(AsyncHttpClient asyncHttpClient) {
-        // the next release of AsyncHttpClient will include a hook to modify the pipeline without
-        // having to resort to this reflection hack, see
-        // https://github.com/AsyncHttpClient/async-http-client/pull/205
-        ClientBootstrap plainBootstrap = Reflection.field("plainBootstrap")
-                .ofType(ClientBootstrap.class).in(asyncHttpClient.getProvider()).get();
-        final ChannelPipelineFactory pipelineFactory = plainBootstrap.getPipelineFactory();
-        plainBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-            public ChannelPipeline getPipeline() throws Exception {
-                ChannelPipeline pipeline = pipelineFactory.getPipeline();
-                pipeline.addBefore("inflater", "saveTheEncoding", new SaveTheEncodingHandler());
-                return pipeline;
-            }
-        });
-    }
-
-    private static class SaveTheEncodingHandler extends SimpleChannelHandler {
-        @Override
-        public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
-            Object msg = e.getMessage();
-            if (msg instanceof HttpMessage) {
-                HttpMessage m = (HttpMessage) msg;
-                String contentEncoding = m.getHeader(HttpHeaders.Names.CONTENT_ENCODING);
-                if (contentEncoding != null) {
-                    m.setHeader("X-Original-Content-Encoding", contentEncoding);
-                }
-            }
-            ctx.sendUpstream(e);
-        }
     }
 }

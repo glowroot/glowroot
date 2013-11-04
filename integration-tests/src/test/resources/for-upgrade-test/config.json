@@ -27,6 +27,7 @@
     "rollingSizeMb" : 1000
   },
   "ui" : {
+    "port": 0,
     "passwordEnabled" : false,
     "sessionTimeoutMinutes" : 30,
     "passwordHash" : ""

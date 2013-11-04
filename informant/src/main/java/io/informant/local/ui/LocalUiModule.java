@@ -18,6 +18,7 @@ package io.informant.local.ui;
 import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 import checkers.igj.quals.ReadOnly;
@@ -57,8 +58,6 @@ import static io.informant.local.ui.HttpServerHandler.HttpMethod.POST;
 public class LocalUiModule {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalUiModule.class);
-
-    private static final int DEFAULT_UI_PORT = 4000;
 
     private final TraceExportHttpService traceExportHttpService;
     @Nullable
@@ -115,11 +114,22 @@ public class LocalUiModule {
 
         // for now only a single http worker thread to keep # of threads down
         final int numWorkerThreads = 1;
-        int port = getHttpServerPort(properties);
+        int port = configService.getUserInterfaceConfig().getPort();
         httpServer = buildHttpServer(port, numWorkerThreads, indexHtmlService, layoutJsonService,
                 aggregateJsonService, tracePointJsonService, traceSummaryJsonService,
                 snapshotHttpService, traceExportHttpService, jvmJsonService, configJsonService,
                 adhocPointcutConfigJsonService, adminJsonService, httpSessionManager);
+        if (httpServer != null) {
+            configJsonService.setHttpServer(httpServer);
+        }
+    }
+
+    public int getPort() {
+        if (httpServer == null) {
+            return -1;
+        } else {
+            return httpServer.getPort();
+        }
     }
 
     @OnlyUsedByTests
@@ -131,31 +141,13 @@ public class LocalUiModule {
     }
 
     @OnlyUsedByTests
-    public int getPort() {
-        if (httpServer == null) {
-            return -1;
-        } else {
-            return httpServer.getPort();
-        }
-    }
-
-    @OnlyUsedByTests
     public TraceExportHttpService getTraceExportHttpService() {
         return traceExportHttpService;
     }
 
-    private static int getHttpServerPort(@ReadOnly Map<String, String> properties) {
-        String uiPort = properties.get("ui.port");
-        if (uiPort == null) {
-            return DEFAULT_UI_PORT;
-        }
-        try {
-            return Integer.parseInt(uiPort);
-        } catch (NumberFormatException e) {
-            logger.warn("invalid -Dinformant.ui.port value '{}', proceeding with default value"
-                    + " '{}'", uiPort, DEFAULT_UI_PORT);
-            return DEFAULT_UI_PORT;
-        }
+    @OnlyUsedByTests
+    public void changeHttpServerPort(int newPort) throws InterruptedException, ExecutionException {
+        httpServer.changePort(newPort);
     }
 
     private static String getBaseHref(@ReadOnly Map<String, String> properties) {
@@ -241,8 +233,6 @@ public class LocalUiModule {
                 jvmJsonService, "getAllFlags"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/capabilities",
                 jvmJsonService, "getCapabilities"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config$",
-                configJsonService, "getConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/general$",
                 configJsonService, "getGeneralConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/general$",
@@ -251,34 +241,32 @@ public class LocalUiModule {
                 configJsonService, "getCoarseProfilingConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/coarse-profiling$",
                 configJsonService, "updateCoarseProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET,
-                "^/backend/config/fine-profiling-section$",
-                configJsonService, "getFineProfilingSection"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/fine-profiling$",
+                configJsonService, "getFineProfiling"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/fine-profiling$",
                 configJsonService, "updateFineProfilingConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/user-overrides",
                 configJsonService, "getUserOverridesConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/user-overrides",
                 configJsonService, "updateUserOverridesConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/storage-section",
-                configJsonService, "getStorageSection"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/storage",
+                configJsonService, "getStorage"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/storage",
                 configJsonService, "updateStorageConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/user-interface",
                 configJsonService, "getUserInterface"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/user-interface",
                 configJsonService, "updateUserInterfaceConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/advanced-section",
-                configJsonService, "getAdvancedSection"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/advanced",
+                configJsonService, "getAdvanced"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/advanced",
                 configJsonService, "updateAdvancedConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/plugin-section$",
-                configJsonService, "getPluginSection"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/plugin$",
+                configJsonService, "getPlugin"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/plugin/(.+)$",
                 configJsonService, "updatePluginConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET,
-                "^/backend/config/adhoc-pointcut-section$",
-                configJsonService, "getAdhocPointcutSection"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/adhoc-pointcut$",
+                configJsonService, "getAdhocPointcut"));
         jsonServiceMappings.add(new JsonServiceMapping(POST,
                 "^/backend/config/adhoc-pointcut/\\+$",
                 configJsonService, "addAdhocPointcutConfig"));
@@ -290,13 +278,13 @@ public class LocalUiModule {
         jsonServiceMappings.add(new JsonServiceMapping(POST,
                 "^/backend/adhoc-pointcut/pre-load-auto-complete", adhocPointcutConfigJsonService,
                 "preLoadAutoComplete"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET,
+        jsonServiceMappings.add(new JsonServiceMapping(POST,
                 "^/backend/adhoc-pointcut/matching-type-names", adhocPointcutConfigJsonService,
                 "getMatchingTypeNames"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET,
+        jsonServiceMappings.add(new JsonServiceMapping(POST,
                 "^/backend/adhoc-pointcut/matching-method-names", adhocPointcutConfigJsonService,
                 "getMatchingMethodNames"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET,
+        jsonServiceMappings.add(new JsonServiceMapping(POST,
                 "^/backend/adhoc-pointcut/matching-methods",
                 adhocPointcutConfigJsonService, "getMatchingMethods"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/admin/data/delete-all$",

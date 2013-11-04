@@ -40,10 +40,7 @@ informant.controller('JvmHeapDumpCtrl', [
               deferred.resolve('See disk space below');
             }
           })
-          .error(function (data, status) {
-            $scope.httpError = httpErrors.get(data, status);
-            deferred.reject($scope.httpError.headline);
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $scope.dumpHeap = function (deferred) {
@@ -58,10 +55,7 @@ informant.controller('JvmHeapDumpCtrl', [
               $scope.heapDumpResponse = data;
             }
           })
-          .error(function (data, status) {
-            $scope.httpError = httpErrors.get(data, status);
-            deferred.reject($scope.httpError.headline);
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $http.get('backend/jvm/heap-dump-defaults')
@@ -69,8 +63,6 @@ informant.controller('JvmHeapDumpCtrl', [
           $scope.loaded = true;
           $scope.data = data;
         })
-        .error(function (data, status) {
-          $scope.httpError = httpErrors.get(data, status);
-        });
+        .error(httpErrors.handler($scope));
   }
 ]);

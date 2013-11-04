@@ -16,8 +16,14 @@
 package io.informant.testing.ui;
 
 import java.io.File;
+import java.io.IOException;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
+import com.google.common.io.CharStreams;
+import com.google.common.io.Files;
 
 import io.informant.container.AppUnderTest;
 import io.informant.container.Container;
@@ -36,10 +42,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class UiTestingMain {
 
+    private static final JsonFactory jsonFactory = new JsonFactory();
+
     // need to use javaagent when testing pointcuts.html, otherwise class/method auto completion
     // won't be available
     private static final boolean useJavaagent = false;
-    private static final int UI_PORT = 4001;
+    private static final int INITIAL_UI_PORT = 4001;
     private static final boolean rollOverQuickly = false;
 
     static {
@@ -50,10 +58,15 @@ public class UiTestingMain {
 
     public static void main(String... args) throws Exception {
         Container container;
+        File dataDir = new File("target");
+        File configFile = new File(dataDir, "config.json");
+        if (!configFile.exists()) {
+            writeConfigJson(dataDir, INITIAL_UI_PORT);
+        }
         if (useJavaagent) {
-            container = new JavaagentContainer(new File("target"), UI_PORT, true, false, false);
+            container = new JavaagentContainer(dataDir, true, false, false);
         } else {
-            container = new LocalContainer(new File("target"), UI_PORT, true, false);
+            container = new LocalContainer(dataDir, true, false);
         }
         // set thresholds low so there will be lots of data to view
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
@@ -77,6 +90,18 @@ public class UiTestingMain {
             container.getConfigService().updateStorageConfig(storageConfig);
         }
         container.executeAppUnderTest(GenerateTraces.class);
+    }
+
+    private static void writeConfigJson(File dataDir, int uiPort) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeObjectFieldStart("ui");
+        jg.writeNumberField("port", uiPort);
+        jg.writeEndObject();
+        jg.writeEndObject();
+        jg.close();
+        Files.write(sb, new File(dataDir, "config.json"), Charsets.UTF_8);
     }
 
     public static class GenerateTraces implements AppUnderTest {

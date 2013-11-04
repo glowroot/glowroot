@@ -44,35 +44,31 @@ public class Containers {
 
     public static Container create() throws Exception {
         if (!SharedContainerRunListener.useSharedContainer()) {
-            return create(0, false);
+            return create(false);
         }
         Container sharedContainer = SharedContainerRunListener.getSharedContainer();
         if (sharedContainer == null) {
-            sharedContainer = create(null, 0, false, true);
+            sharedContainer = create(null, false, true);
             SharedContainerRunListener.setSharedContainer(sharedContainer);
         }
         return sharedContainer;
     }
 
     public static Container createWithFileDb() throws Exception {
-        return create(null, 0, true, false);
+        return create(null, true, false);
     }
 
     public static Container createWithFileDb(File dataDir) throws Exception {
-        return create(dataDir, 0, true, false);
+        return create(dataDir, true, false);
     }
 
-    public static Container createWithFileDb(int uiPort) throws Exception {
-        return create(null, uiPort, true, false);
-    }
-
-    public static Container create(int uiPort, boolean useFileDb) throws Exception {
-        return create(null, uiPort, useFileDb, false);
+    public static Container create(boolean useFileDb) throws Exception {
+        return create(null, useFileDb, false);
     }
 
     // since dataDir is passed to the container, the container will not delete dataDir on close
-    public static Container create(File dataDir, int uiPort, boolean useFileDb) throws Exception {
-        return create(dataDir, uiPort, useFileDb, false);
+    public static Container create(File dataDir, boolean useFileDb) throws Exception {
+        return create(dataDir, useFileDb, false);
     }
 
     public static Container createJavaagentContainer() throws Exception {
@@ -83,17 +79,17 @@ public class Containers {
         return JavaagentContainer.create();
     }
 
-    private static Container create(@Nullable File dataDir, int uiPort, boolean useFileDb,
+    private static Container create(@Nullable File dataDir, boolean useFileDb,
             boolean shared) throws Exception {
         if (javaagent) {
             // this is the most realistic way to run tests because it launches an external JVM
             // process using -javaagent:informant.jar
             logger.debug("create(): using javaagent container");
-            return new JavaagentContainer(dataDir, uiPort, useFileDb, shared, false);
+            return new JavaagentContainer(dataDir, useFileDb, shared, false);
         } else {
             // this is the easiest way to run/debug tests inside of Eclipse
             logger.debug("create(): using local container");
-            return new LocalContainer(dataDir, uiPort, useFileDb, shared);
+            return new LocalContainer(dataDir, useFileDb, shared);
         }
     }
 }

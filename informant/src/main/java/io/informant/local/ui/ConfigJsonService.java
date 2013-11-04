@@ -21,11 +21,14 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.jar.Attributes;
 import java.util.jar.JarInputStream;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -79,6 +82,10 @@ class ConfigJsonService {
     private final HttpSessionManager httpSessionManager;
     private final TraceModule traceModule;
 
+    // TODO address the cyclic dependency between HttpServer and ConfigJsonService created by this
+    // reference
+    private volatile HttpServer httpServer;
+
     ConfigJsonService(ConfigService configService, RollingFile rollingFile,
             PluginDescriptorCache pluginDescriptorCache, File dataDir,
             AdhocAdviceCache adhocAdviceCache, HttpSessionManager httpSessionManager,
@@ -92,13 +99,20 @@ class ConfigJsonService {
         this.traceModule = traceModule;
     }
 
+    void setHttpServer(HttpServer httpServer) {
+        this.httpServer = httpServer;
+    }
+
     @JsonServiceMethod
     String getGeneralConfig() throws IOException, SQLException {
         logger.debug("getGeneralConfig()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
+        jg.writeStartObject();
+        jg.writeFieldName("config");
         writer.writeValue(jg, configService.getGeneralConfig());
+        jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
@@ -109,14 +123,17 @@ class ConfigJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
+        jg.writeStartObject();
+        jg.writeFieldName("config");
         writer.writeValue(jg, configService.getCoarseProfilingConfig());
+        jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
     @JsonServiceMethod
-    String getFineProfilingSection() throws IOException, SQLException {
-        logger.debug("getFineProfilingSection()");
+    String getFineProfiling() throws IOException, SQLException {
+        logger.debug("getFineProfiling()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
@@ -136,14 +153,17 @@ class ConfigJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
+        jg.writeStartObject();
+        jg.writeFieldName("config");
         writer.writeValue(jg, configService.getUserOverridesConfig());
+        jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
     @JsonServiceMethod
-    String getStorageSection() throws IOException, SQLException {
-        logger.debug("getStorageSection()");
+    String getStorage() throws IOException, SQLException {
+        logger.debug("getStorage()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
@@ -162,14 +182,23 @@ class ConfigJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
-        writer.writeValue(jg, configService.getUserInterfaceConfig());
+        jg.writeStartObject();
+        writeUserInterface(jg, writer);
+        jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
+    private void writeUserInterface(JsonGenerator jg, ObjectWriter writer)
+            throws IOException, JsonGenerationException, JsonMappingException {
+        jg.writeFieldName("config");
+        writer.writeValue(jg, configService.getUserInterfaceConfig());
+        jg.writeNumberField("activePort", httpServer.getPort());
+    }
+
     @JsonServiceMethod
-    String getPluginSection() throws IOException, SQLException {
-        logger.debug("getPluginSection()");
+    String getPlugin() throws IOException, SQLException {
+        logger.debug("getPlugin()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
@@ -184,8 +213,8 @@ class ConfigJsonService {
     }
 
     @JsonServiceMethod
-    String getAdhocPointcutSection() throws IOException, SQLException {
-        logger.debug("getAdhocPointcutSection()");
+    String getAdhocPointcut() throws IOException, SQLException {
+        logger.debug("getAdhocPointcut()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
@@ -202,8 +231,8 @@ class ConfigJsonService {
     }
 
     @JsonServiceMethod
-    String getAdvancedSection() throws IOException, SQLException {
-        logger.debug("getAdvancedSection()");
+    String getAdvanced() throws IOException, SQLException {
+        logger.debug("getAdvanced()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
@@ -246,7 +275,8 @@ class ConfigJsonService {
     }
 
     @JsonServiceMethod
-    String updateGeneralConfig(String content) throws IOException, JsonServiceException {
+    String updateGeneralConfig(String content) throws IOException, JsonServiceException,
+            SQLException {
         logger.debug("updateGeneralConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
@@ -260,15 +290,16 @@ class ConfigJsonService {
         GeneralConfig.Overlay overlay = GeneralConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
         try {
-            return configService.updateGeneralConfig(overlay.build(), priorVersion);
+            configService.updateGeneralConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
         }
+        return getGeneralConfig();
     }
 
     @JsonServiceMethod
     String updateCoarseProfilingConfig(String content) throws JsonServiceException,
-            IOException {
+            IOException, SQLException {
         logger.debug("updateCoarseProfilingConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
@@ -282,15 +313,16 @@ class ConfigJsonService {
         CoarseProfilingConfig.Overlay overlay = CoarseProfilingConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
         try {
-            return configService.updateCoarseProfilingConfig(overlay.build(), priorVersion);
+            configService.updateCoarseProfilingConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
         }
+        return getCoarseProfilingConfig();
     }
 
     @JsonServiceMethod
     String updateFineProfilingConfig(String content) throws JsonServiceException,
-            IOException {
+            IOException, SQLException {
         logger.debug("updateFineProfilingConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
@@ -304,14 +336,16 @@ class ConfigJsonService {
         FineProfilingConfig.Overlay overlay = FineProfilingConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
         try {
-            return configService.updateFineProfilingConfig(overlay.build(), priorVersion);
+            configService.updateFineProfilingConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
         }
+        return getFineProfiling();
     }
 
     @JsonServiceMethod
-    String updateUserOverridesConfig(String content) throws JsonServiceException, IOException {
+    String updateUserOverridesConfig(String content) throws JsonServiceException, IOException,
+            SQLException {
         logger.debug("updateUserOverridesConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
@@ -325,14 +359,16 @@ class ConfigJsonService {
         UserOverridesConfig.Overlay overlay = UserOverridesConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
         try {
-            return configService.updateUserOverridesConfig(overlay.build(), priorVersion);
+            configService.updateUserOverridesConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
         }
+        return getUserOverridesConfig();
     }
 
     @JsonServiceMethod
-    String updateStorageConfig(String content) throws JsonServiceException, IOException {
+    String updateStorageConfig(String content) throws JsonServiceException, IOException,
+            SQLException {
         logger.debug("updateStorageConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
@@ -345,21 +381,20 @@ class ConfigJsonService {
         StorageConfig config = configService.getStorageConfig();
         StorageConfig.Overlay overlay = StorageConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
-        String updatedVersion;
         try {
-            updatedVersion = configService.updateStorageConfig(overlay.build(), priorVersion);
+            configService.updateStorageConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
         }
         // resize() doesn't do anything if the new and old value are the same
         rollingFile.resize(configService.getStorageConfig().getRollingSizeMb() * 1024);
-        return updatedVersion;
+        return getStorage();
     }
 
     @JsonServiceMethod
     String updateUserInterfaceConfig(String content, HttpResponse response)
-            throws JsonServiceException,
-            IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+            throws JsonServiceException, IOException, NoSuchAlgorithmException,
+            InvalidKeySpecException, SQLException {
         logger.debug("updateUserInterfaceConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
@@ -378,9 +413,8 @@ class ConfigJsonService {
         } catch (CurrentPasswordIncorrectException e) {
             return "{\"currentPasswordIncorrect\":true}";
         }
-        String updatedVersion;
         try {
-            updatedVersion = configService.updateUserInterfaceConfig(updatedConfig, priorVersion);
+            configService.updateUserInterfaceConfig(updatedConfig, priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
         }
@@ -390,11 +424,35 @@ class ConfigJsonService {
         } else if (config.isPasswordEnabled() && !updatedConfig.isPasswordEnabled()) {
             httpSessionManager.deleteSession(response);
         }
-        return updatedVersion;
+        // lastly deal with ui port change
+        if (config.getPort() != updatedConfig.getPort()) {
+            try {
+                httpServer.changePort(updatedConfig.getPort());
+                response.setHeader("X-Informant-Port-Changed", "true");
+            } catch (InterruptedException e) {
+                return getUserInterfaceWithPortChangeFailed();
+            } catch (ExecutionException e) {
+                return getUserInterfaceWithPortChangeFailed();
+            }
+        }
+        return getUserInterface();
+    }
+
+    private String getUserInterfaceWithPortChangeFailed() throws IOException {
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
+        jg.writeStartObject();
+        writeUserInterface(jg, writer);
+        jg.writeBooleanField("portChangeFailed", true);
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
     }
 
     @JsonServiceMethod
-    String updateAdvancedConfig(String content) throws JsonServiceException, IOException {
+    String updateAdvancedConfig(String content) throws JsonServiceException, IOException,
+            SQLException {
         logger.debug("updateAdvancedConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
@@ -408,10 +466,11 @@ class ConfigJsonService {
         AdvancedConfig.Overlay overlay = AdvancedConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
         try {
-            return configService.updateAdvancedConfig(overlay.build(), priorVersion);
+            configService.updateAdvancedConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
         }
+        return getAdvanced();
     }
 
     @JsonServiceMethod
@@ -431,10 +490,17 @@ class ConfigJsonService {
         PluginConfig.Builder builder = PluginConfig.builder(config);
         builder.overlay(configNode);
         try {
-            return configService.updatePluginConfig(builder.build(), priorVersion);
+            configService.updatePluginConfig(builder.build(), priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
         }
+        PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
+        writer.writeValue(jg, pluginConfig);
+        jg.close();
+        return sb.toString();
     }
 
     @JsonServiceMethod
@@ -442,7 +508,13 @@ class ConfigJsonService {
         logger.debug("addAdhocPointcutConfig(): content={}", content);
         AdhocPointcutConfig adhocPointcutConfig =
                 ObjectMappers.readRequiredValue(mapper, content, AdhocPointcutConfig.class);
-        return configService.insertAdhocPointcutConfig(adhocPointcutConfig);
+        configService.insertAdhocPointcutConfig(adhocPointcutConfig);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
+        writer.writeValue(jg, adhocPointcutConfig);
+        jg.close();
+        return sb.toString();
     }
 
     @JsonServiceMethod
@@ -452,7 +524,13 @@ class ConfigJsonService {
                 content);
         AdhocPointcutConfig adhocPointcutConfig =
                 ObjectMappers.readRequiredValue(mapper, content, AdhocPointcutConfig.class);
-        return configService.updateAdhocPointcutConfig(priorVersion, adhocPointcutConfig);
+        configService.updateAdhocPointcutConfig(priorVersion, adhocPointcutConfig);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
+        writer.writeValue(jg, adhocPointcutConfig);
+        jg.close();
+        return sb.toString();
     }
 
     @JsonServiceMethod

@@ -37,6 +37,7 @@ import io.informant.config.JsonViews.UiView;
 @Immutable
 public class UserInterfaceConfig {
 
+    private final int port;
     private final boolean passwordEnabled;
     // timeout 0 means sessions do not time out (except on jvm restart)
     private final int sessionTimeoutMinutes;
@@ -45,10 +46,11 @@ public class UserInterfaceConfig {
     private final String version;
 
     static UserInterfaceConfig getDefault() {
+        final int port = 4000;
         final boolean passwordEnabled = false;
         final int sessionTimeoutMinutes = 30;
         final String passwordHash = "";
-        return new UserInterfaceConfig(passwordEnabled, sessionTimeoutMinutes, passwordHash);
+        return new UserInterfaceConfig(port, passwordEnabled, sessionTimeoutMinutes, passwordHash);
     }
 
     public static FileOverlay fileOverlay(UserInterfaceConfig base) {
@@ -60,12 +62,17 @@ public class UserInterfaceConfig {
     }
 
     @VisibleForTesting
-    public UserInterfaceConfig(boolean passwordEnabled, int sessionTimeoutMinutes,
+    public UserInterfaceConfig(int port, boolean passwordEnabled, int sessionTimeoutMinutes,
             String passwordHash) {
+        this.port = port;
         this.passwordEnabled = passwordEnabled;
         this.sessionTimeoutMinutes = sessionTimeoutMinutes;
         this.passwordHash = passwordHash;
         this.version = VersionHashes.sha1(sessionTimeoutMinutes, passwordHash);
+    }
+
+    public int getPort() {
+        return port;
     }
 
     public int getSessionTimeoutMinutes() {
@@ -109,14 +116,19 @@ public class UserInterfaceConfig {
     // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
     public static class FileOverlay {
 
+        private int port;
         private boolean passwordEnabled;
         private int sessionTimeoutMinutes;
         private String passwordHash;
 
         private FileOverlay(UserInterfaceConfig base) {
+            port = base.port;
             passwordEnabled = base.passwordEnabled;
             sessionTimeoutMinutes = base.sessionTimeoutMinutes;
             passwordHash = base.passwordHash;
+        }
+        public void setPort(int port) {
+            this.port = port;
         }
         public void setPasswordEnabled(boolean passwordEnabled) {
             this.passwordEnabled = passwordEnabled;
@@ -128,7 +140,8 @@ public class UserInterfaceConfig {
             this.passwordHash = passwordHash;
         }
         public UserInterfaceConfig build() {
-            return new UserInterfaceConfig(passwordEnabled, sessionTimeoutMinutes, passwordHash);
+            return new UserInterfaceConfig(port, passwordEnabled, sessionTimeoutMinutes,
+                    passwordHash);
         }
     }
 
@@ -138,6 +151,7 @@ public class UserInterfaceConfig {
         private final boolean originalPasswordEnabled;
         private final String originalPasswordHash;
 
+        private int port;
         private boolean passwordEnabled;
         private int sessionTimeoutMinutes;
 
@@ -147,10 +161,14 @@ public class UserInterfaceConfig {
         private String newPassword;
 
         private Overlay(UserInterfaceConfig base) {
+            port = base.port;
             originalPasswordEnabled = base.passwordEnabled;
             originalPasswordHash = base.passwordHash;
             passwordEnabled = base.passwordEnabled;
             sessionTimeoutMinutes = base.sessionTimeoutMinutes;
+        }
+        public void setPort(int port) {
+            this.port = port;
         }
         public void setPasswordEnabled(boolean passwordEnabled) {
             this.passwordEnabled = passwordEnabled;
@@ -201,7 +219,8 @@ public class UserInterfaceConfig {
                 // no change
                 passwordHash = originalPasswordHash;
             }
-            return new UserInterfaceConfig(passwordEnabled, sessionTimeoutMinutes, passwordHash);
+            return new UserInterfaceConfig(port, passwordEnabled, sessionTimeoutMinutes,
+                    passwordHash);
         }
     }
 

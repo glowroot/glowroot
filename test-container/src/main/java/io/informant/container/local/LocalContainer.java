@@ -32,18 +32,17 @@ import io.informant.markers.ThreadSafe;
 public class LocalContainer extends GenericLocalContainer<AppUnderTest> implements Container {
 
     public static Container createWithFileDb(File dataDir) throws Exception {
-        return new LocalContainer(dataDir, 0, true, false);
+        return new LocalContainer(dataDir, true, false);
     }
 
-    public static Container createWithFileDb(int uiPort) throws Exception {
+    public static Container createWithFileDb() throws Exception {
         File dataDir = TempDirs.createTempDir("informant-test-datadir");
-        return new LocalContainer(dataDir, uiPort, true, false);
+        return new LocalContainer(dataDir, true, false);
     }
 
-    public LocalContainer(@Nullable File dataDir, int uiPort, boolean useFileDb, boolean shared)
+    public LocalContainer(@Nullable File dataDir, boolean useFileDb, boolean shared)
             throws Exception {
-        super(dataDir, uiPort, useFileDb, shared, AppUnderTest.class,
-                AppUnderTestExecutor.INSTANCE);
+        super(dataDir, useFileDb, shared, AppUnderTest.class, AppUnderTestExecutor.INSTANCE);
     }
 
     private static class AppUnderTestExecutor implements AppExecutor<AppUnderTest> {

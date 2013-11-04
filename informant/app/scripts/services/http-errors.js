@@ -18,21 +18,40 @@
 
 informant.factory('httpErrors', [
   function () {
+    function getHttpErrorsObject(data, status) {
+      if (status === 0) {
+        return {
+          headline: 'Unable to connect to server'
+        };
+      } else {
+        var message = data.message;
+        if (!message && !data.stackTrace) {
+          message = data;
+        }
+        return {
+          headline: 'An error occurred',
+          message: message,
+          stackTrace: data.stackTrace
+        };
+      }
+    }
     return {
-      get: function (data, status) {
-        if (status === 0) {
-          return {
-            headline: 'Unable to connect to server'
+      get: getHttpErrorsObject,
+      handler: function ($scope, deferred) {
+        if (deferred) {
+          return function (data, status) {
+            // all actions that need to handle HTTP Precondition Failed pass a deferred object
+            if (status === 412) {
+              // HTTP Precondition Failed
+              deferred.reject('Someone else has updated the data on this page, please reload and try again');
+            } else {
+              $scope.httpError = getHttpErrorsObject(data, status);
+              deferred.reject($scope.httpError.headline);
+            }
           };
         } else {
-          var message = data.message;
-          if (!message && !data.stackTrace) {
-            message = data;
-          }
-          return {
-            headline: 'An error occurred',
-            message: message,
-            stackTrace: data.stackTrace
+          return function (data, status) {
+            $scope.httpError = getHttpErrorsObject(data, status);
           };
         }
       }

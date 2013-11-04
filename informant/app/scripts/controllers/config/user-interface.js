@@ -20,12 +20,13 @@ informant.controller('ConfigUserInterfaceCtrl', [
   '$scope',
   '$http',
   '$rootScope',
+  '$location',
+  '$timeout',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, $rootScope, confirmIfHasChanges, httpErrors) {
-    var originalConfig;
+  function ($scope, $http, $rootScope, $location, $timeout, confirmIfHasChanges, httpErrors) {
     // set up objects for data binding
-    $scope.passwordData = {};
+    $scope.page = {};
     $scope.passwordForm = {};
 
     $scope.$watch('config.passwordEnabled', function (newValue, oldValue) {
@@ -33,7 +34,7 @@ informant.controller('ConfigUserInterfaceCtrl', [
         // initial value is being set after $http response
         return;
       }
-      if (originalConfig.passwordEnabled) {
+      if ($scope.originalConfig.passwordEnabled) {
         $('#disablePasswordDetail').collapse('toggle');
       } else {
         $('#enablePasswordDetail').collapse('toggle');
@@ -41,54 +42,68 @@ informant.controller('ConfigUserInterfaceCtrl', [
     });
 
     $scope.hasChanges = function () {
-      if (!originalConfig) {
+      if (!$scope.originalConfig) {
         // hasn't loaded yet
         return false;
       }
-      if (!originalConfig.passwordEnabled && $scope.config.passwordEnabled) {
+      if (!$scope.originalConfig.passwordEnabled && $scope.config.passwordEnabled) {
         // enabling password, require initialPassword and verifyInitialPassword fields
-        if (!$scope.passwordData.initialPassword || !$scope.passwordData.verifyInitialPassword) {
+        if (!$scope.page.initialPassword || !$scope.page.verifyInitialPassword) {
           return false;
         }
       }
-      if (originalConfig.passwordEnabled && !$scope.config.passwordEnabled) {
+      if ($scope.originalConfig.passwordEnabled && !$scope.config.passwordEnabled) {
         // disabling password, require verifyCurrentPassword field
-        if (!$scope.passwordData.verifyCurrentPassword) {
+        if (!$scope.page.verifyCurrentPassword) {
           return false;
         }
       }
-      return !angular.equals($scope.config, originalConfig);
+      return !angular.equals($scope.config, $scope.originalConfig);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
+    function onNewData(data) {
+      $scope.loaded = true;
+      $scope.config = data.config;
+      $scope.originalConfig = angular.copy(data.config);
+      $scope.showChangePasswordSection = data.config.passwordEnabled;
+      $scope.activePort = data.activePort;
+      $scope.page.initialPassword = '';
+      $scope.page.verifyInitialPassword = '';
+      $scope.page.verifyCurrentPassword = '';
+    }
+
     $scope.save = function (deferred) {
-      var config = angular.copy($scope.config);
+      // another copy to modify for the http post data
+      var postData = angular.copy($scope.config);
       var enablingPassword = false;
       var disablingPassword = false;
-      if (!originalConfig.passwordEnabled && config.passwordEnabled) {
+      var changingPort = false;
+      var previousPort;
+      if (!$scope.originalConfig.passwordEnabled && $scope.config.passwordEnabled) {
         enablingPassword = true;
-        if ($scope.passwordData.verifyInitialPassword !== $scope.passwordData.initialPassword) {
+        if ($scope.page.verifyInitialPassword !== $scope.page.initialPassword) {
           deferred.reject('Passwords do not match');
           return;
         }
-        config.currentPassword = '';
-        config.newPassword = $scope.passwordData.initialPassword;
+        postData.currentPassword = '';
+        postData.newPassword = $scope.page.initialPassword;
       }
-      if (originalConfig.passwordEnabled && !config.passwordEnabled) {
+      if ($scope.originalConfig.passwordEnabled && !$scope.config.passwordEnabled) {
         disablingPassword = true;
-        config.currentPassword = $scope.passwordData.verifyCurrentPassword;
-        config.newPassword = '';
+        postData.currentPassword = $scope.page.verifyCurrentPassword;
+        postData.newPassword = '';
       }
-      $http.post('backend/config/user-interface', config)
+      if ($scope.originalConfig.port !== $scope.config.port) {
+        changingPort = true;
+        previousPort = $scope.originalConfig.port;
+      }
+      $http.post('backend/config/user-interface', postData)
           .success(function (data) {
             if (data.currentPasswordIncorrect) {
               deferred.reject('Current password is incorrect');
             } else {
-              $scope.config.version = data;
-              originalConfig = angular.copy($scope.config);
-              $scope.showChangePasswordSection = originalConfig.passwordEnabled;
-              deferred.resolve('Saved');
-              $scope.passwordData = {};
+              onNewData(data);
               if ($('#enablePasswordDetail').is(':visible')) {
                 $('#enablePasswordDetail').collapse('hide');
               }
@@ -100,17 +115,29 @@ informant.controller('ConfigUserInterfaceCtrl', [
               } else if (disablingPassword) {
                 $rootScope.showSignOutButton = false;
               }
+              if (changingPort && data.portChangeFailed) {
+                deferred.reject('Save succeeded, but switching over to the new port failed');
+              } else if (changingPort) {
+                if ($location.port() === previousPort) {
+                  deferred.resolve('Saved, redirecting to new port ...');
+                  $timeout(function () {
+                    var newUrl = $location.protocol() + '://' + $location.host();
+                    if (data.activePort !== 80) {
+                      newUrl += ':' + data.activePort;
+                    }
+                    newUrl += $location.path();
+                    document.location.href = newUrl;
+                  }, 500);
+                } else {
+                  deferred.reject('Save succeeded, switching over the port succeeded, but not sure how to redirect' +
+                      ' you since you are not connecting directly the old port is no longer available');
+                }
+              } else {
+                deferred.resolve('Saved');
+              }
             }
           })
-          .error(function (data, status) {
-            if (status === 412) {
-              // HTTP Precondition Failed
-              deferred.reject('Someone else has updated this configuration, please reload and try again');
-            } else {
-              $scope.httpError = httpErrors.get(data, status);
-              deferred.reject($scope.httpError.headline);
-            }
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $scope.changePasswordButtonDisabled = function () {
@@ -122,43 +149,28 @@ informant.controller('ConfigUserInterfaceCtrl', [
       if ($scope.passwordForm.verifyPassword !== $scope.passwordForm.newPassword) {
         deferred.reject('Passwords do not match');
       }
-      var config = {
+      var postData = {
         currentPassword: $scope.passwordForm.currentPassword,
         newPassword: $scope.passwordForm.newPassword,
         version: $scope.config.version
       };
-      $http.post('backend/config/user-interface', config)
+      $http.post('backend/config/user-interface', postData)
           .success(function (data) {
             if (data.currentPasswordIncorrect) {
               deferred.reject('Current password is incorrect');
             } else {
               $scope.config.version = data;
               // need to update originalConfig also
-              originalConfig.version = data;
+              $scope.originalConfig.version = data;
               $scope.passwordForm = {};
               deferred.resolve('Password changed');
             }
           })
-          .error(function (data, status) {
-            if (status === 412) {
-              // HTTP Precondition Failed
-              deferred.reject('Someone else has updated this configuration, please reload and try again');
-            } else {
-              $scope.httpError = httpErrors.get(data, status);
-              deferred.reject($scope.httpError.headline);
-            }
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $http.get('backend/config/user-interface')
-        .success(function (data) {
-          $scope.loaded = true;
-          $scope.config = data;
-          originalConfig = angular.copy($scope.config);
-          $scope.showChangePasswordSection = originalConfig.passwordEnabled;
-        })
-        .error(function (data, status) {
-          $scope.httpError = httpErrors.get(data, status);
-        });
+        .success(onNewData)
+        .error(httpErrors.handler($scope));
   }
 ]);

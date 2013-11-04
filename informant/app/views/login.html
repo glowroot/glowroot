@@ -17,7 +17,7 @@
   <div class="form-group">
     <input type="password"
            class="form-control inline-block"
-           ng-model="data.password"
+           ng-model="page.password"
            id="loginPassword"
            placeholder="Enter password"
            style="max-width: 20em;"
@@ -32,7 +32,7 @@
     <div ix-button
          ix-label="Login"
          ix-click="login(deferred)"
-         ix-disabled="!data.password">
+         ix-disabled="!page.password">
     </div>
   </div>
 </form>

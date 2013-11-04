@@ -28,11 +28,11 @@
       <form class="form-horizontal" name="formCtrl">
         <div ix-form-group
              ix-label="Enabled"
-             ix-model="plugin.config.enabled"
+             ix-model="config.enabled"
              ix-type="checkbox"
              class="ix-form-group-without-help-block">
         </div>
-        <div ng-repeat="property in plugin.descriptor.properties">
+        <div ng-repeat="property in config.properties">
           <div ng-switch on="property.type" ng-hide="property.hidden">
             <div ng-switch-when="string">
               <div ix-form-group

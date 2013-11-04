@@ -26,8 +26,6 @@ informant.controller('JvmCapabilitiesCtrl', [
           $scope.loaded = true;
           $scope.capabilities = data;
         })
-        .error(function (data, status) {
-          $scope.httpError = httpErrors.get(data, status);
-        });
+        .error(httpErrors.handler($scope));
   }
 ]);

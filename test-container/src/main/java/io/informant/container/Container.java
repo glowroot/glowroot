@@ -34,7 +34,7 @@ public interface Container {
 
     TraceService getTraceService();
 
-    int getUiPort();
+    int getUiPort() throws Exception;
 
     // checks no unexpected log messages
     // checks no active traces

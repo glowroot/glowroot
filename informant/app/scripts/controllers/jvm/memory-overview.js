@@ -30,10 +30,7 @@ informant.controller('JvmMemoryOverviewCtrl', [
             $scope.data = data;
             deferred.resolve('Complete');
           })
-          .error(function (data, status) {
-            $scope.httpError = httpErrors.get(data, status);
-            deferred.reject($scope.httpError.headline);
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $scope.resetPeakUsage = function (deferred) {
@@ -43,10 +40,7 @@ informant.controller('JvmMemoryOverviewCtrl', [
             $scope.data = data;
             deferred.resolve('Complete');
           })
-          .error(function (data, status) {
-            $scope.httpError = httpErrors.get(data, status);
-            deferred.reject($scope.httpError.headline);
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $scope.refresh = function (deferred) {
@@ -58,12 +52,7 @@ informant.controller('JvmMemoryOverviewCtrl', [
               deferred.resolve('Refreshed');
             }
           })
-          .error(function (data, status) {
-            $scope.httpError = httpErrors.get(data, status);
-            if (deferred) {
-              deferred.reject($scope.httpError.headline);
-            }
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $scope.refresh();

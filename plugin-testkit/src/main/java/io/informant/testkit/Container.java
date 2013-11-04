@@ -37,8 +37,8 @@ public class Container {
     }
 
     private Container() throws Exception {
-        container = new GenericLocalContainer<AppUnderTest>(null, 0, false, false,
-                AppUnderTest.class, AppUnderTestExecutor.INSTANCE);
+        container = new GenericLocalContainer<AppUnderTest>(null, false, false, AppUnderTest.class,
+                AppUnderTestExecutor.INSTANCE);
         container.getConfigService().setStoreThresholdMillis(0);
     }
 

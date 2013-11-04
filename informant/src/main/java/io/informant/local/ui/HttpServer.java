@@ -16,6 +16,7 @@
 package io.informant.local.ui;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -43,7 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.local.ui.HttpServerHandler.JsonServiceMapping;
-import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
 
 /**
@@ -58,10 +58,10 @@ class HttpServer {
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
 
     private final ServerBootstrap bootstrap;
-    private final Channel serverChannel;
     private final HttpServerHandler handler;
 
-    private final int port;
+    private volatile Channel serverChannel;
+    private volatile int port;
 
     HttpServer(int port, int numWorkerThreads, IndexHtmlService indexHtmlService,
             ImmutableMap<Pattern, Object> uriMappings,
@@ -103,6 +103,30 @@ class HttpServer {
         logger.debug("<init>(): http server bound");
     }
 
+    int getPort() {
+        return port;
+    }
+
+    void changePort(final int newPort) throws InterruptedException, ExecutionException {
+        // need to call from separate thread, since netty throws exception if I/O thread (serving
+        // http request) calls awaitUninterruptibly(), which is called by bind() below
+        Channel previousServerChannel = this.serverChannel;
+        ChangePort changePort = new ChangePort(newPort);
+        Thread thread = new Thread(changePort);
+        thread.setDaemon(true);
+        thread.setName("Informant-Temporary-Thread");
+        thread.start();
+        thread.join();
+        Throwable t = changePort.throwable;
+        if (t != null) {
+            logger.warn(t.getMessage(), t);
+            throw new ExecutionException(t);
+        } else {
+            previousServerChannel.close();
+            handler.closeAllButCurrent();
+        }
+    }
+
     void close() {
         logger.debug("close(): stopping http server");
         serverChannel.close().awaitUninterruptibly();
@@ -111,13 +135,30 @@ class HttpServer {
         bootstrap.releaseExternalResources();
     }
 
-    @OnlyUsedByTests
-    public int getPort() {
-        return port;
+    private class ChangePort implements Runnable {
+
+        private final int newPort;
+        private volatile Throwable throwable;
+
+        ChangePort(int newPort) {
+            this.newPort = newPort;
+        }
+
+        public void run() {
+            try {
+                InetSocketAddress localAddress = new InetSocketAddress(newPort);
+                HttpServer.this.serverChannel = bootstrap.bind(localAddress);
+                HttpServer.this.port = newPort;
+            } catch (Throwable t) {
+                this.throwable = t;
+            }
+        }
     }
 
     private static class PrefixingThreadNameDeterminer implements ThreadNameDeterminer {
+
         private final AtomicInteger workerCount = new AtomicInteger();
+
         public String determineThreadName(String currentThreadName, String proposedThreadName) {
             if (proposedThreadName.matches("New I/O server boss #[0-9]+")) {
                 // leave off the # since there is always a single boss thread

@@ -22,41 +22,30 @@ informant.controller('ConfigAdvancedCtrl', [
   'confirmIfHasChanges',
   'httpErrors',
   function ($scope, $http, confirmIfHasChanges, httpErrors) {
-
     $scope.hasChanges = function () {
       return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
+    function onNewData(data) {
+      $scope.loaded = true;
+      $scope.config = data.config;
+      $scope.originalConfig = angular.copy(data.config);
+      $scope.generateMetricNameWrapperMethodsActive = data.generateMetricNameWrapperMethodsActive;
+      $scope.weavingDisabledActive = data.weavingDisabledActive;
+    }
+
     $scope.save = function (deferred) {
       $http.post('backend/config/advanced', $scope.config)
           .success(function (data) {
-            $scope.config.version = data;
-            $scope.originalConfig = angular.copy($scope.config);
+            onNewData(data);
             deferred.resolve('Saved');
           })
-          .error(function (data, status) {
-            if (status === 412) {
-              // HTTP Precondition Failed
-              deferred.reject('Someone else has updated this configuration, please reload and try again');
-            } else {
-              $scope.httpError = httpErrors.get(data, status);
-              deferred.reject($scope.httpError.headline);
-            }
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/advanced-section')
-        .success(function (data) {
-          $scope.loaded = true;
-          $scope.config = data.config;
-          $scope.originalConfig = angular.copy($scope.config);
-
-          $scope.generateMetricNameWrapperMethodsActive = data.generateMetricNameWrapperMethodsActive;
-          $scope.weavingDisabledActive = data.weavingDisabledActive;
-        })
-        .error(function (data, status) {
-          $scope.httpError = httpErrors.get(data, status);
-        });
+    $http.get('backend/config/advanced')
+        .success(onNewData)
+        .error(httpErrors.handler($scope));
   }
 ]);

@@ -62,7 +62,7 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldUpdateGeneral() throws InterruptedException {
+    public void shouldUpdateGeneral() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
@@ -94,7 +94,7 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldAddAdhocPointcut() throws InterruptedException {
+    public void shouldAddAdhocPointcut() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
@@ -131,7 +131,7 @@ public class ConfigTest {
     // TODO in firefox, still see "Please fill out this field" tooltip on hitting delete when
     // required field is missing
     @Test
-    public void shouldNotValidateOnDeleteAdhocPointcut() throws InterruptedException {
+    public void shouldNotValidateOnDeleteAdhocPointcut() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
@@ -157,7 +157,7 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldAddMetricOnlyAdhocPointcut() throws InterruptedException {
+    public void shouldAddMetricOnlyAdhocPointcut() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
@@ -190,7 +190,7 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldAddMetricAndSpanOnlyAdhocPointcut() throws InterruptedException {
+    public void shouldAddMetricAndSpanOnlyAdhocPointcut() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);

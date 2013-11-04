@@ -24,22 +24,18 @@ import java.net.URL;
 import java.nio.channels.ClosedChannelException;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.CaseFormat;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -62,7 +58,6 @@ import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.informant.common.ObjectMappers;
 import io.informant.markers.Singleton;
 
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -80,7 +75,7 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 class HttpServerHandler extends SimpleChannelUpstreamHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerHandler.class);
-    private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final JsonFactory jsonFactory = new JsonFactory();
     private static final long TEN_YEARS = 10 * 365 * 24 * 60 * 60 * 1000L;
     private static final long ONE_DAY = 24 * 60 * 60 * 1000L;
     private static final long FIVE_MINUTES = 5 * 60 * 1000L;
@@ -110,6 +105,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
     private final HttpSessionManager httpSessionManager;
 
+    private final ThreadLocal<Channel> currentChannel = new ThreadLocal<Channel>();
+
     HttpServerHandler(IndexHtmlService indexHtmlService, ImmutableMap<Pattern, Object> uriMappings,
             ImmutableList<JsonServiceMapping> jsonServiceMappings,
             HttpSessionManager httpSessionManager) {
@@ -131,18 +128,34 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             InterruptedException {
         HttpRequest request = (HttpRequest) e.getMessage();
         logger.debug("messageReceived(): request.uri={}", request.getUri());
-        HttpResponse response = handleRequest(request, e.getChannel());
+        Channel channel = e.getChannel();
+        currentChannel.set(channel);
+        HttpResponse response;
+        try {
+            response = handleRequest(request, channel);
+        } finally {
+            currentChannel.remove();
+        }
         if (response == null) {
             // streaming response
             return;
         }
         boolean keepAlive = HttpHeaders.isKeepAlive(request);
+        if (response.getHeader("X-Informant-Port-Changed") != null) {
+            // current connection is the only open channel on the old port, keepAlive=false will add
+            // the listener below to close the channel after the response completes
+            //
+            // remove the hacky header, no need to send it back to client
+            response.removeHeader("X-Informant-Port-Changed");
+            response.setHeader("Connection", "close");
+            keepAlive = false;
+        }
         if (keepAlive && response.getStatus() != NOT_MODIFIED) {
             // add content-length header only for keep-alive connections
             response.setHeader(Names.CONTENT_LENGTH, response.getContent().readableBytes());
         }
         logger.debug("messageReceived(): response={}", response);
-        ChannelFuture f = e.getChannel().write(response);
+        ChannelFuture f = channel.write(response);
         if (!keepAlive) {
             // close non- keep-alive connections after the write operation is done
             f.addListener(ChannelFutureListener.CLOSE);
@@ -173,6 +186,15 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
 
     void close() {
         allChannels.close().awaitUninterruptibly();
+    }
+
+    void closeAllButCurrent() {
+        Channel current = currentChannel.get();
+        for (Channel channel : allChannels) {
+            if (channel != current) {
+                channel.close().awaitUninterruptibly();
+            }
+        }
     }
 
     @Nullable
@@ -212,7 +234,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                 if (httpSessionManager.needsAuthentication(request)) {
                     return handleUnauthorized(request);
                 }
-                String requestText = getRequestText(request, decoder);
+                String requestText = request.getContent().toString(Charsets.ISO_8859_1);
                 String[] args = new String[matcher.groupCount()];
                 for (int i = 0; i < args.length; i++) {
                     args[i] = matcher.group(i + 1);
@@ -339,7 +361,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         e.printStackTrace(new PrintWriter(sw));
         StringBuilder sb = new StringBuilder();
         try {
-            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+            JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
             Throwable rootCause = e;
             while (rootCause.getCause() != null) {
@@ -393,27 +415,6 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                         parameterTypes.toArray(new Class[parameterTypes.size()]));
                 return method.invoke(object, parameters.toArray(new Object[parameters.size()]));
             }
-        }
-    }
-
-    private static String getRequestText(HttpRequest request, QueryStringDecoder decoder)
-            throws JsonProcessingException {
-        if (decoder.getParameters().isEmpty()) {
-            return request.getContent().toString(Charsets.ISO_8859_1);
-        } else {
-            // create json message out of the query string
-            // flatten map values from list to single element where possible
-            Map<String, Object> parameters = Maps.newHashMap();
-            for (Entry<String, List<String>> entry : decoder.getParameters().entrySet()) {
-                String key = entry.getKey();
-                key = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, key);
-                if (entry.getValue().size() == 1) {
-                    parameters.put(key, entry.getValue().get(0));
-                } else {
-                    parameters.put(key, entry.getValue());
-                }
-            }
-            return mapper.writeValueAsString(parameters);
         }
     }
 

@@ -15,12 +15,17 @@
  */
 package io.informant.container.javaagent;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.informant.container.common.ObjectMappers;
 import io.informant.container.config.AdhocPointcutConfig;
@@ -46,9 +51,11 @@ class JavaagentConfigService implements ConfigService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final JavaagentHttpClient httpClient;
+    private final PortChangeListener portChangeListener;
 
-    JavaagentConfigService(JavaagentHttpClient httpClient) {
+    JavaagentConfigService(JavaagentHttpClient httpClient, PortChangeListener portChangeListener) {
         this.httpClient = httpClient;
+        this.portChangeListener = portChangeListener;
     }
 
     public void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
@@ -58,121 +65,105 @@ class JavaagentConfigService implements ConfigService {
     }
 
     public GeneralConfig getGeneralConfig() throws Exception {
-        return ObjectMappers.readRequiredValue(mapper, httpClient.get("/backend/config/general"),
-                GeneralConfig.class);
+        return getConfig("/backend/config/general", GeneralConfig.class);
     }
 
-    // returns new version
-    public String updateGeneralConfig(GeneralConfig config) throws Exception {
-        return httpClient.post("/backend/config/general", mapper.writeValueAsString(config));
+    public void updateGeneralConfig(GeneralConfig config) throws Exception {
+        httpClient.post("/backend/config/general", mapper.writeValueAsString(config));
     }
 
     public CoarseProfilingConfig getCoarseProfilingConfig() throws Exception {
-        return ObjectMappers.readRequiredValue(mapper,
-                httpClient.get("/backend/config/coarse-profiling"), CoarseProfilingConfig.class);
+        return getConfig("/backend/config/coarse-profiling", CoarseProfilingConfig.class);
     }
 
-    // returns new version
-    public String updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
-        return httpClient.post("/backend/config/coarse-profiling",
-                mapper.writeValueAsString(config));
+    public void updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
+        httpClient.post("/backend/config/coarse-profiling", mapper.writeValueAsString(config));
     }
 
     public FineProfilingConfig getFineProfilingConfig() throws Exception {
-        return ObjectMappers.readRequiredValue(mapper,
-                httpClient.get("/backend/config/fine-profiling-section"),
-                FineProfilingConfigSection.class).getConfig();
+        return getConfig("/backend/config/fine-profiling", FineProfilingConfig.class);
     }
 
-    // returns new version
-    public String updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
-        return httpClient.post("/backend/config/fine-profiling", mapper.writeValueAsString(config));
+    public void updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
+        httpClient.post("/backend/config/fine-profiling", mapper.writeValueAsString(config));
     }
 
     public UserOverridesConfig getUserOverridesConfig() throws Exception {
-        return ObjectMappers.readRequiredValue(mapper,
-                httpClient.get("/backend/config/user-overrides"), UserOverridesConfig.class);
+        return getConfig("/backend/config/user-overrides", UserOverridesConfig.class);
     }
 
-    // returns new version
-    public String updateUserOverridesConfig(UserOverridesConfig config) throws Exception {
-        return httpClient.post("/backend/config/user-overrides", mapper.writeValueAsString(config));
+    public void updateUserOverridesConfig(UserOverridesConfig config) throws Exception {
+        httpClient.post("/backend/config/user-overrides", mapper.writeValueAsString(config));
     }
 
     public StorageConfig getStorageConfig() throws Exception {
-        return ObjectMappers.readRequiredValue(mapper,
-                httpClient.get("/backend/config/storage-section"),
-                StorageConfigSection.class).getConfig();
+        return getConfig("/backend/config/storage", StorageConfig.class);
     }
 
-    // returns new version
-    public String updateStorageConfig(StorageConfig config) throws Exception {
-        return httpClient.post("/backend/config/storage", mapper.writeValueAsString(config));
+    public void updateStorageConfig(StorageConfig config) throws Exception {
+        httpClient.post("/backend/config/storage", mapper.writeValueAsString(config));
     }
 
     public UserInterfaceConfig getUserInterfaceConfig() throws Exception {
-        return ObjectMappers.readRequiredValue(mapper,
-                httpClient.get("/backend/config/user-interface"), UserInterfaceConfig.class);
+        return getConfig("/backend/config/user-interface", UserInterfaceConfig.class);
     }
 
-    // returns new version
-    public String updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception {
+    public void updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception {
         String response = httpClient.post("/backend/config/user-interface",
                 mapper.writeValueAsString(config));
-        if (response.matches("[0-9a-f]{40}")) {
-            // version number
-            return response;
-        }
         JsonNode node = mapper.readTree(response);
-        boolean currentPasswordIncorrect = node.get("currentPasswordIncorrect").asBoolean();
-        if (currentPasswordIncorrect) {
+        JsonNode currentPasswordIncorrectNode = node.get("currentPasswordIncorrect");
+        if (currentPasswordIncorrectNode != null && currentPasswordIncorrectNode.asBoolean()) {
             throw new CurrentPasswordIncorrectException();
-        } else {
-            // currently there are no other expected responses
-            throw new IllegalStateException("Unexpected response: " + node);
         }
+        JsonNode portChangeFailedNode = node.get("portChangeFailed");
+        if (portChangeFailedNode != null && portChangeFailedNode.asBoolean()) {
+            throw new PortChangeFailedException();
+        }
+        portChangeListener.onMaybePortChange();
     }
 
     public AdvancedConfig getAdvancedConfig() throws Exception {
-        return ObjectMappers.readRequiredValue(mapper,
-                httpClient.get("/backend/config/advanced-section"),
-                AdvancedConfigSection.class).getConfig();
+        return getConfig("/backend/config/advanced", AdvancedConfig.class);
     }
 
-    // returns new version
-    public String updateAdvancedConfig(AdvancedConfig config) throws Exception {
-        return httpClient.post("/backend/config/advanced", mapper.writeValueAsString(config));
+    public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
+        httpClient.post("/backend/config/advanced", mapper.writeValueAsString(config));
     }
 
     @Nullable
     public PluginConfig getPluginConfig(String pluginId) throws Exception {
-        return ObjectMappers.readRequiredValue(mapper,
-                httpClient.get("/backend/config/plugin-section"), PluginConfigSection.class)
-                .getConfigs().get(pluginId);
+        String response = httpClient.get("/backend/config/plugin");
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        JsonNode configNode = rootNode.get("configs");
+        Map<String, PluginConfig> configs = mapper.readValue(mapper.treeAsTokens(configNode),
+                new TypeReference<Map<String, PluginConfig>>() {});
+        return configs.get(pluginId);
     }
 
-    // returns new version
-    public String updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
-        return httpClient.post("/backend/config/plugin/" + pluginId,
-                mapper.writeValueAsString(config));
+    public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
+        httpClient.post("/backend/config/plugin/" + pluginId, mapper.writeValueAsString(config));
     }
 
     public List<AdhocPointcutConfig> getAdhocPointcutConfigs() throws Exception {
-        return ObjectMappers.readRequiredValue(mapper,
-                httpClient.get("/backend/config/adhoc-pointcut-section"),
-                AdhocPointcutConfigSection.class).getConfigs();
+        String response = httpClient.get("/backend/config/adhoc-pointcut");
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        JsonNode configNode = rootNode.get("configs");
+        return mapper.readValue(mapper.treeAsTokens(configNode),
+                new TypeReference<List<AdhocPointcutConfig>>() {});
     }
 
     // returns new version
     public String addAdhocPointcutConfig(AdhocPointcutConfig adhocPointcutConfig) throws Exception {
-        return httpClient.post("/backend/config/adhoc-pointcut/+",
+        String response = httpClient.post("/backend/config/adhoc-pointcut/+",
                 mapper.writeValueAsString(adhocPointcutConfig));
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        return rootNode.get("version").asText();
     }
 
-    // returns new version
-    public String updateAdhocPointcutConfig(String version, AdhocPointcutConfig adhocPointcutConfig)
+    public void updateAdhocPointcutConfig(String version, AdhocPointcutConfig adhocPointcutConfig)
             throws Exception {
-        return httpClient.post("/backend/config/adhoc-pointcut/" + version,
+        httpClient.post("/backend/config/adhoc-pointcut/" + version,
                 mapper.writeValueAsString(adhocPointcutConfig));
     }
 
@@ -190,5 +181,17 @@ class JavaagentConfigService implements ConfigService {
 
     void resetAllConfig() throws Exception {
         httpClient.post("/backend/admin/config/reset-all", "");
+    }
+
+    private <T> T getConfig(String url, Class<T> type) throws Exception, IOException,
+            JsonProcessingException {
+        String response = httpClient.get(url);
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        JsonNode configNode = rootNode.get("config");
+        return mapper.treeToValue(configNode, type);
+    }
+
+    interface PortChangeListener {
+        void onMaybePortChange();
     }
 }

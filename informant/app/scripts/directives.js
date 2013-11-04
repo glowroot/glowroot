@@ -267,7 +267,7 @@ informant.directive('ixNavbarItem', [
 
 informant.directive('ixSetFocus', function () {
   return function (scope, iElement, iAttrs) {
-    scope.$watch(iAttrs.ixFocus,
+    scope.$watch(iAttrs.ixSetFocus,
         function (newValue) {
           if (newValue) {
             iElement.focus();

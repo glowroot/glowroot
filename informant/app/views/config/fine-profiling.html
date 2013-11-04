@@ -68,7 +68,7 @@
           <div class="checkbox ix-form-checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="data.fineStoreThresholdOverride"
+                     ng-model="page.fineStoreThresholdOverride"
                      id="fineStoreThresholdOverride"
                      style="margin-top: 3px;">
               Override general store threshold
@@ -77,13 +77,13 @@
           <div class="input-group">
             <input type="text"
                    class="form-control"
-                   ng-model="data.fineStoreThresholdMillis"
+                   ng-model="page.fineStoreThresholdMillis"
                    ng-pattern="pattern.integer"
                    id="fineStoreThresholdMillis"
                    name="fineStoreThresholdMillis"
                    style="width: 7em;"
-                   ng-readonly="!data.fineStoreThresholdOverride"
-                   ng-required="data.fineStoreThresholdOverride">
+                   ng-readonly="!page.fineStoreThresholdOverride"
+                   ng-required="page.fineStoreThresholdOverride">
             <span class="input-group-addon">
               milliseconds
             </span>

@@ -22,6 +22,22 @@
     <div ng-include src="'template/ix-http-error-overlay.html'"></div>
     <form class="form-horizontal" name="formCtrl">
       <div ix-form-group
+           ix-label="Port"
+           ix-model="config.port"
+           ix-number="true"
+           ix-pattern="pattern.integer"
+           ix-required="loaded"
+           ix-width="7em">
+        <div class="help-block">
+          <div class="informant-yellow"
+               ng-show="originalConfig.port !== activePort"
+               style="padding-bottom: 5px;">
+            Active value is <code>{{activePort}}</code>.
+          </div>
+          Port that the user interface listens on.
+        </div>
+      </div>
+      <div ix-form-group
            ix-label="Password enabled"
            ix-model="config.passwordEnabled"
            ix-type="checkbox"
@@ -33,12 +49,12 @@
             <label class="control-label" style="padding-top: 0;">Initial password</label>
             <input type="password"
                    class="form-control"
-                   ng-model="passwordData.initialPassword"
+                   ng-model="page.initialPassword"
                    style="max-width: 20em;">
             <label class="control-label" style="padding-top: 10px;">Verify initial password</label>
             <input type="password"
                    class="form-control"
-                   ng-model="passwordData.verifyInitialPassword"
+                   ng-model="page.verifyInitialPassword"
                    style="max-width: 20em;">
           </div>
         </div>
@@ -48,7 +64,7 @@
             <label class="control-label" style="padding-top: 0;">Verify current password</label>
             <input type="password"
                    class="form-control"
-                   ng-model="passwordData.verifyCurrentPassword"
+                     ng-model="page.verifyCurrentPassword"
                    style="max-width: 20em;">
           </div>
         </div>

@@ -17,6 +17,7 @@ package io.informant.container.local;
 
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.collect.Lists;
@@ -35,6 +36,7 @@ import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserInterfaceConfig;
 import io.informant.container.config.UserOverridesConfig;
 import io.informant.local.store.DataSource;
+import io.informant.local.ui.LocalUiModule;
 import io.informant.markers.ThreadSafe;
 
 import static io.informant.common.Nullness.assertNonNull;
@@ -48,10 +50,12 @@ class LocalConfigService implements ConfigService {
 
     private final io.informant.config.ConfigService configService;
     private final DataSource dataSource;
+    private final LocalUiModule localUiModule;
 
     LocalConfigService(InformantModule informantModule) {
         configService = informantModule.getConfigModule().getConfigService();
         dataSource = informantModule.getStorageModule().getDataSource();
+        localUiModule = informantModule.getUiModule();
     }
 
     public void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
@@ -72,13 +76,13 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
-    public String updateGeneralConfig(GeneralConfig config) throws Exception {
+    public void updateGeneralConfig(GeneralConfig config) throws Exception {
         io.informant.config.GeneralConfig updatedConfig =
                 new io.informant.config.GeneralConfig(config.isEnabled(),
                         config.getStoreThresholdMillis(),
                         config.getStuckThresholdSeconds(),
                         config.getMaxSpans());
-        return configService.updateGeneralConfig(updatedConfig, config.getVersion());
+        configService.updateGeneralConfig(updatedConfig, config.getVersion());
     }
 
     public CoarseProfilingConfig getCoarseProfilingConfig() {
@@ -92,12 +96,12 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
-    public String updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
+    public void updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
         io.informant.config.CoarseProfilingConfig updatedConfig =
                 new io.informant.config.CoarseProfilingConfig(config.isEnabled(),
                         config.getInitialDelayMillis(), config.getIntervalMillis(),
                         config.getTotalSeconds());
-        return configService.updateCoarseProfilingConfig(updatedConfig, config.getVersion());
+        configService.updateCoarseProfilingConfig(updatedConfig, config.getVersion());
     }
 
     public FineProfilingConfig getFineProfilingConfig() {
@@ -111,12 +115,12 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
-    public String updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
+    public void updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
         io.informant.config.FineProfilingConfig updatedConfig =
                 new io.informant.config.FineProfilingConfig(config.getTracePercentage(),
                         config.getIntervalMillis(), config.getTotalSeconds(),
                         config.getStoreThresholdMillis());
-        return configService.updateFineProfilingConfig(updatedConfig, config.getVersion());
+        configService.updateFineProfilingConfig(updatedConfig, config.getVersion());
     }
 
     public UserOverridesConfig getUserOverridesConfig() {
@@ -128,11 +132,11 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
-    public String updateUserOverridesConfig(UserOverridesConfig config) throws Exception {
+    public void updateUserOverridesConfig(UserOverridesConfig config) throws Exception {
         io.informant.config.UserOverridesConfig updatedConfig =
                 new io.informant.config.UserOverridesConfig(config.getUserId(),
                         config.getStoreThresholdMillis(), config.isFineProfiling());
-        return configService.updateUserOverridesConfig(updatedConfig, config.getVersion());
+        configService.updateUserOverridesConfig(updatedConfig, config.getVersion());
     }
 
     public StorageConfig getStorageConfig() {
@@ -143,25 +147,27 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
-    public String updateStorageConfig(StorageConfig config) throws Exception {
+    public void updateStorageConfig(StorageConfig config) throws Exception {
         io.informant.config.StorageConfig updatedConfig =
                 new io.informant.config.StorageConfig(config.getSnapshotExpirationHours(),
                         config.getRollingSizeMb());
-        return configService.updateStorageConfig(updatedConfig, config.getVersion());
+        configService.updateStorageConfig(updatedConfig, config.getVersion());
     }
 
     public UserInterfaceConfig getUserInterfaceConfig() {
         io.informant.config.UserInterfaceConfig coreConfig = configService.getUserInterfaceConfig();
         UserInterfaceConfig config = new UserInterfaceConfig(coreConfig.getVersion());
+        config.setPort(coreConfig.getPort());
         config.setPasswordEnabled(coreConfig.isPasswordEnabled());
         config.setSessionTimeoutMinutes(coreConfig.getSessionTimeoutMinutes());
         return config;
     }
 
-    public String updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception {
+    public void updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception {
         // need to use overlay in order to preserve existing passwordHash
         io.informant.config.UserInterfaceConfig coreConfig = configService.getUserInterfaceConfig();
         Overlay overlay = io.informant.config.UserInterfaceConfig.overlay(coreConfig);
+        overlay.setPort(config.getPort());
         overlay.setPasswordEnabled(config.isPasswordEnabled());
         overlay.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes());
         overlay.setCurrentPassword(config.getCurrentPassword());
@@ -172,7 +178,17 @@ class LocalConfigService implements ConfigService {
         } catch (io.informant.config.UserInterfaceConfig.CurrentPasswordIncorrectException e) {
             throw new CurrentPasswordIncorrectException();
         }
-        return configService.updateUserInterfaceConfig(updatedCoreConfig, config.getVersion());
+        // lastly deal with ui port change
+        if (coreConfig.getPort() != updatedCoreConfig.getPort()) {
+            try {
+                localUiModule.changeHttpServerPort(updatedCoreConfig.getPort());
+            } catch (InterruptedException e) {
+                throw new PortChangeFailedException();
+            } catch (ExecutionException e) {
+                throw new PortChangeFailedException();
+            }
+        }
+        configService.updateUserInterfaceConfig(updatedCoreConfig, config.getVersion());
     }
 
     public AdvancedConfig getAdvancedConfig() {
@@ -184,12 +200,12 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
-    public String updateAdvancedConfig(AdvancedConfig config) throws Exception {
+    public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
         io.informant.config.AdvancedConfig updatedConfig =
                 new io.informant.config.AdvancedConfig(config.isGenerateMetricNameWrapperMethods(),
                         config.isWarnOnSpanOutsideTrace(),
                         config.isWeavingDisabled());
-        return configService.updateAdvancedConfig(updatedConfig, config.getVersion());
+        configService.updateAdvancedConfig(updatedConfig, config.getVersion());
     }
 
     @Nullable
@@ -208,7 +224,7 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
-    public String updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
+    public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
         io.informant.config.PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
         if (pluginConfig == null) {
             throw new IllegalArgumentException("Plugin for id not found: " + pluginId);
@@ -219,7 +235,7 @@ class LocalConfigService implements ConfigService {
         for (Entry<String, /*@Nullable*/Object> entry : config.getProperties().entrySet()) {
             updatedConfig.setProperty(entry.getKey(), entry.getValue());
         }
-        return configService.updatePluginConfig(updatedConfig.build(), config.getVersion());
+        configService.updatePluginConfig(updatedConfig.build(), config.getVersion());
     }
 
     public List<AdhocPointcutConfig> getAdhocPointcutConfigs() {
@@ -235,9 +251,9 @@ class LocalConfigService implements ConfigService {
         return configService.insertAdhocPointcutConfig(convertToCore(config));
     }
 
-    public String updateAdhocPointcutConfig(String version, AdhocPointcutConfig config)
+    public void updateAdhocPointcutConfig(String version, AdhocPointcutConfig config)
             throws Exception {
-        return configService.updateAdhocPointcutConfig(version, convertToCore(config));
+        configService.updateAdhocPointcutConfig(version, convertToCore(config));
     }
 
     public void removeAdhocPointcutConfig(String version) throws Exception {

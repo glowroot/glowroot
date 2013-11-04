@@ -29,43 +29,43 @@ public interface ConfigService {
 
     GeneralConfig getGeneralConfig() throws Exception;
 
-    String updateGeneralConfig(GeneralConfig config) throws Exception;
+    void updateGeneralConfig(GeneralConfig config) throws Exception;
 
     CoarseProfilingConfig getCoarseProfilingConfig() throws Exception;
 
-    String updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception;
+    void updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception;
 
     FineProfilingConfig getFineProfilingConfig() throws Exception;
 
-    String updateFineProfilingConfig(FineProfilingConfig config) throws Exception;
+    void updateFineProfilingConfig(FineProfilingConfig config) throws Exception;
 
     UserOverridesConfig getUserOverridesConfig() throws Exception;
 
-    String updateUserOverridesConfig(UserOverridesConfig config) throws Exception;
+    void updateUserOverridesConfig(UserOverridesConfig config) throws Exception;
 
     StorageConfig getStorageConfig() throws Exception;
 
-    String updateStorageConfig(StorageConfig config) throws Exception;
+    void updateStorageConfig(StorageConfig config) throws Exception;
 
     UserInterfaceConfig getUserInterfaceConfig() throws Exception;
 
     // throws CurrentPasswordIncorrectException
-    String updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception;
+    void updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception;
 
     AdvancedConfig getAdvancedConfig() throws Exception;
 
-    String updateAdvancedConfig(AdvancedConfig config) throws Exception;
+    void updateAdvancedConfig(AdvancedConfig config) throws Exception;
 
     @Nullable
     PluginConfig getPluginConfig(String pluginId) throws Exception;
 
-    String updatePluginConfig(String pluginId, PluginConfig config) throws Exception;
+    void updatePluginConfig(String pluginId, PluginConfig config) throws Exception;
 
     List<AdhocPointcutConfig> getAdhocPointcutConfigs() throws Exception;
 
     String addAdhocPointcutConfig(AdhocPointcutConfig adhocPointcutConfig) throws Exception;
 
-    String updateAdhocPointcutConfig(String version, AdhocPointcutConfig adhocPointcutConfig)
+    void updateAdhocPointcutConfig(String version, AdhocPointcutConfig adhocPointcutConfig)
             throws Exception;
 
     void removeAdhocPointcutConfig(String version) throws Exception;
@@ -76,4 +76,7 @@ public interface ConfigService {
 
     @SuppressWarnings("serial")
     public class CurrentPasswordIncorrectException extends Exception {}
+
+    @SuppressWarnings("serial")
+    public class PortChangeFailedException extends Exception {}
 }

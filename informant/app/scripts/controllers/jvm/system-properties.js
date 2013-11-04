@@ -26,8 +26,6 @@ informant.controller('JvmSystemPropertiesCtrl', [
           $scope.loaded = true;
           $scope.properties = data;
         })
-        .error(function (data, status) {
-          $scope.httpError = httpErrors.get(data, status);
-        });
+        .error(httpErrors.handler($scope));
   }
 ]);

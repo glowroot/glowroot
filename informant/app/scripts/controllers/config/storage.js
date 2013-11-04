@@ -22,29 +22,36 @@ informant.controller('ConfigStorageCtrl', [
   'confirmIfHasChanges',
   'httpErrors',
   function ($scope, $http, confirmIfHasChanges, httpErrors) {
-    var originalConfig;
+    // initialize page binding object
+    $scope.page = {};
 
     $scope.hasChanges = function () {
-      return originalConfig && !angular.equals($scope.config, originalConfig);
+      return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
+
+    $scope.$watch('page.snapshotExpirationDays', function (newValue) {
+      if ($scope.config) {
+        $scope.config.snapshotExpirationHours = newValue * 24;
+      }
+    });
+
+    function onNewData(data) {
+      $scope.loaded = true;
+      $scope.config = data.config;
+      $scope.originalConfig = angular.copy(data.config);
+
+      $scope.dataDir = data.dataDir;
+      $scope.page.snapshotExpirationDays = data.config.snapshotExpirationHours / 24;
+    }
 
     $scope.save = function (deferred) {
       $http.post('backend/config/storage', $scope.config)
           .success(function (data) {
-            $scope.config.version = data;
-            originalConfig = angular.copy($scope.config);
+            onNewData(data);
             deferred.resolve('Saved');
           })
-          .error(function (data, status) {
-            if (status === 412) {
-              // HTTP Precondition Failed
-              deferred.reject('Someone else has updated this configuration, please reload and try again');
-            } else {
-              $scope.httpError = httpErrors.get(data, status);
-              deferred.reject($scope.httpError.headline);
-            }
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $scope.deleteAll = function (deferred) {
@@ -52,31 +59,11 @@ informant.controller('ConfigStorageCtrl', [
           .success(function () {
             deferred.resolve('Deleted');
           })
-          .error(function (data, status) {
-            if (status === 0) {
-              deferred.reject('Unable to connect to server');
-            } else {
-              deferred.reject('An error occurred');
-            }
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/storage-section')
-        .success(function (data) {
-          $scope.loaded = true;
-          $scope.config = data.config;
-          originalConfig = angular.copy($scope.config);
-
-          $scope.dataDir = data.dataDir;
-          // set up calculated properties
-          $scope.data = {};
-          $scope.data.snapshotExpirationDays = $scope.config.snapshotExpirationHours / 24;
-          $scope.$watch('data.snapshotExpirationDays', function (newValue) {
-            $scope.config.snapshotExpirationHours = newValue * 24;
-          });
-        })
-        .error(function (data, status) {
-          $scope.httpError = httpErrors.get(data, status);
-        });
+    $http.get('backend/config/storage')
+        .success(onNewData)
+        .error(httpErrors.handler($scope));
   }
 ]);

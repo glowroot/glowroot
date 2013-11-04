@@ -16,34 +16,48 @@
 
 /* global informant, angular */
 
-informant.controller('ConfigCoarseProfilingCtrl', [
+informant.controller('ConfigPluginCtrl', [
   '$scope',
   '$http',
   'confirmIfHasChanges',
   'httpErrors',
   function ($scope, $http, confirmIfHasChanges, httpErrors) {
+    function onNewData(data) {
+      $scope.config = {
+        enabled: data.enabled,
+        version: data.version
+      };
+      $scope.config.properties = angular.copy($scope.plugin.descriptor.properties);
+      for (var j = 0; j < $scope.config.properties.length; j++) {
+        var property = $scope.config.properties[j];
+        property.value = data.properties[property.name];
+      }
+      $scope.originalConfig = angular.copy($scope.config);
+    }
+
+    onNewData($scope.plugin.config);
+
     $scope.hasChanges = function () {
-      return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
+      return !angular.equals($scope.config, $scope.originalConfig);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
-    function onNewData(data) {
-      $scope.loaded = true;
-      $scope.config = data.config;
-      $scope.originalConfig = angular.copy(data.config);
-    }
-
     $scope.save = function (deferred) {
-      $http.post('backend/config/coarse-profiling', $scope.config)
+      var postData = {
+        enabled: $scope.config.enabled,
+        properties: {},
+        version: $scope.config.version
+      };
+      for (var i = 0; i < $scope.config.properties.length; i++) {
+        var property = $scope.config.properties[i];
+        postData.properties[property.name] = property.value;
+      }
+      $http.post('backend/config/plugin/' + $scope.plugin.id, postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');
           })
           .error(httpErrors.handler($scope, deferred));
     };
-
-    $http.get('backend/config/coarse-profiling')
-        .success(onNewData)
-        .error(httpErrors.handler($scope));
   }
 ]);

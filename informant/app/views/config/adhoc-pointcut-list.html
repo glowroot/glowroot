@@ -22,7 +22,7 @@
      ng-controller="ConfigAdhocPointcutCtrl"
      class="panel panel-default">
   <div class="panel-heading">
-    <h2>{{pointcut.heading}}</h2>
+    <h2>{{heading}}</h2>
   </div>
   <div class="panel-body">
     <form class="form-horizontal" name="formCtrl">
@@ -35,14 +35,14 @@
         <div class="col-lg-10">
           <input type="text"
                  class="form-control"
-                 ng-model="pointcut.config.typeName"
+                 ng-model="config.typeName"
                  ng-required="true"
                  typeahead="suggestion for suggestion in typeNames($viewValue)"
                  typeahead-on-select="onSelectTypeName()"
                  typeahead-loading="typeNamesLoading"
                  name="__typeName{{$id}}"
                  id="__typeName{{$id}}"
-                 ix-set-focus="pointcut.isFocus"
+                 ix-set-focus="isFocus"
                  style="max-width: 40em; display: inline-block">
           <div ix-spinner
                ix-spinner-inline="true"
@@ -60,7 +60,7 @@
         <div class="col-lg-10">
           <input type="text"
                  class="form-control"
-                 ng-model="pointcut.config.methodName"
+                 ng-model="config.methodName"
                  ng-required="true"
                  typeahead="suggestion for suggestion in methodNames($viewValue)"
                  typeahead-on-select="onSelectMethodName()"
@@ -83,15 +83,15 @@
         </label>
         <div class="col-lg-10">
           <div ix-spinner
-               ix-show="signaturesLoading"
+               ix-show="signaturesLoading && !httpError"
                class="hide"
                style="width: 40px; height: 40px;">
           </div>
-          <div ng-repeat="signature in pointcut.signatures">
+          <div ng-repeat="signature in signatures">
             <div class="radio">
               <label>
                 <input type="radio"
-                       ng-model="pointcut.selectedSignature"
+                       ng-model="page.selectedSignature"
                        ng-value="signature">
                 {{signatureText(signature)}}
               </label>
@@ -108,7 +108,7 @@
           <div class="checkbox" style="padding-top: 6px !important;">
             <label>
               <input type="checkbox"
-                     ng-model="pointcut.config.metric"
+                     ng-model="config.metric"
                      style="margin-top: 3px;">
               Metric
             </label>
@@ -116,9 +116,9 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="pointcut.config.span"
-                     ng-disabled="!pointcut.config.metric">
-                  <span ng-class="{disabled: !pointcut.config.metric}">
+                     ng-model="config.span"
+                     ng-disabled="!config.metric">
+                  <span ng-class="{disabled: !config.metric}">
                     Span
                   </span>
             </label>
@@ -126,9 +126,9 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="pointcut.config.trace"
-                     ng-disabled="!pointcut.config.span">
-                  <span ng-class="{disabled: !pointcut.config.span}">
+                     ng-model="config.trace"
+                     ng-disabled="!config.span">
+                  <span ng-class="{disabled: !config.span}">
                     Trace
                   </span>
             </label>
@@ -137,7 +137,7 @@
       </div>
       <div class="form-group"
            ng-class="{'has-error': formCtrl['__metricName' + $id].$invalid}"
-           ng-show="pointcut.config.metric">
+           ng-show="config.metric">
         <label class="col-lg-2 control-label"
                for="__metricName{{$id}}">
           Metric name
@@ -145,14 +145,14 @@
         <div class="col-lg-10">
           <input type="text"
                  class="form-control"
-                 ng-model="pointcut.config.metricName"
-                 ng-required="pointcut.config.metric"
+                 ng-model="config.metricName"
+                 ng-required="config.metric"
                  name="__metricName{{$id}}"
                  id="__metricName{{$id}}"
                  style="max-width: 20em;">
         </div>
       </div>
-      <div ng-show="pointcut.config.span">
+      <div ng-show="config.span">
         <div class="form-group"
              ng-class="{'has-error': formCtrl['__spanText' + $id].$invalid}">
           <label class="col-lg-2 control-label"
@@ -161,8 +161,8 @@
           </label>
           <div class="col-lg-10">
             <textarea class="form-control"
-                      ng-model="pointcut.config.spanText"
-                      ng-required="pointcut.config.span"
+                      ng-model="config.spanText"
+                      ng-required="config.span"
                       name="__spanText{{$id}}"
                       id="__spanText{{$id}}"
                       rows="2"
@@ -171,7 +171,7 @@
           </div>
         </div>
       </div>
-      <div ng-show="pointcut.config.trace">
+      <div ng-show="config.trace">
         <div class="form-group"
              ng-class="{'has-error': formCtrl['__traceGrouping' + $id].$invalid}">
           <label class="col-lg-2 control-label"
@@ -180,8 +180,8 @@
           </label>
           <div class="col-lg-10">
             <textarea class="form-control"
-                      ng-model="pointcut.config.traceGrouping"
-                      ng-required="pointcut.config.trace"
+                      ng-model="config.traceGrouping"
+                      ng-required="config.trace"
                       name="__traceGrouping{{$id}}"
                       id="__traceGrouping{{$id}}"
                       rows="2"
@@ -194,7 +194,7 @@
         <div class="col-lg-offset-2 col-lg-10">
           <div ix-button-group>
             <div ix-button
-                 ix-label="{{pointcut.version ? 'Save' : 'Add'}}"
+                 ix-label="{{config.version ? 'Save' : 'Add'}}"
                  ix-click="pointcutSave(deferred)"
                  ix-disabled="!hasChanges() || formCtrl.$invalid"
                  class="inline-block">
@@ -230,9 +230,9 @@
   <div ix-button
        ix-label="Apply changes to running JVM"
        ix-click="retransformClasses(deferred)"
-       ix-show="data.dirty">
+       ix-show="page.dirty">
   </div>
 </div>
-<div ng-show="!jvmRetransformClassesSupported && data.dirty">
+<div ng-show="!jvmRetransformClassesSupported && page.dirty">
   JVM restart is required to apply changes
 </div>

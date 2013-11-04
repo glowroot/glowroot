@@ -22,62 +22,53 @@ informant.controller('ConfigFineProfilingCtrl', [
   'confirmIfHasChanges',
   'httpErrors',
   function ($scope, $http, confirmIfHasChanges, httpErrors) {
-    var originalConfig;
+    // initialize page binding object
+    $scope.page = {};
 
     $scope.hasChanges = function () {
-      return originalConfig && !angular.equals($scope.config, originalConfig);
+      return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
+
+    $scope.$watchCollection('[page.fineStoreThresholdOverride, page.fineStoreThresholdMillis]', function (newValues) {
+      if (newValues[0] === undefined) {
+        // initial
+        return;
+      }
+      if (newValues[0]) {
+        $scope.config.storeThresholdMillis = newValues[1];
+      } else {
+        $scope.config.storeThresholdMillis = -1;
+        // update disabled input text to show the overridden value from general config
+        $scope.page.fineStoreThresholdMillis = $scope.generalStoreThresholdMillis;
+      }
+    });
+
+    function onNewData(data) {
+      $scope.loaded = true;
+      $scope.config = data.config;
+      $scope.originalConfig = angular.copy(data.config);
+
+      $scope.generalStoreThresholdMillis = data.generalStoreThresholdMillis;
+      if (data.config.storeThresholdMillis === -1) {
+        $scope.page.fineStoreThresholdOverride = false;
+      } else {
+        $scope.page.fineStoreThresholdOverride = true;
+        $scope.page.fineStoreThresholdMillis = $scope.config.storeThresholdMillis;
+      }
+    }
 
     $scope.save = function (deferred) {
       $http.post('backend/config/fine-profiling', $scope.config)
           .success(function (data) {
-            $scope.config.version = data;
-            originalConfig = angular.copy($scope.config);
+            onNewData(data);
             deferred.resolve('Saved');
           })
-          .error(function (data, status) {
-            if (status === 412) {
-              // HTTP Precondition Failed
-              deferred.reject('Someone else has updated this configuration, please reload and try again');
-            } else {
-              $scope.httpError = httpErrors.get(data, status);
-              deferred.reject($scope.httpError.headline);
-            }
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/fine-profiling-section')
-        .success(function (data) {
-          $scope.loaded = true;
-          $scope.config = data.config;
-          originalConfig = angular.copy($scope.config);
-
-          $scope.generalStoreThresholdMillis = data.generalStoreThresholdMillis;
-          // set up calculated properties
-          $scope.data = {};
-          if ($scope.config.storeThresholdMillis !== -1) {
-            $scope.data.fineStoreThresholdOverride = true;
-            $scope.data.fineStoreThresholdMillis = $scope.config.storeThresholdMillis;
-          } else {
-            $scope.data.fineStoreThresholdOverride = false;
-            $scope.data.fineStoreThresholdMillis = '';
-          }
-          $scope.$watch('[data.fineStoreThresholdOverride, data.fineStoreThresholdMillis]',
-              function (newValue) {
-                if (newValue[0]) {
-                  if ($scope.data.fineStoreThresholdMillis === '') {
-                    $scope.data.fineStoreThresholdMillis = $scope.generalStoreThresholdMillis;
-                  }
-                  $scope.config.storeThresholdMillis = $scope.data.fineStoreThresholdMillis;
-                } else {
-                  $scope.data.fineStoreThresholdMillis = '';
-                  $scope.config.storeThresholdMillis = -1;
-                }
-              }, true);
-        })
-        .error(function (data, status) {
-          $scope.httpError = httpErrors.get(data, status);
-        });
+    $http.get('backend/config/fine-profiling')
+        .success(onNewData)
+        .error(httpErrors.handler($scope));
   }
 ]);

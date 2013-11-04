@@ -22,48 +22,42 @@ informant.controller('JvmManageableFlagsCtrl', [
   'confirmIfHasChanges',
   'httpErrors',
   function ($scope, $http, confirmIfHasChanges, httpErrors) {
-    var originalFlags;
-
     $scope.hasChanges = function () {
-      return originalFlags && !angular.equals($scope.flags, originalFlags);
+      return $scope.originalFlags && !angular.equals($scope.flags, $scope.originalFlags);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
+    function onNewData(data) {
+      $scope.loaded = true;
+      $scope.flags = data;
+      $scope.originalFlags = angular.copy(data);
+    }
+
     $scope.update = function (deferred) {
+      var postData = {};
       // only pass diff to limit clobbering
       // (and also because setting flag to same value will update the flag origin to MANAGEMENT)
       var originalFlagsHash = {};
-      angular.forEach(originalFlags, function (flag) {
+      angular.forEach($scope.originalFlags, function (flag) {
         originalFlagsHash[flag.name] = flag.value;
       });
-      var updatedFlags = {};
       angular.forEach($scope.flags, function (flag) {
         var originalFlagValue = originalFlagsHash[flag.name];
         var updatedFlagValue = flag.value;
         if (updatedFlagValue !== originalFlagValue) {
-          updatedFlags[flag.name] = updatedFlagValue;
+          postData[flag.name] = updatedFlagValue;
         }
       });
-      $http.post('backend/jvm/update-manageable-flags', updatedFlags)
+      $http.post('backend/jvm/update-manageable-flags', postData)
           .success(function (data) {
-            $scope.flags = data;
-            originalFlags = angular.copy($scope.flags);
+            onNewData(data);
             deferred.resolve('Updated');
           })
-          .error(function (data, status) {
-            $scope.httpError = httpErrors.get(data, status);
-            deferred.reject($scope.httpError.headline);
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $http.get('backend/jvm/manageable-flags')
-        .success(function (data) {
-          $scope.loaded = true;
-          $scope.flags = data;
-          originalFlags = angular.copy($scope.flags);
-        })
-        .error(function (data, status) {
-          $scope.httpError = httpErrors.get(data, status);
-        });
+        .success(onNewData)
+        .error(httpErrors.handler($scope));
   }
 ]);

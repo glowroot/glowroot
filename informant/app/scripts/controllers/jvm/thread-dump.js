@@ -50,12 +50,7 @@ informant.controller('JvmThreadDumpCtrl', [
               deferred.resolve('Refreshed');
             }
           })
-          .error(function (data, status) {
-            $scope.httpError = httpErrors.get(data, status);
-            if (deferred) {
-              deferred.reject($scope.httpError.headline);
-            }
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $scope.refresh();

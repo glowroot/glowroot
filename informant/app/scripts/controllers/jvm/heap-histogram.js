@@ -69,12 +69,7 @@ informant.controller('JvmHeapHistogramCtrl', [
               deferred.resolve('Complete');
             }
           })
-          .error(function (data, status) {
-            $scope.httpError = httpErrors.get(data, status);
-            if (deferred) {
-              deferred.reject($scope.httpError.headline);
-            }
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $scope.exportAsCsv = function (deferred) {

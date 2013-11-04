@@ -29,12 +29,13 @@ informant.controller('LoginCtrl', [
     $scope.$parent.title = 'Login';
     $scope.$parent.activeNavbarItem = 'login';
 
-    // init for data binding
-    $scope.data = {};
+    // initialize page binding object
+    $scope.page = {};
+
     $scope.message = login.getMessage();
     $scope.login = function (deferred) {
       $scope.message = undefined;
-      $http.post('/backend/login', $scope.data.password)
+      $http.post('/backend/login', $scope.page.password)
           .success(function (data) {
             if (data.incorrectPassword) {
               $('#loginPassword').select();

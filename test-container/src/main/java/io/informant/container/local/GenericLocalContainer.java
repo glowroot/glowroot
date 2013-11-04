@@ -21,10 +21,12 @@ import java.util.List;
 import java.util.Map;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 
 import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
@@ -63,8 +65,8 @@ public class GenericLocalContainer<T> {
     private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
     private final InformantModule informantModule;
 
-    public GenericLocalContainer(@Nullable File dataDir, int uiPort, boolean useFileDb,
-            boolean shared, Class<T> appInterface, AppExecutor<T> appExecutor) throws Exception {
+    public GenericLocalContainer(@Nullable File dataDir, boolean useFileDb, boolean shared,
+            Class<T> appInterface, AppExecutor<T> appExecutor) throws Exception {
         if (dataDir == null) {
             this.dataDir = TempDirs.createTempDir("informant-test-datadir");
             deleteDataDirOnClose = true;
@@ -74,9 +76,13 @@ public class GenericLocalContainer<T> {
         }
         this.shared = shared;
         preExistingThreads = Threads.currentThreads();
+        // default to port 0 (any available)
+        File configFile = new File(this.dataDir, "config.json");
+        if (!configFile.exists()) {
+            Files.write("{\"ui\":{\"port\":0}}", configFile, Charsets.UTF_8);
+        }
         Map<String, String> properties = Maps.newHashMap();
         properties.put("data.dir", this.dataDir.getAbsolutePath());
-        properties.put("ui.port", Integer.toString(uiPort));
         if (!useFileDb) {
             properties.put("internal.h2.memdb", "true");
         }
