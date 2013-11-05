@@ -28,10 +28,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <base href="/">
-  <!-- main.css is compiled by sass to .tmp/app/styles/main.css
+  <!-- main.css is compiled by sass to .tmp/styles/main.css
        once sass supports inlining css files, this build:css section will not be necessary
        see https://github.com/nex3/sass/issues/556 -->
-  <!-- build:css({informant/app,.tmp/app}) styles/main.css -->
+  <!-- build:css({app,.tmp}) styles/main.css -->
   <link rel="stylesheet" href="bower_components/qtip2/src/core.css"/>
   <link rel="stylesheet" href="bower_components/qtip2/src/tips/tips.css"/>
   <link rel="stylesheet" href="bower_components/bootstrap-datepicker/css/datepicker.css"/>
@@ -140,7 +140,7 @@
   <!-- not using angular cdn at this time since custom angular build is required due to
        https://github.com/angular/angular.js/pull/3135 -->
 
-  <!-- build:js({informant/app,.tmp/app}) scripts/app.components.js -->
+  <!-- build:js({app,.tmp}) scripts/app.components.js -->
   <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
   <script src="bower_components/handlebars/handlebars.runtime.js"></script>
   <!-- modal is used by trace detail modals -->
@@ -177,7 +177,7 @@
   <script src="scripts/generated/angular-ui-bootstrap-templates.js"></script>
   <!-- endbuild -->
 
-  <!-- build:js({informant/app,.tmp/app}) scripts/app.js -->
+  <!-- build:js({app,.tmp}) scripts/app.js -->
   <script src="scripts/app.js"></script>
   <script src="scripts/routes.js"></script>
   <script src="scripts/directives.js"></script>

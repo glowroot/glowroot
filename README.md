@@ -46,7 +46,7 @@ If you are working on the UI, you either need to run `grunt` to re-build the web
 
     grunt server
 
-and connect your browser to `http://localhost:9000`.
+and connect your browser to `http://localhost:9000`.  Note: `grunt` and `grunt server` should be run from the informant subdirectory.
 
 `grunt server` serves up the Informant web assets to the browser without the concat/minify/rev step, which makes testing/debugging much easier. It reverse proxies non- static resource requests to http://localhost:4001 to be handled by Informant. It also watches for changes to the files and performs live-reload of the assets inside the browser.
 

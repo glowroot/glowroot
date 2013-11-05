@@ -18,9 +18,9 @@ module.exports = function (grunt) {
 
   // configurable paths
   var yeomanConfig = {
-    app: 'informant/app',
-    dist: 'informant/ui-resources-dist/io/informant/local/ui/app-dist',
-    exportDist: 'informant/ui-resources-dist/io/informant/local/ui/export-dist'
+    app: 'app',
+    dist: 'target/ui-resources-dist/io/informant/local/ui/app-dist',
+    exportDist: 'target/ui-resources-dist/io/informant/local/ui/export-dist'
   };
 
   try {
@@ -48,9 +48,9 @@ module.exports = function (grunt) {
           '<%= yeoman.app %>/views/**/*.html',
           '<%= yeoman.app %>/template/**/*.html',
           // watch:sass output
-          '.tmp/app/styles/main.css',
+          '.tmp/styles/main.css',
           // watch:handlebars output
-          '.tmp/app/scripts/generated/handlebars-templates.js'
+          '.tmp/scripts/generated/handlebars-templates.js'
         ]
       },
       gruntfile: {
@@ -90,7 +90,7 @@ module.exports = function (grunt) {
               require('grunt-connect-rewrite/lib/utils').rewriteRequest,
               require('grunt-connect-proxy/lib/utils').proxyRequest,
               mountFolder(connect, yeomanConfig.app),
-              mountFolder(connect, '.tmp/app'),
+              mountFolder(connect, '.tmp'),
               // serve angular-ui-bootstrap templates
               mountFolder(connect, yeomanConfig.app + '/bower_components/angular-ui-bootstrap'),
               // serve source maps
@@ -147,13 +147,13 @@ module.exports = function (grunt) {
           // need to output main.css to .tmp so it can still be concatenated with qtip and datepicker css files
           // once sass supports inlining css files, this can output directly to destination
           // see https://github.com/nex3/sass/issues/556
-          '.tmp/app/styles/main.css': '<%= yeoman.app %>/styles/main.scss',
+          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.scss',
           '<%= yeoman.exportDist %>/styles/export.css': '<%= yeoman.app %>/styles/export.scss'
         }
       },
       server: {
         files: {
-          '.tmp/app/styles/main.css': '<%= yeoman.app %>/styles/main.scss'
+          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.scss'
         }
       }
     },
@@ -221,7 +221,7 @@ module.exports = function (grunt) {
           }
         },
         files: {
-          '.tmp/app/scripts/generated/handlebars-templates.js': '<%= yeoman.app %>/hbs/*.hbs'
+          '.tmp/scripts/generated/handlebars-templates.js': '<%= yeoman.app %>/hbs/*.hbs'
         }
       }
     },
@@ -270,7 +270,7 @@ module.exports = function (grunt) {
           'template/modal/*.html',
           'template/dialog/*.html'
         ],
-        dest: '.tmp/app/scripts/generated/angular-ui-bootstrap-templates.js'
+        dest: '.tmp/scripts/generated/angular-ui-bootstrap-templates.js'
       },
       appTemplates: {
         options: {
@@ -281,7 +281,7 @@ module.exports = function (grunt) {
           'views/**/*.html',
           'template/**/*.html'
         ],
-        dest: '.tmp/app/scripts/generated/angular-templates.js'
+        dest: '.tmp/scripts/generated/angular-templates.js'
       }
     },
     uglify: {
@@ -300,10 +300,9 @@ module.exports = function (grunt) {
           return file.replace(/(.*)[/\\]scripts[/\\]([^/\\]+)$/, '$1/sources/$2') + '.map';
         },
         sourceMapRoot: '/sources',
-        // drop informant/app and .tmp/app prefixes in the source map file
-        // NOTE: this is why .tmp/app is used instead of just .tmp, since then it wouldn't have the same number of
-        // path elements that need to be stripped
-        sourceMapPrefix: 2,
+        // drop app and .tmp prefixes in the source map file
+        // it's important that these two directories have the same number of path elements
+        sourceMapPrefix: 1,
         sourceMappingURL: function (file) {
           if (file.indexOf('export.js') !== -1 || file.indexOf('export.components.js') !== -1) {
             // don't add sourceMappingURL to js that is inlined into export files
