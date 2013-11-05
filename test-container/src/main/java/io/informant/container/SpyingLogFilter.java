@@ -46,10 +46,10 @@ public class SpyingLogFilter extends Filter<ILoggingEvent> {
             if (event.getLevel().isGreaterOrEqual(Level.WARN)) {
                 unexpectedMessageCount.getAndIncrement();
             }
-            return FilterReply.ACCEPT;
+            return FilterReply.NEUTRAL;
         } else {
             // this is expected, so don't log it
-            return FilterReply.NEUTRAL;
+            return FilterReply.DENY;
         }
     }
 
