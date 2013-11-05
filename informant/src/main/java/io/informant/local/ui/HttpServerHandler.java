@@ -82,7 +82,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
 
     private static final ImmutableSet<String> BROWSER_DISCONNECT_MESSAGES = ImmutableSet.of(
             "An existing connection was forcibly closed by the remote host",
-            "An established connection was aborted by the software in your host machine");
+            "An established connection was aborted by the software in your host machine",
+            "Connection reset by peer");
 
     private static final ImmutableMap<String, String> mimeTypes =
             ImmutableMap.<String, String>builder()

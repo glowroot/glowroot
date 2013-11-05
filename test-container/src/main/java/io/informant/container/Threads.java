@@ -42,9 +42,11 @@ public class Threads {
     public static List<Thread> currentThreads() {
         List<Thread> threads = Lists.newArrayList();
         for (Thread thread : Thread.getAllStackTraces().keySet()) {
-            // DestroyJavaVM thread seems a bit unpredictable, easier to just filter it out
+            // DestroyJavaVM is a JVM thread that appears sporadically, easier to just filter it out
+            // AWT-AppKit is a JVM thread on OS X that appears during webdriver tests
             if (thread.getState() != State.TERMINATED
-                    && !thread.getName().equals("DestroyJavaVM")) {
+                    && !thread.getName().equals("DestroyJavaVM")
+                    && !thread.getName().equals("AWT-AppKit")) {
                 threads.add(thread);
             }
         }

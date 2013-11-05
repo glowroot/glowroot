@@ -122,7 +122,7 @@ public class JvmInfoTest {
         public void traceMarker() throws Exception {
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             long start = threadBean.getCurrentThreadCpuTime();
-            while (threadBean.getCurrentThreadCpuTime() - start < 10) {
+            while (threadBean.getCurrentThreadCpuTime() - start < MILLISECONDS.toNanos(10)) {
                 for (int i = 0; i < 1000; i++) {
                     Math.pow(i, i);
                 }
