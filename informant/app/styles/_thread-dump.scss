@@ -28,6 +28,10 @@
   white-space: pre;
   background-color: #eee;
   border-radius: 8px;
+  // min-width 100% so the section is at least flush-right with the container
+  min-width: 100%;
+  // this ensures there is still a bit of padding to the right since the log can be very wide
+  margin-right: 20px;
 }
 
 .thread-dump-spinner {

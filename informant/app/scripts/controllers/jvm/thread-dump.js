@@ -23,6 +23,8 @@ informant.controller('JvmThreadDumpCtrl', [
   'httpErrors',
   function ($scope, $http, $q, httpErrors) {
 
+    var threadDumpHtml;
+
     Handlebars.registerHelper('ifBlocked', function (state, options) {
       if (state === 'BLOCKED') {
         return options.fn(this);
@@ -39,13 +41,19 @@ informant.controller('JvmThreadDumpCtrl', [
       }
     });
 
+    $scope.exportAsText = function (deferred) {
+      var textWindow = window.open();
+      $(textWindow.document.body).html(threadDumpHtml);
+      deferred.resolve();
+    };
+
     $scope.refresh = function (deferred) {
       $http.get('backend/jvm/thread-dump')
           .success(function (data) {
             $scope.loaded = true;
             // $.trim() is needed because this template is sensitive to surrounding spaces
-            var html = $.trim(JST['thread-dump'](data));
-            $('#threadDump').html(html);
+            threadDumpHtml = $.trim(JST['thread-dump'](data));
+            $('#threadDump').html('<br>' + threadDumpHtml);
             if (deferred) {
               deferred.resolve('Refreshed');
             }

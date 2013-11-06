@@ -20,19 +20,22 @@
   <div class="panel-body">
     <div ng-include src="'template/ix-loading-overlay.html'"></div>
     <div ng-include src="'template/ix-http-error-overlay.html'"></div>
-    <!-- margin-right: 20px since the log can be very wide, introducing horizontal scroller and
-         this ensures there is still a bit of padding to the right,
-         min-width: 100% so the section is at least flush-right with the container -->
-    <div style="margin-right: 20px; min-width: 100%;">
-      <div ix-button
-           ix-label="Refresh"
-           ix-click="refresh(deferred)"
-           style="margin-bottom: 20px;">
-      </div>
-      <span class="thread-dump-flat-pre"
-            ng-class="{hide: !loaded}"
-            id="threadDump">
-      </span>
+    <div ix-button
+         ix-label="Refresh"
+         ix-click="refresh(deferred)"
+         style="margin-bottom: 20px; float: left;">
+    </div>
+    <div ix-button
+         ix-button-right-aligned
+         ix-label="Export as text"
+         ix-click="exportAsText(deferred)"
+         ix-btn-class="btn-default"
+         style="float: right;">
+    </div>
+    <br style="clear: both;">
+    <div class="thread-dump-flat-pre"
+         ng-class="{hide: !loaded}"
+         id="threadDump">
     </div>
   </div>
 </div>
