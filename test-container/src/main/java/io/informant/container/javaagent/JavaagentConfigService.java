@@ -17,7 +17,6 @@ package io.informant.container.javaagent;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
@@ -133,12 +132,10 @@ class JavaagentConfigService implements ConfigService {
 
     @Nullable
     public PluginConfig getPluginConfig(String pluginId) throws Exception {
-        String response = httpClient.get("/backend/config/plugin");
+        String response = httpClient.get("/backend/config/plugin/" + pluginId);
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        JsonNode configNode = rootNode.get("configs");
-        Map<String, PluginConfig> configs = mapper.readValue(mapper.treeAsTokens(configNode),
-                new TypeReference<Map<String, PluginConfig>>() {});
-        return configs.get(pluginId);
+        JsonNode configNode = rootNode.get("config");
+        return mapper.readValue(mapper.treeAsTokens(configNode), PluginConfig.class);
     }
 
     public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {

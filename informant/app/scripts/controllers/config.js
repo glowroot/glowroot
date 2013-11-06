@@ -18,9 +18,8 @@
 
 informant.controller('ConfigCtrl', [
   '$scope',
-  '$http',
   '$state',
-  function ($scope, $http, $state) {
+  function ($scope, $state) {
     // \u00b7 is &middot;
     document.title = 'Configuration \u00b7 Informant';
     $scope.$parent.title = 'Configuration';

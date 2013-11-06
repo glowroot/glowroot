@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.sql.SQLException;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.Attributes;
 import java.util.jar.JarInputStream;
@@ -33,7 +32,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
@@ -50,7 +48,6 @@ import io.informant.config.FineProfilingConfig;
 import io.informant.config.GeneralConfig;
 import io.informant.config.JsonViews.UiView;
 import io.informant.config.PluginConfig;
-import io.informant.config.PluginDescriptor;
 import io.informant.config.PluginDescriptorCache;
 import io.informant.config.StorageConfig;
 import io.informant.config.UserInterfaceConfig;
@@ -197,16 +194,16 @@ class ConfigJsonService {
     }
 
     @JsonServiceMethod
-    String getPlugin() throws IOException, SQLException {
-        logger.debug("getPlugin()");
+    String getPluginConfig(String pluginId) throws IOException, SQLException {
+        logger.debug("getPlugin(): pluginId={}", pluginId);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
         jg.writeStartObject();
-        jg.writeFieldName("descriptors");
-        writer.writeValue(jg, pluginDescriptorCache.getPluginDescriptors());
-        jg.writeFieldName("configs");
-        writer.writeValue(jg, getPluginConfigMap());
+        jg.writeFieldName("descriptor");
+        writer.writeValue(jg, pluginDescriptorCache.getPluginDescriptor(pluginId));
+        jg.writeFieldName("config");
+        writer.writeValue(jg, configService.getPluginConfig(pluginId));
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -475,7 +472,7 @@ class ConfigJsonService {
 
     @JsonServiceMethod
     String updatePluginConfig(String pluginId, String content) throws JsonServiceException,
-            IOException {
+            IOException, SQLException {
         logger.debug("updatePluginConfig(): pluginId={}, content={}", pluginId, content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
@@ -494,13 +491,7 @@ class ConfigJsonService {
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
         }
-        PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        writer.writeValue(jg, pluginConfig);
-        jg.close();
-        return sb.toString();
+        return getPluginConfig(pluginId);
     }
 
     @JsonServiceMethod
@@ -538,18 +529,5 @@ class ConfigJsonService {
         logger.debug("removeAdhocPointcutConfig(): content={}", content);
         String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
         configService.deleteAdhocPointcutConfig(version);
-    }
-
-    private Map<String, PluginConfig> getPluginConfigMap() {
-        Map<String, PluginConfig> pluginConfigMap = Maps.newHashMap();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
-            PluginConfig pluginConfig = configService.getPluginConfig(pluginDescriptor.getId());
-            if (pluginConfig == null) {
-                throw new IllegalStateException("Plugin config not found for plugin id '"
-                        + pluginDescriptor.getId() + "'");
-            }
-            pluginConfigMap.put(pluginDescriptor.getId(), pluginConfig);
-        }
-        return pluginConfigMap;
     }
 }

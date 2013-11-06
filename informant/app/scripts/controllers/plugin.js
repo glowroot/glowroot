@@ -16,17 +16,29 @@
 
 /* global informant, $ */
 
-informant.controller('JvmCtrl', [
+informant.controller('PluginCtrl', [
   '$scope',
   '$state',
-  function ($scope, $state) {
+  '$http',
+  'httpErrors',
+  function ($scope, $state, $http, httpErrors) {
     // \u00b7 is &middot;
-    document.title = 'JVM \u00b7 Informant';
-    $scope.$parent.title = 'JVM';
-    $scope.$parent.activeNavbarItem = 'jvm';
+    document.title = 'Plugins \u00b7 Informant';
+    $scope.$parent.title = 'Plugins';
+    $scope.$parent.activeNavbarItem = 'plugin';
 
     $scope.isCurrentView = function (viewName) {
-      return $state.current.name === viewName;
+      return $state.params.id === viewName;
+    };
+
+    $scope.pattern = {
+      // TODO allow comma as decimal separator (and check out html5 input type="number")
+      // tolerant of missing whole (.2) and missing decimal (2.)
+      percentage: /^(0|[1-9][0-9]?|100)?(\\.[0-9]*)?$/,
+      // tolerant of commas
+      integer: /^(0|[1-9][0-9]*)$/,
+      // missing whole (.2) and missing decimal (2.)
+      double: /^(0|[1-9][0-9]*)?(\\.[0-9]*)?$/
     };
 
     function setUpSidebar() {

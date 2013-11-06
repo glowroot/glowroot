@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
 import io.informant.config.ConfigService;
+import io.informant.config.PluginDescriptor;
+import io.informant.config.PluginDescriptorCache;
 import io.informant.jvm.Flags;
 import io.informant.jvm.HeapHistograms;
 import io.informant.jvm.HotSpotDiagnostic;
@@ -46,11 +48,14 @@ class LayoutJsonService {
     private final String version;
     private final boolean aggregatesEnabled;
     private final ConfigService configService;
+    private final PluginDescriptorCache pluginDescriptorCache;
 
-    LayoutJsonService(String version, boolean aggregatesEnabled, ConfigService configService) {
+    LayoutJsonService(String version, boolean aggregatesEnabled, ConfigService configService,
+            PluginDescriptorCache pluginDescriptorCache) {
         this.version = version;
         this.aggregatesEnabled = aggregatesEnabled;
         this.configService = configService;
+        this.pluginDescriptorCache = pluginDescriptorCache;
     }
 
     // this is only used when running under 'grunt server' and is just to get get back layout data
@@ -70,6 +75,15 @@ class LayoutJsonService {
         jg.writeStringField("footerMessage", "version " + version);
         jg.writeBooleanField("passwordEnabled",
                 configService.getUserInterfaceConfig().isPasswordEnabled());
+        jg.writeFieldName("plugins");
+        jg.writeStartArray();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
+            jg.writeStartObject();
+            jg.writeStringField("id", pluginDescriptor.getId());
+            jg.writeStringField("name", pluginDescriptor.getName());
+            jg.writeEndObject();
+        }
+        jg.writeEndArray();
         jg.writeEndObject();
         jg.close();
         return sb.toString();

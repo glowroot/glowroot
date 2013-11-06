@@ -94,6 +94,16 @@ public class PluginDescriptorCache {
         return pluginDescriptors;
     }
 
+    @Nullable
+    public PluginDescriptor getPluginDescriptor(String pluginId) {
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            if (pluginDescriptor.getId().equals(pluginId)) {
+                return pluginDescriptor;
+            }
+        }
+        return null;
+    }
+
     // don't return ImmutableList since this method is used by SameJvmExecutionAdapter and when
     // SameJvmExecutionAdapter is compiled by maven, it is compiled against shaded informant,
     // but then if a unit test is run inside an IDE without rebuilding SameJvmExecutionAdapter it

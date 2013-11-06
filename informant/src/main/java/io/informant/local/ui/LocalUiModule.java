@@ -80,7 +80,7 @@ public class LocalUiModule {
         TraceRegistry traceRegistry = traceModule.getTraceRegistry();
 
         LayoutJsonService layoutJsonService = new LayoutJsonService(version,
-                collectorModule.getAggregatesEnabled(), configService);
+                collectorModule.getAggregatesEnabled(), configService, pluginDescriptorCache);
         HttpSessionManager httpSessionManager = new HttpSessionManager(configService, clock,
                 layoutJsonService);
         String baseHref = getBaseHref(properties);
@@ -174,6 +174,7 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/aggregates$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/jvm/.*$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/config/.*$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/plugin/.*$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/login$"), resourceBase + "/index.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");
@@ -261,8 +262,8 @@ public class LocalUiModule {
                 configJsonService, "getAdvanced"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/advanced",
                 configJsonService, "updateAdvancedConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/plugin$",
-                configJsonService, "getPlugin"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/plugin/(.+)$",
+                configJsonService, "getPluginConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/plugin/(.+)$",
                 configJsonService, "updatePluginConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/adhoc-pointcut$",

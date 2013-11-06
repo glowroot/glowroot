@@ -116,11 +116,6 @@ informant.config([
       templateUrl: 'views/config/user-interface.html',
       controller: 'ConfigUserInterfaceCtrl'
     });
-    $stateProvider.state('config.plugins', {
-      url: '/plugins',
-      templateUrl: 'views/config/plugin-list.html',
-      controller: 'ConfigPluginListCtrl'
-    });
     $stateProvider.state('config.adhocPointcuts', {
       url: '/adhoc-pointcuts',
       templateUrl: 'views/config/adhoc-pointcut-list.html',
@@ -130,6 +125,16 @@ informant.config([
       url: '/advanced',
       templateUrl: 'views/config/advanced.html',
       controller: 'ConfigAdvancedCtrl'
+    });
+    $stateProvider.state('plugin', {
+      url: '/plugin',
+      templateUrl: 'views/plugin.html',
+      controller: 'PluginCtrl'
+    });
+    $stateProvider.state('plugin.x', {
+      url: '/:id',
+      templateUrl: 'views/plugin-x.html',
+      controller: 'PluginXCtrl'
     });
     $stateProvider.state('login', {
       url: '/login',

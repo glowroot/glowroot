@@ -99,6 +99,12 @@
                  ix-item-name="config"
                  ix-url="#/config/general">
             </div>
+            <div ix-navbar-item
+                 ix-display="Plugins"
+                 ix-item-name="plugin"
+                 ix-url="#/plugin/{{layout.plugins[0].id}}"
+                 ix-show="layout.plugins.length">
+            </div>
           </ul>
           <form class="navbar-form navbar-right ng-cloak"
                 ng-show="showSignOutButton">
@@ -197,8 +203,6 @@
   <script src="scripts/controllers/config/storage.js"></script>
   <script src="scripts/controllers/config/user-interface.js"></script>
   <script src="scripts/controllers/config/advanced.js"></script>
-  <script src="scripts/controllers/config/plugin-list.js"></script>
-  <script src="scripts/controllers/config/plugin.js"></script>
   <script src="scripts/controllers/config/adhoc-pointcut-list.js"></script>
   <script src="scripts/controllers/config/adhoc-pointcut.js"></script>
   <script src="scripts/controllers/jvm.js"></script>
@@ -211,6 +215,8 @@
   <script src="scripts/controllers/jvm/manageable-flags.js"></script>
   <script src="scripts/controllers/jvm/all-flags.js"></script>
   <script src="scripts/controllers/jvm/capabilities.js"></script>
+  <script src="scripts/controllers/plugin.js"></script>
+  <script src="scripts/controllers/plugin-x.js"></script>
   <script src="scripts/controllers/login.js"></script>
   <!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->
   <script src="scripts/generated/handlebars-templates.js"></script>

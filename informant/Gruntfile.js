@@ -79,6 +79,7 @@ module.exports = function (grunt) {
         '^/aggregates$': '/index.html',
         '^/jvm/.*$': '/index.html',
         '^/config/.*$': '/index.html',
+        '^/plugin/.*$': '/index.html',
         '^/login$': '/index.html'
       },
       livereload: {

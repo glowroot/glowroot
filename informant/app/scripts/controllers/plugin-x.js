@@ -16,26 +16,28 @@
 
 /* global informant, angular */
 
-informant.controller('ConfigPluginCtrl', [
+informant.controller('PluginXCtrl', [
   '$scope',
+  '$stateParams',
   '$http',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, confirmIfHasChanges, httpErrors) {
+  function ($scope, $stateParams, $http, confirmIfHasChanges, httpErrors) {
+
     function onNewData(data) {
+      $scope.loaded = true;
+      $scope.plugin = data;
       $scope.config = {
-        enabled: data.enabled,
-        version: data.version
+        enabled: data.config.enabled,
+        version: data.config.version
       };
-      $scope.config.properties = angular.copy($scope.plugin.descriptor.properties);
+      $scope.config.properties = angular.copy(data.descriptor.properties);
       for (var j = 0; j < $scope.config.properties.length; j++) {
         var property = $scope.config.properties[j];
-        property.value = data.properties[property.name];
+        property.value = data.config.properties[property.name];
       }
       $scope.originalConfig = angular.copy($scope.config);
     }
-
-    onNewData($scope.plugin.config);
 
     $scope.hasChanges = function () {
       return !angular.equals($scope.config, $scope.originalConfig);
@@ -52,12 +54,18 @@ informant.controller('ConfigPluginCtrl', [
         var property = $scope.config.properties[i];
         postData.properties[property.name] = property.value;
       }
-      $http.post('backend/config/plugin/' + $scope.plugin.id, postData)
+      $http.post('backend/config/plugin/' + $stateParams.id, postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');
           })
           .error(httpErrors.handler($scope, deferred));
     };
+
+    $http.get('backend/config/plugin/' + $stateParams.id)
+        .success(function (data) {
+          onNewData(data);
+        })
+        .error(httpErrors.handler($scope));
   }
 ]);
