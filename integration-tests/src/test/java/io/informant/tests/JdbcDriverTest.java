@@ -70,7 +70,7 @@ public class JdbcDriverTest {
         }
         public void traceMarker() throws Exception {
             PluginServices pluginServices =
-                    PluginServices.get("io.informant:informant-integration-tests");
+                    PluginServices.get("informant-integration-tests");
             pluginServices.setTraceAttribute("mock driver loaded",
                     Boolean.toString(MockDriverState.isLoaded()));
         }

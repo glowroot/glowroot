@@ -214,9 +214,7 @@ class LocalConfigService implements ConfigService {
         if (coreConfig == null) {
             return null;
         }
-        PluginConfig config = new PluginConfig(coreConfig.getGroupId(),
-                coreConfig.getArtifactId(),
-                coreConfig.getVersion());
+        PluginConfig config = new PluginConfig(coreConfig.getId(), coreConfig.getVersion());
         config.setEnabled(coreConfig.isEnabled());
         for (Entry<String, /*@Nullable*/Object> entry : coreConfig.getProperties().entrySet()) {
             config.setProperty(entry.getKey(), entry.getValue());

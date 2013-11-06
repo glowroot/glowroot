@@ -37,8 +37,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class ConnectionAspect {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("io.informant.plugins:jdbc-plugin");
+    private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
     private static volatile int stackTraceThresholdMillis;
 

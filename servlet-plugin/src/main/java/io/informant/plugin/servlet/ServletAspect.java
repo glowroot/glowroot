@@ -50,8 +50,7 @@ import io.informant.shaded.google.common.base.Strings;
 // TODO add support for async servlets (servlet 3.0)
 public class ServletAspect {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("io.informant.plugins:servlet-plugin");
+    private static final PluginServices pluginServices = PluginServices.get("servlet");
 
     private static final ThreadLocal</*@Nullable*/ServletMessageSupplier> topLevel =
             new ThreadLocal</*@Nullable*/ServletMessageSupplier>();

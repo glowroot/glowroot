@@ -47,8 +47,7 @@ public class NestableCallAspect {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("io.informant:informant-ui-testing");
+    private static final PluginServices pluginServices = PluginServices.get("informant-ui-testing");
 
     @Pointcut(typeName = "io.informant.testing.ui.NestableCall", methodName = "execute",
             metricName = "nestable", captureNested = false)

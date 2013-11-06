@@ -1,7 +1,6 @@
 {
   "name": "Integration Tests Plugin",
-  "groupId": "io.informant",
-  "artifactId": "informant-integration-tests",
+  "id": "informant-integration-tests",
   "version": "0.5-SNAPSHOT",
   "properties": [
     {

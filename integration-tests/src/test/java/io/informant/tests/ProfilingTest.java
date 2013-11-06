@@ -248,7 +248,7 @@ public class ProfilingTest {
     public static class ShouldGenerateTraceWithMergedStackTreeForAble implements AppUnderTest,
             TraceMarker {
         private static final PluginServices pluginServices =
-                PluginServices.get("io.informant:informant-integration-tests");
+                PluginServices.get("informant-integration-tests");
         public void executeApp() throws InterruptedException {
             traceMarker();
         }

@@ -50,7 +50,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
  */
 public class JdbcPluginTest {
 
-    private static final String PLUGIN_ID = "io.informant.plugins:jdbc-plugin";
+    private static final String PLUGIN_ID = "jdbc";
 
     private static Container container;
 

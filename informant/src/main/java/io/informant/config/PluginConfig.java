@@ -22,7 +22,6 @@ import java.util.Map.Entry;
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -48,7 +47,7 @@ import io.informant.markers.OnlyUsedByTests;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@JsonPropertyOrder({"groupId", "artifactId"})
+@JsonPropertyOrder({"id"})
 @Immutable
 public class PluginConfig {
 
@@ -90,13 +89,8 @@ public class PluginConfig {
     }
 
     // used by json serialization
-    public String getGroupId() {
-        return pluginDescriptor.getGroupId();
-    }
-
-    // used by json serialization
-    public String getArtifactId() {
-        return pluginDescriptor.getArtifactId();
+    public String getId() {
+        return pluginDescriptor.getId();
     }
 
     public boolean isEnabled() {
@@ -161,16 +155,10 @@ public class PluginConfig {
         return version;
     }
 
-    @JsonIgnore
-    String getId() {
-        return pluginDescriptor.getId();
-    }
-
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("groupId", pluginDescriptor.getGroupId())
-                .add("artifactId", pluginDescriptor.getArtifactId())
+                .add("id", pluginDescriptor.getId())
                 .add("enabled", enabled)
                 .add("stringProperties", stringProperties)
                 .add("booleanProperties", booleanProperties)

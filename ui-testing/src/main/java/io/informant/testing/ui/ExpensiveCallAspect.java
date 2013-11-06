@@ -44,8 +44,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 public class ExpensiveCallAspect {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("io.informant:informant-ui-testing");
+    private static final PluginServices pluginServices = PluginServices.get("informant-ui-testing");
 
     private static final UnresolvedMethod getSpanText =
             UnresolvedMethod.from("io.informant.testing.ui.ExpensiveCall", "getSpanText");

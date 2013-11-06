@@ -1,7 +1,6 @@
 {
   "name": "Ui Testing Plugin",
-  "groupId": "io.informant",
-  "artifactId": "informant-ui-testing",
+  "id": "informant-ui-testing",
   "version": "0.5-SNAPSHOT",
   "properties": [
     {

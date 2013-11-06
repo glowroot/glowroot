@@ -37,8 +37,7 @@ import io.informant.api.weaving.Pointcut;
  */
 public class ServletInitAspect {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("io.informant.plugins:servlet-plugin");
+    private static final PluginServices pluginServices = PluginServices.get("servlet");
 
     /*
      * ================== Startup ==================

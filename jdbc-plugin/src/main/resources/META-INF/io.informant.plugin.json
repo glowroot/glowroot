@@ -1,7 +1,6 @@
 {
   "name": "Jdbc Plugin",
-  "groupId": "io.informant.plugins",
-  "artifactId": "jdbc-plugin",
+  "id": "jdbc",
   "version": "0.5-SNAPSHOT",
   "properties": [
     {

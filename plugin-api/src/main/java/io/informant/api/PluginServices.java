@@ -37,8 +37,7 @@ import io.informant.api.weaving.Pointcut;
  * &#064;Aspect
  * public class SpringAspect {
  * 
- *     private static final PluginServices pluginServices =
- *             PluginServices.get(&quot;io.informant.plugins:spring-plugin&quot;);
+ *     private static final PluginServices pluginServices = PluginServices.get(&quot;spring&quot;);
  * 
  *     &#064;Pointcut(typeName = &quot;org.springframework.validation.Validator&quot;,
  *             methodName = &quot;validate&quot;, methodArgs = {&quot;..&quot;},

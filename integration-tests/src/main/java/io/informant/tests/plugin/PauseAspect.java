@@ -35,7 +35,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 public class PauseAspect {
 
     private static final PluginServices pluginServices =
-            PluginServices.get("io.informant:informant-integration-tests");
+            PluginServices.get("informant-integration-tests");
 
     @Pointcut(typeName = "io.informant.tests.Pause", methodName = "pauseOneMillisecond",
             methodArgs = {}, metricName = "pause")

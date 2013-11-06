@@ -36,8 +36,7 @@ import io.informant.api.weaving.Pointcut;
  */
 public class ExternalJvmMainAspect {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("io.informant:informant-ui-testing");
+    private static final PluginServices pluginServices = PluginServices.get("informant-ui-testing");
 
     @Pointcut(typeName = "io.informant.container.javaagent.JavaagentContainer",
             methodName = "main", methodArgs = {"java.lang.String[]"},

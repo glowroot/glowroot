@@ -60,8 +60,7 @@ public class StatementAspect {
 
     private static final Logger logger = LoggerFactory.getLogger(StatementAspect.class);
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("io.informant.plugins:jdbc-plugin");
+    private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
     private static final AtomicBoolean noSqlTextAvailableLoggedOnce = new AtomicBoolean();
 

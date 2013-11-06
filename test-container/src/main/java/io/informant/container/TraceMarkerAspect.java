@@ -33,7 +33,7 @@ import io.informant.api.weaving.Pointcut;
 public class TraceMarkerAspect {
 
     private static final PluginServices pluginServices =
-            PluginServices.get("io.informant:informant-test-container");
+            PluginServices.get("informant-test-container");
 
     @Pointcut(typeName = "io.informant.container.TraceMarker|io.informant.testkit.TraceMarker",
             methodName = "traceMarker", metricName = "mock trace marker")

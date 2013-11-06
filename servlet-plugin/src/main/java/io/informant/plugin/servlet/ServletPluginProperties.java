@@ -38,8 +38,7 @@ class ServletPluginProperties {
     private static final String CAPTURE_SESSION_ID_PROPERTY_NAME = "captureSessionId";
     private static final String CAPTURE_STARTUP_PROPERTY_NAME = "captureStartup";
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("io.informant.plugins:servlet-plugin");
+    private static final PluginServices pluginServices = PluginServices.get("servlet");
 
     private static final Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
 

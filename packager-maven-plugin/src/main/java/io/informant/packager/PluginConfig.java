@@ -26,31 +26,16 @@ import checkers.nullness.quals.Nullable;
 public class PluginConfig {
 
     @Nullable
-    private String groupId;
-    @Nullable
-    private String artifactId;
+    private String id;
     private PropertyConfig[] properties = new PropertyConfig[0];
 
+    @Nullable
     public String getId() {
-        return groupId + ":" + artifactId;
+        return id;
     }
 
-    @Nullable
-    public String getGroupId() {
-        return groupId;
-    }
-
-    public void setGroupId(String groupId) {
-        this.groupId = groupId;
-    }
-
-    @Nullable
-    public String getArtifactId() {
-        return artifactId;
-    }
-
-    public void setArtifactId(String artifactId) {
-        this.artifactId = artifactId;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public PropertyConfig[] getProperties() {

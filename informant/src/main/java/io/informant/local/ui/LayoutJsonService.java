@@ -80,7 +80,12 @@ class LayoutJsonService {
         for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
             jg.writeStartObject();
             jg.writeStringField("id", pluginDescriptor.getId());
-            jg.writeStringField("name", pluginDescriptor.getName());
+            String name = pluginDescriptor.getName();
+            // by convention, strip off trailing " Plugin"
+            if (name.endsWith(" Plugin")) {
+                name = name.substring(0, name.lastIndexOf(" Plugin"));
+            }
+            jg.writeStringField("name", name);
             jg.writeEndObject();
         }
         jg.writeEndArray();

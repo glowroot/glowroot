@@ -37,8 +37,7 @@ import io.informant.shaded.google.common.collect.ImmutableMap;
  */
 public class RequestParameterAspect {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("io.informant.plugins:servlet-plugin");
+    private static final PluginServices pluginServices = PluginServices.get("servlet");
 
     @Pointcut(typeName = "javax.servlet.ServletRequest", methodName = "getParameter*",
             methodArgs = {".."}, captureNested = false)

@@ -1,7 +1,6 @@
 {
   "name": "Servlet Plugin",
-  "groupId": "io.informant.plugins",
-  "artifactId": "servlet-plugin",
+  "id": "servlet",
   "version": "0.5-SNAPSHOT",
   "properties": [
     {

@@ -38,8 +38,7 @@
     "weavingDisabled" : false
   },
   "plugins" : [ {
-    "groupId" : "io.informant",
-    "artifactId" : "informant-integration-tests",
+    "id" : "informant-integration-tests",
     "enabled" : true,
     "properties" : {
       "hasDefaultVal" : "one",
@@ -48,8 +47,7 @@
       "starredGrouping" : false
     }
   }, {
-    "groupId" : "io.informant",
-    "artifactId" : "informant-test-container",
+    "id" : "informant-test-container",
     "enabled" : true,
     "properties" : { }
   } ],

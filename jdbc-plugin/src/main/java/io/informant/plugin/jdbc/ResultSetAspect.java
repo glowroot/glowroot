@@ -45,8 +45,7 @@ public class ResultSetAspect {
 
     private static final Logger logger = LoggerFactory.getLogger(ResultSetAspect.class);
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("io.informant.plugins:jdbc-plugin");
+    private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
     @Pointcut(typeName = "java.sql.ResultSet",
             methodName = "next|previous|relative|absolute|first|last", methodArgs = "..",

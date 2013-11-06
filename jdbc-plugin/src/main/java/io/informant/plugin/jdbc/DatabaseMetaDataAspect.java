@@ -43,8 +43,7 @@ public class DatabaseMetaDataAspect {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseMetaDataAspect.class);
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("io.informant.plugins:jdbc-plugin");
+    private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
     // DatabaseMetaData method timings are captured below, so this thread local is used to
     // avoid capturing driver-specific java.sql.Statement executions used to implement the

@@ -231,25 +231,16 @@ class ConfigMapper {
         Map<String, ObjectNode> pluginNodes = Maps.newHashMap();
         for (JsonNode pluginNode : pluginsNode) {
             ObjectNode pluginObjectNode = (ObjectNode) pluginNode;
-            JsonNode groupId = pluginObjectNode.get("groupId");
-            if (groupId == null) {
-                logger.warn("error in config.json file, groupId is missing");
+            JsonNode id = pluginObjectNode.get("id");
+            if (id == null) {
+                logger.warn("error in config.json file, id is missing");
                 continue;
             }
-            if (!groupId.isTextual()) {
-                logger.warn("error in config.json file, groupId is not a string");
+            if (!id.isTextual()) {
+                logger.warn("error in config.json file, id is not a string");
                 continue;
             }
-            JsonNode artifactId = pluginObjectNode.get("artifactId");
-            if (artifactId == null) {
-                logger.warn("error in config.json file, artifactId is missing");
-                continue;
-            }
-            if (!artifactId.isTextual()) {
-                logger.warn("error in config.json file, artifactId is not a string");
-                continue;
-            }
-            pluginNodes.put(groupId.asText() + ":" + artifactId.asText(), pluginObjectNode);
+            pluginNodes.put(id.asText(), pluginObjectNode);
         }
         return pluginNodes;
     }

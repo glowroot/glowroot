@@ -34,7 +34,7 @@ import io.informant.api.weaving.Pointcut;
 public class LogCauseAspect {
 
     private static final PluginServices pluginServices =
-            PluginServices.get("io.informant:informant-integration-tests");
+            PluginServices.get("informant-integration-tests");
 
     private static final Exception cause1 = new NullPointerException("Cause 1");
     private static final Exception cause2 = new IllegalStateException("Cause 2", cause1);

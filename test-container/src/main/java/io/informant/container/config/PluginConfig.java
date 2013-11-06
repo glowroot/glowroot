@@ -32,27 +32,21 @@ import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
  */
 public class PluginConfig {
 
-    private final String groupId;
-    private final String artifactId;
+    private final String id;
 
     private boolean enabled;
     private final Map<String, /*@Nullable*/Object> properties;
 
     private final String version;
 
-    public PluginConfig(String groupId, String artifactId, String version) {
-        this.groupId = groupId;
-        this.artifactId = artifactId;
+    public PluginConfig(String id, String version) {
+        this.id = id;
         properties = Maps.newHashMap();
         this.version = version;
     }
 
-    public String getGroupId() {
-        return groupId;
-    }
-
-    public String getArtifactId() {
-        return artifactId;
+    public String getId() {
+        return id;
     }
 
     public boolean isEnabled() {
@@ -92,8 +86,7 @@ public class PluginConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(groupId, that.groupId)
-                    && Objects.equal(artifactId, that.artifactId)
+            return Objects.equal(id, that.id)
                     && Objects.equal(enabled, that.enabled)
                     && Objects.equal(properties, that.properties);
         }
@@ -105,14 +98,13 @@ public class PluginConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(groupId, artifactId, enabled, properties);
+        return Objects.hashCode(id, enabled, properties);
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("groupId", groupId)
-                .add("artifactId", artifactId)
+                .add("id", id)
                 .add("enabled", enabled)
                 .add("properties", properties)
                 .add("version", version)
@@ -120,17 +112,15 @@ public class PluginConfig {
     }
 
     @JsonCreator
-    static PluginConfig readValue(@JsonProperty("groupId") @Nullable String groupId,
-            @JsonProperty("artifactId") @Nullable String artifactId,
+    static PluginConfig readValue(@JsonProperty("id") @Nullable String id,
             @JsonProperty("enabled") @Nullable Boolean enabled,
             @JsonProperty("properties") @Nullable Map<String, /*@Nullable*/Object> properties,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(groupId, "groupId");
-        checkRequiredProperty(artifactId, "artifactId");
+        checkRequiredProperty(id, "id");
         checkRequiredProperty(enabled, "enabled");
         checkRequiredProperty(properties, "properties");
         checkRequiredProperty(version, "version");
-        PluginConfig config = new PluginConfig(groupId, artifactId, version);
+        PluginConfig config = new PluginConfig(id, version);
         config.setEnabled(enabled);
         config.properties.putAll(properties);
         return config;

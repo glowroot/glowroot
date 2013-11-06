@@ -36,7 +36,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
  */
 public class PluginConfigTest {
 
-    private static final String PLUGIN_ID = "io.informant:informant-integration-tests";
+    private static final String PLUGIN_ID = "informant-integration-tests";
 
     private static final Random random = new Random();
 

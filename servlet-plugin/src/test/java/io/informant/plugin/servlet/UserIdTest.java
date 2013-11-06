@@ -34,7 +34,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
  */
 public class UserIdTest {
 
-    private static final String PLUGIN_ID = "io.informant.plugins:servlet-plugin";
+    private static final String PLUGIN_ID = "servlet";
 
     private static Container container;
 

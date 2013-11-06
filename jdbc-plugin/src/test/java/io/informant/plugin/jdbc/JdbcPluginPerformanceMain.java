@@ -42,7 +42,7 @@ import io.informant.container.trace.Trace;
  */
 public class JdbcPluginPerformanceMain {
 
-    private static final String PLUGIN_ID = "io.informant.plugins:jdbc-plugin";
+    private static final String PLUGIN_ID = "jdbc";
     private static final String DB_NAME = "testdb";
 
     public static void main(String... args) throws Exception {

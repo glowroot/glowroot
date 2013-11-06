@@ -35,7 +35,7 @@ import io.informant.shaded.google.common.collect.ImmutableMap;
 public class LevelTwoAspect {
 
     private static final PluginServices pluginServices =
-            PluginServices.get("io.informant:informant-integration-tests");
+            PluginServices.get("informant-integration-tests");
 
     @Pointcut(typeName = "io.informant.tests.LevelTwo", methodName = "call",
             methodArgs = {"java.lang.String", "java.lang.String"}, metricName = "level two")
