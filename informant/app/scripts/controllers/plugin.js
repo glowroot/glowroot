@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global informant, $ */
+/* global informant */
 
 informant.controller('PluginCtrl', [
   '$scope',
@@ -40,22 +40,5 @@ informant.controller('PluginCtrl', [
       // missing whole (.2) and missing decimal (2.)
       double: /^(0|[1-9][0-9]*)?(\\.[0-9]*)?$/
     };
-
-    function setUpSidebar() {
-      // set up sidebar scrolling
-      var $sidebar = $('.ix-sidebar');
-      var offsetTop = $sidebar.offset().top;
-      var sideBarTopMargin = 30;
-      var navOuterHeight = $('.navbar').height();
-      var offset = {
-        top: offsetTop - navOuterHeight - sideBarTopMargin,
-        // +20 is for padding between sidebar and footer
-        // (although need a really short and wide screen for this to be necessary)
-        bottom: $('#footer').outerHeight(true) + 20
-      };
-      $sidebar.affix({ offset: offset });
-    }
-
-    setTimeout(setUpSidebar, 100);
   }
 ]);

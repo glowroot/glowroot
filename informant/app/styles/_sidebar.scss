@@ -19,11 +19,6 @@
 
 $sidenav-vertical-margin: 30px;
 
-// sidebar is not affixed in mobile view
-.ix-sidebar.affix {
-  position: static;
-}
-
 .ix-sidebar .list-group-item.active,
 .ix-sidebar .list-group-item.active:hover,
 .ix-sidebar .list-group-item.active:focus {
@@ -60,20 +55,5 @@ $row-lg-desktop: $container-lg-desktop + $grid-gutter-width;
   }
   .ix-main-column {
     margin-left: 240px;
-  }
-  .ix-sidebar .nav > .active > ul {
-    display: block;
-  }
-  .ix-sidebar.affix {
-    position: fixed;
-    top: $navbar-height + $sidenav-vertical-margin;
-  }
-  .ix-sidebar.affix-bottom {
-    position: absolute;
-  }
-  .ix-sidebar.affix-bottom .ix-sidenav,
-  .ix-sidebar.affix .ix-sidenav {
-    margin-top: 0;
-    margin-bottom: 0;
   }
 }
