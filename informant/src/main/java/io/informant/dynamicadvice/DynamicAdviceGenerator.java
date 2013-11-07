@@ -27,7 +27,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
-import io.informant.config.AdhocPointcutConfig;
+import io.informant.config.PointcutConfig;
 import io.informant.weaving.TypeNames;
 
 import static io.informant.common.Nullness.assertNonNull;
@@ -57,11 +57,11 @@ public class DynamicAdviceGenerator {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
-    private final AdhocPointcutConfig adhocPointcutConfig;
+    private final PointcutConfig pointcutConfig;
     private final String adviceTypeName;
 
-    public DynamicAdviceGenerator(AdhocPointcutConfig adhocPointcutConfig) {
-        this.adhocPointcutConfig = adhocPointcutConfig;
+    public DynamicAdviceGenerator(PointcutConfig pointcutConfig) {
+        this.pointcutConfig = pointcutConfig;
         adviceTypeName = "io/informant/dynamicadvice/GeneratedAdvice" + counter.incrementAndGet();
     }
 
@@ -73,8 +73,8 @@ public class DynamicAdviceGenerator {
         addStaticFields(cw);
         addStaticInitializer(pluginId, cw);
         addIsEnabledMethod(cw);
-        if (adhocPointcutConfig.isSpan()) {
-            addOnBeforeMethod(cw, adhocPointcutConfig.isTrace());
+        if (pointcutConfig.isSpan()) {
+            addOnBeforeMethod(cw, pointcutConfig.isTrace());
             addOnThrowMethod(cw);
             addOnReturnMethod(cw);
         } else {
@@ -89,14 +89,14 @@ public class DynamicAdviceGenerator {
     private void addClassAnnotation(ClassVisitor cv) {
         AnnotationVisitor annotationVisitor =
                 cv.visitAnnotation("Lio/informant/api/weaving/Pointcut;", true);
-        annotationVisitor.visit("typeName", adhocPointcutConfig.getTypeName());
-        annotationVisitor.visit("methodName", adhocPointcutConfig.getMethodName());
+        annotationVisitor.visit("typeName", pointcutConfig.getTypeName());
+        annotationVisitor.visit("methodName", pointcutConfig.getMethodName());
         AnnotationVisitor argVisitor = annotationVisitor.visitArray("methodArgs");
-        for (String methodArgTypeName : adhocPointcutConfig.getMethodArgTypeNames()) {
+        for (String methodArgTypeName : pointcutConfig.getMethodArgTypeNames()) {
             argVisitor.visit(null, methodArgTypeName);
         }
         argVisitor.visitEnd();
-        String metricName = adhocPointcutConfig.getMetricName();
+        String metricName = pointcutConfig.getMetricName();
         if (metricName == null) {
             annotationVisitor.visit("metricName", "<no metric name provided>");
         } else {
@@ -114,12 +114,12 @@ public class DynamicAdviceGenerator {
         cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "metric",
                 "Lio/informant/api/MetricName;", null, null)
                 .visitEnd();
-        if (adhocPointcutConfig.isSpan()) {
+        if (pointcutConfig.isSpan()) {
             cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "spanText",
                     "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;", null, null)
                     .visitEnd();
         }
-        if (adhocPointcutConfig.isTrace()) {
+        if (pointcutConfig.isTrace()) {
             cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "traceGrouping",
                     "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;", null, null)
                     .visitEnd();
@@ -141,8 +141,8 @@ public class DynamicAdviceGenerator {
         mv.visitMethodInsn(INVOKEVIRTUAL, "io/informant/api/PluginServices", "getMetricName",
                 "(Ljava/lang/Class;)Lio/informant/api/MetricName;");
         mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "metric", "Lio/informant/api/MetricName;");
-        if (adhocPointcutConfig.isSpan()) {
-            String spanText = adhocPointcutConfig.getSpanText();
+        if (pointcutConfig.isSpan()) {
+            String spanText = pointcutConfig.getSpanText();
             if (spanText == null) {
                 mv.visitLdcInsn("<no span text provided>");
             } else {
@@ -155,11 +155,11 @@ public class DynamicAdviceGenerator {
             mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "spanText",
                     "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;");
         }
-        if (adhocPointcutConfig.isTrace()) {
-            if (Strings.isNullOrEmpty(adhocPointcutConfig.getTraceGrouping())) {
+        if (pointcutConfig.isTrace()) {
+            if (Strings.isNullOrEmpty(pointcutConfig.getTraceGrouping())) {
                 mv.visitLdcInsn("<no trace grouping provided>");
             } else {
-                mv.visitLdcInsn(adhocPointcutConfig.getTraceGrouping());
+                mv.visitLdcInsn(pointcutConfig.getTraceGrouping());
             }
             mv.visitMethodInsn(INVOKESTATIC,
                     "io/informant/dynamicadvice/DynamicAdviceMessageTemplate", "create",
@@ -278,7 +278,7 @@ public class DynamicAdviceGenerator {
 
     private void addOnReturnMethod(ClassVisitor cv) {
         MethodVisitor mv;
-        if (adhocPointcutConfig.getMethodReturnTypeName().equals("")) {
+        if (pointcutConfig.getMethodReturnTypeName().equals("")) {
             mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
                     "(Lio/informant/api/OptionalReturn;Lio/informant/api/Span;)V", null, null);
             assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
@@ -286,7 +286,7 @@ public class DynamicAdviceGenerator {
                     .visitEnd();
             mv.visitParameterAnnotation(1, "Lio/informant/api/weaving/BindTraveler;", true)
                     .visitEnd();
-        } else if (adhocPointcutConfig.getMethodReturnTypeName().equals("void")) {
+        } else if (pointcutConfig.getMethodReturnTypeName().equals("void")) {
             mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
                     "(Lio/informant/api/Span;)V", null, null);
             assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
@@ -304,7 +304,7 @@ public class DynamicAdviceGenerator {
         mv.visitAnnotation("Lio/informant/api/weaving/OnReturn;", true)
                 .visitEnd();
         mv.visitCode();
-        if (adhocPointcutConfig.getMethodReturnTypeName().equals("")) {
+        if (pointcutConfig.getMethodReturnTypeName().equals("")) {
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 0);
             mv.visitMethodInsn(INVOKEINTERFACE, "io/informant/api/OptionalReturn", "isVoid", "()Z");
@@ -322,7 +322,7 @@ public class DynamicAdviceGenerator {
                     "io/informant/dynamicadvice/DynamicAdviceMessageSupplier",
                     "updateWithReturnValue", "(Lio/informant/api/Span;Ljava/lang/Object;)V");
             mv.visitVarInsn(ALOAD, 1);
-        } else if (adhocPointcutConfig.getMethodReturnTypeName().equals("void")) {
+        } else if (pointcutConfig.getMethodReturnTypeName().equals("void")) {
             mv.visitVarInsn(ALOAD, 0);
         } else {
             mv.visitVarInsn(ALOAD, 1);

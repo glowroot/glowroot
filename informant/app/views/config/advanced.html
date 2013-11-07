@@ -38,7 +38,7 @@
           that stack traces gathered by the profiler can see what metric timings are active, and the resulting trace
           profiles can be filtered in the UI by metric names. For example, a trace profile can be filtered to see only
           the profile of code that is executing jdbc queries. Or, even more useful, filter to see only the profile of
-          code that has no metric timings, which helps to discover new bottlenecks that would be worth timing via adhoc
+          code that has no metric timings, which helps to discover new bottlenecks that would be worth timing via
           pointcuts. <em>Changes to this setting will take effect on next JVM restart.</em>
         </div>
       </div>
@@ -49,7 +49,7 @@
         <div class="help-block">
           When enabled, a warning will be logged when a span is encountered outside of a trace. For example, if a jdbc
           query is executed by a background task outside of a servlet. This can be helpful for finding background tasks
-          that should be captured as traces via adhoc pointcuts.
+          that should be captured as traces via pointcuts.
         </div>
       </div>
       <div ix-form-group

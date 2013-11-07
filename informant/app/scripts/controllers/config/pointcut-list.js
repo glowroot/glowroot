@@ -16,7 +16,7 @@
 
 /* global informant */
 
-informant.controller('ConfigAdhocPointcutListCtrl', [
+informant.controller('PointcutListCtrl', [
   '$scope',
   '$http',
   '$timeout',
@@ -25,7 +25,7 @@ informant.controller('ConfigAdhocPointcutListCtrl', [
     // initialize page binding object
     $scope.page = {};
 
-    $http.get('backend/config/adhoc-pointcut')
+    $http.get('backend/config/pointcut')
         .success(function (data) {
           $scope.loaded = true;
           $scope.pointcuts = [];
@@ -38,7 +38,7 @@ informant.controller('ConfigAdhocPointcutListCtrl', [
           $scope.page.dirty = data.jvmOutOfSync;
           $scope.jvmRetransformClassesSupported = data.jvmRetransformClassesSupported;
           // pre-load cache for class name and method name auto completion
-          $http.post('backend/adhoc-pointcut/pre-load-auto-complete');
+          $http.post('backend/pointcut/pre-load-auto-complete');
         })
         .error(httpErrors.handler($scope));
 
@@ -57,7 +57,7 @@ informant.controller('ConfigAdhocPointcutListCtrl', [
     };
 
     $scope.retransformClasses = function (deferred) {
-      $http.post('backend/admin/adhoc-pointcuts/reweave', '')
+      $http.post('backend/admin/pointcuts/reweave', '')
           .success(function (data) {
             $scope.page.dirty = false;
             deferred.resolve('Success');

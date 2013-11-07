@@ -24,8 +24,8 @@ import com.google.common.collect.Lists;
 
 import io.informant.InformantModule;
 import io.informant.config.UserInterfaceConfig.Overlay;
-import io.informant.container.config.AdhocPointcutConfig;
-import io.informant.container.config.AdhocPointcutConfig.MethodModifier;
+import io.informant.container.config.PointcutConfig;
+import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.config.AdvancedConfig;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.ConfigService;
@@ -236,29 +236,29 @@ class LocalConfigService implements ConfigService {
         configService.updatePluginConfig(updatedConfig.build(), config.getVersion());
     }
 
-    public List<AdhocPointcutConfig> getAdhocPointcutConfigs() {
-        List<AdhocPointcutConfig> configs = Lists.newArrayList();
-        for (io.informant.config.AdhocPointcutConfig coreConfig : configService
-                .getAdhocPointcutConfigs()) {
+    public List<PointcutConfig> getPointcutConfigs() {
+        List<PointcutConfig> configs = Lists.newArrayList();
+        for (io.informant.config.PointcutConfig coreConfig : configService
+                .getPointcutConfigs()) {
             configs.add(convertToCore(coreConfig));
         }
         return configs;
     }
 
-    public String addAdhocPointcutConfig(AdhocPointcutConfig config) throws Exception {
-        return configService.insertAdhocPointcutConfig(convertToCore(config));
+    public String addPointcutConfig(PointcutConfig config) throws Exception {
+        return configService.insertPointcutConfig(convertToCore(config));
     }
 
-    public void updateAdhocPointcutConfig(String version, AdhocPointcutConfig config)
+    public void updatePointcutConfig(String version, PointcutConfig config)
             throws Exception {
-        configService.updateAdhocPointcutConfig(version, convertToCore(config));
+        configService.updatePointcutConfig(version, convertToCore(config));
     }
 
-    public void removeAdhocPointcutConfig(String version) throws Exception {
-        configService.deleteAdhocPointcutConfig(version);
+    public void removePointcutConfig(String version) throws Exception {
+        configService.deletePointcutConfig(version);
     }
 
-    public void reweaveAdhocPointcuts() throws Exception {
+    public void reweavePointcutConfigs() throws Exception {
         throw new IllegalStateException(
                 "Retransforming classes only works inside javaagent container");
     }
@@ -271,15 +271,15 @@ class LocalConfigService implements ConfigService {
         configService.resetAllConfig();
     }
 
-    private static AdhocPointcutConfig convertToCore(
-            io.informant.config.AdhocPointcutConfig coreConfig) {
+    private static PointcutConfig convertToCore(
+            io.informant.config.PointcutConfig coreConfig) {
         List<MethodModifier> methodModifiers = Lists.newArrayList();
         for (io.informant.api.weaving.MethodModifier methodModifier : coreConfig
                 .getMethodModifiers()) {
             methodModifiers.add(MethodModifier.valueOf(methodModifier.name()));
         }
 
-        AdhocPointcutConfig config = new AdhocPointcutConfig(coreConfig.getVersion());
+        PointcutConfig config = new PointcutConfig(coreConfig.getVersion());
         config.setMetric(coreConfig.isMetric());
         config.setSpan(coreConfig.isSpan());
         config.setTrace(coreConfig.isTrace());
@@ -293,8 +293,8 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
-    private static io.informant.config.AdhocPointcutConfig convertToCore(
-            AdhocPointcutConfig config) {
+    private static io.informant.config.PointcutConfig convertToCore(
+            PointcutConfig config) {
         List<io.informant.api.weaving.MethodModifier> methodModifiers = Lists.newArrayList();
         for (MethodModifier methodModifier : config.getMethodModifiers()) {
             methodModifiers.add(io.informant.api.weaving.MethodModifier.valueOf(methodModifier
@@ -306,7 +306,7 @@ class LocalConfigService implements ConfigService {
         assertNonNull(typeName, "Config typeName is null");
         assertNonNull(methodName, "Config methodName is null");
         assertNonNull(methodReturnTypeName, "Config methodReturnTypeName is null");
-        return new io.informant.config.AdhocPointcutConfig(config.isMetric(), config.isSpan(),
+        return new io.informant.config.PointcutConfig(config.isMetric(), config.isSpan(),
                 config.isTrace(), typeName, methodName, config.getMethodArgTypeNames(),
                 methodReturnTypeName, methodModifiers, config.getMetricName(),
                 config.getSpanText(), config.getTraceGrouping());

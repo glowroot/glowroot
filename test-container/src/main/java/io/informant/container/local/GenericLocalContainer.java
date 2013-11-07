@@ -40,7 +40,7 @@ import io.informant.container.Threads;
 import io.informant.container.config.ConfigService;
 import io.informant.container.trace.TraceService;
 import io.informant.markers.ThreadSafe;
-import io.informant.trace.AdhocAdviceCache;
+import io.informant.trace.PointcutConfigAdviceCache;
 import io.informant.weaving.IsolatedWeavingClassLoader;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -95,11 +95,11 @@ public class GenericLocalContainer<T> {
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         PluginDescriptorCache pluginDescriptorCache =
                 informantModule.getConfigModule().getPluginDescriptorCache();
-        AdhocAdviceCache adhocAdviceCache =
-                informantModule.getTraceModule().getDynamicAdviceCache();
+        PointcutConfigAdviceCache pointcutConfigAdviceCache =
+                informantModule.getTraceModule().getPointcutConfigAdviceCache();
         loader.setMixinTypes(pluginDescriptorCache.getMixinTypes());
         loader.setAdvisors(Iterables.concat(pluginDescriptorCache.getAdvisors(),
-                adhocAdviceCache.getAdhocAdvisors()));
+                pointcutConfigAdviceCache.getAdvisors()));
         loader.setMetricTimerService(informantModule.getTraceModule().getMetricTimerService());
         loader.addBridgeClasses(appInterface);
         loader.addExcludePackages("io.informant.api", "io.informant.collector",

@@ -98,7 +98,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         // (remotely) possible race condition
         configService.addConfigListener(this);
         configService.addPluginConfigListener(pluginId, this);
-        if (!pluginId.equals(AdhocAdviceCache.ADHOC_POINTCUTS_PLUGIN_ID)) {
+        if (!pluginId.equals(PointcutConfigAdviceCache.POINTCUT_CONFIG_PLUGIN_ID)) {
             pluginConfig = configService.getPluginConfig(pluginId);
             if (pluginConfig == null) {
                 List<String> ids = Lists.newArrayList();
@@ -310,7 +310,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     public void onChange() {
         GeneralConfig generalConfig = configService.getGeneralConfig();
-        if (pluginId.equals(AdhocAdviceCache.ADHOC_POINTCUTS_PLUGIN_ID)) {
+        if (pluginId.equals(PointcutConfigAdviceCache.POINTCUT_CONFIG_PLUGIN_ID)) {
             enabled = generalConfig.isEnabled();
         } else {
             pluginConfig = configService.getPluginConfig(pluginId);

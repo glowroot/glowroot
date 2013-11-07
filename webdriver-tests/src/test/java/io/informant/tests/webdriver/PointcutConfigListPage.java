@@ -24,31 +24,31 @@ import static org.openqa.selenium.By.xpath;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class ConfigAdhocPointcutListPage {
+class PointcutConfigListPage {
 
     private final WebDriver driver;
 
-    ConfigAdhocPointcutListPage(WebDriver driver) {
+    PointcutConfigListPage(WebDriver driver) {
         this.driver = driver;
     }
 
     WebElement getAddPointcutButton() {
-        return getNewAdhocPointcutSection().findElement(xpath("//button[text()='Add pointcut']"));
+        return getNewPointcutSection().findElement(xpath("//button[text()='Add pointcut']"));
     }
 
     int getNumSections() {
         return driver.findElements(xpath("(//form[@name='formCtrl'])")).size();
     }
 
-    ConfigAdhocPointcutSection getSection(int index) {
+    PointcutConfigSection getSection(int index) {
         Utils.waitForAngular(driver);
         WebElement form = driver.findElement(xpath("(//form[@name='formCtrl'])[" + (index + 1)
                 + "]"));
-        return new ConfigAdhocPointcutSection(driver, form);
+        return new PointcutConfigSection(driver, form);
     }
 
-    private WebElement getNewAdhocPointcutSection() {
+    private WebElement getNewPointcutSection() {
         Utils.waitForAngular(driver);
-        return driver.findElement(xpath("//div[div[h2[text()='New adhoc pointcut']]]"));
+        return driver.findElement(xpath("//div[div[h2[text()='New pointcut']]]"));
     }
 }

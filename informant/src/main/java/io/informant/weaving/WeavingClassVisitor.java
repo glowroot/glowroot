@@ -275,8 +275,8 @@ class WeavingClassVisitor extends ClassVisitor {
         for (AdviceMatcher adviceMatcher : adviceMatchers) {
             if (adviceMatcher.isMethodLevelMatch(access, parsedMethod)) {
                 matchingAdvisors.add(adviceMatcher.getAdvice());
-                if (adviceMatcher.getAdvice().isAdhoc()) {
-                    parsedType.setHasAdhocPointcut(true);
+                if (adviceMatcher.getAdvice().isReweavable()) {
+                    parsedType.setHasReweavableAdvice(true);
                 }
             }
         }

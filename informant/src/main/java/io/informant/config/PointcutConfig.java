@@ -34,13 +34,13 @@ import io.informant.config.JsonViews.UiView;
 import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
 /**
- * Immutable structure to hold an adhoc pointcut configuration.
+ * Immutable structure to hold a pointcut configuration.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Immutable
-public class AdhocPointcutConfig {
+public class PointcutConfig {
 
     private final boolean metric;
     private final boolean span;
@@ -59,7 +59,7 @@ public class AdhocPointcutConfig {
     private final String version;
 
     @VisibleForTesting
-    public AdhocPointcutConfig(boolean metric, boolean span, boolean trace, String typeName,
+    public PointcutConfig(boolean metric, boolean span, boolean trace, String typeName,
             String methodName, @ReadOnly List<String> methodArgTypeNames,
             String methodReturnTypeName, @ReadOnly List<MethodModifier> methodModifiers,
             @Nullable String metricName, @Nullable String spanText,
@@ -134,7 +134,7 @@ public class AdhocPointcutConfig {
     }
 
     @JsonCreator
-    static AdhocPointcutConfig readValue(
+    static PointcutConfig readValue(
             @JsonProperty("metric") @Nullable Boolean metric,
             @JsonProperty("span") @Nullable Boolean span,
             @JsonProperty("trace") @Nullable Boolean trace,
@@ -156,7 +156,7 @@ public class AdhocPointcutConfig {
         if (version != null) {
             throw new JsonMappingException("Version field is not allowed for deserialization");
         }
-        return new AdhocPointcutConfig(orFalse(metric), orFalse(span), orFalse(trace), typeName,
+        return new PointcutConfig(orFalse(metric), orFalse(span), orFalse(trace), typeName,
                 methodName, orEmpty(methodArgTypeNames), methodReturnTypeName,
                 orEmpty(methodModifiers), metricName, spanText, traceGrouping);
     }

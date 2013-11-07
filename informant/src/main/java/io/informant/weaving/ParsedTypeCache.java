@@ -134,12 +134,12 @@ public class ParsedTypeCache {
         return Lists.newArrayList(typeNames);
     }
 
-    public List<Class<?>> getClassesWithAdhocPointcuts() {
+    public List<Class<?>> getClassesWithReweavableAdvice() {
         List<Class<?>> classes = Lists.newArrayList();
         for (Entry<ClassLoader, ConcurrentMap<String, ParsedType>> outerEntry : parsedTypeCache
                 .asMap().entrySet()) {
             for (Entry<String, ParsedType> innerEntry : outerEntry.getValue().entrySet()) {
-                if (innerEntry.getValue().hasAdhocPointcut()) {
+                if (innerEntry.getValue().hasReweavableAdvice()) {
                     try {
                         classes.add(outerEntry.getKey().loadClass(innerEntry.getKey()));
                     } catch (ClassNotFoundException e) {

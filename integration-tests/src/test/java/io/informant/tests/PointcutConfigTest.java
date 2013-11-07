@@ -30,8 +30,8 @@ import io.informant.container.AppUnderTest;
 import io.informant.container.Container;
 import io.informant.container.TempDirs;
 import io.informant.container.TraceMarker;
-import io.informant.container.config.AdhocPointcutConfig;
-import io.informant.container.config.AdhocPointcutConfig.MethodModifier;
+import io.informant.container.config.PointcutConfig;
+import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.trace.Trace;
 
 import static org.fest.assertions.api.Assertions.assertThat;
@@ -40,7 +40,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class AdhocPointcutTest {
+public class PointcutConfigTest {
 
     protected static Container container;
     private static File dataDir;
@@ -49,11 +49,11 @@ public class AdhocPointcutTest {
     public static void setUp() throws Exception {
         dataDir = TempDirs.createTempDir("informant-test-datadir");
         container = Containers.createWithFileDb(dataDir);
-        addAdhocPointcutForExecute1();
-        addAdhocPointcutForExecute1MetricOnly();
-        addAdhocPointcutForExecuteWithReturn();
-        addAdhocPointcutForExecuteWithArgs();
-        // re-start now with adhoc pointcuts
+        addPointcutConfigForExecute1();
+        addPointcutConfigForExecute1MetricOnly();
+        addPointcutConfigForExecuteWithReturn();
+        addPointcutConfigForExecuteWithArgs();
+        // re-start now with pointcut configs
         container.close();
         container = Containers.createWithFileDb(dataDir);
     }
@@ -115,52 +115,52 @@ public class AdhocPointcutTest {
                 .isEqualTo("executeWithArgs(): abc, 123");
     }
 
-    protected static void addAdhocPointcutForExecute1() throws Exception {
-        AdhocPointcutConfig config = new AdhocPointcutConfig();
+    protected static void addPointcutConfigForExecute1() throws Exception {
+        PointcutConfig config = new PointcutConfig();
         config.setMetric(true);
         config.setSpan(true);
-        config.setTypeName("io.informant.tests.AdhocPointcutTest$Misc");
+        config.setTypeName("io.informant.tests.PointcutConfigTest$Misc");
         config.setMethodName("execute1");
         config.setMethodArgTypeNames(ImmutableList.<String>of());
         config.setMethodReturnTypeName("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setMetricName("execute one");
         config.setSpanText("execute1() => {{ret}}");
-        container.getConfigService().addAdhocPointcutConfig(config);
+        container.getConfigService().addPointcutConfig(config);
     }
 
-    protected static void addAdhocPointcutForExecute1MetricOnly() throws Exception {
-        AdhocPointcutConfig config = new AdhocPointcutConfig();
+    protected static void addPointcutConfigForExecute1MetricOnly() throws Exception {
+        PointcutConfig config = new PointcutConfig();
         config.setMetric(true);
-        config.setTypeName("io.informant.tests.AdhocPointcutTest$Misc");
+        config.setTypeName("io.informant.tests.PointcutConfigTest$Misc");
         config.setMethodName("execute1");
         config.setMethodArgTypeNames(ImmutableList.<String>of());
         config.setMethodReturnTypeName("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setMetricName("execute one metric only");
-        container.getConfigService().addAdhocPointcutConfig(config);
+        container.getConfigService().addPointcutConfig(config);
     }
 
-    protected static void addAdhocPointcutForExecuteWithReturn() throws Exception {
-        AdhocPointcutConfig config = new AdhocPointcutConfig();
+    protected static void addPointcutConfigForExecuteWithReturn() throws Exception {
+        PointcutConfig config = new PointcutConfig();
         config.setMetric(true);
         config.setSpan(true);
-        config.setTypeName("io.informant.tests.AdhocPointcutTest$Misc");
+        config.setTypeName("io.informant.tests.PointcutConfigTest$Misc");
         config.setMethodName("executeWithReturn");
         config.setMethodArgTypeNames(ImmutableList.<String>of());
         config.setMethodReturnTypeName("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setMetricName("execute with return");
         config.setSpanText("executeWithReturn() => {{ret}}");
-        container.getConfigService().addAdhocPointcutConfig(config);
+        container.getConfigService().addPointcutConfig(config);
     }
 
-    protected static void addAdhocPointcutForExecuteWithArgs() throws Exception {
-        AdhocPointcutConfig config = new AdhocPointcutConfig();
+    protected static void addPointcutConfigForExecuteWithArgs() throws Exception {
+        PointcutConfig config = new PointcutConfig();
         config.setMetric(true);
         config.setSpan(true);
         config.setTrace(true);
-        config.setTypeName("io.informant.tests.AdhocPointcutTest$Misc");
+        config.setTypeName("io.informant.tests.PointcutConfigTest$Misc");
         config.setMethodName("executeWithArgs");
         config.setMethodArgTypeNames(ImmutableList.of("java.lang.String", "int"));
         config.setMethodReturnTypeName("void");
@@ -168,7 +168,7 @@ public class AdhocPointcutTest {
         config.setMetricName("execute with args");
         config.setSpanText("executeWithArgs(): {{0}}, {{1}}");
         config.setTraceGrouping("Misc / {{methodName}}");
-        container.getConfigService().addAdhocPointcutConfig(config);
+        container.getConfigService().addPointcutConfig(config);
     }
 
     public interface Misc {

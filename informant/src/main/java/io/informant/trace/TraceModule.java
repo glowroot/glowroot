@@ -51,7 +51,7 @@ public class TraceModule {
     private final ParsedTypeCache parsedTypeCache;
     private final TraceRegistry traceRegistry;
     private final MetricNameCache metricNameCache;
-    private final AdhocAdviceCache adhocAdviceCache;
+    private final PointcutConfigAdviceCache pointcutConfigAdviceCache;
     private final MetricTimerService metricTimerService;
 
     private final StuckTraceCollector stuckTraceCollector;
@@ -83,16 +83,15 @@ public class TraceModule {
         parsedTypeCache = new ParsedTypeCache();
         traceRegistry = new TraceRegistry();
         metricNameCache = new MetricNameCache(ticker);
-        adhocAdviceCache = new AdhocAdviceCache(configService.getAdhocPointcutConfigs());
+        pointcutConfigAdviceCache =
+                new PointcutConfigAdviceCache(configService.getPointcutConfigs());
         metricTimerService = new MetricTimerServiceImpl(metricNameCache, traceRegistry);
-
-        fineProfileScheduler = new FineProfileScheduler(scheduledExecutor, configService, ticker,
-                new Random());
+        fineProfileScheduler =
+                new FineProfileScheduler(scheduledExecutor, configService, ticker, new Random());
         stuckTraceCollector = new StuckTraceCollector(scheduledExecutor, traceRegistry,
-                traceCollector,
-                configService, ticker);
-        coarseProfiler = new CoarseProfiler(scheduledExecutor, traceRegistry, configService,
-                ticker);
+                traceCollector, configService, ticker);
+        coarseProfiler =
+                new CoarseProfiler(scheduledExecutor, traceRegistry, configService, ticker);
         stuckTraceCollector.start();
         coarseProfiler.start();
 
@@ -105,7 +104,7 @@ public class TraceModule {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
                     configModule.getPluginDescriptorCache().getMixinTypes(),
                     configModule.getPluginDescriptorCache().getAdvisors(),
-                    adhocAdviceCache.getAdhocAdvisorsSupplier(), parsedTypeCache,
+                    pointcutConfigAdviceCache.getAdvisorsSupplier(), parsedTypeCache,
                     metricTimerService, generateMetricNameWrapperMethods);
             if (JDK6.isSupported() && JDK6.isRetransformClassesSupported(instrumentation)) {
                 JDK6.addRetransformingTransformer(instrumentation, transformer);
@@ -131,8 +130,8 @@ public class TraceModule {
         return traceRegistry;
     }
 
-    public AdhocAdviceCache getDynamicAdviceCache() {
-        return adhocAdviceCache;
+    public PointcutConfigAdviceCache getPointcutConfigAdviceCache() {
+        return pointcutConfigAdviceCache;
     }
 
     public MetricTimerService getMetricTimerService() {

@@ -94,181 +94,181 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldAddAdhocPointcut() throws Exception {
+    public void shouldAddPointcutConfig() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        ConfigAdhocPointcutListPage adhocPointcutListPage = new ConfigAdhocPointcutListPage(driver);
+        PointcutConfigListPage pointcutConfigListPage = new PointcutConfigListPage(driver);
 
         app.openHomePage();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getAdhocPointcutsLink().click();
+        configSidebar.getPointcutsLink().click();
 
         // when
-        createAdhocPointcut1(adhocPointcutListPage);
+        createPointcutConfig1(pointcutConfigListPage);
 
         // then
         app.openHomePage();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getAdhocPointcutsLink().click();
-        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
-        assertThat(adhocPointcutSection.getTypeNameTextField().getAttribute("value"))
+        configSidebar.getPointcutsLink().click();
+        PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
+        assertThat(pointcutConfigSection.getTypeNameTextField().getAttribute("value"))
                 .isEqualTo("io.informant.container.AppUnderTest");
-        assertThat(adhocPointcutSection.getMethodNameTextField().getAttribute("value"))
+        assertThat(pointcutConfigSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(adhocPointcutSection.getMetricCheckbox().isSelected()).isTrue();
-        assertThat(adhocPointcutSection.getSpanCheckbox().isSelected()).isTrue();
-        assertThat(adhocPointcutSection.getTraceCheckbox().isSelected()).isTrue();
-        assertThat(adhocPointcutSection.getMetricNameTextField().getAttribute("value"))
+        assertThat(pointcutConfigSection.getMetricCheckbox().isSelected()).isTrue();
+        assertThat(pointcutConfigSection.getSpanCheckbox().isSelected()).isTrue();
+        assertThat(pointcutConfigSection.getTraceCheckbox().isSelected()).isTrue();
+        assertThat(pointcutConfigSection.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
-        assertThat(adhocPointcutSection.getSpanTextTextField().getAttribute("value"))
+        assertThat(pointcutConfigSection.getSpanTextTextField().getAttribute("value"))
                 .isEqualTo("a span");
-        assertThat(adhocPointcutSection.getTraceGroupingTextField().getAttribute("value"))
+        assertThat(pointcutConfigSection.getTraceGroupingTextField().getAttribute("value"))
                 .isEqualTo("a trace");
     }
 
     // TODO in firefox, still see "Please fill out this field" tooltip on hitting delete when
     // required field is missing
     @Test
-    public void shouldNotValidateOnDeleteAdhocPointcut() throws Exception {
+    public void shouldNotValidateOnDeletePointcutConfig() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        ConfigAdhocPointcutListPage adhocPointcutListPage = new ConfigAdhocPointcutListPage(driver);
+        PointcutConfigListPage pointcutConfigListPage = new PointcutConfigListPage(driver);
 
         app.openHomePage();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getAdhocPointcutsLink().click();
-        createAdhocPointcut1(adhocPointcutListPage);
+        configSidebar.getPointcutsLink().click();
+        createPointcutConfig1(pointcutConfigListPage);
 
         app.openHomePage();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getAdhocPointcutsLink().click();
-        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
+        configSidebar.getPointcutsLink().click();
+        PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
 
         // when
-        Utils.clearInput(adhocPointcutSection.getMetricNameTextField());
-        adhocPointcutSection.getDeleteButton().click();
+        Utils.clearInput(pointcutConfigSection.getMetricNameTextField());
+        pointcutConfigSection.getDeleteButton().click();
 
         // then
-        assertThat(adhocPointcutListPage.getNumSections()).isEqualTo(0);
+        assertThat(pointcutConfigListPage.getNumSections()).isEqualTo(0);
     }
 
     @Test
-    public void shouldAddMetricOnlyAdhocPointcut() throws Exception {
+    public void shouldAddMetricOnlyPointcutConfig() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        ConfigAdhocPointcutListPage adhocPointcutListPage = new ConfigAdhocPointcutListPage(driver);
+        PointcutConfigListPage pointcutConfigListPage = new PointcutConfigListPage(driver);
 
         app.openHomePage();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getAdhocPointcutsLink().click();
+        configSidebar.getPointcutsLink().click();
 
         // when
-        createMetricOnlyAdhocPointcut(adhocPointcutListPage);
+        createMetricOnlyPointcutConfig(pointcutConfigListPage);
 
         // then
         app.openHomePage();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getAdhocPointcutsLink().click();
-        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
-        assertThat(adhocPointcutSection.getTypeNameTextField().getAttribute("value"))
+        configSidebar.getPointcutsLink().click();
+        PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
+        assertThat(pointcutConfigSection.getTypeNameTextField().getAttribute("value"))
                 .isEqualTo("io.informant.container.AppUnderTest");
-        assertThat(adhocPointcutSection.getMethodNameTextField().getAttribute("value"))
+        assertThat(pointcutConfigSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(adhocPointcutSection.getMetricCheckbox().isSelected()).isTrue();
-        assertThat(adhocPointcutSection.getSpanCheckbox().isSelected()).isFalse();
-        assertThat(adhocPointcutSection.getTraceCheckbox().isSelected()).isFalse();
-        assertThat(adhocPointcutSection.getMetricNameTextField().getAttribute("value"))
+        assertThat(pointcutConfigSection.getMetricCheckbox().isSelected()).isTrue();
+        assertThat(pointcutConfigSection.getSpanCheckbox().isSelected()).isFalse();
+        assertThat(pointcutConfigSection.getTraceCheckbox().isSelected()).isFalse();
+        assertThat(pointcutConfigSection.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
-        assertThat(adhocPointcutSection.getSpanTextTextField().isDisplayed()).isFalse();
-        assertThat(adhocPointcutSection.getTraceGroupingTextField().isDisplayed()).isFalse();
+        assertThat(pointcutConfigSection.getSpanTextTextField().isDisplayed()).isFalse();
+        assertThat(pointcutConfigSection.getTraceGroupingTextField().isDisplayed()).isFalse();
     }
 
     @Test
-    public void shouldAddMetricAndSpanOnlyAdhocPointcut() throws Exception {
+    public void shouldAddMetricAndSpanOnlyPointcutConfig() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        ConfigAdhocPointcutListPage adhocPointcutListPage = new ConfigAdhocPointcutListPage(driver);
+        PointcutConfigListPage pointcutConfigListPage = new PointcutConfigListPage(driver);
 
         app.openHomePage();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getAdhocPointcutsLink().click();
+        configSidebar.getPointcutsLink().click();
 
         // when
-        createMetricAndSpanOnlyAdhocPointcut(adhocPointcutListPage);
+        createMetricAndSpanOnlyPointcutConfig(pointcutConfigListPage);
 
         // then
         app.openHomePage();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getAdhocPointcutsLink().click();
-        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
-        assertThat(adhocPointcutSection.getTypeNameTextField().getAttribute("value"))
+        configSidebar.getPointcutsLink().click();
+        PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
+        assertThat(pointcutConfigSection.getTypeNameTextField().getAttribute("value"))
                 .isEqualTo("io.informant.container.AppUnderTest");
-        assertThat(adhocPointcutSection.getMethodNameTextField().getAttribute("value"))
+        assertThat(pointcutConfigSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(adhocPointcutSection.getMetricCheckbox().isSelected()).isTrue();
-        assertThat(adhocPointcutSection.getSpanCheckbox().isSelected()).isTrue();
-        assertThat(adhocPointcutSection.getTraceCheckbox().isSelected()).isFalse();
-        assertThat(adhocPointcutSection.getMetricNameTextField().getAttribute("value"))
+        assertThat(pointcutConfigSection.getMetricCheckbox().isSelected()).isTrue();
+        assertThat(pointcutConfigSection.getSpanCheckbox().isSelected()).isTrue();
+        assertThat(pointcutConfigSection.getTraceCheckbox().isSelected()).isFalse();
+        assertThat(pointcutConfigSection.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
-        assertThat(adhocPointcutSection.getSpanTextTextField().getAttribute("value"))
+        assertThat(pointcutConfigSection.getSpanTextTextField().getAttribute("value"))
                 .isEqualTo("a span");
-        assertThat(adhocPointcutSection.getTraceGroupingTextField().isDisplayed()).isFalse();
+        assertThat(pointcutConfigSection.getTraceGroupingTextField().isDisplayed()).isFalse();
     }
 
-    private void createAdhocPointcut1(ConfigAdhocPointcutListPage adhocPointcutListPage) {
-        adhocPointcutListPage.getAddPointcutButton().click();
-        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
-        adhocPointcutSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
-        adhocPointcutSection.getTypeNameAutoCompleteItem("container.AppUnderTest").click();
-        adhocPointcutSection.getMethodNameTextField().sendKeys("exec");
-        adhocPointcutSection.getMethodNameAutoCompleteItem("exec").click();
-        adhocPointcutSection.getMetricCheckbox().click();
-        adhocPointcutSection.getSpanCheckbox().click();
-        adhocPointcutSection.getTraceCheckbox().click();
-        adhocPointcutSection.getMetricNameTextField().clear();
-        adhocPointcutSection.getMetricNameTextField().sendKeys("a metric");
-        adhocPointcutSection.getSpanTextTextField().clear();
-        adhocPointcutSection.getSpanTextTextField().sendKeys("a span");
-        adhocPointcutSection.getTraceGroupingTextField().clear();
-        adhocPointcutSection.getTraceGroupingTextField().sendKeys("a trace");
-        adhocPointcutSection.getAddButton().click();
+    private void createPointcutConfig1(PointcutConfigListPage pointcutConfigListPage) {
+        pointcutConfigListPage.getAddPointcutButton().click();
+        PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
+        pointcutConfigSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
+        pointcutConfigSection.getTypeNameAutoCompleteItem("container.AppUnderTest").click();
+        pointcutConfigSection.getMethodNameTextField().sendKeys("exec");
+        pointcutConfigSection.getMethodNameAutoCompleteItem("exec").click();
+        pointcutConfigSection.getMetricCheckbox().click();
+        pointcutConfigSection.getSpanCheckbox().click();
+        pointcutConfigSection.getTraceCheckbox().click();
+        pointcutConfigSection.getMetricNameTextField().clear();
+        pointcutConfigSection.getMetricNameTextField().sendKeys("a metric");
+        pointcutConfigSection.getSpanTextTextField().clear();
+        pointcutConfigSection.getSpanTextTextField().sendKeys("a span");
+        pointcutConfigSection.getTraceGroupingTextField().clear();
+        pointcutConfigSection.getTraceGroupingTextField().sendKeys("a trace");
+        pointcutConfigSection.getAddButton().click();
     }
 
-    private void createMetricOnlyAdhocPointcut(ConfigAdhocPointcutListPage adhocPointcutListPage) {
-        adhocPointcutListPage.getAddPointcutButton().click();
-        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
-        adhocPointcutSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
-        adhocPointcutSection.getTypeNameAutoCompleteItem("container.AppUnderTest").click();
-        adhocPointcutSection.getMethodNameTextField().sendKeys("exec");
-        adhocPointcutSection.getMethodNameAutoCompleteItem("exec").click();
-        adhocPointcutSection.getMetricCheckbox().click();
-        adhocPointcutSection.getMetricNameTextField().clear();
-        adhocPointcutSection.getMetricNameTextField().sendKeys("a metric");
-        adhocPointcutSection.getAddButton().click();
+    private void createMetricOnlyPointcutConfig(PointcutConfigListPage pointcutConfigListPage) {
+        pointcutConfigListPage.getAddPointcutButton().click();
+        PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
+        pointcutConfigSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
+        pointcutConfigSection.getTypeNameAutoCompleteItem("container.AppUnderTest").click();
+        pointcutConfigSection.getMethodNameTextField().sendKeys("exec");
+        pointcutConfigSection.getMethodNameAutoCompleteItem("exec").click();
+        pointcutConfigSection.getMetricCheckbox().click();
+        pointcutConfigSection.getMetricNameTextField().clear();
+        pointcutConfigSection.getMetricNameTextField().sendKeys("a metric");
+        pointcutConfigSection.getAddButton().click();
     }
 
-    private void createMetricAndSpanOnlyAdhocPointcut(
-            ConfigAdhocPointcutListPage adhocPointcutListPage) {
-        adhocPointcutListPage.getAddPointcutButton().click();
-        ConfigAdhocPointcutSection adhocPointcutSection = adhocPointcutListPage.getSection(0);
-        adhocPointcutSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
-        adhocPointcutSection.getTypeNameAutoCompleteItem("container.AppUnderTest").click();
-        adhocPointcutSection.getMethodNameTextField().sendKeys("exec");
-        adhocPointcutSection.getMethodNameAutoCompleteItem("exec").click();
-        adhocPointcutSection.getMetricCheckbox().click();
-        adhocPointcutSection.getSpanCheckbox().click();
-        adhocPointcutSection.getMetricNameTextField().clear();
-        adhocPointcutSection.getMetricNameTextField().sendKeys("a metric");
-        adhocPointcutSection.getSpanTextTextField().clear();
-        adhocPointcutSection.getSpanTextTextField().sendKeys("a span");
-        adhocPointcutSection.getAddButton().click();
+    private void createMetricAndSpanOnlyPointcutConfig(
+            PointcutConfigListPage pointcutConfigListPage) {
+        pointcutConfigListPage.getAddPointcutButton().click();
+        PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
+        pointcutConfigSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
+        pointcutConfigSection.getTypeNameAutoCompleteItem("container.AppUnderTest").click();
+        pointcutConfigSection.getMethodNameTextField().sendKeys("exec");
+        pointcutConfigSection.getMethodNameAutoCompleteItem("exec").click();
+        pointcutConfigSection.getMetricCheckbox().click();
+        pointcutConfigSection.getSpanCheckbox().click();
+        pointcutConfigSection.getMetricNameTextField().clear();
+        pointcutConfigSection.getMetricNameTextField().sendKeys("a metric");
+        pointcutConfigSection.getSpanTextTextField().clear();
+        pointcutConfigSection.getSpanTextTextField().sendKeys("a span");
+        pointcutConfigSection.getAddButton().click();
     }
 }

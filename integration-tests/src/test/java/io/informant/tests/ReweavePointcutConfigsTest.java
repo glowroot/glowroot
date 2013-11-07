@@ -29,17 +29,17 @@ import io.informant.container.javaagent.JavaagentContainer;
  * @since 0.5
  */
 @RunWith(IgnoreOnJdk5.class)
-public class ReweaveAdhocPointcutTest extends AdhocPointcutTest {
+public class ReweavePointcutConfigsTest extends PointcutConfigTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
         container = JavaagentContainer.create();
         container.executeAppUnderTest(ShouldExecute1.class);
-        addAdhocPointcutForExecute1();
-        addAdhocPointcutForExecute1MetricOnly();
-        addAdhocPointcutForExecuteWithReturn();
-        addAdhocPointcutForExecuteWithArgs();
-        container.getConfigService().reweaveAdhocPointcuts();
+        addPointcutConfigForExecute1();
+        addPointcutConfigForExecute1MetricOnly();
+        addPointcutConfigForExecuteWithReturn();
+        addPointcutConfigForExecuteWithArgs();
+        container.getConfigService().reweavePointcutConfigs();
     }
 
     @AfterClass

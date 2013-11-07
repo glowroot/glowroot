@@ -116,10 +116,10 @@ informant.config([
       templateUrl: 'views/config/user-interface.html',
       controller: 'ConfigUserInterfaceCtrl'
     });
-    $stateProvider.state('config.adhocPointcuts', {
-      url: '/adhoc-pointcuts',
-      templateUrl: 'views/config/adhoc-pointcut-list.html',
-      controller: 'ConfigAdhocPointcutListCtrl'
+    $stateProvider.state('config.pointcuts', {
+      url: '/pointcuts',
+      templateUrl: 'views/config/pointcut-list.html',
+      controller: 'PointcutListCtrl'
     });
     $stateProvider.state('config.advanced', {
       url: '/advanced',

@@ -30,14 +30,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.collector.TraceCollectorImpl;
-import io.informant.config.AdhocPointcutConfig;
 import io.informant.config.ConfigService;
+import io.informant.config.PointcutConfig;
 import io.informant.jvm.JDK6;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.SnapshotDao;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
-import io.informant.trace.AdhocAdviceCache;
+import io.informant.trace.PointcutConfigAdviceCache;
 import io.informant.trace.TraceRegistry;
 import io.informant.weaving.ParsedTypeCache;
 
@@ -55,7 +55,7 @@ class AdminJsonService {
 
     private final SnapshotDao snapshotDao;
     private final ConfigService configService;
-    private final AdhocAdviceCache adhocAdviceCache;
+    private final PointcutConfigAdviceCache pointcutConfigAdviceCache;
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final Instrumentation instrumentation;
@@ -64,12 +64,12 @@ class AdminJsonService {
     private final TraceRegistry traceRegistry;
 
     AdminJsonService(SnapshotDao snapshotDao, ConfigService configService,
-            AdhocAdviceCache adhocAdviceCache, ParsedTypeCache parsedTypeCache,
+            PointcutConfigAdviceCache pointcutConfigAdviceCache, ParsedTypeCache parsedTypeCache,
             @Nullable Instrumentation instrumentation, TraceCollectorImpl traceCollector,
             DataSource dataSource, TraceRegistry traceRegistry) {
         this.snapshotDao = snapshotDao;
         this.configService = configService;
-        this.adhocAdviceCache = adhocAdviceCache;
+        this.pointcutConfigAdviceCache = pointcutConfigAdviceCache;
         this.parsedTypeCache = parsedTypeCache;
         this.instrumentation = instrumentation;
         this.traceCollector = traceCollector;
@@ -84,7 +84,7 @@ class AdminJsonService {
     }
 
     @JsonServiceMethod
-    void reweaveAdhocPointcuts() throws IllegalArgumentException, IllegalAccessException,
+    void reweavePointcutConfigs() throws IllegalArgumentException, IllegalAccessException,
             InvocationTargetException {
         if (!JDK6.isRetransformClassesSupported(instrumentation)) {
             logger.warn("retransformClasses is not supported");
@@ -94,14 +94,14 @@ class AdminJsonService {
             logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
             return;
         }
-        List<AdhocPointcutConfig> adhocPointcutConfigs = configService.getAdhocPointcutConfigs();
-        adhocAdviceCache.updateAdvisors(adhocPointcutConfigs);
+        List<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
+        pointcutConfigAdviceCache.updateAdvisors(pointcutConfigs);
         Set<String> typeNames = Sets.newHashSet();
-        for (AdhocPointcutConfig adhocPointcutConfig : adhocPointcutConfigs) {
-            typeNames.add(adhocPointcutConfig.getTypeName());
+        for (PointcutConfig pointcutConfig : pointcutConfigs) {
+            typeNames.add(pointcutConfig.getTypeName());
         }
         List<Class<?>> classes = Lists.newArrayList();
-        classes.addAll(parsedTypeCache.getClassesWithAdhocPointcuts());
+        classes.addAll(parsedTypeCache.getClassesWithReweavableAdvice());
         classes.addAll(parsedTypeCache.getExistingSubClasses(typeNames));
         if (classes.isEmpty()) {
             return;

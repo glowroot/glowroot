@@ -38,7 +38,7 @@ public class ParsedType {
     private final String superName;
     private final ImmutableList<String> interfaceNames;
     private final ImmutableList<ParsedMethod> methods;
-    private final boolean hasAdhocPointcut;
+    private final boolean hasReweavableAdvice;
 
     // interfaces that do not extend anything have null superClass
     static ParsedType from(boolean iface, String name, @Nullable String superName,
@@ -48,13 +48,13 @@ public class ParsedType {
 
     private ParsedType(boolean iface, String name, @Nullable String superName,
             ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods,
-            boolean hasAdhocPointcut) {
+            boolean hasReweavableAdvice) {
         this.iface = iface;
         this.name = name;
         this.superName = superName;
         this.interfaceNames = interfaceNames;
         this.methods = methods;
-        this.hasAdhocPointcut = hasAdhocPointcut;
+        this.hasReweavableAdvice = hasReweavableAdvice;
     }
 
     boolean isInterface() {
@@ -90,8 +90,8 @@ public class ParsedType {
         return null;
     }
 
-    public boolean hasAdhocPointcut() {
-        return hasAdhocPointcut;
+    public boolean hasReweavableAdvice() {
+        return hasReweavableAdvice;
     }
 
     @Override
@@ -102,7 +102,7 @@ public class ParsedType {
                 .add("superName", superName)
                 .add("interfaceNames", interfaceNames)
                 .add("methods", methods)
-                .add("hasAdhocPointcut", hasAdhocPointcut)
+                .add("hasReweavableAdvice", hasReweavableAdvice)
                 .toString();
     }
 
@@ -120,7 +120,7 @@ public class ParsedType {
         private final String superName;
         private final ImmutableList<String> interfaceNames;
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
-        private boolean hasAdhocPointcut;
+        private boolean hasReweavableAdvice;
 
         private Builder(boolean iface, String name, @Nullable String superName,
                 ImmutableList<String> interfaceNames) {
@@ -134,13 +134,13 @@ public class ParsedType {
             methods.add(method);
         }
 
-        public void setHasAdhocPointcut(boolean hasAdhocPointcut) {
-            this.hasAdhocPointcut = hasAdhocPointcut;
+        public void setHasReweavableAdvice(boolean hasReweavableAdvice) {
+            this.hasReweavableAdvice = hasReweavableAdvice;
         }
 
         ParsedType build() {
             return new ParsedType(iface, name, superName, interfaceNames, methods.build(),
-                    hasAdhocPointcut);
+                    hasReweavableAdvice);
         }
     }
 }

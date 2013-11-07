@@ -39,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
-import io.informant.config.AdhocPointcutConfig;
 import io.informant.config.AdvancedConfig;
 import io.informant.config.CoarseProfilingConfig;
 import io.informant.config.ConfigService;
@@ -49,13 +48,14 @@ import io.informant.config.GeneralConfig;
 import io.informant.config.JsonViews.UiView;
 import io.informant.config.PluginConfig;
 import io.informant.config.PluginDescriptorCache;
+import io.informant.config.PointcutConfig;
 import io.informant.config.StorageConfig;
 import io.informant.config.UserInterfaceConfig;
 import io.informant.config.UserInterfaceConfig.CurrentPasswordIncorrectException;
 import io.informant.config.UserOverridesConfig;
 import io.informant.local.store.RollingFile;
 import io.informant.markers.Singleton;
-import io.informant.trace.AdhocAdviceCache;
+import io.informant.trace.PointcutConfigAdviceCache;
 import io.informant.trace.TraceModule;
 
 /**
@@ -75,7 +75,7 @@ class ConfigJsonService {
     private final RollingFile rollingFile;
     private final PluginDescriptorCache pluginDescriptorCache;
     private final File dataDir;
-    private final AdhocAdviceCache adhocAdviceCache;
+    private final PointcutConfigAdviceCache pointcutConfigAdviceCache;
     private final HttpSessionManager httpSessionManager;
     private final TraceModule traceModule;
 
@@ -85,13 +85,13 @@ class ConfigJsonService {
 
     ConfigJsonService(ConfigService configService, RollingFile rollingFile,
             PluginDescriptorCache pluginDescriptorCache, File dataDir,
-            AdhocAdviceCache adhocAdviceCache, HttpSessionManager httpSessionManager,
-            TraceModule traceModule) {
+            PointcutConfigAdviceCache pointcutConfigAdviceCache,
+            HttpSessionManager httpSessionManager, TraceModule traceModule) {
         this.configService = configService;
         this.rollingFile = rollingFile;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.dataDir = dataDir;
-        this.adhocAdviceCache = adhocAdviceCache;
+        this.pointcutConfigAdviceCache = pointcutConfigAdviceCache;
         this.httpSessionManager = httpSessionManager;
         this.traceModule = traceModule;
     }
@@ -210,16 +210,16 @@ class ConfigJsonService {
     }
 
     @JsonServiceMethod
-    String getAdhocPointcut() throws IOException, SQLException {
-        logger.debug("getAdhocPointcut()");
+    String getPointcutConfig() throws IOException, SQLException {
+        logger.debug("getPointcutConfig()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
         jg.writeStartObject();
         jg.writeFieldName("configs");
-        writer.writeValue(jg, configService.getAdhocPointcutConfigs());
-        jg.writeBooleanField("jvmOutOfSync", adhocAdviceCache
-                .isAdhocPointcutConfigsOutOfSync(configService.getAdhocPointcutConfigs()));
+        writer.writeValue(jg, configService.getPointcutConfigs());
+        jg.writeBooleanField("jvmOutOfSync", pointcutConfigAdviceCache
+                .isPointcutConfigsOutOfSync(configService.getPointcutConfigs()));
         jg.writeBooleanField("jvmRetransformClassesSupported",
                 traceModule.isJvmRetransformClassesSupported());
         jg.writeEndObject();
@@ -495,39 +495,39 @@ class ConfigJsonService {
     }
 
     @JsonServiceMethod
-    String addAdhocPointcutConfig(String content) throws JsonProcessingException, IOException {
-        logger.debug("addAdhocPointcutConfig(): content={}", content);
-        AdhocPointcutConfig adhocPointcutConfig =
-                ObjectMappers.readRequiredValue(mapper, content, AdhocPointcutConfig.class);
-        configService.insertAdhocPointcutConfig(adhocPointcutConfig);
+    String addPointcutConfig(String content) throws JsonProcessingException, IOException {
+        logger.debug("addPointcutConfig(): content={}", content);
+        PointcutConfig pointcutConfig =
+                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
+        configService.insertPointcutConfig(pointcutConfig);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
-        writer.writeValue(jg, adhocPointcutConfig);
+        writer.writeValue(jg, pointcutConfig);
         jg.close();
         return sb.toString();
     }
 
     @JsonServiceMethod
-    String updateAdhocPointcutConfig(String priorVersion, String content)
+    String updatePointcutConfig(String priorVersion, String content)
             throws JsonProcessingException, IOException {
-        logger.debug("updateAdhocPointcutConfig(): priorVersion={}, content={}", priorVersion,
+        logger.debug("updatePointcutConfig(): priorVersion={}, content={}", priorVersion,
                 content);
-        AdhocPointcutConfig adhocPointcutConfig =
-                ObjectMappers.readRequiredValue(mapper, content, AdhocPointcutConfig.class);
-        configService.updateAdhocPointcutConfig(priorVersion, adhocPointcutConfig);
+        PointcutConfig pointcutConfig =
+                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
+        configService.updatePointcutConfig(priorVersion, pointcutConfig);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
-        writer.writeValue(jg, adhocPointcutConfig);
+        writer.writeValue(jg, pointcutConfig);
         jg.close();
         return sb.toString();
     }
 
     @JsonServiceMethod
-    void removeAdhocPointcutConfig(String content) throws IOException {
-        logger.debug("removeAdhocPointcutConfig(): content={}", content);
+    void removePointcutConfig(String content) throws IOException {
+        logger.debug("removePointcutConfig(): content={}", content);
         String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
-        configService.deleteAdhocPointcutConfig(version);
+        configService.deletePointcutConfig(version);
     }
 }

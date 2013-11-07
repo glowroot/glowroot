@@ -57,7 +57,7 @@ class Weaver {
 
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> pluginAdvisors;
-    private final Supplier<ImmutableList<Advice>> adhocAdvisors;
+    private final Supplier<ImmutableList<Advice>> pointcutConfigAdvisors;
     @Nullable
     private final ClassLoader loader;
     private final ParsedTypeCache parsedTypeCache;
@@ -67,12 +67,12 @@ class Weaver {
     private final MetricName weavingMetricName;
 
     Weaver(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> pluginAdvisors,
-            Supplier<ImmutableList<Advice>> adhocAdvisors,
+            Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
             @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
             MetricTimerService metricTimerService, boolean generateMetricNameWrapperMethods) {
         this.mixinTypes = mixinTypes;
         this.pluginAdvisors = pluginAdvisors;
-        this.adhocAdvisors = adhocAdvisors;
+        this.pointcutConfigAdvisors = pointcutConfigAdvisors;
         this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
         this.metricTimerService = metricTimerService;
@@ -112,7 +112,8 @@ class Weaver {
             ClassWriter cw = new ComputeFramesClassWriter(
                     ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES,
                     parsedTypeCache, loader, codeSource, className);
-            Iterable<Advice> advisors = Iterables.concat(pluginAdvisors, adhocAdvisors.get());
+            Iterable<Advice> advisors = Iterables.concat(pluginAdvisors,
+                    pointcutConfigAdvisors.get());
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors, loader,
                     parsedTypeCache, codeSource, generateMetricNameWrapperMethods);
             ClassReader cr = new ClassReader(classBytes);
@@ -142,7 +143,7 @@ class Weaver {
         return Objects.toStringHelper(this)
                 .add("mixinTypes", mixinTypes)
                 .add("pluginAdvisors", pluginAdvisors)
-                .add("adhocAdvisors", adhocAdvisors)
+                .add("pointcutConfigAdvisors", pointcutConfigAdvisors)
                 .add("loader", loader)
                 .add("parsedTypeCache", parsedTypeCache)
                 .toString();

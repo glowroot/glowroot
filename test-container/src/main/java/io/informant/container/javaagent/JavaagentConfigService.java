@@ -27,13 +27,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.informant.container.common.ObjectMappers;
-import io.informant.container.config.AdhocPointcutConfig;
 import io.informant.container.config.AdvancedConfig;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.ConfigService;
 import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
+import io.informant.container.config.PointcutConfig;
 import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserInterfaceConfig;
 import io.informant.container.config.UserOverridesConfig;
@@ -142,34 +142,34 @@ class JavaagentConfigService implements ConfigService {
         httpClient.post("/backend/config/plugin/" + pluginId, mapper.writeValueAsString(config));
     }
 
-    public List<AdhocPointcutConfig> getAdhocPointcutConfigs() throws Exception {
-        String response = httpClient.get("/backend/config/adhoc-pointcut");
+    public List<PointcutConfig> getPointcutConfigs() throws Exception {
+        String response = httpClient.get("/backend/config/pointcut");
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         JsonNode configNode = rootNode.get("configs");
         return mapper.readValue(mapper.treeAsTokens(configNode),
-                new TypeReference<List<AdhocPointcutConfig>>() {});
+                new TypeReference<List<PointcutConfig>>() {});
     }
 
     // returns new version
-    public String addAdhocPointcutConfig(AdhocPointcutConfig adhocPointcutConfig) throws Exception {
-        String response = httpClient.post("/backend/config/adhoc-pointcut/+",
-                mapper.writeValueAsString(adhocPointcutConfig));
+    public String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception {
+        String response = httpClient.post("/backend/config/pointcut/+",
+                mapper.writeValueAsString(pointcutConfig));
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         return rootNode.get("version").asText();
     }
 
-    public void updateAdhocPointcutConfig(String version, AdhocPointcutConfig adhocPointcutConfig)
+    public void updatePointcutConfig(String version, PointcutConfig pointcutConfig)
             throws Exception {
-        httpClient.post("/backend/config/adhoc-pointcut/" + version,
-                mapper.writeValueAsString(adhocPointcutConfig));
+        httpClient.post("/backend/config/pointcut/" + version,
+                mapper.writeValueAsString(pointcutConfig));
     }
 
-    public void removeAdhocPointcutConfig(String version) throws Exception {
-        httpClient.post("/backend/config/adhoc-pointcut/-", mapper.writeValueAsString(version));
+    public void removePointcutConfig(String version) throws Exception {
+        httpClient.post("/backend/config/pointcut/-", mapper.writeValueAsString(version));
     }
 
-    public void reweaveAdhocPointcuts() throws Exception {
-        httpClient.post("/backend/admin/adhoc-pointcuts/reweave", "");
+    public void reweavePointcutConfigs() throws Exception {
+        httpClient.post("/backend/admin/pointcuts/reweave", "");
     }
 
     public void compactData() throws Exception {

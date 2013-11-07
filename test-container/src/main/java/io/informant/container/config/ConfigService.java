@@ -61,16 +61,16 @@ public interface ConfigService {
 
     void updatePluginConfig(String pluginId, PluginConfig config) throws Exception;
 
-    List<AdhocPointcutConfig> getAdhocPointcutConfigs() throws Exception;
+    List<PointcutConfig> getPointcutConfigs() throws Exception;
 
-    String addAdhocPointcutConfig(AdhocPointcutConfig adhocPointcutConfig) throws Exception;
+    String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception;
 
-    void updateAdhocPointcutConfig(String version, AdhocPointcutConfig adhocPointcutConfig)
+    void updatePointcutConfig(String version, PointcutConfig pointcutConfig)
             throws Exception;
 
-    void removeAdhocPointcutConfig(String version) throws Exception;
+    void removePointcutConfig(String version) throws Exception;
 
-    void reweaveAdhocPointcuts() throws Exception;
+    void reweavePointcutConfigs() throws Exception;
 
     void compactData() throws Exception;
 

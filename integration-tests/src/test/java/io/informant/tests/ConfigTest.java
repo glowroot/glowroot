@@ -26,13 +26,13 @@ import org.junit.Test;
 
 import io.informant.Containers;
 import io.informant.container.Container;
-import io.informant.container.config.AdhocPointcutConfig;
-import io.informant.container.config.AdhocPointcutConfig.MethodModifier;
 import io.informant.container.config.AdvancedConfig;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
+import io.informant.container.config.PointcutConfig;
+import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserInterfaceConfig;
 import io.informant.container.config.UserOverridesConfig;
@@ -218,41 +218,41 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldInsertAdhocPointcutConfig() throws Exception {
+    public void shouldInsertPointcutConfig() throws Exception {
         // given
-        AdhocPointcutConfig config = createAdhocPointcutConfig();
+        PointcutConfig config = createPointcutConfig();
         // when
-        container.getConfigService().addAdhocPointcutConfig(config);
+        container.getConfigService().addPointcutConfig(config);
         // then
-        List<AdhocPointcutConfig> configs = container.getConfigService().getAdhocPointcutConfigs();
+        List<PointcutConfig> configs = container.getConfigService().getPointcutConfigs();
         assertThat(configs).hasSize(1);
         assertThat(configs.get(0)).isEqualTo(config);
     }
 
     @Test
-    public void shouldUpdateAdhocPointcutConfig() throws Exception {
+    public void shouldUpdatePointcutConfig() throws Exception {
         // given
-        AdhocPointcutConfig config = createAdhocPointcutConfig();
-        String version = container.getConfigService().addAdhocPointcutConfig(config);
+        PointcutConfig config = createPointcutConfig();
+        String version = container.getConfigService().addPointcutConfig(config);
         // when
         updateAllFields(config);
-        container.getConfigService().updateAdhocPointcutConfig(version, config);
+        container.getConfigService().updatePointcutConfig(version, config);
         // then
-        List<AdhocPointcutConfig> configs = container.getConfigService().getAdhocPointcutConfigs();
+        List<PointcutConfig> configs = container.getConfigService().getPointcutConfigs();
         assertThat(configs).hasSize(1);
         assertThat(configs.get(0)).isEqualTo(config);
     }
 
     @Test
-    public void shouldDeleteAdhocPointcutConfig() throws Exception {
+    public void shouldDeletePointcutConfig() throws Exception {
         // given
-        AdhocPointcutConfig config = createAdhocPointcutConfig();
-        String version = container.getConfigService().addAdhocPointcutConfig(config);
+        PointcutConfig config = createPointcutConfig();
+        String version = container.getConfigService().addPointcutConfig(config);
         // when
-        container.getConfigService().removeAdhocPointcutConfig(version);
+        container.getConfigService().removePointcutConfig(version);
         // then
-        List<? extends AdhocPointcutConfig> configs =
-                container.getConfigService().getAdhocPointcutConfigs();
+        List<? extends PointcutConfig> configs =
+                container.getConfigService().getPointcutConfigs();
         assertThat(configs).isEmpty();
     }
 
@@ -315,8 +315,8 @@ public class ConfigTest {
         config.setProperty("captureSpanStackTraces", !captureSpanStackTraces);
     }
 
-    private static AdhocPointcutConfig createAdhocPointcutConfig() {
-        AdhocPointcutConfig config = new AdhocPointcutConfig();
+    private static PointcutConfig createPointcutConfig() {
+        PointcutConfig config = new PointcutConfig();
         config.setMetric(true);
         config.setSpan(true);
         config.setTypeName("java.util.Collections");
@@ -330,7 +330,7 @@ public class ConfigTest {
         return config;
     }
 
-    private static void updateAllFields(AdhocPointcutConfig config) {
+    private static void updateAllFields(PointcutConfig config) {
         config.setMetric(!config.isMetric());
         config.setSpan(!config.isSpan());
         config.setTrace(!config.isTrace());

@@ -37,8 +37,8 @@ class ConfigSidebar {
         return getSidebar().findElement(linkText("General"));
     }
 
-    WebElement getAdhocPointcutsLink() {
-        return getSidebar().findElement(linkText("Adhoc pointcuts"));
+    WebElement getPointcutsLink() {
+        return getSidebar().findElement(linkText("Pointcuts"));
     }
 
     private WebElement getSidebar() {

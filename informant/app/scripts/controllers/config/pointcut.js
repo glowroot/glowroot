@@ -16,7 +16,7 @@
 
 /* global informant, angular */
 
-informant.controller('ConfigAdhocPointcutCtrl', [
+informant.controller('PointcutCtrl', [
   '$scope',
   '$http',
   '$timeout',
@@ -62,7 +62,7 @@ informant.controller('ConfigAdhocPointcutCtrl', [
         limit: 10
       };
       // use 'then' method to return promise
-      return $http.post('backend/adhoc-pointcut/matching-type-names', postData)
+      return $http.post('backend/pointcut/matching-type-names', postData)
           .then(function (response) {
             return response.data;
           }, function () {
@@ -94,7 +94,7 @@ informant.controller('ConfigAdhocPointcutCtrl', [
         partialMethodName: suggestion,
         limit: 10
       };
-      return $http.post('backend/adhoc-pointcut/matching-method-names', postData)
+      return $http.post('backend/pointcut/matching-method-names', postData)
           .then(function (response) {
             return response.data;
           }, function () {
@@ -169,9 +169,9 @@ informant.controller('ConfigAdhocPointcutCtrl', [
       var url;
       var version = $scope.config.version;
       if (version) {
-        url = 'backend/config/adhoc-pointcut/' + version;
+        url = 'backend/config/pointcut/' + version;
       } else {
-        url = 'backend/config/adhoc-pointcut/+';
+        url = 'backend/config/pointcut/+';
       }
       $http.post(url, postData)
           .success(function (data) {
@@ -185,7 +185,7 @@ informant.controller('ConfigAdhocPointcutCtrl', [
     // TODO this needs access to outer scope remove pointcut and update retransformClassesButton
     $scope.pointcutDelete = function (deferred) {
       if ($scope.config.version) {
-        $http.post('backend/config/adhoc-pointcut/-', '"' + $scope.config.version + '"')
+        $http.post('backend/config/pointcut/-', '"' + $scope.config.version + '"')
             .success(function (data) {
               $scope.$parent.removePointcut($scope.pointcut);
               $scope.page.dirty = true;
@@ -204,7 +204,7 @@ informant.controller('ConfigAdhocPointcutCtrl', [
         methodName: methodName
       };
       $scope.signaturesLoading = true;
-      $http.post('backend/adhoc-pointcut/matching-methods', postData)
+      $http.post('backend/pointcut/matching-methods', postData)
           .success(function (data) {
             $scope.signaturesLoading = false;
             $scope.signatures = data;

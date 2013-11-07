@@ -101,15 +101,15 @@ public class LocalUiModule {
         // port is just displayed on config page for its documentation value anyways, and more
         // useful to know it was set to 0 than to display its value (which is needed to view the
         // page anyways)
-        ConfigJsonService configJsonService =
-                new ConfigJsonService(configService, rollingFile, pluginDescriptorCache, dataDir,
-                        traceModule.getDynamicAdviceCache(), httpSessionManager, traceModule);
+        ConfigJsonService configJsonService = new ConfigJsonService(configService, rollingFile,
+                pluginDescriptorCache, dataDir, traceModule.getPointcutConfigAdviceCache(),
+                httpSessionManager, traceModule);
         ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
-        AdhocPointcutConfigJsonService adhocPointcutConfigJsonService =
-                new AdhocPointcutConfigJsonService(parsedTypeCache, classpathCache);
+        PointcutConfigJsonService pointcutConfigJsonService =
+                new PointcutConfigJsonService(parsedTypeCache, classpathCache);
         JvmJsonService jvmJsonService = new JvmJsonService();
         AdminJsonService adminJsonService = new AdminJsonService(snapshotDao,
-                configService, traceModule.getDynamicAdviceCache(), parsedTypeCache,
+                configService, traceModule.getPointcutConfigAdviceCache(), parsedTypeCache,
                 instrumentation, traceCollector, dataSource, traceRegistry);
 
         // for now only a single http worker thread to keep # of threads down
@@ -118,7 +118,7 @@ public class LocalUiModule {
         httpServer = buildHttpServer(port, numWorkerThreads, indexHtmlService, layoutJsonService,
                 aggregateJsonService, tracePointJsonService, traceSummaryJsonService,
                 snapshotHttpService, traceExportHttpService, jvmJsonService, configJsonService,
-                adhocPointcutConfigJsonService, adminJsonService, httpSessionManager);
+                pointcutConfigJsonService, adminJsonService, httpSessionManager);
         if (httpServer != null) {
             configJsonService.setHttpServer(httpServer);
         }
@@ -162,7 +162,7 @@ public class LocalUiModule {
             TraceSummaryJsonService traceSummaryJsonService,
             SnapshotHttpService snapshotHttpService, TraceExportHttpService traceExportHttpService,
             JvmJsonService jvmJsonService, ConfigJsonService configJsonService,
-            AdhocPointcutConfigJsonService adhocPointcutConfigJsonService,
+            PointcutConfigJsonService pointcutConfigJsonService,
             AdminJsonService adminJsonService, HttpSessionManager httpSessionManager) {
 
         String resourceBase = "io/informant/local/ui/app-dist";
@@ -266,33 +266,33 @@ public class LocalUiModule {
                 configJsonService, "getPluginConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/plugin/(.+)$",
                 configJsonService, "updatePluginConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/adhoc-pointcut$",
-                configJsonService, "getAdhocPointcut"));
+        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/pointcut$",
+                configJsonService, "getPointcutConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/config/adhoc-pointcut/\\+$",
-                configJsonService, "addAdhocPointcutConfig"));
+                "^/backend/config/pointcut/\\+$",
+                configJsonService, "addPointcutConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/config/adhoc-pointcut/([0-9a-f]+)$", configJsonService,
-                "updateAdhocPointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/adhoc-pointcut/-$",
-                configJsonService, "removeAdhocPointcutConfig"));
+                "^/backend/config/pointcut/([0-9a-f]+)$", configJsonService,
+                "updatePointcutConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/pointcut/-$",
+                configJsonService, "removePointcutConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/adhoc-pointcut/pre-load-auto-complete", adhocPointcutConfigJsonService,
+                "^/backend/pointcut/pre-load-auto-complete", pointcutConfigJsonService,
                 "preLoadAutoComplete"));
         jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/adhoc-pointcut/matching-type-names", adhocPointcutConfigJsonService,
+                "^/backend/pointcut/matching-type-names", pointcutConfigJsonService,
                 "getMatchingTypeNames"));
         jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/adhoc-pointcut/matching-method-names", adhocPointcutConfigJsonService,
+                "^/backend/pointcut/matching-method-names", pointcutConfigJsonService,
                 "getMatchingMethodNames"));
         jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/adhoc-pointcut/matching-methods",
-                adhocPointcutConfigJsonService, "getMatchingMethods"));
+                "^/backend/pointcut/matching-methods",
+                pointcutConfigJsonService, "getMatchingMethods"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/admin/data/delete-all$",
                 adminJsonService, "deleteAllData"));
         jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/admin/adhoc-pointcuts/reweave",
-                adminJsonService, "reweaveAdhocPointcuts"));
+                "^/backend/admin/pointcuts/reweave",
+                adminJsonService, "reweavePointcutConfigs"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/admin/data/compact$",
                 adminJsonService, "compactData"));
         jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/admin/config/reset-all$",

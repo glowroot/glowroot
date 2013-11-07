@@ -32,7 +32,7 @@ import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class AdhocPointcutConfig {
+public class PointcutConfig {
 
     private boolean metric;
     private boolean span;
@@ -52,18 +52,18 @@ public class AdhocPointcutConfig {
     @Nullable
     private String traceGrouping;
 
-    // null for new AdhocPointcutConfig records that haven't been sent to server yet
+    // null for new PointcutConfig records that haven't been sent to server yet
     @Nullable
     private final String version;
 
-    // used to create new AdhocPointcutConfig records that haven't been sent to server yet
-    public AdhocPointcutConfig() {
+    // used to create new PointcutConfig records that haven't been sent to server yet
+    public PointcutConfig() {
         methodArgTypeNames = ImmutableList.of();
         methodModifiers = ImmutableList.of();
         version = null;
     }
 
-    public AdhocPointcutConfig(String version) {
+    public PointcutConfig(String version) {
         methodArgTypeNames = ImmutableList.of();
         methodModifiers = ImmutableList.of();
         this.version = version;
@@ -172,8 +172,8 @@ public class AdhocPointcutConfig {
 
     @Override
     public boolean equals(@Nullable Object obj) {
-        if (obj instanceof AdhocPointcutConfig) {
-            AdhocPointcutConfig that = (AdhocPointcutConfig) obj;
+        if (obj instanceof PointcutConfig) {
+            PointcutConfig that = (PointcutConfig) obj;
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
@@ -220,7 +220,7 @@ public class AdhocPointcutConfig {
     }
 
     @JsonCreator
-    static AdhocPointcutConfig readValue(
+    static PointcutConfig readValue(
             @JsonProperty("metric") @Nullable Boolean metric,
             @JsonProperty("span") @Nullable Boolean span,
             @JsonProperty("trace") @Nullable Boolean trace,
@@ -243,7 +243,7 @@ public class AdhocPointcutConfig {
         checkRequiredProperty(methodModifiers, "methodModifiers");
         checkRequiredProperty(metricName, "metricName");
         checkRequiredProperty(version, "version");
-        AdhocPointcutConfig config = new AdhocPointcutConfig(version);
+        PointcutConfig config = new PointcutConfig(version);
         config.setMetric(metric);
         config.setSpan(span);
         config.setTrace(trace);

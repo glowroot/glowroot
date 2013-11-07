@@ -19,7 +19,7 @@
 </div>
 <div ng-include src="'template/ix-http-error.html'"></div>
 <div ng-repeat="pointcut in pointcuts"
-     ng-controller="ConfigAdhocPointcutCtrl"
+     ng-controller="PointcutCtrl"
      class="panel panel-default">
   <div class="panel-heading">
     <h2>{{heading}}</h2>
@@ -213,10 +213,10 @@
   </div>
 </div>
 <!-- ng-show="loaded" is used to jitter of seeing this section very briefly
-     before it gets pushed down by existing adhoc pointcut sections -->
+     before it gets pushed down by existing pointcut sections -->
 <div class="panel panel-default" ng-show="loaded">
   <div class="panel-heading">
-    <h2>New adhoc pointcut</h2>
+    <h2>New pointcut</h2>
   </div>
   <!-- override .panel-body min-height: 150px, not needed anyway since no loading spinner in this panel -->
   <div class="panel-body" style="min-height: 0;">

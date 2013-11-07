@@ -54,10 +54,9 @@ import static io.informant.common.ObjectMappers.checkRequiredProperty;
  */
 @Singleton
 @JsonService
-class AdhocPointcutConfigJsonService {
+class PointcutConfigJsonService {
 
-    private static final Logger logger =
-            LoggerFactory.getLogger(AdhocPointcutConfigJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(PointcutConfigJsonService.class);
     @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
     private static final Splitter splitter = Splitter.on(' ').omitEmptyStrings();
@@ -65,7 +64,7 @@ class AdhocPointcutConfigJsonService {
     private final ParsedTypeCache parsedTypeCache;
     private final ClasspathCache classpathCache;
 
-    AdhocPointcutConfigJsonService(ParsedTypeCache parsedTypeCache,
+    PointcutConfigJsonService(ParsedTypeCache parsedTypeCache,
             ClasspathCache classpathTypeCache) {
         this.parsedTypeCache = parsedTypeCache;
         this.classpathCache = classpathTypeCache;

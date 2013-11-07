@@ -114,11 +114,11 @@ public class Advice {
     private final ImmutableList<AdviceParameter> onAfterParameters;
 
     private final Class<?> generatedAdviceFlowClass;
-    private final boolean adhoc;
+    private final boolean reweavable;
 
-    public static Advice from(Pointcut pointcut, Class<?> adviceClass, boolean adhoc)
+    public static Advice from(Pointcut pointcut, Class<?> adviceClass, boolean reweavable)
             throws AdviceConstructionException {
-        return new Builder(pointcut, adviceClass, adhoc).build();
+        return new Builder(pointcut, adviceClass, reweavable).build();
     }
 
     private Advice(Pointcut pointcut, Type adviceType, @Nullable Pattern pointcutTypePattern,
@@ -130,8 +130,7 @@ public class Advice {
             ImmutableList<AdviceParameter> onReturnParameters,
             ImmutableList<AdviceParameter> onThrowParameterKinds,
             ImmutableList<AdviceParameter> onAfterParameterKinds,
-            Class<?> generatedAdviceFlowClass,
-            boolean adhoc) {
+            Class<?> generatedAdviceFlowClass, boolean reweavable) {
         this.pointcut = pointcut;
         this.adviceType = adviceType;
         this.pointcutTypePattern = pointcutTypePattern;
@@ -148,7 +147,7 @@ public class Advice {
         this.onThrowParameters = onThrowParameterKinds;
         this.onAfterParameters = onAfterParameterKinds;
         this.generatedAdviceFlowClass = generatedAdviceFlowClass;
-        this.adhoc = adhoc;
+        this.reweavable = reweavable;
     }
 
     Pointcut getPointcut() {
@@ -223,8 +222,8 @@ public class Advice {
         return generatedAdviceFlowClass;
     }
 
-    boolean isAdhoc() {
-        return adhoc;
+    boolean isReweavable() {
+        return reweavable;
     }
 
     @Override
@@ -246,7 +245,7 @@ public class Advice {
                 .add("onThrowParameters", onThrowParameters)
                 .add("onAfterParameters", onAfterParameters)
                 .add("generatedAdviceFlowClass", generatedAdviceFlowClass)
-                .add("adhoc", adhoc)
+                .add("reweavable", reweavable)
                 .toString();
     }
 
@@ -285,7 +284,7 @@ public class Advice {
 
         private final Pointcut pointcut;
         private final Class<?> adviceClass;
-        private final boolean adhoc;
+        private final boolean reweavable;
 
         private Type adviceType;
         @Nullable
@@ -313,10 +312,10 @@ public class Advice {
 
         private Class<?> generatedAdviceFlowClass;
 
-        private Builder(Pointcut pointcut, Class<?> adviceClass, boolean adhoc) {
+        private Builder(Pointcut pointcut, Class<?> adviceClass, boolean reweavable) {
             this.pointcut = pointcut;
             this.adviceClass = adviceClass;
-            this.adhoc = adhoc;
+            this.reweavable = reweavable;
         }
 
         private Advice build() throws AdviceConstructionException {
@@ -344,7 +343,7 @@ public class Advice {
             return new Advice(pointcut, adviceType, pointcutTypePattern, pointcutMethodPattern,
                     isEnabledAdvice, onBeforeAdvice, onReturnAdvice, onThrowAdvice, onAfterAdvice,
                     travelerType, isEnabledParameters, onBeforeParameters, onReturnParameters,
-                    onThrowParameters, onAfterParameters, generatedAdviceFlowClass, adhoc);
+                    onThrowParameters, onAfterParameters, generatedAdviceFlowClass, reweavable);
         }
 
         private Class<?> buildGeneratedAdviceFlowClass() throws AdviceConstructionException {
