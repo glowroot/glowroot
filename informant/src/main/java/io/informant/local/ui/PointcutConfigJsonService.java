@@ -70,7 +70,7 @@ class PointcutConfigJsonService {
         this.classpathCache = classpathTypeCache;
     }
 
-    @JsonServiceMethod
+    @POST("/backend/pointcut/pre-load-auto-complete")
     void preLoadAutoComplete() throws IOException {
         logger.debug("preLoadAutoComplete()");
         // HttpServer is configured with a very small thread pool to keep number of threads down
@@ -86,7 +86,7 @@ class PointcutConfigJsonService {
         thread.start();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/pointcut/matching-type-names")
     String getMatchingTypeNames(String content) throws IOException {
         logger.debug("getMatchingTypeNames(): content={}", content);
         TypeNameRequest request =
@@ -97,7 +97,7 @@ class PointcutConfigJsonService {
         return mapper.writeValueAsString(matchingTypeNames);
     }
 
-    @JsonServiceMethod
+    @POST("/backend/pointcut/matching-method-names")
     String getMatchingMethodNames(String content) throws IOException {
         logger.debug("getMatchingMethodNames(): content={}", content);
         MethodNameRequest request =
@@ -107,7 +107,7 @@ class PointcutConfigJsonService {
         return mapper.writeValueAsString(matchingMethodNames);
     }
 
-    @JsonServiceMethod
+    @POST("/backend/pointcut/matching-methods")
     String getMatchingMethods(String content) throws IOException {
         logger.debug("getMatchingMethods(): content={}", content);
         MethodRequest request =

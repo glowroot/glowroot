@@ -60,6 +60,8 @@ import org.slf4j.LoggerFactory;
 
 import io.informant.markers.Singleton;
 
+import static io.informant.local.ui.HttpServerHandler.HttpMethod.GET;
+import static io.informant.local.ui.HttpServerHandler.HttpMethod.POST;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_MODIFIED;
@@ -109,12 +111,27 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     private final ThreadLocal<Channel> currentChannel = new ThreadLocal<Channel>();
 
     HttpServerHandler(IndexHtmlService indexHtmlService, ImmutableMap<Pattern, Object> uriMappings,
-            ImmutableList<JsonServiceMapping> jsonServiceMappings,
-            HttpSessionManager httpSessionManager) {
+            HttpSessionManager httpSessionManager, ImmutableList<Object> jsonServices) {
         this.indexHtmlService = indexHtmlService;
         this.uriMappings = uriMappings;
-        this.jsonServiceMappings = jsonServiceMappings;
         this.httpSessionManager = httpSessionManager;
+        ImmutableList.Builder<JsonServiceMapping> jsonServiceMappings = ImmutableList.builder();
+        for (Object jsonService : jsonServices) {
+            for (Method method : jsonService.getClass().getDeclaredMethods()) {
+                GET annotationGET = method.getAnnotation(GET.class);
+                if (annotationGET != null) {
+                    jsonServiceMappings.add(new JsonServiceMapping(GET, annotationGET.value(),
+                            jsonService, method.getName()));
+                }
+                POST annotationPOST = method.getAnnotation(POST.class);
+                if (annotationPOST != null) {
+                    jsonServiceMappings.add(new JsonServiceMapping(POST, annotationPOST.value(),
+                            jsonService, method.getName()));
+                }
+            }
+        }
+
+        this.jsonServiceMappings = jsonServiceMappings.build();
         allChannels = new DefaultChannelGroup();
     }
 
@@ -424,12 +441,16 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         private final Pattern pattern;
         private final Object service;
         private final String methodName;
-        JsonServiceMapping(HttpMethod httpMethod, String pattern, Object service,
-                String methodName) {
+        JsonServiceMapping(HttpMethod httpMethod, String path, Object service, String methodName) {
             this.httpMethod = httpMethod;
-            this.pattern = Pattern.compile(pattern);
             this.service = service;
             this.methodName = methodName;
+            if (path.contains("(")) {
+                pattern = Pattern.compile(path);
+            } else {
+                pattern = Pattern.compile(Pattern.quote(path));
+            }
+
         }
     }
 

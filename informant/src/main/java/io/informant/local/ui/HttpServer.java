@@ -43,7 +43,6 @@ import org.jboss.netty.util.ThreadNameDeterminer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.informant.local.ui.HttpServerHandler.JsonServiceMapping;
 import io.informant.markers.Singleton;
 
 /**
@@ -64,11 +63,10 @@ class HttpServer {
     private volatile int port;
 
     HttpServer(int port, int numWorkerThreads, IndexHtmlService indexHtmlService,
-            ImmutableMap<Pattern, Object> uriMappings,
-            ImmutableList<JsonServiceMapping> jsonServiceMappings,
-            HttpSessionManager httpSessionManager) {
-        handler = new HttpServerHandler(indexHtmlService, uriMappings, jsonServiceMappings,
-                httpSessionManager);
+            ImmutableMap<Pattern, Object> uriMappings, HttpSessionManager httpSessionManager,
+            ImmutableList<Object> jsonServices) {
+        handler = new HttpServerHandler(indexHtmlService, uriMappings, httpSessionManager,
+                jsonServices);
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
         ExecutorService bossExecutor = Executors.newCachedThreadPool(threadFactory);
         ExecutorService workerExecutor = Executors.newCachedThreadPool(threadFactory);

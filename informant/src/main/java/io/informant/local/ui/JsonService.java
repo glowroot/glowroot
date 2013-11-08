@@ -15,7 +15,11 @@
  */
 package io.informant.local.ui;
 
+import java.lang.annotation.Retention;
+
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * @author Trask Stalnaker
@@ -24,8 +28,17 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 // marker annotation
 @interface JsonService {}
 
-// marker annotation
-@interface JsonServiceMethod {}
+// similar to javax.ws.rs.GET
+@Retention(RUNTIME)
+@interface GET {
+    String value();
+}
+
+// similar to javax.ws.rs.POST
+@Retention(RUNTIME)
+@interface POST {
+    String value();
+}
 
 @SuppressWarnings("serial")
 class JsonServiceException extends Exception {

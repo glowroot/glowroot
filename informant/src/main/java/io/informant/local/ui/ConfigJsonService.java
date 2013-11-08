@@ -21,8 +21,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.sql.SQLException;
 import java.util.concurrent.ExecutionException;
-import java.util.jar.Attributes;
-import java.util.jar.JarInputStream;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -100,7 +98,7 @@ class ConfigJsonService {
         this.httpServer = httpServer;
     }
 
-    @JsonServiceMethod
+    @GET("/backend/config/general")
     String getGeneralConfig() throws IOException, SQLException {
         logger.debug("getGeneralConfig()");
         StringBuilder sb = new StringBuilder();
@@ -114,7 +112,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/config/coarse-profiling")
     String getCoarseProfilingConfig() throws IOException, SQLException {
         logger.debug("getCoarseProfilingConfig()");
         StringBuilder sb = new StringBuilder();
@@ -128,7 +126,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/config/fine-profiling")
     String getFineProfiling() throws IOException, SQLException {
         logger.debug("getFineProfiling()");
         StringBuilder sb = new StringBuilder();
@@ -144,7 +142,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/config/user-overrides")
     String getUserOverridesConfig() throws IOException, SQLException {
         logger.debug("getUserOverridesConfig()");
         StringBuilder sb = new StringBuilder();
@@ -158,7 +156,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/config/storage")
     String getStorage() throws IOException, SQLException {
         logger.debug("getStorage()");
         StringBuilder sb = new StringBuilder();
@@ -173,7 +171,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/config/user-interface")
     String getUserInterface() throws IOException, SQLException {
         logger.debug("getUserInterface()");
         StringBuilder sb = new StringBuilder();
@@ -193,9 +191,9 @@ class ConfigJsonService {
         jg.writeNumberField("activePort", httpServer.getPort());
     }
 
-    @JsonServiceMethod
+    @GET("/backend/config/plugin/(.+)")
     String getPluginConfig(String pluginId) throws IOException, SQLException {
-        logger.debug("getPlugin(): pluginId={}", pluginId);
+        logger.debug("getPluginConfig(): pluginId={}", pluginId);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
@@ -209,7 +207,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/config/pointcut")
     String getPointcutConfig() throws IOException, SQLException {
         logger.debug("getPointcutConfig()");
         StringBuilder sb = new StringBuilder();
@@ -227,7 +225,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/config/advanced")
     String getAdvanced() throws IOException, SQLException {
         logger.debug("getAdvanced()");
         StringBuilder sb = new StringBuilder();
@@ -244,34 +242,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
-    String getVersion() throws IOException {
-        logger.debug("getVersion()");
-        JarInputStream jarIn = new JarInputStream(ConfigJsonService.class.getProtectionDomain()
-                .getCodeSource().getLocation().openStream());
-        try {
-            Attributes m = jarIn.getManifest().getMainAttributes();
-            String version = m.getValue("Implementation-Version");
-            if (version == null) {
-                logger.warn("could not find Implementation-Version attribute in"
-                        + " META-INF/MANIFEST.MF file");
-                return "<unknown>";
-            }
-            if (version.endsWith("-SNAPSHOT")) {
-                String snapshotTimestamp = m.getValue("Build-Time");
-                if (snapshotTimestamp == null) {
-                    logger.warn("could not find Build-Time attribute in META-INF/MANIFEST.MF file");
-                    return version + " (<timestamp unknown>)";
-                }
-                return version + " (" + snapshotTimestamp + ")";
-            }
-            return version;
-        } finally {
-            jarIn.close();
-        }
-    }
-
-    @JsonServiceMethod
+    @POST("/backend/config/general")
     String updateGeneralConfig(String content) throws IOException, JsonServiceException,
             SQLException {
         logger.debug("updateGeneralConfig(): content={}", content);
@@ -294,7 +265,7 @@ class ConfigJsonService {
         return getGeneralConfig();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/config/coarse-profiling")
     String updateCoarseProfilingConfig(String content) throws JsonServiceException,
             IOException, SQLException {
         logger.debug("updateCoarseProfilingConfig(): content={}", content);
@@ -317,7 +288,7 @@ class ConfigJsonService {
         return getCoarseProfilingConfig();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/config/fine-profiling")
     String updateFineProfilingConfig(String content) throws JsonServiceException,
             IOException, SQLException {
         logger.debug("updateFineProfilingConfig(): content={}", content);
@@ -340,7 +311,7 @@ class ConfigJsonService {
         return getFineProfiling();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/config/user-overrides")
     String updateUserOverridesConfig(String content) throws JsonServiceException, IOException,
             SQLException {
         logger.debug("updateUserOverridesConfig(): content={}", content);
@@ -363,7 +334,7 @@ class ConfigJsonService {
         return getUserOverridesConfig();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/config/storage")
     String updateStorageConfig(String content) throws JsonServiceException, IOException,
             SQLException {
         logger.debug("updateStorageConfig(): content={}", content);
@@ -388,7 +359,7 @@ class ConfigJsonService {
         return getStorage();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/config/user-interface")
     String updateUserInterfaceConfig(String content, HttpResponse response)
             throws JsonServiceException, IOException, NoSuchAlgorithmException,
             InvalidKeySpecException, SQLException {
@@ -447,7 +418,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/config/advanced")
     String updateAdvancedConfig(String content) throws JsonServiceException, IOException,
             SQLException {
         logger.debug("updateAdvancedConfig(): content={}", content);
@@ -470,7 +441,7 @@ class ConfigJsonService {
         return getAdvanced();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/config/plugin/(.+)")
     String updatePluginConfig(String pluginId, String content) throws JsonServiceException,
             IOException, SQLException {
         logger.debug("updatePluginConfig(): pluginId={}, content={}", pluginId, content);
@@ -494,7 +465,7 @@ class ConfigJsonService {
         return getPluginConfig(pluginId);
     }
 
-    @JsonServiceMethod
+    @POST("/backend/config/pointcut/+")
     String addPointcutConfig(String content) throws JsonProcessingException, IOException {
         logger.debug("addPointcutConfig(): content={}", content);
         PointcutConfig pointcutConfig =
@@ -508,7 +479,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/config/pointcut/([0-9a-f]+)")
     String updatePointcutConfig(String priorVersion, String content)
             throws JsonProcessingException, IOException {
         logger.debug("updatePointcutConfig(): priorVersion={}, content={}", priorVersion,
@@ -524,7 +495,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/config/pointcut/-")
     void removePointcutConfig(String content) throws IOException {
         logger.debug("removePointcutConfig(): content={}", content);
         String version = ObjectMappers.readRequiredValue(mapper, content, String.class);

@@ -92,7 +92,7 @@ class JvmJsonService {
         }
     };
 
-    @JsonServiceMethod
+    @GET("/backend/jvm/general")
     String getGeneralInfo() throws IOException, JMException {
         logger.debug("getGeneralInfo()");
         String pid = ProcessId.getPid();
@@ -134,7 +134,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/jvm/system-properties")
     String getSystemProperties() throws IOException {
         logger.debug("getSystemProperties()");
         Properties properties = System.getProperties();
@@ -160,7 +160,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/jvm/thread-dump")
     String getThreadDump() throws IOException {
         logger.debug("getThreadDump()");
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
@@ -195,7 +195,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/jvm/memory-overview")
     String getMemoryOverview() throws IOException {
         logger.debug("getMemoryOverview()");
         MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
@@ -250,14 +250,14 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/jvm/perform-gc")
     String performGC() throws IOException {
         logger.debug("performGC()");
         System.gc();
         return getMemoryOverview();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/jvm/reset-peak-memory-usage")
     String resetPeakMemoryUsage() throws IOException {
         logger.debug("resetPeakMemoryUsage()");
         for (MemoryPoolMXBean memoryPoolMXBean : ManagementFactory.getMemoryPoolMXBeans()) {
@@ -266,14 +266,14 @@ class JvmJsonService {
         return getMemoryOverview();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/jvm/heap-histogram")
     String getHeapHistogram() throws IOException, SecurityException, NoSuchMethodException,
             IllegalAccessException, InvocationTargetException {
         logger.debug("getHeapHistogram()");
         return HeapHistograms.heapHistogramJson();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/jvm/heap-dump-defaults")
     String getHeapDumpDefaults() throws IOException, JMException {
         logger.debug("getHeapDumpDefaults()");
         String heapDumpPath = HotSpotDiagnostic.getVMOption("HeapDumpPath").getValue();
@@ -290,7 +290,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/jvm/check-disk-space")
     String checkDiskSpace(String content) throws IOException, JMException,
             SecurityException, IllegalAccessException, InvocationTargetException {
         logger.debug("checkDiskSpace(): content={}", content);
@@ -307,7 +307,7 @@ class JvmJsonService {
         return Long.toString(diskSpace);
     }
 
-    @JsonServiceMethod
+    @POST("/backend/jvm/dump-heap")
     String dumpHeap(String content) throws IOException, JMException {
         logger.debug("dumpHeap(): content={}", content);
         ObjectNode rootNode = (ObjectNode) mapper.readTree(content);
@@ -338,7 +338,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/jvm/manageable-flags")
     String getManageableFlags() throws IOException, JMException {
         logger.debug("getManageableFlags()");
         StringBuilder sb = new StringBuilder();
@@ -365,7 +365,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/jvm/update-manageable-flags")
     String updateManageableFlags(String content) throws IOException, JMException {
         logger.debug("updateManageableFlags(): content={}", content);
         Map<String, Object> values =
@@ -376,7 +376,7 @@ class JvmJsonService {
         return getManageableFlags();
     }
 
-    @JsonServiceMethod
+    @GET("/backend/jvm/all-flags")
     String getAllFlags() throws IOException, JMException, ClassNotFoundException,
             NoSuchMethodException, SecurityException, IllegalAccessException,
             InvocationTargetException {
@@ -389,7 +389,7 @@ class JvmJsonService {
         return mapper.writeValueAsString(VMOption.orderingByName.sortedCopy(options));
     }
 
-    @JsonServiceMethod
+    @GET("/backend/jvm/capabilities")
     String getCapabilities() throws JsonGenerationException, IOException {
         logger.debug("getCapabilities()");
         Availability hotSpotDiagnosticAvailability = HotSpotDiagnostic.getAvailability();

@@ -77,13 +77,13 @@ class AdminJsonService {
         this.traceRegistry = traceRegistry;
     }
 
-    @JsonServiceMethod
+    @POST("/backend/admin/data/delete-all")
     void deleteAllData() {
         logger.debug("deleteAllData()");
         snapshotDao.deleteAllSnapshots();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/admin/pointcuts/reweave")
     void reweavePointcutConfigs() throws IllegalArgumentException, IllegalAccessException,
             InvocationTargetException {
         if (!JDK6.isRetransformClassesSupported(instrumentation)) {
@@ -109,7 +109,7 @@ class AdminJsonService {
         JDK6.retransformClasses(instrumentation, classes);
     }
 
-    @JsonServiceMethod
+    @POST("/backend/admin/data/compact")
     void compactData() {
         logger.debug("compactData()");
         try {
@@ -121,28 +121,28 @@ class AdminJsonService {
     }
 
     @OnlyUsedByTests
-    @JsonServiceMethod
+    @POST("/backend/admin/config/reset-all")
     void resetAllConfig() throws IOException {
         logger.debug("resetAllConfig()");
         configService.resetAllConfig();
     }
 
     @OnlyUsedByTests
-    @JsonServiceMethod
+    @GET("/backend/admin/num-pending-complete-traces")
     String getNumPendingCompleteTraces() {
         logger.debug("getNumPendingCompleteTraces()");
         return Integer.toString(traceCollector.getPendingCompleteTraces().size());
     }
 
     @OnlyUsedByTests
-    @JsonServiceMethod
+    @GET("/backend/admin/num-stored-snapshots")
     String getNumStoredSnapshots() {
         logger.debug("getNumStoredSnapshots()");
         return Long.toString(snapshotDao.count());
     }
 
     @OnlyUsedByTests
-    @JsonServiceMethod
+    @GET("/backend/admin/num-active-traces")
     String getNumActiveTraces() {
         logger.debug("getNumActiveTraces()");
         return Integer.toString(Iterables.size(traceRegistry.getTraces()));

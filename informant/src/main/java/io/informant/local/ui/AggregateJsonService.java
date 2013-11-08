@@ -60,7 +60,7 @@ class AggregateJsonService {
         this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
     }
 
-    @JsonServiceMethod
+    @POST("/backend/aggregate/points")
     String getPoints(String content) throws IOException {
         logger.debug("getPoints(): content={}", content);
         PointsRequest request =
@@ -92,7 +92,7 @@ class AggregateJsonService {
         return sb.toString();
     }
 
-    @JsonServiceMethod
+    @POST("/backend/aggregate/groupings")
     String getGroupings(String content) throws IOException {
         logger.debug("getGroupings(): content={}", content);
         GroupingsRequest request =

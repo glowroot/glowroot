@@ -40,15 +40,11 @@ import io.informant.local.store.DataSource;
 import io.informant.local.store.RollingFile;
 import io.informant.local.store.SnapshotDao;
 import io.informant.local.store.StorageModule;
-import io.informant.local.ui.HttpServerHandler.JsonServiceMapping;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 import io.informant.trace.TraceModule;
 import io.informant.trace.TraceRegistry;
 import io.informant.weaving.ParsedTypeCache;
-
-import static io.informant.local.ui.HttpServerHandler.HttpMethod.GET;
-import static io.informant.local.ui.HttpServerHandler.HttpMethod.POST;
 
 /**
  * @author Trask Stalnaker
@@ -112,13 +108,21 @@ public class LocalUiModule {
                 configService, traceModule.getPointcutConfigAdviceCache(), parsedTypeCache,
                 instrumentation, traceCollector, dataSource, traceRegistry);
 
+        ImmutableList.Builder<Object> jsonServices = ImmutableList.builder();
+        jsonServices.add(layoutJsonService);
+        jsonServices.add(aggregateJsonService);
+        jsonServices.add(tracePointJsonService);
+        jsonServices.add(traceSummaryJsonService);
+        jsonServices.add(jvmJsonService);
+        jsonServices.add(configJsonService);
+        jsonServices.add(pointcutConfigJsonService);
+        jsonServices.add(adminJsonService);
+
         // for now only a single http worker thread to keep # of threads down
         final int numWorkerThreads = 1;
         int port = configService.getUserInterfaceConfig().getPort();
-        httpServer = buildHttpServer(port, numWorkerThreads, indexHtmlService, layoutJsonService,
-                aggregateJsonService, tracePointJsonService, traceSummaryJsonService,
-                snapshotHttpService, traceExportHttpService, jvmJsonService, configJsonService,
-                pointcutConfigJsonService, adminJsonService, httpSessionManager);
+        httpServer = buildHttpServer(port, numWorkerThreads, httpSessionManager, indexHtmlService,
+                snapshotHttpService, traceExportHttpService, jsonServices.build());
         if (httpServer != null) {
             configJsonService.setHttpServer(httpServer);
         }
@@ -157,13 +161,9 @@ public class LocalUiModule {
 
     @Nullable
     private static HttpServer buildHttpServer(int port, int numWorkerThreads,
-            IndexHtmlService indexHtmlService, LayoutJsonService layoutJsonService,
-            AggregateJsonService aggregateJsonService, TracePointJsonService tracePointJsonService,
-            TraceSummaryJsonService traceSummaryJsonService,
+            HttpSessionManager httpSessionManager, IndexHtmlService indexHtmlService,
             SnapshotHttpService snapshotHttpService, TraceExportHttpService traceExportHttpService,
-            JvmJsonService jvmJsonService, ConfigJsonService configJsonService,
-            PointcutConfigJsonService pointcutConfigJsonService,
-            AdminJsonService adminJsonService, HttpSessionManager httpSessionManager) {
+            ImmutableList<Object> jsonServices) {
 
         String resourceBase = "io/informant/local/ui/app-dist";
 
@@ -188,126 +188,9 @@ public class LocalUiModule {
         // the download url for the export file
         uriMappings.put(Pattern.compile("^/export/.*$"), traceExportHttpService);
         uriMappings.put(Pattern.compile("^/backend/trace/detail/.*$"), snapshotHttpService);
-
-        // the parentheses define the part of the match that is used to construct the args for
-        // calling the method in json service, e.g. /backend/trace/summary/abc123 below calls the
-        // method getSummary("abc123") in TraceSummaryJsonService
-        ImmutableList.Builder<JsonServiceMapping> jsonServiceMappings = ImmutableList.builder();
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/layout$",
-                layoutJsonService, "getLayout"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/aggregate/points$",
-                aggregateJsonService, "getPoints"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/aggregate/groupings",
-                aggregateJsonService, "getGroupings"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/trace/points$",
-                tracePointJsonService, "getPoints"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/trace/summary/(.+)$",
-                traceSummaryJsonService, "getSummary"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/supported",
-                jvmJsonService, "getSupported"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/general",
-                jvmJsonService, "getGeneralInfo"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/system-properties",
-                jvmJsonService, "getSystemProperties"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/thread-dump$",
-                jvmJsonService, "getThreadDump"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/memory-overview",
-                jvmJsonService, "getMemoryOverview"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/jvm/perform-gc",
-                jvmJsonService, "performGC"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/jvm/reset-peak-memory-usage", jvmJsonService, "resetPeakMemoryUsage"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/heap-histogram",
-                jvmJsonService, "getHeapHistogram"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/heap-dump-defaults",
-                jvmJsonService, "getHeapDumpDefaults"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/jvm/check-disk-space",
-                jvmJsonService, "checkDiskSpace"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/jvm/dump-heap$",
-                jvmJsonService, "dumpHeap"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/manageable-flags",
-                jvmJsonService, "getManageableFlags"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/jvm/update-manageable-flags", jvmJsonService,
-                "updateManageableFlags"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/all-flags",
-                jvmJsonService, "getAllFlags"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/jvm/capabilities",
-                jvmJsonService, "getCapabilities"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/general$",
-                configJsonService, "getGeneralConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/general$",
-                configJsonService, "updateGeneralConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/coarse-profiling$",
-                configJsonService, "getCoarseProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/coarse-profiling$",
-                configJsonService, "updateCoarseProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/fine-profiling$",
-                configJsonService, "getFineProfiling"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/fine-profiling$",
-                configJsonService, "updateFineProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/user-overrides",
-                configJsonService, "getUserOverridesConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/user-overrides",
-                configJsonService, "updateUserOverridesConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/storage",
-                configJsonService, "getStorage"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/storage",
-                configJsonService, "updateStorageConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/user-interface",
-                configJsonService, "getUserInterface"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/user-interface",
-                configJsonService, "updateUserInterfaceConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/advanced",
-                configJsonService, "getAdvanced"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/advanced",
-                configJsonService, "updateAdvancedConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/plugin/(.+)$",
-                configJsonService, "getPluginConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/plugin/(.+)$",
-                configJsonService, "updatePluginConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/config/pointcut$",
-                configJsonService, "getPointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/config/pointcut/\\+$",
-                configJsonService, "addPointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/config/pointcut/([0-9a-f]+)$", configJsonService,
-                "updatePointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/config/pointcut/-$",
-                configJsonService, "removePointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/pointcut/pre-load-auto-complete", pointcutConfigJsonService,
-                "preLoadAutoComplete"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/pointcut/matching-type-names", pointcutConfigJsonService,
-                "getMatchingTypeNames"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/pointcut/matching-method-names", pointcutConfigJsonService,
-                "getMatchingMethodNames"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/pointcut/matching-methods",
-                pointcutConfigJsonService, "getMatchingMethods"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/admin/data/delete-all$",
-                adminJsonService, "deleteAllData"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST,
-                "^/backend/admin/pointcuts/reweave",
-                adminJsonService, "reweavePointcutConfigs"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/admin/data/compact$",
-                adminJsonService, "compactData"));
-        jsonServiceMappings.add(new JsonServiceMapping(POST, "^/backend/admin/config/reset-all$",
-                adminJsonService, "resetAllConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET,
-                "^/backend/admin/num-pending-complete-traces$",
-                adminJsonService, "getNumPendingCompleteTraces"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET,
-                "^/backend/admin/num-stored-snapshots$",
-                adminJsonService, "getNumStoredSnapshots"));
-        jsonServiceMappings.add(new JsonServiceMapping(GET, "^/backend/admin/num-active-traces",
-                adminJsonService, "getNumActiveTraces"));
         try {
             return new HttpServer(port, numWorkerThreads, indexHtmlService, uriMappings.build(),
-                    jsonServiceMappings.build(), httpSessionManager);
+                    httpSessionManager, jsonServices);
         } catch (ChannelException e) {
             // binding to the specified port failed and binding to port 0 (any port) failed
             logger.error("unable to bind http listener to any port, the user interface will not be"

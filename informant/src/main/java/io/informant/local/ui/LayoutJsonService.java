@@ -60,7 +60,7 @@ class LayoutJsonService {
 
     // this is only used when running under 'grunt server' and is just to get get back layout data
     // (or find out login is needed if required)
-    @JsonServiceMethod
+    @GET("/backend/layout")
     String getLayout() throws IOException {
         logger.debug("getAuthenticatedLayout()");
         StringBuilder sb = new StringBuilder();

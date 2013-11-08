@@ -41,7 +41,7 @@ class TraceSummaryJsonService {
         this.traceCommonService = traceCommonService;
     }
 
-    @JsonServiceMethod
+    @GET("/backend/trace/summary/(.+)")
     String getSummary(String id) throws IOException {
         logger.debug("getSummary(): id={}", id);
         CharSource charSource =
