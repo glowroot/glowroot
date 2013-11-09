@@ -109,6 +109,16 @@ TraceRenderer = (function () {
     return (nanos / 1000000).toFixed(1);
   });
 
+  Handlebars.registerHelper('numberOfSpans', function (spans) {
+    var num = 0;
+    $.each(spans, function (i, span) {
+      if (!span.limitExceededMarker && !span.limitExtendedMarker) {
+        num++;
+      }
+    });
+    return num;
+  });
+
   Handlebars.registerHelper('messageDetailHtml', function (detail) {
     var messageDetailHtml = function (detail) {
       var ret = '';
