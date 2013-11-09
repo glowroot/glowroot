@@ -52,21 +52,5 @@ informant.controller('LoginCtrl', [
             alert('An error occurred');
           });
     };
-
-    $timeout(function () {
-      $('#loginPassword').focus();
-      // TODO this is needed only for IE
-      // TODO why do config pages auto-submit on enter in any input, even in IE?
-      // TODO is refresh-data-on-enter-key handler still needed (see app.js)?
-      // need to wait a small bit for input to be visible
-      $('#loginPassword').keypress(function (event) {
-        if (event.which === 13) {
-          // trigger button so it will active spinner and success message
-          $(event.target).closest('form').find('button').first().click();
-          // without preventDefault, enter triggers 'more filters' button
-          event.preventDefault();
-        }
-      });
-    }, 100);
   }
 ]);

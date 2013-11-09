@@ -15,6 +15,7 @@
 -->
 <div ng-form
      ix-form-with-primary-button
+     ix-form-autofocus-on-first-input
      name="formCtrl">
   <div class="form-group">
     <input type="password"
@@ -22,8 +23,7 @@
            ng-model="page.password"
            id="loginPassword"
            placeholder="Enter password"
-           style="max-width: 20em;"
-           autofocus>
+           style="max-width: 20em;">
     <span class="informant-red"
           ng-show="message"
           style="padding-left: 15px;">
