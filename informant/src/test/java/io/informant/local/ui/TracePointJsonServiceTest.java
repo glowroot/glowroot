@@ -30,8 +30,8 @@ import io.informant.collector.TraceCollectorImpl;
 import io.informant.common.Clock;
 import io.informant.common.ObjectMappers;
 import io.informant.local.store.SnapshotDao;
-import io.informant.local.store.TracePointQuery;
 import io.informant.local.store.TracePoint;
+import io.informant.local.store.TracePointQuery;
 import io.informant.trace.TraceRegistry;
 import io.informant.trace.model.Trace;
 
@@ -188,7 +188,7 @@ public class TracePointJsonServiceTest {
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
 
-        when(snapshotDao.readNonStuckPoints(any(TracePointQuery.class))).thenReturn(orderedPoints);
+        when(snapshotDao.readPoints(any(TracePointQuery.class))).thenReturn(orderedPoints);
         when(traceRegistry.getTraces()).thenReturn(activeTraces);
         // for now, assume all active traces will be stored
         when(traceCollector.shouldStore(any(Trace.class))).thenReturn(true);
@@ -216,7 +216,7 @@ public class TracePointJsonServiceTest {
         return trace;
     }
 
-    private TracePoint mockPoint(String id, long end, long durationMillis) {
+    private static TracePoint mockPoint(String id, long end, long durationMillis) {
         return TracePoint.from(id, end, MILLISECONDS.toNanos(durationMillis), false);
     }
 }

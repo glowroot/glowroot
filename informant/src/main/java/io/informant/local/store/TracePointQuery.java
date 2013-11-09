@@ -61,10 +61,9 @@ public class TracePointQuery {
     ParameterizedSql getParameterizedSql() {
         // all of these columns should be in the same index so h2 can return result set directly
         // from the index without having to reference the table for each row
-        String sql = "select id, capture_time, duration, error from snapshot where stuck = ?"
-                + " and capture_time >= ? and capture_time <= ?";
+        String sql = "select id, capture_time, duration, error from snapshot where"
+                + " capture_time >= ? and capture_time <= ?";
         List<Object> args = Lists.newArrayList();
-        args.add(false);
         args.add(captureTimeFrom);
         args.add(captureTimeTo);
         if (durationLow != 0) {

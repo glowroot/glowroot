@@ -72,7 +72,7 @@ public class SnapshotDaoTest {
         TracePointQuery query = new TracePointQuery(0, 0, 0, Long.MAX_VALUE, false, false, false,
                 null, null, null, null, 1);
         // when
-        List<TracePoint> points = snapshotDao.readNonStuckPoints(query);
+        List<TracePoint> points = snapshotDao.readPoints(query);
         Snapshot snapshot2 = snapshotDao.readSnapshot(points.get(0).getId());
         // then
         assertThat(snapshot2.getId()).isEqualTo(snapshot.getId());
@@ -92,7 +92,7 @@ public class SnapshotDaoTest {
         TracePointQuery query = new TracePointQuery(0, 0, snapshot.getDuration(),
                 snapshot.getDuration(), false, false, false, null, null, null, null, 1);
         // when
-        List<TracePoint> points = snapshotDao.readNonStuckPoints(query);
+        List<TracePoint> points = snapshotDao.readPoints(query);
         // then
         assertThat(points).hasSize(1);
     }
@@ -105,7 +105,7 @@ public class SnapshotDaoTest {
         TracePointQuery query = new TracePointQuery(0, 0, snapshot.getDuration() + 1,
                 snapshot.getDuration() + 2, false, false, false, null, null, null, null, 1);
         // when
-        List<TracePoint> points = snapshotDao.readNonStuckPoints(query);
+        List<TracePoint> points = snapshotDao.readPoints(query);
         // then
         assertThat(points).isEmpty();
     }
@@ -118,7 +118,7 @@ public class SnapshotDaoTest {
         TracePointQuery query = new TracePointQuery(0, 0, snapshot.getDuration() - 2,
                 snapshot.getDuration() - 1, false, false, false, null, null, null, null, 1);
         // when
-        List<TracePoint> points = snapshotDao.readNonStuckPoints(query);
+        List<TracePoint> points = snapshotDao.readPoints(query);
         // then
         assertThat(points).isEmpty();
     }

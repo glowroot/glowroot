@@ -142,8 +142,8 @@ public class TraceCollectorImpl implements TraceCollector {
     // single thread executor in StuckTraceCollector
     public void onStuckTrace(Trace trace) {
         try {
-            Snapshot snaphsot = SnapshotCreator.createActiveSnapshot(trace, ticker.read(),
-                    clock.currentTimeMillis(), false);
+            Snapshot snaphsot = SnapshotCreator.createActiveSnapshot(trace,
+                    clock.currentTimeMillis(), ticker.read(), false);
             if (!trace.isCompleted()) {
                 snapshotRepository.store(snaphsot);
             }

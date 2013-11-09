@@ -164,13 +164,13 @@ class TracePointJsonService {
                     high, request.isBackground(), request.isErrorOnly(), request.isFineOnly(),
                     groupingComparator, request.getGrouping(), userIdComparator,
                     request.getUserId(), request.getLimit() + 1);
-            List<TracePoint> points = snapshotDao.readNonStuckPoints(query);
+            List<TracePoint> points = snapshotDao.readPoints(query);
             // create single merged and limited list of points
-            List<TracePoint> combinedPoints = Lists.newArrayList(points);
+            List<TracePoint> orderedPoints = Lists.newArrayList(points);
             for (TracePoint pendingPoint : matchingPendingPoints) {
-                mergeIntoCombinedPoints(pendingPoint, combinedPoints);
+                insertIntoOrderedPoints(pendingPoint, orderedPoints);
             }
-            return combinedPoints;
+            return orderedPoints;
         }
 
         private List<Trace> getMatchingActiveTraces() {
@@ -284,36 +284,52 @@ class TracePointJsonService {
             return background == null || background == trace.isBackground();
         }
 
-        private void mergeIntoCombinedPoints(TracePoint pendingPoint,
-                List<TracePoint> combinedPoints) {
-            boolean duplicate = false;
-            int orderedInsertionIndex = 0;
-            // check if duplicate and capture ordered insertion index at the same time
-            for (int i = 0; i < combinedPoints.size(); i++) {
-                TracePoint point = combinedPoints.get(i);
-                if (pendingPoint.getDuration() < point.getDuration()) {
-                    // keep pushing orderedInsertionIndex down the line
-                    orderedInsertionIndex = i + 1;
-                }
+        private void insertIntoOrderedPoints(TracePoint pendingPoint,
+                List<TracePoint> orderedPoints) {
+            int duplicateIndex = -1;
+            int insertionIndex = -1;
+            // check if duplicate and capture insertion index at the same time
+            for (int i = 0; i < orderedPoints.size(); i++) {
+                TracePoint point = orderedPoints.get(i);
                 if (pendingPoint.getId().equals(point.getId())) {
-                    duplicate = true;
+                    duplicateIndex = i;
+                    break;
+                }
+                if (pendingPoint.getDuration() > point.getDuration()) {
+                    insertionIndex = i;
                     break;
                 }
             }
-            if (!duplicate) {
-                combinedPoints.add(orderedInsertionIndex, pendingPoint);
+            if (duplicateIndex != -1) {
+                TracePoint point = orderedPoints.get(duplicateIndex);
+                if (pendingPoint.getDuration() > point.getDuration()) {
+                    // prefer the pending trace, it must be a stuck trace that has just completed
+                    orderedPoints.set(duplicateIndex, pendingPoint);
+                }
+                return;
+            }
+            if (insertionIndex == -1) {
+                orderedPoints.add(pendingPoint);
+            } else {
+                orderedPoints.add(insertionIndex, pendingPoint);
             }
         }
 
-        private void removeDuplicatesBetweenActiveTracesAndPoints(
-                List<Trace> activeTraces, List<TracePoint> points) {
+        private void removeDuplicatesBetweenActiveTracesAndPoints(List<Trace> activeTraces,
+                List<TracePoint> points) {
             for (Iterator<Trace> i = activeTraces.iterator(); i.hasNext();) {
                 Trace activeTrace = i.next();
                 for (Iterator<TracePoint> j = points.iterator(); j.hasNext();) {
                     TracePoint point = j.next();
                     if (activeTrace.getId().equals(point.getId())) {
-                        // prefer completed trace
-                        i.remove();
+                        if (activeTrace.getDuration() > point.getDuration()) {
+                            // prefer the active trace, it must be a stuck trace that hasn't
+                            // completed yet
+                            j.remove();
+                        } else {
+                            // otherwise prefer the completed trace
+                            i.remove();
+                        }
                         // there can be at most one duplicate per id, so ok to break to outer
                         break;
                     }

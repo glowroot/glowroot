@@ -123,9 +123,9 @@ public class SnapshotDao implements SnapshotRepository {
     }
 
     @ReadOnly
-    public List<TracePoint> readNonStuckPoints(TracePointQuery query) {
+    public List<TracePoint> readPoints(TracePointQuery query) {
         if (logger.isDebugEnabled()) {
-            logger.debug("readNonStuckPoints(): query={}", query);
+            logger.debug("readPoints(): query={}", query);
         }
         try {
             ParameterizedSql parameterizedSql = query.getParameterizedSql();

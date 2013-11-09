@@ -84,7 +84,7 @@ public class StuckTraceTest {
         // wait for trace to be marked stuck
         Stopwatch stopwatch = new Stopwatch().start();
         Trace trace = null;
-        while (stopwatch.elapsed(SECONDS) < 2) {
+        while (stopwatch.elapsed(SECONDS) < 5) {
             trace = container.getTraceService().getActiveTraceSummary(0, MILLISECONDS);
             if (trace != null && trace.isStuck()) {
                 break;
@@ -112,7 +112,7 @@ public class StuckTraceTest {
         public void traceMarker() throws InterruptedException {
             while (true) {
                 try {
-                    Thread.sleep(1);
+                    Thread.sleep(5);
                 } catch (InterruptedException e) {
                     return;
                 }
