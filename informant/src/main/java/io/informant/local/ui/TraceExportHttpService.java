@@ -86,8 +86,8 @@ public class TraceExportHttpService implements HttpService {
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.setHeader(CONTENT_TYPE, MediaType.ZIP.toString());
-        response.setHeader("Content-Disposition", "attachment; filename=" + getFilename(id)
+        response.headers().set(CONTENT_TYPE, MediaType.ZIP.toString());
+        response.headers().set("Content-Disposition", "attachment; filename=" + getFilename(id)
                 + ".zip");
         HttpServices.preventCaching(response);
         response.setChunked(true);

@@ -33,7 +33,7 @@ public class HttpContentCompressor
     protected EncoderEmbedder<ChannelBuffer> newContentEncoder(HttpMessage msg,
             String acceptEncoding) throws Exception {
 
-        String contentType = msg.getHeader(CONTENT_TYPE);
+        String contentType = msg.headers().get(CONTENT_TYPE);
         if (contentType != null && contentType.equals(MediaType.ZIP.toString())) {
             // don't compress already zipped content
             return null;

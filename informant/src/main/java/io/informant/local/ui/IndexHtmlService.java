@@ -78,11 +78,11 @@ class IndexHtmlService {
         }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         HttpServices.preventCaching(response);
-        response.setHeader(Names.CONTENT_TYPE, "text/html; charset=UTF-8");
-        response.setHeader(Names.CONTENT_LENGTH, indexHtml.length());
+        response.headers().set(Names.CONTENT_TYPE, "text/html; charset=UTF-8");
+        response.headers().set(Names.CONTENT_LENGTH, indexHtml.length());
         // X-UA-Compatible must be set via header (as opposed to via meta tag)
         // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
-        response.setHeader("X-UA-Compatible", "IE=edge");
+        response.headers().set("X-UA-Compatible", "IE=edge");
         response.setContent(ChannelBuffers.copiedBuffer(indexHtml, Charsets.UTF_8));
         return response;
     }

@@ -32,8 +32,8 @@ class HttpServices {
         // prevent caching of dynamic json data, using 'definitive' minimum set of headers from
         // http://stackoverflow.com/questions/49547/
         // making-sure-a-web-page-is-not-cached-across-all-browsers/2068407#2068407
-        response.setHeader(Names.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
-        response.setHeader(Names.PRAGMA, "no-cache");
-        response.setHeader(Names.EXPIRES, new Date(0));
+        response.headers().set(Names.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
+        response.headers().set(Names.PRAGMA, "no-cache");
+        response.headers().set(Names.EXPIRES, new Date(0));
     }
 }

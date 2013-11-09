@@ -75,7 +75,7 @@
   word-break: break-all;
 }
 
-@media (min-width: $screen-sm) {
+@media (min-width: $screen-sm-min) {
   .xs-word-break {
     word-break: normal;
   }
@@ -85,7 +85,7 @@
   margin-top: 10px;
 }
 
-@media (min-width: $screen-md) {
+@media (min-width: $screen-md-min) {
   .heap-histogram-limit {
     float: right;
     margin-top: 0px;

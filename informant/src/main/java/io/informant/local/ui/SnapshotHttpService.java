@@ -59,12 +59,12 @@ class SnapshotHttpService implements HttpService {
         CharSource charSource =
                 traceCommonService.createCharSourceForSnapshotOrActiveTrace(id, false);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+        response.headers().set(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
         if (charSource == null) {
             logger.debug("no trace found for id '{}', returning expired=true", id);
             String content = "{\"expired\":true}";
             response.setContent(ChannelBuffers.copiedBuffer(content, Charsets.UTF_8));
-            response.setHeader(Names.CONTENT_LENGTH, content.length());
+            response.headers().set(Names.CONTENT_LENGTH, content.length());
             return response;
         }
         HttpServices.preventCaching(response);

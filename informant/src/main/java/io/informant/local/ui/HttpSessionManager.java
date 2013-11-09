@@ -135,7 +135,7 @@ class HttpSessionManager {
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         cookieEncoder.addCookie(cookie);
-        response.addHeader(SET_COOKIE, cookieEncoder.encode());
+        response.headers().add(SET_COOKIE, cookieEncoder.encode());
         // TODO clean up expired sessions
     }
 
@@ -146,12 +146,12 @@ class HttpSessionManager {
         cookie.setMaxAge(0);
         cookie.setPath("/");
         cookieEncoder.addCookie(cookie);
-        response.addHeader(SET_COOKIE, cookieEncoder.encode());
+        response.headers().add(SET_COOKIE, cookieEncoder.encode());
     }
 
     @Nullable
     String getSessionId(HttpRequest request) {
-        String cookieHeader = request.getHeader(COOKIE);
+        String cookieHeader = request.headers().get(COOKIE);
         if (cookieHeader == null) {
             return null;
         }

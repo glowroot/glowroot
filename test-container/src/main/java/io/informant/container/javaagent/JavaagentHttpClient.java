@@ -208,9 +208,9 @@ class JavaagentHttpClient {
             Object msg = e.getMessage();
             if (msg instanceof HttpMessage) {
                 HttpMessage m = (HttpMessage) msg;
-                String contentEncoding = m.getHeader(HttpHeaders.Names.CONTENT_ENCODING);
+                String contentEncoding = m.headers().get(HttpHeaders.Names.CONTENT_ENCODING);
                 if (contentEncoding != null) {
-                    m.setHeader("X-Original-Content-Encoding", contentEncoding);
+                    m.headers().set("X-Original-Content-Encoding", contentEncoding);
                 }
             }
             ctx.sendUpstream(e);

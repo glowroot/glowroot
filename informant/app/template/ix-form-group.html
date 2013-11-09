@@ -1,4 +1,4 @@
-<div class="form-group" ng-class="{'has-error': formCtrl[ixId].$invalid}">
+<div ng-form="formGroupCtrl" class="form-group" ng-class="{'has-error': formGroupCtrl['property'].$invalid}">
   <label class="control-label col-lg-3"
          ng-class="{ 'checkbox-control-label': ixType === 'checkbox' }"
          for="{{ixId}}">
@@ -8,10 +8,15 @@
     <div ng-switch="ixType">
       <div ng-switch-when="checkbox">
         <div class="checkbox ix-form-checkbox">
+          <!--
+            From http://docs.angularjs.org/api/ng.directive:form
+              "Since you cannot dynamically generate the name attribute of input elements using interpolation, you have
+               to wrap each set of repeated inputs in an ngForm directive and nest these in an outer form element."
+          -->
           <input type="checkbox"
                  class="ix-form-checkbox"
                  ng-model="$parent.ngModel"
-                 name="{{ixId}}"
+                 name="property"
                  id="{{ixId}}">
         </div>
       </div>
@@ -22,7 +27,7 @@
             <input type="{{ixType}}"
                    class="form-control"
                    ng-model="$parent.ngModel"
-                   name="{{ixId}}"
+                   name="property"
                    id="{{ixId}}"
                    ng-pattern="ngPattern"
                    ng-required="ixRequired()"

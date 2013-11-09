@@ -46,9 +46,9 @@ $sidenav-vertical-margin: 30px;
 }
 
 $row-desktop: $container-desktop + $grid-gutter-width;
-$row-lg-desktop: $container-lg-desktop + $grid-gutter-width;
+$row-lg-desktop: $container-large-desktop + $grid-gutter-width;
 
-@media screen and (min-width: $screen-md) {
+@media screen and (min-width: $screen-md-min) {
   .ix-sidebar {
     position: absolute;
     width: 220px;

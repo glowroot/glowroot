@@ -22,6 +22,12 @@
       "name": "thirdName",
       "type": "double",
       "description": "I'm quickly out of ideas."
+    },
+    {
+      "prompt": "Lucky number",
+      "name": "fourthName",
+      "type": "double",
+      "description": "Good luck."
     }
   ],
   "aspects": [

@@ -159,18 +159,18 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             return;
         }
         boolean keepAlive = HttpHeaders.isKeepAlive(request);
-        if (response.getHeader("X-Informant-Port-Changed") != null) {
+        if (response.headers().get("X-Informant-Port-Changed") != null) {
             // current connection is the only open channel on the old port, keepAlive=false will add
             // the listener below to close the channel after the response completes
             //
             // remove the hacky header, no need to send it back to client
-            response.removeHeader("X-Informant-Port-Changed");
-            response.setHeader("Connection", "close");
+            response.headers().remove("X-Informant-Port-Changed");
+            response.headers().add("Connection", "close");
             keepAlive = false;
         }
         if (keepAlive && response.getStatus() != NOT_MODIFIED) {
             // add content-length header only for keep-alive connections
-            response.setHeader(Names.CONTENT_LENGTH, response.getContent().readableBytes());
+            response.headers().add(Names.CONTENT_LENGTH, response.getContent().readableBytes());
         }
         logger.debug("messageReceived(): response={}", response);
         ChannelFuture f = channel.write(response);
@@ -290,18 +290,19 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         if (path.endsWith("/ui/app-dist/favicon.ico")) {
-            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + ONE_DAY));
+            response.headers().add(Names.EXPIRES, new Date(System.currentTimeMillis() + ONE_DAY));
         } else if (path.endsWith(".js.map") || path.startsWith("/sources/")) {
             // javascript source maps and source files are not versioned
-            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + FIVE_MINUTES));
+            response.headers().add(Names.EXPIRES,
+                    new Date(System.currentTimeMillis() + FIVE_MINUTES));
         } else {
             // all other static resources are versioned and can be safely cached forever
             String filename = path.substring(path.lastIndexOf("/") + 1);
             String rev = filename.substring(0, filename.indexOf("."));
-            response.setHeader(Names.ETAG, rev);
-            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
+            response.headers().add(Names.ETAG, rev);
+            response.headers().add(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
 
-            if (rev.equals(request.getHeader(Names.IF_NONE_MATCH))) {
+            if (rev.equals(request.headers().get(Names.IF_NONE_MATCH))) {
                 response.setStatus(NOT_MODIFIED);
                 return response;
             }
@@ -315,8 +316,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
         byte[] staticContent = Resources.toByteArray(url);
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
-        response.setHeader(Names.CONTENT_TYPE, mimeType);
-        response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
+        response.headers().add(Names.CONTENT_TYPE, mimeType);
+        response.headers().add(Names.CONTENT_LENGTH, staticContent.length);
         return response;
     }
 
@@ -359,13 +360,13 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         if (responseText instanceof String) {
             response.setContent(ChannelBuffers.copiedBuffer(responseText.toString(),
                     Charsets.ISO_8859_1));
-            response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
             HttpServices.preventCaching(response);
             return response;
         }
         if (responseText instanceof byte[]) {
             response.setContent(ChannelBuffers.wrappedBuffer((byte[]) responseText));
-            response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
             HttpServices.preventCaching(response);
             return response;
         }
@@ -390,7 +391,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             jg.writeEndObject();
             jg.close();
             DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
-            response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
             response.setContent(ChannelBuffers.copiedBuffer(sb.toString(), Charsets.ISO_8859_1));
             return response;
         } catch (IOException f) {

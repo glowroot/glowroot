@@ -396,7 +396,7 @@ class ConfigJsonService {
         if (config.getPort() != updatedConfig.getPort()) {
             try {
                 httpServer.changePort(updatedConfig.getPort());
-                response.setHeader("X-Informant-Port-Changed", "true");
+                response.headers().set("X-Informant-Port-Changed", "true");
             } catch (InterruptedException e) {
                 return getUserInterfaceWithPortChangeFailed();
             } catch (ExecutionException e) {

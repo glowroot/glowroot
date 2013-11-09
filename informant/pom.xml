@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -28,36 +27,36 @@
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>4.1</version>
+      <version>4.2</version>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <version>4.1</version>
+      <version>4.2</version>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-tree</artifactId>
-      <version>4.1</version>
+      <version>4.2</version>
     </dependency>
     <dependency>
       <!-- org.objectweb.asm.util.CheckClassAdapter.verify() is used when woven byte code
         verification is enabled via -Dinformant.weaving.verify=true -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
-      <version>4.1</version>
+      <version>4.2</version>
     </dependency>
     <dependency>
       <!-- this is an optional dependency of asm-util -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-analysis</artifactId>
-      <version>4.1</version>
+      <version>4.2</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
       <!-- netty 4.x requires jdk 6 -->
-      <version>3.7.0.Final</version>
+      <version>3.8.0.Final</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -146,7 +145,7 @@
       <groupId>org.apache.jackrabbit</groupId>
       <artifactId>jackrabbit-core</artifactId>
       <!-- this is the latest version compiled to jdk 5 and therefore the latest version to include
-       JSR bytecode since JSR bytecode was deprecated in jdk 6 -->
+        JSR bytecode since JSR bytecode was deprecated in jdk 6 -->
       <version>2.5.0</version>
       <scope>test</scope>
     </dependency>
@@ -297,8 +296,8 @@
                 </goals>
                 <configuration>
                   <!-- 'cmd /c npm install' is more reliable than 'npm.cmd install', which fails
-                       via Runtime.getRuntime().exec("npm.cmd install") on JDK6 and early JDK7
-                       see http://stackoverflow.com/questions/19311174 -->
+                    via Runtime.getRuntime().exec("npm.cmd install") on JDK6 and early JDK7
+                    see http://stackoverflow.com/questions/19311174 -->
                   <executable>cmd</executable>
                   <arguments>
                     <argument>/c</argument>
@@ -541,8 +540,10 @@
                 <!-- keep DefaultMustacheFactory.compile() which is used by generated advice -->
                 <option>
                   -keep class io.informant.shaded.github.mustachejava.DefaultMustacheFactory
-                  { public io.informant.shaded.github.mustachejava.Mustache
-                    compile(java.io.Reader, java.lang.String); }
+                  {
+                  public io.informant.shaded.github.mustachejava.Mustache
+                  compile(java.io.Reader,
+                  java.lang.String); }
                 </option>
                 <!-- keep all logback appenders -->
                 <option>
@@ -553,14 +554,15 @@
                 <option>
                   -keepclassmembers enum *
                   { public static **[] values();
-                    public static ** valueOf(java.lang.String); }
+                  public static **
+                  valueOf(java.lang.String); }
                 </option>
                 <!-- if the FilterAttachable<E> interface is not kept, then the interface is
-                     stripped from io.informant.shaded.qos.logback.core.Appender<E>, and proguard
-                     then strips the generic parameter type from Appender, but proguard
-                     (at least as of version 4.10) leaves behind the generic parameter on the
-                     doAppend(E paramE) method, which leads to a MalformedParameterizedTypeException
-                     on JDK 7 (maybe due to more strict validation in JDK 7) -->
+                  stripped from io.informant.shaded.qos.logback.core.Appender<E>, and proguard
+                  then strips the generic parameter type from Appender, but proguard
+                  (at least as of version 4.10) leaves behind the generic parameter on the
+                  doAppend(E paramE) method, which leads to a MalformedParameterizedTypeException
+                  on JDK 7 (maybe due to more strict validation in JDK 7) -->
                 <option>
                   -keep class io.informant.shaded.qos.logback.core.spi.FilterAttachable { *; }
                 </option>
