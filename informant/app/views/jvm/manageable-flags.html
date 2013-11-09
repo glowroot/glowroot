@@ -20,7 +20,10 @@
   <div class="panel-body">
     <div ng-include src="'template/ix-loading-overlay.html'"></div>
     <div ng-include src="'template/ix-http-error-overlay.html'"></div>
-    <form class="form-horizontal jvm-manageable-flags-form" name="formCtrl">
+    <div ng-form
+         ix-form-with-primary-button
+         class="form-horizontal jvm-manageable-flags-form"
+         name="formCtrl">
       <div ng-repeat="flag in flags">
         <div class="row">
           <div class="checkbox jvm-manageable-flag col-lg-offset-3 col-lg-9">
@@ -55,6 +58,6 @@
           </div>
         </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>

@@ -20,7 +20,10 @@
   <div class="panel-body">
     <div ng-include src="'template/ix-loading-overlay.html'"></div>
     <div ng-include src="'template/ix-http-error-overlay.html'"></div>
-    <form class="form-horizontal" name="formCtrl">
+    <div ng-form
+         ix-form-with-primary-button
+         class="form-horizontal"
+         name="formCtrl">
       <div class="form-group" ng-class="{'has-error': formCtrl.snapshotExpirationDays.$invalid}">
         <label class="col-lg-3 control-label" for="snapshotExpirationDays">
           Keep trace snapshot for
@@ -95,6 +98,6 @@
           </div>
         </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>

@@ -218,15 +218,6 @@ Informant = (function () {
     });
   }
 
-  $(document).on('keypress', '.refresh-data-on-enter-key', function (event) {
-    if (event.which === 13) {
-      // trigger button so it will active spinner and success message
-      $('.form-submit > button').click();
-      // without preventDefault, enter triggers 'more filters' button
-      event.preventDefault();
-    }
-  });
-
   return {
     showAndFadeSuccessMessage: function (selector) {
       showAndFadeMessage(selector, 0);

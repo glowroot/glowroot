@@ -23,7 +23,10 @@
     <h2>{{plugin.descriptor.name}}</h2>
   </div>
   <div class="panel-body">
-    <form class="form-horizontal" name="formCtrl">
+    <div ng-form
+         ix-form-with-primary-button
+         class="form-horizontal"
+         name="formCtrl">
       <div ix-form-group
            ix-label="Enabled"
            ix-model="config.enabled"
@@ -78,6 +81,6 @@
           </div>
         </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>

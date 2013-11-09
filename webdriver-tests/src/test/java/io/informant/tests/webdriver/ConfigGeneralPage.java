@@ -54,6 +54,6 @@ class ConfigGeneralPage {
 
     private WebElement getForm() {
         Utils.waitForAngular(driver);
-        return driver.findElement(xpath("//form[@name='formCtrl']"));
+        return driver.findElement(xpath("//div[@name='formCtrl']"));
     }
 }

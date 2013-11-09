@@ -20,7 +20,10 @@
   <div class="panel-body">
     <div ng-include src="'template/ix-loading-overlay.html'"></div>
     <div ng-include src="'template/ix-http-error-overlay.html'"></div>
-    <form class="form-horizontal" name="formCtrl">
+    <!-- intentionally not using ix-form-with-primary-button to prevent accidental heap dumps -->
+    <div ng-form
+         class="form-horizontal"
+         name="formCtrl">
       <div class="form-group">
         <label class="control-label col-lg-2" for="directory">
           Directory
@@ -87,6 +90,6 @@
           </div>
         </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>

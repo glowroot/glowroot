@@ -14,20 +14,13 @@
  * limitations under the License.
  */
 
-/* global informant, $ */
+/* global informant */
 
 informant.controller('JvmHeapDumpCtrl', [
   '$scope',
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
-    $('#directory').keypress(function (e) {
-      if (e.which === 13) {
-        // don't want to accidentally trigger heap dump
-        return false;
-      }
-    });
-
     $scope.checkDiskSpace = function (deferred) {
       $scope.checkDiskSpaceResponse = false;
       $scope.heapDumpResponse = false;

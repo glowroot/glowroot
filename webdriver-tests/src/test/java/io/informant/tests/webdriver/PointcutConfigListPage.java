@@ -37,12 +37,12 @@ class PointcutConfigListPage {
     }
 
     int getNumSections() {
-        return driver.findElements(xpath("(//form[@name='formCtrl'])")).size();
+        return driver.findElements(xpath("(//div[@name='formCtrl'])")).size();
     }
 
     PointcutConfigSection getSection(int index) {
         Utils.waitForAngular(driver);
-        WebElement form = driver.findElement(xpath("(//form[@name='formCtrl'])[" + (index + 1)
+        WebElement form = driver.findElement(xpath("(//div[@name='formCtrl'])[" + (index + 1)
                 + "]"));
         return new PointcutConfigSection(driver, form);
     }

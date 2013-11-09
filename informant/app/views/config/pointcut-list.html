@@ -25,7 +25,10 @@
     <h2>{{heading}}</h2>
   </div>
   <div class="panel-body">
-    <form class="form-horizontal" name="formCtrl">
+    <div ng-form
+         ix-form-with-primary-button
+         class="form-horizontal"
+         name="formCtrl">
       <div class="form-group"
            ng-class="{'has-error': formCtrl['__typeName' + $id].$invalid}">
         <label class="col-lg-2 control-label"
@@ -209,7 +212,7 @@
           </div>
         </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>
 <!-- ng-show="loaded" is used to jitter of seeing this section very briefly

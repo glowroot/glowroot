@@ -20,7 +20,10 @@
   <div class="panel-body">
     <div ng-include src="'template/ix-loading-overlay.html'"></div>
     <div ng-include src="'template/ix-http-error-overlay.html'"></div>
-    <form class="form-horizontal" name="formCtrl">
+    <div ng-form
+         ix-form-with-primary-button
+         class="form-horizontal"
+         name="formCtrl">
       <div ix-form-group
            ix-label="Generate metric name wrapper methods"
            ix-model="config.generateMetricNameWrapperMethods"
@@ -76,6 +79,6 @@
           </div>
         </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>

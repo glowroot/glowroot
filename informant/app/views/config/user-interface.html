@@ -20,7 +20,10 @@
   <div class="panel-body">
     <div ng-include src="'template/ix-loading-overlay.html'"></div>
     <div ng-include src="'template/ix-http-error-overlay.html'"></div>
-    <form class="form-horizontal" name="formCtrl">
+    <div ng-form
+         ix-form-with-primary-button
+         class="form-horizontal"
+         name="formCtrl">
       <div ix-form-group
            ix-label="Port"
            ix-model="config.port"
@@ -91,7 +94,7 @@
           </div>
         </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>
 
@@ -103,7 +106,9 @@
   <div class="panel-body">
     <div ng-include src="'template/ix-loading-overlay.html'"></div>
     <div ng-include src="'template/ix-http-error-overlay.html'"></div>
-    <form class="form-horizontal">
+    <div ng-form
+         ix-form-with-primary-button
+         class="form-horizontal">
       <div class="form-group">
         <div ix-form-group
              ix-label="Current password"
@@ -133,6 +138,6 @@
           </div>
         </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>
