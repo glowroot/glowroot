@@ -9,10 +9,10 @@
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>informant</artifactId>
+  <artifactId>informant-core</artifactId>
 
-  <name>Informant</name>
-  <description>Informant</description>
+  <name>Informant Core</name>
+  <description>Informant Core</description>
 
   <properties>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>

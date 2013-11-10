@@ -31,7 +31,7 @@
 
   <modules>
     <module>plugin-api</module>
-    <module>informant</module>
+    <module>core</module>
     <module>test-container</module>
     <module>plugin-testkit</module>
     <module>packager-maven-plugin</module>
@@ -218,7 +218,7 @@
                 -Djsr308_imports=checkers.nullness.quals.*${path.separator}checkers.igj.quals.*
               </javaParams>
               <javacParams>
-                -Astubs=${basedir}/../informant/src/main/stubs -Alint=nulltest
+                -Astubs=${basedir}/../core/src/main/stubs -Alint=nulltest
               </javacParams>
             </configuration>
           </plugin>

@@ -28,8 +28,8 @@ public class ClassPath {
     private ClassPath() {}
 
     @Nullable
-    public static File getInformantJarFile() {
-        return getJarFile("informant-[0-9.]+(-SNAPSHOT)?.jar");
+    public static File getInformantCoreJarFile() {
+        return getJarFile("informant-core-[0-9.]+(-SNAPSHOT)?.jar");
     }
 
     @Nullable

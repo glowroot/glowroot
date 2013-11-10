@@ -17,7 +17,7 @@
   <dependencies>
     <dependency>
       <groupId>io.informant</groupId>
-      <artifactId>informant</artifactId>
+      <artifactId>informant-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -49,6 +49,7 @@
   </pluginRepositories>
 
   <build>
+    <finalName>informant-${project.version}</finalName>
     <plugins>
       <plugin>
         <groupId>io.informant</groupId>

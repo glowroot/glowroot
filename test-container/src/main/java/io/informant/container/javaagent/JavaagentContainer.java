@@ -310,7 +310,7 @@ public class JavaagentContainer implements Container, PortChangeListener {
         command.add("-cp");
         command.add(classpath);
         command.addAll(getJavaAgentsFromCurrentJvm());
-        File javaagentJarFile = ClassPath.getInformantJarFile();
+        File javaagentJarFile = ClassPath.getInformantCoreJarFile();
         if (javaagentJarFile == null) {
             // create jar file in data dir since that gets cleaned up at end of test already
             javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(dataDir);

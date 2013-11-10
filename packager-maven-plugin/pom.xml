@@ -22,9 +22,9 @@
 
   <dependencies>
     <dependency>
-      <!-- informant artifact is used for plugin.json parsing -->
+      <!-- informant-core artifact is used for plugin.json parsing -->
       <groupId>io.informant</groupId>
-      <artifactId>informant</artifactId>
+      <artifactId>informant-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

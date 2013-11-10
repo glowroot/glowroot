@@ -41,16 +41,16 @@ public class JarFileShadingTest {
 
     @Test
     public void shouldCheckThatJarIsWellShaded() throws IOException {
-        File informantJarFile = ClassPath.getInformantJarFile();
-        if (informantJarFile == null) {
+        File informantCoreJarFile = ClassPath.getInformantCoreJarFile();
+        if (informantCoreJarFile == null) {
             if (System.getProperty("surefire.test.class.path") != null) {
                 throw new IllegalStateException(
-                        "Running inside maven and can't find informant.jar on class path");
+                        "Running inside maven and can't find informant-core.jar on class path");
             }
             // try to cover the non-standard case when running outside of maven (e.g. inside an IDE)
-            informantJarFile = getInformantJarFileFromRelativePath();
+            informantCoreJarFile = getInformantCoreJarFileFromRelativePath();
             // don't worry if informant jar can't be found while running outside of maven
-            Assume.assumeNotNull(informantJarFile);
+            Assume.assumeNotNull(informantCoreJarFile);
         }
         List<String> acceptableEntries = Lists.newArrayList();
         acceptableEntries.add("io.informant\\..*");
@@ -62,7 +62,7 @@ public class JarFileShadingTest {
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
         acceptableEntries.add("META-INF/THIRD-PARTY-JAVA-LIBRARIES\\.txt");
         acceptableEntries.add("META-INF/THIRD-PARTY-WEB-LIBRARIES\\.txt");
-        JarFile jarFile = new JarFile(informantJarFile);
+        JarFile jarFile = new JarFile(informantCoreJarFile);
         List<String> unacceptableEntries = Lists.newArrayList();
         for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements();) {
             JarEntry jarEntry = e.nextElement();
@@ -75,14 +75,14 @@ public class JarFileShadingTest {
 
     // try to cover the non-standard case when running from inside an IDE
     @Nullable
-    private static File getInformantJarFileFromRelativePath() {
+    private static File getInformantCoreJarFileFromRelativePath() {
         String classesDir = MainEntryPoint.class.getProtectionDomain().getCodeSource()
                 .getLocation().getFile();
         // guessing this is target/classes
         File targetDir = new File(classesDir).getParentFile();
         File[] possibleMatches = targetDir.listFiles(new FilenameFilter() {
             public boolean accept(File dir, String name) {
-                return name.matches("informant-[0-9.]+(-SNAPSHOT)?.jar");
+                return name.matches("informant-core-[0-9.]+(-SNAPSHOT)?.jar");
             }
         });
         if (possibleMatches == null || possibleMatches.length == 0) {

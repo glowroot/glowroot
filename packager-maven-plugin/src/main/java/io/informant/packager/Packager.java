@@ -165,7 +165,7 @@ public class Packager {
             MojoExecutionException {
         for (Artifact artifact : artifacts) {
             if (artifact.getGroupId().equals("io.informant")
-                    && artifact.getArtifactId().equals("informant")) {
+                    && artifact.getArtifactId().equals("informant-core")) {
                 JarFile jarFile = new JarFile(artifact.getFile());
                 Manifest manifest = jarFile.getManifest();
                 jarFile.close();
