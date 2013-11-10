@@ -67,7 +67,7 @@ public class InformantModule {
         File dataDir = DataDir.getDataDir(properties);
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                .setNameFormat("Informant-Background").build();
+                .setNameFormat("Informant-Background-%d").build();
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
         configModule = new ConfigModule(dataDir);
         storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,

@@ -20,6 +20,8 @@ import java.util.List;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
+import javax.management.JMException;
+import javax.management.JMRuntimeException;
 import javax.management.MBeanException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -57,8 +59,34 @@ public class HotSpotDiagnostic {
             supported = false;
             unsupportedReason = "Unsupported due to error, see Informant log";
         } else if (exists(objectName)) {
-            supported = true;
-            unsupportedReason = "";
+            boolean unsupportedDueToKnownJdkBug = false;
+            boolean unsupportedDueToError = false;
+            try {
+                ManagementFactory.getPlatformMBeanServer().getAttribute(objectName,
+                        "DiagnosticOptions");
+            } catch (JMRuntimeException e) {
+                if (e.getCause() instanceof NullPointerException) {
+                    // https://bugs.openjdk.java.net/browse/JDK-6658779
+                    unsupportedDueToKnownJdkBug = true;
+                } else {
+                    logger.error(e.getMessage(), e);
+                    unsupportedDueToError = true;
+                }
+            } catch (JMException e) {
+                logger.error(e.getMessage(), e);
+                unsupportedDueToError = true;
+            }
+            if (unsupportedDueToKnownJdkBug) {
+                supported = false;
+                unsupportedReason = "Unsupported due to known JDK bug, see"
+                        + " https://bugs.openjdk.java.net/browse/JDK-6658779";
+            } else if (unsupportedDueToError) {
+                supported = false;
+                unsupportedReason = "Unsupported due to error, see Informant log";
+            } else {
+                supported = true;
+                unsupportedReason = "";
+            }
         } else {
             supported = false;
             unsupportedReason = "No such MBean " + MBEAN_NAME + " (introduced in Oracle Java SE 6)";

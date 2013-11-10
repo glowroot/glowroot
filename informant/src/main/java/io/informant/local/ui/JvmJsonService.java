@@ -138,7 +138,11 @@ class JvmJsonService {
     String getSystemProperties() throws IOException {
         logger.debug("getSystemProperties()");
         Properties properties = System.getProperties();
-        Map<String, String> sortedProperties = Maps.newTreeMap(String.CASE_INSENSITIVE_ORDER);
+        // explicit generic signature Maps.<String, String, String>newTreeMap(...) is needed to work
+        // around an OpenJDK 6 type inference bug
+        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
+        Map<String, String> sortedProperties =
+                Maps.<String, String, String>newTreeMap(String.CASE_INSENSITIVE_ORDER);
         for (Enumeration<?> e = properties.propertyNames(); e.hasMoreElements();) {
             Object obj = e.nextElement();
             if (obj instanceof String) {

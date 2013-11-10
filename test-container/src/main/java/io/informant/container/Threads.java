@@ -71,7 +71,7 @@ public class Threads {
             }
             // check total number of threads to make sure Informant is not creating too many
             //
-            // currently, the six threads are:
+            // currently, the seven threads are:
             //
             // Informant-Background-0
             // Informant-Background-1
@@ -79,7 +79,8 @@ public class Threads {
             // H2 File Lock Watchdog <lock db file>
             // Informant-Http-Boss
             // Informant-Http-Worker-0
-            if (rogueThreads.isEmpty() && nonPreExistingThreads.size() <= 6) {
+            // Generate Seed
+            if (rogueThreads.isEmpty() && nonPreExistingThreads.size() <= 7) {
                 // success
                 return;
             }
@@ -103,6 +104,14 @@ public class Threads {
         do {
             rogueThreads = getNonPreExistingThreads(preExistingThreads);
             if (rogueThreads.isEmpty()) {
+                // success
+                return;
+            }
+            // make an exception for H2's Generate Seed thread since it can take a bit of time to
+            // complete on some systems (e.g. travis-ci), but is otherwise harmless
+            // note: both the "Generate Seed" thread name and the string in this conditional are
+            // changed to "Informant-H2 Generate Seed" during shading
+            if (rogueThreads.size() == 1 && rogueThreads.get(0).getName().equals("Generate Seed")) {
                 // success
                 return;
             }
@@ -144,8 +153,9 @@ public class Threads {
                 && !thread.getName().startsWith("H2 File Lock Watchdog ")
                 && !thread.getName().startsWith("H2 Log Writer ")
                 && !thread.getName().equals("Generate Seed")) {
-            // the last one (Generate Seed) is an H2 thread (see org.h2.util.MathUtils) that is
-            // usually completed by now (but was not on at least one occasion)
+            // note: Generate Seed is an H2 thread that generates a secure random seed
+            // this can take a bit of time to complete on some systems (e.g. travis-ci), but is
+            // otherwise harmless (see org.h2.util.MathUtils)
             return true;
         }
         return false;
@@ -195,7 +205,7 @@ public class Threads {
                     .add("class", thread.getClass().getName())
                     .add("state", thread.getState());
             for (int i = 0; i < Math.min(30, thread.getStackTrace().length); i++) {
-                toStringHelper.add("stackTrace." + i, thread.getStackTrace()[i].getClassName());
+                toStringHelper.add("stackTrace." + i, thread.getStackTrace()[i].toString());
             }
             return toStringHelper.toString();
         }

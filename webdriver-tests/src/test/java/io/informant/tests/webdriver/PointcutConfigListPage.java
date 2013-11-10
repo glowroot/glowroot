@@ -33,10 +33,13 @@ class PointcutConfigListPage {
     }
 
     WebElement getAddPointcutButton() {
-        return getNewPointcutSection().findElement(xpath("//button[text()='Add pointcut']"));
+        Utils.waitForAngular(driver);
+        WebElement sectionDiv = driver.findElement(xpath("//div[div[h2[text()='New pointcut']]]"));
+        return sectionDiv.findElement(xpath("//button[text()='Add pointcut']"));
     }
 
     int getNumSections() {
+        Utils.waitForAngular(driver);
         return driver.findElements(xpath("(//div[@name='formCtrl'])")).size();
     }
 
@@ -45,10 +48,5 @@ class PointcutConfigListPage {
         WebElement form = driver.findElement(xpath("(//div[@name='formCtrl'])[" + (index + 1)
                 + "]"));
         return new PointcutConfigSection(driver, form);
-    }
-
-    private WebElement getNewPointcutSection() {
-        Utils.waitForAngular(driver);
-        return driver.findElement(xpath("//div[div[h2[text()='New pointcut']]]"));
     }
 }

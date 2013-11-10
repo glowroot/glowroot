@@ -71,7 +71,8 @@ class LayoutJsonService {
         jg.writeBooleanField("jvmHeapDump", HotSpotDiagnostic.getAvailability().isAvailable());
         jg.writeBooleanField("jvmManageableFlags",
                 HotSpotDiagnostic.getAvailability().isAvailable());
-        jg.writeBooleanField("jvmAllFlags", Flags.getAvailability().isAvailable());
+        jg.writeBooleanField("jvmAllFlags", Flags.getAvailability().isAvailable()
+                && HotSpotDiagnostic.getAvailability().isAvailable());
         jg.writeStringField("footerMessage", "version " + version);
         jg.writeBooleanField("passwordEnabled",
                 configService.getUserInterfaceConfig().isPasswordEnabled());

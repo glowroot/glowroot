@@ -452,6 +452,12 @@
                       <shadedPattern>Informant-H2 Log Writer</shadedPattern>
                     </relocation>
                     <relocation>
+                      <!-- shade thread names to make it easy to identify informant threads -->
+                      <rawString>true</rawString>
+                      <pattern>Generate Seed</pattern>
+                      <shadedPattern>Informant-H2 Generate Seed</shadedPattern>
+                    </relocation>
+                    <relocation>
                       <pattern>com.ning.compress</pattern>
                       <shadedPattern>io.informant.shaded.ning.compress</shadedPattern>
                     </relocation>

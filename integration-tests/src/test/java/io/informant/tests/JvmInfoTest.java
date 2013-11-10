@@ -70,7 +70,7 @@ public class JvmInfoTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getJvmInfo().getThreadCpuTime())
-                .isGreaterThan(MILLISECONDS.toNanos(10));
+                .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(10));
     }
 
     @Test

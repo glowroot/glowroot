@@ -79,18 +79,15 @@
             <id>default-test</id>
             <configuration>
               <excludes>
-                <!-- JarFileShadingTest requires informant.jar to be available on the
-                  classpath, so it is excluded here in case 'mvn test' is executed from the parent
-                  module (informant.jar is built in the package phase) -->
+                <!-- requires informant.jar so it is executed during integration-test phase -->
                 <exclude>**/JarFileShadingTest.java</exclude>
               </excludes>
             </configuration>
           </execution>
           <execution>
-            <!-- run tests a second time using the javaagent container (and with JarFileShadingTest
-              this time) -->
-            <id>integration-test</id>
-            <phase>integration-test</phase>
+            <!-- run tests a second time using the javaagent container -->
+            <id>with-javaagent-container-test</id>
+            <phase>test</phase>
             <goals>
               <goal>test</goal>
             </goals>
@@ -104,6 +101,23 @@
                   <value>io.informant.container.SharedContainerRunListener</value>
                 </property>
               </properties>
+              <excludes>
+                <!-- requires informant.jar so it is executed during integration-test phase -->
+                <exclude>**/JarFileShadingTest.java</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>integration-test</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <includes>
+                <!-- requires informant.jar so it is executed during integration-test phase -->
+                <include>**/JarFileShadingTest.java</include>
+              </includes>
             </configuration>
           </execution>
         </executions>

@@ -73,7 +73,10 @@ public class PluginDescriptor {
         return version;
     }
 
-    public ImmutableList<PropertyDescriptor> getProperties() {
+    // don't return ImmutableList since this method is used by unshaded code in
+    // io.informant.packager.Packager
+    @Immutable
+    public List<PropertyDescriptor> getProperties() {
         return properties;
     }
 

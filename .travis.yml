@@ -2,3 +2,16 @@ language: java
 jdk:
   - oraclejdk7
   - openjdk6
+before_install:
+  - npm install -g grunt-cli
+install:
+  - TARGET=install
+  - if [[ "$TRAVIS_REPO_SLUG" == "informant/informant" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_JDK_VERSION" == "oraclejdk7" ]]; then TARGET=deploy; fi
+  - mvn clean $TARGET -DdeployAtEnd=true --settings settings.xml -B
+script: true
+env:
+  global:
+    # SONATYPE_USERNAME
+    - secure: "BNWyuP7hL9OVFXj2ikbSbD/REFRfN3WysmVj5rjj14ulDmDH09j+Gj0i2bEiKaENhDgxGI8hQhY3qYcabe2XmtkoJTjHyET5Gopb8Nsk0+8p2HA3/tgCuQFfaHz1NwD3DICxvNKDvT8kzq9dFPW20Bcm7G7X+Mcvc4yu1yuo2V4="
+    # SONATYPE_PASSWORD
+    - secure: "ui46dn/mbi1uazQh/PuV20jR/eGk9S0X2pmfZa82UWq9u7TSM6nLYmoG0Vxft9m+4V/T9Ina2TCJQJVsQTezsc5dVh8KaACz16ftGiEDX2GelLMMUpSsPzfhKRNwaTXtvlxjXdIKxxPBZ2FxNuhW/CMEFRRzNoW0h3B3X23YmFQ="

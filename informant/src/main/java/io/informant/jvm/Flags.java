@@ -58,6 +58,7 @@ public class Flags {
             unsupportedReason = "Cannot find class sun.management.Flag";
         } else {
             ImmutableList<String> flagNamesLocal = null;
+            boolean unsupportedDueToKnownJdkBug = false;
             try {
                 flagNamesLocal = buildFlagNames(flagClass, getAllFlagsMethod);
             } catch (ClassNotFoundException e) {
@@ -72,8 +73,15 @@ public class Flags {
                 logger.error(e.getMessage(), e);
             } catch (InvocationTargetException e) {
                 logger.error(e.getMessage(), e);
+            } catch (UnsupporedDueToKnownJdkBugException e) {
+                unsupportedDueToKnownJdkBug = true;
             }
-            if (flagNamesLocal == null) {
+            if (unsupportedDueToKnownJdkBug) {
+                flagNames = null;
+                supported = false;
+                unsupportedReason = "Unsupported due to known JDK bug, see"
+                        + " https://bugs.openjdk.java.net/browse/JDK-6658779";
+            } else if (flagNamesLocal == null) {
                 flagNames = null;
                 supported = false;
                 unsupportedReason = "Unsupported due to error, see Informant log";
@@ -98,7 +106,7 @@ public class Flags {
     private static ImmutableList<String> buildFlagNames(Class<?> flagClass,
             Method getAllFlagsMethod) throws ClassNotFoundException, SecurityException,
             NoSuchMethodException, IllegalArgumentException, IllegalAccessException,
-            InvocationTargetException {
+            InvocationTargetException, UnsupporedDueToKnownJdkBugException {
 
         Class<?> vmOptionClass = Class.forName("com.sun.management.VMOption");
         Method getVMOptionMethod = flagClass.getDeclaredMethod("getVMOption");
@@ -109,8 +117,22 @@ public class Flags {
         List<?> flags = (List<?>) getAllFlagsMethod.invoke(null);
         ImmutableList.Builder<String> names = ImmutableList.builder();
         for (Object flag : flags) {
-            names.add((String) getNameMethod.invoke(getVMOptionMethod.invoke(flag)));
+            Object option;
+            try {
+                option = getVMOptionMethod.invoke(flag);
+            } catch (InvocationTargetException e) {
+                if (e.getCause() instanceof NullPointerException) {
+                    // https://bugs.openjdk.java.net/browse/JDK-6658779
+                    throw new UnsupporedDueToKnownJdkBugException();
+                } else {
+                    throw e;
+                }
+            }
+            names.add((String) getNameMethod.invoke(option));
         }
         return names.build();
     }
+
+    @SuppressWarnings("serial")
+    private static class UnsupporedDueToKnownJdkBugException extends Exception {}
 }
