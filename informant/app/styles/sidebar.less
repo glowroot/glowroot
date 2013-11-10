@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-@import "../bower_components/sass-bootstrap/lib/variables";
+@import "../bower_components/bootstrap/less/variables";
 @import "variables";
 
-$sidenav-vertical-margin: 30px;
+@sidenav-vertical-margin: 30px;
 
 .ix-sidebar .list-group-item.active,
 .ix-sidebar .list-group-item.active:hover,
@@ -45,10 +45,10 @@ $sidenav-vertical-margin: 30px;
   border-bottom-left-radius: 3px !important;
 }
 
-$row-desktop: $container-desktop + $grid-gutter-width;
-$row-lg-desktop: $container-large-desktop + $grid-gutter-width;
+@row-desktop: @container-desktop + @grid-gutter-width;
+@row-lg-desktop: @container-large-desktop + @grid-gutter-width;
 
-@media screen and (min-width: $screen-md-min) {
+@media screen and (min-width: @screen-md-min) {
   .ix-sidebar {
     position: absolute;
     width: 220px;

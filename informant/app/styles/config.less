@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-@import "../bower_components/sass-bootstrap/lib/mixins";
+@import "../bower_components/bootstrap/less/mixins";
 @import "variables";
 
 .config-status-on {
   margin-left: 40px;
-  color: $informant-green;
+  color: @informant-green;
 }
 
 .config-status-off {
   margin-left: 40px;
-  color: $informant-red;
+  color: @informant-red;
 }
 
 .config-status-disabled {
@@ -56,7 +56,7 @@
 }
 
 .btn-config-delete-all-snapshot {
-  @include button-variant(#333, #ddd, #bbb);
+  .button-variant(#333, #ddd, #bbb);
   height: 34px;
 }
 

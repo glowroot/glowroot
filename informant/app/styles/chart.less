@@ -16,9 +16,9 @@
 
 @import "variables";
 
-$trace-point-normal: $informant-yellow;
-$trace-point-active: lighten($informant-blue, 20);
-$trace-point-error: $informant-red;
+@trace-point-normal: @informant-yellow;
+@trace-point-active: lighten(@informant-blue, 20);
+@trace-point-error: @informant-red;
 
 .chart-container {
   position: relative;
@@ -37,14 +37,14 @@ $trace-point-error: $informant-red;
 }
 
 .chart-spinner {
-  @extend .chart-dimensions;
   pointer-events: none;
+  .chart-dimensions;
 }
 
 .chart-warning {
   padding: 10px 35px;
-  color: $informant-red;
-  background-color: $informant-light-red-background;
+  color: @informant-red;
+  background-color: @informant-light-red-background;
   margin-bottom: 6px;
   border-radius: 6px;
 }
@@ -56,8 +56,8 @@ $trace-point-error: $informant-red;
   margin-top: 100px;
   // include padding in margin-left
   margin-left: -(250px / 2 + 35px);
-  @extend .chart-warning;
   pointer-events: none;
+  .chart-warning;
 }
 
 .chart-help {
@@ -83,15 +83,15 @@ $trace-point-error: $informant-red;
 }
 
 .qtip-border-color-0 {
-  border-color: $trace-point-normal;
+  border-color: @trace-point-normal;
 }
 
 .qtip-border-color-1 {
-  border-color: $trace-point-error;
+  border-color: @trace-point-error;
 }
 
 .qtip-border-color-2 {
-  border-color: $trace-point-active;
+  border-color: @trace-point-active;
 }
 
 .modal {

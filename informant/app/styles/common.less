@@ -16,8 +16,8 @@
 
 /* styles shared between app.scss and export.scss */
 
-@import "../bower_components/sass-bootstrap/lib/variables";
-@import "../bower_components/sass-bootstrap/lib/mixins";
+@import "../bower_components/bootstrap/less/variables";
+@import "../bower_components/bootstrap/less/mixins";
 @import "variables";
 
 // --------
@@ -74,11 +74,11 @@ html.lt-ie9 .lt-ie9-width-auto {
 }
 
 .button-message-success {
-  color: $informant-green;
+  color: @informant-green;
 }
 
 .button-message-error {
-  color: $informant-red;
+  color: @informant-red;
 }
 
 // this is to dynamically hide the validation error message immediately after it is fixed
@@ -95,11 +95,11 @@ form.ng-valid .button-validation-error {
 }
 
 .informant-red {
-  color: $informant-red;
+  color: @informant-red;
 }
 
 .informant-yellow {
-  color: $informant-yellow;
+  color: @informant-yellow;
 }
 
 .nowrap {
@@ -120,7 +120,7 @@ form.ng-valid .button-validation-error {
 }
 
 span.disabled {
-  color: $gray-light;
+  color: @gray-light;
   cursor: not-allowed;
 }
 

@@ -16,14 +16,14 @@
 
 @import "variables";
 
-// $indent1 must be sync'd with indent1 javascript variable in trace-renderer.js
-$indent1: 1em;
-$horizontal-padding: 1em;
+// @indent1 must be sync'd with indent1 javascript variable in trace-renderer.js
+@indent1: 1em;
+@horizontal-padding: 1em;
 // by default using flatButtonVerticalPadding, but these are really independent vars
-$vertical-padding: $flat-button-vertical-padding;
+@vertical-padding: @flat-button-vertical-padding;
 
 .content-detail {
-  margin-left: (2 * $indent1);
+  margin-left: (2 * @indent1);
 }
 
 .metrics-table td {
@@ -34,12 +34,8 @@ $vertical-padding: $flat-button-vertical-padding;
 }
 
 // some elements need the same padding as expanding elements
-@mixin content-padding {
-  padding: $vertical-padding $horizontal-padding;
-}
-
 .content-padding {
-  @include content-padding;
+  padding: @vertical-padding @horizontal-padding;
 }
 
 .unexpanded-content,
@@ -49,7 +45,7 @@ $vertical-padding: $flat-button-vertical-padding;
   // require horizontal scrolling still have padding to their right
   margin-right: 20px;
   border-radius: 4px;
-  @include content-padding;
+  .content-padding;
 }
 
 .unexpanded-content:hover,
@@ -69,41 +65,37 @@ $vertical-padding: $flat-button-vertical-padding;
 .left-numeric-column {
   text-align: right;
   // needs the same vertical padding as content
-  padding: $vertical-padding 0;
+  padding: @vertical-padding 0;
 }
 
 .indent1 {
-  margin-left: $indent1;
+  margin-left: @indent1;
 }
 
 .indent2 {
-  margin-left: (2 * $indent1);
-}
-
-@mixin pad1 {
-  padding-left: $horizontal-padding;
-  padding-right: $horizontal-padding;
+  margin-left: (2 * @indent1);
 }
 
 .pad1 {
-  @include pad1;
+  padding-left: @horizontal-padding;
+  padding-right: @horizontal-padding;
 }
 
 .pad1aligned {
-  margin-left: -$horizontal-padding;
-  @include pad1;
+  margin-left: -@horizontal-padding;
+  .pad1;
 }
 
 .flat-btn.flat-btn-big-pad1aligned {
-  margin-left: -$horizontal-padding;
-  @include pad1;
+  margin-left: -@horizontal-padding;
+  .pad1;
   padding-top: 6px;
   padding-bottom: 6px;
 }
 
 .second-line-indent {
-  padding-left: (4 * $indent1);
-  text-indent: -(4 * $indent1);
+  padding-left: (4 * @indent1);
+  text-indent: -(4 * @indent1);
 }
 
 /* text-indent is inherited by default, so need to reset it on buttons inside .second-level-indent,

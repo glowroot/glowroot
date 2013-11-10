@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-$informant-red: #b12930;
-$informant-blue: darken(#4286bd, 2%);
-// TODO override and use bootstrap $brand-success instead of $informant-green?
-$informant-green: #336600;
-// flot default point color, just for documenting where $informantYellow / $tracePointNormal is derived from
-$flot-default-color: #edc240;
-$informant-yellow: darken($flot-default-color, 10);
+@import "variables";
 
-$flat-button-vertical-padding: 2px;
+.aggregates-tooltip-label {
+  display: inline-block;
+  width: 5em;
+}
 
-$informant-light-red-background: #f2dede;
+.groupings-error {
+  display: inline-block;
+  padding: 10px 35px;
+  color: @informant-red;
+  background-color: @informant-light-red-background;
+  margin-bottom: 6px;
+  border-radius: 6px;
+}

@@ -30,9 +30,9 @@ module.exports = function (grunt) {
   grunt.initConfig({
     yeoman: yeomanConfig,
     watch: {
-      sass: {
-        files: '<%= yeoman.app %>/styles/*.scss',
-        tasks: 'sass:server'
+      less: {
+        files: '<%= yeoman.app %>/styles/*.less',
+        tasks: 'less:server'
       },
       handlebars: {
         files: '<%= yeoman.app %>/hbs/*.hbs',
@@ -47,7 +47,7 @@ module.exports = function (grunt) {
           '<%= yeoman.app %>/scripts/**/*.js',
           '<%= yeoman.app %>/views/**/*.html',
           '<%= yeoman.app %>/template/**/*.html',
-          // watch:sass output
+          // watch:less output
           '.tmp/styles/main.css',
           // watch:handlebars output
           '.tmp/scripts/generated/handlebars-templates.js'
@@ -142,19 +142,16 @@ module.exports = function (grunt) {
         '<%= yeoman.app %>/scripts/**/*.js'
       ]
     },
-    sass: {
+    less: {
       dist: {
         files: {
-          // need to output main.css to .tmp so it can still be concatenated with qtip and datepicker css files
-          // once sass supports inlining css files, this can output directly to destination
-          // see https://github.com/nex3/sass/issues/556
-          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.scss',
-          '<%= yeoman.exportDist %>/styles/export.css': '<%= yeoman.app %>/styles/export.scss'
+          '<%= yeoman.dist %>/styles/main.css': '<%= yeoman.app %>/styles/main.less',
+          '<%= yeoman.exportDist %>/styles/export.css': '<%= yeoman.app %>/styles/export.less'
         }
       },
       server: {
         files: {
-          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.scss'
+          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.less'
         }
       }
     },
@@ -183,8 +180,7 @@ module.exports = function (grunt) {
                 }
               },
               'uglifyjs'
-            ],
-            css: ['concat', 'cssmin']
+            ]
           },
           post: []
         }
@@ -345,6 +341,7 @@ module.exports = function (grunt) {
     cssmin: {
       dist: {
         files: {
+          '<%= yeoman.dist %>/styles/main.css': '<%= yeoman.dist %>/styles/main.css',
           '<%= yeoman.exportDist %>/styles/export.css': '<%= yeoman.exportDist %>/styles/export.css'
         }
       }
@@ -412,7 +409,7 @@ module.exports = function (grunt) {
 
   grunt.registerTask('server', [
     'clean:server',
-    'sass:server',
+    'less:server',
     'handlebars',
     'configureRewriteRules',
     'configureProxies',
@@ -424,11 +421,10 @@ module.exports = function (grunt) {
     'bower',
     'clean:dist',
     'jshint',
-    'sass:dist',
+    'less:dist',
     'useminPrepare',
     'ngtemplates',
     'handlebars',
-    'concat',
     'copy',
     'replace:index',
     'cssmin',

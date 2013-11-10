@@ -4,7 +4,8 @@
     "angular": "1.2.0",
     "angular-ui-bootstrap": "trask/angular-ui-bootstrap#bootstrap3_bis2+patch.1",
     "angular-ui-router": "trask/angular-ui-router#0.2.0+patch.1",
-    "bootstrap-datepicker": "trask/bootstrap-datepicker#1.2.0+patch",
+    "bootstrap": "3.0.2",
+    "bootstrap-datepicker": "fda46bbcf5747c54c3f795ed259a215ae1e1fbf6",
     "flot": "trask/flot#0.9-work+patch",
     "handlebars": "1.1.2",
     "html5shiv": "3.7.0",
@@ -13,7 +14,9 @@
     "moment": "2.4.0",
     "qtip2": "trask/qTip2#c561e5a28e027e6793f3cfc32c8de4e9a8c97650",
     "respond": "1.3.0",
-    "sass-bootstrap": "3.0.2",
     "spinjs": "1.3.2"
+  },
+  "resolutions": {
+    "bootstrap": "3.0.2"
   }
 }

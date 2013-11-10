@@ -14,66 +14,70 @@
  * limitations under the License.
  */
 
-@import "variables";
+@import (less) "../bower_components/qtip2/src/core.css";
+@import (less) "../bower_components/qtip2/src/tips/tips.css";
 
-$navbar-height: 50px;
-$navbar-inverse-bg: darken($informant-red, 7%);
-$navbar-inverse-link-active-bg: darken($informant-red, 13%);
-$navbar-inverse-link-color: #ccc;
+@import "../bower_components/bootstrap-datepicker/less/datepicker3.less";
 
-$input-border-focus: $informant-blue;
+@import "../bower_components/bootstrap/less/variables.less";
+@import "../bower_components/bootstrap/less/mixins.less";
 
-$btn-primary-color: #f8f8f8;
-$btn-primary-border: #ccc;
-
-$brand-primary: darken($informant-blue, 5%);
-
-$state-danger-text: $informant-red;
-
-@import "../bower_components/sass-bootstrap/lib/variables";
-@import "../bower_components/sass-bootstrap/lib/mixins";
-
-@import "../bower_components/sass-bootstrap/lib/buttons";
+@import "../bower_components/bootstrap/less/buttons.less";
 // close is used by trace detail modal
-@import "../bower_components/sass-bootstrap/lib/close";
+@import "../bower_components/bootstrap/less/close.less";
 // component-animations is used by mobile navbar expanding/collapsing
-@import "../bower_components/sass-bootstrap/lib/component-animations";
+@import "../bower_components/bootstrap/less/component-animations.less";
 // dropdowns is used by the trace search form (e.g. begins with / equals / ends with / contains)
-@import "../bower_components/sass-bootstrap/lib/dropdowns";
-@import "../bower_components/sass-bootstrap/lib/forms";
-@import "../bower_components/sass-bootstrap/lib/input-groups";
+@import "../bower_components/bootstrap/less/dropdowns.less";
+@import "../bower_components/bootstrap/less/forms.less";
+@import "../bower_components/bootstrap/less/input-groups.less";
 // list-group is used by configuration sidebar
-@import "../bower_components/sass-bootstrap/lib/list-group";
-@import "../bower_components/sass-bootstrap/lib/modals";
+@import "../bower_components/bootstrap/less/list-group.less";
+@import "../bower_components/bootstrap/less/modals.less";
 // navs import needs to be before navbar import, othewise navbar is messed up
-@import "../bower_components/sass-bootstrap/lib/navs";
-@import "../bower_components/sass-bootstrap/lib/navbar";
+@import "../bower_components/bootstrap/less/navs.less";
+@import "../bower_components/bootstrap/less/navbar.less";
 // panels are used by config views
-@import "../bower_components/sass-bootstrap/lib/panels";
+@import "../bower_components/bootstrap/less/panels.less";
 // panels are used by jvm heapdump view
-@import "../bower_components/sass-bootstrap/lib/wells";
+@import "../bower_components/bootstrap/less/wells.less";
 
 // basic bootstrap foundation
-@import "../bower_components/sass-bootstrap/lib/grid";
-@import "../bower_components/sass-bootstrap/lib/normalize";
-@import "../bower_components/sass-bootstrap/lib/scaffolding";
-@import "../bower_components/sass-bootstrap/lib/type";
-@import "../bower_components/sass-bootstrap/lib/utilities";
-@import "../bower_components/sass-bootstrap/lib/responsive-utilities";
+@import "../bower_components/bootstrap/less/grid.less";
+@import "../bower_components/bootstrap/less/normalize.less";
+@import "../bower_components/bootstrap/less/scaffolding.less";
+@import "../bower_components/bootstrap/less/type.less";
+@import "../bower_components/bootstrap/less/utilities.less";
+@import "../bower_components/bootstrap/less/responsive-utilities.less";
 // tables are used on jvm/heap-histogram
-@import "../bower_components/sass-bootstrap/lib/tables";
+@import "../bower_components/bootstrap/less/tables.less";
 
-@import "bootstrap-datepicker-overrides";
-@import "common-trace";
-@import "chart";
-@import "aggregates";
-@import "search";
-@import "config";
-@import "jvm";
-@import "sidebar";
-@import "thread-dump";
-@import "common";
-@import "sticky-footer";
+@import "common-trace.less";
+@import "chart.less";
+@import "aggregates.less";
+@import "search.less";
+@import "config.less";
+@import "jvm.less";
+@import "sidebar.less";
+@import "thread-dump.less";
+@import "common.less";
+@import "sticky-footer.less";
+
+@import "variables.less";
+
+@navbar-height: 50px;
+@navbar-inverse-bg: darken(@informant-red, 7%);
+@navbar-inverse-link-active-bg: darken(@informant-red, 13%);
+@navbar-inverse-link-color: #ccc;
+
+@input-border-focus: @informant-blue;
+
+@btn-primary-color: #f8f8f8;
+@btn-primary-border: #ccc;
+
+@brand-primary: darken(@informant-blue, 5%);
+
+@state-danger-text: @informant-red;
 
 body {
   // always display vertical scrollbar so content doesn't shift horizontally when the vertical
@@ -95,7 +99,7 @@ body {
 .header-page-name {
   font-family: SpecialElite-Regular;
   font-size: 44px;
-  color: $informant-red;
+  color: @informant-red;
 }
 
 @font-face {
@@ -109,7 +113,7 @@ body {
 }
 
 .navbar {
-  background-color: $navbar-inverse-bg;
+  background-color: @navbar-inverse-bg;
 }
 
 .navbar-brand {
