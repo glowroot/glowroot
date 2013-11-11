@@ -354,6 +354,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
         if (responseText == null) {
             response.setContent(ChannelBuffers.EMPTY_BUFFER);
+            response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
             HttpServices.preventCaching(response);
             return response;
         }
