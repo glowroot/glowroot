@@ -30,9 +30,9 @@
          class="form-horizontal"
          name="formCtrl">
       <div class="form-group"
-           ng-class="{'has-error': formCtrl['__typeName' + $id].$invalid}">
+           ng-class="{'has-error': formCtrl['typeName' + $id].$invalid}">
         <label class="col-lg-2 control-label"
-               for="__typeName{{$id}}">
+               for="typeName{{$id}}">
           Type name
         </label>
         <div class="col-lg-10">
@@ -43,8 +43,8 @@
                  typeahead="suggestion for suggestion in typeNames($viewValue)"
                  typeahead-on-select="onSelectTypeName()"
                  typeahead-loading="typeNamesLoading"
-                 name="__typeName{{$id}}"
-                 id="__typeName{{$id}}"
+                 name="typeName{{$id}}"
+                 id="typeName{{$id}}"
                  ix-set-focus="isFocus"
                  style="max-width: 40em; display: inline-block">
           <div ix-spinner
@@ -55,9 +55,9 @@
         </div>
       </div>
       <div class="form-group"
-           ng-class="{'has-error': formCtrl['__methodName' + $id].$invalid}">
+           ng-class="{'has-error': formCtrl['methodName' + $id].$invalid}">
         <label class="col-lg-2 control-label"
-               for="__methodName{{$id}}">
+               for="methodName{{$id}}">
           Method name
         </label>
         <div class="col-lg-10">
@@ -70,8 +70,8 @@
                  typeahead-loading="methodNamesLoading"
                  ix-typeahead-open-on-empty
                  ng-blur="onSelectMethodName()"
-                 name="__methodName{{$id}}"
-                 id="__methodName{{$id}}"
+                 name="methodName{{$id}}"
+                 id="methodName{{$id}}"
                  style="max-width: 40em; display: inline-block;">
           <div ix-spinner
                ix-spinner-inline="true"
@@ -139,10 +139,10 @@
         </div>
       </div>
       <div class="form-group"
-           ng-class="{'has-error': formCtrl['__metricName' + $id].$invalid}"
+           ng-class="{'has-error': formCtrl['metricName' + $id].$invalid}"
            ng-show="config.metric">
         <label class="col-lg-2 control-label"
-               for="__metricName{{$id}}">
+               for="metricName{{$id}}">
           Metric name
         </label>
         <div class="col-lg-10">
@@ -150,24 +150,24 @@
                  class="form-control"
                  ng-model="config.metricName"
                  ng-required="config.metric"
-                 name="__metricName{{$id}}"
-                 id="__metricName{{$id}}"
+                 name="metricName{{$id}}"
+                 id="metricName{{$id}}"
                  style="max-width: 20em;">
         </div>
       </div>
       <div ng-show="config.span">
         <div class="form-group"
-             ng-class="{'has-error': formCtrl['__spanText' + $id].$invalid}">
+             ng-class="{'has-error': formCtrl['spanText' + $id].$invalid}">
           <label class="col-lg-2 control-label"
-                 for="__spanText{{$id}}">
+                 for="spanText{{$id}}">
             Span text
           </label>
           <div class="col-lg-10">
             <textarea class="form-control"
                       ng-model="config.spanText"
                       ng-required="config.span"
-                      name="__spanText{{$id}}"
-                      id="__spanText{{$id}}"
+                      name="spanText{{$id}}"
+                      id="spanText{{$id}}"
                       rows="2"
                       style="max-width: 40em;">
             </textarea>
@@ -176,17 +176,17 @@
       </div>
       <div ng-show="config.trace">
         <div class="form-group"
-             ng-class="{'has-error': formCtrl['__traceGrouping' + $id].$invalid}">
+             ng-class="{'has-error': formCtrl['traceGrouping' + $id].$invalid}">
           <label class="col-lg-2 control-label"
-                 for="__traceGrouping{{$id}}">
+                 for="traceGrouping{{$id}}">
             Trace grouping
           </label>
           <div class="col-lg-10">
             <textarea class="form-control"
                       ng-model="config.traceGrouping"
                       ng-required="config.trace"
-                      name="__traceGrouping{{$id}}"
-                      id="__traceGrouping{{$id}}"
+                      name="traceGrouping{{$id}}"
+                      id="traceGrouping{{$id}}"
                       rows="2"
                       style="max-width: 40em;">
             </textarea>
