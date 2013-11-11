@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,13 @@
 package org.glowroot;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-import checkers.nullness.quals.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Manifests;
 import org.glowroot.markers.Static;
 
 /**
@@ -41,7 +39,7 @@ class Version {
     static String getVersion() {
         Manifest manifest;
         try {
-            manifest = getManifest();
+            manifest = Manifests.getManifest(Version.class);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             return "unknown";
@@ -77,26 +75,5 @@ class Version {
             version += ", built at " + snapshotTimestamp;
         }
         return version;
-    }
-
-    @Nullable
-    private static Manifest getManifest() throws IOException {
-        URL classURL = Version.class.getResource(Version.class.getSimpleName() + ".class");
-        if (classURL == null) {
-            logger.warn("url for Version class is unexpectedly null");
-            return null;
-        }
-        String externalForm = classURL.toExternalForm();
-        if (!externalForm.startsWith("jar:")) {
-            return null;
-        }
-        URL manifestURL = new URL(externalForm.substring(0, externalForm.lastIndexOf('!')) +
-                "!/META-INF/MANIFEST.MF");
-        InputStream manifestIn = manifestURL.openStream();
-        try {
-            return new Manifest(manifestIn);
-        } finally {
-            manifestIn.close();
-        }
     }
 }

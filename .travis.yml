@@ -17,6 +17,32 @@ matrix:
       env: TARGET=sonarqube
     - jdk: oraclejdk7
       env: TARGET=checker
+      # firefox
+    - jdk: oraclejdk7
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=
+      # chrome
+    - jdk: oraclejdk7
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=
+      # safari
+    - jdk: oraclejdk7
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.9" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=7
+    - jdk: oraclejdk7
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.8" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=6
+    - jdk: oraclejdk7
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.6" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=5
+      # internet explorer
+    - jdk: oraclejdk7
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 8.1" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
+    - jdk: oraclejdk7
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 8" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
+    - jdk: oraclejdk7
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
+    - jdk: oraclejdk7
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=9
+    - jdk: oraclejdk7
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=8
+    - jdk: oraclejdk7
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows XP" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=8
 env:
   global:
     - SONATYPE_USERNAME=trask
@@ -47,3 +73,8 @@ deploy:
     branch: master
     repo: glowroot/glowroot
     condition: "$TARGET = deploy"
+addons:
+  sauce_connect:
+    username: glowroot
+    access_key:
+      secure: "gywACGw1z8xcdNki4UGId8+GMYTMyEZQdwR/cqIVwjYj5FaHQ+kU+ImikXYQx4DJgldUo1/btgXxSwmOXwzo83TtQkG2nLsVB25KJHULHncchpARQF891rH+RjTceaPLtihfxoQd1Efsa8gS4QI2k6yGNRglCMymkrl27ajsJqE="

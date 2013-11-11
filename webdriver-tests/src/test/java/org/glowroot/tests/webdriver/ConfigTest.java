@@ -15,21 +15,32 @@
  */
 package org.glowroot.tests.webdriver;
 
+import com.saucelabs.common.SauceOnDemandAuthentication;
+import com.saucelabs.common.SauceOnDemandSessionIdProvider;
+import com.saucelabs.junit.SauceOnDemandTestWatcher;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
+import org.junit.rules.TestWatcher;
 import org.junit.runner.RunWith;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.ie.InternetExplorerDriver;
+import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.server.SeleniumServer;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
+import org.glowroot.container.config.UserInterfaceConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,32 +51,97 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(WebDriverRunner.class)
 public class ConfigTest {
 
+    private static final boolean USE_LOCAL_IE = false;
+
+    private static final TestName testNameWatcher = new TestName();
+
     private static Container container;
     private static SeleniumServer seleniumServer;
     private static WebDriver driver;
 
+    private String remoteWebDriverSessionId;
+
     @BeforeClass
     public static void setUp() throws Exception {
         container = Containers.getSharedContainer();
-        seleniumServer = new SeleniumServer();
-        seleniumServer.start();
-        driver = new FirefoxDriver();
-        // 992 is bootstrap media query breakpoint for screen-md-min
-        // 1200 is bootstrap media query breakpoint for screen-lg-min
-        driver.manage().window().setSize(new Dimension(1200, 800));
+        if (SauceLabs.useSauceLabs()) {
+            // glowroot must listen on one of the ports that sauce connect proxies
+            // see https://saucelabs.com/docs/connect#localhost
+            UserInterfaceConfig userInterfaceConfig =
+                    container.getConfigService().getUserInterfaceConfig();
+            userInterfaceConfig.setPort(4000);
+            container.getConfigService().updateUserInterfaceConfig(userInterfaceConfig);
+        }
+        if (!SauceLabs.useSauceLabs()) {
+            seleniumServer = new SeleniumServer();
+            seleniumServer.start();
+            // single webdriver instance for much better performance
+            if (USE_LOCAL_IE) {
+                // https://code.google.com/p/selenium/issues/detail?id=4403
+                DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
+                capabilities.setCapability("enablePersistentHover", false);
+                driver = new InternetExplorerDriver(capabilities);
+            } else {
+                driver = new FirefoxDriver();
+            }
+            // 992 is bootstrap media query breakpoint for screen-md-min
+            // 1200 is bootstrap media query breakpoint for screen-lg-min
+            driver.manage().window().setSize(new Dimension(1200, 800));
+        }
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        driver.quit();
-        seleniumServer.stop();
+        if (!SauceLabs.useSauceLabs()) {
+            driver.quit();
+            seleniumServer.stop();
+        }
         container.close();
+    }
+
+    @Before
+    public void beforeEachTest() throws Exception {
+        if (SauceLabs.useSauceLabs()) {
+            // need separate webdriver instance per test in order to report each test separately in
+            // saucelabs
+            String testName = getClass().getName() + '.' + testNameWatcher.getMethodName();
+            driver = SauceLabs.getWebDriver(testName);
+            // need to capture sessionId since it is needed in sauceLabsTestWatcher, after
+            // driver.quit() is called
+            remoteWebDriverSessionId = ((RemoteWebDriver) driver).getSessionId().toString();
+        }
     }
 
     @After
     public void afterEachTest() throws Exception {
+        if (SauceLabs.useSauceLabs()) {
+            driver.quit();
+        }
         container.checkAndReset();
-        Thread.sleep(2000);
+    }
+
+    @Rule
+    public TestWatcher getTestNameWatcher() {
+        return testNameWatcher;
+    }
+
+    @Rule
+    public TestWatcher getSauceLabsTestWatcher() {
+        if (!SauceLabs.useSauceLabs()) {
+            return null;
+        }
+        String sauceUsername = System.getenv("SAUCE_USERNAME");
+        String sauceAccessKey = System.getenv("SAUCE_ACCESS_KEY");
+        SauceOnDemandAuthentication authentication =
+                new SauceOnDemandAuthentication(sauceUsername, sauceAccessKey);
+        SauceOnDemandSessionIdProvider sessionIdProvider =
+                new SauceOnDemandSessionIdProvider() {
+                    @Override
+                    public String getSessionId() {
+                        return remoteWebDriverSessionId;
+                    }
+                };
+        return new SauceOnDemandTestWatcher(sessionIdProvider, authentication);
     }
 
     @Test

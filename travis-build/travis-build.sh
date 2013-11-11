@@ -87,4 +87,24 @@ case "$1" in
                test ${PIPESTATUS[0]} -eq 0
                ;;
 
+  "saucelabs") if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" ]]
+               then
+                 mvn clean install -DskipTests=true \
+                                   -B
+                 cd webdriver-tests
+                 mvn clean test -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
+                                -Dsaucelabs.browser.name=$SAUCELABS_BROWSER_NAME \
+                                -Dsaucelabs.browser.version=$SAUCELABS_BROWSER_VERSION \
+                                -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \
+                                -Dsaucelabs.device.version=$SAUCELABS_DEVICE_VERSION \
+                                -Dsaucelabs.device.type=$SAUCELABS_DEVICE_TYPE \
+                                -Dsaucelabs.device.orientation=$SAUCELABS_DEVICE_ORIENTATION \
+                                -Dsaucelabs.device.app=$SAUCELABS_DEVICE_APP \
+                                -Dsaucelabs.tunnel.identifier=$TRAVIS_JOB_NUMBER \
+                                -B
+               else
+                 echo skipping, saucelabs only runs against master repository and master branch
+               fi
+               ;;
+
 esac
