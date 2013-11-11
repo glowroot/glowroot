@@ -15,18 +15,20 @@
  */
 package io.informant.tests.webdriver;
 
+import org.jboss.arquillian.phantom.resolver.ResolvingPhantomJSDriverService;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.phantomjs.PhantomJSDriver;
+import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.server.SeleniumServer;
 
 import io.informant.Containers;
 import io.informant.container.Container;
-import io.informant.container.IgnoreOnJdk5;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -34,7 +36,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@RunWith(IgnoreOnJdk5.class)
+@RunWith(WebDriverRunner.class)
 public class ConfigTest {
 
     private static Container container;
@@ -46,7 +48,15 @@ public class ConfigTest {
         container = Containers.createJavaagentContainer();
         seleniumServer = new SeleniumServer();
         seleniumServer.start();
-        driver = new FirefoxDriver();
+
+        DesiredCapabilities capabilities = DesiredCapabilities.phantomjs();
+        capabilities.setCapability("phantomjs.binary.path", "./target/phantomjs");
+        driver = new PhantomJSDriver(
+                ResolvingPhantomJSDriverService.createDefaultService(capabilities),
+                capabilities);
+        // 992 is bootstrap media query breakpoint for screen-md-min
+        // 1200 is bootstrap media query breakpoint for screen-lg-min
+        driver.manage().window().setSize(new Dimension(1200, 800));
     }
 
     @AfterClass
@@ -128,8 +138,6 @@ public class ConfigTest {
                 .isEqualTo("a trace");
     }
 
-    // TODO in firefox, still see "Please fill out this field" tooltip on hitting delete when
-    // required field is missing
     @Test
     public void shouldNotValidateOnDeletePointcutConfig() throws Exception {
         // given

@@ -15,7 +15,14 @@
  */
 package io.informant.tests.webdriver;
 
+import java.io.IOException;
+
+import com.google.common.base.Charsets;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.phantomjs.PhantomJSDriver;
+
+import io.informant.shaded.google.common.io.Resources;
 
 /**
  * @author Trask Stalnaker
@@ -33,6 +40,21 @@ class App {
 
     void openHomePage() {
         driver.get(baseUrl);
+        addBindPolyfillIfNecessary();
         Utils.waitForAngular(driver);
+    }
+
+    private void addBindPolyfillIfNecessary() {
+        if (driver instanceof PhantomJSDriver) {
+            // PhantomJS doesn't support bind yet, use polyfill in the meantime
+            // see https://github.com/ariya/phantomjs/issues/10522
+            String js;
+            try {
+                js = Resources.toString(Resources.getResource("bind-polyfill.js"), Charsets.UTF_8);
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+            ((JavascriptExecutor) driver).executeScript(js);
+        }
     }
 }
