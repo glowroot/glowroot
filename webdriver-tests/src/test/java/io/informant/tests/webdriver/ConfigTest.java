@@ -15,7 +15,6 @@
  */
 package io.informant.tests.webdriver;
 
-import org.jboss.arquillian.phantom.resolver.ResolvingPhantomJSDriverService;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -23,8 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.phantomjs.PhantomJSDriver;
-import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.server.SeleniumServer;
 
 import io.informant.Containers;
@@ -48,12 +46,7 @@ public class ConfigTest {
         container = Containers.createJavaagentContainer();
         seleniumServer = new SeleniumServer();
         seleniumServer.start();
-
-        DesiredCapabilities capabilities = DesiredCapabilities.phantomjs();
-        capabilities.setCapability("phantomjs.binary.path", "./target/phantomjs");
-        driver = new PhantomJSDriver(
-                ResolvingPhantomJSDriverService.createDefaultService(capabilities),
-                capabilities);
+        driver = new FirefoxDriver();
         // 992 is bootstrap media query breakpoint for screen-md-min
         // 1200 is bootstrap media query breakpoint for screen-lg-min
         driver.manage().window().setSize(new Dimension(1200, 800));

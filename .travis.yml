@@ -4,6 +4,8 @@ jdk:
   - openjdk6
 before_install:
   - npm install -g grunt-cli
+  - "export DISPLAY=:99.0"
+  - sh -e /etc/init.d/xvfb start
 install:
   - TARGET=install
   - if [[ "$TRAVIS_REPO_SLUG" == "informant/informant" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_JDK_VERSION" == "oraclejdk7" ]]; then TARGET=deploy; fi
