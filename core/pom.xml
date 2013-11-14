@@ -109,7 +109,7 @@
     </dependency>
     <dependency>
       <groupId>io.informant.shaded</groupId>
-      <artifactId>shaded-logback</artifactId>
+      <artifactId>shaded-slf4j-impl</artifactId>
       <version>1.0.13-SNAPSHOT</version>
     </dependency>
     <dependency>
@@ -424,7 +424,7 @@
                       <!-- this is not excluded via artifactSet so that it will still be removed
                         from the dependency reduced pom, the classes will be added (without shading)
                         below in a second maven-shade-plugin execution -->
-                      <artifact>io.informant.shaded:shaded-logback</artifact>
+                      <artifact>io.informant.shaded:shaded-slf4j-impl</artifact>
                       <excludes>
                         <exclude>**</exclude>
                       </excludes>
@@ -489,8 +489,8 @@
                 </configuration>
               </execution>
               <execution>
-                <!-- shaded-logback can't be included above since its (intentionally) unshaded slf4j
-                  references would then get shaded -->
+                <!-- shaded-slf4j-impl can't be included above since its (intentionally) unshaded
+                     slf4j references would then get shaded -->
                 <id>shade-with-logback</id>
                 <goals>
                   <goal>shade</goal>
@@ -500,7 +500,7 @@
                   <artifactSet>
                     <includes>
                       <include>io.informant:informant</include>
-                      <include>io.informant.shaded:shaded-logback</include>
+                      <include>io.informant.shaded:shaded-slf4j-impl</include>
                     </includes>
                   </artifactSet>
                 </configuration>
@@ -543,6 +543,8 @@
                 <option>-keep class io.informant.weaving.** { *; }</option>
                 <!-- keep all guava classes so that plugins can use shaded-guava artifact -->
                 <option>-keep class io.informant.shaded.google.common.** { *; }</option>
+                <!-- keep all slf4j classes so that plugins can use shaded-slf4j-api artifact -->
+                <option>-keep class io.informant.shaded.org.slf4j.** { *; }</option>
                 <!-- keep DefaultMustacheFactory.compile() which is used by generated advice -->
                 <option>
                   -keep class io.informant.shaded.github.mustachejava.DefaultMustacheFactory
