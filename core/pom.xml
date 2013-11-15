@@ -211,7 +211,8 @@
               <Premain-Class>io.informant.MainEntryPoint</Premain-Class>
               <Can-Redefine-Classes>true</Can-Redefine-Classes>
               <Can-Retransform-Classes>true</Can-Retransform-Classes>
-              <!-- build time is useful for snapshot versions -->
+              <!-- build commit and build time are useful for snapshot versions -->
+              <Build-Commit>${env.TRAVIS_COMMIT}</Build-Commit>
               <Build-Time>${maven.build.timestamp}</Build-Time>
             </manifestEntries>
           </archive>

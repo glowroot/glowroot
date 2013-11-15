@@ -56,12 +56,21 @@ class Version {
                 return "unknown";
             }
             if (version.endsWith("-SNAPSHOT")) {
+                String commit = mainAttributes.getValue("Build-Commit");
+                if (commit.length() > 0) {
+                    if (commit.length() == 40) {
+                        version += ", commit " + commit.substring(0, 10);
+                    } else {
+                        logger.warn("invalid Build-Commit attribute in META-INF/MANIFEST.MF file,"
+                                + " should be a 40 character git commit hash");
+                    }
+                }
                 String snapshotTimestamp = mainAttributes.getValue("Build-Time");
                 if (snapshotTimestamp == null) {
                     logger.warn("could not find Build-Time attribute in META-INF/MANIFEST.MF file");
                     return version;
                 }
-                return version + ", build " + snapshotTimestamp;
+                version += ", built at " + snapshotTimestamp;
             }
             return version;
         } finally {
