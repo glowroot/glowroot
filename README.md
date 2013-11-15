@@ -3,7 +3,7 @@
 
 ## Quick start
 
-1. Download [informant.jar](https://oss.sonatype.org/content/repositories/snapshots/io/informant/informant-package/0.5-SNAPSHOT/informant-package-0.5-20131020.191732-2.jar) and place in an empty directory of your choosing
+1. Download the latest [informant.jar](https://s3.amazonaws.com/travis-ci.informant.io/snapshots/latest/informant.jar) and place it in an empty directory of your choosing
 2. Add `-javaagent:informant.jar` to your application's JVM arguments
 3. Start your application
 4. Connect to http://localhost:4000

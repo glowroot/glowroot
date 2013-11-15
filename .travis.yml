@@ -17,3 +17,22 @@ env:
     - secure: "BNWyuP7hL9OVFXj2ikbSbD/REFRfN3WysmVj5rjj14ulDmDH09j+Gj0i2bEiKaENhDgxGI8hQhY3qYcabe2XmtkoJTjHyET5Gopb8Nsk0+8p2HA3/tgCuQFfaHz1NwD3DICxvNKDvT8kzq9dFPW20Bcm7G7X+Mcvc4yu1yuo2V4="
     # SONATYPE_PASSWORD
     - secure: "ui46dn/mbi1uazQh/PuV20jR/eGk9S0X2pmfZa82UWq9u7TSM6nLYmoG0Vxft9m+4V/T9Ina2TCJQJVsQTezsc5dVh8KaACz16ftGiEDX2GelLMMUpSsPzfhKRNwaTXtvlxjXdIKxxPBZ2FxNuhW/CMEFRRzNoW0h3B3X23YmFQ="
+before_deploy:
+  - mkdir -p s3/snapshots/latest
+  - cp package/target/informant-*.jar s3/snapshots/latest
+  - rm s3/snapshots/latest/informant-*-sources.jar
+  - mv s3/snapshots/latest/informant-*.jar s3/snapshots/latest/informant.jar
+  - "cp s3/snapshots/latest/informant.jar s3/snapshots/informant-${TRAVIS_COMMIT:0:10}.jar"
+  - cd s3
+deploy:
+  provider: s3
+  access_key_id:
+    secure: "bB2vqgDCZgcY1P5d1CdToq9YWg2ykB2kuwizT9EIVsWY4Y290P3UjwC6QtJ5BsCZ/lUzp68FI+SJfc4YQh8a/XCNXEfHRvnowPKA8BvJo75p8orula2lq8tiAMnAZuzi8N72J5xcGrVtYRCayYHDXiXzYPYLfvIQ3ui/fyr0QzM="
+  secret_access_key:
+    secure: "F5FwSoUci69w7WedrTgiHbZULfpDZfSgNdyXwl+nMGtmFIsC7CIoWSHStp1rIhwsSMeQqgcq/Ghmu7tb4qFJlFbEQUCXUl6TXdxxuOH2ml7cMhbj/sHvaJNOrHXjCVaZY5IohB9TmvFnGqnZAXyWJPzsnO790W4sNtWaf2s4Ecs="
+  bucket: travis-ci.informant.io
+  skip_cleanup: true
+  on:
+    jdk: oraclejdk7
+    branch: master
+    repo: informant/informant
