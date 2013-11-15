@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Implementation-Title: Informant
+Implementation-Version: ${project.version}
+Build-Commit: ${git.commit.hash}
+Build-Time: ${maven.build.timestamp.value}
+Main-Class: io.informant.Viewer
+Premain-Class: io.informant.MainEntryPoint
+Can-Redefine-Classes: true
+Can-Retransform-Classes: true

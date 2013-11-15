@@ -15,7 +15,12 @@
   <description>Informant Core</description>
 
   <properties>
+    <!-- default it to empty, otherwise it will default to the text "${git.commit.hash}" -->
+    <git.commit.hash></git.commit.hash>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
+    <!-- this extra property is needed since maven.build.timestamp is not directly available to
+         resource filtering, see http://jira.codehaus.org/browse/MRESOURCES-99 -->
+    <maven.build.timestamp.value>${maven.build.timestamp}</maven.build.timestamp.value>
   </properties>
 
   <dependencies>
@@ -185,6 +190,16 @@
     <resources>
       <resource>
         <directory>${basedir}/src/main/resources</directory>
+        <excludes>
+          <exclude>META-INF/MANIFEST.MF</exclude>
+        </excludes>
+      </resource>
+      <resource>
+        <directory>${basedir}/src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>META-INF/MANIFEST.MF</include>
+        </includes>
       </resource>
       <resource>
         <directory>${project.build.directory}/ui-resources-dist</directory>
@@ -201,20 +216,13 @@
       </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
+        <!-- eclipse m2e-wtp doesn't like maven-jar-plugin 2.4 when using manifestFile, so staying
+             with 2.3.2 for now, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=406507 -->
+        <version>2.3.2</version>
         <configuration>
           <archive>
-            <manifest>
-              <mainClass>io.informant.Viewer</mainClass>
-              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-            </manifest>
-            <manifestEntries>
-              <Premain-Class>io.informant.MainEntryPoint</Premain-Class>
-              <Can-Redefine-Classes>true</Can-Redefine-Classes>
-              <Can-Retransform-Classes>true</Can-Retransform-Classes>
-              <!-- build commit and build time are useful for snapshot versions -->
-              <Build-Commit>${env.TRAVIS_COMMIT}</Build-Commit>
-              <Build-Time>${maven.build.timestamp}</Build-Time>
-            </manifestEntries>
+            <!-- using build output directory to get the post-filtered MANIFEST.MF -->
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
           <excludes>
             <exclude>io/informant/local/ui/app/**</exclude>

@@ -9,7 +9,7 @@ before_install:
 install:
   - TARGET=install
   - if [[ "$TRAVIS_REPO_SLUG" == "informant/informant" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_JDK_VERSION" == "oraclejdk7" ]]; then TARGET=deploy; fi
-  - mvn clean $TARGET -DdeployAtEnd=true --settings settings.xml -B
+  - mvn clean $TARGET -Dgit.commit.hash=$TRAVIS_COMMIT -DdeployAtEnd=true --settings settings.xml -B
 script: true
 env:
   global:

@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Writer;
@@ -28,7 +29,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Charsets;
@@ -134,12 +134,16 @@ public class Packager {
         FileOutputStream fileOut = new FileOutputStream(outputJarFile);
         JarOutputStream jarOut;
         try {
-            jarOut = new JarOutputStream(fileOut, createManifest(artifacts));
+            jarOut = new JarOutputStream(fileOut);
         } catch (IOException e) {
             fileOut.close();
             throw e;
         }
         try {
+            JarEntry manifestEntry = new JarEntry("META-INF/MANIFEST.MF");
+            jarOut.putNextEntry(manifestEntry);
+            jarOut.write(createManifest(artifacts));
+            jarOut.closeEntry();
             Set<String> seenDirectories = Sets.newHashSet();
             List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
             for (Artifact artifact : artifacts) {
@@ -161,15 +165,18 @@ public class Packager {
         }
     }
 
-    private Manifest createManifest(List<Artifact> artifacts) throws IOException,
+    private byte[] createManifest(List<Artifact> artifacts) throws IOException,
             MojoExecutionException {
         for (Artifact artifact : artifacts) {
             if (artifact.getGroupId().equals("io.informant")
                     && artifact.getArtifactId().equals("informant-core")) {
                 JarFile jarFile = new JarFile(artifact.getFile());
-                Manifest manifest = jarFile.getManifest();
+                JarEntry manifestEntry = jarFile.getJarEntry("META-INF/MANIFEST.MF");
+                InputStream manifestIn = jarFile.getInputStream(manifestEntry);
+                byte[] manifestBytes = ByteStreams.toByteArray(manifestIn);
+                manifestIn.close();
                 jarFile.close();
-                return new Manifest(manifest);
+                return manifestBytes;
             }
         }
         throw new MojoExecutionException("Missing project dependency io.informant:informant");
