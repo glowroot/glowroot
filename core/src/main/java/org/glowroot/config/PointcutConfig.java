@@ -27,6 +27,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import dataflow.quals.Pure;
 
 import org.glowroot.api.weaving.MethodModifier;
 import org.glowroot.config.JsonViews.UiView;
@@ -161,10 +163,9 @@ public class PointcutConfig {
                 orEmpty(methodModifiers), metricName, spanText, traceGrouping);
     }
 
-    @ReadOnly
-    private static <T> List<T> orEmpty(@ReadOnly @Nullable List<T> list) {
+    private static <T> List<T> orEmpty(@Nullable List<T> list) {
         if (list == null) {
-            return ImmutableList.of();
+            return Lists.newArrayList();
         }
         return list;
     }
@@ -174,6 +175,7 @@ public class PointcutConfig {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("metric", metric)

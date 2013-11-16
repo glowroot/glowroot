@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
@@ -46,6 +45,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
+import dataflow.quals.Pure;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.Singleton;
 
-import static org.glowroot.common.Nullness.assertNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_NATIVE;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ASM4;
@@ -205,8 +205,7 @@ public class ParsedTypeCache {
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
-    @ReadOnly
-    private List<ParsedType> getSuperTypes(String typeName, @Nullable ClassLoader loader,
+    private ImmutableList<ParsedType> getSuperTypes(String typeName, @Nullable ClassLoader loader,
             ParseContext parseContext) {
         ParsedType parsedType;
         try {
@@ -220,7 +219,8 @@ public class ParsedTypeCache {
             logger.debug("type {} not found while parsing type {}", typeName, parseContext);
             return ImmutableList.of();
         }
-        List<ParsedType> superTypes = Lists.newArrayList(parsedType);
+        ImmutableList.Builder<ParsedType> superTypes = ImmutableList.builder();
+        superTypes.add(parsedType);
         String superName = parsedType.getSuperName();
         if (superName != null && !superName.equals("java.lang.Object")) {
             superTypes.addAll(getSuperTypes(superName, loader, parseContext));
@@ -228,7 +228,7 @@ public class ParsedTypeCache {
         for (String interfaceName : parsedType.getInterfaceNames()) {
             superTypes.addAll(getSuperTypes(interfaceName, loader, parseContext));
         }
-        return superTypes;
+        return superTypes.build();
     }
 
     private ParsedType getOrCreateParsedType(String typeName, @Nullable ClassLoader loader)
@@ -426,6 +426,7 @@ public class ParsedTypeCache {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("parsedTypes", parsedTypeCache)
@@ -443,6 +444,7 @@ public class ParsedTypeCache {
         }
         // toString() is used in logger warning construction
         @Override
+        @Pure
         public String toString() {
             if (codeSource == null) {
                 return className;
@@ -458,9 +460,7 @@ public class ParsedTypeCache {
         public static final ParsedMethodOrdering INSTANCE = new ParsedMethodOrdering();
 
         @Override
-        public int compare(@Nullable ParsedMethod left, @Nullable ParsedMethod right) {
-            assertNonNull(left, "Comparing of non-null elements only");
-            assertNonNull(right, "Comparing of non-null elements only");
+        public int compare(ParsedMethod left, ParsedMethod right) {
             return ComparisonChain.start()
                     .compare(getAccessibility(left), getAccessibility(right))
                     .compare(left.getName(), right.getName())
@@ -525,7 +525,7 @@ public class ParsedTypeCache {
         }
 
         public ParsedType build() {
-            assertNonNull(name, "Call to visit() is required");
+            checkNotNull(name, "Call to visit() is required");
             return ParsedType.from(iface, TypeNames.fromInternal(name),
                     TypeNames.fromInternal(superName), TypeNames.fromInternal(interfaceNames),
                     methods.build());

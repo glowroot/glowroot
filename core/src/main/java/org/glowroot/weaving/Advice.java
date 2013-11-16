@@ -16,19 +16,19 @@
 package org.glowroot.weaving;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import dataflow.quals.Pure;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
@@ -227,6 +227,7 @@ public class Advice {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("pointcut", pointcut)
@@ -272,10 +273,10 @@ public class Advice {
 
     @SuppressWarnings("serial")
     public static class AdviceConstructionException extends Exception {
-        private AdviceConstructionException(@Nullable String message) {
+        AdviceConstructionException(@Nullable String message) {
             super(message);
         }
-        private AdviceConstructionException(Throwable cause) {
+        AdviceConstructionException(Throwable cause) {
             super(cause);
         }
     }
@@ -286,22 +287,23 @@ public class Advice {
         private final Class<?> adviceClass;
         private final boolean reweavable;
 
+        @MonotonicNonNull
         private Type adviceType;
         @Nullable
         private Pattern pointcutTypePattern;
         @Nullable
         private Pattern pointcutMethodPattern;
-        @LazyNonNull
+        @MonotonicNonNull
         private Method isEnabledAdvice;
-        @LazyNonNull
+        @MonotonicNonNull
         private Method onBeforeAdvice;
-        @LazyNonNull
+        @MonotonicNonNull
         private Method onReturnAdvice;
-        @LazyNonNull
+        @MonotonicNonNull
         private Method onThrowAdvice;
-        @LazyNonNull
+        @MonotonicNonNull
         private Method onAfterAdvice;
-        @LazyNonNull
+        @MonotonicNonNull
         private Type travelerType;
 
         private ImmutableList<AdviceParameter> isEnabledParameters = ImmutableList.of();
@@ -310,6 +312,7 @@ public class Advice {
         private ImmutableList<AdviceParameter> onThrowParameters = ImmutableList.of();
         private ImmutableList<AdviceParameter> onAfterParameters = ImmutableList.of();
 
+        @MonotonicNonNull
         private Class<?> generatedAdviceFlowClass;
 
         private Builder(Pointcut pointcut, Class<?> adviceClass, boolean reweavable) {
@@ -339,32 +342,11 @@ public class Advice {
                 throw new AdviceConstructionException(
                         "@OnBefore is not supported on constructors at this time");
             }
-            generatedAdviceFlowClass = buildGeneratedAdviceFlowClass();
+            generatedAdviceFlowClass = AdviceFlowGenerator.generate();
             return new Advice(pointcut, adviceType, pointcutTypePattern, pointcutMethodPattern,
                     isEnabledAdvice, onBeforeAdvice, onReturnAdvice, onThrowAdvice, onAfterAdvice,
                     travelerType, isEnabledParameters, onBeforeParameters, onReturnParameters,
                     onThrowParameters, onAfterParameters, generatedAdviceFlowClass, reweavable);
-        }
-
-        private Class<?> buildGeneratedAdviceFlowClass() throws AdviceConstructionException {
-            try {
-                return AdviceFlowGenerator.generate();
-            } catch (SecurityException e) {
-                logger.error(e.getMessage(), e);
-                throw new AdviceConstructionException(e);
-            } catch (IllegalArgumentException e) {
-                logger.error(e.getMessage(), e);
-                throw new AdviceConstructionException(e);
-            } catch (NoSuchMethodException e) {
-                logger.error(e.getMessage(), e);
-                throw new AdviceConstructionException(e);
-            } catch (IllegalAccessException e) {
-                logger.error(e.getMessage(), e);
-                throw new AdviceConstructionException(e);
-            } catch (InvocationTargetException e) {
-                logger.error(e.getMessage(), e);
-                throw new AdviceConstructionException(e);
-            }
         }
 
         private void initIsEnabledAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
@@ -538,8 +520,8 @@ public class Advice {
         }
 
         private static AdviceParameter getAdviceParameter(
-                Class<? extends Annotation> validBindAnnotationType, Class<?> parameterType)
-                throws AdviceConstructionException {
+                Class<? extends Annotation> validBindAnnotationType,
+                Class<?> parameterType) throws AdviceConstructionException {
 
             if (validBindAnnotationType == BindMethodName.class
                     && !parameterType.isAssignableFrom(String.class)) {
@@ -552,6 +534,11 @@ public class Advice {
                         + " java.lang.Throwable (or super type of java.lang.Throwable)");
             }
             ParameterKind parameterKind = parameterKindMap.get(validBindAnnotationType);
+            if (parameterKind == null) {
+                // not possible since all bind annotations have a mapping in parameterKindMap
+                throw new AssertionError("Annotation not found in parameterKindMap: "
+                        + validBindAnnotationType.getName());
+            }
             return new AdviceParameter(parameterKind, parameterType);
         }
     }

@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import dataflow.quals.Pure;
 
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.markers.UsedByJsonBinding;
@@ -61,6 +62,7 @@ public class PackageDescriptor {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("plugins", plugins)

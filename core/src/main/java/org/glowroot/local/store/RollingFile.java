@@ -66,7 +66,7 @@ public class RollingFile {
     RollingFile(File file, int requestedRollingSizeKb, ScheduledExecutorService scheduledExecutor,
             Ticker ticker) throws IOException {
         this.file = file;
-        out = new RollingOutputStream(file, requestedRollingSizeKb, scheduledExecutor, ticker);
+        out = RollingOutputStream.create(file, requestedRollingSizeKb, scheduledExecutor, ticker);
         compressedWriter = new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
         inFile = new RandomAccessFile(file, "r");
         shutdownHookThread = new ShutdownHookThread();

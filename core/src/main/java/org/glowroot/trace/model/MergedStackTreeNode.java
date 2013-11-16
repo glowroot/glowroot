@@ -22,6 +22,7 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import dataflow.quals.Pure;
 
 import org.glowroot.markers.ThreadSafe;
 
@@ -129,6 +130,7 @@ public class MergedStackTreeNode {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("stackTraceElement", stackTraceElement)

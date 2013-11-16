@@ -28,6 +28,7 @@ import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
+import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,6 +119,7 @@ class SocketCommander {
             return command;
         }
         @Override
+        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("commandNum", commandNum)
@@ -143,6 +145,7 @@ class SocketCommander {
             return response;
         }
         @Override
+        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("commandNum", commandNum)

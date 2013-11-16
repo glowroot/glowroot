@@ -32,6 +32,7 @@ import java.util.jar.JarOutputStream;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Charsets;
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
@@ -203,7 +204,7 @@ public class Packager {
         for (PluginConfig pluginConfig : pluginConfigs) {
             for (PluginConfig pluginConfig2 : pluginConfigs) {
                 if (pluginConfig != pluginConfig2
-                        && pluginConfig.getId().equals(pluginConfig2.getId())) {
+                        && Objects.equal(pluginConfig.getId(), pluginConfig2.getId())) {
                     throw new MojoExecutionException("Found duplicate <plugin> tags (same groupId"
                             + " and artifactId) under <configuration>");
                 }
@@ -272,7 +273,7 @@ public class Packager {
     @Nullable
     private PluginConfig getPluginConfig(String id) {
         for (PluginConfig pluginConfig : pluginConfigs) {
-            if (pluginConfig.getId().equals(id)) {
+            if (id.equals(pluginConfig.getId())) {
                 return pluginConfig;
             }
         }

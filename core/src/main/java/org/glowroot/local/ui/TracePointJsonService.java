@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Locale;
 
 import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,7 +46,7 @@ import org.glowroot.markers.Singleton;
 import org.glowroot.trace.TraceRegistry;
 import org.glowroot.trace.model.Trace;
 
-import static org.glowroot.common.Nullness.assertNonNull;
+import static org.glowroot.common.Nullness.castNonNull;
 
 /**
  * Json service to read trace point data, bound under /backend/trace/points.
@@ -92,9 +92,9 @@ class TracePointJsonService {
         private long requestAt;
         private long low;
         private long high;
-        @LazyNonNull
+        @MonotonicNonNull
         private StringComparator groupingComparator;
-        @LazyNonNull
+        @MonotonicNonNull
         private StringComparator userIdComparator;
 
         public Handler(TracePointRequest request) {
@@ -189,7 +189,8 @@ class TracePointJsonService {
             Collections.sort(activeTraces,
                     Ordering.natural().onResultOf(new Function<Trace, Long>() {
                         public Long apply(@Nullable Trace trace) {
-                            assertNonNull(trace, "Ordering of non-null elements only");
+                            // sorting activeTraces which is List<@NonNull Trace>
+                            castNonNull(trace);
                             return trace.getStartTick();
                         }
                     }));

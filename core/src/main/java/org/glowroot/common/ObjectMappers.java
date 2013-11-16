@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.Locale;
 
 import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.AssertNonNullAfter;
+import checkers.nullness.quals.EnsuresNonNull;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -56,12 +56,12 @@ public class ObjectMappers {
     private ObjectMappers() {}
 
     public static ObjectMapper create() {
-        return new ObjectMapper().registerModule(new EnumModule());
+        return new ObjectMapper().registerModule(EnumModule.create());
     }
 
-    public static <T> T readRequiredValue(@ReadOnly ObjectMapper mapper, String content,
-            Class<T> type) throws IOException, JsonProcessingException {
-        /*@Nullable*/
+    public static <T extends /*@Nullable*/Object> T readRequiredValue(
+            @ReadOnly ObjectMapper mapper, String content, Class<T> type) throws IOException,
+            JsonProcessingException {
         T value = mapper.readValue(content, type);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
@@ -69,9 +69,9 @@ public class ObjectMappers {
         return value;
     }
 
-    public static <T> T treeToRequiredValue(@ReadOnly ObjectMapper mapper, TreeNode n,
-            Class<T> type) throws JsonProcessingException {
-        /*@Nullable*/
+    public static <T extends /*@Nullable*/Object> T treeToRequiredValue(
+            @ReadOnly ObjectMapper mapper, TreeNode n, Class<T> type)
+            throws JsonProcessingException {
         T value = mapper.treeToValue(n, type);
         if (value == null) {
             throw new JsonMappingException("Node is json null");
@@ -79,7 +79,7 @@ public class ObjectMappers {
         return value;
     }
 
-    @AssertNonNullAfter("#1")
+    @EnsuresNonNull("#1")
     public static <T extends /*@Nullable*/Object> void checkRequiredProperty(T reference,
             String fieldName) throws JsonMappingException {
         if (reference == null) {
@@ -89,8 +89,10 @@ public class ObjectMappers {
 
     @SuppressWarnings("serial")
     private static class EnumModule extends SimpleModule {
-        private EnumModule() {
-            addSerializer(Enum.class, new EnumSerializer());
+        private static EnumModule create() {
+            EnumModule module = new EnumModule();
+            module.addSerializer(Enum.class, new EnumSerializer());
+            return module;
         }
         @Override
         public void setupModule(SetupContext context) {

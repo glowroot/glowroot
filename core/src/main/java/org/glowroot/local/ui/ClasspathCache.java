@@ -92,10 +92,10 @@ class ClasspathCache {
         return Lists.newArrayList(typeNames);
     }
 
-    List<ParsedType> getParsedTypes(String typeName) {
+    ImmutableList<ParsedType> getParsedTypes(String typeName) {
         // update cache before proceeding
         updateCache();
-        List<ParsedType> parsedTypes = Lists.newArrayList();
+        ImmutableList.Builder<ParsedType> parsedTypes = ImmutableList.builder();
         Set<URI> uris = typeNames.get(typeName);
         if (uris == null) {
             return ImmutableList.of();
@@ -107,7 +107,7 @@ class ClasspathCache {
                 logger.warn(e.getMessage(), e);
             }
         }
-        return parsedTypes;
+        return parsedTypes.build();
     }
 
     void updateCache() {
@@ -167,7 +167,12 @@ class ClasspathCache {
         List<ClassLoader> loaders = Lists.newArrayList(parsedTypeCache.getClassLoaders());
         if (loaders.isEmpty()) {
             // this is needed for testing the UI outside of javaagent
-            return ImmutableList.of(ClassLoader.getSystemClassLoader());
+            ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+            if (systemClassLoader == null) {
+                return ImmutableList.of();
+            } else {
+                return ImmutableList.of(systemClassLoader);
+            }
         }
         return loaders;
     }

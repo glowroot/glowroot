@@ -23,6 +23,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +65,9 @@ class RootSpan {
         this.startTick = startTick;
         this.ticker = ticker;
         rootSpan = new Span(messageSupplier, startTick, startTick, 0, metric);
-        pushSpanInternal(rootSpan);
+        spanStack.add(rootSpan);
+        spans.add(rootSpan);
+        size = 1;
     }
 
     Span getRootSpan() {
@@ -98,7 +101,9 @@ class RootSpan {
 
     Span pushSpan(long startTick, MessageSupplier messageSupplier, Metric metric) {
         Span span = createSpan(startTick, messageSupplier, null, metric, false);
-        pushSpanInternal(span);
+        spanStack.add(span);
+        spans.add(span);
+        size++;
         return span;
     }
 
@@ -151,12 +156,6 @@ class RootSpan {
         return span;
     }
 
-    private void pushSpanInternal(Span span) {
-        spanStack.add(span);
-        spans.add(span);
-        size++;
-    }
-
     private void popSpanSafe(Span span) {
         if (spanStack.isEmpty()) {
             logger.error("span stack is empty, cannot pop span: {}", span);
@@ -176,6 +175,7 @@ class RootSpan {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("spanStack", spanStack)

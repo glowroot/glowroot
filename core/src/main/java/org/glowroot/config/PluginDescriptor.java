@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import dataflow.quals.Pure;
 
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.markers.UsedByJsonBinding;
@@ -87,6 +88,7 @@ public class PluginDescriptor {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)
@@ -110,7 +112,8 @@ public class PluginDescriptor {
     }
 
     @ReadOnly
-    private static <T> List<T> orEmpty(@ReadOnly @Nullable List<T> list) {
+    private static <T extends /*@NonNull*/Object> List<T> orEmpty(
+            @ReadOnly @Nullable List<T> list) {
         if (list == null) {
             return ImmutableList.of();
         }

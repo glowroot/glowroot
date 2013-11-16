@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.Mutable;
 import com.google.common.base.Strings;
+import dataflow.quals.Pure;
 
 /**
  * The unique identifier for a trace. The string representation of the unique identifier is lazily
@@ -66,6 +67,7 @@ class TraceUniqueId {
     }
 
     @Override
+    @Pure
     public String toString() {
         return get();
     }

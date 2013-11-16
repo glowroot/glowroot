@@ -60,6 +60,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.Singleton;
 
+import static org.glowroot.common.Nullness.castNonNull;
 import static org.glowroot.local.ui.HttpServerHandler.HttpMethod.GET;
 import static org.glowroot.local.ui.HttpServerHandler.HttpMethod.POST;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -108,7 +109,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
     private final HttpSessionManager httpSessionManager;
 
-    private final ThreadLocal<Channel> currentChannel = new ThreadLocal<Channel>();
+    private final ThreadLocal</*@Nullable*/Channel> currentChannel =
+            new ThreadLocal</*@Nullable*/Channel>();
 
     HttpServerHandler(IndexHtmlService indexHtmlService, ImmutableMap<Pattern, Object> uriMappings,
             HttpSessionManager httpSessionManager, ImmutableList<Object> jsonServices) {
@@ -142,6 +144,9 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     }
 
     @Override
+    // @SuppressWarnings needed until this Checker Framework bug is fixed:
+    // https://code.google.com/p/checker-framework/issues/detail?id=293
+    @SuppressWarnings("initialization")
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws IOException,
             InterruptedException {
         HttpRequest request = (HttpRequest) e.getMessage();
@@ -255,7 +260,9 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                 String requestText = request.getContent().toString(Charsets.ISO_8859_1);
                 String[] args = new String[matcher.groupCount()];
                 for (int i = 0; i < args.length; i++) {
-                    args[i] = matcher.group(i + 1);
+                    String group = matcher.group(i + 1);
+                    castNonNull(group);
+                    args[i] = group;
                 }
                 return handleJsonRequest(jsonServiceMapping.service,
                         jsonServiceMapping.methodName, args, requestText);
@@ -345,7 +352,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             return newHttpResponseWithStackTrace(e);
         } catch (InvocationTargetException e) {
             if (e.getCause() instanceof JsonServiceException) {
-                // this is an exception that the UI understand how to handle
+                // this is an exception that the UI understands how to handle
                 JsonServiceException jsonServiceException = (JsonServiceException) e.getCause();
                 return new DefaultHttpResponse(HTTP_1_1, jsonServiceException.getStatus());
             }

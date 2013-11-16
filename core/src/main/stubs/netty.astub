@@ -7,6 +7,16 @@ public interface HttpMessage {
     @Nullable String getHeader(String name);
 }
 
+public class HttpContentEncoder {
+    @Nullable EncoderEmbedder<ChannelBuffer> newContentEncoder(HttpMessage msg,
+            String acceptEncoding);
+}
+
+public class HttpContentCompressor {
+    @Nullable EncoderEmbedder<ChannelBuffer> newContentEncoder(HttpMessage msg,
+            String acceptEncoding);
+}
+
 /* ========================================================================== */
 package org.jboss.netty.handler.stream;
 

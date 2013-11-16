@@ -137,8 +137,7 @@ public class PluginDescriptorCache {
         return plugins;
     }
 
-    @ReadOnly
-    private static List<PluginDescriptor> readPackagedPlugins() throws IOException {
+    private static ImmutableList<PluginDescriptor> readPackagedPlugins() throws IOException {
         URL url = getResource("META-INF/org.glowroot.package.json");
         if (url == null) {
             return ImmutableList.of();

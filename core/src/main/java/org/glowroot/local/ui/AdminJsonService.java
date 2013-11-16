@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.collector.TraceCollectorImpl;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PointcutConfig;
-import org.glowroot.jvm.JDK6;
+import org.glowroot.jvm.Jdk6;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -59,19 +59,22 @@ class AdminJsonService {
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final Instrumentation instrumentation;
+    @Nullable
+    private final Jdk6 jdk6;
     private final TraceCollectorImpl traceCollector;
     private final DataSource dataSource;
     private final TraceRegistry traceRegistry;
 
     AdminJsonService(SnapshotDao snapshotDao, ConfigService configService,
             PointcutConfigAdviceCache pointcutConfigAdviceCache, ParsedTypeCache parsedTypeCache,
-            @Nullable Instrumentation instrumentation, TraceCollectorImpl traceCollector,
-            DataSource dataSource, TraceRegistry traceRegistry) {
+            @Nullable Instrumentation instrumentation, @Nullable Jdk6 jdk6,
+            TraceCollectorImpl traceCollector, DataSource dataSource, TraceRegistry traceRegistry) {
         this.snapshotDao = snapshotDao;
         this.configService = configService;
         this.pointcutConfigAdviceCache = pointcutConfigAdviceCache;
         this.parsedTypeCache = parsedTypeCache;
         this.instrumentation = instrumentation;
+        this.jdk6 = jdk6;
         this.traceCollector = traceCollector;
         this.dataSource = dataSource;
         this.traceRegistry = traceRegistry;
@@ -86,12 +89,15 @@ class AdminJsonService {
     @POST("/backend/admin/pointcuts/reweave")
     void reweavePointcutConfigs() throws IllegalArgumentException, IllegalAccessException,
             InvocationTargetException {
-        if (!JDK6.isRetransformClassesSupported(instrumentation)) {
-            logger.warn("retransformClasses is not supported");
-            return;
-        }
         if (instrumentation == null) {
             logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
+            return;
+        }
+        if (jdk6 == null) {
+            throw new IllegalStateException("JDK6 is not available");
+        }
+        if (!jdk6.isRetransformClassesSupported(instrumentation)) {
+            logger.warn("retransformClasses is not supported");
             return;
         }
         List<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
@@ -106,7 +112,7 @@ class AdminJsonService {
         if (classes.isEmpty()) {
             return;
         }
-        JDK6.retransformClasses(instrumentation, classes);
+        jdk6.retransformClasses(instrumentation, classes);
     }
 
     @POST("/backend/admin/data/compact")

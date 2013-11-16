@@ -35,16 +35,12 @@ import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.Advice.AdviceConstructionException;
 
-import static org.glowroot.common.Nullness.assertNonNull;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 @ThreadSafe
 public class PointcutConfigAdviceCache {
-
-    static final String POINTCUT_CONFIG_PLUGIN_ID = "org.glowroot:pointcut-config";
 
     @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(PointcutConfigAdviceCache.class);
@@ -53,7 +49,8 @@ public class PointcutConfigAdviceCache {
     private volatile ImmutableSet<String> pointcutConfigVersions;
 
     PointcutConfigAdviceCache(@ReadOnly List<PointcutConfig> pointcutConfigs) {
-        updateAdvisors(pointcutConfigs);
+        advisors = getAdvisors(pointcutConfigs);
+        pointcutConfigVersions = getPointcutConfigVersions(pointcutConfigs);
     }
 
     Supplier<ImmutableList<Advice>> getAdvisorsSupplier() {
@@ -65,12 +62,8 @@ public class PointcutConfigAdviceCache {
     }
 
     public void updateAdvisors(@ReadOnly List<PointcutConfig> pointcutConfigs) {
-        this.advisors = getAdvisors(pointcutConfigs);
-        ImmutableSet.Builder<String> pointcutConfigVersions = ImmutableSet.builder();
-        for (PointcutConfig pointcutConfig : pointcutConfigs) {
-            pointcutConfigVersions.add(pointcutConfig.getVersion());
-        }
-        this.pointcutConfigVersions = pointcutConfigVersions.build();
+        advisors = getAdvisors(pointcutConfigs);
+        pointcutConfigVersions = getPointcutConfigVersions(pointcutConfigs);
     }
 
     public boolean isPointcutConfigsOutOfSync(@ReadOnly List<PointcutConfig> pointcutConfigs) {
@@ -86,10 +79,12 @@ public class PointcutConfigAdviceCache {
         ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
             try {
-                Class<?> dynamicAdviceClass = new DynamicAdviceGenerator(pointcutConfig)
-                        .generate(POINTCUT_CONFIG_PLUGIN_ID);
+                Class<?> dynamicAdviceClass = new DynamicAdviceGenerator(pointcutConfig).generate();
                 Pointcut pointcut = dynamicAdviceClass.getAnnotation(Pointcut.class);
-                assertNonNull(pointcut, "Class was generated without @Pointcut annotation");
+                if (pointcut == null) {
+                    logger.error("class was generated without @Pointcut annotation");
+                    continue;
+                }
                 Advice advice = Advice.from(pointcut, dynamicAdviceClass, true);
                 advisors.add(advice);
             } catch (SecurityException e) {
@@ -107,6 +102,15 @@ public class PointcutConfigAdviceCache {
             }
         }
         return advisors.build();
+    }
+
+    private static ImmutableSet<String> getPointcutConfigVersions(
+            List<PointcutConfig> pointcutConfigs) {
+        ImmutableSet.Builder<String> pointcutConfigVersions = ImmutableSet.builder();
+        for (PointcutConfig pointcutConfig : pointcutConfigs) {
+            pointcutConfigVersions.add(pointcutConfig.getVersion());
+        }
+        return pointcutConfigVersions.build();
     }
 
     // this method exists because tests cannot use (sometimes) shaded guava Supplier

@@ -378,9 +378,6 @@ class PreInitializeClasses {
         types.add("org.glowroot.api.weaving.OnThrow");
         types.add("org.glowroot.api.weaving.Pointcut");
         types.add("org.glowroot.common.Nullness");
-        types.add("org.glowroot.jvm.ThreadAllocatedBytes");
-        types.add("org.glowroot.jvm.ThreadContentionTime");
-        types.add("org.glowroot.jvm.ThreadCpuTime");
         types.add("org.glowroot.local.store.DataSource");
         types.add("org.glowroot.local.store.DataSource$1");
         types.add("org.glowroot.local.store.DataSource$ShutdownHookThread");
@@ -389,7 +386,6 @@ class PreInitializeClasses {
         types.add("org.glowroot.trace.MetricTimerServiceImpl$NopMetricTimer");
         types.add("org.glowroot.trace.TraceRegistry");
         types.add("org.glowroot.trace.model.JvmInfo");
-        types.add("org.glowroot.trace.model.JvmInfo$GarbageCollectorInfo");
         types.add("org.glowroot.trace.model.MergedStackTree");
         types.add("org.glowroot.trace.model.Metric");
         types.add("org.glowroot.trace.model.MetricNameImpl");

@@ -19,120 +19,89 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import checkers.igj.quals.Immutable;
 import com.google.common.collect.ImmutableList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.Static;
+import org.glowroot.jvm.OptionalService.OptionalServiceFactory;
+import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
+import org.glowroot.jvm.OptionalService.OptionalServiceFactoryHelper;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Static
+@Immutable
 public class Flags {
 
-    private static final Logger logger = LoggerFactory.getLogger(Flags.class);
+    private final ImmutableList<String> flagNames;
 
-    private static final ImmutableList<String> flagNames;
-    private static final boolean supported;
-    private static final String unsupportedReason;
-
-    static {
-        Class<?> flagClass = null;
-        Method getAllFlagsMethod = null;
-        try {
-            flagClass = Class.forName("sun.management.Flag");
-            getAllFlagsMethod = flagClass.getDeclaredMethod("getAllFlags");
-            getAllFlagsMethod.setAccessible(true);
-        } catch (ClassNotFoundException e) {
-            // this is ok, just means its not available
-        } catch (NoSuchMethodException e) {
-            // this is ok, just means its not available
-        } catch (SecurityException e) {
-            logger.error(e.getMessage(), e);
-        }
-        if (getAllFlagsMethod == null) {
-            flagNames = ImmutableList.of();
-            supported = false;
-            unsupportedReason = "Cannot find class sun.management.Flag";
-        } else {
-            ImmutableList<String> flagNamesLocal = null;
-            boolean unsupportedDueToKnownJdkBug = false;
-            try {
-                flagNamesLocal = buildFlagNames(flagClass, getAllFlagsMethod);
-            } catch (ClassNotFoundException e) {
-                logger.error(e.getMessage(), e);
-            } catch (SecurityException e) {
-                logger.error(e.getMessage(), e);
-            } catch (IllegalArgumentException e) {
-                logger.error(e.getMessage(), e);
-            } catch (NoSuchMethodException e) {
-                logger.error(e.getMessage(), e);
-            } catch (IllegalAccessException e) {
-                logger.error(e.getMessage(), e);
-            } catch (InvocationTargetException e) {
-                logger.error(e.getMessage(), e);
-            } catch (UnsupporedDueToKnownJdkBugException e) {
-                unsupportedDueToKnownJdkBug = true;
-            }
-            if (unsupportedDueToKnownJdkBug) {
-                flagNames = null;
-                supported = false;
-                unsupportedReason = "Unsupported due to known JDK bug, see"
-                        + " https://bugs.openjdk.java.net/browse/JDK-6658779";
-            } else if (flagNamesLocal == null) {
-                flagNames = null;
-                supported = false;
-                unsupportedReason = "Unsupported due to error, see Glowroot log";
-            } else {
-                flagNames = flagNamesLocal;
-                supported = true;
-                unsupportedReason = "";
-            }
-        }
+    private Flags(ImmutableList<String> flagNames) {
+        this.flagNames = flagNames;
     }
 
-    private Flags() {}
-
-    public static Availability getAvailability() {
-        return Availability.from(supported, unsupportedReason);
-    }
-
-    public static ImmutableList<String> getFlagNames() {
+    public ImmutableList<String> getFlagNames() {
         return flagNames;
     }
 
-    private static ImmutableList<String> buildFlagNames(Class<?> flagClass,
-            Method getAllFlagsMethod) throws ClassNotFoundException, SecurityException,
-            NoSuchMethodException, IllegalArgumentException, IllegalAccessException,
-            InvocationTargetException, UnsupporedDueToKnownJdkBugException {
+    static class Factory implements OptionalServiceFactory<Flags> {
 
-        Class<?> vmOptionClass = Class.forName("com.sun.management.VMOption");
-        Method getVMOptionMethod = flagClass.getDeclaredMethod("getVMOption");
-        getVMOptionMethod.setAccessible(true);
-        Method getNameMethod = vmOptionClass.getDeclaredMethod("getName");
-        getNameMethod.setAccessible(true);
-
-        List<?> flags = (List<?>) getAllFlagsMethod.invoke(null);
-        ImmutableList.Builder<String> names = ImmutableList.builder();
-        for (Object flag : flags) {
-            Object option;
-            try {
-                option = getVMOptionMethod.invoke(flag);
-            } catch (InvocationTargetException e) {
-                if (e.getCause() instanceof NullPointerException) {
-                    // https://bugs.openjdk.java.net/browse/JDK-6658779
-                    throw new UnsupporedDueToKnownJdkBugException();
-                } else {
-                    throw e;
-                }
-            }
-            names.add((String) getNameMethod.invoke(option));
+        public Flags create() throws OptionalServiceFactoryException {
+            Class<?> flagClass = OptionalServiceFactoryHelper.classForName("sun.management.Flag");
+            Method getAllFlagsMethod = OptionalServiceFactoryHelper.getDeclaredMethod(flagClass,
+                    "getAllFlags");
+            getAllFlagsMethod.setAccessible(true);
+            ImmutableList<String> flagNamesLocal = buildFlagNames(flagClass, getAllFlagsMethod);
+            return new Flags(flagNamesLocal);
         }
-        return names.build();
-    }
 
-    @SuppressWarnings("serial")
-    private static class UnsupporedDueToKnownJdkBugException extends Exception {}
+        private static ImmutableList<String> buildFlagNames(Class<?> flagClass,
+                Method getAllFlagsMethod) throws OptionalServiceFactoryException {
+            Class<?> vmOptionClass = OptionalServiceFactoryHelper
+                    .classForName("com.sun.management.VMOption");
+            Method getVMOptionMethod =
+                    OptionalServiceFactoryHelper.getDeclaredMethod(flagClass, "getVMOption");
+            getVMOptionMethod.setAccessible(true);
+            Method getNameMethod = OptionalServiceFactoryHelper.getDeclaredMethod(vmOptionClass,
+                    "getName");
+            getNameMethod.setAccessible(true);
+
+            List<?> flags = (List<?>) OptionalServiceFactoryHelper.invoke(getAllFlagsMethod, null);
+            if (flags == null) {
+                throw new OptionalServiceFactoryException(
+                        "Method sun.management.Flag.getAllFlags()"
+                                + " returned null");
+            }
+            ImmutableList.Builder<String> names = ImmutableList.builder();
+            for (Object flag : flags) {
+                Object option;
+                try {
+                    option = getVMOptionMethod.invoke(flag);
+                } catch (IllegalAccessException e) {
+                    throw new OptionalServiceFactoryException(e);
+                } catch (IllegalArgumentException e) {
+                    throw new OptionalServiceFactoryException(e);
+                } catch (InvocationTargetException e) {
+                    if (e.getCause() instanceof NullPointerException) {
+                        // https://bugs.openjdk.java.net/browse/JDK-6658779
+                        throw new OptionalServiceFactoryException(
+                                "Unavailable due to known JDK bug, see"
+                                        + " https://bugs.openjdk.java.net/browse/JDK-6658779");
+                    } else {
+                        throw new OptionalServiceFactoryException(e);
+                    }
+                }
+                if (option == null) {
+                    throw new OptionalServiceFactoryException("Method " + flagClass.getName()
+                            + ".getVMOption() returned null");
+                }
+                String name = (String) OptionalServiceFactoryHelper.invoke(getNameMethod, option);
+                if (name == null) {
+                    throw new OptionalServiceFactoryException("Method " + vmOptionClass.getName()
+                            + ".getName() returned null");
+                }
+                names.add(name);
+            }
+            return names.build();
+        }
+    }
 }

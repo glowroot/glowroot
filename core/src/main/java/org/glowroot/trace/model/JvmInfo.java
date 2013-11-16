@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.util.List;
 import java.util.Set;
 
@@ -32,14 +33,13 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
+import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.jvm.ThreadContentionTime;
-import org.glowroot.jvm.ThreadCpuTime;
 
-import static org.glowroot.common.Nullness.assertNonNull;
+import static org.glowroot.common.Nullness.castNonNull;
 
 /**
  * @author Trask Stalnaker
@@ -52,6 +52,11 @@ class JvmInfo {
     @ReadOnly
     private static final JsonFactory jsonFactory = new JsonFactory();
 
+    private static final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+    private static final boolean isThreadCpuTimeSupported = threadMXBean.isThreadCpuTimeSupported();
+    private static final boolean isThreadContentionMonitoringSupported =
+            threadMXBean.isThreadContentionMonitoringSupported();
+
     private final long threadId;
     private final long threadCpuTimeStart;
     private final long threadBlockedTimeStart;
@@ -60,21 +65,38 @@ class JvmInfo {
 
     private final ImmutableMap<String, GarbageCollectorInfo> garbageCollectorInfos;
 
+    @Nullable
+    private final ThreadAllocatedBytes threadAllocatedBytes;
+
     @GuardedBy("lock")
     @Nullable
     private volatile String completedJsonValue;
 
     private final Object lock = new Object();
 
-    JvmInfo() {
+    JvmInfo(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
         threadId = Thread.currentThread().getId();
         ThreadInfo threadInfo = ManagementFactory.getThreadMXBean().getThreadInfo(threadId, 0);
-        assertNonNull(threadInfo, "Thread info for current thread is null");
-        threadCpuTimeStart = ThreadCpuTime.getCurrentThreadCpuTimeSafely();
-        threadBlockedTimeStart = ThreadContentionTime.getBlockedTimeSafely(threadInfo);
-        threadWaitedTimeStart = ThreadContentionTime.getWaitedTimeSafely(threadInfo);
-        threadAllocatedBytesStart = ThreadAllocatedBytes.getThreadAllocatedBytesSafely(threadId);
-
+        // thread info for current thread cannot be null
+        castNonNull(threadInfo);
+        if (isThreadCpuTimeSupported) {
+            threadCpuTimeStart = threadMXBean.getCurrentThreadCpuTime();
+        } else {
+            threadCpuTimeStart = -1;
+        }
+        if (isThreadContentionMonitoringSupported) {
+            threadBlockedTimeStart = threadInfo.getBlockedTime();
+            threadWaitedTimeStart = threadInfo.getWaitedTime();
+        } else {
+            threadBlockedTimeStart = -1;
+            threadWaitedTimeStart = -1;
+        }
+        if (threadAllocatedBytes != null) {
+            threadAllocatedBytesStart =
+                    threadAllocatedBytes.getThreadAllocatedBytesSafely(threadId);
+        } else {
+            threadAllocatedBytesStart = -1;
+        }
         List<GarbageCollectorMXBean> garbageCollectorBeans =
                 ManagementFactory.getGarbageCollectorMXBeans();
         ImmutableMap.Builder<String, GarbageCollectorInfo> infos = ImmutableMap.builder();
@@ -83,6 +105,7 @@ class JvmInfo {
                     new GarbageCollectorInfo(garbageCollectorBean));
         }
         this.garbageCollectorInfos = infos.build();
+        this.threadAllocatedBytes = threadAllocatedBytes;
     }
 
     // must be called from trace thread
@@ -127,22 +150,33 @@ class JvmInfo {
             return;
         }
         jg.writeStartObject();
-        long threadCpuTime = ThreadCpuTime.getThreadCpuTimeSafely(threadId);
-        long threadBlockedTime = ThreadContentionTime.getBlockedTimeSafely(threadInfo);
-        long threadWaitedTime = ThreadContentionTime.getWaitedTimeSafely(threadInfo);
-        long threadAllocatedBytes = ThreadAllocatedBytes.getThreadAllocatedBytesSafely(threadId);
-        if (threadCpuTimeStart != -1 && threadCpuTime != -1) {
-            jg.writeNumberField("threadCpuTime", threadCpuTime - threadCpuTimeStart);
+        if (isThreadCpuTimeSupported) {
+            // getThreadCpuTime() returns -1 if CPU time measurement is disabled (which is different
+            // than whether or not it is supported)
+            long threadCpuTime = threadMXBean.getThreadCpuTime(threadId);
+            if (threadCpuTimeStart != -1 && threadCpuTime != -1) {
+                jg.writeNumberField("threadCpuTime", threadCpuTime - threadCpuTimeStart);
+            }
         }
-        if (threadBlockedTimeStart != -1 && threadBlockedTime != -1) {
-            jg.writeNumberField("threadBlockedTime", threadBlockedTime - threadBlockedTimeStart);
+        if (isThreadContentionMonitoringSupported) {
+            // getBlockedTime() and getWaitedTime() return -1 if thread contention monitoring is
+            // disabled (which is different than whether or not it is supported)
+            long threadBlockedTime = threadInfo.getBlockedTime();
+            long threadWaitedTime = threadInfo.getWaitedTime();
+            if (threadBlockedTimeStart != -1 && threadBlockedTime != -1) {
+                jg.writeNumberField("threadBlockedTime",
+                        threadBlockedTime - threadBlockedTimeStart);
+            }
+            if (threadWaitedTimeStart != -1 && threadWaitedTime != -1) {
+                jg.writeNumberField("threadWaitedTime", threadWaitedTime - threadWaitedTimeStart);
+            }
         }
-        if (threadWaitedTimeStart != -1 && threadWaitedTime != -1) {
-            jg.writeNumberField("threadWaitedTime", threadWaitedTime - threadWaitedTimeStart);
-        }
-        if (threadAllocatedBytesStart != -1 && threadAllocatedBytes != -1) {
-            jg.writeNumberField("threadAllocatedBytes",
-                    threadAllocatedBytes - threadAllocatedBytesStart);
+        if (threadAllocatedBytes != null) {
+            long allocatedBytes = threadAllocatedBytes.getThreadAllocatedBytesSafely(threadId);
+            if (threadAllocatedBytesStart != -1 && allocatedBytes != -1) {
+                jg.writeNumberField("threadAllocatedBytes",
+                        allocatedBytes - threadAllocatedBytesStart);
+            }
         }
         List<GarbageCollectorMXBean> garbageCollectorBeans =
                 ManagementFactory.getGarbageCollectorMXBeans();
@@ -179,6 +213,7 @@ class JvmInfo {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("threadId", threadId)
@@ -208,6 +243,7 @@ class JvmInfo {
         }
 
         @Override
+        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("collectionCountStart", collectionCountStart)

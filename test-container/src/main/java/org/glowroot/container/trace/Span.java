@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.nullToFalse;
 
@@ -136,6 +137,7 @@ public class Span {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("offset", offset)

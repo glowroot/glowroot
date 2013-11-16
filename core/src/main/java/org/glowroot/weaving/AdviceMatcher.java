@@ -24,6 +24,7 @@ import checkers.igj.quals.ReadOnly;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import dataflow.quals.Pure;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +48,13 @@ class AdviceMatcher {
     AdviceMatcher(Advice advice, Type targetType, List<ParsedType> superTypes) {
         this.advice = advice;
         targetTypeMatch = isTypeMatch(targetType.getClassName(), advice);
-        preMatchedSuperTypes = buildPreMatchedSuperTypes(superTypes);
+        ImmutableList.Builder<ParsedType> builder = ImmutableList.builder();
+        for (ParsedType superType : superTypes) {
+            if (isTypeMatch(superType.getName(), advice)) {
+                builder.add(superType);
+            }
+        }
+        preMatchedSuperTypes = builder.build();
     }
 
     boolean isClassLevelMatch() {
@@ -88,16 +95,6 @@ class AdviceMatcher {
 
     Advice getAdvice() {
         return advice;
-    }
-
-    private ImmutableList<ParsedType> buildPreMatchedSuperTypes(List<ParsedType> superTypes) {
-        ImmutableList.Builder<ParsedType> builder = ImmutableList.builder();
-        for (ParsedType superType : superTypes) {
-            if (isTypeMatch(superType.getName(), advice)) {
-                builder.add(superType);
-            }
-        }
-        return builder.build();
     }
 
     private boolean isMethodNameMatch(String name) {
@@ -179,6 +176,7 @@ class AdviceMatcher {
     }
 
     @Override
+    @Pure
     public String toString() {
         List<String> preMatchedSuperTypeNames = Lists.newArrayList();
         for (ParsedType preMatchedSuperType : preMatchedSuperTypes) {

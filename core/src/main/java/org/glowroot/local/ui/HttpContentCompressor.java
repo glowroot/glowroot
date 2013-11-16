@@ -15,6 +15,7 @@
  */
 package org.glowroot.local.ui;
 
+import checkers.nullness.quals.Nullable;
 import com.google.common.net.MediaType;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.handler.codec.embedder.EncoderEmbedder;
@@ -28,6 +29,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
  */
 class HttpContentCompressor extends org.jboss.netty.handler.codec.http.HttpContentCompressor {
     @Override
+    @Nullable
     protected EncoderEmbedder<ChannelBuffer> newContentEncoder(HttpMessage msg,
             String acceptEncoding) throws Exception {
 

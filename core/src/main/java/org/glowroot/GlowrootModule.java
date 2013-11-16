@@ -36,6 +36,7 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.collector.CollectorModule;
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
+import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.ui.LocalUiModule;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -53,6 +54,7 @@ public class GlowrootModule {
     private static final Logger logger = LoggerFactory.getLogger(GlowrootModule.class);
 
     private final ScheduledExecutorService scheduledExecutor;
+    private final JvmModule jvmModule;
     private final ConfigModule configModule;
     private final StorageModule storageModule;
     private final CollectorModule collectorModule;
@@ -69,6 +71,7 @@ public class GlowrootModule {
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
                 .setNameFormat("Glowroot-Background-%d").build();
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
+        jvmModule = new JvmModule();
         configModule = new ConfigModule(dataDir);
         storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
                 scheduledExecutor);
@@ -76,12 +79,14 @@ public class GlowrootModule {
                 storageModule.getSnapshotRepository(), storageModule.getAggregateRepository(),
                 scheduledExecutor);
         traceModule = new TraceModule(ticker, clock, configModule,
-                collectorModule.getTraceCollector(), instrumentation, scheduledExecutor);
-        uiModule = new LocalUiModule(ticker, clock, dataDir, configModule, storageModule,
-                collectorModule, traceModule, instrumentation, properties, version);
+                collectorModule.getTraceCollector(),
+                jvmModule.getThreadAllocatedBytes().getService(), instrumentation,
+                jvmModule.getJdk6().getService(), scheduledExecutor);
+        uiModule = new LocalUiModule(ticker, clock, dataDir, jvmModule, configModule,
+                storageModule, collectorModule, traceModule, instrumentation, properties, version);
     }
 
-    PluginServices getPluginServices(String pluginId) {
+    PluginServices getPluginServices(@Nullable String pluginId) {
         return traceModule.getPluginServices(pluginId);
     }
 

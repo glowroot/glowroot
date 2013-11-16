@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
@@ -66,6 +67,7 @@ public class TraceError {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("text", text)

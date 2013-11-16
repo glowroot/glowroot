@@ -123,8 +123,7 @@ public class GenericLocalContainer<T> {
         if (SpyingLogFilterCheck.isSpyingLogFilterEnabled()) {
             SpyingLogFilter.addExpectedMessage(loggerName, partialMessage);
         } else {
-            throw new AssertionError(SpyingLogFilter.class.getSimpleName()
-                    + " is not enabled");
+            throw new AssertionError(SpyingLogFilter.class.getSimpleName() + " is not enabled");
         }
     }
 

@@ -16,12 +16,13 @@
 package org.glowroot.collector;
 
 import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.EnsuresNonNull;
+import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
+import checkers.nullness.quals.RequiresNonNull;
 import com.google.common.base.Objects;
 import com.google.common.io.CharSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dataflow.quals.Pure;
 
 /**
  * Structure used as part of the response to "/backend/trace/detail".
@@ -170,6 +171,7 @@ public class Snapshot {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
@@ -194,16 +196,14 @@ public class Snapshot {
 
     public static class Builder {
 
-        private static final Logger logger = LoggerFactory.getLogger(Builder.class);
-
-        @LazyNonNull
+        @MonotonicNonNull
         private String id;
         private boolean stuck;
         private long startTime;
         private long captureTime;
         private long duration;
         private boolean background;
-        @LazyNonNull
+        @MonotonicNonNull
         private String grouping;
         @Nullable
         private String attributes;
@@ -231,6 +231,7 @@ public class Snapshot {
 
         private Builder() {}
 
+        @EnsuresNonNull("id")
         public Builder id(String id) {
             this.id = id;
             return this;
@@ -261,6 +262,7 @@ public class Snapshot {
             return this;
         }
 
+        @EnsuresNonNull("grouping")
         public Builder grouping(String grouping) {
             this.grouping = grouping;
             return this;
@@ -317,15 +319,8 @@ public class Snapshot {
             return this;
         }
 
+        @RequiresNonNull({"id", "grouping"})
         public Snapshot build() {
-            if (id == null) {
-                logger.warn("setId() must be called before build()");
-                id = "<error: no id provided>";
-            }
-            if (grouping == null) {
-                logger.warn("setGrouping() must be called before build()");
-                grouping = "<error: no grouping provided>";
-            }
             return new Snapshot(id, stuck, startTime, captureTime, duration, background, grouping,
                     attributes, userId, errorText, errorDetail, exception, metrics, jvmInfo, spans,
                     coarseMergedStackTree, fineMergedStackTree);

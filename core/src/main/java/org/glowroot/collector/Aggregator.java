@@ -43,19 +43,29 @@ class Aggregator {
 
     private final long fixedAggregateIntervalMillis;
 
-    Aggregator(ScheduledExecutorService scheduledExecutor, AggregateRepository aggregateRepository,
-            Clock clock, long fixedAggregateIntervalSeconds) {
+    static Aggregator create(ScheduledExecutorService scheduledExecutor,
+            AggregateRepository aggregateRepository, Clock clock,
+            long fixedAggregateIntervalSeconds) {
+        final Aggregator aggregator = new Aggregator(scheduledExecutor, aggregateRepository, clock,
+                fixedAggregateIntervalSeconds);
+        // this scheduled job ensures that an aggregate record is stored for each interval even if
+        // no data, which is useful to differentiate between no user requests vs server down
+        scheduledExecutor.scheduleAtFixedRate(new Runnable() {
+            public void run() {
+                aggregator.flush();
+            }
+        }, 10, 10, SECONDS);
+        return aggregator;
+    }
+
+    private Aggregator(ScheduledExecutorService scheduledExecutor,
+            AggregateRepository aggregateRepository, Clock clock,
+            long fixedAggregateIntervalSeconds) {
         this.scheduledExecutor = scheduledExecutor;
         this.aggregateRepository = aggregateRepository;
         this.clock = clock;
         this.fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
         currentAggregates = new Aggregates(clock.currentTimeMillis());
-        // store aggregate record for each interval even if no data
-        scheduledExecutor.scheduleAtFixedRate(new Runnable() {
-            public void run() {
-                flush();
-            }
-        }, 10, 10, SECONDS);
     }
 
     long add(String grouping, long duration) {

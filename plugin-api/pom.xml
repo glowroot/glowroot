@@ -28,10 +28,11 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <!-- only annotations are used, so ok the (unshaded) artifact is not provided at runtime -->
       <groupId>edu.washington.cs.types.checker</groupId>
       <artifactId>checker-quals-jdk5</artifactId>
-      <version>1.6.4</version>
-      <scope>provided</scope>
+      <version>1.7.1</version>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

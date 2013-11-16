@@ -20,7 +20,6 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 
-import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharSource;
@@ -122,8 +121,7 @@ public class SnapshotDao implements SnapshotRepository {
         }
     }
 
-    @ReadOnly
-    public List<TracePoint> readPoints(TracePointQuery query) {
+    public ImmutableList<TracePoint> readPoints(TracePointQuery query) {
         logger.debug("readPoints(): query={}", query);
         try {
             ParameterizedSql parameterizedSql = query.getParameterizedSql();

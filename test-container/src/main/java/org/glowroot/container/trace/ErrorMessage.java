@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
@@ -37,7 +38,7 @@ public class ErrorMessage extends Message {
     @Nullable
     private final ExceptionInfo exception;
 
-    private ErrorMessage(@Nullable String text, @ReadOnly Map<String, Object> detail,
+    private ErrorMessage(@Nullable String text, @ReadOnly Map<String, /*@Nullable*/Object> detail,
             @Nullable ExceptionInfo exception) {
         super(text, detail);
         this.exception = exception;
@@ -49,6 +50,7 @@ public class ErrorMessage extends Message {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("text", getText())
@@ -60,7 +62,7 @@ public class ErrorMessage extends Message {
     @JsonCreator
     static ErrorMessage readValue(
             @JsonProperty("text") @Nullable String text,
-            @JsonProperty("detail") @Nullable Map<String, Object> detail,
+            @JsonProperty("detail") @Nullable Map<String, /*@Nullable*/Object> detail,
             @JsonProperty("exception") @Nullable ExceptionInfo exception)
             throws JsonMappingException {
         return new ErrorMessage(text, nullToEmpty(detail), exception);

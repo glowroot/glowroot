@@ -29,7 +29,8 @@ public class MetricNameImpl implements MetricName {
     private final String name;
     private final Ticker ticker;
 
-    private final ThreadLocal<Metric> metricHolder = new ThreadLocal<Metric>();
+    private final ThreadLocal</*@Nullable*/Metric> metricHolder =
+            new ThreadLocal</*@Nullable*/Metric>();
 
     public MetricNameImpl(String name, Ticker ticker) {
         this.name = name;

@@ -39,7 +39,7 @@ import org.glowroot.local.store.DataSource;
 import org.glowroot.local.ui.LocalUiModule;
 import org.glowroot.markers.ThreadSafe;
 
-import static org.glowroot.common.Nullness.assertNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker
@@ -302,9 +302,9 @@ class LocalConfigService implements ConfigService {
         String typeName = config.getTypeName();
         String methodName = config.getMethodName();
         String methodReturnTypeName = config.getMethodReturnTypeName();
-        assertNonNull(typeName, "Config typeName is null");
-        assertNonNull(methodName, "Config methodName is null");
-        assertNonNull(methodReturnTypeName, "Config methodReturnTypeName is null");
+        checkNotNull(typeName, "PointcutConfig typeName is null");
+        checkNotNull(methodName, "PointcutConfig methodName is null");
+        checkNotNull(methodReturnTypeName, "PointcutConfig methodReturnTypeName is null");
         return new org.glowroot.config.PointcutConfig(config.isMetric(), config.isSpan(),
                 config.isTrace(), typeName, methodName, config.getMethodArgTypeNames(),
                 methodReturnTypeName, methodModifiers, config.getMetricName(),

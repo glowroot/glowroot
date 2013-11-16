@@ -6,6 +6,12 @@ package org.glowroot.shaded.google.common.base;
 
 public class Objects {
     public static <T extends @Nullable Object> @NonNull T firstNonNull(T first, @NonNull T second);
+    public static boolean equal(@Nullable Object a, @Nullable Object b);
+    public static int hashCode(@Nullable Object... objects);
+}
+
+public class Objects$ToStringHelper {
+    public ToStringHelper add(String name, @Nullable Object value);
 }
 
 public class Optional<T> {
@@ -14,40 +20,57 @@ public class Optional<T> {
 }
 
 public class Preconditions {
-    @AssertNonNullAfter("#1")
-    public static <T extends @Nullable Object> @NonNull T checkNotNull(T reference);
+    @EnsuresNonNull("#1")
+    public static <T extends @Nullable Object> T checkNotNull(@Nullable T reference);
+    @EnsuresNonNull("#1")
+    public static <T extends @Nullable Object> T checkNotNull(@Nullable T reference,
+            @Nullable Object errorMessage);
 }
 
 public class Strings {
-    @AssertNonNullIfFalse("#1")
+    @EnsuresNonNullIf(expression = "#1", result = false)
     public static boolean isNullOrEmpty(@Nullable String string);
+    public static String nullToEmpty(@Nullable String string);
+}
+
+public class Throwables {
+    public static <X extends Throwable> void propagateIfPossible(@Nullable Throwable throwable,
+            Class<X> declaredType);
 }
 
 /* ========================================================================== */
 package org.glowroot.shaded.google.common.collect;
 
 @Immutable
-public class ImmutableList<E> {
-    public static <E> ImmutableList<E> copyOf(@ReadOnly Collection<? extends E> elements);
-    public static <E> ImmutableList<E> copyOf(@ReadOnly Iterable<? extends E> elements);
+public class ImmutableList<E extends @NonNull Object> {
+    public static <E extends @NonNull Object> ImmutableList<E> of();
+    public static <E extends @NonNull Object> ImmutableList<E> copyOf(
+            @ReadOnly Collection<? extends E> elements);
+    public static <E extends @NonNull Object> ImmutableList<E> copyOf(
+            @ReadOnly Iterable<? extends E> elements);
 }
 
-public class ImmutableList$Builder<E> {
+public class ImmutableList$Builder<E extends @NonNull Object> {
     public Builder<E> addAll(@ReadOnly Iterable<? extends E> elements);
 }
 
 @Immutable
-public class ImmutableMap<K, V> {
-    public static <K, V> ImmutableMap<K, V> copyOf(@ReadOnly Map<? extends K, ? extends V> map);
+public class ImmutableMap<K extends @NonNull Object, V extends @NonNull Object> {
+    public static <K extends @NonNull Object, V extends @NonNull Object> ImmutableMap<K, V> copyOf(
+            @ReadOnly Map<? extends K, ? extends V> map);
 }
 
 @Immutable
-public class ImmutableCollection<E> {}
+public class ImmutableCollection<E extends @NonNull Object> {
+    public boolean contains(@Nullable Object object);
+}
 
 @Immutable
-public class ImmutableSet<E> {
-    public static <E> ImmutableSet<E> copyOf(@ReadOnly Collection<? extends E> elements);
-    public static <E> ImmutableSet<E> copyOf(@ReadOnly Iterable<? extends E> elements);
+public class ImmutableSet<E extends @NonNull Object> {
+    public static <E extends @NonNull Object> ImmutableSet<E> copyOf(
+            @ReadOnly Collection<? extends E> elements);
+    public static <E extends @NonNull Object> ImmutableSet<E> copyOf(
+            @ReadOnly Iterable<? extends E> elements);
 }
 
 public class Iterables {

@@ -21,12 +21,13 @@ import java.util.List;
 import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import dataflow.quals.Pure;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
@@ -47,7 +48,7 @@ import org.glowroot.weaving.Advice.AdviceParameter;
 import org.glowroot.weaving.Advice.ParameterKind;
 import org.glowroot.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
 
-import static org.glowroot.common.Nullness.assertNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker
@@ -75,9 +76,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
 
     private boolean needsTryCatch;
-    @LazyNonNull
+    @MonotonicNonNull
     private Label methodStartLabel;
-    @LazyNonNull
+    @MonotonicNonNull
     private Label catchStartLabel;
     private boolean visitedLocalVariableThis;
 
@@ -123,7 +124,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     @Override
     public void visitLocalVariable(String name, String desc, @Nullable String signature,
             Label start, Label end, int index) {
-        assertNonNull(methodStartLabel, "Call to onMethodEnter() is required");
+        checkNotNull(methodStartLabel, "Call to onMethodEnter() is required");
         // the JSRInlinerAdapter writes the local variable "this" across different label ranges
         // so visitedLocalVariableThis is checked and updated to ensure this block is only executed
         // once per method
@@ -182,7 +183,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     @Override
     public void visitMaxs(int maxStack, int maxLocals) {
         if (needsTryCatch) {
-            assertNonNull(catchStartLabel, "Call to onMethodEnter() is required");
+            checkNotNull(catchStartLabel, "Call to onMethodEnter() is required");
             Label catchEndLabel = newLabel();
             Label catchHandlerLabel2 = newLabel();
             visitTryCatchBlock(catchStartLabel, catchEndLabel, catchEndLabel,
@@ -482,13 +483,25 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private void resetAdviceFlowIfNecessary() {
         for (Advice advice : advisors) {
             if (!advice.getPointcut().captureNested()) {
+                Integer enabledLocal = enabledLocals.get(advice);
+                Integer adviceFlowLocal = adviceFlowLocals.get(advice);
+                Integer adviceFlowHolderLocal = adviceFlowHolderLocals.get(advice);
+                // enabledLocal is non-null for all advice
+                checkNotNull(enabledLocal, "enabledLocal is null");
+                // adviceFlowLocal is non-null for all advice with captureNested = false
+                // (same condition as tested above)
+                checkNotNull(adviceFlowLocal, "adviceFlowLocal is null");
+                // adviceFlowHolderLocal is non-null for all advice with captureNested = false
+                // (same condition as tested above)
+                checkNotNull(adviceFlowHolderLocal, "adviceFlowHolderLocal is null");
+
                 Label setAdviceFlowBlockEnd = newLabel();
-                loadLocal(enabledLocals.get(advice));
+                loadLocal(enabledLocal);
                 visitJumpInsn(IFEQ, setAdviceFlowBlockEnd);
-                loadLocal(adviceFlowLocals.get(advice));
+                loadLocal(adviceFlowLocal);
                 visitJumpInsn(IFEQ, setAdviceFlowBlockEnd);
                 // isTop was true at the beginning of the advice, need to reset it now
-                loadLocal(adviceFlowHolderLocals.get(advice));
+                loadLocal(adviceFlowHolderLocal);
                 push(true);
                 invokeVirtual(adviceFlowHolderType, Method.getMethod("void setTop(boolean)"));
                 visitLabel(setAdviceFlowBlockEnd);
@@ -611,6 +624,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("access", access)

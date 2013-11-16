@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
+import dataflow.quals.Pure;
 
 /**
  * This class is modeled after Guava's Optional class. It can be useful for plugins when returning a
@@ -29,7 +30,7 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public abstract class Optional<T> {
+public abstract class Optional<T extends /*@NonNull*/Object> {
 
     /**
      * Returns the contained instance, which must be present. If the instance might be absent, use
@@ -74,7 +75,7 @@ public abstract class Optional<T> {
      * @return an {@code Optional} instance with no contained reference
      */
     @SuppressWarnings("unchecked")
-    public static <T> Optional<T> absent() {
+    public static <T extends /*@NonNull*/Object> Optional<T> absent() {
         return (Optional<T>) Absent.INSTANCE;
     }
 
@@ -87,7 +88,7 @@ public abstract class Optional<T> {
      * @return an {@code Optional} instance with no contained reference
      */
     @SuppressWarnings({"unchecked"})
-    public static <T> Optional<T> absent(Class<T> type) {
+    public static <T extends /*@NonNull*/Object> Optional<T> absent(Class<T> type) {
         return (Optional<T>) Absent.INSTANCE;
     }
 
@@ -97,10 +98,7 @@ public abstract class Optional<T> {
      * @param reference
      * @return an {@code Optional} instance containing the given non-{@code null} reference
      */
-    public static <T> Optional<T> of(T reference) {
-        if (reference == null) {
-            throw new NullPointerException();
-        }
+    public static <T extends /*@NonNull*/Object> Optional<T> of(T reference) {
         return new Present<T>(reference);
     }
 
@@ -143,7 +141,7 @@ public abstract class Optional<T> {
         }
     }
 
-    private static class Present<T> extends Optional<T> {
+    private static class Present<T extends /*@NonNull*/Object> extends Optional<T> {
         private final T reference;
         public Present(T reference) {
             this.reference = reference;
@@ -157,6 +155,7 @@ public abstract class Optional<T> {
             return true;
         }
         @Override
+        @Pure
         public boolean equals(@Nullable Object o) {
             if (o instanceof Present) {
                 Present<?> that = (Present<?>) o;
@@ -165,6 +164,7 @@ public abstract class Optional<T> {
             return false;
         }
         @Override
+        @Pure
         public int hashCode() {
             return Objects.hashCode(reference);
         }

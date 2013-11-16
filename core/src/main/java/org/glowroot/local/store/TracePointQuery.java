@@ -18,8 +18,10 @@ package org.glowroot.local.store;
 import java.util.List;
 import java.util.Locale;
 
+import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import dataflow.quals.Pure;
 
 /**
  * @author Trask Stalnaker
@@ -31,19 +33,24 @@ public class TracePointQuery {
     private final long captureTimeTo;
     private final long durationLow;
     private final long durationHigh;
+    @Nullable
     private final Boolean background;
     private final boolean errorOnly;
     private final boolean fineOnly;
+    @Nullable
     private final StringComparator groupingComparator;
+    @Nullable
     private final String grouping;
+    @Nullable
     private final StringComparator userIdComparator;
+    @Nullable
     private final String userId;
     private final int limit;
 
     public TracePointQuery(long captureTimeFrom, long captureTimeTo, long durationLow,
-            long durationHigh, Boolean background, boolean errorOnly, boolean fineOnly,
-            StringComparator groupingComparator, String grouping,
-            StringComparator userIdComparator, String userId, int limit) {
+            long durationHigh, @Nullable Boolean background, boolean errorOnly, boolean fineOnly,
+            @Nullable StringComparator groupingComparator, @Nullable String grouping,
+            @Nullable StringComparator userIdComparator, @Nullable String userId, int limit) {
         this.captureTimeFrom = captureTimeFrom;
         this.captureTimeTo = captureTimeTo;
         this.durationLow = durationLow;
@@ -100,6 +107,7 @@ public class TracePointQuery {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("captureTimeFrom", captureTimeFrom)

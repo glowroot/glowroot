@@ -20,6 +20,9 @@ import java.lang.instrument.Instrumentation;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -29,7 +32,8 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
-import org.glowroot.jvm.JDK6;
+import org.glowroot.jvm.Jdk6;
+import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.MetricTimerService;
@@ -53,6 +57,8 @@ public class TraceModule {
     private final MetricNameCache metricNameCache;
     private final PointcutConfigAdviceCache pointcutConfigAdviceCache;
     private final MetricTimerService metricTimerService;
+    @Nullable
+    private final ThreadAllocatedBytes threadAllocatedBytes;
 
     private final StuckTraceCollector stuckTraceCollector;
     private final CoarseProfiler coarseProfiler;
@@ -66,19 +72,26 @@ public class TraceModule {
             CacheBuilder.newBuilder().build(new CacheLoader<String, PluginServices>() {
                 @Override
                 public PluginServices load(String pluginId) {
-                    return new PluginServicesImpl(traceRegistry, traceCollector,
-                            configModule.getConfigService(), metricNameCache, fineProfileScheduler,
-                            ticker, clock, configModule.getPluginDescriptorCache(), pluginId);
+                    return create(pluginId);
+                }
+            });
+
+    private final Supplier<PluginServices> pluginServicesWithoutPlugin =
+            Suppliers.memoize(new Supplier<PluginServices>() {
+                public PluginServices get() {
+                    return create(null);
                 }
             });
 
     public TraceModule(Ticker ticker, Clock clock, ConfigModule configModule,
-            TraceCollector traceCollector, Instrumentation instrumentation,
+            TraceCollector traceCollector, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
+            @Nullable Instrumentation instrumentation, @Nullable Jdk6 jdk6,
             ScheduledExecutorService scheduledExecutor) {
         this.ticker = ticker;
         this.clock = clock;
         this.configModule = configModule;
         this.traceCollector = traceCollector;
+        this.threadAllocatedBytes = threadAllocatedBytes;
         ConfigService configService = configModule.getConfigService();
         parsedTypeCache = new ParsedTypeCache();
         traceRegistry = new TraceRegistry();
@@ -106,8 +119,8 @@ public class TraceModule {
                     configModule.getPluginDescriptorCache().getAdvisors(),
                     pointcutConfigAdviceCache.getAdvisorsSupplier(), parsedTypeCache,
                     metricTimerService, generateMetricNameWrapperMethods);
-            if (JDK6.isSupported() && JDK6.isRetransformClassesSupported(instrumentation)) {
-                JDK6.addRetransformingTransformer(instrumentation, transformer);
+            if (jdk6 != null && jdk6.isRetransformClassesSupported(instrumentation)) {
+                jdk6.addRetransformingTransformer(instrumentation, transformer);
                 jvmRetransformClassesSupported = true;
             } else {
                 instrumentation.addTransformer(transformer);
@@ -118,7 +131,10 @@ public class TraceModule {
         }
     }
 
-    public PluginServices getPluginServices(String pluginId) {
+    public PluginServices getPluginServices(@Nullable String pluginId) {
+        if (pluginId == null) {
+            return pluginServicesWithoutPlugin.get();
+        }
         return pluginServices.getUnchecked(pluginId);
     }
 
@@ -148,6 +164,13 @@ public class TraceModule {
 
     public boolean isJvmRetransformClassesSupported() {
         return jvmRetransformClassesSupported;
+    }
+
+    private PluginServices create(@Nullable String pluginId) {
+        return PluginServicesImpl.create(traceRegistry, traceCollector,
+                configModule.getConfigService(), metricNameCache, threadAllocatedBytes,
+                fineProfileScheduler, ticker, clock, configModule.getPluginDescriptorCache(),
+                pluginId);
     }
 
     @OnlyUsedByTests

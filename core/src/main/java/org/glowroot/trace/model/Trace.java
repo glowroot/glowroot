@@ -26,18 +26,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
-import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.PartiallyThreadSafe;
 
 /**
@@ -77,7 +79,7 @@ public class Trace {
 
     // lazy loaded to reduce memory when attributes are not used
     @GuardedBy("attributes")
-    @LazyNonNull
+    @MonotonicNonNull
     private volatile List<TraceAttribute> attributes;
 
     // see performance comparison of synchronized ArrayList vs ConcurrentLinkedQueue in
@@ -97,10 +99,10 @@ public class Trace {
     private final RootSpan rootSpan;
 
     // stack trace data constructed from coarse-grained profiling
-    @LazyNonNull
+    @MonotonicNonNull
     private volatile MergedStackTree coarseMergedStackTree;
     // stack trace data constructed from fine-grained profiling
-    @LazyNonNull
+    @MonotonicNonNull
     private volatile MergedStackTree fineMergedStackTree;
 
     private final long threadId;
@@ -114,14 +116,12 @@ public class Trace {
     @Nullable
     private volatile ScheduledFuture<?> stuckScheduledFuture;
 
-    private final Ticker ticker;
-
     public Trace(long startTime, boolean background, String grouping,
-            MessageSupplier messageSupplier, MetricNameImpl metricName, Ticker ticker) {
+            MessageSupplier messageSupplier, MetricNameImpl metricName,
+            @Nullable ThreadAllocatedBytes threadAllocatedBytes, Ticker ticker) {
         this.startTime = startTime;
         this.background = background;
         this.grouping = grouping;
-        this.ticker = ticker;
         id = new TraceUniqueId(startTime);
         long startTick = ticker.read();
         Metric metric = metricName.create();
@@ -133,7 +133,7 @@ public class Trace {
         this.metrics = theMetrics;
         metricNames.add(metricName);
         threadId = Thread.currentThread().getId();
-        jvmInfo = new JvmInfo();
+        jvmInfo = new JvmInfo(threadAllocatedBytes);
     }
 
     public long getStartTime() {
@@ -179,8 +179,7 @@ public class Trace {
         return userId;
     }
 
-    @ReadOnly
-    public List<TraceAttribute> getAttributes() {
+    public ImmutableList<TraceAttribute> getAttributes() {
         if (attributes == null) {
             return ImmutableList.of();
         }
@@ -201,13 +200,13 @@ public class Trace {
             }
             pluginAttributeMap.put(attribute.getName(), attribute);
         }
-        List<TraceAttribute> orderedAttributes = Lists.newArrayList();
+        ImmutableList.Builder<TraceAttribute> orderedAttributes = ImmutableList.builder();
         for (Map<String, TraceAttribute> pluginAttributeMap : attributeMap.values()) {
             for (TraceAttribute attribute : pluginAttributeMap.values()) {
                 orderedAttributes.add(attribute);
             }
         }
-        return orderedAttributes;
+        return orderedAttributes.build();
     }
 
     public boolean isError() {
@@ -319,8 +318,8 @@ public class Trace {
         this.stuckScheduledFuture = scheduledFuture;
     }
 
-    public Span pushSpan(MetricNameImpl metricName, MessageSupplier messageSupplier) {
-        long startTick = ticker.read();
+    public Span pushSpan(MetricNameImpl metricName, long startTick,
+            MessageSupplier messageSupplier) {
         Metric metric = metricName.get();
         if (metric == null) {
             metric = addMetric(metricName);
@@ -400,6 +399,7 @@ public class Trace {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)

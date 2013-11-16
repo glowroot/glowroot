@@ -29,8 +29,6 @@ import com.google.common.io.Resources;
 import org.glowroot.markers.Static;
 import org.glowroot.weaving.TypeNames;
 
-import static org.glowroot.common.Nullness.assertNonNull;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -44,8 +42,10 @@ public class DelegatingJavaagent {
 
     public static void premain(String agentArgs, Instrumentation instrumentation) throws Exception {
         String delegateJavaagent = System.getProperty(DELEGATE_JAVA_AGENT_PROPERTY);
-        assertNonNull(delegateJavaagent, "System property '" + DELEGATE_JAVA_AGENT_PROPERTY
-                + "' is not set");
+        if (delegateJavaagent == null) {
+            throw new IllegalStateException("System property '" + DELEGATE_JAVA_AGENT_PROPERTY
+                    + "' is not set");
+        }
         Class<?> delegateClass = Class.forName(delegateJavaagent);
         Method delegateMethod = delegateClass.getMethod("premain", String.class,
                 Instrumentation.class);

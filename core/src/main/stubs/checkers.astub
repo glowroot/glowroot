@@ -1,0 +1,9 @@
+import checkers.nullness.quals.*;
+
+/* ========================================================================== */
+package checkers.nullness;
+
+public class NullnessUtils {
+    @EnsuresNonNull("#1")
+    public static <T extends @Nullable Object> @NonNull T castNonNull(T ref);
+}

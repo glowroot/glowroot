@@ -38,11 +38,13 @@ import java.util.Properties;
 import javax.management.JMException;
 
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
@@ -56,19 +58,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ObjectMappers;
-import org.glowroot.jvm.Availability;
 import org.glowroot.jvm.Flags;
 import org.glowroot.jvm.HeapHistograms;
-import org.glowroot.jvm.HotSpotDiagnostic;
-import org.glowroot.jvm.HotSpotDiagnostic.VMOption;
-import org.glowroot.jvm.JDK6;
+import org.glowroot.jvm.HotSpotDiagnostics;
+import org.glowroot.jvm.HotSpotDiagnostics.VMOption;
+import org.glowroot.jvm.Jdk6;
+import org.glowroot.jvm.OptionalService;
+import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.ProcessId;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.jvm.ThreadContentionTime;
-import org.glowroot.jvm.ThreadCpuTime;
 import org.glowroot.markers.Singleton;
 
-import static org.glowroot.common.Nullness.assertNonNull;
+import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
 /**
  * Json service to read jvm info, bound to /backend/jvm.
@@ -85,12 +86,28 @@ class JvmJsonService {
 
     private static final Ordering<ThreadInfo> orderingByStackSize = new Ordering<ThreadInfo>() {
         @Override
-        public int compare(@Nullable ThreadInfo left, @Nullable ThreadInfo right) {
-            assertNonNull(left, "Ordering of non-null elements only");
-            assertNonNull(right, "Ordering of non-null elements only");
+        public int compare(ThreadInfo left, ThreadInfo right) {
             return Ints.compare(right.getStackTrace().length, left.getStackTrace().length);
         }
     };
+
+    private final OptionalService<Jdk6> jdk6;
+    private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
+    private final OptionalService<HeapHistograms> heapHistograms;
+    private final OptionalService<HotSpotDiagnostics> hotSpotDiagnostics;
+    private final OptionalService<Flags> flags;
+
+    JvmJsonService(OptionalService<Jdk6> jdk6,
+            OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
+            OptionalService<HeapHistograms> heapHistograms,
+            OptionalService<HotSpotDiagnostics> hotSpotDiagnosticService,
+            OptionalService<Flags> flags) {
+        this.jdk6 = jdk6;
+        this.threadAllocatedBytes = threadAllocatedBytes;
+        this.heapHistograms = heapHistograms;
+        this.hotSpotDiagnostics = hotSpotDiagnosticService;
+        this.flags = flags;
+    }
 
     @GET("/backend/jvm/general")
     String getGeneralInfo() throws IOException, JMException {
@@ -147,7 +164,10 @@ class JvmJsonService {
             Object obj = e.nextElement();
             if (obj instanceof String) {
                 String propertyName = (String) obj;
-                sortedProperties.put(propertyName, properties.getProperty(propertyName));
+                String propertyValue = properties.getProperty(propertyName);
+                if (propertyValue != null) {
+                    sortedProperties.put(propertyName, propertyValue);
+                }
             }
         }
         StringBuilder sb = new StringBuilder();
@@ -274,13 +294,21 @@ class JvmJsonService {
     String getHeapHistogram() throws IOException, SecurityException, NoSuchMethodException,
             IllegalAccessException, InvocationTargetException {
         logger.debug("getHeapHistogram()");
-        return HeapHistograms.heapHistogramJson();
+        HeapHistograms service = heapHistograms.getService();
+        if (service == null) {
+            throw new IllegalStateException("HotSpotDiagnostics service is not available");
+        }
+        return service.heapHistogramJson();
     }
 
     @GET("/backend/jvm/heap-dump-defaults")
     String getHeapDumpDefaults() throws IOException, JMException {
         logger.debug("getHeapDumpDefaults()");
-        String heapDumpPath = HotSpotDiagnostic.getVMOption("HeapDumpPath").getValue();
+        HotSpotDiagnostics service = hotSpotDiagnostics.getService();
+        if (service == null) {
+            throw new IllegalStateException("HotSpotDiagnostics service is not available");
+        }
+        String heapDumpPath = service.getVMOption("HeapDumpPath").getValue();
         if (Strings.isNullOrEmpty(heapDumpPath)) {
             heapDumpPath = new File(System.getProperty("java.io.tmpdir")).getAbsolutePath();
         }
@@ -288,7 +316,7 @@ class JvmJsonService {
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeStringField("directory", heapDumpPath);
-        jg.writeBooleanField("checkDiskSpaceSupported", JDK6.isSupported());
+        jg.writeBooleanField("checkDiskSpaceSupported", jdk6 != null);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -298,25 +326,33 @@ class JvmJsonService {
     String checkDiskSpace(String content) throws IOException, JMException,
             SecurityException, IllegalAccessException, InvocationTargetException {
         logger.debug("checkDiskSpace(): content={}", content);
-        ObjectNode rootNode = (ObjectNode) mapper.readTree(content);
-        String directory = rootNode.get("directory").asText();
-        File dir = new File(directory);
+        Jdk6 service = jdk6.getService();
+        if (service == null) {
+            throw new IllegalStateException("HotSpotDiagnostics service is not available");
+        }
+        RequestWithDirectory request =
+                ObjectMappers.readRequiredValue(mapper, content, RequestWithDirectory.class);
+        File dir = new File(request.getDirectory());
         if (!dir.exists()) {
             return "{\"error\": \"Directory doesn't exist\"}";
         }
         if (!dir.isDirectory()) {
             return "{\"error\": \"Path is not a directory\"}";
         }
-        long diskSpace = JDK6.getFreeSpace(new File(directory));
+        long diskSpace = service.getFreeSpace(new File(request.getDirectory()));
         return Long.toString(diskSpace);
     }
 
     @POST("/backend/jvm/dump-heap")
     String dumpHeap(String content) throws IOException, JMException {
         logger.debug("dumpHeap(): content={}", content);
-        ObjectNode rootNode = (ObjectNode) mapper.readTree(content);
-        String directory = rootNode.get("directory").asText();
-        File dir = new File(directory);
+        HotSpotDiagnostics service = hotSpotDiagnostics.getService();
+        if (service == null) {
+            throw new IllegalStateException("HotSpotDiagnostics service is not available");
+        }
+        RequestWithDirectory request =
+                ObjectMappers.readRequiredValue(mapper, content, RequestWithDirectory.class);
+        File dir = new File(request.getDirectory());
         if (!dir.exists()) {
             return "{\"error\": \"Directory doesn't exist\"}";
         }
@@ -330,7 +366,7 @@ class JvmJsonService {
             i++;
             file = new File(dir, "heapdump-" + date + "-" + i + ".hprof");
         }
-        HotSpotDiagnostic.dumpHeap(file.getAbsolutePath());
+        service.dumpHeap(file.getAbsolutePath());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -345,12 +381,16 @@ class JvmJsonService {
     @GET("/backend/jvm/manageable-flags")
     String getManageableFlags() throws IOException, JMException {
         logger.debug("getManageableFlags()");
+        HotSpotDiagnostics service = hotSpotDiagnostics.getService();
+        if (service == null) {
+            throw new IllegalStateException("HotSpotDiagnostics service is not available");
+        }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartArray();
         // don't sort these, there are not many and they seem to be sorted in meaningful order
         // already
-        for (VMOption option : HotSpotDiagnostic.getDiagnosticOptions()) {
+        for (VMOption option : service.getDiagnosticOptions()) {
             // only handle true/false values for now
             if ("true".equals(option.getValue()) || "false".equals(option.getValue())) {
                 // filter out seemingly less useful options (keep only HeapDump... and Print...)
@@ -372,10 +412,14 @@ class JvmJsonService {
     @POST("/backend/jvm/update-manageable-flags")
     String updateManageableFlags(String content) throws IOException, JMException {
         logger.debug("updateManageableFlags(): content={}", content);
+        HotSpotDiagnostics service = hotSpotDiagnostics.getService();
+        if (service == null) {
+            throw new IllegalStateException("HotSpotDiagnostics service is not available");
+        }
         Map<String, Object> values =
                 mapper.readValue(content, new TypeReference<Map<String, Object>>() {});
         for (Entry<String, Object> value : values.entrySet()) {
-            HotSpotDiagnostic.setVMOption(value.getKey(), value.getValue().toString());
+            service.setVMOption(value.getKey(), value.getValue().toString());
         }
         return getManageableFlags();
     }
@@ -384,11 +428,18 @@ class JvmJsonService {
     String getAllFlags() throws IOException, JMException, ClassNotFoundException,
             NoSuchMethodException, SecurityException, IllegalAccessException,
             InvocationTargetException {
-
         logger.debug("getAllFlags()");
+        Flags flagService = flags.getService();
+        if (flagService == null) {
+            throw new IllegalStateException("Flags service is not available");
+        }
+        HotSpotDiagnostics hotSpotDiagnosticService = hotSpotDiagnostics.getService();
+        if (hotSpotDiagnosticService == null) {
+            throw new IllegalStateException("HotSpotDiagnostics service is not available");
+        }
         List<VMOption> options = Lists.newArrayList();
-        for (String name : Flags.getFlagNames()) {
-            options.add(HotSpotDiagnostic.getVMOption(name));
+        for (String name : flagService.getFlagNames()) {
+            options.add(hotSpotDiagnosticService.getVMOption(name));
         }
         return mapper.writeValueAsString(VMOption.orderingByName.sortedCopy(options));
     }
@@ -396,24 +447,25 @@ class JvmJsonService {
     @GET("/backend/jvm/capabilities")
     String getCapabilities() throws JsonGenerationException, IOException {
         logger.debug("getCapabilities()");
-        Availability hotSpotDiagnosticAvailability = HotSpotDiagnostic.getAvailability();
+        Availability hotSpotDiagnosticAvailability =
+                hotSpotDiagnostics.getAvailability();
         Availability allFlagsAvailability;
         if (!hotSpotDiagnosticAvailability.isAvailable()) {
             allFlagsAvailability = hotSpotDiagnosticAvailability;
         } else {
-            allFlagsAvailability = Flags.getAvailability();
+            allFlagsAvailability = flags.getAvailability();
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeFieldName("threadCpuTime");
-        mapper.writeValue(jg, ThreadCpuTime.getAvailability());
+        mapper.writeValue(jg, getThreadCpuTimeAvailability());
         jg.writeFieldName("threadContentionTime");
-        mapper.writeValue(jg, ThreadContentionTime.getAvailability());
+        mapper.writeValue(jg, getThreadContentionAvailability());
         jg.writeFieldName("threadAllocatedBytes");
-        mapper.writeValue(jg, ThreadAllocatedBytes.getAvailability());
+        mapper.writeValue(jg, threadAllocatedBytes.getAvailability());
         jg.writeFieldName("heapHistogram");
-        mapper.writeValue(jg, HeapHistograms.getAvailability());
+        mapper.writeValue(jg, heapHistograms.getAvailability());
         jg.writeFieldName("heapDump");
         mapper.writeValue(jg, hotSpotDiagnosticAvailability);
         jg.writeFieldName("manageableFlags");
@@ -456,5 +508,47 @@ class JvmJsonService {
         }
         jg.writeEndArray();
         jg.writeEndObject();
+    }
+
+    private static Availability getThreadCpuTimeAvailability() {
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        if (!threadMXBean.isThreadCpuTimeSupported()) {
+            return new Availability(false, "java.lang.management.ThreadMXBean"
+                    + ".isThreadCpuTimeSupported() returned false");
+        }
+        if (!threadMXBean.isThreadCpuTimeEnabled()) {
+            return new Availability(false, "java.lang.management.ThreadMXBean"
+                    + ".isThreadCpuTimeEnabled() returned false");
+        }
+        return new Availability(true, "");
+    }
+
+    private static Availability getThreadContentionAvailability() {
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        if (!threadMXBean.isThreadContentionMonitoringSupported()) {
+            return new Availability(false, "java.lang.management.ThreadMXBean"
+                    + ".isThreadContentionMonitoringSupported() returned false");
+        }
+        if (!threadMXBean.isThreadContentionMonitoringEnabled()) {
+            return new Availability(false, "java.lang.management.ThreadMXBean"
+                    + ".isThreadContentionMonitoringEnabled() returned false");
+        }
+        return new Availability(true, "");
+    }
+
+    private static class RequestWithDirectory {
+
+        private final String directory;
+
+        @JsonCreator
+        RequestWithDirectory(@JsonProperty("directory") @Nullable String directory)
+                throws JsonMappingException {
+            checkRequiredProperty(directory, "directory");
+            this.directory = directory;
+        }
+
+        private String getDirectory() {
+            return directory;
+        }
     }
 }

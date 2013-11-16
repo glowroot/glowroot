@@ -24,6 +24,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import dataflow.quals.Pure;
 
 import org.glowroot.markers.Static;
 
@@ -191,6 +192,7 @@ public class Threads {
             this.threads = threads;
         }
         @Override
+        @Pure
         public String getMessage() {
             StringBuilder sb = new StringBuilder();
             for (Thread thread : threads) {

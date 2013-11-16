@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 
 import checkers.nullness.quals.Nullable;
+import dataflow.quals.Pure;
 
 import org.glowroot.shaded.google.common.collect.ImmutableList;
 import org.glowroot.shaded.google.common.collect.Lists;
@@ -108,6 +109,7 @@ class PreparedStatementMirror extends StatementMirror {
 
     static class NullParameterValue {
         @Override
+        @Pure
         public String toString() {
             return "NULL";
         }
@@ -126,6 +128,7 @@ class PreparedStatementMirror extends StatementMirror {
             }
         }
         @Override
+        @Pure
         public String toString() {
             if (bytes != null) {
                 return "0x" + HashCodes.fromBytes(bytes).toString();
@@ -141,6 +144,7 @@ class PreparedStatementMirror extends StatementMirror {
             this.o = o;
         }
         @Override
+        @Pure
         public String toString() {
             return "{stream:" + o.getClass().getSimpleName() + "}";
         }

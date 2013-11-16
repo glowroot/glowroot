@@ -22,6 +22,7 @@ import java.util.Random;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import org.junit.Test;
@@ -180,7 +181,7 @@ public class TracePointJsonServiceTest {
                     }
                 });
 
-        List<TracePoint> orderedPoints = durationDescOrdering.sortedCopy(points);
+        ImmutableList<TracePoint> orderedPoints = durationDescOrdering.immutableSortedCopy(points);
 
         SnapshotDao snapshotDao = mock(SnapshotDao.class);
         TraceRegistry traceRegistry = mock(TraceRegistry.class);

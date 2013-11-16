@@ -27,6 +27,8 @@ import org.glowroot.api.Beans;
 import org.glowroot.api.UnresolvedMethod;
 import org.glowroot.shaded.google.common.base.Strings;
 import org.glowroot.shaded.google.common.collect.ImmutableMap;
+import org.glowroot.shaded.slf4j.Logger;
+import org.glowroot.shaded.slf4j.LoggerFactory;
 
 /**
  * @author Trask Stalnaker
@@ -36,6 +38,8 @@ import org.glowroot.shaded.google.common.collect.ImmutableMap;
 // javax.servlet.http.HttpSession since it's just an interface and could theoretically return null
 // even where it seems to not make sense
 class HttpSession {
+
+    private static final Logger logger = LoggerFactory.getLogger(HttpSession.class);
 
     private static final UnresolvedMethod getIdMethod =
             UnresolvedMethod.from("javax.servlet.http.HttpSession", "getId");
@@ -66,7 +70,13 @@ class HttpSession {
     }
 
     boolean isNew() {
-        return (Boolean) isNewMethod.invoke(realSession, false);
+        Boolean isNew = (Boolean) isNewMethod.invoke(realSession, false);
+        if (isNew == null) {
+            logger.warn("method unexpectedly returned null:"
+                    + " javax.servlet.http.HttpSession.isNew()");
+            return false;
+        }
+        return isNew;
     }
 
     @Nullable

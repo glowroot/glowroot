@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -171,6 +172,7 @@ public class PointcutConfig {
     }
 
     @Override
+    @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof PointcutConfig) {
             PointcutConfig that = (PointcutConfig) obj;
@@ -193,6 +195,7 @@ public class PointcutConfig {
     }
 
     @Override
+    @Pure
     public int hashCode() {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
@@ -202,6 +205,7 @@ public class PointcutConfig {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("metric", metric)

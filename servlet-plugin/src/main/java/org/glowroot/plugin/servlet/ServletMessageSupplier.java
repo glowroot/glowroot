@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 
-import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
 
 import org.glowroot.api.Message;
@@ -59,13 +59,13 @@ class ServletMessageSupplier extends MessageSupplier {
 
     private final String requestUri;
 
-    @LazyNonNull
+    @MonotonicNonNull
     private volatile ImmutableMap<String, String[]> requestParameterMap;
 
     // the initial value is the sessionId as it was present at the beginning of the request
     @Nullable
     private final String sessionIdInitialValue;
-    @LazyNonNull
+    @MonotonicNonNull
     private volatile String sessionIdUpdatedValue;
 
     // session attributes may not be thread safe, so they must be converted to Strings
@@ -77,7 +77,7 @@ class ServletMessageSupplier extends MessageSupplier {
     private final ImmutableMap<String, String> sessionAttributeInitialValueMap;
 
     // ConcurrentHashMap does not allow null values, so need to use Optional values
-    @LazyNonNull
+    @MonotonicNonNull
     private volatile ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
     ServletMessageSupplier(String requestUri, @Nullable String sessionId,

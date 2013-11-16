@@ -45,7 +45,8 @@ public class RollingOutputStreamTest {
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("glowroot-test-", ".rolling.txt");
         scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        rollingOut = new RollingOutputStream(tempFile, 1, scheduledExecutor, Ticker.systemTicker());
+        rollingOut = RollingOutputStream.create(tempFile, 1, scheduledExecutor,
+                Ticker.systemTicker());
         in = new RandomAccessFile(tempFile, "r");
     }
 

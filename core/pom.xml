@@ -108,14 +108,16 @@
       <version>0.9.6</version>
     </dependency>
     <dependency>
-      <groupId>edu.washington.cs.types.checker</groupId>
-      <artifactId>checker-quals-jdk5</artifactId>
-      <version>1.6.4</version>
-    </dependency>
-    <dependency>
       <groupId>org.glowroot.shaded</groupId>
       <artifactId>shaded-slf4j-impl</artifactId>
       <version>1.0.13-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <!-- only annotations are used, so ok the (unshaded) artifact is not provided at runtime -->
+      <groupId>edu.washington.cs.types.checker</groupId>
+      <artifactId>checker-quals-jdk5</artifactId>
+      <version>1.7.1</version>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -439,10 +441,6 @@
                     <relocation>
                       <pattern>com.google.common</pattern>
                       <shadedPattern>org.glowroot.shaded.google.common</shadedPattern>
-                    </relocation>
-                    <relocation>
-                      <pattern>checkers</pattern>
-                      <shadedPattern>org.glowroot.shaded.checkers</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>com.fasterxml.jackson</pattern>

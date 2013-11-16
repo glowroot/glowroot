@@ -15,7 +15,7 @@
  */
 package org.glowroot.common;
 
-import checkers.nullness.quals.AssertNonNullAfter;
+import checkers.nullness.quals.EnsuresNonNull;
 import checkers.nullness.quals.Nullable;
 
 import org.glowroot.markers.Static;
@@ -31,10 +31,10 @@ public class Nullness {
 
     private Nullness() {}
 
-    @AssertNonNullAfter("#1")
-    public static void assertNonNull(@Nullable Object reference, String message) {
+    @EnsuresNonNull("#1")
+    public static void castNonNull(@Nullable Object reference) {
         if (reference == null) {
-            throw new AssertionError(message);
+            throw new AssertionError();
         }
     }
 }

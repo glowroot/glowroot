@@ -19,6 +19,8 @@ import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import dataflow.quals.Pure;
+import org.objectweb.asm.Type;
 
 import org.glowroot.markers.NotThreadSafe;
 
@@ -95,6 +97,7 @@ public class ParsedType {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("interface", iface)
@@ -130,8 +133,12 @@ public class ParsedType {
             this.interfaceNames = interfaceNames;
         }
 
-        void addMethod(ParsedMethod method) {
+        ParsedMethod addParsedMethod(int access, String name, String desc) {
+            ParsedMethod method =
+                    ParsedMethod.from(name, ImmutableList.copyOf(Type.getArgumentTypes(desc)),
+                            Type.getReturnType(desc), access);
             methods.add(method);
+            return method;
         }
 
         void setHasReweavableAdvice(boolean hasReweavableAdvice) {

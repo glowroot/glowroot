@@ -16,11 +16,12 @@
 package org.glowroot;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.jar.Attributes;
-import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
+import checkers.nullness.quals.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,43 +39,58 @@ class Version {
     private Version() {}
 
     static String getVersion() throws IOException {
-        URL location = Version.class.getProtectionDomain().getCodeSource().getLocation();
-        JarInputStream jarIn = new JarInputStream(location.openStream());
+        Manifest manifest = getManifest();
+        if (manifest == null) {
+            // manifest is missing when running ui testing and integration tests from inside IDE
+            // so only log this at debug level
+            logger.debug("could not locate META-INF/MANIFEST.MF file");
+            return "unknown";
+        }
+        Attributes mainAttributes = manifest.getMainAttributes();
+        String version = mainAttributes.getValue("Implementation-Version");
+        if (version == null) {
+            logger.warn("could not find Implementation-Version attribute in"
+                    + " META-INF/MANIFEST.MF file");
+            return "unknown";
+        }
+        if (version.endsWith("-SNAPSHOT")) {
+            String commit = mainAttributes.getValue("Build-Commit");
+            if (commit.length() > 0) {
+                if (commit.length() == 40) {
+                    version += ", commit " + commit.substring(0, 10);
+                } else {
+                    logger.warn("invalid Build-Commit attribute in META-INF/MANIFEST.MF file,"
+                            + " should be a 40 character git commit hash");
+                }
+            }
+            String snapshotTimestamp = mainAttributes.getValue("Build-Time");
+            if (snapshotTimestamp == null) {
+                logger.warn("could not find Build-Time attribute in META-INF/MANIFEST.MF file");
+                return version;
+            }
+            version += ", built at " + snapshotTimestamp;
+        }
+        return version;
+    }
+
+    @Nullable
+    private static Manifest getManifest() throws IOException {
+        URL classURL = Version.class.getResource(Version.class.getSimpleName() + ".class");
+        if (classURL == null) {
+            logger.warn("url for Version class is unexpectedly null");
+            return null;
+        }
+        String externalForm = classURL.toExternalForm();
+        if (!externalForm.startsWith("jar:")) {
+            return null;
+        }
+        URL manifestURL = new URL(externalForm.substring(0, externalForm.lastIndexOf("!")) +
+                "!/META-INF/MANIFEST.MF");
+        InputStream manifestIn = manifestURL.openStream();
         try {
-            Manifest manifest = jarIn.getManifest();
-            if (manifest == null) {
-                // manifest is missing when running ui testing and integration tests from inside IDE
-                // so only log this at debug level
-                logger.debug("could not find META-INF/MANIFEST.MF file");
-                return "unknown";
-            }
-            Attributes mainAttributes = manifest.getMainAttributes();
-            String version = mainAttributes.getValue("Implementation-Version");
-            if (version == null) {
-                logger.warn("could not find Implementation-Version attribute in"
-                        + " META-INF/MANIFEST.MF file");
-                return "unknown";
-            }
-            if (version.endsWith("-SNAPSHOT")) {
-                String commit = mainAttributes.getValue("Build-Commit");
-                if (commit.length() > 0) {
-                    if (commit.length() == 40) {
-                        version += ", commit " + commit.substring(0, 10);
-                    } else {
-                        logger.warn("invalid Build-Commit attribute in META-INF/MANIFEST.MF file,"
-                                + " should be a 40 character git commit hash");
-                    }
-                }
-                String snapshotTimestamp = mainAttributes.getValue("Build-Time");
-                if (snapshotTimestamp == null) {
-                    logger.warn("could not find Build-Time attribute in META-INF/MANIFEST.MF file");
-                    return version;
-                }
-                version += ", built at " + snapshotTimestamp;
-            }
-            return version;
+            return new Manifest(manifestIn);
         } finally {
-            jarIn.close();
+            manifestIn.close();
         }
     }
 }

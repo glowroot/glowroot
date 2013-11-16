@@ -20,6 +20,7 @@ import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
+import dataflow.quals.Pure;
 
 import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.markers.UsedByJsonBinding;
@@ -80,6 +81,7 @@ public class UserOverridesConfig {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("userId", userId)

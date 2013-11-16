@@ -21,7 +21,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.AssertNonNullAfter;
+import checkers.nullness.quals.EnsuresNonNull;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -31,13 +31,15 @@ import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,9 +47,9 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// unfortunately this is mostly a duplicate of a class from the glowroot module
-// test-container cannot use the class from the glowroot module since sometimes that class exposes
-// unshaded jackson types (in IDE) and sometimes it exposes shaded jackson types (in maven build)
+// unfortunately this is mostly a duplicate of a class from the glowroot module test-container
+// cannot use the class from the glowroot module since sometimes that class exposes unshaded jackson
+// types (in IDE) and sometimes it exposes shaded jackson types (in maven build)
 public class ObjectMappers {
 
     private static final Logger logger = LoggerFactory.getLogger(ObjectMappers.class);
@@ -55,12 +57,12 @@ public class ObjectMappers {
     private ObjectMappers() {}
 
     public static ObjectMapper create() {
-        return new ObjectMapper().registerModule(new EnumModule());
+        return new ObjectMapper().registerModule(EnumModule.create());
     }
 
-    public static <T> T readRequiredValue(@ReadOnly ObjectMapper mapper, String content,
-            Class<T> type) throws IOException, JsonProcessingException {
-        /*@Nullable*/
+    public static <T extends /*@Nullable*/Object> T readRequiredValue(
+            @ReadOnly ObjectMapper mapper, String content, Class<T> type) throws IOException,
+            JsonProcessingException {
         T value = mapper.readValue(content, type);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
@@ -68,7 +70,20 @@ public class ObjectMappers {
         return value;
     }
 
-    @AssertNonNullAfter("#1")
+    public static JsonNode getRequiredChildNode(
+            @ReadOnly JsonNode parentNode, String fieldName) throws IOException,
+            JsonProcessingException {
+        JsonNode node = parentNode.get(fieldName);
+        if (node == null) {
+            throw new JsonMappingException("Missing required field: " + fieldName);
+        }
+        if (node.isNull()) {
+            throw new JsonMappingException("Required field is json null: " + fieldName);
+        }
+        return node;
+    }
+
+    @EnsuresNonNull("#1")
     public static <T extends /*@Nullable*/Object> void checkRequiredProperty(T reference,
             String fieldName) throws JsonMappingException {
         if (reference == null) {
@@ -76,19 +91,18 @@ public class ObjectMappers {
         }
     }
 
-    @ReadOnly
-    public static <T> List<T> nullToEmpty(@ReadOnly @Nullable List<T> list) {
+    public static <T> List<T> nullToEmpty(@Nullable List<T> list) {
         if (list == null) {
-            return ImmutableList.of();
+            return Lists.newArrayList();
         } else {
             return list;
         }
     }
 
-    @ReadOnly
-    public static <K, V> Map<K, V> nullToEmpty(@ReadOnly @Nullable Map<K, V> map) {
+    public static <K, V extends /*@Nullable*/Object> Map<K, V> nullToEmpty(
+            @ReadOnly @Nullable Map<K, V> map) {
         if (map == null) {
-            return ImmutableMap.of();
+            return Maps.newHashMap();
         } else {
             return map;
         }
@@ -100,8 +114,10 @@ public class ObjectMappers {
 
     @SuppressWarnings("serial")
     private static class EnumModule extends SimpleModule {
-        private EnumModule() {
-            addSerializer(Enum.class, new EnumSerializer());
+        private static EnumModule create() {
+            EnumModule module = new EnumModule();
+            module.addSerializer(Enum.class, new EnumSerializer());
+            return module;
         }
         @Override
         public void setupModule(SetupContext context) {

@@ -17,6 +17,7 @@ package org.glowroot.collector;
 
 import java.util.concurrent.ScheduledExecutorService;
 
+import checkers.nullness.quals.Nullable;
 import com.google.common.base.Ticker;
 
 import org.glowroot.common.Clock;
@@ -41,6 +42,7 @@ public class CollectorModule {
                 Long.getLong("glowroot.internal.collector.aggregateInterval", 300);
     }
 
+    @Nullable
     private final Aggregator aggregator;
     private final TraceCollectorImpl traceCollector;
 
@@ -49,7 +51,7 @@ public class CollectorModule {
             ScheduledExecutorService scheduledExecutor) {
         ConfigService configService = configModule.getConfigService();
         if (aggregatesEnabled) {
-            aggregator = new Aggregator(scheduledExecutor, aggregateRepository, clock,
+            aggregator = Aggregator.create(scheduledExecutor, aggregateRepository, clock,
                     fixedAggregateIntervalSeconds);
         } else {
             aggregator = null;

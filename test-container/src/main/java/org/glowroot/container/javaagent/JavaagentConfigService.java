@@ -50,11 +50,11 @@ class JavaagentConfigService implements ConfigService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final JavaagentHttpClient httpClient;
-    private final PortChangeListener portChangeListener;
+    private final GetUiPortCommand getUiPortCommand;
 
-    JavaagentConfigService(JavaagentHttpClient httpClient, PortChangeListener portChangeListener) {
+    JavaagentConfigService(JavaagentHttpClient httpClient, GetUiPortCommand getUiPortCommand) {
         this.httpClient = httpClient;
-        this.portChangeListener = portChangeListener;
+        this.getUiPortCommand = getUiPortCommand;
     }
 
     public void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
@@ -119,7 +119,11 @@ class JavaagentConfigService implements ConfigService {
         if (portChangeFailedNode != null && portChangeFailedNode.asBoolean()) {
             throw new PortChangeFailedException();
         }
-        portChangeListener.onMaybePortChange();
+        try {
+            httpClient.updateUiPort(getUiPortCommand.getUiPort());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public AdvancedConfig getAdvancedConfig() throws Exception {
@@ -132,10 +136,7 @@ class JavaagentConfigService implements ConfigService {
 
     @Nullable
     public PluginConfig getPluginConfig(String pluginId) throws Exception {
-        String response = httpClient.get("/backend/config/plugin/" + pluginId);
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        JsonNode configNode = rootNode.get("config");
-        return mapper.readValue(mapper.treeAsTokens(configNode), PluginConfig.class);
+        return getConfig("/backend/config/plugin/" + pluginId, PluginConfig.class);
     }
 
     public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
@@ -145,8 +146,8 @@ class JavaagentConfigService implements ConfigService {
     public List<PointcutConfig> getPointcutConfigs() throws Exception {
         String response = httpClient.get("/backend/config/pointcut");
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        JsonNode configNode = rootNode.get("configs");
-        return mapper.readValue(mapper.treeAsTokens(configNode),
+        JsonNode configsNode = ObjectMappers.getRequiredChildNode(rootNode, "configs");
+        return mapper.readValue(mapper.treeAsTokens(configsNode),
                 new TypeReference<List<PointcutConfig>>() {});
     }
 
@@ -155,7 +156,8 @@ class JavaagentConfigService implements ConfigService {
         String response = httpClient.post("/backend/config/pointcut/+",
                 mapper.writeValueAsString(pointcutConfig));
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        return rootNode.get("version").asText();
+        JsonNode versionNode = ObjectMappers.getRequiredChildNode(rootNode, "version");
+        return versionNode.asText();
     }
 
     public void updatePointcutConfig(String version, PointcutConfig pointcutConfig)
@@ -184,11 +186,11 @@ class JavaagentConfigService implements ConfigService {
             JsonProcessingException {
         String response = httpClient.get(url);
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        JsonNode configNode = rootNode.get("config");
+        JsonNode configNode = ObjectMappers.getRequiredChildNode(rootNode, "config");
         return mapper.treeToValue(configNode, type);
     }
 
-    interface PortChangeListener {
-        void onMaybePortChange();
+    interface GetUiPortCommand {
+        int getUiPort() throws Exception;
     }
 }

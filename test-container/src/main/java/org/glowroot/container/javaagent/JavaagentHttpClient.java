@@ -54,36 +54,34 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 class JavaagentHttpClient {
 
     private final AsyncHttpClient asyncHttpClient;
-    private volatile int uiPort;
+    private volatile int port;
     @Nullable
     private volatile Cookie sessionIdCookie;
 
     JavaagentHttpClient(int uiPort) {
-        this.uiPort = uiPort;
+        this.port = uiPort;
         this.asyncHttpClient = createAsyncHttpClient();
     }
 
     void updateUiPort(int uiPort) {
-        this.uiPort = uiPort;
+        this.port = uiPort;
     }
 
     String get(String path) throws Exception {
-        BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + uiPort
-                + path);
+        BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + port + path);
         Response response = execute(request);
         return validateAndReturnBody(response);
     }
 
     InputStream getAsStream(String path) throws Exception {
-        BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + uiPort
-                + path);
+        BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + port + path);
         Response response = execute(request);
         return validateAndReturnBodyAsStream(response);
     }
 
     String post(String path, String data) throws Exception {
-        BoundRequestBuilder request = asyncHttpClient.preparePost("http://localhost:" + uiPort
-                + path);
+        BoundRequestBuilder request =
+                asyncHttpClient.preparePost("http://localhost:" + port + path);
         request.setBody(data);
         Response response = execute(request);
         return validateAndReturnBody(response);

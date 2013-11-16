@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import checkers.nullness.quals.MonotonicNonNull;
 import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,7 @@ import org.glowroot.markers.OnlyUsedByTests;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.glowroot.common.Nullness.castNonNull;
 
 /**
  * Needs to be externally synchronized around startBlock()/write()/endBlock().
@@ -67,12 +69,31 @@ class RollingOutputStream extends OutputStream {
 
     private long blockStartIndex;
 
-    private final Future<?> fsyncFuture;
     private final AtomicBoolean fsyncNeeded = new AtomicBoolean();
     private final AtomicLong lastFsyncTick = new AtomicLong();
 
-    RollingOutputStream(File file, int requestedRollingSizeKb,
+    @MonotonicNonNull
+    private volatile Future<?> fsyncFuture;
+
+    static RollingOutputStream create(File file, int requestedRollingSizeKb,
             ScheduledExecutorService scheduledExecutor, Ticker ticker) throws IOException {
+        final RollingOutputStream out = new RollingOutputStream(file, requestedRollingSizeKb,
+                ticker);
+        out.fsyncFuture = scheduledExecutor.scheduleWithFixedDelay(new Runnable() {
+            public void run() {
+                try {
+                    out.fsyncIfNeeded();
+                } catch (Throwable t) {
+                    // log and terminate successfully
+                    logger.error(t.getMessage(), t);
+                }
+            }
+        }, FSYNC_INTERVAL_MILLIS, FSYNC_INTERVAL_MILLIS, MILLISECONDS);
+        return out;
+    }
+
+    private RollingOutputStream(File file, int requestedRollingSizeKb, Ticker ticker)
+            throws IOException {
         this.file = file;
         this.ticker = ticker;
         boolean newFile = !file.exists() || file.length() == 0;
@@ -95,16 +116,6 @@ class RollingOutputStream extends OutputStream {
             currPosition = (currIndex - lastResizeBaseIndex) % rollingSizeBytes;
             out.seek(HEADER_SKIP_BYTES + currPosition);
         }
-        fsyncFuture = scheduledExecutor.scheduleWithFixedDelay(new Runnable() {
-            public void run() {
-                try {
-                    fsyncIfNeeded();
-                } catch (Throwable t) {
-                    // log and terminate successfully
-                    logger.error(t.getMessage(), t);
-                }
-            }
-        }, FSYNC_INTERVAL_MILLIS, FSYNC_INTERVAL_MILLIS, MILLISECONDS);
         lastFsyncTick.set(ticker.read());
     }
 
@@ -206,6 +217,8 @@ class RollingOutputStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
+        // factory method ensures fsyncFuture is not null
+        castNonNull(fsyncFuture);
         fsyncFuture.cancel(false);
         out.close();
     }

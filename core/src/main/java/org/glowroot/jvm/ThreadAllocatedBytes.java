@@ -19,73 +19,49 @@ import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import checkers.nullness.quals.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.Static;
+import org.glowroot.jvm.OptionalService.Availability;
+import org.glowroot.jvm.OptionalService.OptionalServiceFactory;
+import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
+import org.glowroot.jvm.OptionalService.OptionalServiceFactoryHelper;
+import org.glowroot.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Static
+@ThreadSafe
 public class ThreadAllocatedBytes {
 
     private static final Logger logger = LoggerFactory.getLogger(ThreadAllocatedBytes.class);
 
-    @Nullable
-    private static final Class<?> sunThreadMXBeanClass;
+    private final Class<?> sunThreadMXBeanClass;
+    private final Method getThreadAllocatedBytesMethod;
+    private volatile boolean disabledDueToError;
 
-    @Nullable
-    private static final Method getThreadAllocatedBytesMethod;
-
-    private static final boolean supported;
-    private static final String unsupportedReason;
-
-    private static volatile boolean disabledDueToError;
-
-    static {
-        sunThreadMXBeanClass = initSunThreadMXBeanClass();
-        if (sunThreadMXBeanClass == null) {
-            getThreadAllocatedBytesMethod = null;
-            supported = false;
-            unsupportedReason = "No such class com.sun.management.ThreadMXBean (introduced in"
-                    + " Oracle Java SE 6u25)";
-        } else {
-            if (isSupported(sunThreadMXBeanClass)) {
-                getThreadAllocatedBytesMethod =
-                        initGetThreadAllocatedBytesMethod(sunThreadMXBeanClass);
-                if (getThreadAllocatedBytesMethod == null) {
-                    supported = false;
-                    unsupportedReason = "Unsupported due to error, see Glowroot log";
-                } else {
-                    supported = true;
-                    unsupportedReason = "";
-                }
-            } else {
-                getThreadAllocatedBytesMethod = null;
-                supported = false;
-                unsupportedReason = "com.sun.management.ThreadMXBean"
-                        + ".isThreadAllocatedMemorySupported() returned false";
-            }
-        }
+    private ThreadAllocatedBytes(Class<?> sunThreadMXBeanClass,
+            Method getThreadAllocatedBytesMethod) {
+        this.sunThreadMXBeanClass = sunThreadMXBeanClass;
+        this.getThreadAllocatedBytesMethod = getThreadAllocatedBytesMethod;
     }
 
-    private ThreadAllocatedBytes() {}
-
-    public static long getThreadAllocatedBytesSafely(long threadId) {
-        if (!supported) {
-            // getThreadAllocatedBytes() throws UnsupportedOperationException in this case
-            return -1;
-        }
+    public long getThreadAllocatedBytesSafely(long threadId) {
         if (disabledDueToError) {
             // prevent excessive error logging in case there is a problem
             return -1;
         }
         try {
-            return (Long) getThreadAllocatedBytesMethod.invoke(ManagementFactory.getThreadMXBean(),
-                    threadId);
+            Long threadAllocatedBytes = (Long) getThreadAllocatedBytesMethod.invoke(
+                    ManagementFactory.getThreadMXBean(), threadId);
+            if (threadAllocatedBytes == null) {
+                logger.error("method unexpectedly returned null:"
+                        + " com.sun.management.ThreadMXBean.getThreadAllocatedBytes()");
+                disabledDueToError = true;
+                return -1;
+            }
+            return threadAllocatedBytes;
         } catch (IllegalArgumentException e) {
             logger.error(e.getMessage(), e);
             disabledDueToError = true;
@@ -101,87 +77,59 @@ public class ThreadAllocatedBytes {
         }
     }
 
-    public static Availability getAvailability() {
-        if (!supported) {
-            return Availability.unavailable(unsupportedReason);
-        } else if (!isEnabled(sunThreadMXBeanClass)) {
-            return Availability.unavailable("com.sun.management.ThreadMXBean"
+    public Availability getAvailability() {
+        if (!isEnabled(sunThreadMXBeanClass)) {
+            return new Availability(false, "com.sun.management.ThreadMXBean"
                     + ".isThreadAllocatedMemoryEnabled() returned false");
-        } else if (disabledDueToError) {
-            return Availability.unavailable("Disabled due to error, see Glowroot log");
-        } else {
-            return Availability.available();
         }
+        if (disabledDueToError) {
+            return new Availability(false, "Disabled due to error, see Glowroot log");
+        }
+        return new Availability(true, "");
     }
 
-    @Nullable
-    private static Class<?> initSunThreadMXBeanClass() {
-        try {
-            return Class.forName("com.sun.management.ThreadMXBean");
-        } catch (ClassNotFoundException e) {
-            // this is ok, just means its not available
-            return null;
-        }
-    }
-
-    @Nullable
-    private static Method initGetThreadAllocatedBytesMethod(Class<?> sunThreadMXBeanClass) {
-        try {
-            return sunThreadMXBeanClass.getMethod("getThreadAllocatedBytes", long.class);
-        } catch (SecurityException e) {
-            logger.error(e.getMessage(), e);
-            return null;
-        } catch (NoSuchMethodException e) {
-            logger.error(e.getMessage(), e);
-            return null;
-        }
-    }
-
-    @Nullable
-    private static boolean isSupported(Class<?> sunThreadMXBeanClass) {
-        try {
-            Method isSupportedMethod =
-                    sunThreadMXBeanClass.getMethod("isThreadAllocatedMemorySupported");
-            return (Boolean) isSupportedMethod.invoke(ManagementFactory.getThreadMXBean());
-        } catch (SecurityException e) {
-            logger.error(e.getMessage(), e);
-            return false;
-        } catch (NoSuchMethodException e) {
-            logger.error(e.getMessage(), e);
-            return false;
-        } catch (IllegalArgumentException e) {
-            logger.error(e.getMessage(), e);
-            return false;
-        } catch (IllegalAccessException e) {
-            logger.error(e.getMessage(), e);
-            return false;
-        } catch (InvocationTargetException e) {
-            logger.error(e.getMessage(), e);
-            return false;
-        }
-    }
-
-    @Nullable
     private static boolean isEnabled(Class<?> sunThreadMXBeanClass) {
+        Method isEnabledMethod;
         try {
-            Method isEnabledMethod =
-                    sunThreadMXBeanClass.getMethod("isThreadAllocatedMemoryEnabled");
-            return (Boolean) isEnabledMethod.invoke(ManagementFactory.getThreadMXBean());
-        } catch (SecurityException e) {
-            logger.error(e.getMessage(), e);
-            return false;
+            isEnabledMethod = sunThreadMXBeanClass.getMethod("isThreadAllocatedMemoryEnabled");
         } catch (NoSuchMethodException e) {
             logger.error(e.getMessage(), e);
             return false;
-        } catch (IllegalArgumentException e) {
+        } catch (SecurityException e) {
             logger.error(e.getMessage(), e);
             return false;
-        } catch (IllegalAccessException e) {
-            logger.error(e.getMessage(), e);
-            return false;
-        } catch (InvocationTargetException e) {
-            logger.error(e.getMessage(), e);
-            return false;
+        }
+        MethodWithNonNullReturn method = new MethodWithNonNullReturn(isEnabledMethod, false);
+        return (Boolean) method.invoke(ManagementFactory.getThreadMXBean());
+    }
+
+    static class Factory implements OptionalServiceFactory<ThreadAllocatedBytes> {
+        public ThreadAllocatedBytes create() throws OptionalServiceFactoryException {
+            Class<?> sunThreadMXBeanClass;
+            try {
+                sunThreadMXBeanClass = Class.forName("com.sun.management.ThreadMXBean");
+            } catch (ClassNotFoundException e) {
+                throw new OptionalServiceFactoryException(
+                        "Cannot find class com.sun.management.ThreadMXBean"
+                                + " (introduced in Oracle Java SE 6u25)");
+            }
+            Method isSupportedMethod = OptionalServiceFactoryHelper.getMethod(sunThreadMXBeanClass,
+                    "isThreadAllocatedMemorySupported");
+            Boolean supported = (Boolean) OptionalServiceFactoryHelper.invoke(isSupportedMethod,
+                    ManagementFactory.getThreadMXBean());
+            if (supported == null) {
+                throw new OptionalServiceFactoryException(
+                        "ThreadMXBean.isThreadAllocatedMemorySupported() returned null");
+            }
+            if (supported) {
+                Method getThreadAllocatedBytesMethod =
+                        OptionalServiceFactoryHelper.getMethod(sunThreadMXBeanClass,
+                                "getThreadAllocatedBytes", long.class);
+                return new ThreadAllocatedBytes(sunThreadMXBeanClass,
+                        getThreadAllocatedBytesMethod);
+            }
+            throw new OptionalServiceFactoryException("Method com.sun.management.ThreadMXBean"
+                    + ".isThreadAllocatedMemorySupported() returned false");
         }
     }
 }

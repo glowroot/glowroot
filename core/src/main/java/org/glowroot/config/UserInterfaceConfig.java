@@ -23,6 +23,7 @@ import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
+import dataflow.quals.Pure;
 
 import org.glowroot.config.JsonViews.FileView;
 import org.glowroot.config.JsonViews.UiView;
@@ -101,6 +102,7 @@ public class UserInterfaceConfig {
     }
 
     @Override
+    @Pure
     public String toString() {
         // don't expose passwordHash
         return Objects.toStringHelper(this)
@@ -162,10 +164,10 @@ public class UserInterfaceConfig {
         public void setSessionTimeoutMinutes(int sessionTimeoutMinutes) {
             this.sessionTimeoutMinutes = sessionTimeoutMinutes;
         }
-        public void setCurrentPassword(String currentPassword) {
+        public void setCurrentPassword(@Nullable String currentPassword) {
             this.currentPassword = currentPassword;
         }
-        public void setNewPassword(String newPassword) {
+        public void setNewPassword(@Nullable String newPassword) {
             this.newPassword = newPassword;
         }
         public UserInterfaceConfig build() throws NoSuchAlgorithmException,
@@ -181,10 +183,8 @@ public class UserInterfaceConfig {
             return new UserInterfaceConfig(port, sessionTimeoutMinutes, passwordHash);
         }
         private static String verifyAndGenerateNewPasswordHash(String currentPassword,
-                @Nullable String newPassword, String originalPasswordHash)
-                throws NoSuchAlgorithmException, InvalidKeySpecException,
-                CurrentPasswordIncorrectException {
-
+                String newPassword, String originalPasswordHash) throws NoSuchAlgorithmException,
+                InvalidKeySpecException, CurrentPasswordIncorrectException {
             if (currentPassword.equals("") && !newPassword.equals("")) {
                 // enabling password
                 return PasswordHash.createHash(newPassword);

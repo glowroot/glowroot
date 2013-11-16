@@ -23,6 +23,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
+import checkers.nullness.quals.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -65,8 +66,7 @@ class HttpServer {
     HttpServer(int port, int numWorkerThreads, IndexHtmlService indexHtmlService,
             ImmutableMap<Pattern, Object> uriMappings, HttpSessionManager httpSessionManager,
             ImmutableList<Object> jsonServices) {
-        handler = new HttpServerHandler(indexHtmlService, uriMappings, httpSessionManager,
-                jsonServices);
+
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
         ExecutorService bossExecutor = Executors.newCachedThreadPool(threadFactory);
         ExecutorService workerExecutor = Executors.newCachedThreadPool(threadFactory);
@@ -74,6 +74,9 @@ class HttpServer {
         bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(
                 new NioServerBossPool(bossExecutor, 1, determiner),
                 new NioWorkerPool(workerExecutor, numWorkerThreads, determiner)));
+
+        final HttpServerHandler handler = new HttpServerHandler(indexHtmlService, uriMappings,
+                httpSessionManager, jsonServices);
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             public ChannelPipeline getPipeline() {
                 ChannelPipeline pipeline = Channels.pipeline();
@@ -86,6 +89,7 @@ class HttpServer {
                 return pipeline;
             }
         });
+        this.handler = handler;
         InetSocketAddress localAddress = new InetSocketAddress(port);
         logger.debug("<init>(): binding http server to port {}", port);
         Channel serverChannel;
@@ -136,6 +140,7 @@ class HttpServer {
     private class ChangePort implements Runnable {
 
         private final int newPort;
+        @Nullable
         private volatile Throwable throwable;
 
         ChangePort(int newPort) {

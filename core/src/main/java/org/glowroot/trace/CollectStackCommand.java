@@ -17,6 +17,7 @@ package org.glowroot.trace;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
+import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,6 +76,7 @@ class CollectStackCommand implements Runnable {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("trace", trace)

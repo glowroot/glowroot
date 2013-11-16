@@ -29,6 +29,7 @@ public class AdviceFlowOuterHolder {
 
     // it is faster to use a mutable holder object and always perform ThreadLocal.get() and never
     // use ThreadLocal.set()
+    @SuppressWarnings("nullness:type.argument.type.incompatible")
     private final ThreadLocal<AdviceFlowHolder> topHolder = new ThreadLocal<AdviceFlowHolder>() {
         @Override
         protected AdviceFlowHolder initialValue() {

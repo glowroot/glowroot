@@ -381,6 +381,7 @@ public class ExpensiveCallAspect {
         };
     }
 
+    @Nullable
     private static Exception getRandomCause() {
         if (random.nextBoolean()) {
             return cause;

@@ -23,8 +23,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
+import dataflow.quals.Pure;
 
-import static org.glowroot.common.Nullness.assertNonNull;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
@@ -36,9 +36,7 @@ public class Metric {
 
     static final Ordering<Metric> orderingByTotal = new Ordering<Metric>() {
         @Override
-        public int compare(@Nullable Metric left, @Nullable Metric right) {
-            assertNonNull(left, "Ordering of non-null elements only");
-            assertNonNull(right, "Ordering of non-null elements only");
+        public int compare(Metric left, Metric right) {
             return Longs.compare(left.total, right.total);
         }
     };
@@ -97,6 +95,7 @@ public class Metric {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)

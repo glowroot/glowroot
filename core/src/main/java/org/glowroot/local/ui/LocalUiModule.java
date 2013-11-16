@@ -36,6 +36,7 @@ import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptorCache;
+import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.RollingFile;
 import org.glowroot.local.store.SnapshotDao;
@@ -56,11 +57,13 @@ public class LocalUiModule {
     private static final Logger logger = LoggerFactory.getLogger(LocalUiModule.class);
 
     private final TraceExportHttpService traceExportHttpService;
+    // httpServer is only null if it could not even bind to port 0 (any available port)
     @Nullable
     private final HttpServer httpServer;
 
-    public LocalUiModule(Ticker ticker, Clock clock, File dataDir, ConfigModule configModule,
-            StorageModule storageModule, CollectorModule collectorModule, TraceModule traceModule,
+    public LocalUiModule(Ticker ticker, Clock clock, File dataDir, JvmModule jvmModule,
+            ConfigModule configModule, StorageModule storageModule,
+            CollectorModule collectorModule, TraceModule traceModule,
             @Nullable Instrumentation instrumentation, @ReadOnly Map<String, String> properties,
             String version) {
 
@@ -76,7 +79,9 @@ public class LocalUiModule {
         TraceRegistry traceRegistry = traceModule.getTraceRegistry();
 
         LayoutJsonService layoutJsonService = new LayoutJsonService(version,
-                collectorModule.getAggregatesEnabled(), configService, pluginDescriptorCache);
+                collectorModule.getAggregatesEnabled(), configService, pluginDescriptorCache,
+                jvmModule.getHeapHistograms().getService(),
+                jvmModule.getHotSpotDiagnostics().getService(), jvmModule.getFlags().getService());
         HttpSessionManager httpSessionManager = new HttpSessionManager(configService, clock,
                 layoutJsonService);
         String baseHref = getBaseHref(properties);
@@ -103,10 +108,12 @@ public class LocalUiModule {
         ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
         PointcutConfigJsonService pointcutConfigJsonService =
                 new PointcutConfigJsonService(parsedTypeCache, classpathCache);
-        JvmJsonService jvmJsonService = new JvmJsonService();
-        AdminJsonService adminJsonService = new AdminJsonService(snapshotDao,
-                configService, traceModule.getPointcutConfigAdviceCache(), parsedTypeCache,
-                instrumentation, traceCollector, dataSource, traceRegistry);
+        JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getJdk6(),
+                jvmModule.getThreadAllocatedBytes(), jvmModule.getHeapHistograms(),
+                jvmModule.getHotSpotDiagnostics(), jvmModule.getFlags());
+        AdminJsonService adminJsonService = new AdminJsonService(snapshotDao, configService,
+                traceModule.getPointcutConfigAdviceCache(), parsedTypeCache, instrumentation,
+                jvmModule.getJdk6().getService(), traceCollector, dataSource, traceRegistry);
 
         ImmutableList.Builder<Object> jsonServices = ImmutableList.builder();
         jsonServices.add(layoutJsonService);
@@ -151,7 +158,9 @@ public class LocalUiModule {
 
     @OnlyUsedByTests
     public void changeHttpServerPort(int newPort) throws InterruptedException, ExecutionException {
-        httpServer.changePort(newPort);
+        if (httpServer != null) {
+            httpServer.changePort(newPort);
+        }
     }
 
     private static String getBaseHref(@ReadOnly Map<String, String> properties) {

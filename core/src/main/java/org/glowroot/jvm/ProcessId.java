@@ -28,6 +28,7 @@ import org.glowroot.markers.Static;
 @Static
 public class ProcessId {
 
+    @Nullable
     private static final String pid;
 
     static {
@@ -41,6 +42,7 @@ public class ProcessId {
         return pid;
     }
 
+    @Nullable
     private static String initPid() {
         String runtimeName = ManagementFactory.getRuntimeMXBean().getName();
         int index = runtimeName.indexOf('@');

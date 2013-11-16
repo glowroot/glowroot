@@ -144,9 +144,8 @@ public class DataSource {
         }
     }
 
-    @ReadOnly
-    <T> List<T> query(String sql, @ReadOnly List<?> args, RowMapper<T> rowMapper)
-            throws SQLException {
+    <T extends /*@NonNull*/Object> ImmutableList<T> query(String sql, @ReadOnly List<?> args,
+            RowMapper<T> rowMapper) throws SQLException {
         synchronized (lock) {
             if (closing) {
                 return ImmutableList.of();
@@ -157,11 +156,11 @@ public class DataSource {
             }
             ResultSet resultSet = preparedStatement.executeQuery();
             try {
-                List<T> mappedRows = Lists.newArrayList();
+                ImmutableList.Builder<T> mappedRows = ImmutableList.builder();
                 while (resultSet.next()) {
                     mappedRows.add(rowMapper.mapRow(resultSet));
                 }
-                return mappedRows;
+                return mappedRows.build();
             } finally {
                 resultSet.close();
             }

@@ -42,6 +42,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @SuppressWarnings("serial")
 class JsonServiceException extends Exception {
+
     private final HttpResponseStatus status;
 
     JsonServiceException(HttpResponseStatus status, Throwable cause) {

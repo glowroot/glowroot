@@ -25,6 +25,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import dataflow.quals.Pure;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -80,8 +81,7 @@ class Weaver {
         weavingMetricName = metricTimerService.getMetricName("glowroot weaving");
     }
 
-    @Nullable
-    byte[] weave(byte[] classBytes, String className, @Nullable CodeSource codeSource) {
+    byte/*@Nullable*/[] weave(byte[] classBytes, String className, @Nullable CodeSource codeSource) {
         if (generateMetricNameWrapperMethods) {
             return weave$glowroot$metric$glowroot$weaving$0(classBytes, className, codeSource);
         } else {
@@ -90,14 +90,13 @@ class Weaver {
     }
 
     // weird method name is following "metric marker" method naming
-    @Nullable
-    private byte[] weave$glowroot$metric$glowroot$weaving$0(byte[] classBytes, String className,
-            @Nullable CodeSource codeSource) {
+    private byte/*@Nullable*/[] weave$glowroot$metric$glowroot$weaving$0(byte[] classBytes,
+            String className, @Nullable CodeSource codeSource) {
         return weaveInternal(classBytes, className, codeSource);
     }
 
-    @Nullable
-    private byte[] weaveInternal(byte[] classBytes, String className, CodeSource codeSource) {
+    private byte/*@Nullable*/[] weaveInternal(byte[] classBytes, String className,
+            @Nullable CodeSource codeSource) {
         MetricTimer metricTimer = metricTimerService.startMetricTimer(weavingMetricName);
         try {
             // from http://www.oracle.com/technetwork/java/javase/compatibility-417013.html:
@@ -142,6 +141,7 @@ class Weaver {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("mixinTypes", mixinTypes)

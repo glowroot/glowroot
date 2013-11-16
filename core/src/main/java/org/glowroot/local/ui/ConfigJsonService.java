@@ -22,6 +22,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.sql.SQLException;
 import java.util.concurrent.ExecutionException;
 
+import checkers.nullness.quals.MonotonicNonNull;
+import checkers.nullness.quals.RequiresNonNull;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -56,6 +58,8 @@ import org.glowroot.markers.Singleton;
 import org.glowroot.trace.PointcutConfigAdviceCache;
 import org.glowroot.trace.TraceModule;
 
+import static org.glowroot.common.Nullness.castNonNull;
+
 /**
  * Json service to read and update config data, bound to /backend/config.
  * 
@@ -77,6 +81,7 @@ class ConfigJsonService {
     private final HttpSessionManager httpSessionManager;
     private final TraceModule traceModule;
 
+    @MonotonicNonNull
     private volatile HttpServer httpServer;
 
     ConfigJsonService(ConfigService configService, RollingFile rollingFile,
@@ -172,6 +177,8 @@ class ConfigJsonService {
     @GET("/backend/config/user-interface")
     String getUserInterface() throws IOException, SQLException {
         logger.debug("getUserInterface()");
+        // this code cannot be reached when httpServer is null
+        castNonNull(httpServer);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
@@ -182,6 +189,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
+    @RequiresNonNull("httpServer")
     private void writeUserInterface(JsonGenerator jg, ObjectWriter writer)
             throws IOException, JsonGenerationException, JsonMappingException {
         jg.writeFieldName("config");
@@ -245,13 +253,7 @@ class ConfigJsonService {
             SQLException {
         logger.debug("updateGeneralConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        JsonNode versionNode = configNode.get("version");
-        if (versionNode == null || !versionNode.isTextual()) {
-            throw new IllegalStateException("Version is missing or is not a string value");
-        }
-        String priorVersion = versionNode.asText();
-        configNode.remove("version");
-
+        String priorVersion = getAndRemoveVersionNode(configNode);
         GeneralConfig config = configService.getGeneralConfig();
         GeneralConfig.Overlay overlay = GeneralConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
@@ -268,13 +270,7 @@ class ConfigJsonService {
             IOException, SQLException {
         logger.debug("updateCoarseProfilingConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        JsonNode versionNode = configNode.get("version");
-        if (versionNode == null || !versionNode.isTextual()) {
-            throw new IllegalStateException("Version is missing or is not a string value");
-        }
-        String priorVersion = versionNode.asText();
-        configNode.remove("version");
-
+        String priorVersion = getAndRemoveVersionNode(configNode);
         CoarseProfilingConfig config = configService.getCoarseProfilingConfig();
         CoarseProfilingConfig.Overlay overlay = CoarseProfilingConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
@@ -291,13 +287,7 @@ class ConfigJsonService {
             IOException, SQLException {
         logger.debug("updateFineProfilingConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        JsonNode versionNode = configNode.get("version");
-        if (versionNode == null || !versionNode.isTextual()) {
-            throw new IllegalStateException("Version is missing or is not a string value");
-        }
-        String priorVersion = versionNode.asText();
-        configNode.remove("version");
-
+        String priorVersion = getAndRemoveVersionNode(configNode);
         FineProfilingConfig config = configService.getFineProfilingConfig();
         FineProfilingConfig.Overlay overlay = FineProfilingConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
@@ -314,13 +304,7 @@ class ConfigJsonService {
             SQLException {
         logger.debug("updateUserOverridesConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        JsonNode versionNode = configNode.get("version");
-        if (versionNode == null || !versionNode.isTextual()) {
-            throw new IllegalStateException("Version is missing or is not a string value");
-        }
-        String priorVersion = versionNode.asText();
-        configNode.remove("version");
-
+        String priorVersion = getAndRemoveVersionNode(configNode);
         UserOverridesConfig config = configService.getUserOverridesConfig();
         UserOverridesConfig.Overlay overlay = UserOverridesConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
@@ -337,13 +321,7 @@ class ConfigJsonService {
             SQLException {
         logger.debug("updateStorageConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        JsonNode versionNode = configNode.get("version");
-        if (versionNode == null || !versionNode.isTextual()) {
-            throw new IllegalStateException("Version is missing or is not a string value");
-        }
-        String priorVersion = versionNode.asText();
-        configNode.remove("version");
-
+        String priorVersion = getAndRemoveVersionNode(configNode);
         StorageConfig config = configService.getStorageConfig();
         StorageConfig.Overlay overlay = StorageConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
@@ -362,14 +340,10 @@ class ConfigJsonService {
             throws JsonServiceException, IOException, NoSuchAlgorithmException,
             InvalidKeySpecException, SQLException {
         logger.debug("updateUserInterfaceConfig(): content={}", content);
+        // this code cannot be reached when httpServer is null
+        castNonNull(httpServer);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        JsonNode versionNode = configNode.get("version");
-        if (versionNode == null || !versionNode.isTextual()) {
-            throw new IllegalStateException("Version is missing or is not a string value");
-        }
-        String priorVersion = versionNode.asText();
-        configNode.remove("version");
-
+        String priorVersion = getAndRemoveVersionNode(configNode);
         UserInterfaceConfig config = configService.getUserInterfaceConfig();
         UserInterfaceConfig.Overlay overlay = UserInterfaceConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
@@ -404,6 +378,7 @@ class ConfigJsonService {
         return getUserInterface();
     }
 
+    @RequiresNonNull("httpServer")
     private String getUserInterfaceWithPortChangeFailed() throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -421,13 +396,7 @@ class ConfigJsonService {
             SQLException {
         logger.debug("updateAdvancedConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        JsonNode versionNode = configNode.get("version");
-        if (versionNode == null || !versionNode.isTextual()) {
-            throw new IllegalStateException("Version is missing or is not a string value");
-        }
-        String priorVersion = versionNode.asText();
-        configNode.remove("version");
-
+        String priorVersion = getAndRemoveVersionNode(configNode);
         AdvancedConfig config = configService.getAdvancedConfig();
         AdvancedConfig.Overlay overlay = AdvancedConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
@@ -498,5 +467,14 @@ class ConfigJsonService {
         logger.debug("removePointcutConfig(): content={}", content);
         String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
         configService.deletePointcutConfig(version);
+    }
+
+    private String getAndRemoveVersionNode(ObjectNode configNode) {
+        JsonNode versionNode = configNode.get("version");
+        if (versionNode == null || !versionNode.isTextual()) {
+            throw new IllegalStateException("Version is missing or is not a string value");
+        }
+        configNode.remove("version");
+        return versionNode.asText();
     }
 }

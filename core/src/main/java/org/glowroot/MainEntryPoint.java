@@ -24,7 +24,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.EnsuresNonNull;
+import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
+import checkers.nullness.quals.RequiresNonNull;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
@@ -36,7 +39,7 @@ import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Static;
 import org.glowroot.markers.UsedByReflection;
 
-import static org.glowroot.common.Nullness.assertNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * This class is registered as the Premain-Class in the MANIFEST.MF of glowroot.jar:
@@ -54,6 +57,7 @@ public class MainEntryPoint {
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
     private static final Logger infoLogger = LoggerFactory.getLogger("org.glowroot");
 
+    @MonotonicNonNull
     private static volatile GlowrootModule glowrootModule;
 
     private MainEntryPoint() {}
@@ -91,9 +95,10 @@ public class MainEntryPoint {
     }
 
     // called via reflection from org.glowroot.api.PluginServices
+    // also called via reflection from generated pointcut config advice
     @UsedByReflection
-    public static PluginServices getPluginServices(String pluginId) {
-        assertNonNull(glowrootModule, "Glowroot has not been started");
+    public static PluginServices getPluginServices(@Nullable String pluginId) {
+        checkNotNull(glowrootModule, "Glowroot has not been started");
         return glowrootModule.getPluginServices(pluginId);
     }
 
@@ -102,6 +107,7 @@ public class MainEntryPoint {
         start(getGlowrootProperties(), null);
     }
 
+    @EnsuresNonNull("glowrootModule")
     private static void start(@ReadOnly Map<String, String> properties,
             @Nullable Instrumentation instrumentation) throws SQLException, IOException {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
@@ -131,13 +137,14 @@ public class MainEntryPoint {
     }
 
     @OnlyUsedByTests
+    @EnsuresNonNull("glowrootModule")
     public static void start(@ReadOnly Map<String, String> properties)
             throws SQLException, IOException {
         start(properties, null);
     }
 
     @OnlyUsedByTests
-    @Nullable
+    @RequiresNonNull("glowrootModule")
     public static GlowrootModule getGlowrootModule() {
         return glowrootModule;
     }

@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
@@ -201,6 +202,7 @@ public class Trace {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
@@ -233,7 +235,7 @@ public class Trace {
             @JsonProperty("duration") @Nullable Long duration,
             @JsonProperty("background") @Nullable Boolean background,
             @JsonProperty("grouping") @Nullable String grouping,
-            @JsonProperty("attributes") @Nullable Map<String, String> attributes,
+            @JsonProperty("attributes") @Nullable Map<String, /*@Nullable*/String> attributes,
             @JsonProperty("userId") @Nullable String userId,
             @JsonProperty("error") @Nullable TraceError error,
             @JsonProperty("metrics") @Nullable List<Metric> metrics,

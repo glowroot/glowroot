@@ -23,7 +23,10 @@ import java.util.List;
 import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.EnsuresNonNull;
+import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
+import checkers.nullness.quals.RequiresNonNull;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -34,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
+
+import static org.glowroot.common.Nullness.castNonNull;
 
 /**
  * The placement of this code in the main Glowroot code base (and not inside of the tests folder) is
@@ -64,6 +69,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     // guarded by 'this'
     private final Map<String, Class<?>> classes = Maps.newConcurrentMap();
 
+    @SuppressWarnings("nullness:type.argument.type.incompatible")
     private final ThreadLocal<Boolean> inWeaving = new ThreadLocal<Boolean>() {
         @Override
         protected Boolean initialValue() {
@@ -75,6 +81,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return new Builder();
     }
 
+    @SuppressWarnings("initialization")
     private IsolatedWeavingClassLoader(ImmutableList<MixinType> mixinTypes,
             ImmutableList<Advice> advisors, MetricTimerService metricTimerService,
             ImmutableList<Class<?>> bridgeClasses, ImmutableList<String> excludePackages,
@@ -85,14 +92,21 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         if (weavingDisabled) {
             weaver = null;
         } else {
-            weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE, this,
+            // it is safe to pass @UnderInitialization IsolatedWeavingClassLoader to Weaver
+            // constructor since Weaver only stores the reference for later use,
+            // see Java Concurrency in Practice:
+            // "The this reference can be stored somewhere by the constructor as long as it is not
+            // used by another thread until after construction."
+            @SuppressWarnings("initialization")
+            Weaver weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE, this,
                     new ParsedTypeCache(), metricTimerService, generateMetricNameWrapperMethods);
+            this.weaver = weaver;
         }
     }
 
-    public <S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
-            throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-
+    public <S extends /*@Nullable*/Object, T extends S> S newInstance(Class<T> implClass,
+            Class<S> bridgeClass) throws InstantiationException, IllegalAccessException,
+            ClassNotFoundException {
         if (isBridgeable(bridgeClass.getName())) {
             return bridgeClass.cast(loadClass(implClass.getName()).newInstance());
         } else {
@@ -142,6 +156,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return super.defineClass(name, bytes, 0, bytes.length);
     }
 
+    @RequiresNonNull("weaver")
     private byte[] weaveClass(String name, byte[] bytes) throws ClassFormatError {
         if (inWeaving.get()) {
             return bytes;
@@ -205,6 +220,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
         private ImmutableList<MixinType> mixinTypes = ImmutableList.of();
         private ImmutableList<Advice> advisors = ImmutableList.of();
+        @MonotonicNonNull
         private MetricTimerService metricTimerService;
         private boolean weavingDisabled;
         private boolean generateMetricNameWrapperMethods;
@@ -221,6 +237,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.advisors = ImmutableList.copyOf(advisors);
         }
 
+        @EnsuresNonNull("metricTimerService")
         public void setMetricTimerService(MetricTimerService metricTimerService) {
             this.metricTimerService = metricTimerService;
         }
@@ -241,10 +258,14 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.excludePackages.add(excludePackages);
         }
 
+        @RequiresNonNull("metricTimerService")
         public IsolatedWeavingClassLoader build() {
             return AccessController.doPrivileged(
                     new PrivilegedAction<IsolatedWeavingClassLoader>() {
                         public IsolatedWeavingClassLoader run() {
+                            // metricTimerService is non-null when outer method is called, and it is
+                            // @MonotonicNonNull, so it must be non-null here
+                            castNonNull(metricTimerService);
                             return new IsolatedWeavingClassLoader(mixinTypes, advisors,
                                     metricTimerService, bridgeClasses.build(),
                                     excludePackages.build(), weavingDisabled,

@@ -42,6 +42,7 @@ import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PluginDescriptorCache;
+import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.CollectStackCommand.TerminateScheduledActionException;
@@ -67,12 +68,15 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final TraceCollector traceCollector;
     private final ConfigService configService;
     private final MetricNameCache metricNameCache;
+    @Nullable
+    private final ThreadAllocatedBytes threadAllocatedBytes;
     private final FineProfileScheduler fineProfileScheduler;
     private final Clock clock;
     private final Ticker ticker;
 
-    // pluginId should be "groupId:artifactId", based on the groupId and artifactId specified in the
-    // plugin's org.glowroot.plugin.json
+    // pluginId is either the id of a registered plugin or it is null
+    // (see validation in constructor)
+    @Nullable
     private final String pluginId;
 
     // cache for fast read access
@@ -81,37 +85,56 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Nullable
     private volatile PluginConfig pluginConfig;
 
+    static PluginServicesImpl create(TraceRegistry traceRegistry, TraceCollector traceCollector,
+            ConfigService configService, MetricNameCache metricNameCache,
+            @Nullable ThreadAllocatedBytes threadAllocatedBytes,
+            FineProfileScheduler fineProfileScheduler, Ticker ticker, Clock clock,
+            PluginDescriptorCache pluginDescriptorCache, @Nullable String pluginId) {
+        PluginServicesImpl pluginServices = new PluginServicesImpl(traceRegistry, traceCollector,
+                configService, metricNameCache, threadAllocatedBytes, fineProfileScheduler, ticker,
+                clock, pluginDescriptorCache, pluginId);
+        // add config listeners first before caching configuration property values to avoid a
+        // (remotely) possible race condition
+        configService.addConfigListener(pluginServices);
+        if (pluginId != null) {
+            configService.addPluginConfigListener(pluginId, pluginServices);
+        }
+        // call onChange() to initialize the cached configuration property values
+        pluginServices.onChange();
+        return pluginServices;
+    }
+
     PluginServicesImpl(TraceRegistry traceRegistry, TraceCollector traceCollector,
             ConfigService configService, MetricNameCache metricNameCache,
+            @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             FineProfileScheduler fineProfileScheduler, Ticker ticker, Clock clock,
-            PluginDescriptorCache pluginDescriptorCache,
-            String pluginId) {
+            PluginDescriptorCache pluginDescriptorCache, @Nullable String pluginId) {
         this.traceRegistry = traceRegistry;
         this.traceCollector = traceCollector;
         this.configService = configService;
         this.metricNameCache = metricNameCache;
+        this.threadAllocatedBytes = threadAllocatedBytes;
         this.fineProfileScheduler = fineProfileScheduler;
         this.clock = clock;
         this.ticker = ticker;
-        this.pluginId = pluginId;
-        // add config listener first before caching config properties to avoid a
-        // (remotely) possible race condition
-        configService.addConfigListener(this);
-        configService.addPluginConfigListener(pluginId, this);
-        if (!pluginId.equals(PointcutConfigAdviceCache.POINTCUT_CONFIG_PLUGIN_ID)) {
-            pluginConfig = configService.getPluginConfig(pluginId);
+        if (pluginId == null) {
+            this.pluginId = null;
+        } else {
+            PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
             if (pluginConfig == null) {
                 List<String> ids = Lists.newArrayList();
-                for (PluginDescriptor pluginDescriptor : pluginDescriptorCache
-                        .getPluginDescriptors()) {
+                List<PluginDescriptor> pluginDescriptors =
+                        pluginDescriptorCache.getPluginDescriptors();
+                for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
                     ids.add(pluginDescriptor.getId());
                 }
                 logger.warn("unexpected plugin id: {} (available plugin ids are {})", pluginId,
                         Joiner.on(", ").join(ids));
+                this.pluginId = null;
+            } else {
+                this.pluginId = pluginId;
             }
         }
-        // call onChange() to initialize the cached configuration property values
-        onChange();
     }
 
     @Override
@@ -166,6 +189,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public void registerConfigListener(ConfigListener listener) {
+        if (pluginId == null) {
+            return;
+        }
         if (listener == null) {
             logger.error("registerConfigListener(): argument 'listener' must be non-null");
             return;
@@ -198,7 +224,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
             trace = new Trace(clock.currentTimeMillis(), background, grouping, messageSupplier,
-                    (MetricNameImpl) metricName, ticker);
+                    (MetricNameImpl) metricName, threadAllocatedBytes, ticker);
             traceRegistry.addTrace(trace);
             fineProfileScheduler.maybeScheduleFineProfilingUsingPercentage(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
@@ -298,6 +324,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public void setTraceAttribute(String name, @Nullable String value) {
+        if (pluginId == null) {
+            return;
+        }
         if (name == null) {
             logger.error("setTraceAttribute(): argument 'name' must be non-null");
             return;
@@ -310,21 +339,28 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     public void onChange() {
         GeneralConfig generalConfig = configService.getGeneralConfig();
-        if (pluginId.equals(PointcutConfigAdviceCache.POINTCUT_CONFIG_PLUGIN_ID)) {
+        if (pluginId == null) {
             enabled = generalConfig.isEnabled();
         } else {
-            pluginConfig = configService.getPluginConfig(pluginId);
-            enabled = generalConfig.isEnabled() && pluginConfig != null && pluginConfig.isEnabled();
+            PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
+            if (pluginConfig == null) {
+                // pluginId was already validated at construction time so this should not happen
+                logger.error("plugin config not found for plugin id: {}", pluginId);
+                enabled = generalConfig.isEnabled();
+            } else {
+                enabled = generalConfig.isEnabled() && pluginConfig.isEnabled();
+            }
+            this.pluginConfig = pluginConfig;
         }
         maxSpans = generalConfig.getMaxSpans();
     }
 
     private Span startSpan(Trace trace, MetricNameImpl metricName,
             MessageSupplier messageSupplier) {
+        long startTick = ticker.read();
         if (trace.getSpanCount() >= maxSpans) {
             // the span limit has been exceeded for this trace
             trace.addSpanLimitExceededMarkerIfNeeded();
-            long startTick = ticker.read();
             Metric metric = metricName.get();
             if (metric == null) {
                 metric = trace.addMetric(metricName);
@@ -332,7 +368,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             metric.start(startTick);
             return new TimerWrappedInSpan(metric, startTick, trace, messageSupplier);
         } else {
-            return new SpanImpl(trace.pushSpan(metricName, messageSupplier), trace);
+            return new SpanImpl(trace.pushSpan(metricName, startTick, messageSupplier), trace);
         }
     }
 

@@ -19,11 +19,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import checkers.igj.quals.ReadOnly;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,8 +89,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    @ReadOnly
-    public List<AggregatePoint> readAggregates(long captureTimeFrom, long captureTimeTo) {
+    public ImmutableList<AggregatePoint> readAggregates(long captureTimeFrom, long captureTimeTo) {
         logger.debug("readAggregates(): captureTimeFrom={}, captureTimeTo={}", captureTimeFrom,
                 captureTimeTo);
         try {
@@ -107,9 +104,8 @@ public class AggregateDao implements AggregateRepository {
     }
 
     // returns list ordered and limited by average descending
-    @ReadOnly
-    public List<GroupingAggregate> readGroupingAggregates(long captureTimeFrom, long captureTimeTo,
-            int limit) {
+    public ImmutableList<GroupingAggregate> readGroupingAggregates(long captureTimeFrom,
+            long captureTimeTo, int limit) {
         logger.debug("readAggregates(): captureTimeFrom={}, captureTimeTo={}, limit={}",
                 captureTimeFrom, captureTimeTo, limit);
         try {

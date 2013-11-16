@@ -195,13 +195,25 @@
     </profile>
     <profile>
       <id>checker</id>
+      <dependencies>
+        <dependency>
+          <!-- guava uses these annotations but makes the dependency optional so
+               they need to be explicitly added when running the checker framework
+               otherwise it errors on code that invokes Splitter.omitEmptyStrings()
+               (e.g. org.glowroot.jvm.HeapHistograms) and probably elsewhere -->
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
+          <version>2.0.2</version>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
       <build>
         <plugins>
           <plugin>
             <!-- running checker framework check requires jdk7 -->
             <groupId>edu.washington.cs.types.checker</groupId>
             <artifactId>checker-maven-plugin</artifactId>
-            <version>1.6.4</version>
+            <version>1.7.1</version>
             <executions>
               <execution>
                 <phase>process-classes</phase>
@@ -213,16 +225,16 @@
             <configuration>
               <processors>
                 <processor>checkers.nullness.NullnessChecker</processor>
-                <processor>checkers.igj.IGJChecker</processor>
+                <!--processor>checkers.igj.IGJChecker</processor-->
               </processors>
               <procOnly>false</procOnly>
-              <failOnError>false</failOnError>
               <!-- implicit imports for commented out uses of /*@Nullable*/, etc -->
+              <!-- TODO test without implicit imports, maybe fixed now in 1.7.1?? -->
               <javaParams>
                 -Djsr308_imports=checkers.nullness.quals.*${path.separator}checkers.igj.quals.*
               </javaParams>
               <javacParams>
-                -Astubs=${basedir}/../core/src/main/stubs -Alint=nulltest
+                -Astubs=${basedir}/../core/src/main/stubs
               </javacParams>
             </configuration>
           </plugin>

@@ -23,8 +23,12 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.glowroot.common.Nullness.assertNonNull;
+import org.glowroot.weaving.Advice.AdviceConstructionException;
+
+import static org.glowroot.common.Nullness.castNonNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
@@ -40,15 +44,15 @@ import static org.objectweb.asm.Opcodes.V1_5;
  */
 class AdviceFlowGenerator {
 
+    private static final Logger logger = LoggerFactory.getLogger(AdviceFlowGenerator.class);
+
     private static final AtomicInteger counter = new AtomicInteger();
 
     private static final Type adviceFlowOuterHolderType = Type.getType(AdviceFlowOuterHolder.class);
 
     private AdviceFlowGenerator() {}
 
-    static Class<?> generate() throws SecurityException, NoSuchMethodException,
-            IllegalArgumentException, IllegalAccessException, InvocationTargetException {
-
+    static Class<?> generate() throws AdviceConstructionException {
         String generatedTypeName = "org/glowroot/weaving/GeneratedAdviceFlow"
                 + counter.incrementAndGet();
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
@@ -65,7 +69,7 @@ class AdviceFlowGenerator {
 
     private static void writeThreadLocalInitialization(ClassVisitor cv, String adviceFlowTypeName) {
         MethodVisitor mv = cv.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
-        assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
+        castNonNull(mv);
         mv.visitCode();
         String adviceFlowInternalName = adviceFlowOuterHolderType.getInternalName();
         mv.visitMethodInsn(INVOKESTATIC, adviceFlowInternalName, "create",
@@ -78,14 +82,38 @@ class AdviceFlowGenerator {
         cv.visitEnd();
     }
 
-    private static Class<?> defineClass(String name, byte[] bytes) throws NoSuchMethodException,
-            IllegalAccessException, InvocationTargetException {
-        Method defineClassMethod = ClassLoader.class.getDeclaredMethod("defineClass", String.class,
-                byte[].class, int.class, int.class);
+    private static Class<?> defineClass(String name, byte[] bytes)
+            throws AdviceConstructionException {
+        Method defineClassMethod;
+        try {
+            defineClassMethod = ClassLoader.class.getDeclaredMethod("defineClass", String.class,
+                    byte[].class, int.class, int.class);
+        } catch (NoSuchMethodException e) {
+            logger.error(e.getMessage(), e);
+            throw new AdviceConstructionException(e);
+        } catch (SecurityException e) {
+            logger.error(e.getMessage(), e);
+            throw new AdviceConstructionException(e);
+        }
         defineClassMethod.setAccessible(true);
-        Class<?> definedClass = (Class<?>) defineClassMethod.invoke(
-                AdviceFlowGenerator.class.getClassLoader(), name, bytes, 0, bytes.length);
-        assertNonNull(definedClass, "ClassLoader.defineClass() returned null");
+        Class<?> definedClass;
+        try {
+            definedClass = (Class<?>) defineClassMethod.invoke(
+                    AdviceFlowGenerator.class.getClassLoader(), name, bytes, 0, bytes.length);
+        } catch (IllegalAccessException e) {
+            logger.error(e.getMessage(), e);
+            throw new AdviceConstructionException(e);
+        } catch (IllegalArgumentException e) {
+            logger.error(e.getMessage(), e);
+            throw new AdviceConstructionException(e);
+        } catch (InvocationTargetException e) {
+            logger.error(e.getMessage(), e);
+            throw new AdviceConstructionException(e);
+        }
+        if (definedClass == null) {
+            logger.error("method unexpectedly returned null: java.lang.ClassLoader.defineClass()");
+            throw new AdviceConstructionException("Method ClassLoader.defineClass() returned null");
+        }
         return definedClass;
     }
 }

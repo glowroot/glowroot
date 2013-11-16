@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
+import dataflow.quals.Pure;
 
 import org.glowroot.api.MetricTimer;
 import org.glowroot.markers.PartiallyThreadSafe;
@@ -157,6 +158,7 @@ public class Metric implements MetricTimer {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)

@@ -18,7 +18,7 @@ package org.glowroot.plugin.jdbc;
 import java.util.List;
 
 import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.AssertNonNullIfTrue;
+import checkers.nullness.quals.EnsuresNonNullIf;
 import checkers.nullness.quals.Nullable;
 
 import org.glowroot.api.Message;
@@ -149,12 +149,12 @@ class JdbcMessageSupplier extends MessageSupplier {
         this.numRows = Math.max(this.numRows, currentRow);
     }
 
-    @AssertNonNullIfTrue("parameters")
+    @EnsuresNonNullIf(expression = "parameters", result = true)
     private boolean isUsingParameters() {
         return parameters != null;
     }
 
-    @AssertNonNullIfTrue("batchedParameters")
+    @EnsuresNonNullIf(expression = "batchedParameters", result = true)
     private boolean isUsingBatchedParameters() {
         return batchedParameters != null;
     }

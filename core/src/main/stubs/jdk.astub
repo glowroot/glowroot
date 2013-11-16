@@ -44,6 +44,16 @@ public interface Annotation {}
 
 
 /* ========================================================================== */
+package java.lang.instrument;
+
+public interface ClassFileTransformer {
+    byte @Nullable [] transform(@Nullable ClassLoader loader, String className,
+            Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
+            byte[] classfileBuffer);
+}
+
+
+/* ========================================================================== */
 package java.lang.management;
 
 @Immutable

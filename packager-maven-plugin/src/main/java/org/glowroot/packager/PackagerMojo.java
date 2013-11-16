@@ -18,7 +18,7 @@ package org.glowroot.packager;
 import java.io.IOException;
 import java.util.List;
 
-import checkers.nullness.quals.Nullable;
+import checkers.nullness.quals.MonotonicNonNull;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
@@ -43,36 +43,36 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class PackagerMojo extends AbstractMojo {
 
     @Parameter(readonly = true, defaultValue = "${project}")
-    @Nullable
+    @MonotonicNonNull
     private MavenProject project;
 
     @Component
-    @Nullable
+    @MonotonicNonNull
     private MavenProjectHelper projectHelper;
 
     @Component
-    @Nullable
+    @MonotonicNonNull
     private ArtifactFactory artifactFactory;
 
     @Component
-    @Nullable
+    @MonotonicNonNull
     private ArtifactResolver artifactResolver;
 
     @Parameter(readonly = true, required = true,
             defaultValue = "${project.remoteArtifactRepositories}")
-    @Nullable
+    @MonotonicNonNull
     private List<ArtifactRepository> remoteArtifactRepositories;
 
     @Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
-    @Nullable
+    @MonotonicNonNull
     private ArtifactRepository localRepository;
 
     @Parameter(readonly = true, required = true, defaultValue = "${project.build.finalName}")
-    @Nullable
+    @MonotonicNonNull
     private String finalName;
 
     @Parameter
-    private PluginConfig/*@Nullable*/[] plugins;
+    private PluginConfig/*@MonotonicNonNull*/[] plugins;
 
     public void execute() throws MojoExecutionException {
         if (plugins == null) {

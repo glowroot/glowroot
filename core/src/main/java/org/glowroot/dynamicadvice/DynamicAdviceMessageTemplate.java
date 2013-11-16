@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.UsedByGeneratedBytecode;
 
+import static org.glowroot.common.Nullness.castNonNull;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -53,7 +55,9 @@ public class DynamicAdviceMessageTemplate {
             if (matcher.start() > curr) {
                 allParts.add(new ConstantPart(template.substring(curr, matcher.start())));
             }
-            String path = matcher.group(1).trim();
+            String group = matcher.group(1);
+            castNonNull(group);
+            String path = group.trim();
             int index = path.indexOf('.');
             String base;
             String remaining;

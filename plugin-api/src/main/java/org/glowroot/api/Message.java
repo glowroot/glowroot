@@ -19,11 +19,14 @@ import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
+
+import dataflow.quals.Pure;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.glowroot.api.internal.ReadableMessage;
 
 /**
@@ -118,6 +121,7 @@ public abstract class Message {
         }
 
         @Override
+        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("template", template)

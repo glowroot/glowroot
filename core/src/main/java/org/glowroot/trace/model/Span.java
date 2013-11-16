@@ -18,6 +18,7 @@ package org.glowroot.trace.model;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import dataflow.quals.Pure;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
@@ -124,6 +125,7 @@ public class Span {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("message", messageSupplier == null ? null : messageSupplier.get())

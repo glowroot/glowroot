@@ -45,7 +45,7 @@ class ServletPluginProperties {
     private static volatile ImmutableList<Pattern> captureRequestParameters = ImmutableList.of();
     private static volatile ImmutableList<Pattern> maskRequestParameters = ImmutableList.of();
 
-    private static volatile String sessionUserIdAttributePath;
+    private static volatile String sessionUserIdAttributePath = "";
     private static volatile ImmutableSet<String> captureSessionAttributePaths = ImmutableSet.of();
     private static volatile ImmutableSet<String> captureSessionAttributeNames = ImmutableSet.of();
     private static volatile boolean captureSessionId;

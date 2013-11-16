@@ -30,9 +30,12 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import dataflow.quals.Pure;
 
 import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.ThreadSafe;
+
+import static org.glowroot.common.Nullness.castNonNull;
 
 /**
  * Merged stack tree built from sampled stack traces captured by periodic calls to
@@ -150,6 +153,7 @@ public class MergedStackTree {
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("rootNodes", rootNodes)
@@ -198,7 +202,9 @@ public class MergedStackTree {
     private static String getMetricName(StackTraceElement stackTraceElement) {
         Matcher matcher = metricMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
         if (matcher.matches()) {
-            return matcher.group(1).replace("$", " ");
+            String group = matcher.group(1);
+            castNonNull(group);
+            return group.replace("$", " ");
         } else {
             return null;
         }

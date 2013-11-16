@@ -19,6 +19,7 @@ import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import dataflow.quals.Pure;
 import org.objectweb.asm.Type;
 
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
@@ -75,6 +76,7 @@ public class ParsedMethod {
     // equals and hashCode are only defined in terms of name and argTypeNames since those uniquely
     // identify a method within a given class
     @Override
+    @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj == this) {
             return true;
@@ -89,11 +91,13 @@ public class ParsedMethod {
     // equals and hashCode are only defined in terms of name and argTypeNames since those uniquely
     // identify a method within a given class
     @Override
+    @Pure
     public int hashCode() {
         return Objects.hashCode(name, argTypeNames);
     }
 
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)

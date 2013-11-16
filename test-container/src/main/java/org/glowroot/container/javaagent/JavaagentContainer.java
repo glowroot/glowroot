@@ -17,8 +17,10 @@ package org.glowroot.container.javaagent;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.ServerSocket;
@@ -47,19 +49,18 @@ import org.glowroot.container.SpyingLogFilter.MessageCount;
 import org.glowroot.container.SpyingLogFilterCheck;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.ConfigService;
-import org.glowroot.container.javaagent.JavaagentConfigService.PortChangeListener;
+import org.glowroot.container.javaagent.JavaagentConfigService.GetUiPortCommand;
 import org.glowroot.container.trace.TraceService;
 import org.glowroot.markers.ThreadSafe;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.glowroot.common.Nullness.assertNonNull;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 @ThreadSafe
-public class JavaagentContainer implements Container, PortChangeListener {
+public class JavaagentContainer implements Container {
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentContainer.class);
 
@@ -69,15 +70,13 @@ public class JavaagentContainer implements Container, PortChangeListener {
 
     private final ServerSocket serverSocket;
     private final SocketCommander socketCommander;
-    private final Process process;
     private final ExecutorService consolePipeExecutorService;
+    private final Process process;
+    private final ConsoleOutputPipe consoleOutputPipe;
     private final JavaagentHttpClient httpClient;
     private final JavaagentConfigService configService;
     private final JavaagentTraceService traceService;
     private final Thread shutdownHook;
-
-    // the one place ever that StringBuffer's synchronization is useful :-)
-    private final StringBuffer consoleOutput = new StringBuffer();
 
     public static JavaagentContainer create() throws Exception {
         return new JavaagentContainer(null, false, false, false);
@@ -92,7 +91,7 @@ public class JavaagentContainer implements Container, PortChangeListener {
     }
 
     public JavaagentContainer(@Nullable File dataDir, boolean useFileDb, boolean shared,
-            final boolean scrapeConsoleOutput) throws Exception {
+            final boolean captureConsoleOutput) throws Exception {
         if (dataDir == null) {
             this.dataDir = TempDirs.createTempDir("glowroot-test-datadir");
             deleteDataDirOnClose = true;
@@ -111,34 +110,22 @@ public class JavaagentContainer implements Container, PortChangeListener {
         List<String> command = buildCommand(serverSocket.getLocalPort(), this.dataDir, useFileDb);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
-        process = processBuilder.start();
+        final Process process = processBuilder.start();
         consolePipeExecutorService = Executors.newSingleThreadExecutor();
-        consolePipeExecutorService.submit(new Runnable() {
-            public void run() {
-                try {
-                    byte[] buffer = new byte[100];
-                    while (true) {
-                        int n = process.getInputStream().read(buffer);
-                        if (n == -1) {
-                            break;
-                        }
-                        if (scrapeConsoleOutput) {
-                            // intentionally using platform default charset
-                            consoleOutput.append(new String(buffer, 0, n));
-                        }
-                        System.out.write(buffer, 0, n);
-                    }
-                } catch (IOException e) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
-        });
+        InputStream in = process.getInputStream();
+        if (in == null) {
+            // process.getInputStream() only returns null if ProcessBuilder.redirectOutput() is used
+            // to redirect output to a file
+            throw new AssertionError("Process.getInputStream() returned null");
+        }
+        consoleOutputPipe = new ConsoleOutputPipe(in, System.out, captureConsoleOutput);
+        consolePipeExecutorService.submit(consoleOutputPipe);
+        this.process = process;
         Socket socket = serverSocket.accept();
         ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
         ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
         socketCommander = new SocketCommander(objectOut, objectIn);
-        int uiPort = (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT);
-        assertNonNull(uiPort, "Get Port returned null port");
+        int uiPort = getUiPort(socketCommander);
         if (uiPort == SocketCommandProcessor.NO_PORT) {
             socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN);
             socketCommander.close();
@@ -148,18 +135,10 @@ public class JavaagentContainer implements Container, PortChangeListener {
             throw new StartupFailedException();
         }
         httpClient = new JavaagentHttpClient(uiPort);
-        configService = new JavaagentConfigService(httpClient, this);
+        this.configService = new JavaagentConfigService(httpClient,
+                new JavaagentContainerGetUiPort(socketCommander));
         traceService = new JavaagentTraceService(httpClient);
-        shutdownHook = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    socketCommander.sendKillCommand();
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
-        };
+        shutdownHook = new ShutdownHookThread(socketCommander);
         // unfortunately, ctrl-c during maven test will kill the maven process, but won't kill the
         // forked surefire jvm where the tests are being run
         // (http://jira.codehaus.org/browse/SUREFIRE-413), and so this hook won't get triggered by
@@ -200,15 +179,7 @@ public class JavaagentContainer implements Container, PortChangeListener {
     }
 
     public int getUiPort() throws Exception {
-        return (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT);
-    }
-
-    public void onMaybePortChange() {
-        try {
-            httpClient.updateUiPort(getUiPort());
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+        return getUiPort(socketCommander);
     }
 
     public void checkAndReset() throws Exception {
@@ -219,7 +190,10 @@ public class JavaagentContainer implements Container, PortChangeListener {
         if (SpyingLogFilterCheck.isSpyingLogFilterEnabled()) {
             MessageCount logMessageCount = (MessageCount) socketCommander
                     .sendCommand(SocketCommandProcessor.CLEAR_LOG_MESSAGES);
-            assertNonNull(logMessageCount, "Clear Log Messages returned null MessageCount");
+            if (logMessageCount == null) {
+                throw new AssertionError("Command returned null: "
+                        + SocketCommandProcessor.CLEAR_LOG_MESSAGES);
+            }
             if (logMessageCount.getExpectedCount() > 0) {
                 throw new AssertionError("One or more expected messages were not logged");
             }
@@ -250,7 +224,12 @@ public class JavaagentContainer implements Container, PortChangeListener {
     public List<String> getUnexpectedConsoleLines() {
         List<String> unexpectedLines = Lists.newArrayList();
         Splitter splitter = Splitter.on(Pattern.compile("\r?\n")).omitEmptyStrings();
-        for (String line : splitter.split(consoleOutput.toString())) {
+        String capturedOutput = consoleOutputPipe.getCapturedOutput();
+        if (capturedOutput == null) {
+            throw new IllegalStateException("JavaagentContainer was created with"
+                    + " captureConsoleOutput=false");
+        }
+        for (String line : splitter.split(capturedOutput)) {
             if (line.contains("Glowroot started") || line.contains("Glowroot listening")) {
                 continue;
             }
@@ -269,6 +248,14 @@ public class JavaagentContainer implements Container, PortChangeListener {
         if (deleteDataDirOnClose) {
             TempDirs.deleteRecursively(dataDir);
         }
+    }
+
+    private static int getUiPort(SocketCommander socketCommander) throws Exception {
+        Integer port = (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT);
+        if (port == null) {
+            throw new AssertionError("Command returned null: " + SocketCommandProcessor.GET_PORT);
+        }
+        return port;
     }
 
     public static void main(String[] args) throws Exception {
@@ -344,5 +331,80 @@ public class JavaagentContainer implements Container, PortChangeListener {
             }
         }
         return javaAgents;
+    }
+
+    private static class JavaagentContainerGetUiPort implements GetUiPortCommand {
+
+        private final SocketCommander socketCommander;
+
+        private JavaagentContainerGetUiPort(SocketCommander socketCommander) {
+            this.socketCommander = socketCommander;
+        }
+
+        public int getUiPort() throws Exception {
+            return JavaagentContainer.getUiPort(socketCommander);
+        }
+    }
+
+    private static class ShutdownHookThread extends Thread {
+
+        private final SocketCommander socketCommander;
+
+        private ShutdownHookThread(SocketCommander socketCommander) {
+            this.socketCommander = socketCommander;
+        }
+
+        @Override
+        public void run() {
+            try {
+                socketCommander.sendKillCommand();
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
+    }
+
+    @ThreadSafe
+    private static class ConsoleOutputPipe implements Runnable {
+
+        private final InputStream in;
+        private final OutputStream out;
+        // the one place ever that StringBuffer's synchronization is useful :-)
+        @Nullable
+        private final StringBuffer capturedOutput;
+
+        private ConsoleOutputPipe(InputStream in, OutputStream out, boolean captureOutput) {
+            this.in = in;
+            this.out = out;
+            if (captureOutput) {
+                capturedOutput = new StringBuffer();
+            } else {
+                capturedOutput = null;
+            }
+        }
+
+        public void run() {
+            byte[] buffer = new byte[100];
+            try {
+                while (true) {
+                    int n = in.read(buffer);
+                    if (n == -1) {
+                        break;
+                    }
+                    if (capturedOutput != null) {
+                        // intentionally using platform default charset
+                        capturedOutput.append(new String(buffer, 0, n));
+                    }
+                    out.write(buffer, 0, n);
+                }
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
+
+        @Nullable
+        private String getCapturedOutput() {
+            return capturedOutput == null ? null : capturedOutput.toString();
+        }
     }
 }
