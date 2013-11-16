@@ -252,7 +252,7 @@ public class Advice {
     static class AdviceParameter {
         private final ParameterKind kind;
         private final Class<?> type;
-        AdviceParameter(ParameterKind kind, Class<?> type) {
+        private AdviceParameter(ParameterKind kind, Class<?> type) {
             this.kind = kind;
             this.type = type;
         }

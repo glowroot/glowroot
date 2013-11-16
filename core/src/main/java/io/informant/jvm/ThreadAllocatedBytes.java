@@ -114,10 +114,6 @@ public class ThreadAllocatedBytes {
         }
     }
 
-    public static boolean isAvailable() {
-        return supported && isEnabled(sunThreadMXBeanClass);
-    }
-
     @Nullable
     private static Class<?> initSunThreadMXBeanClass() {
         try {

@@ -16,11 +16,13 @@
 package io.informant.weaving;
 
 import io.informant.api.OptionalReturn;
+import io.informant.markers.UsedByGeneratedBytecode;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@UsedByGeneratedBytecode
 public class VoidReturn implements OptionalReturn {
 
     private static final VoidReturn INSTANCE = new VoidReturn();

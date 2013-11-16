@@ -23,10 +23,10 @@ import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import com.google.common.base.Strings;
 
 import io.informant.config.JsonViews.FileView;
 import io.informant.config.JsonViews.UiView;
+import io.informant.markers.UsedByJsonBinding;
 
 /**
  * Immutable structure to hold the user interface config.
@@ -38,7 +38,6 @@ import io.informant.config.JsonViews.UiView;
 public class UserInterfaceConfig {
 
     private final int port;
-    private final boolean passwordEnabled;
     // timeout 0 means sessions do not time out (except on jvm restart)
     private final int sessionTimeoutMinutes;
     private final String passwordHash;
@@ -47,25 +46,22 @@ public class UserInterfaceConfig {
 
     static UserInterfaceConfig getDefault() {
         final int port = 4000;
-        final boolean passwordEnabled = false;
         final int sessionTimeoutMinutes = 30;
         final String passwordHash = "";
-        return new UserInterfaceConfig(port, passwordEnabled, sessionTimeoutMinutes, passwordHash);
-    }
-
-    public static FileOverlay fileOverlay(UserInterfaceConfig base) {
-        return new FileOverlay(base);
+        return new UserInterfaceConfig(port, sessionTimeoutMinutes, passwordHash);
     }
 
     public static Overlay overlay(UserInterfaceConfig base) {
         return new Overlay(base);
     }
 
+    static FileOverlay fileOverlay(UserInterfaceConfig base) {
+        return new FileOverlay(base);
+    }
+
     @VisibleForTesting
-    public UserInterfaceConfig(int port, boolean passwordEnabled, int sessionTimeoutMinutes,
-            String passwordHash) {
+    public UserInterfaceConfig(int port, int sessionTimeoutMinutes, String passwordHash) {
         this.port = port;
-        this.passwordEnabled = passwordEnabled;
         this.sessionTimeoutMinutes = sessionTimeoutMinutes;
         this.passwordHash = passwordHash;
         this.version = VersionHashes.sha1(sessionTimeoutMinutes, passwordHash);
@@ -79,6 +75,7 @@ public class UserInterfaceConfig {
         return sessionTimeoutMinutes;
     }
 
+    @JsonView(UiView.class)
     public boolean isPasswordEnabled() {
         return !passwordHash.equals("");
     }
@@ -114,45 +111,39 @@ public class UserInterfaceConfig {
     }
 
     // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
-    public static class FileOverlay {
+    @UsedByJsonBinding
+    static class FileOverlay {
 
         private int port;
-        private boolean passwordEnabled;
         private int sessionTimeoutMinutes;
         private String passwordHash;
 
         private FileOverlay(UserInterfaceConfig base) {
             port = base.port;
-            passwordEnabled = base.passwordEnabled;
             sessionTimeoutMinutes = base.sessionTimeoutMinutes;
             passwordHash = base.passwordHash;
         }
-        public void setPort(int port) {
+        void setPort(int port) {
             this.port = port;
         }
-        public void setPasswordEnabled(boolean passwordEnabled) {
-            this.passwordEnabled = passwordEnabled;
-        }
-        public void setSessionTimeoutMinutes(int sessionTimeoutMinutes) {
+        void setSessionTimeoutMinutes(int sessionTimeoutMinutes) {
             this.sessionTimeoutMinutes = sessionTimeoutMinutes;
         }
-        public void setPasswordHash(String passwordHash) {
+        void setPasswordHash(String passwordHash) {
             this.passwordHash = passwordHash;
         }
-        public UserInterfaceConfig build() {
-            return new UserInterfaceConfig(port, passwordEnabled, sessionTimeoutMinutes,
-                    passwordHash);
+        UserInterfaceConfig build() {
+            return new UserInterfaceConfig(port, sessionTimeoutMinutes, passwordHash);
         }
     }
 
     // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
+    @UsedByJsonBinding
     public static class Overlay {
 
-        private final boolean originalPasswordEnabled;
         private final String originalPasswordHash;
 
         private int port;
-        private boolean passwordEnabled;
         private int sessionTimeoutMinutes;
 
         @Nullable
@@ -162,16 +153,11 @@ public class UserInterfaceConfig {
 
         private Overlay(UserInterfaceConfig base) {
             port = base.port;
-            originalPasswordEnabled = base.passwordEnabled;
             originalPasswordHash = base.passwordHash;
-            passwordEnabled = base.passwordEnabled;
             sessionTimeoutMinutes = base.sessionTimeoutMinutes;
         }
         public void setPort(int port) {
             this.port = port;
-        }
-        public void setPasswordEnabled(boolean passwordEnabled) {
-            this.passwordEnabled = passwordEnabled;
         }
         public void setSessionTimeoutMinutes(int sessionTimeoutMinutes) {
             this.sessionTimeoutMinutes = sessionTimeoutMinutes;
@@ -185,42 +171,39 @@ public class UserInterfaceConfig {
         public UserInterfaceConfig build() throws NoSuchAlgorithmException,
                 InvalidKeySpecException, CurrentPasswordIncorrectException {
             String passwordHash;
-            if (!originalPasswordEnabled && passwordEnabled) {
-                // enabling password
-                if (Strings.isNullOrEmpty(newPassword)) {
-                    // UI validation prevents this from happening
-                    throw new IllegalStateException("When enabling password, newPassword property"
-                            + " is required");
-                }
-                passwordHash = PasswordHash.createHash(newPassword);
-            } else if (originalPasswordEnabled && !passwordEnabled) {
-                // disabling password
-                if (Strings.isNullOrEmpty(currentPassword)) {
-                    // UI validation prevents this from happening
-                    throw new IllegalStateException("When disabling password, currentPassword"
-                            + " property is required");
-                }
-                if (!PasswordHash.validatePassword(currentPassword, originalPasswordHash)) {
-                    throw new CurrentPasswordIncorrectException();
-                }
-                passwordHash = "";
-            } else if (passwordEnabled && newPassword != null) {
-                // changing password
-                if (Strings.isNullOrEmpty(currentPassword) || Strings.isNullOrEmpty(newPassword)) {
-                    // UI validation prevents this from happening
-                    throw new IllegalStateException("When changing the password, both"
-                            + " currentPassword and newPassword properties are required");
-                }
-                if (!PasswordHash.validatePassword(currentPassword, originalPasswordHash)) {
-                    throw new CurrentPasswordIncorrectException();
-                }
-                passwordHash = PasswordHash.createHash(newPassword);
+            if (currentPassword != null && newPassword != null) {
+                passwordHash = verifyAndGenerateNewPasswordHash(currentPassword, newPassword,
+                        originalPasswordHash);
             } else {
                 // no change
                 passwordHash = originalPasswordHash;
             }
-            return new UserInterfaceConfig(port, passwordEnabled, sessionTimeoutMinutes,
-                    passwordHash);
+            return new UserInterfaceConfig(port, sessionTimeoutMinutes, passwordHash);
+        }
+        private static String verifyAndGenerateNewPasswordHash(String currentPassword,
+                @Nullable String newPassword, String originalPasswordHash)
+                throws NoSuchAlgorithmException, InvalidKeySpecException,
+                CurrentPasswordIncorrectException {
+
+            if (currentPassword.equals("") && !newPassword.equals("")) {
+                // enabling password
+                return PasswordHash.createHash(newPassword);
+            } else if (!currentPassword.equals("") && newPassword.equals("")) {
+                // disabling password
+                if (!PasswordHash.validatePassword(currentPassword, originalPasswordHash)) {
+                    throw new CurrentPasswordIncorrectException();
+                }
+                return "";
+            } else if (currentPassword.equals("") && newPassword.equals("")) {
+                // UI validation prevents this from happening
+                throw new IllegalStateException("Current and new password are both empty");
+            } else {
+                // changing password
+                if (!PasswordHash.validatePassword(currentPassword, originalPasswordHash)) {
+                    throw new CurrentPasswordIncorrectException();
+                }
+                return PasswordHash.createHash(newPassword);
+            }
         }
     }
 

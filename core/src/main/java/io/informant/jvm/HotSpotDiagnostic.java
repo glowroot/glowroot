@@ -166,7 +166,7 @@ public class HotSpotDiagnostic {
         private final String value;
         private final String origin;
 
-        public VMOption(CompositeData wrappedOption) {
+        private VMOption(CompositeData wrappedOption) {
             name = (String) wrappedOption.get("name");
             value = (String) wrappedOption.get("value");
             origin = (String) wrappedOption.get("origin");

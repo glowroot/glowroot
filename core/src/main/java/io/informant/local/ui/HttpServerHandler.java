@@ -297,8 +297,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                     new Date(System.currentTimeMillis() + FIVE_MINUTES));
         } else {
             // all other static resources are versioned and can be safely cached forever
-            String filename = path.substring(path.lastIndexOf("/") + 1);
-            String rev = filename.substring(0, filename.indexOf("."));
+            String filename = path.substring(path.lastIndexOf('/') + 1);
+            String rev = filename.substring(0, filename.indexOf('.'));
             response.headers().add(Names.ETAG, rev);
             response.headers().add(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
 
@@ -438,12 +438,15 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
     }
 
-    static class JsonServiceMapping {
+    private static class JsonServiceMapping {
+
         private final HttpMethod httpMethod;
         private final Pattern pattern;
         private final Object service;
         private final String methodName;
-        JsonServiceMapping(HttpMethod httpMethod, String path, Object service, String methodName) {
+
+        private JsonServiceMapping(HttpMethod httpMethod, String path, Object service,
+                String methodName) {
             this.httpMethod = httpMethod;
             this.service = service;
             this.methodName = methodName;

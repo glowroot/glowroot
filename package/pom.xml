@@ -35,7 +35,7 @@
   <pluginRepositories>
     <pluginRepository>
       <!-- eclipse doesn't resolve plugins against the current workspace, so it needs this if
-           informant-packager-maven-plugin hasn't been installed into the local repo already -->
+        informant-packager-maven-plugin hasn't been installed into the local repo already -->
       <id>sonatype-nexus-snapshots</id>
       <name>Sonatype Nexus Snapshots</name>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>

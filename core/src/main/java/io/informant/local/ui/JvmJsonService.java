@@ -88,7 +88,7 @@ class JvmJsonService {
         public int compare(@Nullable ThreadInfo left, @Nullable ThreadInfo right) {
             assertNonNull(left, "Ordering of non-null elements only");
             assertNonNull(right, "Ordering of non-null elements only");
-            return -Ints.compare(left.getStackTrace().length, right.getStackTrace().length);
+            return Ints.compare(right.getStackTrace().length, left.getStackTrace().length);
         }
     };
 
@@ -401,12 +401,7 @@ class JvmJsonService {
         if (!hotSpotDiagnosticAvailability.isAvailable()) {
             allFlagsAvailability = hotSpotDiagnosticAvailability;
         } else {
-            Availability flagsAvailability = Flags.getAvailability();
-            if (!flagsAvailability.isAvailable()) {
-                allFlagsAvailability = flagsAvailability;
-            } else {
-                allFlagsAvailability = Availability.available();
-            }
+            allFlagsAvailability = Flags.getAvailability();
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));

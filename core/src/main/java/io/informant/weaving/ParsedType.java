@@ -90,7 +90,7 @@ public class ParsedType {
         return null;
     }
 
-    public boolean hasReweavableAdvice() {
+    boolean hasReweavableAdvice() {
         return hasReweavableAdvice;
     }
 
@@ -134,7 +134,7 @@ public class ParsedType {
             methods.add(method);
         }
 
-        public void setHasReweavableAdvice(boolean hasReweavableAdvice) {
+        void setHasReweavableAdvice(boolean hasReweavableAdvice) {
             this.hasReweavableAdvice = hasReweavableAdvice;
         }
 

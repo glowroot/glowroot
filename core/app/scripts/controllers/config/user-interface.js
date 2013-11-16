@@ -77,6 +77,8 @@ informant.controller('ConfigUserInterfaceCtrl', [
     $scope.save = function (deferred) {
       // another copy to modify for the http post data
       var postData = angular.copy($scope.config);
+      // passwordEnabled property isn't sent back to server (only currentPassword/newPassword if applicable below)
+      delete postData.passwordEnabled;
       var enablingPassword = false;
       var disablingPassword = false;
       var changingPort = false;

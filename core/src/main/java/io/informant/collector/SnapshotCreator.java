@@ -68,8 +68,7 @@ public class SnapshotCreator {
         return createSnapshot(trace, trace.isStuck(), captureTime, captureTick, summary);
     }
 
-    public static Snapshot createCompletedSnapshot(Trace trace, long captureTime)
-            throws IOException {
+    static Snapshot createCompletedSnapshot(Trace trace, long captureTime) throws IOException {
         return createSnapshot(trace, false, captureTime, trace.getEndTick(), false);
     }
 
@@ -241,7 +240,6 @@ public class SnapshotCreator {
         private final JsonGenerator jg;
 
         private int writerIndex;
-        private boolean limitExceeded;
 
         private SpansReader(@ReadOnly Iterator<Span> spans, long captureTick) throws IOException {
             this.spans = spans;
@@ -288,14 +286,12 @@ public class SnapshotCreator {
                 return;
             }
             if (span.isLimitExceededMarker()) {
-                limitExceeded = true;
                 jg.writeStartObject();
                 jg.writeBooleanField("limitExceededMarker", true);
                 jg.writeEndObject();
                 return;
             }
             if (span.isLimitExtendedMarker()) {
-                limitExceeded = false;
                 jg.writeStartObject();
                 jg.writeBooleanField("limitExtendedMarker", true);
                 jg.writeEndObject();

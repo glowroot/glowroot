@@ -145,10 +145,6 @@ public class Metric implements MetricTimer {
         selfNestingLevel--;
     }
 
-    long getCount() {
-        return count;
-    }
-
     private void recordData(long time) {
         if (time > max) {
             max = time;

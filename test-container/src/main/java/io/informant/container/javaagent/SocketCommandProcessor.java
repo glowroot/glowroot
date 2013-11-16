@@ -79,11 +79,11 @@ class SocketCommandProcessor implements Runnable {
             }
         } catch (EOFException e) {
             // socket was closed, terminate gracefully
-            System.exit(0);
+            terminateJvm(0);
         } catch (Throwable e) {
             // this may not get logged if test jvm has been terminated already
             logger.error(e.getMessage(), e);
-            System.exit(1);
+            terminateJvm(1);
         }
     }
 
@@ -97,11 +97,11 @@ class SocketCommandProcessor implements Runnable {
                     runCommandAndRespond(commandWrapper);
                 } catch (EOFException e) {
                     // socket was closed, terminate gracefully
-                    System.exit(0);
+                    terminateJvm(0);
                 } catch (Throwable e) {
                     // this may not get logged if test jvm has been terminated already
                     logger.error(e.getMessage(), e);
-                    System.exit(1);
+                    terminateJvm(1);
                 }
             }
         });
@@ -116,10 +116,10 @@ class SocketCommandProcessor implements Runnable {
             } else if (command.equals(CLEAR_LOG_MESSAGES)) {
                 respond(SpyingLogFilter.clearMessages(), commandNum);
             } else if (command.equals(KILL)) {
-                System.exit(0);
+                terminateJvm(0);
             } else if (command.equals(SHUTDOWN)) {
                 shutdown(commandNum);
-                System.exit(0);
+                terminateJvm(0);
             } else if (command.equals(INTERRUPT)) {
                 interruptAppAndRespond(commandNum);
             } else {
@@ -225,5 +225,9 @@ class SocketCommandProcessor implements Runnable {
             objectOut.writeObject(responseWrapper);
             logger.debug("response sent");
         }
+    }
+
+    private static void terminateJvm(int status) {
+        System.exit(status);
     }
 }

@@ -132,11 +132,11 @@ public class TracePointQuery {
             this.parameterFormat = parameterTemplate;
         }
 
-        public String formatParameter(String parameter) {
+        String formatParameter(String parameter) {
             return String.format(parameterFormat, parameter);
         }
 
-        public String getComparator() {
+        String getComparator() {
             return comparator;
         }
     }
@@ -151,11 +151,11 @@ public class TracePointQuery {
             this.args = args;
         }
 
-        public String getSql() {
+        String getSql() {
             return sql;
         }
 
-        public List<Object> getArgs() {
+        List<Object> getArgs() {
             return args;
         }
     }

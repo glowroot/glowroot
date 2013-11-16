@@ -42,7 +42,7 @@ public class TraceRegistry {
             new ThreadLocal</*@Nullable*/Trace>();
 
     @Nullable
-    public Trace getCurrentTrace() {
+    Trace getCurrentTrace() {
         return currentTraceHolder.get();
     }
 

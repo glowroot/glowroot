@@ -150,7 +150,7 @@ public class ConfigTest {
     public void shouldEnableUserInterfacePassword() throws Exception {
         // given
         UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
-        config.setPasswordEnabled(true);
+        config.setCurrentPassword("");
         config.setNewPassword("abc");
         // when
         container.getConfigService().updateUserInterfaceConfig(config);
@@ -163,7 +163,7 @@ public class ConfigTest {
     public void shouldChangeUserInterfacePassword() throws Exception {
         // given
         UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
-        config.setPasswordEnabled(true);
+        config.setCurrentPassword("");
         config.setNewPassword("xyz");
         container.getConfigService().updateUserInterfaceConfig(config);
         // when
@@ -180,13 +180,13 @@ public class ConfigTest {
     public void shouldDisableUserInterfacePassword() throws Exception {
         // given
         UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
-        config.setPasswordEnabled(true);
+        config.setCurrentPassword("");
         config.setNewPassword("efg");
         container.getConfigService().updateUserInterfaceConfig(config);
         // when
         config = container.getConfigService().getUserInterfaceConfig();
-        config.setPasswordEnabled(false);
         config.setCurrentPassword("efg");
+        config.setNewPassword("");
         container.getConfigService().updateUserInterfaceConfig(config);
         // then
         UserInterfaceConfig updatedConfig = container.getConfigService().getUserInterfaceConfig();
@@ -288,12 +288,7 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(UserInterfaceConfig config) {
-        if (config.isPasswordEnabled()) {
-            throw new AssertionError("Cannot disable password since that requires knowing current"
-                    + " password");
-        }
-        config.setPasswordEnabled(false);
-        config.setNewPassword("z");
+        // changing the password is tested elsewhere
         config.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes() + 1);
     }
 

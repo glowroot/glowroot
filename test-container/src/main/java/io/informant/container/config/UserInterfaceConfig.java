@@ -17,6 +17,7 @@ package io.informant.container.config;
 
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
@@ -30,7 +31,7 @@ import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
 public class UserInterfaceConfig {
 
     private int port;
-    private boolean passwordEnabled;
+    private final boolean passwordEnabled;
     private int sessionTimeoutMinutes;
 
     // used for submitting a password change
@@ -42,7 +43,8 @@ public class UserInterfaceConfig {
 
     private final String version;
 
-    public UserInterfaceConfig(String version) {
+    public UserInterfaceConfig(boolean passwordEnabled, String version) {
+        this.passwordEnabled = passwordEnabled;
         this.version = version;
     }
 
@@ -62,12 +64,9 @@ public class UserInterfaceConfig {
         this.sessionTimeoutMinutes = sessionTimeoutMinutes;
     }
 
+    @JsonIgnore
     public boolean isPasswordEnabled() {
         return passwordEnabled;
-    }
-
-    public void setPasswordEnabled(boolean passwordEnabled) {
-        this.passwordEnabled = passwordEnabled;
     }
 
     @Nullable
@@ -141,9 +140,8 @@ public class UserInterfaceConfig {
         checkRequiredProperty(passwordEnabled, "passwordEnabled");
         checkRequiredProperty(sessionTimeoutMinutes, "sessionTimeoutMinutes");
         checkRequiredProperty(version, "version");
-        UserInterfaceConfig config = new UserInterfaceConfig(version);
+        UserInterfaceConfig config = new UserInterfaceConfig(passwordEnabled, version);
         config.setPort(port);
-        config.setPasswordEnabled(passwordEnabled);
         config.setSessionTimeoutMinutes(sessionTimeoutMinutes);
         return config;
     }

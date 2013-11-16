@@ -59,7 +59,8 @@ class ClasspathCache {
 
     private final ParsedTypeCache parsedTypeCache;
 
-    private final Set<URL> classpath = Sets.newSetFromMap(Maps.<URL, Boolean>newConcurrentMap());
+    private final Set<URL> classpathURLs =
+            Sets.newSetFromMap(Maps.<URL, Boolean>newConcurrentMap());
     private final Map<String, Set<URL>> typeNames = Maps.newConcurrentMap();
 
     @GuardedBy("typeNameUppers")
@@ -137,10 +138,10 @@ class ClasspathCache {
             return;
         }
         for (URL url : urls) {
-            if (classpath.contains(url)) {
+            if (classpathURLs.contains(url)) {
                 continue;
             }
-            classpath.add(url);
+            classpathURLs.add(url);
             try {
                 loadTypeNames(url);
             } catch (IOException e) {

@@ -75,8 +75,8 @@ public interface ConfigService {
     void compactData() throws Exception;
 
     @SuppressWarnings("serial")
-    public class CurrentPasswordIncorrectException extends Exception {}
+    class CurrentPasswordIncorrectException extends Exception {}
 
     @SuppressWarnings("serial")
-    public class PortChangeFailedException extends Exception {}
+    class PortChangeFailedException extends Exception {}
 }

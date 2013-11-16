@@ -52,11 +52,11 @@ public class PointcutConfigAdviceCache {
     private volatile ImmutableList<Advice> advisors;
     private volatile ImmutableSet<String> pointcutConfigVersions;
 
-    public PointcutConfigAdviceCache(@ReadOnly List<PointcutConfig> pointcutConfigs) {
+    PointcutConfigAdviceCache(@ReadOnly List<PointcutConfig> pointcutConfigs) {
         updateAdvisors(pointcutConfigs);
     }
 
-    public Supplier<ImmutableList<Advice>> getAdvisorsSupplier() {
+    Supplier<ImmutableList<Advice>> getAdvisorsSupplier() {
         return new Supplier<ImmutableList<Advice>>() {
             public ImmutableList<Advice> get() {
                 return advisors;

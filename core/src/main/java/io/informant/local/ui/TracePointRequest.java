@@ -18,12 +18,15 @@ package io.informant.local.ui;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 
+import io.informant.markers.UsedByJsonBinding;
+
 /**
  * Structure used to deserialize json post data sent to /backend/trace/points.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
+@UsedByJsonBinding
 class TracePointRequest {
 
     private long from;

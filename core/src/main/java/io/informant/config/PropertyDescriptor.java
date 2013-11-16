@@ -25,6 +25,8 @@ import com.google.common.base.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.informant.markers.UsedByJsonBinding;
+
 import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
 /**
@@ -32,6 +34,7 @@ import static io.informant.common.ObjectMappers.checkRequiredProperty;
  * @since 0.5
  */
 @Immutable
+@UsedByJsonBinding
 public abstract class PropertyDescriptor {
 
     @ReadOnly

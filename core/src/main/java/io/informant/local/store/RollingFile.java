@@ -152,7 +152,7 @@ public class RollingFile {
         }
 
         @Override
-        public int read(byte bytes[], int off, int len) throws IOException {
+        public int read(byte[] bytes, int off, int len) throws IOException {
             long blockRemaining = block.getLength() - blockIndex;
             if (blockRemaining == 0) {
                 return -1;
@@ -173,7 +173,7 @@ public class RollingFile {
 
         // delegate to read(...) above
         @Override
-        public int read(byte bytes[]) throws IOException {
+        public int read(byte[] bytes) throws IOException {
             return read(bytes, 0, bytes.length);
         }
 

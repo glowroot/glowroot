@@ -15,28 +15,31 @@
  */
 package io.informant.jvm;
 
-import io.informant.markers.Static;
+import checkers.igj.quals.Immutable;
+
+import io.informant.markers.UsedByJsonBinding;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Static
+@UsedByJsonBinding
+@Immutable
 public class Availability {
 
     private final boolean available;
     // reason only needed when available is false
     private final String reason;
 
-    public static Availability unavailable(String reason) {
+    static Availability unavailable(String reason) {
         return new Availability(false, reason);
     }
 
-    public static Availability available() {
+    static Availability available() {
         return new Availability(true, "");
     }
 
-    public static Availability from(boolean available, String reason) {
+    static Availability from(boolean available, String reason) {
         return new Availability(available, reason);
     }
 

@@ -44,11 +44,12 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 class JsonServiceException extends Exception {
     private final HttpResponseStatus status;
 
-    public JsonServiceException(HttpResponseStatus status) {
+    JsonServiceException(HttpResponseStatus status, Throwable cause) {
+        super(cause);
         this.status = status;
     }
 
-    public HttpResponseStatus getStatus() {
+    HttpResponseStatus getStatus() {
         return status;
     }
 }

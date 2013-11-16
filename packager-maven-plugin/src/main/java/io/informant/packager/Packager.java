@@ -132,14 +132,9 @@ public class Packager {
             throws MojoExecutionException, IOException {
         Files.createParentDirs(outputJarFile);
         FileOutputStream fileOut = new FileOutputStream(outputJarFile);
-        JarOutputStream jarOut;
+        JarOutputStream jarOut = null;
         try {
             jarOut = new JarOutputStream(fileOut);
-        } catch (IOException e) {
-            fileOut.close();
-            throw e;
-        }
-        try {
             JarEntry manifestEntry = new JarEntry("META-INF/MANIFEST.MF");
             jarOut.putNextEntry(manifestEntry);
             jarOut.write(createManifest(artifacts));
@@ -160,8 +155,11 @@ public class Packager {
                 jarOut.closeEntry();
             }
         } finally {
-            // this also closes fileOut
-            jarOut.close();
+            if (jarOut == null) {
+                fileOut.close();
+            } else {
+                jarOut.close();
+            }
         }
     }
 

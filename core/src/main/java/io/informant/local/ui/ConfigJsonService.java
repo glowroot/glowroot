@@ -77,8 +77,6 @@ class ConfigJsonService {
     private final HttpSessionManager httpSessionManager;
     private final TraceModule traceModule;
 
-    // TODO address the cyclic dependency between HttpServer and ConfigJsonService created by this
-    // reference
     private volatile HttpServer httpServer;
 
     ConfigJsonService(ConfigService configService, RollingFile rollingFile,
@@ -260,7 +258,7 @@ class ConfigJsonService {
         try {
             configService.updateGeneralConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
         }
         return getGeneralConfig();
     }
@@ -283,7 +281,7 @@ class ConfigJsonService {
         try {
             configService.updateCoarseProfilingConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
         }
         return getCoarseProfilingConfig();
     }
@@ -306,7 +304,7 @@ class ConfigJsonService {
         try {
             configService.updateFineProfilingConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
         }
         return getFineProfiling();
     }
@@ -329,7 +327,7 @@ class ConfigJsonService {
         try {
             configService.updateUserOverridesConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
         }
         return getUserOverridesConfig();
     }
@@ -352,7 +350,7 @@ class ConfigJsonService {
         try {
             configService.updateStorageConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
         }
         // resize() doesn't do anything if the new and old value are the same
         rollingFile.resize(configService.getStorageConfig().getRollingSizeMb() * 1024);
@@ -384,7 +382,7 @@ class ConfigJsonService {
         try {
             configService.updateUserInterfaceConfig(updatedConfig, priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
         }
         // only create/delete session on successful update
         if (!config.isPasswordEnabled() && updatedConfig.isPasswordEnabled()) {
@@ -436,7 +434,7 @@ class ConfigJsonService {
         try {
             configService.updateAdvancedConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
         }
         return getAdvanced();
     }
@@ -460,7 +458,7 @@ class ConfigJsonService {
         try {
             configService.updatePluginConfig(builder.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED);
+            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
         }
         return getPluginConfig(pluginId);
     }

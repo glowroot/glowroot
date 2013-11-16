@@ -169,7 +169,7 @@ class HttpSessionManager {
         if (timeoutMinutes == 0) {
             sessionExpirations.put(sessionId, Long.MAX_VALUE);
         } else {
-            sessionExpirations.put(sessionId, clock.currentTimeMillis() + timeoutMinutes * 60000);
+            sessionExpirations.put(sessionId, clock.currentTimeMillis() + timeoutMinutes * 60000L);
         }
     }
 }

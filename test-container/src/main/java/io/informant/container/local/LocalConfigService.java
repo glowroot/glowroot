@@ -24,14 +24,14 @@ import com.google.common.collect.Lists;
 
 import io.informant.InformantModule;
 import io.informant.config.UserInterfaceConfig.Overlay;
-import io.informant.container.config.PointcutConfig;
-import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.config.AdvancedConfig;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.ConfigService;
 import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
+import io.informant.container.config.PointcutConfig;
+import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserInterfaceConfig;
 import io.informant.container.config.UserOverridesConfig;
@@ -156,9 +156,9 @@ class LocalConfigService implements ConfigService {
 
     public UserInterfaceConfig getUserInterfaceConfig() {
         io.informant.config.UserInterfaceConfig coreConfig = configService.getUserInterfaceConfig();
-        UserInterfaceConfig config = new UserInterfaceConfig(coreConfig.getVersion());
+        UserInterfaceConfig config =
+                new UserInterfaceConfig(coreConfig.isPasswordEnabled(), coreConfig.getVersion());
         config.setPort(coreConfig.getPort());
-        config.setPasswordEnabled(coreConfig.isPasswordEnabled());
         config.setSessionTimeoutMinutes(coreConfig.getSessionTimeoutMinutes());
         return config;
     }
@@ -168,7 +168,6 @@ class LocalConfigService implements ConfigService {
         io.informant.config.UserInterfaceConfig coreConfig = configService.getUserInterfaceConfig();
         Overlay overlay = io.informant.config.UserInterfaceConfig.overlay(coreConfig);
         overlay.setPort(config.getPort());
-        overlay.setPasswordEnabled(config.isPasswordEnabled());
         overlay.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes());
         overlay.setCurrentPassword(config.getCurrentPassword());
         overlay.setNewPassword(config.getNewPassword());

@@ -26,9 +26,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class HttpContentCompressor
-        extends org.jboss.netty.handler.codec.http.HttpContentCompressor {
-
+class HttpContentCompressor extends org.jboss.netty.handler.codec.http.HttpContentCompressor {
     @Override
     protected EncoderEmbedder<ChannelBuffer> newContentEncoder(HttpMessage msg,
             String acceptEncoding) throws Exception {

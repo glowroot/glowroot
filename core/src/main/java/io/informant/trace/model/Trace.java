@@ -430,15 +430,15 @@ public class Trace {
             this.name = name;
             this.value = value;
         }
-        public String getPluginId() {
-            return pluginId;
-        }
         public String getName() {
             return name;
         }
         @Nullable
         public String getValue() {
             return value;
+        }
+        private String getPluginId() {
+            return pluginId;
         }
     }
 }

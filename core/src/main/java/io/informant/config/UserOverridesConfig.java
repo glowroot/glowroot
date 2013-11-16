@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 
 import io.informant.config.JsonViews.UiView;
+import io.informant.markers.UsedByJsonBinding;
 
 /**
  * Immutable structure to hold the user overrides config.
@@ -89,6 +90,7 @@ public class UserOverridesConfig {
     }
 
     // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
+    @UsedByJsonBinding
     public static class Overlay {
 
         @Nullable

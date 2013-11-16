@@ -30,12 +30,14 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 
 import io.informant.common.ObjectMappers;
+import io.informant.markers.UsedByJsonBinding;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Immutable
+@UsedByJsonBinding
 public class PackageDescriptor {
 
     private final ImmutableList<PluginDescriptor> plugins;
@@ -45,15 +47,9 @@ public class PackageDescriptor {
         this.plugins = ImmutableList.copyOf(plugins);
     }
 
+    @JsonProperty
     public ImmutableList<PluginDescriptor> getPlugins() {
         return plugins;
-    }
-
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("plugins", plugins)
-                .toString();
     }
 
     // only used by packager-maven-plugin, placed in informant to avoid shading issues
@@ -62,5 +58,12 @@ public class PackageDescriptor {
         // disable closing since closing jarOut needs to be managed externally
         mapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
         mapper.writeValue(out, this);
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("plugins", plugins)
+                .toString();
     }
 }

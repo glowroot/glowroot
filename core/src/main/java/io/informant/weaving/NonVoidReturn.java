@@ -19,11 +19,13 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 
 import io.informant.api.OptionalReturn;
+import io.informant.markers.UsedByGeneratedBytecode;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@UsedByGeneratedBytecode
 public class NonVoidReturn implements OptionalReturn {
 
     @Nullable

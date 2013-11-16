@@ -89,35 +89,41 @@ public class HeapHistograms {
             IllegalAccessException, InvocationTargetException, IOException {
         InputStream in = heapHisto();
         BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-        // skip over header lines
-        String line = reader.readLine();
-        while (!line.contains("--------")) {
-            line = reader.readLine();
-        }
-        Splitter splitter = Splitter.on(' ').omitEmptyStrings();
-        HeapHistogram heapHistogram = new HeapHistogram();
-        long totalBytes = 0;
-        long totalCount = 0;
-        while ((line = reader.readLine()) != null) {
-            Iterator<String> parts = splitter.split(line).iterator();
-            String num = parts.next();
-            if (num.equals("Total")) {
-                break;
+        try {
+            // skip over header lines
+            String line = reader.readLine();
+            while (line != null && !line.contains("--------")) {
+                line = reader.readLine();
             }
-            long count = Long.parseLong(parts.next());
-            long bytes = Long.parseLong(parts.next());
-            String className = parts.next();
-            if (className.charAt(0) != '<') {
-                // skipping PermGen objects
-                heapHistogram.addItem(className, bytes, count);
-                totalBytes += bytes;
-                totalCount += count;
+            if (line == null) {
+                throw new IllegalStateException("Unexpected heapHisto output");
             }
+            Splitter splitter = Splitter.on(' ').omitEmptyStrings();
+            HeapHistogram heapHistogram = new HeapHistogram();
+            long totalBytes = 0;
+            long totalCount = 0;
+            while ((line = reader.readLine()) != null) {
+                Iterator<String> parts = splitter.split(line).iterator();
+                String num = parts.next();
+                if (num.equals("Total")) {
+                    break;
+                }
+                long count = Long.parseLong(parts.next());
+                long bytes = Long.parseLong(parts.next());
+                String className = parts.next();
+                if (className.charAt(0) != '<') {
+                    // skipping PermGen objects
+                    heapHistogram.addItem(className, bytes, count);
+                    totalBytes += bytes;
+                    totalCount += count;
+                }
+            }
+            heapHistogram.setTotalBytes(totalBytes);
+            heapHistogram.setTotalCount(totalCount);
+            return heapHistogram.toJson();
+        } finally {
+            reader.close();
         }
-        heapHistogram.setTotalBytes(totalBytes);
-        heapHistogram.setTotalCount(totalCount);
-        return heapHistogram.toJson();
-
     }
 
     private static InputStream heapHisto() throws SecurityException, NoSuchMethodException,

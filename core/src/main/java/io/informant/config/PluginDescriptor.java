@@ -30,6 +30,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 
 import io.informant.common.ObjectMappers;
+import io.informant.markers.UsedByJsonBinding;
 
 import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
@@ -38,6 +39,7 @@ import static io.informant.common.ObjectMappers.checkRequiredProperty;
  * @since 0.5
  */
 @Immutable
+@UsedByJsonBinding
 public class PluginDescriptor {
 
     private static final ObjectMapper mapper = ObjectMappers.create();

@@ -13,36 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.local.store;
+package io.informant.markers;
 
-import io.informant.markers.UsedByJsonBinding;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.TYPE;
 
 /**
+ * Marker to identify classes that are used by json binding. This is helpful to know when
+ * refactoring and when running tools to find unused code (e.g. UCDetector).
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-@UsedByJsonBinding
-public class GroupingAggregate {
-
-    private final String grouping;
-    private final long durationTotal;
-    private final long traceCount;
-
-    GroupingAggregate(String grouping, long durationTotal, long traceCount) {
-        this.grouping = grouping;
-        this.durationTotal = durationTotal;
-        this.traceCount = traceCount;
-    }
-
-    public String getGrouping() {
-        return grouping;
-    }
-
-    public long getDurationTotal() {
-        return durationTotal;
-    }
-
-    public long getTraceCount() {
-        return traceCount;
-    }
-}
+@Documented
+@Target(TYPE)
+public @interface UsedByJsonBinding {}

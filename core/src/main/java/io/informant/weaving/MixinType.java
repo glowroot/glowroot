@@ -83,24 +83,24 @@ public class MixinType {
         this.initMethodName = initMethodName;
     }
 
-    public ImmutableList<String> getTargets() {
+    ImmutableList<String> getTargets() {
         return targets;
     }
 
-    public Class<?> getImplementation() {
+    Class<?> getImplementation() {
         return implementation;
     }
 
-    public ImmutableList<Class<?>> getInterfaces() {
+    ImmutableList<Class<?>> getInterfaces() {
         return interfaces;
     }
 
-    public ImmutableList<String> getInterfaceNames() {
+    ImmutableList<String> getInterfaceNames() {
         return interfaceNames;
     }
 
     @Nullable
-    public String getInitMethodName() {
+    String getInitMethodName() {
         return initMethodName;
     }
 

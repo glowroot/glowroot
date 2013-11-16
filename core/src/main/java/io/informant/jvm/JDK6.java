@@ -57,7 +57,6 @@ public class JDK6 {
     private static final ClassLoader systemToolClassLoader;
 
     private static final boolean supported;
-    private static volatile String unsupportedReason;
 
     static {
         if (System.getProperty("java.version").startsWith("1.5")) {
@@ -67,7 +66,6 @@ public class JDK6 {
             getFreeSpaceMethod = null;
             systemToolClassLoader = null;
             supported = false;
-            unsupportedReason = "JDK version is 1.5";
         } else {
             // java.lang.instrument.Instrumentation
             addTransformerTwoArgMethod = initAddTransformerMethod();
@@ -77,15 +75,11 @@ public class JDK6 {
             getFreeSpaceMethod = initGetFreeSpaceMethod();
             // javax.tools.ToolProvider
             systemToolClassLoader = initSystemToolClassLoader();
-            // JDK6 is only available if all methods are available
-            if (addTransformerTwoArgMethod != null && isRetransformClassesSupportedMethod != null
-                    && retransformClassesMethod != null && getFreeSpaceMethod != null) {
-                supported = true;
-                unsupportedReason = "";
-            } else {
-                supported = false;
-                unsupportedReason = "Unsupported due to error, see Informant log";
-            }
+            // JDK6 is only available if all methods are available (if any are not available then
+            // there is a serious problem and the error is already logged in above method calls)
+            supported = addTransformerTwoArgMethod != null
+                    && isRetransformClassesSupportedMethod != null
+                    && retransformClassesMethod != null && getFreeSpaceMethod != null;
         }
     }
 
@@ -93,10 +87,6 @@ public class JDK6 {
 
     public static boolean isSupported() {
         return supported;
-    }
-
-    public static String getUnsupportedReason() {
-        return unsupportedReason;
     }
 
     public static boolean isRetransformClassesSupported(Instrumentation instrumentation) {
@@ -158,7 +148,7 @@ public class JDK6 {
     }
 
     @Nullable
-    public static ClassLoader getSystemToolClassLoader() {
+    static ClassLoader getSystemToolClassLoader() {
         return systemToolClassLoader;
     }
 

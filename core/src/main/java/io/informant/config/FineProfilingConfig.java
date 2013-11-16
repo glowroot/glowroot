@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 
 import io.informant.config.JsonViews.UiView;
+import io.informant.markers.UsedByJsonBinding;
 
 /**
  * Immutable structure to hold the fine-grained profiling config.
@@ -99,6 +100,7 @@ public class FineProfilingConfig {
     }
 
     // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
+    @UsedByJsonBinding
     public static class Overlay {
 
         private double tracePercentage;

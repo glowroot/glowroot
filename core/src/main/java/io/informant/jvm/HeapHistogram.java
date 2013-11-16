@@ -79,7 +79,7 @@ class HeapHistogram {
         return sb.toString();
     }
 
-    static class ClassInfo {
+    private static class ClassInfo {
 
         private static final Ordering<ClassInfo> byBytesDesc = new Ordering<ClassInfo>() {
             @Override

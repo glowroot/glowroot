@@ -15,13 +15,18 @@
  */
 package io.informant.config;
 
+import io.informant.markers.Static;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Static
 public class JsonViews {
+
+    private JsonViews() {}
 
     public static class UiView {}
 
-    public static class FileView {}
+    static class FileView {}
 }

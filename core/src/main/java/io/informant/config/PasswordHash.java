@@ -23,6 +23,8 @@ import java.security.spec.InvalidKeySpecException;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
+import io.informant.markers.Static;
+
 /*
  * PBKDF2 salted password hashing from http://crackstation.net/hashing-security.htm
  * 
@@ -30,6 +32,7 @@ import javax.crypto.spec.PBEKeySpec;
  * @since 0.5
  */
 // would be nice to use jasypt, but it requires very large ICU dependency on JDK5
+@Static
 class PasswordHash {
 
     private static final String PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA1";
@@ -42,6 +45,8 @@ class PasswordHash {
     private static final int ITERATION_INDEX = 0;
     private static final int SALT_INDEX = 1;
     private static final int PBKDF2_INDEX = 2;
+
+    private PasswordHash() {}
 
     static String createHash(String password) throws NoSuchAlgorithmException,
             InvalidKeySpecException {

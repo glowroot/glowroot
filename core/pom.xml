@@ -19,7 +19,7 @@
     <git.commit.hash></git.commit.hash>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
     <!-- this extra property is needed since maven.build.timestamp is not directly available to
-         resource filtering, see http://jira.codehaus.org/browse/MRESOURCES-99 -->
+      resource filtering, see http://jira.codehaus.org/browse/MRESOURCES-99 -->
     <maven.build.timestamp.value>${maven.build.timestamp}</maven.build.timestamp.value>
   </properties>
 
@@ -217,7 +217,7 @@
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <!-- eclipse m2e-wtp doesn't like maven-jar-plugin 2.4 when using manifestFile, so staying
-             with 2.3.2 for now, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=406507 -->
+          with 2.3.2 for now, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=406507 -->
         <version>2.3.2</version>
         <configuration>
           <archive>
@@ -499,7 +499,7 @@
               </execution>
               <execution>
                 <!-- shaded-slf4j-impl can't be included above since its (intentionally) unshaded
-                     slf4j references would then get shaded -->
+                  slf4j references would then get shaded -->
                 <id>shade-with-logback</id>
                 <goals>
                   <goal>shade</goal>

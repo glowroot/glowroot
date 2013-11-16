@@ -28,6 +28,7 @@ import io.informant.markers.UsedByGeneratedBytecode;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@UsedByGeneratedBytecode
 public class DynamicAdviceMessageTemplate {
 
     private static final Logger logger =

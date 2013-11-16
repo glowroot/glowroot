@@ -211,7 +211,7 @@ public class MergedStackTree {
         if (leafThreadState != null && leaf) {
             // only consider thread state when matching the leaf node
             return stackTraceElement.equals(childNode.getStackTraceElement())
-                    && threadState == leafThreadState;
+                    && leafThreadState.equals(threadState);
         } else {
             return leafThreadState == null && !leaf
                     && stackTraceElement.equals(childNode.getStackTraceElement());
@@ -234,7 +234,7 @@ public class MergedStackTree {
         }
         @ReadOnly
         @Nullable
-        public List<String> getMetricNames() {
+        private List<String> getMetricNames() {
             return metricNames;
         }
     }
