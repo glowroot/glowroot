@@ -80,6 +80,7 @@ class Weaver {
         weavingMetricName = metricTimerService.getMetricName("informant weaving");
     }
 
+    @Nullable
     byte[] weave(byte[] classBytes, String className, @Nullable CodeSource codeSource) {
         if (generateMetricNameWrapperMethods) {
             return weave$informant$metric$informant$weaving$0(classBytes, className, codeSource);
@@ -89,11 +90,13 @@ class Weaver {
     }
 
     // weird method name is following "metric marker" method naming
+    @Nullable
     private byte[] weave$informant$metric$informant$weaving$0(byte[] classBytes, String className,
             @Nullable CodeSource codeSource) {
         return weaveInternal(classBytes, className, codeSource);
     }
 
+    @Nullable
     private byte[] weaveInternal(byte[] classBytes, String className, CodeSource codeSource) {
         MetricTimer metricTimer = metricTimerService.startMetricTimer(weavingMetricName);
         try {
@@ -121,10 +124,10 @@ class Weaver {
                 cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
             } catch (ClassCircularityError e) {
                 logger.error(e.getMessage(), e);
-                return classBytes;
+                return null;
             }
             if (cv.isNothingAtAllToWeave()) {
-                return classBytes;
+                return null;
             } else {
                 byte[] wovenBytes = cw.toByteArray();
                 if (verifyWeaving) {

@@ -151,10 +151,12 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             inWeaving.set(true);
             try {
                 byte[] wovenBytes = weaver.weave(bytes, name, null);
-                if (wovenBytes != bytes) {
+                if (wovenBytes == null) {
+                    return bytes;
+                } else {
                     logger.debug("findClass(): transformed {}", name);
+                    return wovenBytes;
                 }
-                return wovenBytes;
             } finally {
                 inWeaving.remove();
             }

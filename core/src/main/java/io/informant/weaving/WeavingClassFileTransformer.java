@@ -16,6 +16,7 @@
 package io.informant.weaving;
 
 import java.lang.instrument.ClassFileTransformer;
+import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.List;
 
@@ -92,8 +93,26 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                 .getClassLoader());
     }
 
+    // From the javadoc on ClassFileTransformer.transform():
+    // "throwing an exception has the same effect as returning null"
+    //
+    // so all exceptions must be caught and logged here or they will be lost
+    @Nullable
     public byte[] transform(@Nullable ClassLoader loader, String className,
-            Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] bytes) {
+            Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
+            byte[] bytes) {
+        try {
+            return transformInternal(loader, className, protectionDomain, bytes);
+        } catch (Throwable t) {
+            // see method-level comment
+            logger.error(t.getMessage(), t);
+            return null;
+        }
+    }
+
+    @Nullable
+    private byte[] transformInternal(ClassLoader loader, String className,
+            ProtectionDomain protectionDomain, byte[] bytes) {
         // don't weave informant classes, including shaded classes like h2 jdbc driver
         // (can't just match "io/informant/" since that would match integration test classes)
         if (className.startsWith("io/informant/collector/")
@@ -104,7 +123,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                 || className.startsWith("io/informant/shaded/")
                 || className.startsWith("io/informant/trace/")
                 || className.startsWith("io/informant/weaving/")) {
-            return bytes;
+            return null;
         }
         logger.trace("transform(): className={}", className);
         Weaver weaver;
@@ -113,8 +132,9 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         } else {
             weaver = weavers.getUnchecked(loader);
         }
-        byte[] transformedBytes = weaver.weave(bytes, className, protectionDomain.getCodeSource());
-        if (transformedBytes != bytes) {
+        CodeSource codeSource = protectionDomain == null ? null : protectionDomain.getCodeSource();
+        byte[] transformedBytes = weaver.weave(bytes, className, codeSource);
+        if (transformedBytes != null) {
             logger.debug("transform(): transformed {}", className);
         }
         return transformedBytes;

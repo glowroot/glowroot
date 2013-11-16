@@ -84,8 +84,8 @@ class WeavingClassVisitor extends ClassVisitor {
     private Type type;
 
     private int innerMethodCounter;
+    private boolean nothingAtAllToWeave;
 
-    private boolean nothingAtAllToWeave = false;
     @LazyNonNull
     // can't use ParsedType.Builder for now, as that leads to error when running checker framework
     // "nested type cannot be annotated"
