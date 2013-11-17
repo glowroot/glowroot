@@ -100,7 +100,7 @@ public class PluginConfig {
     public String getStringProperty(String name) {
         String value = stringProperties.get(name);
         if (value == null) {
-            logger.warn("unexpected string property name '{}'", name);
+            logger.warn("unexpected string property name: {}", name);
             return "";
         }
         return value;
@@ -109,7 +109,7 @@ public class PluginConfig {
     public boolean getBooleanProperty(String name) {
         Boolean value = booleanProperties.get(name);
         if (value == null) {
-            logger.warn("unexpected boolean property name '{}'", name);
+            logger.warn("unexpected boolean property name: {}", name);
             return false;
         }
         return value;
@@ -119,7 +119,7 @@ public class PluginConfig {
     public Double getDoubleProperty(String name) {
         Optional<Double> value = doubleProperties.get(name);
         if (value == null) {
-            logger.warn("unexpected double property name '{}'", name);
+            logger.warn("unexpected double property name: {}", name);
             return null;
         }
         return value.orNull();
@@ -268,15 +268,15 @@ public class PluginConfig {
             PropertyDescriptor propertyDescriptor = getPropertyDescriptor(name);
             if (propertyDescriptor == null) {
                 if (!ignoreWarnings) {
-                    logger.warn("unexpected property name '{}'", name);
+                    logger.warn("unexpected property name: {}", name);
                 }
                 return this;
             }
             if (propertyDescriptor.isHidden()) {
                 if (!ignoreWarnings) {
-                    logger.warn("cannot set hidden property '{}' with value '{}', hidden"
-                            + " properties can only be set by via io.informant.plugin.json or"
-                            + " io.informant.package.json", name, value);
+                    logger.warn("cannot set hidden property {} with value: {} (hidden"
+                            + " properties can only be set by via io.informant.plugin.json"
+                            + " or io.informant.package.json)", name, value);
                 }
                 return this;
             }
@@ -314,8 +314,8 @@ public class PluginConfig {
             } else if (value instanceof String) {
                 stringProperties.put(name, (String) value);
             } else if (!ignoreWarnings) {
-                logger.warn("unexpected property type '{}' for property name '{}'", value
-                        .getClass().getName(), name);
+                logger.warn("property {} has unexpected type: {}", name,
+                        value.getClass().getName());
             }
         }
 
@@ -328,8 +328,8 @@ public class PluginConfig {
             } else if (value instanceof Boolean) {
                 booleanProperties.put(name, (Boolean) value);
             } else if (!ignoreWarnings) {
-                logger.warn("unexpected property type '{}' for property name '{}'", value
-                        .getClass().getName(), name);
+                logger.warn("property {} has unexpected type: {}", name,
+                        value.getClass().getName());
             }
         }
 
@@ -340,8 +340,8 @@ public class PluginConfig {
             } else if (value instanceof Double) {
                 doubleProperties.put(name, Optional.of((Double) value));
             } else if (!ignoreWarnings) {
-                logger.warn("unexpected property type '{}' for property name '{}'", value
-                        .getClass().getName(), name);
+                logger.warn("property {} has unexpected type: {}", name,
+                        value.getClass().getName());
             }
         }
 

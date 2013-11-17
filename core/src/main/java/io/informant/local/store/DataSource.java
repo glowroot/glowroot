@@ -130,13 +130,13 @@ public class DataSource {
                     if (resultSet.next()) {
                         Long value = resultSet.getLong(1);
                         if (value == null) {
-                            logger.warn("query '" + sql + "' returned a null sql value");
+                            logger.warn("query returned a null column value: {}", sql);
                             return 0L;
                         } else {
                             return value;
                         }
                     } else {
-                        logger.warn("query '" + sql + "' didn't return any results");
+                        logger.warn("query didn't return any results: {}", sql);
                         return 0L;
                     }
                 }

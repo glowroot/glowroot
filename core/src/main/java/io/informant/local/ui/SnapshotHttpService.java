@@ -61,7 +61,7 @@ class SnapshotHttpService implements HttpService {
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.headers().set(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
         if (charSource == null) {
-            logger.debug("no trace found for id '{}', returning expired=true", id);
+            logger.debug("no trace found for id: {}", id);
             String content = "{\"expired\":true}";
             response.setContent(ChannelBuffers.copiedBuffer(content, Charsets.UTF_8));
             response.headers().set(Names.CONTENT_LENGTH, content.length());

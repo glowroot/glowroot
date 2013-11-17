@@ -59,7 +59,7 @@ class DetailMapWriter {
                 jg.writeFieldName("");
             } else {
                 // this map comes from plugin, so need extra defensive check
-                logger.warn("detail map has unexpected key type '{}'", key.getClass().getName());
+                logger.warn("detail map has unexpected key type: {}", key.getClass().getName());
                 jg.writeFieldName(key.toString());
             }
             writeValue(entry.getValue());
@@ -86,7 +86,7 @@ class DetailMapWriter {
         } else if (value instanceof Map) {
             writeMap((Map<?, ?>) value);
         } else {
-            logger.warn("detail map has unexpected value type '{}'", value.getClass().getName());
+            logger.warn("detail map has unexpected value type: {}", value.getClass().getName());
             jg.writeString(value.toString());
         }
     }

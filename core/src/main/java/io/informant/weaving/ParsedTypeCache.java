@@ -217,7 +217,7 @@ public class ParsedTypeCache {
         } catch (ClassNotFoundException e) {
             // log at debug level only since the code referencing the class must not be getting used
             // anyways, as it would fail on execution since the type doesn't exist
-            logger.debug("type not found '{}' while parsing: {}", typeName, parseContext);
+            logger.debug("type {} not found while parsing type {}", typeName, parseContext);
             return ImmutableList.of();
         }
         List<ParsedType> superTypes = Lists.newArrayList(parsedType);
@@ -365,9 +365,13 @@ public class ParsedTypeCache {
         if (parsedType == null) {
             // a class was loaded by Class.forName() above that was not previously loaded which
             // means weaving was bypassed since ClassFileTransformer.transform() is not re-entrant
-            logger.warn("could not find resource '{}.class' in class loader '{}', so the class"
-                    + " was loaded during weaving of a subclass and was not woven itself",
-                    TypeNames.toInternal(type.getName()), loader);
+
+            // TODO inspect the class after loading to see if any advice even applies to it, if not
+            // then no need to log warning
+            logger.warn("could not find resource {}.class in class loader {}, so the class"
+                    + " had to be loaded using Class.forName() during weaving of one of its"
+                    + " subclasses, which means it was not woven itself since weaving is not"
+                    + " re-entrant", TypeNames.toInternal(type.getName()), loader);
             return createParsedTypePlanC(typeName, type);
         } else {
             // the type was previously loaded so weaving was not bypassed, yay!

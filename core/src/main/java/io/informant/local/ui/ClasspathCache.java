@@ -144,9 +144,9 @@ class ClasspathCache {
             try {
                 loadTypeNames(url);
             } catch (IOException e) {
-                logger.debug("unable to read classes from url: " + url, e);
+                logger.debug("error reading classes from url: {}", url, e);
             } catch (URISyntaxException e) {
-                logger.debug("unable to read classes from url: " + url, e);
+                logger.debug("error reading classes from url: {}", url, e);
             }
         }
         ClassLoader parent = loader.getParent();

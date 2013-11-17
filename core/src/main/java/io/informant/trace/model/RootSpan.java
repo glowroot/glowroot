@@ -165,7 +165,7 @@ class RootSpan {
         Span pop = spanStack.remove(spanStack.size() - 1);
         if (!pop.equals(span)) {
             // somehow(?) a pop was missed (or maybe too many pops), this is just damage control
-            logger.error("found span {} at top of stack when expecting another span {}", pop, span);
+            logger.error("found span {} at top of stack when expecting span {}", pop, span);
             while (!spanStack.isEmpty() && !pop.equals(span)) {
                 pop = spanStack.remove(spanStack.size() - 1);
             }

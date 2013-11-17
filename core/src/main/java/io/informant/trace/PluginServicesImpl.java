@@ -106,7 +106,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                         .getPluginDescriptors()) {
                     ids.add(pluginDescriptor.getId());
                 }
-                logger.warn("unexpected plugin id '{}', available plugin ids: {}", pluginId,
+                logger.warn("unexpected plugin id: {} (available plugin ids are {})", pluginId,
                         Joiner.on(", ").join(ids));
             }
         }

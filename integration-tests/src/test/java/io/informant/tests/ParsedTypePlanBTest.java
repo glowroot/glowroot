@@ -68,7 +68,7 @@ public class ParsedTypePlanBTest {
     public void shouldLogWarningInParsedTypeCachePlanB() throws Exception {
         // given
         container.addExpectedLogMessage(ParsedTypeCache.class.getName(),
-                "could not find resource '" + TypeNames.toInternal(Y.class.getName()) + ".class'");
+                "could not find resource " + TypeNames.toInternal(Y.class.getName()) + ".class");
         // when
         container.executeAppUnderTest(ShouldLogWarningInParsedTypeCachePlanB.class);
         // then

@@ -84,8 +84,8 @@ public class MainEntryPoint {
             //
             // no need for logging in the special (but common) case described above
             if (!isTomcatStop()) {
-                logger.error("embedded database '" + dataDir.getAbsolutePath()
-                        + "' is locked by another process.");
+                logger.error("embedded database {} is locked by another process.",
+                        dataDir.getAbsolutePath());
             }
         }
     }

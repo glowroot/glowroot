@@ -118,9 +118,11 @@ class JvmInfo {
     private void writeValue(JsonGenerator jg) throws JsonGenerationException, IOException {
         ThreadInfo threadInfo = ManagementFactory.getThreadMXBean().getThreadInfo(threadId, 0);
         if (threadInfo == null) {
-            // this shouldn't be possible since writeValue is
-            logger.warn("writeValue(): threadInfo for threadId '{}' is null", threadId);
+            // thread must have just recently terminated
             jg.writeStartObject();
+            jg.writeFieldName("garbageCollectorInfos");
+            jg.writeStartArray();
+            jg.writeEndArray();
             jg.writeEndObject();
             return;
         }
@@ -151,7 +153,7 @@ class JvmInfo {
             String name = garbageCollectorBean.getName();
             GarbageCollectorInfo garbageCollectorInfo = garbageCollectorInfos.get(name);
             if (garbageCollectorInfo == null) {
-                logger.warn("garbage collector bean did not exist at start of trace: {}", name);
+                logger.warn("garbage collector bean {} did not exist at start of trace", name);
                 continue;
             }
             unmatchedNames.remove(name);
@@ -170,7 +172,7 @@ class JvmInfo {
             jg.writeEndObject();
         }
         for (String unmatchedName : unmatchedNames) {
-            logger.warn("garbage collector bean did not exist at end of trace: {}", unmatchedName);
+            logger.warn("garbage collector bean {} did not exist at end of trace", unmatchedName);
         }
         jg.writeEndArray();
         jg.writeEndObject();

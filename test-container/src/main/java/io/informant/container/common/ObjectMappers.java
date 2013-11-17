@@ -153,7 +153,7 @@ public class ObjectMappers {
                 }
                 this.enumMap = theEnumMap.build();
             } else {
-                logger.error("unexpected class: {}" + enumClass);
+                logger.error("unexpected class: {}", enumClass);
                 this.enumMap = ImmutableMap.of();
             }
         }
@@ -165,7 +165,8 @@ public class ObjectMappers {
             String text = jp.getText();
             Enum<?> constant = enumMap.get(text);
             if (constant == null) {
-                logger.warn("constant not found for enum type {}: {}", enumClass.getName(), text);
+                logger.warn("enum constant {} not found in enum type {}", text,
+                        enumClass.getName());
             }
             return constant;
         }

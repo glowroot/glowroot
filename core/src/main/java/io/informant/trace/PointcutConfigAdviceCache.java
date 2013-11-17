@@ -93,17 +93,17 @@ public class PointcutConfigAdviceCache {
                 Advice advice = Advice.from(pointcut, dynamicAdviceClass, true);
                 advisors.add(advice);
             } catch (SecurityException e) {
-                logger.warn("error creating advice for pointcut config: " + pointcutConfig, e);
+                logger.warn("error creating advice for pointcut config: {}", pointcutConfig, e);
             } catch (NoSuchMethodException e) {
-                logger.warn("error creating advice for pointcut config: " + pointcutConfig, e);
+                logger.warn("error creating advice for pointcut config: {}", pointcutConfig, e);
             } catch (IllegalArgumentException e) {
                 logger.error(e.getMessage(), e);
             } catch (IllegalAccessException e) {
-                logger.warn("error creating advice for pointcut config: " + pointcutConfig, e);
+                logger.warn("error creating advice for pointcut config: {}", pointcutConfig, e);
             } catch (InvocationTargetException e) {
-                logger.warn("error creating advice for pointcut config: " + pointcutConfig, e);
+                logger.warn("error creating advice for pointcut config: {}", pointcutConfig, e);
             } catch (AdviceConstructionException e) {
-                logger.warn("error creating advice for pointcut config: " + pointcutConfig, e);
+                logger.warn("error creating advice for pointcut config: {}", pointcutConfig, e);
             }
         }
         return advisors.build();

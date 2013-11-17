@@ -182,12 +182,10 @@ public class Beans {
                         // TODO getDeclaredField will miss fields in super classes
                         return type.getDeclaredField(name);
                     } catch (NoSuchFieldException h) {
-                        logger.debug("no method or field found for property '{}' in class '{}'",
-                                name, type.getName());
+                        logger.debug("no accessor found for {} in class {}", name, type.getName());
                         return SENTINEL_METHOD;
                     } catch (SecurityException h) {
-                        logger.debug("no method or field found for property '{}' in class '{}'",
-                                name, type.getName());
+                        logger.debug("no accessor found for {} in class {}", name, type.getName());
                         return SENTINEL_METHOD;
                     }
                 }

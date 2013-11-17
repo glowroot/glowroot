@@ -123,7 +123,7 @@ class SocketCommandProcessor implements Runnable {
             } else if (command.equals(INTERRUPT)) {
                 interruptAppAndRespond(commandNum);
             } else {
-                logger.error("unexpected command '" + command + "'");
+                logger.error("unexpected command: {}", command);
                 respond(EXCEPTION_RESPONSE, commandNum);
             }
         } else if (command instanceof List) {
@@ -139,12 +139,12 @@ class SocketCommandProcessor implements Runnable {
                 } else if (commandName.equals(ADD_EXPECTED_LOG_MESSAGE)) {
                     addExpectedMessageAndRespond(commandNum, args);
                 } else {
-                    logger.error("unexpected command '" + commandName + "'");
+                    logger.error("unexpected command: {}", commandName);
                     respond(EXCEPTION_RESPONSE, commandNum);
                 }
             }
         } else {
-            logger.error("unexpected command type '" + command.getClass().getName() + "'");
+            logger.error("unexpected command type: {}", command.getClass().getName());
             respond(EXCEPTION_RESPONSE, commandNum);
         }
     }

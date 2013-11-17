@@ -141,7 +141,7 @@ public abstract class PropertyDescriptor {
             } else if (defaultValue == null) {
                 this.defaultValue = "";
             } else {
-                logger.error("unexpected value for property {}: {}", name, defaultValue);
+                logger.error("property {} has unexpected value: {}", name, defaultValue);
                 this.defaultValue = "";
             }
         }
@@ -170,7 +170,7 @@ public abstract class PropertyDescriptor {
             } else if (defaultValue == null) {
                 this.defaultValue = false;
             } else {
-                logger.error("unexpected value for property {}: {}", name, defaultValue);
+                logger.error("property {} has unexpected value: {}", name, defaultValue);
                 this.defaultValue = false;
             }
         }
@@ -198,7 +198,7 @@ public abstract class PropertyDescriptor {
             if (defaultValue instanceof Double || defaultValue == null) {
                 this.defaultValue = (Double) defaultValue;
             } else {
-                logger.error("unexpected value for property {}: {}", name, defaultValue);
+                logger.error("property {} has unexpected value: {}", name, defaultValue);
                 this.defaultValue = null;
             }
         }

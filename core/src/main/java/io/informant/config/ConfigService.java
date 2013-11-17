@@ -295,7 +295,7 @@ public class ConfigService {
                 }
             }
             if (!found) {
-                logger.warn("pointcut config unique hash '{}' not found", priorVersion);
+                logger.warn("pointcut config unique hash not found: {}", priorVersion);
                 return priorVersion;
             }
             Config updatedConfig = Config.builder(config)
@@ -321,7 +321,7 @@ public class ConfigService {
                 }
             }
             if (!found) {
-                logger.warn("pointcut config version '{}' not found", version);
+                logger.warn("pointcut config version not found: {}", version);
                 return;
             }
             Config updatedConfig = Config.builder(config)

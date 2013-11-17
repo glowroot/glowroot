@@ -61,8 +61,7 @@ public class MixinType {
                     continue;
                 }
                 if (method.getReturnType() != void.class) {
-                    logger.warn("@MixinInit method must return void: {}",
-                            implementation.getName());
+                    logger.warn("@MixinInit method must return void: {}", implementation.getName());
                     continue;
                 }
                 initMethodName = method.getName();

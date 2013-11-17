@@ -521,10 +521,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     break;
                 default:
                     // this should have been caught during Advice construction, but just in case:
-                    logger.warn("the @" + annotationType.getSimpleName() + " method in "
-                            + adviceType.getClassName()
-                            + " has an unexpected parameter kind {} at index {}",
-                            parameter.getKind(), i);
+                    logger.warn("the @{} method in {} has an unexpected parameter kind {}"
+                            + " at index {}", annotationType.getSimpleName(),
+                            adviceType.getClassName(), parameter.getKind(), i);
                     pushDefault(Type.getType(parameter.getType()));
                     break;
             }
@@ -546,10 +545,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private void loadMethodArg(Type adviceType, Class<? extends Annotation> annotationType,
             int argIndex, AdviceParameter parameter) {
         if (argIndex >= argumentTypes.length) {
-            logger.warn("the @" + annotationType.getSimpleName() + " method in "
-                    + adviceType.getClassName() + " has more @"
-                    + BindMethodArg.class.getSimpleName() + " arguments than the number of args"
-                    + " in the target method");
+            logger.warn("the @{} method in {} has more @{} arguments than the number of args"
+                    + " in the target method", annotationType.getSimpleName(),
+                    adviceType.getClassName(), BindMethodArg.class.getSimpleName());
             pushDefault(Type.getType(parameter.getType()));
             return;
         }
@@ -572,10 +570,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private void loadTraveler(@Nullable Integer travelerLocal, Type adviceType,
             Class<? extends Annotation> annotationType, AdviceParameter parameter) {
         if (travelerLocal == null) {
-            logger.warn("the @" + annotationType.getSimpleName() + " method in "
-                    + adviceType.getClassName() + " requested @"
-                    + BindTraveler.class.getSimpleName() + " but @"
-                    + OnBefore.class.getSimpleName() + " returns void");
+            logger.warn("the @{} method in {} requested @{} but @{} returns void",
+                    annotationType.getSimpleName(), adviceType.getClassName(),
+                    BindTraveler.class.getSimpleName(), OnBefore.class.getSimpleName());
             pushDefault(Type.getType(parameter.getType()));
         } else {
             loadLocal(travelerLocal);

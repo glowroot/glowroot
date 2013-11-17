@@ -321,8 +321,8 @@ public abstract class PluginServices {
                     pluginId);
             if (pluginServices == null) {
                 // this really really really shouldn't happen
-                logger.error(MAIN_ENTRY_POINT_CLASS_NAME + "." + GET_PLUGIN_SERVICES_METHOD_NAME
-                        + "(" + pluginId + ") returned null");
+                logger.error("{}.{}({}) returned null", MAIN_ENTRY_POINT_CLASS_NAME,
+                        GET_PLUGIN_SERVICES_METHOD_NAME, pluginId);
                 return PluginServicesNop.INSTANCE;
             }
             return pluginServices;

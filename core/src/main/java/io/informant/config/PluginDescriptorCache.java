@@ -130,7 +130,7 @@ public class PluginDescriptorCache {
                 plugins.add(pluginDescriptor);
             } catch (JsonProcessingException e) {
                 // no need to log stack trace
-                logger.error("error in plugin descriptor {}: {}", url.toExternalForm(),
+                logger.error("error parsing plugin descriptor {}: {}", url.toExternalForm(),
                         e.getMessage());
             }
         }
@@ -150,7 +150,8 @@ public class PluginDescriptorCache {
             return packageDescriptor.getPlugins();
         } catch (JsonProcessingException e) {
             // no need to log stack trace
-            logger.error("error in file {}: {}", url.toExternalForm(), e.getMessage());
+            logger.error("error parsing package descriptor {}: {}", url.toExternalForm(),
+                    e.getMessage());
             return ImmutableList.of();
         }
     }
@@ -163,7 +164,8 @@ public class PluginDescriptorCache {
                 try {
                     advisors.add(Advice.from(pointcut, memberClass, false));
                 } catch (AdviceConstructionException e) {
-                    logger.error("invalid advice '{}': {}", memberClass.getName(), e.getMessage());
+                    logger.error("error creating advice {}: {}", memberClass.getName(),
+                            e.getMessage());
                 }
             }
         }
@@ -204,7 +206,7 @@ public class PluginDescriptorCache {
         for (URL url : urls) {
             resourcePaths.add("'" + url.getPath() + "'");
         }
-        logger.error("more than one resource found with name '{}'. This file is only supported"
+        logger.error("more than one resource found with name {}. This file is only supported"
                 + " inside of an informant packaged jar so there should be only one. Only using"
                 + " the first one of {}.", resourceName, Joiner.on(", ").join(resourcePaths));
         return urls.get(0);

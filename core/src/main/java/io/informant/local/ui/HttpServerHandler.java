@@ -261,7 +261,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                         jsonServiceMapping.methodName, args, requestText);
             }
         }
-        logger.warn("unexpected uri '{}'", request.getUri());
+        logger.warn("unexpected uri: {}", request.getUri());
         return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
     }
 
@@ -276,13 +276,13 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     private HttpResponse handleStaticResource(String path, HttpRequest request) throws IOException {
         int extensionStartIndex = path.lastIndexOf('.');
         if (extensionStartIndex == -1) {
-            logger.warn("missing extension '{}'", path);
+            logger.warn("path has no extension: {}", path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         String extension = path.substring(extensionStartIndex + 1);
         String mimeType = mimeTypes.get(extension);
         if (mimeType == null) {
-            logger.warn("unexpected extension '{}' for path '{}'", extension, path);
+            logger.warn("path {} has unexpected extension: {}", path, extension);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         if (path.endsWith("/ui/app-dist/index.html")) {
@@ -311,7 +311,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         try {
             url = Resources.getResource(path);
         } catch (IllegalArgumentException e) {
-            logger.warn("unexpected path '{}'", path);
+            logger.warn("unexpected path: {}", path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         byte[] staticContent = Resources.toByteArray(url);
@@ -371,7 +371,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             HttpServices.preventCaching(response);
             return response;
         }
-        logger.warn("unexpected type of json service response '{}'",
+        logger.warn("unexpected type of json service response: {}",
                 responseText.getClass().getName());
         return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
     }

@@ -168,7 +168,7 @@ class HttpServer {
                 // numbering at 0)
                 return "Informant-Http-Worker-" + workerCount.getAndIncrement();
             }
-            logger.warn("unexpected thread name: '{}'", proposedThreadName);
+            logger.warn("unexpected thread name: {}", proposedThreadName);
             return proposedThreadName;
         }
     }

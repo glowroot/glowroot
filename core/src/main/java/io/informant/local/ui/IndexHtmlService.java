@@ -58,7 +58,7 @@ class IndexHtmlService {
         try {
             url = Resources.getResource(path);
         } catch (IllegalArgumentException e) {
-            logger.warn("unexpected path '{}'", path);
+            logger.warn("unexpected path: {}", path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         String indexHtml = Resources.toString(url, Charsets.UTF_8);

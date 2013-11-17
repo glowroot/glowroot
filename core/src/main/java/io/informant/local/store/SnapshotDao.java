@@ -124,9 +124,7 @@ public class SnapshotDao implements SnapshotRepository {
 
     @ReadOnly
     public List<TracePoint> readPoints(TracePointQuery query) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("readPoints(): query={}", query);
-        }
+        logger.debug("readPoints(): query={}", query);
         try {
             ParameterizedSql parameterizedSql = query.getParameterizedSql();
             return dataSource.query(parameterizedSql.getSql(), parameterizedSql.getArgs(),
@@ -154,7 +152,7 @@ public class SnapshotDao implements SnapshotRepository {
         if (partiallyHydratedTraces.isEmpty()) {
             return null;
         } else if (partiallyHydratedTraces.size() > 1) {
-            logger.error("multiple records returned for id '{}'", id);
+            logger.error("multiple records returned for id: {}", id);
         }
         // read from rolling file outside of jdbc connection
         return partiallyHydratedTraces.get(0).fullyHydrate();
@@ -176,7 +174,7 @@ public class SnapshotDao implements SnapshotRepository {
         if (snapshots.isEmpty()) {
             return null;
         } else if (snapshots.size() > 1) {
-            logger.error("multiple records returned for id '{}'", id);
+            logger.error("multiple records returned for id: {}", id);
         }
         return snapshots.get(0);
     }

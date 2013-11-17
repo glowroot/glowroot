@@ -71,8 +71,8 @@ class Schemas {
         if (!tableExists(tableName, connection)) {
             createTable(tableName, columns, connection);
         } else if (tableNeedsUpgrade(tableName, columns, connection)) {
-            logger.warn("upgrading " + tableName + " table schema, which unfortunately at this"
-                    + " point just means dropping and re-create the table (losing existing data)");
+            logger.warn("upgrading table {}, which unfortunately at this point just means"
+                    + " dropping and re-create the table (losing existing data)", tableName);
             execute("drop table " + tableName, connection);
             createTable(tableName, columns, connection);
         }

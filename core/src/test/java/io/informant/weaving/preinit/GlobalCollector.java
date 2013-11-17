@@ -73,7 +73,7 @@ public class GlobalCollector {
                 return;
             }
             for (ReferencedMethod override : overrides) {
-                logger.debug(override + " (processing overrides)");
+                logger.debug("{} (processing overrides)", override);
                 processMethod(override);
             }
             overrides.clear();
@@ -98,7 +98,7 @@ public class GlobalCollector {
             // method on an Array, e.g. new String[] {}.clone()
             return;
         }
-        logger.debug(indent + rootMethod);
+        logger.debug("{}{}", indent, rootMethod);
         // add the containing type and its super types if not already added
         Optional<TypeCollector> optional = typeCollectors.get(rootMethod.getOwner());
         if (optional == null) {

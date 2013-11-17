@@ -47,7 +47,7 @@ class TraceSummaryJsonService {
         CharSource charSource =
                 traceCommonService.createCharSourceForSnapshotOrActiveTrace(id, true);
         if (charSource == null) {
-            logger.debug("no trace found for id '{}', returning expired=true", id);
+            logger.debug("no trace found for id: {}", id);
             return "{\"expired\":true}";
         } else {
             // summary is small and doesn't need to be streamed
