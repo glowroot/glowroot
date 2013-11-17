@@ -229,9 +229,7 @@
       <!-- this profile should be activated using -Djacoco since the presence of that property will
         disable class shading and proguard-ing in core/pom.xml, otherwise the bytecode changes done
         to the classes during shading and proguard-ing will modify the jacoco class id and the sonar
-        reports won't report usage of those bytecode modified classes.
-        also, -Djacoco will disable JarFileShadingTest in integration-tests since that will
-        fail when class shading is disabled -->
+        reports won't report usage of those bytecode modified classes. -->
       <id>active-this-profile-using-the-jacoco-property</id>
       <activation>
         <property>

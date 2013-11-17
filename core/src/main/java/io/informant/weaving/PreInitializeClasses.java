@@ -402,6 +402,20 @@ class PreInitializeClasses {
     }
 
     private static List<String> getGuavaUsedTypes() {
+        // webdriver tests include later guava version on the path via selenium dependency
+        // overriding the guava version used by informant (when running against unshaded informant)
+        //
+        // running webdriver tests against unshaded informant occurs during 'mvn clean test', and
+        // during 'mvn clean test -Djacoco' (jacoco code coverage must be run against unshaded
+        // informant, see comment in informant-parent pom.xml)
+        boolean guava14;
+        try {
+            // this class is only present in guava 15 and later
+            Class.forName("com.google.common.base.StandardSystemProperty");
+            guava14 = false;
+        } catch (ClassNotFoundException e) {
+            guava14 = true;
+        }
         List<String> types = Lists.newArrayList();
         types.add("com.google.common.base.Ascii");
         types.add("com.google.common.base.Equivalence");
@@ -511,7 +525,9 @@ class PreInitializeClasses {
         types.add("com.google.common.cache.Striped64");
         types.add("com.google.common.cache.Striped64$1");
         types.add("com.google.common.cache.Striped64$Cell");
-        types.add("com.google.common.cache.Striped64$Cell$1");
+        if (guava14) {
+            types.add("com.google.common.cache.Striped64$Cell$1");
+        }
         types.add("com.google.common.cache.Striped64$HashCode");
         types.add("com.google.common.cache.Striped64$ThreadHashCode");
         types.add("com.google.common.cache.Weigher");
@@ -523,16 +539,22 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.Collections2");
         types.add("com.google.common.collect.Collections2$1");
         types.add("com.google.common.collect.EmptyImmutableBiMap");
-        types.add("com.google.common.collect.EmptyImmutableList");
+        if (guava14) {
+            types.add("com.google.common.collect.EmptyImmutableList");
+        }
         types.add("com.google.common.collect.EmptyImmutableSet");
         types.add("com.google.common.collect.FluentIterable");
         types.add("com.google.common.collect.Hashing");
         types.add("com.google.common.collect.ImmutableAsList");
         types.add("com.google.common.collect.ImmutableBiMap");
         types.add("com.google.common.collect.ImmutableCollection");
-        types.add("com.google.common.collect.ImmutableCollection$1");
+        if (guava14) {
+            types.add("com.google.common.collect.ImmutableCollection$1");
+        }
         types.add("com.google.common.collect.ImmutableCollection$Builder");
-        types.add("com.google.common.collect.ImmutableCollection$EmptyImmutableCollection");
+        if (guava14) {
+            types.add("com.google.common.collect.ImmutableCollection$EmptyImmutableCollection");
+        }
         types.add("com.google.common.collect.ImmutableEntry");
         types.add("com.google.common.collect.ImmutableList");
         types.add("com.google.common.collect.ImmutableList$1");
@@ -574,9 +596,11 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.RegularImmutableMap");
         types.add("com.google.common.collect.RegularImmutableMap$1");
         types.add("com.google.common.collect.RegularImmutableMap$EntrySet");
-        types.add("com.google.common.collect.RegularImmutableMap$LinkedEntry");
-        types.add("com.google.common.collect.RegularImmutableMap$NonTerminalEntry");
-        types.add("com.google.common.collect.RegularImmutableMap$TerminalEntry");
+        if (guava14) {
+            types.add("com.google.common.collect.RegularImmutableMap$LinkedEntry");
+            types.add("com.google.common.collect.RegularImmutableMap$NonTerminalEntry");
+            types.add("com.google.common.collect.RegularImmutableMap$TerminalEntry");
+        }
         types.add("com.google.common.collect.ReverseNaturalOrdering");
         types.add("com.google.common.collect.ReverseOrdering");
         types.add("com.google.common.collect.Sets");

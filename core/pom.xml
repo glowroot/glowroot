@@ -230,25 +230,6 @@
         </configuration>
       </plugin>
       <plugin>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>2.1</version>
-        <executions>
-          <execution>
-            <!-- this is overridden by the (usually active) shade-and-proguard profile below -->
-            <id>default</id>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <dependencyReducedPomLocation>
-            ${project.build.directory}/dependency-reduced-pom.xml
-          </dependencyReducedPomLocation>
-          <createSourcesJar>true</createSourcesJar>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>license-maven-plugin</artifactId>
         <version>1.5</version>
@@ -396,9 +377,19 @@
         <plugins>
           <plugin>
             <artifactId>maven-shade-plugin</artifactId>
+            <version>2.1</version>
+            <configuration>
+              <dependencyReducedPomLocation>
+                ${project.build.directory}/dependency-reduced-pom.xml
+              </dependencyReducedPomLocation>
+              <createSourcesJar>true</createSourcesJar>
+            </configuration>
             <executions>
               <execution>
                 <id>default</id>
+                <goals>
+                  <goal>shade</goal>
+                </goals>
                 <configuration>
                   <shadeSourcesContent>true</shadeSourcesContent>
                   <filters>

@@ -129,30 +129,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>active-this-profile-using-the-jacoco-property</id>
-      <activation>
-        <property>
-          <name>jacoco</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <excludes>
-                <!-- running jacoco requires disabling class shading, and this test will fail when
-                  class shading is disabled, see jacoco profile comment in parent pom.xml for more
-                  detail -->
-                <exclude>**/JarFileShadingTest.java</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>
