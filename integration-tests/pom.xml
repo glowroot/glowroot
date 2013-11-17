@@ -19,6 +19,7 @@
       <groupId>io.informant</groupId>
       <artifactId>informant-plugin-api</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <!-- using shaded-guava dependency to take advantage of the shaded guava library that is
@@ -74,16 +75,6 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <executions>
           <execution>
-            <!-- override default test phase goal -->
-            <id>default-test</id>
-            <configuration>
-              <excludes>
-                <!-- requires informant.jar so it is executed during integration-test phase -->
-                <exclude>**/JarFileShadingTest.java</exclude>
-              </excludes>
-            </configuration>
-          </execution>
-          <execution>
             <!-- run tests a second time using the javaagent container -->
             <id>with-javaagent-container-test</id>
             <phase>test</phase>
@@ -100,24 +91,20 @@
                   <value>io.informant.container.SharedContainerRunListener</value>
                 </property>
               </properties>
-              <excludes>
-                <!-- requires informant.jar so it is executed during integration-test phase -->
-                <exclude>**/JarFileShadingTest.java</exclude>
-              </excludes>
             </configuration>
           </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- maven-failsafe-plugin is used to execute JarFileShadingIT since it needs to run after
+          the packaging phase so that informant.jar will be available -->
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
           <execution>
-            <id>integration-test</id>
-            <phase>integration-test</phase>
             <goals>
-              <goal>test</goal>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
             </goals>
-            <configuration>
-              <includes>
-                <!-- requires informant.jar so it is executed during integration-test phase -->
-                <include>**/JarFileShadingTest.java</include>
-              </includes>
-            </configuration>
           </execution>
         </executions>
       </plugin>

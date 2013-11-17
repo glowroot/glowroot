@@ -21,6 +21,7 @@ import java.util.List;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
+import io.informant.weaving.PreInitializeClasses;
 import io.informant.weaving.preinit.GlobalCollector;
 import io.informant.weaving.preinit.ReferencedMethod;
 
@@ -34,12 +35,13 @@ public class PreInitializeClassesTest {
 
     @Test
     public void shouldCheckHardcodedListAgainstReality() throws IOException {
+        // this test must be run against informant after shading/proguard
         GlobalCollector globalCollector = new GlobalCollector();
         // register WeavingMetricImpl since the WeavingClassFileTransformer constructor accepts the
         // WeavingMetricName interface and so WeavingMetricNameImpl would otherwise co unseen
         globalCollector.registerType("io/informant/trace/MetricTimerServiceImpl");
-        // "call" WeavingClassFileTransformer constructor to capture its lazy loading weavers
-        // structure
+        // "call" WeavingClassFileTransformer constructor to capture types used by its weavers
+        // LoadingCache (so these types will be in the list of possible subtypes later on)
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "io/informant/weaving/WeavingClassFileTransformer", "<init>",
                 "(Ljava/util/List;Ljava/util/List;Lcom/google/common/base/Supplier;"
@@ -51,6 +53,7 @@ public class PreInitializeClassesTest {
                 "(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/Class;"
                         + "Ljava/security/ProtectionDomain;[B)[B"));
         // "call" DataSource$ShutdownHookThread.run()
+        // because class loading during jvm shutdown throws exception
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "io/informant/local/store/DataSource$ShutdownHookThread", "run", "()V"));
         globalCollector.processOverrides();

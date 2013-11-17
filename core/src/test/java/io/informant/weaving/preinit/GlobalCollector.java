@@ -83,7 +83,9 @@ public class GlobalCollector {
     public List<String> usedTypes() {
         List<String> typeNames = Lists.newArrayList();
         for (String typeName : Sets.newTreeSet(typeCollectors.keySet())) {
-            if (!Types.inBootstrapClassLoader(typeName) && Types.exists(typeName)) {
+            if (!Types.inBootstrapClassLoader(typeName) && !typeName.startsWith("org/slf4j/")
+                    && !typeName.startsWith("io/informant/shaded/slf4j/")
+                    && Types.exists(typeName)) {
                 typeNames.add(TypeNames.fromInternal(typeName));
             }
         }
@@ -94,27 +96,30 @@ public class GlobalCollector {
         if (referencedMethods.contains(rootMethod)) {
             return;
         }
-        if (rootMethod.getOwner().startsWith("[")) {
+        String owner = rootMethod.getOwner();
+        if (owner.startsWith("[")) {
             // method on an Array, e.g. new String[] {}.clone()
             return;
         }
         logger.debug("{}{}", indent, rootMethod);
         // add the containing type and its super types if not already added
-        Optional<TypeCollector> optional = typeCollectors.get(rootMethod.getOwner());
+        Optional<TypeCollector> optional = typeCollectors.get(owner);
         if (optional == null) {
-            optional = addType(rootMethod.getOwner());
+            optional = addType(owner);
         }
         if (!optional.isPresent()) {
             // couldn't find type
             if (expected) {
-                throw new IllegalStateException("Could not find type '" + rootMethod.getOwner()
-                        + "'");
+                throw new IllegalStateException("Could not find type '" + owner + "'");
             } else {
                 return;
             }
         }
         referencedMethods.add(rootMethod);
-        if (Types.inBootstrapClassLoader(rootMethod.getOwner())) {
+        if (Types.inBootstrapClassLoader(owner)) {
+            return;
+        }
+        if (owner.startsWith("org/slf4j/") || owner.startsWith("io/informant/shaded/slf4j/")) {
             return;
         }
         TypeCollector typeCollector = optional.get();
@@ -129,7 +134,7 @@ public class GlobalCollector {
             processMethod(ReferencedMethod.from(typeCollector.getSuperType(), methodId));
         }
         // methodCollector can be null, e.g. unimplemented interface method in an abstract class
-        if (methodCollector != null && !Types.inBootstrapClassLoader(rootMethod.getOwner())) {
+        if (methodCollector != null) {
             processMethod(methodCollector);
         }
     }
@@ -187,7 +192,7 @@ public class GlobalCollector {
     @Nullable
     private TypeCollector createTypeCollector(String typeName) {
         if (ClassLoader.getSystemResource(typeName + ".class") == null) {
-            logger.debug("could not find class: {}", typeName);
+            logger.error("could not find class: {}", typeName);
             return null;
         }
         TypeCollector typeCollector = new TypeCollector();

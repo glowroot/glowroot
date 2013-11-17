@@ -19,6 +19,7 @@
       <groupId>io.informant</groupId>
       <artifactId>informant-plugin-api</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <!-- using shaded-guava dependency to take advantage of the shaded guava library that is

@@ -37,7 +37,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class JarFileShadingTest {
+public class JarFileShadingIT {
 
     @Test
     public void shouldCheckThatJarIsWellShaded() throws IOException {
