@@ -71,6 +71,7 @@ informant.controller('ConfigUserInterfaceCtrl', [
       $scope.page.initialPassword = '';
       $scope.page.verifyInitialPassword = '';
       $scope.page.verifyCurrentPassword = '';
+      $scope.passwordForm = {};
     }
 
     $scope.save = function (deferred) {
@@ -159,10 +160,7 @@ informant.controller('ConfigUserInterfaceCtrl', [
             if (data.currentPasswordIncorrect) {
               deferred.reject('Current password is incorrect');
             } else {
-              $scope.config.version = data;
-              // need to update originalConfig also
-              $scope.originalConfig.version = data;
-              $scope.passwordForm = {};
+              onNewData(data);
               deferred.resolve('Password changed');
             }
           })
