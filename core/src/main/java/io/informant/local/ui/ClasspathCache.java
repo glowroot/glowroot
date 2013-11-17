@@ -138,16 +138,13 @@ class ClasspathCache {
             return;
         }
         for (URL url : urls) {
-            if (classpathURLs.contains(url)) {
-                continue;
-            }
-            classpathURLs.add(url);
-            try {
-                loadTypeNames(url);
-            } catch (IOException e) {
-                logger.debug("error reading classes from url: {}", url, e);
-            } catch (URISyntaxException e) {
-                logger.debug("error reading classes from url: {}", url, e);
+            synchronized (classpathURLs) {
+                if (!classpathURLs.contains(url)) {
+                    // this can take a few seconds in the case of maven surefire booter jar which
+                    // includes many of other jar files via its manifest's Class-Path attribute
+                    loadTypeNames(url);
+                    classpathURLs.add(url);
+                }
             }
         }
         ClassLoader parent = loader.getParent();
@@ -165,17 +162,23 @@ class ClasspathCache {
         return loaders;
     }
 
-    private void loadTypeNames(URL url) throws IOException, URISyntaxException {
-        if (url.getProtocol().equals("file")) {
-            File file = new File(url.toURI());
-            if (file.isDirectory()) {
-                loadTypeNamesFromDirectory(file, "");
-            } else {
+    private void loadTypeNames(URL url) {
+        try {
+            if (url.getProtocol().equals("file")) {
+                File file = new File(url.toURI());
+                if (file.isDirectory()) {
+                    loadTypeNamesFromDirectory(file, "");
+                } else if (file.getName().endsWith(".jar")) {
+                    loadTypeNamesFromJarFile(url);
+                }
+            } else if (url.getPath().endsWith(".jar")) {
+                // try to load jar from non-file url
                 loadTypeNamesFromJarFile(url);
             }
-        } else if (url.getPath().endsWith(".jar")) {
-            // try to load jar from non-file url
-            loadTypeNamesFromJarFile(url);
+        } catch (IOException e) {
+            logger.debug("error reading classes from url: {}", url, e);
+        } catch (URISyntaxException e) {
+            logger.debug("error reading classes from url: {}", url, e);
         }
     }
 
@@ -195,14 +198,14 @@ class ClasspathCache {
         }
     }
 
-    private void loadTypeNamesFromJarFile(URL jarUrl) throws IOException {
+    private void loadTypeNamesFromJarFile(URL jarUrl) throws IOException, URISyntaxException {
         JarInputStream jarIn = new JarInputStream(jarUrl.openStream());
         Manifest manifest = jarIn.getManifest();
         if (manifest != null) {
             String classpath = manifest.getMainAttributes().getValue("Class-Path");
             if (classpath != null) {
                 for (String path : Splitter.on(' ').omitEmptyStrings().split(classpath)) {
-                    loadTypeNamesFromJarFile(new URL(path));
+                    loadTypeNames(new URL(path));
                 }
             }
         }
