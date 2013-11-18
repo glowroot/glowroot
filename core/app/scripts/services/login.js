@@ -33,7 +33,8 @@ informant.factory('login', [
         return message;
       },
       returnToOriginalPath: function() {
-        if (originalPath !== '/login') {
+        // originalPath can be undefined if user hits login page directly
+        if (originalPath && originalPath !== '/login') {
           $location.path(originalPath).replace();
         } else {
           $location.path('/').replace();
