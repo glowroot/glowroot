@@ -37,10 +37,8 @@ import io.informant.weaving.SomeAspect.BindOptionalPrimitiveReturnAdvice;
 import io.informant.weaving.SomeAspect.BindOptionalReturnAdvice;
 import io.informant.weaving.SomeAspect.BindOptionalVoidReturnAdvice;
 import io.informant.weaving.SomeAspect.BindPrimitiveBooleanTravelerAdvice;
-import io.informant.weaving.SomeAspect.BindPrimitiveBooleanTravelerBadAdvice;
 import io.informant.weaving.SomeAspect.BindPrimitiveReturnAdvice;
 import io.informant.weaving.SomeAspect.BindPrimitiveTravelerAdvice;
-import io.informant.weaving.SomeAspect.BindPrimitiveTravelerBadAdvice;
 import io.informant.weaving.SomeAspect.BindReturnAdvice;
 import io.informant.weaving.SomeAspect.BindTargetAdvice;
 import io.informant.weaving.SomeAspect.BindThrowableAdvice;
@@ -60,8 +58,6 @@ import io.informant.weaving.SomeAspect.MethodArgsDotDotAdvice3;
 import io.informant.weaving.SomeAspect.MethodReturnCharSequenceAdvice;
 import io.informant.weaving.SomeAspect.MethodReturnStringAdvice;
 import io.informant.weaving.SomeAspect.MethodReturnVoidAdvice;
-import io.informant.weaving.SomeAspect.MoreVeryBadAdvice;
-import io.informant.weaving.SomeAspect.MoreVeryBadAdvice2;
 import io.informant.weaving.SomeAspect.MultipleMethodsAdvice;
 import io.informant.weaving.SomeAspect.NonMatchingMethodReturnAdvice;
 import io.informant.weaving.SomeAspect.NonMatchingMethodReturnAdvice2;
@@ -75,7 +71,6 @@ import io.informant.weaving.SomeAspect.StaticAdvice;
 import io.informant.weaving.SomeAspect.StaticBindTargetClassAdvice;
 import io.informant.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
 import io.informant.weaving.SomeAspect.TypeNamePatternAdvice;
-import io.informant.weaving.SomeAspect.VeryBadAdvice;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -303,34 +298,6 @@ public class WeaverTest {
         assertThat(BindPrimitiveBooleanTravelerAdvice.onReturnTraveler.get()).isEqualTo(true);
         assertThat(BindPrimitiveBooleanTravelerAdvice.onThrowTraveler.get()).isNull();
         assertThat(BindPrimitiveBooleanTravelerAdvice.onAfterTraveler.get()).isEqualTo(true);
-    }
-
-    @Test
-    public void shouldHandleVoidPrimitiveTravelerGracefully() throws Exception {
-        // given
-        BindPrimitiveTravelerBadAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                BindPrimitiveTravelerBadAdvice.class);
-        // when
-        test.execute1();
-        // then
-        assertThat(BindPrimitiveTravelerBadAdvice.onReturnTraveler.get()).isEqualTo(0);
-        assertThat(BindPrimitiveTravelerBadAdvice.onThrowTraveler.get()).isNull();
-        assertThat(BindPrimitiveTravelerBadAdvice.onAfterTraveler.get()).isEqualTo(0);
-    }
-
-    @Test
-    public void shouldHandleVoidPrimitiveBooleanTravelerGracefully() throws Exception {
-        // given
-        BindPrimitiveBooleanTravelerBadAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                BindPrimitiveBooleanTravelerBadAdvice.class);
-        // when
-        test.execute1();
-        // then
-        assertThat(BindPrimitiveBooleanTravelerBadAdvice.onReturnTraveler.get()).isEqualTo(false);
-        assertThat(BindPrimitiveBooleanTravelerBadAdvice.onThrowTraveler.get()).isNull();
-        assertThat(BindPrimitiveBooleanTravelerBadAdvice.onAfterTraveler.get()).isEqualTo(false);
     }
 
     @Test
@@ -944,61 +911,6 @@ public class WeaverTest {
         // when
         test.executeWithArgs("one", 2);
         // then should not bomb
-    }
-
-    @Test
-    public void shouldNotCallOnThrowForOnBeforeException() throws Exception {
-        // given
-        VeryBadAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, VeryBadAdvice.class);
-        // when
-        try {
-            test.executeWithArgs("one", 2);
-        } catch (IllegalStateException e) {
-            assertThat(e.getMessage()).isEqualTo("Sorry");
-            assertThat(VeryBadAdvice.onBeforeCount.get()).isEqualTo(1);
-            assertThat(VeryBadAdvice.onThrowCount.get()).isEqualTo(0);
-            assertThat(VeryBadAdvice.onAfterCount.get()).isEqualTo(0);
-            return;
-        }
-        throw new AssertionError("Expecting IllegalStateException");
-    }
-
-    @Test
-    public void shouldNotCallOnThrowForOnReturnException() throws Exception {
-        // given
-        MoreVeryBadAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, MoreVeryBadAdvice.class);
-        // when
-        try {
-            test.executeWithArgs("one", 2);
-        } catch (IllegalStateException e) {
-            assertThat(e.getMessage()).isEqualTo("Sorry");
-            assertThat(MoreVeryBadAdvice.onReturnCount.get()).isEqualTo(1);
-            assertThat(MoreVeryBadAdvice.onThrowCount.get()).isEqualTo(0);
-            assertThat(MoreVeryBadAdvice.onAfterCount.get()).isEqualTo(0);
-            return;
-        }
-        throw new AssertionError("Expecting IllegalStateException");
-    }
-
-    // same as MoreVeryBadAdvice, but testing weaving a method with a non-void return type
-    @Test
-    public void shouldNotCallOnThrowForOnReturnException2() throws Exception {
-        // given
-        MoreVeryBadAdvice2.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, MoreVeryBadAdvice2.class);
-        // when
-        try {
-            test.executeWithReturn();
-        } catch (IllegalStateException e) {
-            assertThat(e.getMessage()).isEqualTo("Sorry");
-            assertThat(MoreVeryBadAdvice2.onReturnCount.get()).isEqualTo(1);
-            assertThat(MoreVeryBadAdvice2.onThrowCount.get()).isEqualTo(0);
-            assertThat(MoreVeryBadAdvice2.onAfterCount.get()).isEqualTo(0);
-            return;
-        }
-        throw new AssertionError("Expecting IllegalStateException");
     }
 
     @Test
