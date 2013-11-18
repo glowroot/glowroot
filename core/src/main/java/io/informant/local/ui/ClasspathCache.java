@@ -18,6 +18,7 @@ package io.informant.local.ui;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -59,9 +60,11 @@ class ClasspathCache {
 
     private final ParsedTypeCache parsedTypeCache;
 
-    private final Set<URL> classpathURLs =
-            Sets.newSetFromMap(Maps.<URL, Boolean>newConcurrentMap());
-    private final Map<String, Set<URL>> typeNames = Maps.newConcurrentMap();
+    // using sets of URIs because URLs have expensive equals and hashcode methods
+    // see http://michaelscharf.blogspot.com/2006/11/javaneturlequals-and-hashcode-make.html
+    private final Set<URI> classpathURIs =
+            Sets.newSetFromMap(Maps.<URI, Boolean>newConcurrentMap());
+    private final Map<String, Set<URI>> typeNames = Maps.newConcurrentMap();
 
     @GuardedBy("typeNameUppers")
     private final SortedMap<String, SortedSet<String>> typeNameUppers = Maps.newTreeMap();
@@ -93,13 +96,13 @@ class ClasspathCache {
         // update cache before proceeding
         updateCache();
         List<ParsedType> parsedTypes = Lists.newArrayList();
-        Set<URL> urls = typeNames.get(typeName);
-        if (urls == null) {
+        Set<URI> uris = typeNames.get(typeName);
+        if (uris == null) {
             return ImmutableList.of();
         }
-        for (URL url : urls) {
+        for (URI uri : uris) {
             try {
-                parsedTypes.add(createParsedType(url));
+                parsedTypes.add(createParsedType(uri));
             } catch (IOException e) {
                 logger.warn(e.getMessage(), e);
             }
@@ -116,9 +119,9 @@ class ClasspathCache {
         }
     }
 
-    private ParsedType createParsedType(URL url) throws IOException {
+    private ParsedType createParsedType(URI uri) throws IOException {
         ParsedTypeClassVisitor cv = new ParsedTypeClassVisitor();
-        byte[] bytes = Resources.toByteArray(url);
+        byte[] bytes = Resources.toByteArray(uri.toURL());
         ClassReader cr = new ClassReader(bytes);
         cr.accept(cv, 0);
         return cv.build();
@@ -137,13 +140,20 @@ class ClasspathCache {
         if (urls == null) {
             return;
         }
+        List<URI> uris = Lists.newArrayList();
         for (URL url : urls) {
-            synchronized (classpathURLs) {
-                if (!classpathURLs.contains(url)) {
+            try {
+                uris.add(url.toURI());
+            } catch (URISyntaxException e) {
+            }
+        }
+        for (URI uri : uris) {
+            synchronized (classpathURIs) {
+                if (!classpathURIs.contains(uri)) {
                     // this can take a few seconds in the case of maven surefire booter jar which
                     // includes many of other jar files via its manifest's Class-Path attribute
-                    loadTypeNames(url);
-                    classpathURLs.add(url);
+                    loadTypeNames(uri);
+                    classpathURIs.add(uri);
                 }
             }
         }
@@ -162,23 +172,21 @@ class ClasspathCache {
         return loaders;
     }
 
-    private void loadTypeNames(URL url) {
+    private void loadTypeNames(URI uri) {
         try {
-            if (url.getProtocol().equals("file")) {
-                File file = new File(url.toURI());
+            if (uri.getScheme().equals("file")) {
+                File file = new File(uri);
                 if (file.isDirectory()) {
                     loadTypeNamesFromDirectory(file, "");
-                } else if (file.getName().endsWith(".jar")) {
-                    loadTypeNamesFromJarFile(url);
+                } else if (file.exists() && file.getName().endsWith(".jar")) {
+                    loadTypeNamesFromJarFile(uri);
                 }
-            } else if (url.getPath().endsWith(".jar")) {
-                // try to load jar from non-file url
-                loadTypeNamesFromJarFile(url);
+            } else if (uri.getPath().endsWith(".jar")) {
+                // try to load jar from non-file uri
+                loadTypeNamesFromJarFile(uri);
             }
         } catch (IOException e) {
-            logger.debug("error reading classes from url: {}", url, e);
-        } catch (URISyntaxException e) {
-            logger.debug("error reading classes from url: {}", url, e);
+            logger.debug("error reading classes from uri: {}", uri, e);
         }
     }
 
@@ -190,22 +198,23 @@ class ClasspathCache {
         for (File file : files) {
             String name = file.getName();
             if (file.isFile() && name.endsWith(".class")) {
-                URL fileUrl = new File(dir, name).toURI().toURL();
-                addTypeName(prefix + name.substring(0, name.lastIndexOf('.')), fileUrl);
+                URI fileUri = new File(dir, name).toURI();
+                addTypeName(prefix + name.substring(0, name.lastIndexOf('.')), fileUri);
             } else if (file.isDirectory()) {
                 loadTypeNamesFromDirectory(file, prefix + name + ".");
             }
         }
     }
 
-    private void loadTypeNamesFromJarFile(URL jarUrl) throws IOException, URISyntaxException {
-        JarInputStream jarIn = new JarInputStream(jarUrl.openStream());
+    private void loadTypeNamesFromJarFile(URI jarUri) throws IOException {
+        JarInputStream jarIn = new JarInputStream(jarUri.toURL().openStream());
         Manifest manifest = jarIn.getManifest();
         if (manifest != null) {
             String classpath = manifest.getMainAttributes().getValue("Class-Path");
             if (classpath != null) {
                 for (String path : Splitter.on(' ').omitEmptyStrings().split(classpath)) {
-                    loadTypeNames(new URL(path));
+                    URI uri = jarUri.resolve(path);
+                    loadTypeNames(uri);
                 }
             }
         }
@@ -219,23 +228,26 @@ class ClasspathCache {
                 if (name.endsWith(".class")) {
                     String typeName = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
                     // TODO test if this works with jar loaded over http protocol
-                    URL fileURL = new URL("jar", "", jarUrl.getProtocol() + ":" + jarUrl.getFile()
-                            + "!/" + name);
-                    addTypeName(typeName, fileURL);
+                    URI fileURI = new URI("jar", jarUri.getScheme() + ":" + jarUri.getPath()
+                            + "!/" + name, "");
+                    addTypeName(typeName, fileURI);
                 }
             }
+        } catch (URISyntaxException e) {
+            // seems like a programmatic error if URISyntaxException happens here
+            logger.warn(e.getMessage(), e);
         } finally {
             jarIn.close();
         }
     }
 
-    private void addTypeName(String typeName, URL url) {
-        Set<URL> urls = typeNames.get(typeName);
-        if (urls == null) {
-            urls = Sets.newCopyOnWriteArraySet();
-            typeNames.put(typeName, urls);
+    private void addTypeName(String typeName, URI uri) {
+        Set<URI> uris = typeNames.get(typeName);
+        if (uris == null) {
+            uris = Sets.newCopyOnWriteArraySet();
+            typeNames.put(typeName, uris);
         }
-        urls.add(url);
+        uris.add(uri);
         addTypeNameUpper(typeName);
     }
 
