@@ -8,6 +8,7 @@ before_install:
   - sh -e /etc/init.d/xvfb start
 install:
   - TARGET=install
+  - if [[ "$TRAVIS_JDK_VERSION" == "openjdk6" ]]; then TARGET=test; fi
   - if [[ "$TRAVIS_REPO_SLUG" == "informant/informant" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_JDK_VERSION" == "oraclejdk7" ]]; then TARGET=deploy; fi
   - mvn clean $TARGET -Dgit.commit.hash=$TRAVIS_COMMIT -DdeployAtEnd=true --settings settings.xml -B
 script: true
