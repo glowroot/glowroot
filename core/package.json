@@ -24,7 +24,6 @@
     "grunt-connect-rewrite": "~0.1.1",
     "grunt-contrib-uglify": "~0.2.7",
     "grunt-contrib-watch": "~0.5.3",
-    "grunt-google-cdn": "~0.2.2",
     "grunt-rev": "~0.1.0",
     "grunt-text-replace": "~0.3.9",
     "grunt-usemin": "yeoman/grunt-usemin#226a100eb8de4588abc46805caabdb6c527d729b",

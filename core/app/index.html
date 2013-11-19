@@ -135,8 +135,9 @@
   <!-- don't group angular fallback into the same script tag as jquery because need to make sure jquery is loaded
        before angular even if one is available via cdn and the other one uses the fallback
        (though this is very unlikely since they are both hosted by the same cdn provider) -->
-  <!-- not using angular cdn at this time since custom angular build is required due to
-       https://github.com/angular/angular.js/pull/3135 -->
+  <script>
+    window.jQuery || document.write('<script src="bower_components/angular/angular.min.js"><\/script>');
+  </script>
 
   <!-- build:js({app,.tmp}) scripts/app.components.js -->
   <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>

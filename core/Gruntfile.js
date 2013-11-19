@@ -27,6 +27,10 @@ module.exports = function (grunt) {
     yeomanConfig.app = require('./component.json').appPath || yeomanConfig.app;
   } catch (e) {}
 
+  var bowerJson = grunt.file.readJSON('bower.json');
+  var jqueryVersion = bowerJson.dependencies.jquery;
+  var angularVersion = bowerJson.dependencies.angular;
+
   grunt.initConfig({
     yeoman: yeomanConfig,
     watch: {
@@ -321,6 +325,7 @@ module.exports = function (grunt) {
             src: [
               // jquery.min.js and angular.min.js are used for cdn fallback
               'bower_components/jquery/jquery.min.js',
+              'bower_components/jquery/jquery.min.map',
               'bower_components/angular/angular.min.js',
               'bower_components/angular/angular.min.js.map',
               'bower_components/flot/excanvas.min.js',
@@ -347,15 +352,20 @@ module.exports = function (grunt) {
       }
     },
     replace: {
-      index: {
+      // not using grunt-google-cdn because it is not updated with support for the latest Angular
+      // releases at this time
+      // see https://github.com/passy/google-cdn/pull/9
+      cdn: {
         src: '<%= yeoman.dist %>/index.html',
         overwrite: true,
         replacements: [
           {
-            // not using angular cdn at this time since custom angular build is required due to
-            // https://github.com/angular/angular.js/pull/3135
+            from: 'bower_components/jquery/jquery.js',
+            to: '//ajax.googleapis.com/ajax/libs/jquery/' + jqueryVersion + '/jquery.min.js'
+          },
+          {
             from: 'bower_components/angular/angular.js',
-            to: 'bower_components/angular/angular.min.js'
+            to: '//ajax.googleapis.com/ajax/libs/angularjs/' + angularVersion + '/angular.min.js'
           }
         ]
       },
@@ -397,13 +407,6 @@ module.exports = function (grunt) {
       ],
       // use revved font filenames in revved main.css
       css: '<%= yeoman.dist %>/styles/*.main.css'
-    },
-    cdnify: {
-      dist: {
-        // jquery
-        // cdnify won't replace angular since using '+patch.X' version of angular
-        html: '<%= yeoman.dist %>/index.html'
-      }
     }
   });
 
@@ -426,13 +429,11 @@ module.exports = function (grunt) {
     'ngtemplates',
     'handlebars',
     'copy',
-    'replace:index',
     'cssmin',
     'uglify',
-    'replace:sourceMaps',
+    'replace',
     'rev',
     'usemin',
-    'cdnify',
     'htmlmin'
   ]);
 
