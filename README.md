@@ -16,11 +16,11 @@ Post 'em all to the [GitHub issue tracker](https://github.com/informant/informan
 
 #### How to build it
 
-Informant uses [Grunt](http://gruntjs.com) to build its web assets (Javascript concat/minify, SASS compile/minify, AngularJS template concat/minify, asset revving and more).
+Informant uses [Bower](http://bower.io) and [Grunt](http://gruntjs.com) to build its web assets (dependency management, Javascript concat/minify, SASS compile/minify, AngularJS template concat/minify, asset revving and more).
 
-To install Grunt, first install [Node.js](http://nodejs.org), then install Grunt from the command line:
+To install Bower and Grunt, first install [Node.js](http://nodejs.org), then install Bower and Grunt from the command line:
 
-    npm install -g grunt-cli
+    npm install -g bower grunt-cli
 
 From now on, building is easy:
 

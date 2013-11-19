@@ -297,6 +297,23 @@
                 </configuration>
               </execution>
               <execution>
+                <!-- using 'bower update' instead of 'bower install' due to
+                  https://github.com/bower/bower/issues/939 -->
+                <id>bower-update</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>cmd</executable>
+                  <arguments>
+                    <argument>/c</argument>
+                    <argument>bower</argument>
+                    <argument>update</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+              <execution>
                 <id>grunt-build</id>
                 <phase>generate-sources</phase>
                 <goals>
@@ -342,6 +359,21 @@
                   <executable>npm</executable>
                   <arguments>
                     <argument>install</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+              <execution>
+                <!-- using 'bower update' instead of 'bower install' due to
+                  https://github.com/bower/bower/issues/939 -->
+                <id>bower-update</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>bower</executable>
+                  <arguments>
+                    <argument>update</argument>
                   </arguments>
                 </configuration>
               </execution>

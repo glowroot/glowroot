@@ -115,13 +115,6 @@ module.exports = function (grunt) {
         }
       }
     },
-    bower: {
-      install: {
-        options: {
-          copy: false
-        }
-      }
-    },
     clean: {
       dist: {
         files: [
@@ -421,7 +414,6 @@ module.exports = function (grunt) {
   ]);
 
   grunt.registerTask('build', [
-    'bower',
     'clean:dist',
     'jshint',
     'less:dist',
