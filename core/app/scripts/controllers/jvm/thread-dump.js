@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant, $, Handlebars, JST */
+/* global glowroot, $, Handlebars, JST */
 
-informant.controller('JvmThreadDumpCtrl', [
+glowroot.controller('JvmThreadDumpCtrl', [
   '$scope',
   '$http',
   '$q',

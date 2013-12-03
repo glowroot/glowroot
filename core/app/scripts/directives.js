@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, $, Spinner */
+/* global glowroot, Glowroot, $, Spinner */
 
-informant.factory('ixButtonGroupControllerFactory', [
+glowroot.factory('gtButtonGroupControllerFactory', [
   '$q',
   function ($q) {
     return {
@@ -33,7 +33,7 @@ informant.factory('ixButtonGroupControllerFactory', [
             var $buttonSpinner = $element.find('.button-spinner');
             // in case button is clicked again before message fades out
             $buttonMessage.addClass('hide');
-            var spinner = Informant.showSpinner($buttonSpinner);
+            var spinner = Glowroot.showSpinner($buttonSpinner);
 
             var deferred = $q.defer();
             deferred.promise.then(function (success) {
@@ -41,7 +41,7 @@ informant.factory('ixButtonGroupControllerFactory', [
               $buttonMessage.text(success);
               $buttonMessage.removeClass('button-message-error');
               $buttonMessage.addClass('button-message-success');
-              Informant.showAndFadeSuccessMessage($buttonMessage);
+              Glowroot.showAndFadeSuccessMessage($buttonMessage);
               alreadyExecuting = false;
             }, function (error) {
               spinner.stop();
@@ -61,9 +61,9 @@ informant.factory('ixButtonGroupControllerFactory', [
   }
 ]);
 
-informant.directive('ixButtonGroup', [
-  'ixButtonGroupControllerFactory',
-  function (ixButtonGroupControllerFactory) {
+glowroot.directive('gtButtonGroup', [
+  'gtButtonGroupControllerFactory',
+  function (gtButtonGroupControllerFactory) {
     return {
       scope: {},
       transclude: true,
@@ -72,7 +72,7 @@ informant.directive('ixButtonGroup', [
           '  <div ng-transclude style="float: left;"></div>' +
           '  <span class="button-spinner inline-block hide" style="float: left;"></span>' +
           // this needs to be div, and it's child needs to be div, for formatting of multi-line messages
-          // same as done in ix-button.html template
+          // same as done in gt-button.html template
           '  <div style="overflow-x: hidden;">' +
           '    <div class="button-message hide" style="padding-top: 5px;"></div>' +
           '  </div>' +
@@ -80,97 +80,97 @@ informant.directive('ixButtonGroup', [
       controller: [
         '$element',
         function ($element) {
-          return ixButtonGroupControllerFactory.create($element);
+          return gtButtonGroupControllerFactory.create($element);
         }
       ]
     };
   }
 ]);
 
-informant.directive('ixButton', [
-  'ixButtonGroupControllerFactory',
-  function (ixButtonGroupControllerFactory) {
+glowroot.directive('gtButton', [
+  'gtButtonGroupControllerFactory',
+  function (gtButtonGroupControllerFactory) {
     return {
       scope: {
-        ixLabel: '@',
-        ixClick: '&',
-        ixShow: '&',
-        ixBtnClass: '@',
-        ixDisabled: '&'
+        gtLabel: '@',
+        gtClick: '&',
+        gtShow: '&',
+        gtBtnClass: '@',
+        gtDisabled: '&'
       },
       templateUrl: function (tElement, tAttrs) {
-        if (tAttrs.hasOwnProperty('ixButtonRightAligned')) {
-          return 'template/ix-button-right-aligned.html';
+        if (tAttrs.hasOwnProperty('gtButtonRightAligned')) {
+          return 'template/gt-button-right-aligned.html';
         } else {
-          return 'template/ix-button.html';
+          return 'template/gt-button.html';
         }
       },
-      require: '^?ixButtonGroup',
-      link: function (scope, iElement, iAttrs, ixButtonGroup) {
+      require: '^?gtButtonGroup',
+      link: function (scope, iElement, iAttrs, gtButtonGroup) {
         scope.ngShow = function () {
-          return iAttrs.ixShow ? scope.ixShow() : true;
+          return iAttrs.gtShow ? scope.gtShow() : true;
         };
-        if (!ixButtonGroup) {
+        if (!gtButtonGroup) {
           scope.noGroup = true;
-          ixButtonGroup = ixButtonGroupControllerFactory.create(iElement);
+          gtButtonGroup = gtButtonGroupControllerFactory.create(iElement);
         }
         scope.onClick = function () {
-          ixButtonGroup.onClick(scope.ixClick);
+          gtButtonGroup.onClick(scope.gtClick);
         };
       }
     };
   }
 ]);
 
-informant.directive('ixFormGroup', function () {
+glowroot.directive('gtFormGroup', function () {
   return {
     scope: {
-      ixType: '@',
-      ixLabel: '@',
-      ixModel: '=',
-      ixWidth: '@',
-      ixAddon: '@',
-      ixPattern: '@',
-      // ixRequired accepts string binding for inline patterns and RegExp binding for scope expressions
+      gtType: '@',
+      gtLabel: '@',
+      gtModel: '=',
+      gtWidth: '@',
+      gtAddon: '@',
+      gtPattern: '@',
+      // gtRequired accepts string binding for inline patterns and RegExp binding for scope expressions
       // (same as ngPattern on angular input directive)
-      ixRequired: '&',
-      ixNumber: '&'
+      gtRequired: '&',
+      gtNumber: '&'
     },
     transclude: true,
     require: '^form',
-    templateUrl: 'template/ix-form-group.html',
+    templateUrl: 'template/gt-form-group.html',
     link: function (scope, iElement, iAttrs, formCtrl) {
       scope.formCtrl = formCtrl;
       // just need a unique id
-      scope.ixId = scope.$id;
-      if (!scope.ixType) {
+      scope.gtId = scope.$id;
+      if (!scope.gtType) {
         // default
-        scope.ixType = 'text';
+        scope.gtType = 'text';
       }
-      scope.$watch('ixModel', function (newValue) {
+      scope.$watch('gtModel', function (newValue) {
         scope.ngModel = newValue;
       });
       scope.$watch('ngModel', function (newValue) {
-        if (scope.ixNumber()) {
+        if (scope.gtNumber()) {
           if (newValue === '') {
             // map empty string to null number
-            scope.ixModel = null;
+            scope.gtModel = null;
             return;
           } else {
             // try to convert to number
             var float = parseFloat(newValue);
             if (isNaN(float)) {
-              scope.ixModel = newValue;
+              scope.gtModel = newValue;
               return;
             } else {
-              scope.ixModel = float;
+              scope.gtModel = float;
             }
           }
         } else {
-          scope.ixModel = newValue;
+          scope.gtModel = newValue;
         }
       });
-      scope.$watch('ixPattern', function (newValue) {
+      scope.$watch('gtPattern', function (newValue) {
         if (newValue) {
           var match = newValue.match(/^\/(.*)\/$/);
           if (match) {
@@ -188,48 +188,48 @@ informant.directive('ixFormGroup', function () {
   };
 });
 
-informant.directive('ixDatepicker', function () {
+glowroot.directive('gtDatepicker', function () {
   return {
     scope: {
-      ixModel: '=',
-      ixClass: '@',
-      ixId: '@'
+      gtModel: '=',
+      gtClass: '@',
+      gtId: '@'
     },
-    template: '<input type="text" class="form-control" ng-class="ixClass" id="{{ixId}}" style="max-width: 10em;">',
+    template: '<input type="text" class="form-control" ng-class="gtClass" id="{{gtId}}" style="max-width: 10em;">',
     link: function (scope, iElement, iAttrs) {
       // TODO use bootstrap-datepicker momentjs backend when it's available and then use momentjs's
       // localized format 'moment.longDateFormat.L' both here and when parsing date
       // see https://github.com/eternicode/bootstrap-datepicker/issues/24
       var $input = $(iElement).find('input');
       $input.datepicker({format: 'mm/dd/yyyy', autoclose: true, todayHighlight: true});
-      $input.datepicker('setDate', scope.ixModel);
+      $input.datepicker('setDate', scope.gtModel);
       $input.on('changeDate', function (event) {
         scope.$apply(function () {
-          scope.ixModel = event.date;
+          scope.gtModel = event.date;
         });
       });
     }
   };
 });
 
-informant.directive('ixInputGroupDropdown', function () {
+glowroot.directive('gtInputGroupDropdown', function () {
   return {
     scope: {
-      ixModel: '=',
-      ixItems: '&',
-      ixClass: '@'
+      gtModel: '=',
+      gtItems: '&',
+      gtClass: '@'
     },
-    templateUrl: 'template/ix-input-group-dropdown.html',
+    templateUrl: 'template/gt-input-group-dropdown.html',
     // replace is needed in order to not mess up bootstrap css hierarchical selectors
     replace: true,
     link: function (scope, iElement, iAttrs) {
       scope.setItem = function (item) {
-        scope.ixModel = item.value;
-        scope.ixDisplay = item.display;
+        scope.gtModel = item.value;
+        scope.gtDisplay = item.display;
       };
-      scope.setItem(scope.ixItems()[0]);
-      if (scope.ixClass) {
-        scope.classes = 'input-group-btn ' + scope.ixClass;
+      scope.setItem(scope.gtItems()[0]);
+      if (scope.gtClass) {
+        scope.classes = 'input-group-btn ' + scope.gtClass;
       } else {
         scope.classes = 'input-group-btn';
       }
@@ -237,22 +237,22 @@ informant.directive('ixInputGroupDropdown', function () {
   };
 });
 
-informant.directive('ixNavbarItem', [
+glowroot.directive('gtNavbarItem', [
   '$location',
   function ($location) {
     return {
       scope: {
-        ixDisplay: '@',
-        ixItemName: '@',
-        ixUrl: '@',
-        ixShow: '&'
+        gtDisplay: '@',
+        gtItemName: '@',
+        gtUrl: '@',
+        gtShow: '&'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
       replace: true,
-      templateUrl: 'template/ix-navbar-item.html',
+      templateUrl: 'template/gt-navbar-item.html',
       link: function (scope, iElement, iAttrs) {
         scope.ngShow = function () {
-          return iAttrs.ixShow ? scope.ixShow() : true;
+          return iAttrs.gtShow ? scope.gtShow() : true;
         };
         scope.collapseNavbar = function () {
           // need to collapse the navbar in mobile view
@@ -265,9 +265,9 @@ informant.directive('ixNavbarItem', [
   }
 ]);
 
-informant.directive('ixSetFocus', function () {
+glowroot.directive('gtSetFocus', function () {
   return function (scope, iElement, iAttrs) {
-    scope.$watch(iAttrs.ixSetFocus,
+    scope.$watch(iAttrs.gtSetFocus,
         function (newValue) {
           if (newValue) {
             iElement.focus();
@@ -276,13 +276,13 @@ informant.directive('ixSetFocus', function () {
   };
 });
 
-informant.directive('ixDisplayWhitespace', function () {
+glowroot.directive('gtDisplayWhitespace', function () {
   return {
     scope: {
-      ixBind: '&'
+      gtBind: '&'
     },
     link: function (scope, iElement, iAttrs) {
-      var text = scope.ixBind();
+      var text = scope.gtBind();
       iElement.text(text);
       var html = iElement.html();
       html = html.replace('\n', '<em>\\n</em>')
@@ -294,16 +294,16 @@ informant.directive('ixDisplayWhitespace', function () {
   };
 });
 
-informant.directive('ixSpinner', function () {
+glowroot.directive('gtSpinner', function () {
   return function (scope, iElement, iAttrs) {
     var spinner;
     var timer;
     iElement.addClass('hide');
-    scope.$watch(iAttrs.ixShow,
+    scope.$watch(iAttrs.gtShow,
         function (newValue) {
           if (newValue) {
             if (spinner === undefined) {
-              var left = iAttrs.ixSpinnerInline ? 10 : 'auto';
+              var left = iAttrs.gtSpinnerInline ? 10 : 'auto';
               spinner = new Spinner({ lines: 10, radius: 8, width: 4, left: left });
             }
             // small delay so that if there is an immediate response the spinner doesn't blink
@@ -320,7 +320,7 @@ informant.directive('ixSpinner', function () {
   };
 });
 
-informant.directive('ixTypeaheadOpenOnEmpty', function () {
+glowroot.directive('gtTypeaheadOpenOnEmpty', function () {
   return {
     require: ['typeahead', 'ngModel'],
     link: function (scope, iElement, iAttrs, ctrls) {
@@ -339,7 +339,7 @@ informant.directive('ixTypeaheadOpenOnEmpty', function () {
   };
 });
 
-informant.directive('ixFormWithPrimaryButton', function () {
+glowroot.directive('gtFormWithPrimaryButton', function () {
   return function (scope, iElement, iAttrs) {
     iElement.on('keypress', 'input', function (e) {
       if (e.which === 13) {
@@ -352,7 +352,7 @@ informant.directive('ixFormWithPrimaryButton', function () {
   };
 });
 
-informant.directive('ixFormAutofocusOnFirstInput', function () {
+glowroot.directive('gtFormAutofocusOnFirstInput', function () {
   return function (scope, iElement, iAttrs) {
     var unregisterWatch = scope.$watch(function () {
       return iElement.find('input').length && iElement.find('input').first().is(':visible');

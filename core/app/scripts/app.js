@@ -16,7 +16,7 @@
 
 /* global angular, $, Spinner */
 
-var informant = angular.module('informant', [
+var glowroot = angular.module('glowroot', [
   'ui.router',
   'ui.bootstrap.dropdownToggle',
   'ui.bootstrap.typeahead',
@@ -24,9 +24,9 @@ var informant = angular.module('informant', [
   'ui.bootstrap.modal'
 ]);
 
-var Informant;
+var Glowroot;
 
-informant.config([
+glowroot.config([
   '$locationProvider',
   '$httpProvider',
   function ($locationProvider, $httpProvider) {
@@ -70,7 +70,7 @@ informant.config([
   }
 ]);
 
-informant.run([
+glowroot.run([
   '$rootScope',
   '$http',
   '$location',
@@ -137,7 +137,7 @@ informant.run([
   }
 ]);
 
-Informant = (function () {
+Glowroot = (function () {
 
   function showAndFadeMessage(selector, delay) {
     $(selector).each(function () {

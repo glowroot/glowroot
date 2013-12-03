@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant */
+/* global glowroot */
 
-informant.factory('login', [
+glowroot.factory('login', [
   '$location',
   function ($location) {
     var originalPath;

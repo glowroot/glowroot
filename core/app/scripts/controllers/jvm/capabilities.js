@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant */
+/* global glowroot */
 
-informant.controller('JvmCapabilitiesCtrl', [
+glowroot.controller('JvmCapabilitiesCtrl', [
   '$scope',
   '$http',
   'httpErrors',

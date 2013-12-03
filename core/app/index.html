@@ -24,7 +24,7 @@
        because the conditional comments that are wrapping the html tag prevent it from working
        and it must be set (and is being set) via http header
        see https://github.com/h5bp/html5-boilerplate/issues/1187 -->
-  <title>Informant</title>
+  <title>Glowroot</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <base href="/">
@@ -44,7 +44,7 @@
   <!-- placeholder for server-side injected data, see IndexHtmlService.java -->
   <script></script>
 </head>
-<body ng-app="informant"
+<body ng-app="glowroot"
       id="ng-app">
   <!--[if lt IE 8]>
   <p class="browsehappy">
@@ -64,38 +64,38 @@
           <span class="icon-bar"></span>
         </button>
         <span class="navbar-brand">
-          Informant
+          Glowroot
         </span>
       </div>
       <div ng-hide="title === 'Login'">
         <nav class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
-            <div ix-navbar-item
-                 ix-display="Traces"
-                 ix-item-name="traces"
-                 ix-url="#/traces">
+            <div gt-navbar-item
+                 gt-display="Traces"
+                 gt-item-name="traces"
+                 gt-url="#/traces">
             </div>
-            <div ix-navbar-item
-                 ix-display="Aggregates"
-                 ix-item-name="aggregates"
-                 ix-url="#/aggregates"
-                 ix-show="layout.aggregates">
+            <div gt-navbar-item
+                 gt-display="Aggregates"
+                 gt-item-name="aggregates"
+                 gt-url="#/aggregates"
+                 gt-show="layout.aggregates">
             </div>
-            <div ix-navbar-item
-                 ix-display="JVM"
-                 ix-item-name="jvm"
-                 ix-url="#/jvm/general">
+            <div gt-navbar-item
+                 gt-display="JVM"
+                 gt-item-name="jvm"
+                 gt-url="#/jvm/general">
             </div>
-            <div ix-navbar-item
-                 ix-display="Configuration"
-                 ix-item-name="config"
-                 ix-url="#/config/general">
+            <div gt-navbar-item
+                 gt-display="Configuration"
+                 gt-item-name="config"
+                 gt-url="#/config/general">
             </div>
-            <div ix-navbar-item
-                 ix-display="Plugins"
-                 ix-item-name="plugin"
-                 ix-url="#/plugin/{{layout.plugins[0].id}}"
-                 ix-show="layout.plugins.length">
+            <div gt-navbar-item
+                 gt-display="Plugins"
+                 gt-item-name="plugin"
+                 gt-url="#/plugin/{{layout.plugins[0].id}}"
+                 gt-show="layout.plugins.length">
             </div>
           </ul>
           <form class="navbar-form navbar-right ng-cloak"

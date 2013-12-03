@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant, $, alert */
+/* global glowroot, $, alert */
 
-informant.controller('LoginCtrl', [
+glowroot.controller('LoginCtrl', [
   '$scope',
   '$http',
   '$rootScope',
@@ -25,7 +25,7 @@ informant.controller('LoginCtrl', [
   'login',
   function ($scope, $http, $rootScope, $location, $timeout, login) {
     // \u00b7 is &middot;
-    document.title = 'Login \u00b7 Informant';
+    document.title = 'Login \u00b7 Glowroot';
     $scope.$parent.title = 'Login';
     $scope.$parent.activeNavbarItem = 'login';
 

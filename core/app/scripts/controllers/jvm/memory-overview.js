@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant */
+/* global glowroot */
 
-informant.controller('JvmMemoryOverviewCtrl', [
+glowroot.controller('JvmMemoryOverviewCtrl', [
   '$scope',
   '$http',
   '$q',

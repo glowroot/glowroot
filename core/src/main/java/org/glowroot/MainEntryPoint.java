@@ -1,0 +1,144 @@
+/*
+ * Copyright 2011-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.glowroot;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.instrument.Instrumentation;
+import java.lang.management.ManagementFactory;
+import java.sql.SQLException;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.glowroot.api.PluginServices;
+import org.glowroot.local.store.DataSource;
+import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.markers.Static;
+import org.glowroot.markers.UsedByReflection;
+
+import static org.glowroot.common.Nullness.assertNonNull;
+
+/**
+ * This class is registered as the Premain-Class in the MANIFEST.MF of glowroot.jar:
+ * 
+ * Premain-Class: org.glowroot.MainEntryPoint
+ * 
+ * This defines the entry point when the JVM is launched via -javaagent:glowroot.jar.
+ * 
+ * @author Trask Stalnaker
+ * @since 0.5
+ */
+@Static
+public class MainEntryPoint {
+
+    private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
+    private static final Logger infoLogger = LoggerFactory.getLogger("org.glowroot");
+
+    private static volatile GlowrootModule glowrootModule;
+
+    private MainEntryPoint() {}
+
+    // javaagent entry point
+    public static void premain(@SuppressWarnings("unused") @Nullable String agentArgs,
+            Instrumentation instrumentation) {
+        logger.debug("premain()");
+        ImmutableMap<String, String> properties = getGlowrootProperties();
+        // ...WithNoWarning since warning is displayed during start so no need for it twice
+        File dataDir = DataDir.getDataDirWithNoWarning(properties);
+        if (DataSource.tryUnlockDatabase(new File(dataDir, "glowroot.lock.db"))) {
+            try {
+                start(properties, instrumentation);
+            } catch (Throwable t) {
+                logger.error("glowroot failed to start: {}", t.getMessage(), t);
+            }
+        } else {
+            // this is common when stopping tomcat since 'catalina.sh stop' launches a java process
+            // to stop the tomcat jvm, and it uses the same JAVA_OPTS environment variable that may
+            // have been used to specify '-javaagent:glowroot.jar', in which case Glowroot tries
+            // to start up, but it finds the h2 database is locked (by the tomcat jvm).
+            // this can be avoided by using CATALINA_OPTS instead of JAVA_OPTS to specify
+            // -javaagent:glowroot.jar, since CATALINA_OPTS is not used by the 'catalina.sh stop'.
+            // however, when running tomcat from inside eclipse, the tomcat server adapter uses the
+            // same 'VM arguments' for both starting and stopping tomcat, so this code path seems
+            // inevitable at least in this case
+            //
+            // no need for logging in the special (but common) case described above
+            if (!isTomcatStop()) {
+                logger.error("embedded database {} is locked by another process.",
+                        dataDir.getAbsolutePath());
+            }
+        }
+    }
+
+    // called via reflection from org.glowroot.api.PluginServices
+    @UsedByReflection
+    public static PluginServices getPluginServices(String pluginId) {
+        assertNonNull(glowrootModule, "Glowroot has not been started");
+        return glowrootModule.getPluginServices(pluginId);
+    }
+
+    // used by Viewer
+    static void start() throws SQLException, IOException {
+        start(getGlowrootProperties(), null);
+    }
+
+    private static void start(@ReadOnly Map<String, String> properties,
+            @Nullable Instrumentation instrumentation) throws SQLException, IOException {
+        ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
+        ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
+        String version = Version.getVersion();
+        glowrootModule = new GlowrootModule(properties, instrumentation, version);
+        infoLogger.info("Glowroot started (version {})", version);
+        infoLogger.info("Glowroot listening at http://localhost:"
+                + glowrootModule.getUiModule().getPort());
+    }
+
+    private static ImmutableMap<String, String> getGlowrootProperties() {
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
+        for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
+            if (entry.getKey() instanceof String && entry.getValue() instanceof String
+                    && ((String) entry.getKey()).startsWith("glowroot.")) {
+                String key = (String) entry.getKey();
+                builder.put(key.substring("glowroot.".length()), (String) entry.getValue());
+            }
+        }
+        return builder.build();
+    }
+
+    private static boolean isTomcatStop() {
+        return Objects.equal(System.getProperty("sun.java.command"),
+                "org.apache.catalina.startup.Bootstrap stop");
+    }
+
+    @OnlyUsedByTests
+    public static void start(@ReadOnly Map<String, String> properties)
+            throws SQLException, IOException {
+        start(properties, null);
+    }
+
+    @OnlyUsedByTests
+    @Nullable
+    public static GlowrootModule getGlowrootModule() {
+        return glowrootModule;
+    }
+}

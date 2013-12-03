@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-/* global informant */
+/* global glowroot */
 
-informant.controller('JvmCtrl', [
+glowroot.controller('JvmCtrl', [
   '$scope',
   '$state',
   function ($scope, $state) {
     // \u00b7 is &middot;
-    document.title = 'JVM \u00b7 Informant';
+    document.title = 'JVM \u00b7 Glowroot';
     $scope.$parent.title = 'JVM';
     $scope.$parent.activeNavbarItem = 'jvm';
 

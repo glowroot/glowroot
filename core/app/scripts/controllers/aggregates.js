@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, $ */
+/* global glowroot, Glowroot, $ */
 
-informant.controller('AggregatesCtrl', [
+glowroot.controller('AggregatesCtrl', [
   '$scope',
   '$filter',
   '$http',
@@ -24,7 +24,7 @@ informant.controller('AggregatesCtrl', [
   'traceModal',
   function ($scope, $filter, $http, $q, traceModal) {
     // \u00b7 is &middot;
-    document.title = 'Aggregates \u00b7 Informant';
+    document.title = 'Aggregates \u00b7 Glowroot';
     $scope.$parent.title = 'Aggregates';
     $scope.$parent.activeNavbarItem = 'aggregates';
 
@@ -50,7 +50,7 @@ informant.controller('AggregatesCtrl', [
         from: $scope.filter.from,
         to: $scope.filter.to
       };
-      var spinner = Informant.showSpinner('#chartSpinner');
+      var spinner = Glowroot.showSpinner('#chartSpinner');
       $http.post('backend/aggregate/points', query)
           .success(function (data) {
             if (refreshId !== currentRefreshId) {
@@ -271,7 +271,7 @@ informant.controller('AggregatesCtrl', [
     }
 
     // TODO CONVERT TO ANGULARJS, global $http error handler?
-    Informant.configureAjaxError();
+    Glowroot.configureAjaxError();
 
     $('#zoomOut').click(function () {
       plot.zoomOut();

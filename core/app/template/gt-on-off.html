@@ -1,0 +1,10 @@
+<span ng-switch on="gtDisabled()">
+  <span ng-switch-when="false" ng-switch on="gtModel()">
+    <span ng-switch-when="false" class="config-status-off">OFF</span>
+    <span ng-switch-default class="config-status-on">ON</span>
+  </span>
+  <span ng-switch-default ng-switch on="gtModel()">
+    <span ng-switch-when="false" class="config-status-disabled">OFF</span>
+    <span ng-switch-default class="config-status-disabled">ON</span>
+  </span>
+</span>

@@ -1,0 +1,81 @@
+{
+  "name": "Servlet Plugin",
+  "id": "servlet",
+  "version": "0.5-SNAPSHOT",
+  "properties": [
+    {
+      "prompt": "Session user ID attribute",
+      "name": "sessionUserIdAttribute",
+      "type": "string",
+      "description": [
+        "Session attribute to capture as the user ID of the trace.",
+        " Traces can be filtered by user ID in the explorer.",
+        " Nested paths are supported, e.g. something.user.username.",
+        " The attribute value is converted into a String if necessary via toString()."
+      ]
+    },
+    {
+      "prompt": "Session attributes",
+      "name": "captureSessionAttributes",
+      "type": "string",
+      "description": [
+        "Comma-separated list of http session attributes to capture in the servlet span's context",
+        " map.",
+        " These captured attributes are viewable under the servlet span for any capture trace.",
+        " Nested paths are supported, e.g. mainObject.nestedObject.displayName.",
+        " '*' at the end of a path is supported, e.g. mainObject.nestedObject.*, meaning capture",
+        " all properties of mainObject.nestedObject (via reflection, looking at methods that begin",
+        " with \"get[A-Z]\" or \"is[A-Z]\").",
+        " '*' by itself means capture all session attributes.",
+        " Values are converted into Strings if necessary via toString()."
+      ]
+    },
+    {
+      "prompt": "Capture session ID",
+      "name": "captureSessionId",
+      "type": "boolean",
+      "description": [
+        "Capture the http session ID in the servlet span's context map.",
+        " The captured session ID is viewable under the servlet span for any trace in the trace",
+        " explorer."
+      ]
+    },
+    {
+      "prompt": "Capture startup",
+      "name": "captureStartup",
+      "type": "boolean",
+      "description": [
+        "Capture servlet startup time associated with",
+        " javax.servlet.ServletContextListener.contextInitialized(),",
+        " javax.servlet.Servlet.init() and javax.servlet.Filter.init()."
+      ]
+    },
+    {
+      "prompt": "Capture request parameters",
+      "name": "captureRequestParameters",
+      "type": "string",
+      "default": "*",
+      "description": [
+        "Comma-separated list of request parameters to capture in the servlet span's context map.",
+        " These captured parameters are viewable under the servlet span for any captured trace.",
+        " The wildcard '*' is supported anywhere in the parameter."
+      ]
+    },
+    {
+      "prompt": "Mask request parameters",
+      "name": "maskRequestParameters",
+      "type": "string",
+      "default": "*password*",
+      "description": [
+        "Comma-separated list of sensitive request parameters to mask, e.g. passwords.",
+        " The wildcard '*' is supported anywhere in the parameter."
+      ]
+    }
+  ],
+  "aspects": [
+    "org.glowroot.plugin.servlet.ServletAspect",
+    "org.glowroot.plugin.servlet.RequestParameterAspect",
+    "org.glowroot.plugin.servlet.SessionAspect",
+    "org.glowroot.plugin.servlet.ServletInitAspect"
+  ]
+}

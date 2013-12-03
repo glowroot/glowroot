@@ -4,15 +4,15 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.informant</groupId>
-    <artifactId>informant-parent</artifactId>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>informant-plugin-api</artifactId>
+  <artifactId>glowroot-plugin-api</artifactId>
 
-  <name>Informant Plugin API</name>
-  <description>Informant Plugin API</description>
+  <name>Glowroot Plugin API</name>
+  <description>Glowroot Plugin API</description>
 
   <dependencies>
     <dependency>

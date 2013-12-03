@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant */
+/* global glowroot */
 
-informant.factory('confirmIfHasChanges', [
+glowroot.factory('confirmIfHasChanges', [
   '$modal',
   '$location',
   function ($modal, $location) {

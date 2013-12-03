@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant */
+/* global glowroot */
 
-informant.factory('httpErrors', [
+glowroot.factory('httpErrors', [
   function () {
     function getHttpErrorsObject(data, status) {
       if (status === 0) {

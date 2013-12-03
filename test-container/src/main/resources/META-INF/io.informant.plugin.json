@@ -1,9 +1,0 @@
-{
-  "name": "Test Container Plugin",
-  "id": "informant-test-container",
-  "version": "0.5-SNAPSHOT",
-  "properties": [],
-  "aspects": [
-    "io.informant.container.TraceMarkerAspect"
-  ]
-}

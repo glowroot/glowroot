@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant, angular */
+/* global glowroot, angular */
 
-informant.controller('ConfigAdvancedCtrl', [
+glowroot.controller('ConfigAdvancedCtrl', [
   '$scope',
   '$http',
   'confirmIfHasChanges',

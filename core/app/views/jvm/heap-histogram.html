@@ -18,19 +18,19 @@
     <h2>Heap histogram</h2>
   </div>
   <div class="panel-body">
-    <div ng-include src="'template/ix-loading-overlay.html'"></div>
-    <div ng-include src="'template/ix-http-error-overlay.html'"></div>
-    <div ix-button
-         ix-button-right-aligned
-         ix-label="New snapshot"
-         ix-click="refresh(deferred)"
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <div gt-button
+         gt-button-right-aligned
+         gt-label="New snapshot"
+         gt-click="refresh(deferred)"
          style="margin-bottom: 10px; float: right;">
     </div>
-    <div ix-button
-         ix-button-right-aligned
-         ix-label="Export as csv"
-         ix-click="exportAsCsv(deferred)"
-         ix-btn-class="btn-default"
+    <div gt-button
+         gt-button-right-aligned
+         gt-label="Export as csv"
+         gt-click="exportAsCsv(deferred)"
+         gt-btn-class="btn-default"
          style="clear: right; float: right;">
     </div>
     <table>
@@ -52,14 +52,14 @@
     <br>
     <br>
     <div ng-form
-         ix-form-autofocus-on-first-input
+         gt-form-autofocus-on-first-input
          class="form-horizontal well">
       <div class="row">
         <div class="col-md-9">
           <div class="input-group" style="width: 100%;">
-            <div ix-input-group-dropdown
-                 ix-model="filterComparator"
-                 ix-items="filterComparatorOptions">
+            <div gt-input-group-dropdown
+                 gt-model="filterComparator"
+                 gt-items="filterComparatorOptions">
             </div>
             <input type="text"
                    ng-model="filterValue"

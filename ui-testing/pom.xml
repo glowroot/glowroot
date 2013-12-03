@@ -4,20 +4,20 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.informant</groupId>
-    <artifactId>informant-parent</artifactId>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>informant-ui-testing</artifactId>
+  <artifactId>glowroot-ui-testing</artifactId>
 
-  <name>Informant UI Testing</name>
-  <description>Informant UI Testing</description>
+  <name>Glowroot UI Testing</name>
+  <description>Glowroot UI Testing</description>
 
   <dependencies>
     <dependency>
-      <groupId>io.informant</groupId>
-      <artifactId>informant-test-container</artifactId>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-test-container</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

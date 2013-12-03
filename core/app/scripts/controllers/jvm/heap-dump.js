@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant */
+/* global glowroot */
 
-informant.controller('JvmHeapDumpCtrl', [
+glowroot.controller('JvmHeapDumpCtrl', [
   '$scope',
   '$http',
   'httpErrors',

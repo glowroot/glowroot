@@ -4,29 +4,29 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.informant</groupId>
-    <artifactId>informant-parent</artifactId>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>informant-package</artifactId>
+  <artifactId>glowroot-package</artifactId>
 
-  <name>Informant Package</name>
-  <description>Informant Package</description>
+  <name>Glowroot Package</name>
+  <description>Glowroot Package</description>
 
   <dependencies>
     <dependency>
-      <groupId>io.informant</groupId>
-      <artifactId>informant-core</artifactId>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.informant.plugins</groupId>
+      <groupId>org.glowroot.plugins</groupId>
       <artifactId>servlet-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.informant.plugins</groupId>
+      <groupId>org.glowroot.plugins</groupId>
       <artifactId>jdbc-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -35,7 +35,7 @@
   <pluginRepositories>
     <pluginRepository>
       <!-- eclipse doesn't resolve plugins against the current workspace, so it needs this if
-        informant-packager-maven-plugin hasn't been installed into the local repo already -->
+        glowroot-packager-maven-plugin hasn't been installed into the local repo already -->
       <id>sonatype-nexus-snapshots</id>
       <name>Sonatype Nexus Snapshots</name>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
@@ -49,11 +49,11 @@
   </pluginRepositories>
 
   <build>
-    <finalName>informant-${project.version}</finalName>
+    <finalName>glowroot-${project.version}</finalName>
     <plugins>
       <plugin>
-        <groupId>io.informant</groupId>
-        <artifactId>informant-packager-maven-plugin</artifactId>
+        <groupId>org.glowroot</groupId>
+        <artifactId>glowroot-packager-maven-plugin</artifactId>
         <version>${project.version}</version>
         <executions>
           <execution>

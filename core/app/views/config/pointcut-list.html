@@ -13,11 +13,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div ix-spinner
-     ix-show="!loaded && !httpError"
+<div gt-spinner
+     gt-show="!loaded && !httpError"
      class="plugin-list-spinner">
 </div>
-<div ng-include src="'template/ix-http-error.html'"></div>
+<div ng-include src="'template/gt-http-error.html'"></div>
 <div ng-repeat="pointcut in pointcuts"
      ng-controller="PointcutCtrl"
      class="panel panel-default">
@@ -26,7 +26,7 @@
   </div>
   <div class="panel-body">
     <div ng-form
-         ix-form-with-primary-button
+         gt-form-with-primary-button
          class="form-horizontal"
          name="formCtrl">
       <div class="form-group"
@@ -45,11 +45,11 @@
                  typeahead-loading="typeNamesLoading"
                  name="typeName{{$id}}"
                  id="typeName{{$id}}"
-                 ix-set-focus="isFocus"
+                 gt-set-focus="isFocus"
                  style="max-width: 40em; display: inline-block">
-          <div ix-spinner
-               ix-spinner-inline="true"
-               ix-show="typeNamesLoading"
+          <div gt-spinner
+               gt-spinner-inline="true"
+               gt-show="typeNamesLoading"
                class="inline-spinner">
           </div>
         </div>
@@ -68,14 +68,14 @@
                  typeahead="suggestion for suggestion in methodNames($viewValue)"
                  typeahead-on-select="onSelectMethodName()"
                  typeahead-loading="methodNamesLoading"
-                 ix-typeahead-open-on-empty
+                 gt-typeahead-open-on-empty
                  ng-blur="onSelectMethodName()"
                  name="methodName{{$id}}"
                  id="methodName{{$id}}"
                  style="max-width: 40em; display: inline-block;">
-          <div ix-spinner
-               ix-spinner-inline="true"
-               ix-show="methodNamesLoading"
+          <div gt-spinner
+               gt-spinner-inline="true"
+               gt-show="methodNamesLoading"
                class="inline-spinner">
           </div>
         </div>
@@ -85,8 +85,8 @@
           Signature
         </label>
         <div class="col-lg-10">
-          <div ix-spinner
-               ix-show="signaturesLoading && !httpError"
+          <div gt-spinner
+               gt-show="signaturesLoading && !httpError"
                class="hide"
                style="width: 40px; height: 40px;">
           </div>
@@ -195,17 +195,17 @@
       </div>
       <div class="form-group form-buttons">
         <div class="col-lg-offset-2 col-lg-10">
-          <div ix-button-group>
-            <div ix-button
-                 ix-label="{{config.version ? 'Save' : 'Add'}}"
-                 ix-click="pointcutSave(deferred)"
-                 ix-disabled="!hasChanges() || formCtrl.$invalid"
+          <div gt-button-group>
+            <div gt-button
+                 gt-label="{{config.version ? 'Save' : 'Add'}}"
+                 gt-click="pointcutSave(deferred)"
+                 gt-disabled="!hasChanges() || formCtrl.$invalid"
                  class="inline-block">
             </div>
-            <div ix-button
-                 ix-label="Delete"
-                 ix-click="pointcutDelete(deferred)"
-                 ix-btn-class="btn-default"
+            <div gt-button
+                 gt-label="Delete"
+                 gt-click="pointcutDelete(deferred)"
+                 gt-btn-class="btn-default"
                  class="inline-block"
                  style="margin-left: 5px;">
             </div>
@@ -230,10 +230,10 @@
 </div>
 <br>
 <div ng-show="jvmRetransformClassesSupported">
-  <div ix-button
-       ix-label="Apply changes to running JVM"
-       ix-click="retransformClasses(deferred)"
-       ix-show="page.dirty">
+  <div gt-button
+       gt-label="Apply changes to running JVM"
+       gt-click="retransformClasses(deferred)"
+       gt-show="page.dirty">
   </div>
 </div>
 <div ng-show="!jvmRetransformClassesSupported && page.dirty">

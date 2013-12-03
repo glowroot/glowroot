@@ -18,26 +18,26 @@
     <h2>Advanced</h2>
   </div>
   <div class="panel-body">
-    <div ng-include src="'template/ix-loading-overlay.html'"></div>
-    <div ng-include src="'template/ix-http-error-overlay.html'"></div>
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-form
-         ix-form-with-primary-button
-         ix-form-autofocus-on-first-input
+         gt-form-with-primary-button
+         gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl">
-      <div ix-form-group
-           ix-label="Generate metric name wrapper methods"
-           ix-model="config.generateMetricNameWrapperMethods"
-           ix-type="checkbox">
+      <div gt-form-group
+           gt-label="Generate metric name wrapper methods"
+           gt-model="config.generateMetricNameWrapperMethods"
+           gt-type="checkbox">
         <div class="help-block">
-          <div class="informant-yellow"
+          <div class="glowroot-yellow"
                ng-show="originalConfig.generateMetricNameWrapperMethods !== generateMetricNameWrapperMethodsActive"
                style="padding-bottom: 5px;">
             Active value is <code>{{generateMetricNameWrapperMethodsActive ? 'ON' : 'OFF'}}</code>. The newly configured
             value will take effect on next JVM restart.
           </div>
           When enabled, all methods that are woven for metric timing are renamed with suffix
-          <code>$informant$metric$&lt;metric name&gt;</code>
+          <code>$glowroot$metric$&lt;metric name&gt;</code>
           and a new method is generated in its place that simply calls the renamed method. The purpose of this is so
           that stack traces gathered by the profiler can see what metric timings are active, and the resulting trace
           profiles can be filtered in the UI by metric names. For example, a trace profile can be filtered to see only
@@ -46,37 +46,37 @@
           pointcuts. <em>Changes to this setting will take effect on next JVM restart.</em>
         </div>
       </div>
-      <div ix-form-group
-           ix-label="Warn on span outside of trace"
-           ix-model="config.warnOnSpanOutsideTrace"
-           ix-type="checkbox">
+      <div gt-form-group
+           gt-label="Warn on span outside of trace"
+           gt-model="config.warnOnSpanOutsideTrace"
+           gt-type="checkbox">
         <div class="help-block">
           When enabled, a warning will be logged when a span is encountered outside of a trace. For example, if a jdbc
           query is executed by a background task outside of a servlet. This can be helpful for finding background tasks
           that should be captured as traces via pointcuts.
         </div>
       </div>
-      <div ix-form-group
-           ix-label="Disable weaving"
-           ix-model="config.weavingDisabled"
-           ix-type="checkbox">
+      <div gt-form-group
+           gt-label="Disable weaving"
+           gt-model="config.weavingDisabled"
+           gt-type="checkbox">
         <div class="help-block">
-          <div class="informant-yellow"
+          <div class="glowroot-yellow"
                ng-show="originalConfig.weavingDisabled !== weavingDisabledActive"
                style="padding-bottom: 5px;">
             Active value is <code>{{weavingDisabledActive ? 'ON' : 'OFF'}}</code>. The newly configured value will take
             effect on next JVM restart.
           </div>
-          When disabled, Informant will not perform any weaving and will not capture any traces.
+          When disabled, Glowroot will not perform any weaving and will not capture any traces.
           Changing this requires a restart. <em>Changes to this setting will take effect on next JVM restart.</em>
         </div>
       </div>
       <div class="form-group form-buttons">
         <div class="col-lg-offset-3 col-lg-9">
-          <div ix-button
-               ix-label="Save changes"
-               ix-click="save(deferred)"
-               ix-disabled="!hasChanges() || formCtrl.$invalid">
+          <div gt-button
+               gt-label="Save changes"
+               gt-click="save(deferred)"
+               gt-disabled="!hasChanges() || formCtrl.$invalid">
           </div>
         </div>
       </div>

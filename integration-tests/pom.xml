@@ -4,29 +4,29 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.informant</groupId>
-    <artifactId>informant-parent</artifactId>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>informant-integration-tests</artifactId>
+  <artifactId>glowroot-integration-tests</artifactId>
 
-  <name>Informant Integration Tests</name>
-  <description>Informant Integration Tests</description>
+  <name>Glowroot Integration Tests</name>
+  <description>Glowroot Integration Tests</description>
 
   <dependencies>
     <dependency>
-      <groupId>io.informant</groupId>
-      <artifactId>informant-plugin-api</artifactId>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-plugin-api</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <!-- using shaded-guava dependency to take advantage of the shaded guava library that is
-        already provided in the informant jar (and more importantly for these tests, the
+        already provided in the glowroot jar (and more importantly for these tests, the
         shaded-guava classes are not reloaded for each test by IsolatedWeavingClassLoader which
         makes the tests run measurably faster) -->
-      <groupId>io.informant.shaded</groupId>
+      <groupId>org.glowroot.shaded</groupId>
       <artifactId>shaded-guava</artifactId>
       <version>14.0.1-SNAPSHOT</version>
       <scope>provided</scope>
@@ -56,8 +56,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.informant</groupId>
-      <artifactId>informant-test-container</artifactId>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-test-container</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -83,12 +83,12 @@
             </goals>
             <configuration>
               <systemPropertyVariables>
-                <informant.container.javaagent>true</informant.container.javaagent>
+                <glowroot.container.javaagent>true</glowroot.container.javaagent>
               </systemPropertyVariables>
               <properties>
                 <property>
                   <name>listener</name>
-                  <value>io.informant.container.SharedContainerRunListener</value>
+                  <value>org.glowroot.container.SharedContainerRunListener</value>
                 </property>
               </properties>
             </configuration>
@@ -97,7 +97,7 @@
       </plugin>
       <plugin>
         <!-- maven-failsafe-plugin is used to execute JarFileShadingIT since it needs to run after
-          the packaging phase so that informant.jar will be available -->
+          the packaging phase so that glowroot.jar will be available -->
         <artifactId>maven-failsafe-plugin</artifactId>
         <executions>
           <execution>

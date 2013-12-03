@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant, angular */
+/* global glowroot, angular */
 
-informant.controller('JvmManageableFlagsCtrl', [
+glowroot.controller('JvmManageableFlagsCtrl', [
   '$scope',
   '$http',
   'confirmIfHasChanges',

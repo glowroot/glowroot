@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, TraceRenderer, $, Spinner, alert */
+/* global glowroot, Glowroot, TraceRenderer, $, Spinner, alert */
 
-informant.controller('TracesCtrl', [
+glowroot.controller('TracesCtrl', [
   '$scope',
   '$http',
   '$q',
   'traceModal',
   function ($scope, $http, $q, traceModal) {
     // \u00b7 is &middot;
-    document.title = 'Traces \u00b7 Informant';
+    document.title = 'Traces \u00b7 Glowroot';
     $scope.$parent.title = 'Traces';
     $scope.$parent.activeNavbarItem = 'traces';
 
@@ -51,7 +51,7 @@ informant.controller('TracesCtrl', [
       var low = $scope.filter.low;
       var high = $scope.filter.high;
       var refreshId = ++currentRefreshId;
-      var spinner = Informant.showSpinner('#chartSpinner');
+      var spinner = Glowroot.showSpinner('#chartSpinner');
       $http.post('backend/trace/points', $scope.filter)
           .success(function (data) {
             if (refreshId !== currentRefreshId) {
@@ -273,7 +273,7 @@ informant.controller('TracesCtrl', [
                 summaryTrace.truncateMetrics = true;
                 var html = TraceRenderer.renderSummary(summaryTrace);
                 var showDetailHtml = '<div style="margin-top: 0.5em;">' +
-                    '<button class="flat-btn flat-btn-big-pad1aligned informant-red" id="showDetail"' +
+                    '<button class="flat-btn flat-btn-big-pad1aligned glowroot-red" id="showDetail"' +
                     ' style="font-size: 12px;">show detail</button></div>';
                 text = html + showDetailHtml;
               }
@@ -356,7 +356,7 @@ informant.controller('TracesCtrl', [
     });
 
     // TODO CONVERT TO ANGULARJS, global $http error handler?
-    Informant.configureAjaxError();
+    Glowroot.configureAjaxError();
 
     $('#zoomOut').click(function () {
       plot.zoomOut();

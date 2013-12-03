@@ -9,21 +9,21 @@ before_install:
 install:
   - TARGET=install
   - if [[ "$TRAVIS_JDK_VERSION" == "openjdk6" ]]; then TARGET=test; fi
-  - if [[ "$TRAVIS_REPO_SLUG" == "informant/informant" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_JDK_VERSION" == "oraclejdk7" ]]; then TARGET=deploy; fi
+  - if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_JDK_VERSION" == "oraclejdk7" ]]; then TARGET=deploy; fi
   - mvn clean $TARGET -Dgit.commit.hash=$TRAVIS_COMMIT -DdeployAtEnd=true --settings settings.xml -B
 script: true
 env:
   global:
-    # SONATYPE_USERNAME
-    - secure: "BNWyuP7hL9OVFXj2ikbSbD/REFRfN3WysmVj5rjj14ulDmDH09j+Gj0i2bEiKaENhDgxGI8hQhY3qYcabe2XmtkoJTjHyET5Gopb8Nsk0+8p2HA3/tgCuQFfaHz1NwD3DICxvNKDvT8kzq9dFPW20Bcm7G7X+Mcvc4yu1yuo2V4="
-    # SONATYPE_PASSWORD
-    - secure: "ui46dn/mbi1uazQh/PuV20jR/eGk9S0X2pmfZa82UWq9u7TSM6nLYmoG0Vxft9m+4V/T9Ina2TCJQJVsQTezsc5dVh8KaACz16ftGiEDX2GelLMMUpSsPzfhKRNwaTXtvlxjXdIKxxPBZ2FxNuhW/CMEFRRzNoW0h3B3X23YmFQ="
+    # SONATYPE_USERNAME, only used for mvn deploy from glowroot/glowroot master branch
+    - secure: "HCpkVkYORouIXPr39VVIQmZvfz4rnSgVvfTcOBBDqQxs2qg7BJwA0wEH05J2x0GNEyfNiSfrnVmlmXwPK3XpLinEsAVzcJuvLaVqR+rdAxJGFw/L4UgqvK5z6FNZlWbLvLcayvTb14RnAim6XP7OIdH1nmg4nqGy7rs8C5S4VfI="
+    # SONATYPE_PASSWORD, only used for mvn deploy from glowroot/glowroot master branch
+    - secure: "mMqmr+F3CERvhvFSei9a2U34FiCrwHyWDjeKriXGlBC1v1sXvfCVQYyMB0gbO7QFvqUYctZty5nU+5BMDgbpLqhBq+XKjNTuL/Olb0Dj+P/fKDQuqG1SjhE4pZ3SW5yNnvxfOGyHn6O/lIUkfJFEtg1LxG/4N8Rd8v9vpzslKvY="
 before_deploy:
   - mkdir -p s3/snapshots/latest
-  - cp package/target/informant-*.jar s3/snapshots/latest
-  - rm s3/snapshots/latest/informant-*-sources.jar
-  - mv s3/snapshots/latest/informant-*.jar s3/snapshots/latest/informant.jar
-  - "cp s3/snapshots/latest/informant.jar s3/snapshots/informant-${TRAVIS_COMMIT:0:10}.jar"
+  - cp package/target/glowroot-*.jar s3/snapshots/latest
+  - rm s3/snapshots/latest/glowroot-*-sources.jar
+  - mv s3/snapshots/latest/glowroot-*.jar s3/snapshots/latest/glowroot.jar
+  - "cp s3/snapshots/latest/glowroot.jar s3/snapshots/glowroot-${TRAVIS_COMMIT:0:10}.jar"
   - cd s3
 deploy:
   provider: s3
@@ -31,9 +31,9 @@ deploy:
     secure: "bB2vqgDCZgcY1P5d1CdToq9YWg2ykB2kuwizT9EIVsWY4Y290P3UjwC6QtJ5BsCZ/lUzp68FI+SJfc4YQh8a/XCNXEfHRvnowPKA8BvJo75p8orula2lq8tiAMnAZuzi8N72J5xcGrVtYRCayYHDXiXzYPYLfvIQ3ui/fyr0QzM="
   secret_access_key:
     secure: "F5FwSoUci69w7WedrTgiHbZULfpDZfSgNdyXwl+nMGtmFIsC7CIoWSHStp1rIhwsSMeQqgcq/Ghmu7tb4qFJlFbEQUCXUl6TXdxxuOH2ml7cMhbj/sHvaJNOrHXjCVaZY5IohB9TmvFnGqnZAXyWJPzsnO790W4sNtWaf2s4Ecs="
-  bucket: travis-ci.informant.io
+  bucket: travis-ci.glowroot.org
   skip_cleanup: true
   on:
     jdk: oraclejdk7
     branch: master
-    repo: informant/informant
+    repo: glowroot/glowroot

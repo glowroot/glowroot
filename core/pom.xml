@@ -4,15 +4,15 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.informant</groupId>
-    <artifactId>informant-parent</artifactId>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>informant-core</artifactId>
+  <artifactId>glowroot-core</artifactId>
 
-  <name>Informant Core</name>
-  <description>Informant Core</description>
+  <name>Glowroot Core</name>
+  <description>Glowroot Core</description>
 
   <properties>
     <!-- default it to empty, otherwise it will default to the text "${git.commit.hash}" -->
@@ -25,8 +25,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.informant</groupId>
-      <artifactId>informant-plugin-api</artifactId>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-plugin-api</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -46,7 +46,7 @@
     </dependency>
     <dependency>
       <!-- org.objectweb.asm.util.CheckClassAdapter.verify() is used when woven byte code
-        verification is enabled via -Dinformant.weaving.verify=true -->
+        verification is enabled via -Dglowroot.weaving.verify=true -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
       <version>4.2</version>
@@ -97,7 +97,7 @@
       <!-- 1.3.168 is the last version of h2 that supports jdk 5
         but that version introduced a change where using h2's native api triggers java.sql.Driver
         to load, which finds and loads other drivers via META-INF/services/java.sql.Driver
-        the problem is that this all happens during Informant initialization before it is ready
+        the problem is that this all happens during Glowroot initialization before it is ready
         for plugins (e.g. jdbc-plugin) -->
       <version>1.3.167</version>
     </dependency>
@@ -113,7 +113,7 @@
       <version>1.6.4</version>
     </dependency>
     <dependency>
-      <groupId>io.informant.shaded</groupId>
+      <groupId>org.glowroot.shaded</groupId>
       <artifactId>shaded-slf4j-impl</artifactId>
       <version>1.0.13-SNAPSHOT</version>
     </dependency>
@@ -176,7 +176,7 @@
     <dependency>
       <!-- this is a transitive dependency of caliper, but caliper currently depends on version 2.0
         of this library which has dependencies on asm 3.1 artifacts which have different a groupId
-        from the asm 4.1 artifacts already used by informant, so need to pin the latest version
+        from the asm 4.1 artifacts already used by glowroot, so need to pin the latest version
         (2.1) which depends on asm 4.0 which has the same groupId as asm 4.1 and therefore does not
         conflict -->
       <groupId>com.google.code.java-allocation-instrumenter</groupId>
@@ -281,7 +281,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
           <testExcludes>
-            <testExclude>io/informant/trace/ThreadSafeCollectionOfTenBenchmark.java</testExclude>
+            <testExclude>org/glowroot/trace/ThreadSafeCollectionOfTenBenchmark.java</testExclude>
           </testExcludes>
         </configuration>
       </plugin>
@@ -296,7 +296,7 @@
             <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
           <excludes>
-            <exclude>io/informant/local/ui/app/**</exclude>
+            <exclude>org/glowroot/local/ui/app/**</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -315,7 +315,7 @@
         <configuration>
           <thirdPartyFilename>META-INF/THIRD-PARTY-JAVA-LIBRARIES.txt</thirdPartyFilename>
           <useMissingFile>true</useMissingFile>
-          <excludedArtifacts>informant-plugin-api</excludedArtifacts>
+          <excludedArtifacts>glowroot-plugin-api</excludedArtifacts>
           <excludedScopes>test,provided</excludedScopes>
           <licenseMerges>
             <licenseMerge>
@@ -394,7 +394,7 @@
                       <!-- this is not excluded via artifactSet so that it will still be removed
                         from the dependency reduced pom, the classes will be added (without shading)
                         below in a second maven-shade-plugin execution -->
-                      <artifact>io.informant.shaded:shaded-slf4j-impl</artifact>
+                      <artifact>org.glowroot.shaded:shaded-slf4j-impl</artifact>
                       <excludes>
                         <exclude>**</exclude>
                       </excludes>
@@ -403,57 +403,57 @@
                   <relocations>
                     <relocation>
                       <pattern>org.objectweb.asm</pattern>
-                      <shadedPattern>io.informant.shaded.objectweb.asm</shadedPattern>
+                      <shadedPattern>org.glowroot.shaded.objectweb.asm</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>org.h2</pattern>
-                      <shadedPattern>io.informant.shaded.h2</shadedPattern>
+                      <shadedPattern>org.glowroot.shaded.h2</shadedPattern>
                     </relocation>
                     <relocation>
-                      <!-- shade thread names to make it easy to identify informant threads -->
+                      <!-- shade thread names to make it easy to identify glowroot threads -->
                       <rawString>true</rawString>
                       <pattern>H2 File Lock Watchdog</pattern>
-                      <shadedPattern>Informant-H2 File Lock Watchdog</shadedPattern>
+                      <shadedPattern>Glowroot-H2 File Lock Watchdog</shadedPattern>
                     </relocation>
                     <relocation>
-                      <!-- shade thread names to make it easy to identify informant threads -->
+                      <!-- shade thread names to make it easy to identify glowroot threads -->
                       <rawString>true</rawString>
                       <pattern>H2 Log Writer</pattern>
-                      <shadedPattern>Informant-H2 Log Writer</shadedPattern>
+                      <shadedPattern>Glowroot-H2 Log Writer</shadedPattern>
                     </relocation>
                     <relocation>
-                      <!-- shade thread names to make it easy to identify informant threads -->
+                      <!-- shade thread names to make it easy to identify glowroot threads -->
                       <rawString>true</rawString>
                       <pattern>Generate Seed</pattern>
-                      <shadedPattern>Informant-H2 Generate Seed</shadedPattern>
+                      <shadedPattern>Glowroot-H2 Generate Seed</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>com.ning.compress</pattern>
-                      <shadedPattern>io.informant.shaded.ning.compress</shadedPattern>
+                      <shadedPattern>org.glowroot.shaded.ning.compress</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>com.google.common</pattern>
-                      <shadedPattern>io.informant.shaded.google.common</shadedPattern>
+                      <shadedPattern>org.glowroot.shaded.google.common</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>checkers</pattern>
-                      <shadedPattern>io.informant.shaded.checkers</shadedPattern>
+                      <shadedPattern>org.glowroot.shaded.checkers</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>com.fasterxml.jackson</pattern>
-                      <shadedPattern>io.informant.shaded.fasterxml.jackson</shadedPattern>
+                      <shadedPattern>org.glowroot.shaded.fasterxml.jackson</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>org.jboss.netty</pattern>
-                      <shadedPattern>io.informant.shaded.jboss.netty</shadedPattern>
+                      <shadedPattern>org.glowroot.shaded.jboss.netty</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>org.slf4j</pattern>
-                      <shadedPattern>io.informant.shaded.slf4j</shadedPattern>
+                      <shadedPattern>org.glowroot.shaded.slf4j</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>com.github.mustachejava</pattern>
-                      <shadedPattern>io.informant.shaded.github.mustachejava</shadedPattern>
+                      <shadedPattern>org.glowroot.shaded.github.mustachejava</shadedPattern>
                     </relocation>
                   </relocations>
                 </configuration>
@@ -469,8 +469,8 @@
                   <createDependencyReducedPom>false</createDependencyReducedPom>
                   <artifactSet>
                     <includes>
-                      <include>io.informant:informant</include>
-                      <include>io.informant.shaded:shaded-slf4j-impl</include>
+                      <include>org.glowroot:glowroot</include>
+                      <include>org.glowroot.shaded:shaded-slf4j-impl</include>
                     </includes>
                   </artifactSet>
                 </configuration>
@@ -500,32 +500,32 @@
                 <option>-dontoptimize</option>
                 <option>-dontnote **</option>
                 <option>-dontwarn **</option>
-                <option>-keep class io.informant.* { *; }</option>
-                <option>-keep class io.informant.api.** { *; }</option>
-                <option>-keep class io.informant.collector.** { *; }</option>
-                <option>-keep class io.informant.common.** { *; }</option>
-                <option>-keep class io.informant.config.** { *; }</option>
-                <option>-keep class io.informant.dynamicadvice.** { *; }</option>
-                <option>-keep class io.informant.local.** { *; }</option>
+                <option>-keep class org.glowroot.* { *; }</option>
+                <option>-keep class org.glowroot.api.** { *; }</option>
+                <option>-keep class org.glowroot.collector.** { *; }</option>
+                <option>-keep class org.glowroot.common.** { *; }</option>
+                <option>-keep class org.glowroot.config.** { *; }</option>
+                <option>-keep class org.glowroot.dynamicadvice.** { *; }</option>
+                <option>-keep class org.glowroot.local.** { *; }</option>
                 <!-- keep marker annotations so they can be used to doc tests also -->
-                <option>-keep class io.informant.markers.** { *; }</option>
-                <option>-keep class io.informant.trace.** { *; }</option>
-                <option>-keep class io.informant.weaving.** { *; }</option>
+                <option>-keep class org.glowroot.markers.** { *; }</option>
+                <option>-keep class org.glowroot.trace.** { *; }</option>
+                <option>-keep class org.glowroot.weaving.** { *; }</option>
                 <!-- keep all guava classes so that plugins can use shaded-guava artifact -->
-                <option>-keep class io.informant.shaded.google.common.** { *; }</option>
+                <option>-keep class org.glowroot.shaded.google.common.** { *; }</option>
                 <!-- keep all slf4j classes so that plugins can use shaded-slf4j-api artifact -->
-                <option>-keep class io.informant.shaded.org.slf4j.** { *; }</option>
+                <option>-keep class org.glowroot.shaded.org.slf4j.** { *; }</option>
                 <!-- keep DefaultMustacheFactory.compile() which is used by generated advice -->
                 <option>
-                  -keep class io.informant.shaded.github.mustachejava.DefaultMustacheFactory
+                  -keep class org.glowroot.shaded.github.mustachejava.DefaultMustacheFactory
                   {
-                  public io.informant.shaded.github.mustachejava.Mustache
+                  public org.glowroot.shaded.github.mustachejava.Mustache
                   compile(java.io.Reader,
                   java.lang.String); }
                 </option>
                 <!-- keep all logback appenders -->
                 <option>
-                  -keep class * extends io.informant.shaded.qos.logback.core.Appender { *; }
+                  -keep class * extends org.glowroot.shaded.qos.logback.core.Appender { *; }
                 </option>
                 <!-- keep special enumeration methods (see "Processing enumeration classes" section
                   at http://proguard.sourceforge.net/manual/examples.html) -->
@@ -536,13 +536,13 @@
                   valueOf(java.lang.String); }
                 </option>
                 <!-- if the FilterAttachable<E> interface is not kept, then the interface is
-                  stripped from io.informant.shaded.qos.logback.core.Appender<E>, and proguard
+                  stripped from org.glowroot.shaded.qos.logback.core.Appender<E>, and proguard
                   then strips the generic parameter type from Appender, but proguard
                   (at least as of version 4.10) leaves behind the generic parameter on the
                   doAppend(E paramE) method, which leads to a MalformedParameterizedTypeException
                   on JDK 7 (maybe due to more strict validation in JDK 7) -->
                 <option>
-                  -keep class io.informant.shaded.qos.logback.core.spi.FilterAttachable { *; }
+                  -keep class org.glowroot.shaded.qos.logback.core.spi.FilterAttachable { *; }
                 </option>
               </options>
             </configuration>

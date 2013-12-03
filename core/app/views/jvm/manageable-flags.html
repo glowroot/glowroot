@@ -18,11 +18,11 @@
     <h2>Manageable flags</h2>
   </div>
   <div class="panel-body">
-    <div ng-include src="'template/ix-loading-overlay.html'"></div>
-    <div ng-include src="'template/ix-http-error-overlay.html'"></div>
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-form
-         ix-form-with-primary-button
-         ix-form-autofocus-on-first-input
+         gt-form-with-primary-button
+         gt-form-autofocus-on-first-input
          class="form-horizontal jvm-manageable-flags-form"
          name="formCtrl">
       <div ng-repeat="flag in flags">
@@ -30,7 +30,7 @@
           <div class="checkbox jvm-manageable-flag col-lg-offset-3 col-lg-9">
             <label for="{{flag.name}}">
               <input type="checkbox"
-                     class="ix-form-checkbox"
+                     class="gt-form-checkbox"
                      ng-model="flag.value"
                      name="{{flag.name}}"
                      id="{{flag.name}}">
@@ -52,10 +52,10 @@
       </div>
       <div class="form-group form-buttons">
         <div class="col-lg-offset-3 col-lg-9">
-          <div ix-button
-               ix-label="Update JVM"
-               ix-click="update(deferred)"
-               ix-disabled="!hasChanges()">
+          <div gt-button
+               gt-label="Update JVM"
+               gt-click="update(deferred)"
+               gt-disabled="!hasChanges()">
           </div>
         </div>
       </div>

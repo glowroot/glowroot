@@ -13,58 +13,58 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div ix-spinner
-     ix-show="!loaded && !httpError"
+<div gt-spinner
+     gt-show="!loaded && !httpError"
      class="plugin-list-spinner">
 </div>
-<div ng-include src="'template/ix-http-error.html'"></div>
+<div ng-include src="'template/gt-http-error.html'"></div>
 <div class="panel panel-default" ng-show="loaded">
   <div class="panel-heading">
     <h2>{{plugin.descriptor.name}}</h2>
   </div>
   <div class="panel-body">
     <div ng-form
-         ix-form-with-primary-button
+         gt-form-with-primary-button
          class="form-horizontal"
          name="formCtrl">
-      <div ix-form-group
-           ix-label="Enabled"
-           ix-model="config.enabled"
-           ix-type="checkbox"
-           class="ix-form-group-without-help-block">
+      <div gt-form-group
+           gt-label="Enabled"
+           gt-model="config.enabled"
+           gt-type="checkbox"
+           class="gt-form-group-without-help-block">
       </div>
       <div ng-repeat="property in config.properties">
         <div ng-switch on="property.type" ng-hide="property.hidden">
           <div ng-switch-when="string">
-            <div ix-form-group
-                 ix-label="{{property.prompt}}"
-                 ix-model="property.value"
-                 ix-width="25em"
-                 ng-class="{ 'ix-form-group-without-help-block': property.description === null }">
+            <div gt-form-group
+                 gt-label="{{property.prompt}}"
+                 gt-model="property.value"
+                 gt-width="25em"
+                 ng-class="{ 'gt-form-group-without-help-block': property.description === null }">
               <div class="help-block">
                 {{property.description}}
               </div>
             </div>
           </div>
           <div ng-switch-when="boolean">
-            <div ix-form-group
-                 ix-label="{{property.prompt}}"
-                 ix-model="property.value"
-                 ix-type="checkbox"
-                 ng-class="{ 'ix-form-group-without-help-block': property.description === null }">
+            <div gt-form-group
+                 gt-label="{{property.prompt}}"
+                 gt-model="property.value"
+                 gt-type="checkbox"
+                 ng-class="{ 'gt-form-group-without-help-block': property.description === null }">
               <div class="help-block">
                 {{property.description}}
               </div>
             </div>
           </div>
           <div ng-switch-when="double">
-            <div ix-form-group
-                 ix-label="{{property.prompt}}"
-                 ix-model="property.value"
-                 ix-number="true"
-                 ix-pattern="pattern.double"
-                 ix-width="7em"
-                 ng-class="{ 'ix-form-group-without-help-block': property.description === null }">
+            <div gt-form-group
+                 gt-label="{{property.prompt}}"
+                 gt-model="property.value"
+                 gt-number="true"
+                 gt-pattern="pattern.double"
+                 gt-width="7em"
+                 ng-class="{ 'gt-form-group-without-help-block': property.description === null }">
               <div class="help-block">
                 {{property.description}}
               </div>
@@ -74,10 +74,10 @@
       </div>
       <div class="form-group form-buttons">
         <div class="col-lg-offset-3 col-lg-9">
-          <div ix-button
-               ix-label="Save changes"
-               ix-click="save(deferred)"
-               ix-disabled="!hasChanges() || formCtrl.$invalid">
+          <div gt-button
+               gt-label="Save changes"
+               gt-click="save(deferred)"
+               gt-disabled="!hasChanges() || formCtrl.$invalid">
           </div>
         </div>
       </div>

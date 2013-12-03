@@ -2,7 +2,7 @@ import checkers.igj.quals.*;
 import checkers.nullness.quals.*;
 
 /* ========================================================================== */
-package io.informant.shaded.slf4j;
+package org.glowroot.shaded.slf4j;
 
 // not @Immutable since isTraceEnabled(), etc can change over time
 public interface Logger {

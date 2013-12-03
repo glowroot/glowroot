@@ -2,7 +2,7 @@ import checkers.igj.quals.*;
 import checkers.nullness.quals.*;
 
 /* ========================================================================== */
-package io.informant.shaded.google.common.base;
+package org.glowroot.shaded.google.common.base;
 
 public class Objects {
     public static <T extends @Nullable Object> @NonNull T firstNonNull(T first, @NonNull T second);
@@ -24,7 +24,7 @@ public class Strings {
 }
 
 /* ========================================================================== */
-package io.informant.shaded.google.common.collect;
+package org.glowroot.shaded.google.common.collect;
 
 @Immutable
 public class ImmutableList<E> {
@@ -93,7 +93,7 @@ public class Sets {
 }
 
 /* ========================================================================== */
-package io.informant.shaded.google.common.io;
+package org.glowroot.shaded.google.common.io;
 
 public class CharSource {
     public Reader openStream() @ReadOnly;

@@ -24,9 +24,9 @@
     </encoder>
   </appender>
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>target/informant.log</file>
+    <file>target/glowroot.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-      <fileNamePattern>target/informant.%i.log</fileNamePattern>
+      <fileNamePattern>target/glowroot.%i.log</fileNamePattern>
       <minIndex>1</minIndex>
       <maxIndex>2</maxIndex>
     </rollingPolicy>

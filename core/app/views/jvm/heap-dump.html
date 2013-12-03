@@ -18,11 +18,11 @@
     <h2>Heap dump</h2>
   </div>
   <div class="panel-body">
-    <div ng-include src="'template/ix-loading-overlay.html'"></div>
-    <div ng-include src="'template/ix-http-error-overlay.html'"></div>
-    <!-- intentionally not using ix-form-with-primary-button to prevent accidental heap dumps -->
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <!-- intentionally not using gt-form-with-primary-button to prevent accidental heap dumps -->
     <div ng-form
-         ix-form-autofocus-on-first-input
+         gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl">
       <div class="form-group">
@@ -46,16 +46,16 @@
       </div>
       <div class="form-group form-buttons">
         <div class="col-lg-offset-2 col-lg-10">
-          <div ix-button-group>
-            <span ix-button
-                  ix-label="Dump heap"
-                  ix-click="dumpHeap(deferred)">
+          <div gt-button-group>
+            <span gt-button
+                  gt-label="Dump heap"
+                  gt-click="dumpHeap(deferred)">
             </span>
-            <span ix-button
-                  ix-show="data.checkDiskSpaceSupported"
-                  ix-label="Check disk space"
-                  ix-click="checkDiskSpace(deferred)"
-                  ix-btn-class="btn-default"
+            <span gt-button
+                  gt-show="data.checkDiskSpaceSupported"
+                  gt-label="Check disk space"
+                  gt-click="checkDiskSpace(deferred)"
+                  gt-btn-class="btn-default"
                   style="margin-left: 5px;">
             </span>
           </div>
@@ -68,7 +68,7 @@
             <table class="heap-dump-response">
               <tr>
                 <td>Free disk space</td>
-                <td><strong>{{checkDiskSpaceResponse | ixBytes}}</strong></td>
+                <td><strong>{{checkDiskSpaceResponse | gtBytes}}</strong></td>
               </tr>
             </table>
           </div>
@@ -85,7 +85,7 @@
               </tr>
               <tr>
                 <td>File size</td>
-                <td><strong>{{heapDumpResponse.size | ixBytes}}</strong></td>
+                <td><strong>{{heapDumpResponse.size | gtBytes}}</strong></td>
               </tr>
             </table>
           </div>

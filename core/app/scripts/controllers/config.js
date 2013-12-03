@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-/* global informant */
+/* global glowroot */
 
-informant.controller('ConfigCtrl', [
+glowroot.controller('ConfigCtrl', [
   '$scope',
   '$state',
   function ($scope, $state) {
     // \u00b7 is &middot;
-    document.title = 'Configuration \u00b7 Informant';
+    document.title = 'Configuration \u00b7 Glowroot';
     $scope.$parent.title = 'Configuration';
     $scope.$parent.activeNavbarItem = 'config';
 

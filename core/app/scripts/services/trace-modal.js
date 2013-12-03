@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant, Informant, TraceRenderer, $, alert */
+/* global glowroot, Glowroot, TraceRenderer, $, alert */
 
-informant.factory('traceModal', [
+glowroot.factory('traceModal', [
   '$rootScope',
   '$http',
   function ($rootScope, $http) {
@@ -71,7 +71,7 @@ informant.factory('traceModal', [
         lineHeight: '20px'
       }, 400, function () {
         if (!detailLoaded) {
-          spinner = Informant.showSpinner('#detailSpinner');
+          spinner = Glowroot.showSpinner('#detailSpinner');
         }
         // hiding the flot chart is needed to prevent a strange issue in chrome that occurs when
         // expanding a section of the details to trigger vertical scrollbar to be active, then

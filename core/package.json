@@ -1,10 +1,10 @@
 {
-  "name": "informant",
+  "name": "glowroot",
   "version": "0.5.0",
-  "description": "Informant",
+  "description": "Glowroot",
   "repository": {
     "type": "git",
-    "url": "https://github.com/informant/informant.git"
+    "url": "https://github.com/glowroot/glowroot.git"
   },
   "devDependencies": {
     "connect-livereload": "~0.3.0",

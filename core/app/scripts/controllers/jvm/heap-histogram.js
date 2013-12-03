@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant, angular, $ */
+/* global glowroot, angular, $ */
 
-informant.controller('JvmHeapHistogramCtrl', [
+glowroot.controller('JvmHeapHistogramCtrl', [
   '$scope',
   '$http',
   '$q',

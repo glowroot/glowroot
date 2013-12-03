@@ -4,34 +4,34 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.informant</groupId>
-    <artifactId>informant-parent</artifactId>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <groupId>io.informant.plugins</groupId>
+  <groupId>org.glowroot.plugins</groupId>
   <artifactId>jdbc-plugin</artifactId>
 
-  <name>Informant Jdbc Plugin</name>
-  <description>Informant Jdbc Plugin</description>
+  <name>Glowroot Jdbc Plugin</name>
+  <description>Glowroot Jdbc Plugin</description>
 
   <dependencies>
     <dependency>
-      <groupId>io.informant</groupId>
-      <artifactId>informant-plugin-api</artifactId>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-plugin-api</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>io.informant.shaded</groupId>
+      <groupId>org.glowroot.shaded</groupId>
       <artifactId>shaded-slf4j-api</artifactId>
       <version>1.7.5-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <!-- using shaded-guava dependency to take advantage of the shaded guava library that is
-        already provided in the informant jar -->
-      <groupId>io.informant.shaded</groupId>
+        already provided in the glowroot jar -->
+      <groupId>org.glowroot.shaded</groupId>
       <artifactId>shaded-guava</artifactId>
       <version>14.0.1-SNAPSHOT</version>
       <scope>provided</scope>
@@ -57,8 +57,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.informant</groupId>
-      <artifactId>informant-plugin-testkit</artifactId>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-plugin-testkit</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

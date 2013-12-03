@@ -1,0 +1,37 @@
+{
+  "name": "Integration Tests Plugin",
+  "id": "glowroot-integration-tests",
+  "version": "0.5-SNAPSHOT",
+  "properties": [
+    {
+      "prompt": "Starred grouping",
+      "name": "starredGrouping",
+      "type": "boolean"
+    },
+    {
+      "prompt": "Alternate grouping",
+      "name": "alternateGrouping",
+      "type": "string"
+    },
+    {
+      "prompt": "Has default val",
+      "name": "hasDefaultVal",
+      "type": "string",
+      "default": "one"
+    },
+    {
+      "prompt": "Capture span stack traces",
+      "name": "captureSpanStackTraces",
+      "type": "boolean"
+    }
+  ],
+  "aspects": [
+    "org.glowroot.tests.plugin.LevelOneAspect",
+    "org.glowroot.tests.plugin.LevelTwoAspect",
+    "org.glowroot.tests.plugin.LevelThreeAspect",
+    "org.glowroot.tests.plugin.LogErrorAspect",
+    "org.glowroot.tests.plugin.LogCauseAspect",
+    "org.glowroot.tests.plugin.PauseAspect",
+    "org.glowroot.tests.plugin.MatchAllTypesAspect"
+  ]
+}

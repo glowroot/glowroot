@@ -1,5 +1,5 @@
 {
-  "name": "informant",
+  "name": "glowroot",
   "dependencies": {
     "angular": "1.2.1",
     "angular-ui-bootstrap": "trask/angular-ui-bootstrap#bootstrap3_bis2+patch.1",

@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-/* global informant */
+/* global glowroot */
 
-informant.controller('PluginCtrl', [
+glowroot.controller('PluginCtrl', [
   '$scope',
   '$state',
   '$http',
   'httpErrors',
   function ($scope, $state, $http, httpErrors) {
     // \u00b7 is &middot;
-    document.title = 'Plugins \u00b7 Informant';
+    document.title = 'Plugins \u00b7 Glowroot';
     $scope.$parent.title = 'Plugins';
     $scope.$parent.activeNavbarItem = 'plugin';
 

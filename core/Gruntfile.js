@@ -19,8 +19,8 @@ module.exports = function (grunt) {
   // configurable paths
   var yeomanConfig = {
     app: 'app',
-    dist: 'target/ui-resources-dist/io/informant/local/ui/app-dist',
-    exportDist: 'target/ui-resources-dist/io/informant/local/ui/export-dist'
+    dist: 'target/ui-resources-dist/org/glowroot/local/ui/app-dist',
+    exportDist: 'target/ui-resources-dist/org/glowroot/local/ui/export-dist'
   };
 
   try {
@@ -268,7 +268,7 @@ module.exports = function (grunt) {
       },
       appTemplates: {
         options: {
-          module: 'informant'
+          module: 'glowroot'
         },
         cwd: '<%= yeoman.app %>',
         src: [
@@ -282,7 +282,7 @@ module.exports = function (grunt) {
       options: {
         preserveComments: function (node, comment) {
           // TODO moment.js license is not currently included
-          // TODO find better way of excluding informant license
+          // TODO find better way of excluding glowroot license
           return (comment.value.indexOf('!') === 0 || comment.value.indexOf('Copyright') !== -1) &&
               comment.value.indexOf('the original author or authors.') === -1;
         },

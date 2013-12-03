@@ -1,0 +1,25 @@
+<div class="clearfix">
+  <button class="btn"
+          ng-class="gtBtnClass || 'btn-primary'"
+          ng-click="onClick()"
+          ng-show="ngShow()"
+          ng-disabled="gtDisabled()"
+          style="float: right;">
+    {{gtLabel}}
+  </button>
+<span class="button-spinner inline-block hide"
+      style="float: right;">
+</span>
+  <!-- this needs to be div, and it's child needs to be div, for formatting of multi-line messages
+       e.g. Configuration optimistic lock error message -->
+  <div style="overflow-x: hidden;">
+    <!-- padding-top is 4px instead of gt-button which has padding-top 5px
+         it just seems to look better
+         maybe it has more to do with the left hand buttons mostly being btn-primary (blue background with white text)
+         and the right-hand buttons being btn-default (white background with dark text) -->
+    <div class="button-message hide"
+         style="padding-top: 4px;">
+    </div>
+  </div>
+  <span class="button-spinner inline-block hide"></span>
+</div>

@@ -18,40 +18,40 @@
     <h2>User-specific overrides</h2>
   </div>
   <div class="panel-body">
-    <div ng-include src="'template/ix-loading-overlay.html'"></div>
-    <div ng-include src="'template/ix-http-error-overlay.html'"></div>
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-form
-         ix-form-with-primary-button
-         ix-form-autofocus-on-first-input
+         gt-form-with-primary-button
+         gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl">
-      <div ix-form-group
-           ix-label="User ID"
-           ix-model="config.userId"
-           ix-width="20em">
+      <div gt-form-group
+           gt-label="User ID"
+           gt-model="config.userId"
+           gt-width="20em">
         <div class="help-block">
           All traces for the given user will use the store threshold and profiling
           configuration below.
         </div>
       </div>
-      <div ix-form-group
-           ix-label="Store threshold"
-           ix-model="config.storeThresholdMillis"
-           ix-number="true"
-           ix-pattern="pattern.integer"
-           ix-required="loaded"
-           ix-width="7em"
-           ix-addon="milliseconds">
+      <div gt-form-group
+           gt-label="Store threshold"
+           gt-model="config.storeThresholdMillis"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-addon="milliseconds">
         <div class="help-block">
           All traces for the given user that exceeds this amount of time will be
           viewable immediately as an active trace and will be stored to disk at its
           completion.
         </div>
       </div>
-      <div ix-form-group
-           ix-label="Fine profiling"
-           ix-model="config.fineProfiling"
-           ix-type="checkbox">
+      <div gt-form-group
+           gt-label="Fine profiling"
+           gt-model="config.fineProfiling"
+           gt-type="checkbox">
         <div class="help-block">
           All traces for the given user will be profiled using the fine-grained
           profiler.
@@ -59,10 +59,10 @@
       </div>
       <div class="form-group form-buttons">
         <div class="col-lg-offset-3 col-lg-9">
-          <div ix-button
-               ix-label="Save changes"
-               ix-click="save(deferred)"
-               ix-disabled="!hasChanges() || formCtrl.$invalid">
+          <div gt-button
+               gt-label="Save changes"
+               gt-click="save(deferred)"
+               gt-disabled="!hasChanges() || formCtrl.$invalid">
           </div>
         </div>
       </div>

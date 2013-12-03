@@ -51,7 +51,7 @@
       <li>drag over a region to zoom in</li>
       <li>double click to zoom in</li>
       <li>
-        <button class="flat-btn informant-red"
+        <button class="flat-btn glowroot-red"
                 id="zoomOut"
                 style="margin-left: -4px; padding: 0 4px;">
           click here to zoom out
@@ -63,7 +63,7 @@
   </div>
 </div>
 <div ng-form
-     ix-form-with-primary-button
+     gt-form-with-primary-button
      class="col-xs-12 col-sm-8 form-horizontal"
      style="float: left; margin: 20px auto 0 auto;">
   <div class="form-group">
@@ -72,10 +72,10 @@
       Date
     </label>
     <div class="col-lg-9">
-      <div ix-datepicker
-           ix-model="filterDate"
-           ix-class="refresh-data-on-enter-key"
-           ix-id="filterDate">
+      <div gt-datepicker
+           gt-model="filterDate"
+           gt-class="refresh-data-on-enter-key"
+           gt-id="filterDate">
       </div>
     </div>
   </div>
@@ -97,10 +97,10 @@
       <!-- input-group needs to be in a sub-div so it doesn't try to fill the entire width,
            which would push the addon "seconds" label flush right -->
       <div class="input-group">
-        <div ix-input-group-dropdown
-             ix-model="filterDurationComparator"
-             ix-items="filterDateComparatorOptions"
-             ix-class="input-group-btn-fix">
+        <div gt-input-group-dropdown
+             gt-model="filterDurationComparator"
+             gt-items="filterDateComparatorOptions"
+             gt-class="input-group-btn-fix">
         </div>
         <input type="text"
                ng-model="filter.low"
@@ -156,9 +156,9 @@
         Grouping
       </label>
       <div class="col-lg-9 input-group">
-        <div ix-input-group-dropdown
-             ix-model="filter.groupingComparator"
-             ix-items="filterTextComparatorOptions">
+        <div gt-input-group-dropdown
+             gt-model="filter.groupingComparator"
+             gt-items="filterTextComparatorOptions">
         </div>
         <input type="text"
                ng-model="filter.grouping"
@@ -173,9 +173,9 @@
         User ID
       </label>
       <div class="input-group col-lg-9">
-        <div ix-input-group-dropdown
-             ix-model="filter.userIdComparator"
-             ix-items="filterTextComparatorOptions">
+        <div gt-input-group-dropdown
+             gt-model="filter.userIdComparator"
+             gt-items="filterTextComparatorOptions">
         </div>
         <input type="text"
                ng-model="filter.userId"
@@ -223,16 +223,16 @@
   <div class="form-group">
     <div class="col-lg-offset-3 col-lg-9">
       <button ng-click="moreFilters = !moreFilters"
-              class="flat-btn flat-btn-big-pad1aligned informant-red">
+              class="flat-btn flat-btn-big-pad1aligned glowroot-red">
         {{moreFilters ? 'show less filters' : 'show more filters'}}
       </button>
     </div>
   </div>
   <div class="form-group">
     <div class="col-lg-offset-3 col-lg-9">
-      <div ix-button
-           ix-label="Refresh"
-           ix-click="refreshChart(deferred)"
+      <div gt-button
+           gt-label="Refresh"
+           gt-click="refreshChart(deferred)"
            class="form-submit">
       </div>
     </div>

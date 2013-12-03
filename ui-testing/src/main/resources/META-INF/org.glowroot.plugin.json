@@ -1,0 +1,38 @@
+{
+  "name": "Ui Testing Plugin",
+  "id": "glowroot-ui-testing",
+  "version": "0.5-SNAPSHOT",
+  "properties": [
+    {
+      "prompt": "Do something",
+      "name": "oneName",
+      "type": "boolean",
+      "default": true,
+      "description": "Do you want to do something?"
+    },
+    {
+      "prompt": "Whatever you want",
+      "name": "anotherName",
+      "type": "string",
+      "default": "coding",
+      "description": "More help text here and more and more and more."
+    },
+    {
+      "prompt": "For however long you want",
+      "name": "thirdName",
+      "type": "double",
+      "description": "I'm quickly out of ideas."
+    },
+    {
+      "prompt": "Lucky number",
+      "name": "fourthName",
+      "type": "double",
+      "description": "Good luck."
+    }
+  ],
+  "aspects": [
+    "org.glowroot.testing.ui.NestableCallAspect",
+    "org.glowroot.testing.ui.ExpensiveCallAspect",
+    "org.glowroot.testing.ui.ExternalJvmMainAspect"
+  ]
+}

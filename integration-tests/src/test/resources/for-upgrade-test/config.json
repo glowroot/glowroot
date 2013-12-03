@@ -27,7 +27,7 @@
     "rollingSizeMb" : 1000
   },
   "ui" : {
-    "port": 0,
+    "port" : 0,
     "sessionTimeoutMinutes" : 30,
     "passwordHash" : ""
   },
@@ -37,7 +37,7 @@
     "weavingDisabled" : false
   },
   "plugins" : [ {
-    "id" : "informant-integration-tests",
+    "id" : "glowroot-integration-tests",
     "enabled" : true,
     "properties" : {
       "hasDefaultVal" : "one",
@@ -46,9 +46,9 @@
       "starredGrouping" : false
     }
   }, {
-    "id" : "informant-test-container",
+    "id" : "glowroot-test-container",
     "enabled" : true,
     "properties" : { }
   } ],
-  "adhoc-pointcuts" : [ ]
+  "pointcuts" : [ ]
 }

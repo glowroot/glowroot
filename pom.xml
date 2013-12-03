@@ -9,14 +9,14 @@
     <version>7</version>
   </parent>
 
-  <groupId>io.informant</groupId>
-  <artifactId>informant-parent</artifactId>
+  <groupId>org.glowroot</groupId>
+  <artifactId>glowroot-parent</artifactId>
   <version>0.5-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>Informant Parent Project</name>
-  <description>Informant Parent Project</description>
-  <url>http://informant.github.com</url>
+  <name>Glowroot Parent Project</name>
+  <description>Glowroot Parent Project</description>
+  <url>http://glowroot.github.com</url>
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -44,9 +44,9 @@
   </modules>
 
   <scm>
-    <connection>scm:git:https://github.com/informant/informant.git</connection>
-    <developerConnection>scm:git:git@github.com:informant/informant.git</developerConnection>
-    <url>https://github.com/informant/informant</url>
+    <connection>scm:git:https://github.com/glowroot/glowroot.git</connection>
+    <developerConnection>scm:git:git@github.com:glowroot/glowroot.git</developerConnection>
+    <url>https://github.com/glowroot/glowroot</url>
   </scm>
 
   <properties>
@@ -284,7 +284,7 @@
       <properties>
         <source.directory>src/main/resources</source.directory>
         <sonar.branch>Javascript</sonar.branch>
-        <sonar.exclusions>io/informant/local/ui/app/components/**</sonar.exclusions>
+        <sonar.exclusions>org/glowroot/local/ui/app/components/**</sonar.exclusions>
       </properties>
     </profile>
   </profiles>

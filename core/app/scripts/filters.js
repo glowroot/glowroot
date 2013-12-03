@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant, moment */
+/* global glowroot, moment */
 
-informant.filter('ixBytes', function () {
+glowroot.filter('gtBytes', function () {
   return function (bytes, precision) {
     if (isNaN(parseFloat(bytes)) || !isFinite(bytes)) {
       return '-';
@@ -34,7 +34,7 @@ informant.filter('ixBytes', function () {
   };
 });
 
-informant.filter('ixDuration', function () {
+glowroot.filter('gtDuration', function () {
   return function (input) {
     if (input === undefined) {
       return '';
@@ -57,7 +57,7 @@ informant.filter('ixDuration', function () {
   };
 });
 
-informant.filter('ixOnOff', function () {
+glowroot.filter('gtOnOff', function () {
   return function (input) {
     return input ? 'ON' : 'OFF';
   };

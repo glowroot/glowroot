@@ -1,1 +1,1 @@
-io.informant.tests.MockDriver
+org.glowroot.tests.MockDriver

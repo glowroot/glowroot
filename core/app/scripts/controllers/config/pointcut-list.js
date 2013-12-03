@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-/* global informant */
+/* global glowroot */
 
-informant.controller('PointcutListCtrl', [
+glowroot.controller('PointcutListCtrl', [
   '$scope',
   '$http',
   '$timeout',

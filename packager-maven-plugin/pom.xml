@@ -4,16 +4,16 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.informant</groupId>
-    <artifactId>informant-parent</artifactId>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>informant-packager-maven-plugin</artifactId>
+  <artifactId>glowroot-packager-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
 
-  <name>Informant Packager Maven Plugin</name>
-  <description>Informant Packager Maven Plugin</description>
+  <name>Glowroot Packager Maven Plugin</name>
+  <description>Glowroot Packager Maven Plugin</description>
 
   <properties>
     <mavenVersion>2.0.9</mavenVersion>
@@ -21,9 +21,9 @@
 
   <dependencies>
     <dependency>
-      <!-- informant-core artifact is used for plugin.json parsing -->
-      <groupId>io.informant</groupId>
-      <artifactId>informant-core</artifactId>
+      <!-- glowroot-core artifact is used for plugin.json parsing -->
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

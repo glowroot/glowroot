@@ -14,8 +14,8 @@
   limitations under the License.
 -->
 <div ng-form
-     ix-form-with-primary-button
-     ix-form-autofocus-on-first-input
+     gt-form-with-primary-button
+     gt-form-autofocus-on-first-input
      name="formCtrl">
   <div class="form-group">
     <input type="password"
@@ -24,17 +24,17 @@
            id="loginPassword"
            placeholder="Enter password"
            style="max-width: 20em;">
-    <span class="informant-red"
+    <span class="glowroot-red"
           ng-show="message"
           style="padding-left: 15px;">
       {{message}}
     </span>
   </div>
   <div class="form-group form-buttons">
-    <div ix-button
-         ix-label="Login"
-         ix-click="login(deferred)"
-         ix-disabled="!page.password">
+    <div gt-button
+         gt-label="Login"
+         gt-click="login(deferred)"
+         gt-disabled="!page.password">
     </div>
   </div>
 </div>

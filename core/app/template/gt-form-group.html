@@ -1,0 +1,42 @@
+<div ng-form="formGroupCtrl" class="form-group" ng-class="{'has-error': formGroupCtrl['property'].$invalid}">
+  <label class="control-label col-lg-3"
+         ng-class="{ 'checkbox-control-label': gtType === 'checkbox' }"
+         for="{{gtId}}">
+    {{gtLabel}}
+  </label>
+  <div class="col-lg-9">
+    <div ng-switch="gtType">
+      <div ng-switch-when="checkbox">
+        <div class="checkbox gt-form-checkbox">
+          <!--
+            From http://docs.angularjs.org/api/ng.directive:form
+              "Since you cannot dynamically generate the name attribute of input elements using interpolation, you have
+               to wrap each set of repeated inputs in an ngForm directive and nest these in an outer form element."
+          -->
+          <input type="checkbox"
+                 class="gt-form-checkbox"
+                 ng-model="$parent.ngModel"
+                 name="property"
+                 id="{{gtId}}">
+        </div>
+      </div>
+      <div ng-switch-default>
+        <div ng-style="{display : gtWidth ? 'inline' : 'block'}">
+          <div ng-class="{'input-group' : gtAddon}">
+            <!-- gtType "text" and "password" are both used -->
+            <input type="{{gtType}}"
+                   class="form-control"
+                   ng-model="$parent.ngModel"
+                   name="property"
+                   id="{{gtId}}"
+                   ng-pattern="ngPattern"
+                   ng-required="gtRequired()"
+                   ng-style="{'max-width': gtWidth ? gtWidth : 'none'}">
+            <span ng-if="gtAddon" class="input-group-addon">{{gtAddon}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div ng-transclude></div>
+  </div>
+</div>

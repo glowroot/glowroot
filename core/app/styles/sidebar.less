@@ -19,16 +19,16 @@
 
 @sidenav-vertical-margin: 30px;
 
-.ix-sidebar .list-group-item.active,
-.ix-sidebar .list-group-item.active:hover,
-.ix-sidebar .list-group-item.active:focus {
+.gt-sidebar .list-group-item.active,
+.gt-sidebar .list-group-item.active:hover,
+.gt-sidebar .list-group-item.active:focus {
   background-color: #ccc;
   border-color: #ccc;
   // slightly darker than normal list-group-item (#555)
   color: #444;
 }
 
-.ix-sidebar .list-group-item:first-child {
+.gt-sidebar .list-group-item:first-child {
   // this fixes top border problems when list-group is inside of panel with no panel-heading
   // maybe bootstrap issue?
   border-top-width: 0 !important;
@@ -38,7 +38,7 @@
   border-top-left-radius: 3px !important;
 }
 
-.ix-sidebar .list-group-item:last-child {
+.gt-sidebar .list-group-item:last-child {
   // 3px instead of 4px since it is inside of a 4px radius border with lighter color
   // and 3px helps to fill it in better
   border-bottom-right-radius: 3px !important;
@@ -49,11 +49,11 @@
 @row-lg-desktop: @container-large-desktop + @grid-gutter-width;
 
 @media screen and (min-width: @screen-md-min) {
-  .ix-sidebar {
+  .gt-sidebar {
     position: absolute;
     width: 220px;
   }
-  .ix-main-column {
+  .gt-main-column {
     margin-left: 240px;
   }
 }
