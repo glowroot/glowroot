@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-@glowroot-red: #b12930;
-@glowroot-blue: darken(#4286bd, 2%);
+@glowroot-primary-color: darken(goldenrod, 12%);
+
+// TODO rename @gt-warning-color
+@glowroot-red: #ac320a;
+// TODO rename @gt-link-color
+@glowroot-blue: #417998;
 // TODO override and use bootstrap @brand-success instead of @glowroot-green?
-@glowroot-green: #336600;
-// flot default point color, just for documenting where @glowrootYellow / @tracePointNormal is derived from
+@glowroot-green: #365008;
+// flot default point color, just for documenting where @glowroot-yellow
 @flot-default-color: #edc240;
-@glowroot-yellow: darken(@flot-default-color, 10);
+@glowroot-yellow: @glowroot-primary-color;
 
 @flat-button-vertical-padding: 2px;
 

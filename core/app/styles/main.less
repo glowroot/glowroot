@@ -65,9 +65,12 @@
 
 @import "variables.less";
 
+// lighten text to better fit with @glowroot-primary-color
+@text-color: #444;
+
 @navbar-height: 50px;
-@navbar-inverse-bg: darken(@glowroot-red, 7%);
-@navbar-inverse-link-active-bg: darken(@glowroot-red, 13%);
+@navbar-inverse-bg: @glowroot-primary-color;
+@navbar-inverse-link-active-bg: darken(@navbar-inverse-bg, 5%);
 @navbar-inverse-link-color: #ccc;
 
 @input-border-focus: @glowroot-blue;
@@ -75,7 +78,7 @@
 @btn-primary-color: #f8f8f8;
 @btn-primary-border: #ccc;
 
-@brand-primary: darken(@glowroot-blue, 5%);
+@brand-primary: @glowroot-blue;
 
 @state-danger-text: @glowroot-red;
 
@@ -97,32 +100,27 @@ body {
 }
 
 .header-page-name {
-  font-family: SpecialElite-Regular;
-  font-size: 44px;
-  color: @glowroot-red;
+  font-size: 48px;
+  color: #555;
+  color: darken(@navbar-inverse-link-active-bg, 5%);
+  font-family: 'Love Ya Like A Sister';
 }
 
 @font-face {
-  font-family: SpecialElite-Regular;
-  src: url(fonts/specialelite.eot);
-  src: url(fonts/specialelite.eot?#iefix) format("embedded-opentype"),
-       url(fonts/specialelite.woff) format("woff"),
-       url(fonts/specialelite.ttf) format("truetype");
-  font-weight: normal;
+  font-family: 'Love Ya Like A Sister';
   font-style: normal;
-}
-
-.navbar {
-  background-color: @navbar-inverse-bg;
+  font-weight: 400;
+  src: url(fonts/love-ya-like-a-sister.eot);
+  src: url(fonts/love-ya-like-a-sister.eot?#iefix) format("embedded-opentype"),
+       url(fonts/love-ya-like-a-sister.woff) format("woff"),
+       url(fonts/love-ya-like-a-sister.ttf) format("truetype");
 }
 
 .navbar-brand {
-  font-family: SpecialElite-Regular;
   font-size: 24px;
-  // push the text down a pixel to line up with the other nav bar links
-  padding-top: 17px;
-  padding-bottom: 13px;
   color: #fff !important;
+  text-shadow: 0 0 4px white;
+  font-family: 'Love Ya Like A Sister';
 }
 
 .nav.navbar-nav {
