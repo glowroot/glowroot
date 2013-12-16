@@ -56,6 +56,13 @@ public class DataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);
 
+    private static final boolean h2LocalServer;
+
+    static {
+        // this is used for the demo site so there can be a standby instance against the same db
+        h2LocalServer = Boolean.getBoolean("glowroot.internal.h2.localServer");
+    }
+
     // null means use memDb
     @Nullable
     private final File dbFile;
@@ -285,11 +292,12 @@ public class DataSource {
     }
 
     public static void tryUnlockDatabase(File dbFile) throws SQLException {
-        FileLister.tryUnlockDatabase(Lists.newArrayList(dbFile.getPath()), null);
+        if (!h2LocalServer) {
+            FileLister.tryUnlockDatabase(Lists.newArrayList(dbFile.getPath()), null);
+        }
     }
 
-    private static Connection createConnection(@Nullable File dbFile)
-            throws SQLException {
+    private static Connection createConnection(@Nullable File dbFile) throws SQLException {
         // do not use java.sql.DriverManager or org.h2.Driver because these register the driver
         // globally with the JVM
         if (dbFile == null) {
@@ -301,8 +309,14 @@ public class DataSource {
             props.setProperty("user", "sa");
             props.setProperty("password", "");
             // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
-            return new JdbcConnection("jdbc:h2:file:" + dbPath
-                    + ";db_close_on_exit=false;compress_lob=lzf", props);
+            String url;
+            if (h2LocalServer) {
+                url = "jdbc:h2:tcp://localhost/" + dbPath;
+            } else {
+                url = "jdbc:h2:" + dbPath;
+            }
+            url += ";db_close_on_exit=false;compress_lob=lzf";
+            return new JdbcConnection(url, props);
         }
     }
 
