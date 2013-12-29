@@ -78,14 +78,14 @@ module.exports = function (grunt) {
           port: 4001
         }
       ],
-      rules: {
-        '^/traces$': '/index.html',
-        '^/aggregates$': '/index.html',
-        '^/jvm/.*$': '/index.html',
-        '^/config/.*$': '/index.html',
-        '^/plugin/.*$': '/index.html',
-        '^/login$': '/index.html'
-      },
+      rules: [
+        { from: '^/traces$', to: '/index.html' },
+        { from: '^/aggregates$', to: '/index.html' },
+        { from: '^/jvm/.*$', to: '/index.html' },
+        { from: '^/config/.*$', to: '/index.html' },
+        { from: '^/plugin/.*$', to: '/index.html' },
+        { from: '^/login$', to: '/index.html' }
+      ],
       livereload: {
         options: {
           middleware: function (connect) {
