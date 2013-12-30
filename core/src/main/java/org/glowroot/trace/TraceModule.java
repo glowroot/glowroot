@@ -40,6 +40,8 @@ import org.glowroot.weaving.MetricTimerService;
 import org.glowroot.weaving.ParsedTypeCache;
 import org.glowroot.weaving.WeavingClassFileTransformer;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -60,8 +62,8 @@ public class TraceModule {
     @Nullable
     private final ThreadAllocatedBytes threadAllocatedBytes;
 
-    private final StuckTraceCollector stuckTraceCollector;
-    private final CoarseProfiler coarseProfiler;
+    private final StuckTraceWatcher stuckTraceWatcher;
+    private final CoarseProfilerWatcher coarseProfilerWatcher;
     private final FineProfileScheduler fineProfileScheduler;
 
     private final boolean weavingDisabled;
@@ -101,12 +103,14 @@ public class TraceModule {
         metricTimerService = new MetricTimerServiceImpl(metricNameCache, traceRegistry);
         fineProfileScheduler =
                 new FineProfileScheduler(scheduledExecutor, configService, ticker, new Random());
-        stuckTraceCollector = new StuckTraceCollector(scheduledExecutor, traceRegistry,
+        stuckTraceWatcher = new StuckTraceWatcher(scheduledExecutor, traceRegistry,
                 traceCollector, configService, ticker);
-        coarseProfiler =
-                new CoarseProfiler(scheduledExecutor, traceRegistry, configService, ticker);
-        stuckTraceCollector.start();
-        coarseProfiler.start();
+        coarseProfilerWatcher =
+                new CoarseProfilerWatcher(scheduledExecutor, traceRegistry, configService, ticker);
+        stuckTraceWatcher.scheduleAtFixedRate(scheduledExecutor, 0,
+                StuckTraceWatcher.PERIOD_MILLIS, MILLISECONDS);
+        coarseProfilerWatcher.scheduleAtFixedRate(scheduledExecutor, 0,
+                CoarseProfilerWatcher.PERIOD_MILLIS, MILLISECONDS);
 
         weavingDisabled = configModule.getConfigService().getAdvancedConfig().isWeavingDisabled();
         generateMetricNameWrapperMethods = configModule.getConfigService().getAdvancedConfig()
@@ -175,7 +179,7 @@ public class TraceModule {
 
     @OnlyUsedByTests
     public void close() {
-        stuckTraceCollector.close();
-        coarseProfiler.close();
+        stuckTraceWatcher.cancel();
+        coarseProfilerWatcher.cancel();
     }
 }

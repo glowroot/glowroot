@@ -15,12 +15,10 @@
  */
 package org.glowroot.container.javaagent;
 
-import java.io.IOException;
 import java.util.List;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -119,11 +117,7 @@ class JavaagentConfigService implements ConfigService {
         if (portChangeFailedNode != null && portChangeFailedNode.asBoolean()) {
             throw new PortChangeFailedException();
         }
-        try {
-            httpClient.updateUiPort(getUiPortCommand.getUiPort());
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+        httpClient.updateUiPort(getUiPortCommand.getUiPort());
     }
 
     public AdvancedConfig getAdvancedConfig() throws Exception {
@@ -182,8 +176,7 @@ class JavaagentConfigService implements ConfigService {
         httpClient.post("/backend/admin/config/reset-all", "");
     }
 
-    private <T> T getConfig(String url, Class<T> type) throws Exception, IOException,
-            JsonProcessingException {
+    private <T> T getConfig(String url, Class<T> type) throws Exception {
         String response = httpClient.get(url);
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         JsonNode configNode = ObjectMappers.getRequiredChildNode(rootNode, "config");

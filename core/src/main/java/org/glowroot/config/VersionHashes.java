@@ -18,6 +18,7 @@ package org.glowroot.config;
 import java.util.List;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Charsets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
@@ -62,9 +63,9 @@ class VersionHashes {
         } else if (object instanceof Boolean) {
             hasher.putBoolean((Boolean) object);
         } else if (object instanceof String) {
-            hasher.putString((String) object);
+            hasher.putString((String) object, Charsets.UTF_8);
         } else if (object instanceof Enum<?>) {
-            hasher.putString(((Enum<?>) object).name());
+            hasher.putString(((Enum<?>) object).name(), Charsets.UTF_8);
         } else if (object instanceof List<?>) {
             List<?> items = (List<?>) object;
             for (Object item : items) {

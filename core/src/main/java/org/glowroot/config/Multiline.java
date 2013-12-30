@@ -18,7 +18,6 @@ package org.glowroot.config;
 import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -47,7 +46,7 @@ class Multiline {
     static class MultilineDeserializer extends JsonDeserializer<Multiline> {
         @Override
         public Multiline deserialize(JsonParser jp, DeserializationContext ctxt)
-                throws JsonProcessingException, IOException {
+                throws IOException {
             JsonToken token = jp.getCurrentToken();
             if (token == JsonToken.VALUE_STRING) {
                 return new Multiline(jp.getValueAsString());

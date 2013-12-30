@@ -284,13 +284,8 @@ public class DataSource {
         }
     }
 
-    public static boolean tryUnlockDatabase(File dbFile) {
-        try {
-            FileLister.tryUnlockDatabase(Lists.newArrayList(dbFile.getPath()), null);
-            return true;
-        } catch (SQLException e) {
-            return false;
-        }
+    public static void tryUnlockDatabase(File dbFile) throws SQLException {
+        FileLister.tryUnlockDatabase(Lists.newArrayList(dbFile.getPath()), null);
     }
 
     private static Connection createConnection(@Nullable File dbFile)

@@ -81,7 +81,8 @@ class Weaver {
         weavingMetricName = metricTimerService.getMetricName("glowroot weaving");
     }
 
-    byte/*@Nullable*/[] weave(byte[] classBytes, String className, @Nullable CodeSource codeSource) {
+    byte/*@Nullable*/[] weave(byte[] classBytes, String className,
+            @Nullable CodeSource codeSource) {
         if (generateMetricNameWrapperMethods) {
             return weave$glowroot$metric$glowroot$weaving$0(classBytes, className, codeSource);
         } else {
@@ -216,7 +217,7 @@ class Weaver {
             } catch (ClassNotFoundException e) {
                 // log at debug level only since this code will fail anyways if it is actually used
                 // at runtime since type doesn't exist
-                logger.debug("type {} not found while parsing type {}", type1, parseContext);
+                logger.debug("type {} not found while parsing type {}", type1, parseContext, e);
                 return "java/lang/Object";
             }
             ParsedType parsedType2;
@@ -228,7 +229,7 @@ class Weaver {
             } catch (ClassNotFoundException e) {
                 // log at debug level only since this code must not be getting used anyways, as it
                 // would fail on execution since the type doesn't exist
-                logger.debug("type {} not found while parsing type {}", type2, parseContext);
+                logger.debug("type {} not found while parsing type {}", type2, parseContext, e);
                 return "java/lang/Object";
             }
             return getCommonSuperClass(parsedType1, parsedType2, type1, type2);

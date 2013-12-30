@@ -16,7 +16,6 @@
 package org.glowroot.weaving;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
@@ -53,6 +52,8 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Reflections;
+import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.Singleton;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -73,16 +74,12 @@ public class ParsedTypeCache {
 
     static {
         try {
-            findLoadedClassMethod = ClassLoader.class.getDeclaredMethod("findLoadedClass",
-                    new Class[] {String.class});
-        } catch (SecurityException e) {
-            logger.error(e.getMessage(), e);
-            throw new IllegalStateException("Unrecoverable error", e);
-        } catch (NoSuchMethodException e) {
-            logger.error(e.getMessage(), e);
-            throw new IllegalStateException("Unrecoverable error", e);
+            findLoadedClassMethod = Reflections.getDeclaredMethod(ClassLoader.class,
+                    "findLoadedClass", new Class[] {String.class});
+        } catch (ReflectiveException e) {
+            // unrecoverable error
+            throw new AssertionError(e);
         }
-        findLoadedClassMethod.setAccessible(true);
     }
 
     // weak keys to prevent retention of class loaders
@@ -312,12 +309,8 @@ public class ParsedTypeCache {
         // ClassLoader.findLoadClass()
         Class<?> type = null;
         try {
-            type = (Class<?>) findLoadedClassMethod.invoke(loader, typeName);
-        } catch (IllegalArgumentException e) {
-            logger.error(e.getMessage(), e);
-        } catch (IllegalAccessException e) {
-            logger.error(e.getMessage(), e);
-        } catch (InvocationTargetException e) {
+            type = (Class<?>) Reflections.invoke(findLoadedClassMethod, loader, typeName);
+        } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
         }
         ClassLoader parsedTypeLoader = loader;

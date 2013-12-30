@@ -90,8 +90,8 @@ class DataDir {
             if (baseDir == null) {
                 baseDir = getBaseDir(disableWarnings);
             }
-            logger.warn("unable to create data directory {}, using {} instead",
-                    dataDir.getAbsolutePath(), baseDir.getAbsolutePath());
+            logger.warn("error creating data directory: {} (using directory {} instead)",
+                    dataDir.getAbsolutePath(), baseDir.getAbsolutePath(), e);
         }
         return dataDir;
     }

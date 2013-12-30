@@ -21,7 +21,6 @@ import java.util.Map.Entry;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,8 +45,7 @@ class DetailMapWriter {
         writeMap(detail);
     }
 
-    private void writeMap(@ReadOnly Map<?, ?> detail) throws IOException,
-            JsonGenerationException {
+    private void writeMap(@ReadOnly Map<?, ?> detail) throws IOException {
         jg.writeStartObject();
         for (Entry<?, ?> entry : detail.entrySet()) {
             Object key = entry.getKey();

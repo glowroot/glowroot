@@ -101,7 +101,7 @@ class JdbcMessageSupplier extends MessageSupplier {
             @Nullable ImmutableList<String> batchedSqls, @Nullable Integer connectionHashCode) {
 
         if (sql == null && batchedSqls == null) {
-            throw new IllegalStateException("Constructor args 'sql' and 'batchedSqls' cannot both"
+            throw new AssertionError("Constructor args 'sql' and 'batchedSqls' cannot both"
                     + " be null (enforced by static factory methods)");
         }
         this.sql = sql;
@@ -121,7 +121,7 @@ class JdbcMessageSupplier extends MessageSupplier {
             return Message.from(sb.toString());
         }
         if (sql == null) {
-            throw new IllegalStateException("Fields 'sql' and 'batchedSqls' cannot both be null"
+            throw new AssertionError("Fields 'sql' and 'batchedSqls' cannot both be null"
                     + " (enforced by static factory methods)");
         }
         if (isUsingBatchedParameters() && batchedParameters.size() > 1) {

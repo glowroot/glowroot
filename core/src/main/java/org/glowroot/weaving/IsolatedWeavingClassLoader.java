@@ -105,12 +105,18 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     }
 
     public <S extends /*@Nullable*/Object, T extends S> S newInstance(Class<T> implClass,
-            Class<S> bridgeClass) throws InstantiationException, IllegalAccessException,
-            ClassNotFoundException {
-        if (isBridgeable(bridgeClass.getName())) {
+            Class<S> bridgeClass) throws BridgeInstantiationException {
+        if (!isBridgeable(bridgeClass.getName())) {
+            throw new BridgeInstantiationException("Class '" + bridgeClass + "' is not bridgeable");
+        }
+        try {
             return bridgeClass.cast(loadClass(implClass.getName()).newInstance());
-        } else {
-            throw new IllegalStateException("Class '" + bridgeClass + "' is not bridgeable");
+        } catch (ClassNotFoundException e) {
+            throw new BridgeInstantiationException(e);
+        } catch (InstantiationException e) {
+            throw new BridgeInstantiationException(e);
+        } catch (IllegalAccessException e) {
+            throw new BridgeInstantiationException(e);
         }
     }
 
@@ -144,7 +150,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         try {
             bytes = Resources.toByteArray(url);
         } catch (IOException e) {
-            throw new IllegalStateException(e);
+            throw new ClassNotFoundException("Error loading class", e);
         }
         if (weaver != null) {
             bytes = weaveClass(name, bytes);
@@ -213,6 +219,16 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             return c.getClassLoader() == null;
         } catch (ClassNotFoundException e) {
             return false;
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class BridgeInstantiationException extends Exception {
+        private BridgeInstantiationException(Exception cause) {
+            super(cause);
+        }
+        private BridgeInstantiationException(String message) {
+            super(message);
         }
     }
 

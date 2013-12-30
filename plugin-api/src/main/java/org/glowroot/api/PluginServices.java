@@ -330,19 +330,19 @@ public abstract class PluginServices {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
             return PluginServicesNop.INSTANCE;
-        } catch (SecurityException e) {
-            // this really really really shouldn't happen
-            logger.error(e.getMessage(), e);
-            return PluginServicesNop.INSTANCE;
         } catch (NoSuchMethodException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
             return PluginServicesNop.INSTANCE;
-        } catch (IllegalArgumentException e) {
+        } catch (SecurityException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
             return PluginServicesNop.INSTANCE;
         } catch (IllegalAccessException e) {
+            // this really really really shouldn't happen
+            logger.error(e.getMessage(), e);
+            return PluginServicesNop.INSTANCE;
+        } catch (IllegalArgumentException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
             return PluginServicesNop.INSTANCE;
@@ -420,6 +420,7 @@ public abstract class PluginServices {
 
         private static class NopMetric implements MetricName {
             private static final NopMetric INSTANCE = new NopMetric();
+            private NopMetric() {}
         }
 
         private static class NopSpan implements Span {

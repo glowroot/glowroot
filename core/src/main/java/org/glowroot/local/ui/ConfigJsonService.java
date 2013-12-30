@@ -17,24 +17,20 @@ package org.glowroot.local.ui;
 
 import java.io.File;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
+import java.security.GeneralSecurityException;
 import java.sql.SQLException;
-import java.util.concurrent.ExecutionException;
 
+import checkers.nullness.quals.EnsuresNonNull;
 import checkers.nullness.quals.MonotonicNonNull;
+import checkers.nullness.quals.Nullable;
 import checkers.nullness.quals.RequiresNonNull;
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.CharStreams;
 import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,11 +50,14 @@ import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.config.UserInterfaceConfig.CurrentPasswordIncorrectException;
 import org.glowroot.config.UserOverridesConfig;
 import org.glowroot.local.store.RollingFile;
+import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.markers.Singleton;
 import org.glowroot.trace.PointcutConfigAdviceCache;
 import org.glowroot.trace.TraceModule;
 
 import static org.glowroot.common.Nullness.castNonNull;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
 
 /**
  * Json service to read and update config data, bound to /backend/config.
@@ -190,8 +189,7 @@ class ConfigJsonService {
     }
 
     @RequiresNonNull("httpServer")
-    private void writeUserInterface(JsonGenerator jg, ObjectWriter writer)
-            throws IOException, JsonGenerationException, JsonMappingException {
+    private void writeUserInterface(JsonGenerator jg, ObjectWriter writer) throws IOException {
         jg.writeFieldName("config");
         writer.writeValue(jg, configService.getUserInterfaceConfig());
         jg.writeNumberField("activePort", httpServer.getPort());
@@ -249,8 +247,7 @@ class ConfigJsonService {
     }
 
     @POST("/backend/config/general")
-    String updateGeneralConfig(String content) throws IOException, JsonServiceException,
-            SQLException {
+    String updateGeneralConfig(String content) throws IOException, SQLException {
         logger.debug("updateGeneralConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         String priorVersion = getAndRemoveVersionNode(configNode);
@@ -260,14 +257,13 @@ class ConfigJsonService {
         try {
             configService.updateGeneralConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getGeneralConfig();
     }
 
     @POST("/backend/config/coarse-profiling")
-    String updateCoarseProfilingConfig(String content) throws JsonServiceException,
-            IOException, SQLException {
+    String updateCoarseProfilingConfig(String content) throws IOException, SQLException {
         logger.debug("updateCoarseProfilingConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         String priorVersion = getAndRemoveVersionNode(configNode);
@@ -277,14 +273,13 @@ class ConfigJsonService {
         try {
             configService.updateCoarseProfilingConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getCoarseProfilingConfig();
     }
 
     @POST("/backend/config/fine-profiling")
-    String updateFineProfilingConfig(String content) throws JsonServiceException,
-            IOException, SQLException {
+    String updateFineProfilingConfig(String content) throws IOException, SQLException {
         logger.debug("updateFineProfilingConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         String priorVersion = getAndRemoveVersionNode(configNode);
@@ -294,14 +289,13 @@ class ConfigJsonService {
         try {
             configService.updateFineProfilingConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getFineProfiling();
     }
 
     @POST("/backend/config/user-overrides")
-    String updateUserOverridesConfig(String content) throws JsonServiceException, IOException,
-            SQLException {
+    String updateUserOverridesConfig(String content) throws IOException, SQLException {
         logger.debug("updateUserOverridesConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         String priorVersion = getAndRemoveVersionNode(configNode);
@@ -311,14 +305,13 @@ class ConfigJsonService {
         try {
             configService.updateUserOverridesConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getUserOverridesConfig();
     }
 
     @POST("/backend/config/storage")
-    String updateStorageConfig(String content) throws JsonServiceException, IOException,
-            SQLException {
+    String updateStorageConfig(String content) throws IOException, SQLException {
         logger.debug("updateStorageConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         String priorVersion = getAndRemoveVersionNode(configNode);
@@ -328,7 +321,7 @@ class ConfigJsonService {
         try {
             configService.updateStorageConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         // resize() doesn't do anything if the new and old value are the same
         rollingFile.resize(configService.getStorageConfig().getRollingSizeMb() * 1024);
@@ -336,9 +329,8 @@ class ConfigJsonService {
     }
 
     @POST("/backend/config/user-interface")
-    String updateUserInterfaceConfig(String content, HttpResponse response)
-            throws JsonServiceException, IOException, NoSuchAlgorithmException,
-            InvalidKeySpecException, SQLException {
+    String updateUserInterfaceConfig(String content, HttpResponse response) throws IOException,
+            GeneralSecurityException, SQLException {
         logger.debug("updateUserInterfaceConfig(): content={}", content);
         // this code cannot be reached when httpServer is null
         castNonNull(httpServer);
@@ -356,7 +348,7 @@ class ConfigJsonService {
         try {
             configService.updateUserInterfaceConfig(updatedConfig, priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         // only create/delete session on successful update
         if (!config.isPasswordEnabled() && updatedConfig.isPasswordEnabled()) {
@@ -368,10 +360,9 @@ class ConfigJsonService {
         if (config.getPort() != updatedConfig.getPort()) {
             try {
                 httpServer.changePort(updatedConfig.getPort());
-                response.headers().set("X-Glowroot-Port-Changed", "true");
-            } catch (InterruptedException e) {
-                return getUserInterfaceWithPortChangeFailed();
-            } catch (ExecutionException e) {
+                response.headers().set("Glowroot-Port-Changed", "true");
+            } catch (PortChangeFailedException e) {
+                logger.error(e.getMessage(), e);
                 return getUserInterfaceWithPortChangeFailed();
             }
         }
@@ -392,8 +383,7 @@ class ConfigJsonService {
     }
 
     @POST("/backend/config/advanced")
-    String updateAdvancedConfig(String content) throws JsonServiceException, IOException,
-            SQLException {
+    String updateAdvancedConfig(String content) throws IOException, SQLException {
         logger.debug("updateAdvancedConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         String priorVersion = getAndRemoveVersionNode(configNode);
@@ -403,20 +393,17 @@ class ConfigJsonService {
         try {
             configService.updateAdvancedConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getAdvanced();
     }
 
     @POST("/backend/config/plugin/(.+)")
-    String updatePluginConfig(String pluginId, String content) throws JsonServiceException,
-            IOException, SQLException {
+    String updatePluginConfig(String pluginId, String content) throws IOException, SQLException {
         logger.debug("updatePluginConfig(): pluginId={}, content={}", pluginId, content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         JsonNode versionNode = configNode.get("version");
-        if (versionNode == null || !versionNode.isTextual()) {
-            throw new IllegalStateException("Version is missing or is not a string value");
-        }
+        validateVersionNode(versionNode);
         String priorVersion = versionNode.asText();
         PluginConfig config = configService.getPluginConfig(pluginId);
         if (config == null) {
@@ -427,13 +414,13 @@ class ConfigJsonService {
         try {
             configService.updatePluginConfig(builder.build(), priorVersion);
         } catch (OptimisticLockException e) {
-            throw new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, e);
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getPluginConfig(pluginId);
     }
 
     @POST("/backend/config/pointcut/+")
-    String addPointcutConfig(String content) throws JsonProcessingException, IOException {
+    String addPointcutConfig(String content) throws IOException {
         logger.debug("addPointcutConfig(): content={}", content);
         PointcutConfig pointcutConfig =
                 ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
@@ -447,8 +434,7 @@ class ConfigJsonService {
     }
 
     @POST("/backend/config/pointcut/([0-9a-f]+)")
-    String updatePointcutConfig(String priorVersion, String content)
-            throws JsonProcessingException, IOException {
+    String updatePointcutConfig(String priorVersion, String content) throws IOException {
         logger.debug("updatePointcutConfig(): priorVersion={}, content={}", priorVersion,
                 content);
         PointcutConfig pointcutConfig =
@@ -471,10 +457,18 @@ class ConfigJsonService {
 
     private String getAndRemoveVersionNode(ObjectNode configNode) {
         JsonNode versionNode = configNode.get("version");
-        if (versionNode == null || !versionNode.isTextual()) {
-            throw new IllegalStateException("Version is missing or is not a string value");
-        }
+        validateVersionNode(versionNode);
         configNode.remove("version");
         return versionNode.asText();
+    }
+
+    @EnsuresNonNull("#1")
+    private void validateVersionNode(@Nullable JsonNode versionNode) {
+        if (versionNode == null) {
+            throw new JsonServiceException(BAD_REQUEST, "Version is missing");
+        }
+        if (!versionNode.isTextual()) {
+            throw new JsonServiceException(BAD_REQUEST, "Version is not a string value");
+        }
     }
 }

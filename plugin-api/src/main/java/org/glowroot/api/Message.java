@@ -19,14 +19,12 @@ import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
-
 import dataflow.quals.Pure;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.glowroot.api.internal.ReadableMessage;
 
 /**
@@ -64,6 +62,8 @@ public abstract class Message {
             @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
         return new MessageImpl(message, new String[0], detail);
     }
+
+    private Message() {}
 
     // implementing ReadableMessage is just a way to access this class from glowroot without making
     // it (obviously) accessible to plugin implementations

@@ -30,6 +30,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.ConfigService.PortChangeFailedException;
 import org.glowroot.container.config.UserInterfaceConfig;
+import org.glowroot.container.javaagent.JavaagentContainer;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -91,8 +92,10 @@ public class ChangePortTest {
     @Test
     public void shouldFailIfPortNotFree() throws Exception {
         // given
-        container.addExpectedLogMessage("org.glowroot.local.ui.HttpServer",
-                "Failed to bind");
+        if (container instanceof JavaagentContainer) {
+            container.addExpectedLogMessage("org.glowroot.local.ui.ConfigJsonService",
+                    "Failed to bind");
+        }
         UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
         ServerSocket serverSocket = new ServerSocket(0);
         int newPort = serverSocket.getLocalPort();

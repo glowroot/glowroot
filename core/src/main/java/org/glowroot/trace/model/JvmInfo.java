@@ -27,7 +27,6 @@ import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
@@ -138,7 +137,7 @@ class JvmInfo {
         }
     }
 
-    private void writeValue(JsonGenerator jg) throws JsonGenerationException, IOException {
+    private void writeValue(JsonGenerator jg) throws IOException {
         ThreadInfo threadInfo = ManagementFactory.getThreadMXBean().getThreadInfo(threadId, 0);
         if (threadInfo == null) {
             // thread must have just recently terminated

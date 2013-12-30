@@ -54,6 +54,7 @@ import org.glowroot.container.trace.TraceService;
 import org.glowroot.markers.ThreadSafe;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.glowroot.common.Nullness.castNonNull;
 
 /**
  * @author Trask Stalnaker
@@ -113,11 +114,9 @@ public class JavaagentContainer implements Container {
         final Process process = processBuilder.start();
         consolePipeExecutorService = Executors.newSingleThreadExecutor();
         InputStream in = process.getInputStream();
-        if (in == null) {
-            // process.getInputStream() only returns null if ProcessBuilder.redirectOutput() is used
-            // to redirect output to a file
-            throw new AssertionError("Process.getInputStream() returned null");
-        }
+        // process.getInputStream() only returns null if ProcessBuilder.redirectOutput() is used
+        // to redirect output to a file
+        castNonNull(in);
         consoleOutputPipe = new ConsoleOutputPipe(in, System.out, captureConsoleOutput);
         consolePipeExecutorService.submit(consoleOutputPipe);
         this.process = process;
@@ -125,14 +124,17 @@ public class JavaagentContainer implements Container {
         ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
         ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
         socketCommander = new SocketCommander(objectOut, objectIn);
-        int uiPort = getUiPort(socketCommander);
-        if (uiPort == SocketCommandProcessor.NO_PORT) {
+        int uiPort;
+        try {
+            uiPort = getUiPort(socketCommander);
+        } catch (StartupFailedException e) {
+            // clean up and re-throw
             socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN);
             socketCommander.close();
             process.waitFor();
             serverSocket.close();
             consolePipeExecutorService.shutdownNow();
-            throw new StartupFailedException();
+            throw e;
         }
         httpClient = new JavaagentHttpClient(uiPort);
         this.configService = new JavaagentConfigService(httpClient,
@@ -226,8 +228,8 @@ public class JavaagentContainer implements Container {
         Splitter splitter = Splitter.on(Pattern.compile("\r?\n")).omitEmptyStrings();
         String capturedOutput = consoleOutputPipe.getCapturedOutput();
         if (capturedOutput == null) {
-            throw new IllegalStateException("JavaagentContainer was created with"
-                    + " captureConsoleOutput=false");
+            throw new IllegalStateException("Cannot check console lines unless JavaagentContainer"
+                    + " was created with captureConsoleOutput=true");
         }
         for (String line : splitter.split(capturedOutput)) {
             if (line.contains("Glowroot started") || line.contains("Glowroot listening")) {
@@ -251,16 +253,20 @@ public class JavaagentContainer implements Container {
     }
 
     private static int getUiPort(SocketCommander socketCommander) throws Exception {
-        Integer port = (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT);
-        if (port == null) {
+        Object response = socketCommander.sendCommand(SocketCommandProcessor.GET_PORT);
+        if (response == null) {
             throw new AssertionError("Command returned null: " + SocketCommandProcessor.GET_PORT);
         }
-        return port;
+        if (response.equals(SocketCommandProcessor.STARTUP_FAILED)) {
+            throw new StartupFailedException();
+        }
+        return (Integer) response;
     }
 
     public static void main(String[] args) throws Exception {
         try {
             int port = Integer.parseInt(args[0]);
+            // socket is never closed since program is still running after main returns
             Socket socket = new Socket((String) null, port);
             ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
             ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
@@ -276,7 +282,7 @@ public class JavaagentContainer implements Container {
             metricTwo();
             Thread.sleep(1);
         }
-        // do not close socket since program is still running after main returns
+        // non-daemon threads started above keep jvm alive after main returns
     }
 
     private static void metricOne() throws InterruptedException {

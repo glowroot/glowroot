@@ -34,6 +34,8 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -43,9 +45,12 @@ public class StorageModule {
 
     private static final Logger logger = LoggerFactory.getLogger(StorageModule.class);
 
+    private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 60;
+
     private final DataSource dataSource;
     private final RollingFile rollingFile;
     private final SnapshotDao snapshotDao;
+    private final ReaperScheduledRunnable reaperScheduledRunnable;
     private final AggregateDao aggregateDao;
 
     public StorageModule(File dataDir, @ReadOnly Map<String, String> properties, Ticker ticker,
@@ -63,7 +68,11 @@ public class StorageModule {
         rollingFile = new RollingFile(new File(dataDir, "glowroot.rolling.db"),
                 rollingSizeMb * 1024, scheduledExecutor, ticker);
         snapshotDao = new SnapshotDao(dataSource, rollingFile);
-        new SnapshotReaper(configService, snapshotDao, clock).start(scheduledExecutor);
+        reaperScheduledRunnable =
+                new ReaperScheduledRunnable(configService, snapshotDao, clock);
+        // MINUTES is not available in jdk5
+        reaperScheduledRunnable.scheduleAtFixedRate(scheduledExecutor, 0,
+                SNAPSHOT_REAPER_PERIOD_MINUTES * 60, SECONDS);
         aggregateDao = new AggregateDao(dataSource);
     }
 
@@ -94,6 +103,7 @@ public class StorageModule {
     @OnlyUsedByTests
     public void close() {
         logger.debug("close()");
+        reaperScheduledRunnable.cancel();
         try {
             rollingFile.close();
         } catch (IOException e) {

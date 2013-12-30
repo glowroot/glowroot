@@ -16,8 +16,6 @@
 package org.glowroot.trace;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import checkers.nullness.quals.Nullable;
@@ -37,6 +35,7 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
 import org.glowroot.common.Clock;
+import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.PluginConfig;
@@ -45,7 +44,6 @@ import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.ThreadSafe;
-import org.glowroot.trace.CollectStackCommand.TerminateScheduledActionException;
 import org.glowroot.trace.model.Metric;
 import org.glowroot.trace.model.MetricNameImpl;
 import org.glowroot.trace.model.Trace;
@@ -316,7 +314,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setUserId(userId);
-            if (userId != null && trace.getFineProfilingScheduledFuture() == null) {
+            if (userId != null && trace.getFineProfilerScheduledRunnable() == null) {
                 fineProfileScheduler.maybeScheduleFineProfilingUsingUserId(trace, userId);
             }
         }
@@ -421,7 +419,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // this should be impossible since span.getMessageSupplier() is only null when the
                 // span was created using addErrorSpan(), and that method doesn't return the span
                 // afterwards, so it should be impossible to call getMessageSupplier() on it
-                throw new IllegalStateException("Somehow got hold of an error Span??");
+                throw new AssertionError("Somehow got hold of an error Span??");
             }
             return messageSupplier;
         }
@@ -429,9 +427,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             trace.popSpan(span, endTick, errorMessage);
             if (trace.isCompleted()) {
                 // the root span has been popped off
-                cancelScheduledFuture(trace.getCoarseProfilingScheduledFuture());
-                cancelScheduledFuture(trace.getStuckScheduledFuture());
-                cancelScheduledFuture(trace.getFineProfilingScheduledFuture());
+                safeCancel(trace.getCoarseProfilerScheduledRunnable());
+                safeCancel(trace.getStuckScheduledRunnable());
+                safeCancel(trace.getFineProfilerScheduledRunnable());
                 // send to trace collector before removing from trace registry so that trace
                 // collector can cover the gap (via TraceCollectorImpl.getPendingCompleteTraces())
                 // between removing the trace from the registry and storing it
@@ -441,38 +439,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             }
             return new CompletedSpanImpl(span);
         }
-        private void cancelScheduledFuture(@Nullable ScheduledFuture<?> scheduledFuture) {
-            if (scheduledFuture == null) {
+        private void safeCancel(@Nullable ScheduledRunnable scheduledRunnable) {
+            if (scheduledRunnable == null) {
                 return;
             }
-            boolean success = scheduledFuture.cancel(false);
-            if (!success) {
-                // execution of scheduled command failed due to an exception, need to log it to find
-                // out what happened
-
-                // if the thread is in the interrupted state, Future.get() below will immediately
-                // throw InterruptedException
-                // (via AbstractQueuedSynchronizer.acquireSharedInterruptibly())
-                //
-                // so temporarily clear the interrupted state (if it's set) so Future.get() can be
-                // called with a clean slate (it could still throw InterruptedException on its own
-                // via AbstractQueuedSynchronizer.doAcquireSharedInterruptibly())
-                boolean interrupted = Thread.interrupted();
-                try {
-                    scheduledFuture.get();
-                } catch (InterruptedException e) {
-                    // this is the trace thread, so need to be careful and re-interrupt it
-                    Thread.currentThread().interrupt();
-                } catch (ExecutionException e) {
-                    if (!(e.getCause() instanceof TerminateScheduledActionException)) {
-                        logger.error(e.getMessage(), e);
-                    }
-                }
-                if (interrupted) {
-                    // this is the trace thread, so need to be careful and re-interrupt it
-                    Thread.currentThread().interrupt();
-                }
-            }
+            scheduledRunnable.cancel();
         }
     }
 

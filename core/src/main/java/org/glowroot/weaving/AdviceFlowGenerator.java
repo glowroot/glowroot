@@ -15,8 +15,6 @@
  */
 package org.glowroot.weaving;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.objectweb.asm.ClassVisitor;
@@ -26,6 +24,8 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Reflections.ReflectiveException;
+import org.glowroot.jvm.ClassLoaders;
 import org.glowroot.weaving.Advice.AdviceConstructionException;
 
 import static org.glowroot.common.Nullness.castNonNull;
@@ -59,7 +59,13 @@ class AdviceFlowGenerator {
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, generatedTypeName, null, "java/lang/Object", null);
         writeThreadLocalFields(cw);
         writeThreadLocalInitialization(cw, generatedTypeName);
-        return defineClass(TypeNames.fromInternal(generatedTypeName), cw.toByteArray());
+        try {
+            return ClassLoaders.defineClass(TypeNames.fromInternal(generatedTypeName),
+                    cw.toByteArray());
+        } catch (ReflectiveException e) {
+            logger.error(e.getMessage(), e);
+            throw new AdviceConstructionException(e);
+        }
     }
 
     private static void writeThreadLocalFields(ClassVisitor cv) {
@@ -80,40 +86,5 @@ class AdviceFlowGenerator {
         mv.visitMaxs(0, 0);
         mv.visitEnd();
         cv.visitEnd();
-    }
-
-    private static Class<?> defineClass(String name, byte[] bytes)
-            throws AdviceConstructionException {
-        Method defineClassMethod;
-        try {
-            defineClassMethod = ClassLoader.class.getDeclaredMethod("defineClass", String.class,
-                    byte[].class, int.class, int.class);
-        } catch (NoSuchMethodException e) {
-            logger.error(e.getMessage(), e);
-            throw new AdviceConstructionException(e);
-        } catch (SecurityException e) {
-            logger.error(e.getMessage(), e);
-            throw new AdviceConstructionException(e);
-        }
-        defineClassMethod.setAccessible(true);
-        Class<?> definedClass;
-        try {
-            definedClass = (Class<?>) defineClassMethod.invoke(
-                    AdviceFlowGenerator.class.getClassLoader(), name, bytes, 0, bytes.length);
-        } catch (IllegalAccessException e) {
-            logger.error(e.getMessage(), e);
-            throw new AdviceConstructionException(e);
-        } catch (IllegalArgumentException e) {
-            logger.error(e.getMessage(), e);
-            throw new AdviceConstructionException(e);
-        } catch (InvocationTargetException e) {
-            logger.error(e.getMessage(), e);
-            throw new AdviceConstructionException(e);
-        }
-        if (definedClass == null) {
-            logger.error("method unexpectedly returned null: java.lang.ClassLoader.defineClass()");
-            throw new AdviceConstructionException("Method ClassLoader.defineClass() returned null");
-        }
-        return definedClass;
     }
 }

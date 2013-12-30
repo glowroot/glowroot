@@ -23,7 +23,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
-import checkers.nullness.quals.Nullable;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -52,8 +52,9 @@ import org.glowroot.markers.Singleton;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@VisibleForTesting
 @Singleton
-class HttpServer {
+public class HttpServer {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
 
@@ -83,7 +84,7 @@ class HttpServer {
                 pipeline.addLast("decoder", new HttpRequestDecoder());
                 pipeline.addLast("aggregator", new HttpChunkAggregator(65536));
                 pipeline.addLast("encoder", new HttpResponseEncoder());
-                pipeline.addLast("deflater", new HttpContentCompressor());
+                pipeline.addLast("deflater", new ConditionalHttpContentCompressor());
                 pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
                 pipeline.addLast("handler", handler);
                 return pipeline;
@@ -97,8 +98,8 @@ class HttpServer {
             serverChannel = bootstrap.bind(localAddress);
         } catch (ChannelException e) {
             serverChannel = bootstrap.bind(new InetSocketAddress(0));
-            logger.error("unable to bind http listener to port {}, bound to port {} instead", port,
-                    ((InetSocketAddress) serverChannel.getLocalAddress()).getPort());
+            logger.error("error binding to port: {} (bound to port {} instead)", port,
+                    ((InetSocketAddress) serverChannel.getLocalAddress()).getPort(), e);
         }
         this.serverChannel = serverChannel;
         this.port = ((InetSocketAddress) serverChannel.getLocalAddress()).getPort();
@@ -109,24 +110,27 @@ class HttpServer {
         return port;
     }
 
-    void changePort(final int newPort) throws InterruptedException, ExecutionException {
+    void changePort(final int newPort) throws PortChangeFailedException {
         // need to call from separate thread, since netty throws exception if I/O thread (serving
         // http request) calls awaitUninterruptibly(), which is called by bind() below
         Channel previousServerChannel = this.serverChannel;
         ChangePort changePort = new ChangePort(newPort);
-        Thread thread = new Thread(changePort);
-        thread.setDaemon(true);
-        thread.setName("Glowroot-Temporary-Thread");
-        thread.start();
-        thread.join();
-        Throwable t = changePort.throwable;
-        if (t != null) {
-            logger.warn(t.getMessage(), t);
-            throw new ExecutionException(t);
-        } else {
-            previousServerChannel.close();
-            handler.closeAllButCurrent();
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                .setNameFormat("Glowroot-Temporary-Thread").build();
+        ExecutorService executor = Executors.newSingleThreadExecutor(threadFactory);
+        try {
+            // calling get() will wait until ChangePort is complete and will re-throw any exceptions
+            // thrown by ChangePort
+            executor.submit(changePort).get();
+        } catch (InterruptedException e) {
+            throw new PortChangeFailedException(e);
+        } catch (ExecutionException e) {
+            throw new PortChangeFailedException(e);
+        } finally {
+            executor.shutdownNow();
         }
+        previousServerChannel.close();
+        handler.closeAllButCurrent();
     }
 
     void close() {
@@ -140,21 +144,23 @@ class HttpServer {
     private class ChangePort implements Runnable {
 
         private final int newPort;
-        @Nullable
-        private volatile Throwable throwable;
 
         ChangePort(int newPort) {
             this.newPort = newPort;
         }
 
         public void run() {
-            try {
-                InetSocketAddress localAddress = new InetSocketAddress(newPort);
-                HttpServer.this.serverChannel = bootstrap.bind(localAddress);
-                HttpServer.this.port = newPort;
-            } catch (Throwable t) {
-                this.throwable = t;
-            }
+            InetSocketAddress localAddress = new InetSocketAddress(newPort);
+            HttpServer.this.serverChannel = bootstrap.bind(localAddress);
+            HttpServer.this.port = newPort;
+        }
+    }
+
+    @VisibleForTesting
+    @SuppressWarnings("serial")
+    public static class PortChangeFailedException extends Exception {
+        private PortChangeFailedException(Exception cause) {
+            super(cause);
         }
     }
 

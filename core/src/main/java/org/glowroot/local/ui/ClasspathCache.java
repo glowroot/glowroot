@@ -239,8 +239,7 @@ class ClasspathCache {
                 }
             }
         } catch (URISyntaxException e) {
-            // seems like a programmatic error if URISyntaxException happens here
-            logger.warn(e.getMessage(), e);
+            logger.error(e.getMessage(), e);
         } finally {
             jarIn.close();
         }

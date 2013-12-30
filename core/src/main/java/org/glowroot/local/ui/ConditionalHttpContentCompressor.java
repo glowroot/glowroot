@@ -19,6 +19,7 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.net.MediaType;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.handler.codec.embedder.EncoderEmbedder;
+import org.jboss.netty.handler.codec.http.HttpContentCompressor;
 import org.jboss.netty.handler.codec.http.HttpMessage;
 
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
@@ -27,12 +28,12 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class HttpContentCompressor extends org.jboss.netty.handler.codec.http.HttpContentCompressor {
+class ConditionalHttpContentCompressor extends HttpContentCompressor {
+
     @Override
     @Nullable
     protected EncoderEmbedder<ChannelBuffer> newContentEncoder(HttpMessage msg,
             String acceptEncoding) throws Exception {
-
         String contentType = msg.headers().get(CONTENT_TYPE);
         if (contentType != null && contentType.equals(MediaType.ZIP.toString())) {
             // don't compress already zipped content

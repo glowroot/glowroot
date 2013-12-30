@@ -62,8 +62,8 @@ public class MockCatalinaHttpServletRequest extends MockHttpServletRequest {
         @Override
         public V put(K key, V value) {
             if (locked) {
-                throw new IllegalStateException(
-                        "No modifications are allowed to a locked ParameterMap");
+                throw new IllegalStateException("Cannot modify locked ParameterMap,"
+                        + " check isLocked() first");
             }
             return super.put(key, value);
         }

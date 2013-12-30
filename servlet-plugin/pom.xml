@@ -25,7 +25,6 @@
     <dependency>
       <groupId>org.glowroot.shaded</groupId>
       <artifactId>shaded-slf4j-api</artifactId>
-      <version>1.7.5-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -33,14 +32,12 @@
         already provided in the glowroot jar -->
       <groupId>org.glowroot.shaded</groupId>
       <artifactId>shaded-guava</artifactId>
-      <version>14.0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <!-- only annotations are used, so ok the (unshaded) artifact is not provided at runtime -->
       <groupId>edu.washington.cs.types.checker</groupId>
       <artifactId>checker-quals-jdk5</artifactId>
-      <version>1.7.1</version>
       <optional>true</optional>
     </dependency>
     <dependency>
@@ -53,14 +50,16 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.11</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava-jdk5</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.easytesting</groupId>
       <artifactId>fest-assert-core</artifactId>
-      <!-- 2.0M7 is the last version of fest-assert-core that supports jdk 5 -->
-      <version>2.0M7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -87,7 +86,6 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.0.13</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

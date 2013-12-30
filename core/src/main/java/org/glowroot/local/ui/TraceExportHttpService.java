@@ -17,16 +17,10 @@ package org.glowroot.local.ui;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PushbackReader;
-import java.io.Reader;
-import java.io.Writer;
 import java.net.URL;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.annotations.VisibleForTesting;
@@ -37,7 +31,6 @@ import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import com.google.common.net.MediaType;
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
@@ -98,20 +91,20 @@ public class TraceExportHttpService implements HttpService {
     }
 
     @Nullable
-    private ExportChunkedInput getExportChunkedInput(String id) throws IOException {
+    private ChunkedInput getExportChunkedInput(String id) throws IOException {
         CharSource traceCharSource =
                 traceCommonService.createCharSourceForSnapshotOrActiveTrace(id, false);
         if (traceCharSource == null) {
             return null;
         }
         CharSource charSource = render(traceCharSource);
-        return new ExportChunkedInput(charSource.openStream(), getFilename(id));
+        return ChunkedInputs.fromReaderToZipFileDownload(charSource.openStream(), getFilename(id));
     }
 
     // this method exists because tests cannot use (sometimes) shaded netty ChunkedInput
     @OnlyUsedByTests
-    public byte[] getExportBytes(String id) throws IOException {
-        ExportChunkedInput chunkedInput = getExportChunkedInput(id);
+    public byte[] getExportBytes(String id) throws Exception {
+        ChunkedInput chunkedInput = getExportChunkedInput(id);
         if (chunkedInput == null) {
             throw new IllegalStateException("No trace found for id '" + id + "'");
         }
@@ -178,88 +171,5 @@ public class TraceExportHttpService implements HttpService {
     private static CharSource asCharSource(String exportResourceName) {
         URL url = Resources.getResource("org/glowroot/local/ui/export-dist/" + exportResourceName);
         return Resources.asCharSource(url, Charsets.UTF_8);
-    }
-
-    private static class ExportChunkedInput implements ChunkedInput {
-
-        private static final int CHUNK_SIZE = 8192;
-
-        private final PushbackReader reader;
-        private final ByteArrayOutputStream baos;
-        private final Writer zipWriter;
-        // need lots more chars to end up with compressed chunk of given size
-        private final char[] buffer = new char[8 * CHUNK_SIZE];
-
-        private boolean hasSentTerminatingChunk;
-
-        private ExportChunkedInput(Reader reader, String filename) throws IOException {
-            this.reader = new PushbackReader(reader);
-            // write to baos until size >= CHUNK_SIZE, so give it a little extra room
-            baos = new ByteArrayOutputStream(2 * CHUNK_SIZE);
-            ZipOutputStream zipOut = new ZipOutputStream(baos);
-            zipOut.putNextEntry(new ZipEntry(filename + ".html"));
-            zipWriter = new OutputStreamWriter(zipOut, Charsets.UTF_8);
-        }
-
-        public boolean hasNextChunk() {
-            return !hasSentTerminatingChunk;
-        }
-
-        @Nullable
-        public Object nextChunk() throws IOException {
-            if (hasMoreBytes()) {
-                return readNextChunk();
-            } else if (!hasSentTerminatingChunk) {
-                // chunked transfer encoding must be terminated by a final chunk of length zero
-                hasSentTerminatingChunk = true;
-                return new DefaultHttpChunk(ChannelBuffers.EMPTY_BUFFER);
-            } else {
-                return null;
-            }
-        }
-
-        public boolean isEndOfInput() {
-            return hasSentTerminatingChunk;
-        }
-
-        public void close() {}
-
-        private boolean hasMoreBytes() throws IOException {
-            int b = reader.read();
-            if (b < 0) {
-                return false;
-            } else {
-                reader.unread(b);
-                return true;
-            }
-        }
-
-        private Object readNextChunk() throws IOException {
-            int total = 0;
-            while (true) {
-                int n = reader.read(buffer, total, buffer.length - total);
-                if (n == -1) {
-                    break;
-                }
-                total += n;
-                if (total == buffer.length) {
-                    break;
-                }
-            }
-            // no need to flush, there's no buffering except in ZipOutputStream, and that buffering
-            // is for compression and doesn't respond to flush() anyways
-            zipWriter.write(buffer, 0, total);
-            if (baos.size() < CHUNK_SIZE && hasMoreBytes()) {
-                return readNextChunk();
-            }
-            if (!hasMoreBytes()) {
-                // write remaining compressed data
-                zipWriter.close();
-            }
-            // toByteArray returns a copy so it's ok to reset the ByteArrayOutputStream afterwards
-            byte[] bytes = baos.toByteArray();
-            baos.reset();
-            return new DefaultHttpChunk(ChannelBuffers.wrappedBuffer(bytes));
-        }
     }
 }

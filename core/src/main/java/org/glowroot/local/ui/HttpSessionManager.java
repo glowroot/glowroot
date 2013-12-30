@@ -17,9 +17,8 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Map;
 import java.util.Set;
 
@@ -75,10 +74,7 @@ class HttpSessionManager {
         String password = request.getContent().toString(Charsets.ISO_8859_1);
         try {
             success = configService.getUserInterfaceConfig().validatePassword(password);
-        } catch (NoSuchAlgorithmException e) {
-            logger.error(e.getMessage(), e);
-            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
-        } catch (InvalidKeySpecException e) {
+        } catch (GeneralSecurityException e) {
             logger.error(e.getMessage(), e);
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }

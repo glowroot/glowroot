@@ -110,7 +110,7 @@ public class GlobalCollector {
         if (!optional.isPresent()) {
             // couldn't find type
             if (expected) {
-                throw new IllegalStateException("Could not find type '" + owner + "'");
+                throw new IOException("Could not find type '" + owner + "'");
             } else {
                 return;
             }
@@ -126,7 +126,7 @@ public class GlobalCollector {
         String methodId = rootMethod.getName() + ":" + rootMethod.getDesc();
         MethodCollector methodCollector = typeCollector.getMethodCollector(methodId);
         if (expected && methodCollector == null) {
-            throw new IllegalStateException("Could not find method '" + rootMethod + "'");
+            throw new IOException("Could not find method '" + rootMethod + "'");
         }
         if (methodCollector == null && !rootMethod.getName().equals("<clinit>")
                 && typeCollector.getSuperType() != null) {

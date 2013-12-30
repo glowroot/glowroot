@@ -15,8 +15,6 @@
  */
 package org.glowroot.dynamicadvice;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Strings;
@@ -27,7 +25,9 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
+import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.config.PointcutConfig;
+import org.glowroot.jvm.ClassLoaders;
 import org.glowroot.weaving.TypeNames;
 
 import static org.glowroot.common.Nullness.castNonNull;
@@ -66,8 +66,7 @@ public class DynamicAdviceGenerator {
         adviceTypeName = "org/glowroot/dynamicadvice/GeneratedAdvice" + counter.incrementAndGet();
     }
 
-    public Class<?> generate() throws NoSuchMethodException, IllegalAccessException,
-            InvocationTargetException {
+    public Class<?> generate() throws ReflectiveException {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, adviceTypeName, null, "java/lang/Object", null);
         addClassAnnotation(cw);
@@ -84,7 +83,7 @@ public class DynamicAdviceGenerator {
         }
         cw.visitEnd();
         byte[] bytes = cw.toByteArray();
-        return defineClass(TypeNames.fromInternal(adviceTypeName), bytes);
+        return ClassLoaders.defineClass(TypeNames.fromInternal(adviceTypeName), bytes);
     }
 
     private void addClassAnnotation(ClassVisitor cv) {
@@ -362,16 +361,5 @@ public class DynamicAdviceGenerator {
         mv.visitMaxs(0, 0);
         mv.visitEnd();
 
-    }
-
-    private static Class<?> defineClass(String name, byte[] bytes) throws NoSuchMethodException,
-            IllegalAccessException, InvocationTargetException {
-        Method defineClassMethod = ClassLoader.class.getDeclaredMethod("defineClass", String.class,
-                byte[].class, int.class, int.class);
-        defineClassMethod.setAccessible(true);
-        Class<?> definedClass = (Class<?>) defineClassMethod.invoke(
-                DynamicAdviceGenerator.class.getClassLoader(), name, bytes, 0, bytes.length);
-        castNonNull(definedClass);
-        return definedClass;
     }
 }

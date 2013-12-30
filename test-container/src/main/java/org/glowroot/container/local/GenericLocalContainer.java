@@ -88,10 +88,10 @@ public class GenericLocalContainer<T> {
         }
         try {
             MainEntryPoint.start(properties);
-            glowrootModule = MainEntryPoint.getGlowrootModule();
-        } catch (Throwable t) {
-            throw new StartupFailedException(t);
+        } catch (org.glowroot.GlowrootModule.StartupFailedException e) {
+            throw new StartupFailedException();
         }
+        glowrootModule = MainEntryPoint.getGlowrootModule();
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         PluginDescriptorCache pluginDescriptorCache =
                 glowrootModule.getConfigModule().getPluginDescriptorCache();

@@ -19,28 +19,64 @@ import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Stopwatch;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface TraceService {
+public abstract class TraceService {
 
     @Nullable
-    Trace getLastTrace() throws Exception;
+    public Trace getLastTrace() throws Exception {
+        return getLastTrace(false);
+    }
 
     @Nullable
-    Trace getLastTraceSummary() throws Exception;
+    public Trace getLastTraceSummary() throws Exception {
+        return getLastTrace(true);
+    }
+
+    // this method blocks for an active trace to be available because
+    // sometimes need to give container enough time to start up and for the trace to get stuck
+    @Nullable
+    public Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception {
+        return getActiveTrace(timeout, unit, false);
+    }
+
+    // this method blocks for an active trace to be available because
+    // sometimes need to give container enough time to start up and for the trace to get stuck
+    @Nullable
+    public Trace getActiveTraceSummary(int timeout, TimeUnit unit) throws Exception {
+        return getActiveTrace(timeout, unit, true);
+    }
+
+    public abstract int getNumPendingCompleteTraces() throws Exception;
+
+    public abstract long getNumStoredSnapshots() throws Exception;
+
+    public abstract InputStream getTraceExport(String string) throws Exception;
 
     @Nullable
-    Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception;
+    protected abstract Trace getLastTrace(boolean summary) throws Exception;
 
     @Nullable
-    Trace getActiveTraceSummary(int timeout, TimeUnit unit) throws Exception;
+    protected abstract Trace getActiveTrace(boolean summary) throws Exception;
 
-    int getNumPendingCompleteTraces() throws Exception;
-
-    long getNumStoredSnapshots() throws Exception;
-
-    InputStream getTraceExport(String string) throws Exception;
+    @Nullable
+    private Trace getActiveTrace(int timeout, TimeUnit unit, boolean summary) throws Exception {
+        Stopwatch stopwatch = new Stopwatch().start();
+        Trace trace = null;
+        // try at least once (e.g. in case timeoutMillis == 0)
+        boolean first = true;
+        while (first || stopwatch.elapsed(unit) < timeout) {
+            trace = getActiveTrace(summary);
+            if (trace != null) {
+                break;
+            }
+            Thread.sleep(20);
+            first = false;
+        }
+        return trace;
+    }
 }

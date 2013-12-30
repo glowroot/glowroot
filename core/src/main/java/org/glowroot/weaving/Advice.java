@@ -31,8 +31,6 @@ import com.google.common.collect.Lists;
 import dataflow.quals.Pure;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindMethodArgArray;
@@ -55,9 +53,6 @@ import org.glowroot.api.weaving.Pointcut;
  */
 @Immutable
 public class Advice {
-
-    @ReadOnly
-    private static final Logger logger = LoggerFactory.getLogger(Advice.class);
 
     private static final ImmutableList<Class<? extends Annotation>> isEnabledBindAnnotationTypes =
             ImmutableList.of(BindTarget.class, BindMethodArg.class, BindMethodArgArray.class,

@@ -138,8 +138,7 @@ class Schemas {
             }
             String sqlTypeName = sqlTypeNames.get(columns.get(i).getType());
             if (sqlTypeName == null) {
-                throw new IllegalStateException("Unrecoverable error, unexpected sql type '"
-                        + columns.get(i).getType());
+                throw new SQLException("Unexpected sql type '" + columns.get(i).getType());
             }
             sql.append(columns.get(i).getName());
             sql.append(" ");

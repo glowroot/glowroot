@@ -48,10 +48,12 @@ public class Beans {
     static {
         try {
             SENTINEL_METHOD = Beans.class.getDeclaredMethod("sentinelMethod");
-        } catch (SecurityException e) {
-            throw new IllegalStateException("Unrecoverable error", e);
         } catch (NoSuchMethodException e) {
-            throw new IllegalStateException("Unrecoverable error", e);
+            // unrecoverable error
+            throw new AssertionError(e);
+        } catch (SecurityException e) {
+            // unrecoverable error
+            throw new AssertionError(e);
         }
     }
 
@@ -122,6 +124,10 @@ public class Beans {
             logger.debug(e.getMessage(), e);
             // this is less ok
             return "<could not access>";
+        } catch (IllegalArgumentException e) {
+            logger.debug(e.getMessage(), e);
+            // this is less ok
+            return "<could not access>";
         } catch (InvocationTargetException e) {
             logger.debug(e.getMessage(), e);
             // this is less ok
@@ -141,6 +147,9 @@ public class Beans {
                     builder.put(entry.getKey(), value.toString());
                 }
             } catch (IllegalAccessException e) {
+                logger.debug(e.getMessage(), e);
+                builder.put(entry.getKey(), "<could not access>");
+            } catch (IllegalArgumentException e) {
                 logger.debug(e.getMessage(), e);
                 builder.put(entry.getKey(), "<could not access>");
             } catch (InvocationTargetException e) {
@@ -165,18 +174,18 @@ public class Beans {
     private static AccessibleObject loadAccessor(Class<?> type, String name) {
         String capitalizedName = Character.toUpperCase(name.charAt(0)) + name.substring(1);
         try {
-            // TODO the problem with using getDeclaredMethod() is that it will miss public methods
-            // in super classes
-            return type.getMethod("get" + capitalizedName);
-        } catch (NoSuchMethodException e) {
+            // TODO getMethod will only find public methods, but the problem with using
+            // getDeclaredMethod() is that it will miss public methods in super classes
+            return getMethod(type, "get" + capitalizedName);
+        } catch (ReflectiveException e) {
             // fall back to "is" prefix
             try {
-                return type.getMethod("is" + capitalizedName);
-            } catch (NoSuchMethodException f) {
+                return getMethod(type, "is" + capitalizedName);
+            } catch (ReflectiveException f) {
                 // fall back to no prefix
                 try {
-                    return type.getMethod(name);
-                } catch (NoSuchMethodException g) {
+                    return getMethod(type, name);
+                } catch (ReflectiveException g) {
                     // fall back to field access
                     try {
                         // TODO getDeclaredField will miss fields in super classes
@@ -223,7 +232,24 @@ public class Beans {
         return null;
     }
 
+    private static Method getMethod(Class<?> type, String methodName) throws ReflectiveException {
+        try {
+            return type.getMethod(methodName);
+        } catch (NoSuchMethodException e) {
+            throw new ReflectiveException(e);
+        } catch (SecurityException e) {
+            throw new ReflectiveException(e);
+        }
+    }
+
     // this unused private method is required for use as SENTINEL_METHOD above
     @SuppressWarnings("unused")
     private static void sentinelMethod() {}
+
+    @SuppressWarnings("serial")
+    private static class ReflectiveException extends Exception {
+        private ReflectiveException(Exception cause) {
+            super(cause);
+        }
+    }
 }

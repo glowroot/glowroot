@@ -70,7 +70,7 @@ class SnapshotHttpService implements HttpService {
         HttpServices.preventCaching(response);
         response.setChunked(true);
         channel.write(response);
-        channel.write(new ReaderChunkedInput(charSource.openStream()));
+        channel.write(ChunkedInputs.fromReader(charSource.openStream()));
         // return null to indicate streaming
         return null;
     }

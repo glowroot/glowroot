@@ -17,7 +17,6 @@ package org.glowroot.container.javaagent;
 
 import java.io.InputStream;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
@@ -40,7 +39,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 // even though this is thread safe, it is not useful for running tests in parallel since
 // getLastTrace() and others are not scoped to a particular test
 @ThreadSafe
-class JavaagentTraceService implements TraceService {
+class JavaagentTraceService extends TraceService {
 
     @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
@@ -51,41 +50,20 @@ class JavaagentTraceService implements TraceService {
         this.httpClient = httpClient;
     }
 
-    @Nullable
-    public Trace getLastTrace() throws Exception {
-        return getLastTrace(false);
-    }
-
-    @Nullable
-    public Trace getLastTraceSummary() throws Exception {
-        return getLastTrace(true);
-    }
-
-    // this method blocks for an active trace to be available because
-    // sometimes need to give container enough time to start up and for the trace to get stuck
-    @Nullable
-    public Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception {
-        return getActiveTrace(timeout, unit, false);
-    }
-
-    // this method blocks for an active trace to be available because
-    // sometimes need to give container enough time to start up and for the trace to get stuck
-    @Nullable
-    public Trace getActiveTraceSummary(int timeout, TimeUnit unit) throws Exception {
-        return getActiveTrace(timeout, unit, true);
-    }
-
+    @Override
     public int getNumPendingCompleteTraces() throws Exception {
         String numPendingCompleteTraces =
                 httpClient.get("/backend/admin/num-pending-complete-traces");
         return Integer.parseInt(numPendingCompleteTraces);
     }
 
+    @Override
     public long getNumStoredSnapshots() throws Exception {
         String numStoredSnapshots = httpClient.get("/backend/admin/num-stored-snapshots");
         return Long.parseLong(numStoredSnapshots);
     }
 
+    @Override
     public InputStream getTraceExport(String traceId) throws Exception {
         return httpClient.getAsStream("/export/" + traceId);
     }
@@ -108,25 +86,9 @@ class JavaagentTraceService implements TraceService {
         httpClient.post("/backend/admin/data/delete-all", "");
     }
 
+    @Override
     @Nullable
-    private Trace getActiveTrace(int timeout, TimeUnit unit, boolean summary) throws Exception {
-        Stopwatch stopwatch = new Stopwatch().start();
-        Trace trace = null;
-        // try at least once (e.g. in case timeoutMillis == 0)
-        boolean first = true;
-        while (first || stopwatch.elapsed(unit) < timeout) {
-            trace = getActiveTrace(summary);
-            if (trace != null) {
-                break;
-            }
-            Thread.sleep(20);
-            first = false;
-        }
-        return trace;
-    }
-
-    @Nullable
-    private Trace getLastTrace(boolean summary) throws Exception {
+    protected Trace getLastTrace(boolean summary) throws Exception {
         String content = httpClient.post("/backend/trace/points", "{\"from\":0,\"to\":"
                 + Long.MAX_VALUE + ",\"low\":0,\"high\":" + Long.MAX_VALUE + ",\"limit\":1000}");
         TracePointResponse response =
@@ -143,8 +105,9 @@ class JavaagentTraceService implements TraceService {
         return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
     }
 
+    @Override
     @Nullable
-    private Trace getActiveTrace(boolean summary) throws Exception {
+    protected Trace getActiveTrace(boolean summary) throws Exception {
         String content = httpClient.post("/backend/trace/points", "{\"from\":0,\"to\":"
                 + Long.MAX_VALUE + ",\"low\":0,\"high\":" + Long.MAX_VALUE + ",\"limit\":1000}");
         TracePointResponse response =

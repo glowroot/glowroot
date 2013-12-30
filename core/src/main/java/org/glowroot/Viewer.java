@@ -15,9 +15,7 @@
  */
 package org.glowroot;
 
-import java.io.IOException;
-import java.sql.SQLException;
-
+import org.glowroot.GlowrootModule.StartupFailedException;
 import org.glowroot.markers.Static;
 
 /**
@@ -29,7 +27,7 @@ class Viewer {
 
     private Viewer() {}
 
-    public static void main(String... args) throws SQLException, IOException, InterruptedException {
+    public static void main(String... args) throws StartupFailedException, InterruptedException {
         MainEntryPoint.start();
         // Glowroot does not create any non-daemon threads, so need to block jvm from exiting
         Thread.sleep(Long.MAX_VALUE);

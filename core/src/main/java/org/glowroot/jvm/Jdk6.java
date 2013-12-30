@@ -18,7 +18,6 @@ package org.glowroot.jvm;
 import java.io.File;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -28,6 +27,8 @@ import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Reflections;
+import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactory;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactoryHelper;
@@ -72,25 +73,17 @@ public class Jdk6 {
     public void addRetransformingTransformer(Instrumentation instrumentation,
             ClassFileTransformer transformer) {
         try {
-            addTransformerTwoArgMethod.invoke(instrumentation, transformer, true);
-        } catch (IllegalArgumentException e) {
-            logger.error(e.getMessage(), e);
-        } catch (IllegalAccessException e) {
-            logger.error(e.getMessage(), e);
-        } catch (InvocationTargetException e) {
+            Reflections.invoke(addTransformerTwoArgMethod, instrumentation, transformer, true);
+        } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
         }
     }
 
     public void retransformClasses(Instrumentation instrumentation, List<Class<?>> classes) {
         try {
-            retransformClassesMethod.invoke(instrumentation,
+            Reflections.invoke(retransformClassesMethod, instrumentation,
                     (Object) Iterables.toArray(classes, Class.class));
-        } catch (IllegalArgumentException e) {
-            logger.error(e.getMessage(), e);
-        } catch (IllegalAccessException e) {
-            logger.error(e.getMessage(), e);
-        } catch (InvocationTargetException e) {
+        } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
         }
     }
@@ -126,8 +119,8 @@ public class Jdk6 {
             Method getSystemToolClassLoaderMethod = OptionalServiceFactoryHelper.getMethod(
                     toolProviderClass, "getSystemToolClassLoader");
             // javax.tools.ToolProvider
-            ClassLoader systemToolClassLoader = (ClassLoader) OptionalServiceFactoryHelper.invoke(
-                    getSystemToolClassLoaderMethod, null);
+            ClassLoader systemToolClassLoader = (ClassLoader) OptionalServiceFactoryHelper
+                    .invokeStatic(getSystemToolClassLoaderMethod);
             return new Jdk6(addTransformerTwoArgMethod, isRetransformClassesSupportedMethod,
                     retransformClassesMethod, getFreeSpaceMethod, systemToolClassLoader);
         }

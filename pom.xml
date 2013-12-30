@@ -51,12 +51,93 @@
 
   <properties>
     <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
-    <sonar.jacoco.reportPath>${basedir}/../target/jacoco-combined.exec</sonar.jacoco.reportPath>
+    <!-- put combined jacoco results under core/target since that dir is cleaned by mvn clean -->
+    <sonar.jacoco.reportPath>
+      ${basedir}/../core/target/jacoco-combined.exec
+    </sonar.jacoco.reportPath>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty</artifactId>
+        <!-- netty 4.x requires jdk 6 -->
+        <version>3.9.0.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.7.5</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-core</artifactId>
+        <version>1.0.13</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>1.0.13</version>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.11</version>
+      </dependency>
+      <dependency>
+        <groupId>edu.washington.cs.types.checker</groupId>
+        <artifactId>checker-quals-jdk5</artifactId>
+        <version>1.7.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glowroot.shaded</groupId>
+        <artifactId>shaded-slf4j-api</artifactId>
+        <version>1.7.5-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glowroot.shaded</groupId>
+        <artifactId>shaded-guava</artifactId>
+        <version>14.0.1-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava-jdk5</artifactId>
+        <version>14.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <!-- jackson 2.2 requires jdk 6 -->
+        <version>2.1.5</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <!-- jackson 2.2 requires jdk 6 -->
+        <version>2.1.5</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+        <!-- jackson 2.2 requires jdk 6 -->
+        <version>2.1.5</version>
+      </dependency>
+      <dependency>
+        <groupId>org.easytesting</groupId>
+        <artifactId>fest-assert-core</artifactId>
+        <!-- 2.0M7 is the last version of fest-assert-core that supports jdk 5 -->
+        <version>2.0M7</version>
+      </dependency>
+      <dependency>
+        <groupId>com.ning</groupId>
+        <artifactId>async-http-client</artifactId>
+        <version>1.7.23</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <build>
-    <!-- this property is just for supporting sonar analysis of javascript files -->
-    <sourceDirectory>${source.directory}</sourceDirectory>
     <plugins>
       <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
@@ -163,6 +244,11 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.16</version>
         </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>sonar-maven-plugin</artifactId>
+          <version>2.2</version>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -259,7 +345,7 @@
             <artifactId>jacoco-maven-plugin</artifactId>
             <version>0.6.4.201312101107</version>
             <configuration>
-              <destFile>${basedir}/../target/jacoco-combined.exec</destFile>
+              <destFile>${sonar.jacoco.reportPath}</destFile>
             </configuration>
             <executions>
               <execution>
@@ -272,32 +358,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>not-sonar-javascript</id>
-      <activation>
-        <property>
-          <name>sonar.language</name>
-          <value>!js</value>
-        </property>
-      </activation>
-      <properties>
-        <source.directory>src/main/java</source.directory>
-      </properties>
-    </profile>
-    <profile>
-      <id>sonar-javascript</id>
-      <activation>
-        <property>
-          <name>sonar.language</name>
-          <value>js</value>
-        </property>
-      </activation>
-      <properties>
-        <source.directory>src/main/resources</source.directory>
-        <sonar.branch>Javascript</sonar.branch>
-        <sonar.exclusions>org/glowroot/local/ui/app/components/**</sonar.exclusions>
-      </properties>
     </profile>
   </profiles>
 </project>

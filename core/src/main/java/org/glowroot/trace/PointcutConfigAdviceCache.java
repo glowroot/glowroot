@@ -15,7 +15,6 @@
  */
 package org.glowroot.trace;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Set;
 
@@ -28,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.config.PointcutConfig;
 import org.glowroot.dynamicadvice.DynamicAdviceGenerator;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -87,18 +87,10 @@ public class PointcutConfigAdviceCache {
                 }
                 Advice advice = Advice.from(pointcut, dynamicAdviceClass, true);
                 advisors.add(advice);
-            } catch (SecurityException e) {
-                logger.warn("error creating advice for pointcut config: {}", pointcutConfig, e);
-            } catch (NoSuchMethodException e) {
-                logger.warn("error creating advice for pointcut config: {}", pointcutConfig, e);
-            } catch (IllegalArgumentException e) {
-                logger.error(e.getMessage(), e);
-            } catch (IllegalAccessException e) {
-                logger.warn("error creating advice for pointcut config: {}", pointcutConfig, e);
-            } catch (InvocationTargetException e) {
-                logger.warn("error creating advice for pointcut config: {}", pointcutConfig, e);
+            } catch (ReflectiveException e) {
+                logger.error("error creating advice for pointcut config: {}", pointcutConfig, e);
             } catch (AdviceConstructionException e) {
-                logger.warn("error creating advice for pointcut config: {}", pointcutConfig, e);
+                logger.error("error creating advice for pointcut config: {}", pointcutConfig, e);
             }
         }
         return advisors.build();

@@ -15,7 +15,6 @@
  */
 package org.glowroot.jvm;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import checkers.igj.quals.Immutable;
@@ -23,6 +22,8 @@ import checkers.nullness.quals.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Reflections;
+import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.UsedByJsonBinding;
 
 import static org.glowroot.common.Nullness.castNonNull;
@@ -79,6 +80,8 @@ public class OptionalService<T> {
 
     static class OptionalServiceFactoryHelper {
 
+        private OptionalServiceFactoryHelper() {}
+
         static Class<?> classForName(String className) throws OptionalServiceFactoryException {
             return classForName(className, OptionalServiceFactoryHelper.class.getClassLoader());
         }
@@ -96,11 +99,11 @@ public class OptionalService<T> {
                 throws OptionalServiceFactoryException {
             try {
                 return type.getMethod(methodName, parameterTypes);
+            } catch (SecurityException e) {
+                throw new OptionalServiceFactoryException(e);
             } catch (NoSuchMethodException e) {
                 throw new OptionalServiceFactoryException("Could not find method " + methodName
                         + " on class " + type.getName());
-            } catch (SecurityException e) {
-                throw new OptionalServiceFactoryException(e);
             }
         }
 
@@ -108,24 +111,30 @@ public class OptionalService<T> {
                 Class<?>... parameterTypes) throws OptionalServiceFactoryException {
             try {
                 return type.getDeclaredMethod(methodName, parameterTypes);
+            } catch (SecurityException e) {
+                throw new OptionalServiceFactoryException(e);
             } catch (NoSuchMethodException e) {
                 throw new OptionalServiceFactoryException("Could not find method " + methodName
                         + " on class " + type.getName());
-            } catch (SecurityException e) {
+            }
+        }
+
+        @Nullable
+        static Object invoke(Method method, Object obj, Object... args)
+                throws OptionalServiceFactoryException {
+            try {
+                return Reflections.invoke(method, obj, args);
+            } catch (ReflectiveException e) {
                 throw new OptionalServiceFactoryException(e);
             }
         }
 
         @Nullable
-        static Object invoke(Method method, @Nullable Object obj, Object... args)
+        static Object invokeStatic(Method method, Object... args)
                 throws OptionalServiceFactoryException {
             try {
-                return method.invoke(obj, args);
-            } catch (IllegalAccessException e) {
-                throw new OptionalServiceFactoryException(e);
-            } catch (IllegalArgumentException e) {
-                throw new OptionalServiceFactoryException(e);
-            } catch (InvocationTargetException e) {
+                return Reflections.invokeStatic(method, args);
+            } catch (ReflectiveException e) {
                 throw new OptionalServiceFactoryException(e);
             }
         }

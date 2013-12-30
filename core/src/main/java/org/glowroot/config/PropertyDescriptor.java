@@ -109,7 +109,7 @@ public abstract class PropertyDescriptor {
             return new DoublePropertyDescriptor(name, defaultValue, hidden, prompt,
                     description);
         }
-        throw new IllegalStateException("Unexpected PropertyType: " + type);
+        throw new AssertionError("Unknown PropertyType enum: " + type);
     }
 
     @JsonCreator

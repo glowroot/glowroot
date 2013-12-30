@@ -43,6 +43,8 @@ import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
+import org.glowroot.common.Reflections;
+import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.UsedByGeneratedBytecode;
 import org.glowroot.weaving.Advice.AdviceParameter;
 import org.glowroot.weaving.Advice.ParameterKind;
@@ -620,6 +622,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 break;
             default:
                 visitInsn(ACONST_NULL);
+                break;
         }
     }
 
@@ -653,13 +656,13 @@ class WeavingMethodVisitor extends AdviceAdapter {
         private static final Method GET_CAUSE_METHOD;
         static {
             try {
-                STATIC_FACTORY_METHOD = Method.getMethod(MarkerException.class.getDeclaredMethod(
-                        "from", Throwable.class));
-                GET_CAUSE_METHOD = Method.getMethod(Throwable.class.getMethod("getCause"));
-            } catch (SecurityException e) {
-                throw new IllegalStateException("Unrecoverable error", e);
-            } catch (NoSuchMethodException e) {
-                throw new IllegalStateException("Unrecoverable error", e);
+                STATIC_FACTORY_METHOD = Method.getMethod(Reflections.getMethod(
+                        MarkerException.class, "from", Throwable.class));
+                GET_CAUSE_METHOD =
+                        Method.getMethod(Reflections.getMethod(Throwable.class, "getCause"));
+            } catch (ReflectiveException e) {
+                // unrecoverable error
+                throw new AssertionError(e);
             }
         }
         // static methods are easier to call via bytecode than constructors

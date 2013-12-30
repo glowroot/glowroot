@@ -24,8 +24,10 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -39,6 +41,7 @@ import org.glowroot.api.Optional;
 import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.config.PropertyDescriptor.BooleanPropertyDescriptor;
 import org.glowroot.config.PropertyDescriptor.DoublePropertyDescriptor;
+import org.glowroot.config.PropertyDescriptor.PropertyType;
 import org.glowroot.config.PropertyDescriptor.StringPropertyDescriptor;
 import org.glowroot.markers.OnlyUsedByTests;
 
@@ -136,7 +139,8 @@ public class PluginConfig {
                 continue;
             }
             String propertyName = propertyDescriptor.getName();
-            switch (propertyDescriptor.getType()) {
+            PropertyType propertyType = propertyDescriptor.getType();
+            switch (propertyType) {
                 case STRING:
                     properties.put(propertyName, getStringProperty(propertyName));
                     break;
@@ -146,6 +150,8 @@ public class PluginConfig {
                 case DOUBLE:
                     properties.put(propertyName, getDoubleProperty(propertyName));
                     break;
+                default:
+                    throw new AssertionError("Unknown PropertyType enum: " + propertyType);
             }
         }
         return properties;
@@ -213,7 +219,7 @@ public class PluginConfig {
             return this;
         }
 
-        public void overlay(@ReadOnly ObjectNode configNode) {
+        public void overlay(@ReadOnly ObjectNode configNode) throws JsonMappingException {
             overlay(configNode, false);
         }
 
@@ -224,7 +230,8 @@ public class PluginConfig {
                     ImmutableMap.copyOf(doubleProperties), version);
         }
 
-        void overlay(@ReadOnly ObjectNode configNode, boolean ignoreWarnings) {
+        void overlay(@ReadOnly ObjectNode configNode, boolean ignoreWarnings)
+                throws JsonMappingException {
             JsonNode enabledElement = configNode.get("enabled");
             if (enabledElement != null) {
                 enabled(enabledElement.asBoolean());
@@ -248,10 +255,10 @@ public class PluginConfig {
                     } else if (value.isTextual()) {
                         setProperty(name, value.asText(), ignoreWarnings);
                     } else {
-                        throw new IllegalStateException("Unexpected json value: " + value);
+                        throw new JsonMappingException("Unexpected json value: " + value);
                     }
                 } else {
-                    throw new IllegalStateException("Unexpected json node: " + value);
+                    throw new JsonMappingException("Unexpected json node: " + value);
                 }
             }
         }
@@ -282,7 +289,8 @@ public class PluginConfig {
                 }
                 return this;
             }
-            switch (propertyDescriptor.getType()) {
+            PropertyType propertyType = propertyDescriptor.getType();
+            switch (propertyType) {
                 case STRING:
                     setStringProperty(name, value, ignoreWarnings);
                     return this;
@@ -292,8 +300,9 @@ public class PluginConfig {
                 case DOUBLE:
                     setDoubleProperty(name, value, ignoreWarnings);
                     return this;
+                default:
+                    throw new AssertionError("Unknown PropertyType enum: " + propertyType);
             }
-            return this;
         }
 
         @Nullable
@@ -353,22 +362,22 @@ public class PluginConfig {
             for (Entry<String, String> property : stringProperties.entrySet()) {
                 String name = property.getKey();
                 String value = property.getValue();
-                hasher.putString(name);
+                hasher.putString(name, Charsets.UTF_8);
                 hasher.putInt(name.length());
-                hasher.putString(value);
+                hasher.putString(value, Charsets.UTF_8);
                 hasher.putInt(value.length());
             }
             for (Entry<String, Boolean> property : booleanProperties.entrySet()) {
                 String name = property.getKey();
                 Boolean value = property.getValue();
-                hasher.putString(name);
+                hasher.putString(name, Charsets.UTF_8);
                 hasher.putInt(name.length());
                 hasher.putBoolean(value);
             }
             for (Entry<String, Optional<Double>> property : doubleProperties.entrySet()) {
                 String name = property.getKey();
                 Double value = property.getValue().orNull();
-                hasher.putString(name);
+                hasher.putString(name, Charsets.UTF_8);
                 hasher.putInt(name.length());
                 if (value != null) {
                     hasher.putDouble(value);

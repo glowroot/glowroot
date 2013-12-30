@@ -15,54 +15,38 @@
  */
 package org.glowroot.local.store;
 
-import java.util.concurrent.ScheduledExecutorService;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.glowroot.common.Clock;
+import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GeneralConfig;
 import org.glowroot.markers.Singleton;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
-class SnapshotReaper implements Runnable {
+class ReaperScheduledRunnable extends ScheduledRunnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(SnapshotReaper.class);
-    private static final int CHECK_INTERVAL_MINUTES = 10;
     private static final long MILLISECONDS_PER_HOUR = 60L * 60L * 1000L;
 
     private final ConfigService configService;
     private final SnapshotDao snapshotDao;
     private final Clock clock;
 
-    SnapshotReaper(ConfigService configService, SnapshotDao snapshotDao, Clock clock) {
+    ReaperScheduledRunnable(ConfigService configService, SnapshotDao snapshotDao, Clock clock) {
         this.configService = configService;
         this.snapshotDao = snapshotDao;
         this.clock = clock;
     }
 
-    void start(ScheduledExecutorService scheduledExecutor) {
-        scheduledExecutor.scheduleAtFixedRate(this, 0, CHECK_INTERVAL_MINUTES * 60, SECONDS);
-    }
-
-    public void run() {
-        try {
-            int snapshotExpirationHours = configService.getStorageConfig()
-                    .getSnapshotExpirationHours();
-            if (snapshotExpirationHours != GeneralConfig.SNAPSHOT_EXPIRATION_DISABLED) {
-                snapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis()
-                        - snapshotExpirationHours * MILLISECONDS_PER_HOUR);
-            }
-        } catch (Throwable t) {
-            // log and terminate successfully
-            logger.error(t.getMessage(), t);
+    @Override
+    protected void runInternal() {
+        int snapshotExpirationHours = configService.getStorageConfig()
+                .getSnapshotExpirationHours();
+        if (snapshotExpirationHours != GeneralConfig.SNAPSHOT_EXPIRATION_DISABLED) {
+            snapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis()
+                    - snapshotExpirationHours * MILLISECONDS_PER_HOUR);
         }
     }
 }

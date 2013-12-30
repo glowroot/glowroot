@@ -157,7 +157,7 @@ class JavaagentHttpClient {
             // zero-length responses are never compressed
             return false;
         }
-        String contentEncoding = response.getHeader("X-Original-Content-Encoding");
+        String contentEncoding = response.getHeader("Glowroot-Original-Encoding");
         return !"gzip".equals(contentEncoding);
     }
 
@@ -185,8 +185,8 @@ class JavaagentHttpClient {
     // and saves the original Content-Encoding header into another http header so it can be used
     // later to verify that the response was compressed
     private static void addSaveTheEncodingHandlerToNettyPipeline(AsyncHttpClient asyncHttpClient) {
-        // the next release of AsyncHttpClient will include a hook to modify the pipeline without
-        // having to resort to this reflection hack, see
+        // the next major release of AsyncHttpClient (2.0) will include a hook to modify the
+        // pipeline without having to resort to this reflection hack, see
         // https://github.com/AsyncHttpClient/async-http-client/pull/205
         ClientBootstrap plainBootstrap = Reflection.field("plainBootstrap")
                 .ofType(ClientBootstrap.class).in(asyncHttpClient.getProvider()).get();
@@ -208,7 +208,7 @@ class JavaagentHttpClient {
                 HttpMessage m = (HttpMessage) msg;
                 String contentEncoding = m.headers().get(HttpHeaders.Names.CONTENT_ENCODING);
                 if (contentEncoding != null) {
-                    m.headers().set("X-Original-Content-Encoding", contentEncoding);
+                    m.headers().set("Glowroot-Original-Encoding", contentEncoding);
                 }
             }
             ctx.sendUpstream(e);

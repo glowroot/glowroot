@@ -93,19 +93,18 @@ public class ParsedTypePlanBTest {
                 throws ClassNotFoundException {
 
             if (name.equals(Z.class.getName())) {
-                return load(name);
+                try {
+                    return load(name);
+                } catch (IOException e) {
+                    throw new ClassNotFoundException("Error loading class", e);
+                }
             } else {
                 return DelegatingClassLoader.class.getClassLoader().loadClass(name);
             }
         }
-        protected Class<?> load(String name) throws ClassFormatError {
-            byte[] bytes;
-            try {
-                bytes = Resources.toByteArray(Resources.getResource(TypeNames.toInternal(name)
-                        + ".class"));
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
+        protected Class<?> load(String name) throws IOException {
+            byte[] bytes = Resources.toByteArray(Resources.getResource(TypeNames.toInternal(name)
+                    + ".class"));
             return super.defineClass(name, bytes, 0, bytes.length);
         }
         @Override
@@ -126,7 +125,11 @@ public class ParsedTypePlanBTest {
                 throws ClassNotFoundException {
 
             if (name.equals(Y.class.getName()) || name.equals(Z.class.getName())) {
-                return load(name);
+                try {
+                    return load(name);
+                } catch (IOException e) {
+                    throw new ClassNotFoundException("Error loading class", e);
+                }
             } else {
                 return DelegatingClassLoader.class.getClassLoader().loadClass(name);
             }

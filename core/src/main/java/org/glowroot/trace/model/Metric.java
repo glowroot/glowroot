@@ -17,7 +17,6 @@ package org.glowroot.trace.model;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
@@ -56,7 +55,7 @@ public class Metric implements MetricTimer {
     }
 
     // safe to be called from another thread
-    public void writeValue(JsonGenerator jg) throws JsonGenerationException, IOException {
+    public void writeValue(JsonGenerator jg) throws IOException {
         jg.writeStartObject();
         jg.writeStringField("name", name);
 

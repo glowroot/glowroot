@@ -38,8 +38,14 @@ class Version {
 
     private Version() {}
 
-    static String getVersion() throws IOException {
-        Manifest manifest = getManifest();
+    static String getVersion() {
+        Manifest manifest;
+        try {
+            manifest = getManifest();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+            return "unknown";
+        }
         if (manifest == null) {
             // manifest is missing when running ui testing and integration tests from inside IDE
             // so only log this at debug level
@@ -84,7 +90,7 @@ class Version {
         if (!externalForm.startsWith("jar:")) {
             return null;
         }
-        URL manifestURL = new URL(externalForm.substring(0, externalForm.lastIndexOf("!")) +
+        URL manifestURL = new URL(externalForm.substring(0, externalForm.lastIndexOf('!')) +
                 "!/META-INF/MANIFEST.MF");
         InputStream manifestIn = manifestURL.openStream();
         try {

@@ -30,7 +30,7 @@ public class TempDirs {
     private TempDirs() {}
 
     // copied from guava's Files.createTempDir, with added prefix
-    public static File createTempDir(String prefix) {
+    public static File createTempDir(String prefix) throws IOException {
         final int tempDirAttempts = 10000;
         File baseDir = new File(System.getProperty("java.io.tmpdir"));
         String baseName = prefix + "-" + System.currentTimeMillis() + "-";
@@ -40,7 +40,7 @@ public class TempDirs {
                 return tempDir;
             }
         }
-        throw new IllegalStateException("Failed to create directory within " + tempDirAttempts
+        throw new IOException("Failed to create directory within " + tempDirAttempts
                 + " attempts (tried " + baseName + "0 to " + baseName + (tempDirAttempts - 1)
                 + ')');
     }

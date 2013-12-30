@@ -17,7 +17,6 @@ package org.glowroot.container.local;
 
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.collect.Lists;
@@ -181,9 +180,7 @@ class LocalConfigService implements ConfigService {
         if (coreConfig.getPort() != updatedCoreConfig.getPort()) {
             try {
                 localUiModule.changeHttpServerPort(updatedCoreConfig.getPort());
-            } catch (InterruptedException e) {
-                throw new PortChangeFailedException();
-            } catch (ExecutionException e) {
+            } catch (org.glowroot.local.ui.HttpServer.PortChangeFailedException e) {
                 throw new PortChangeFailedException();
             }
         }
@@ -258,8 +255,8 @@ class LocalConfigService implements ConfigService {
     }
 
     public void reweavePointcutConfigs() throws Exception {
-        throw new IllegalStateException(
-                "Retransforming classes only works inside javaagent container");
+        throw new UnsupportedOperationException("Retransforming classes only works inside"
+                + " javaagent container");
     }
 
     public void compactData() throws Exception {

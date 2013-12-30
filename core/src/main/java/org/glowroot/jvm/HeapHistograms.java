@@ -19,14 +19,17 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Splitter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Reflections;
+import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactory;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactoryHelper;
@@ -37,6 +40,8 @@ import org.glowroot.jvm.OptionalService.OptionalServiceFactoryHelper;
  */
 @Immutable
 public class HeapHistograms {
+
+    private static final Logger logger = LoggerFactory.getLogger(HeapHistograms.class);
 
     private final Method attachMethod;
     private final Method heapHistoMethod;
@@ -49,59 +54,99 @@ public class HeapHistograms {
         this.detachMethod = detachMethod;
     }
 
-    public String heapHistogramJson() throws SecurityException, NoSuchMethodException,
-            IllegalAccessException, InvocationTargetException, IOException {
+    public String heapHistogramJson() throws HeapHistogramException {
         InputStream in = heapHisto();
-        if (in == null) {
-            // TODO change this exception type when consolidating the above throws clause
-            throw new IOException("Method heapHisto() returned null");
-        }
-        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        IOException exception = null;
         try {
-            // skip over header lines
-            String line = reader.readLine();
-            while (line != null && !line.contains("--------")) {
-                line = reader.readLine();
-            }
-            if (line == null) {
-                throw new IllegalStateException("Unexpected heapHisto output");
-            }
-            Splitter splitter = Splitter.on(' ').omitEmptyStrings();
-            HeapHistogram heapHistogram = new HeapHistogram();
-            long totalBytes = 0;
-            long totalCount = 0;
-            while ((line = reader.readLine()) != null) {
-                Iterator<String> parts = splitter.split(line).iterator();
-                String num = parts.next();
-                if (num.equals("Total")) {
-                    break;
-                }
-                long count = Long.parseLong(parts.next());
-                long bytes = Long.parseLong(parts.next());
-                String className = parts.next();
-                if (className.charAt(0) != '<') {
-                    // skipping PermGen objects
-                    heapHistogram.addItem(className, bytes, count);
-                    totalBytes += bytes;
-                    totalCount += count;
-                }
-            }
-            heapHistogram.setTotalBytes(totalBytes);
-            heapHistogram.setTotalCount(totalCount);
-            return heapHistogram.toJson();
+            return process(reader);
+        } catch (IOException e) {
+            exception = e;
+            throw new HeapHistogramException(e);
         } finally {
-            reader.close();
+            try {
+                reader.close();
+            } catch (IOException e) {
+                if (exception == null) {
+                    // don't re-throw since it could suppress a non-IOException thrown above
+                    // but at least log it in this case
+                    // (ideally would use JDK7 try-with-resources which handles these corner cases)
+                    logger.error(e.getMessage(), e);
+                }
+            }
         }
     }
 
-    @Nullable
-    private InputStream heapHisto() throws SecurityException, NoSuchMethodException,
-            IllegalAccessException, InvocationTargetException {
-        Object hotSpotVirtualMachine = attachMethod.invoke(null, ProcessId.getPid());
-        InputStream in = (InputStream) heapHistoMethod.invoke(hotSpotVirtualMachine,
-                new Object[] {new Object[0]});
-        detachMethod.invoke(hotSpotVirtualMachine);
+    private String process(BufferedReader reader) throws IOException {
+        // skip over header lines
+        String line = reader.readLine();
+        while (line != null && !line.contains("--------")) {
+            line = reader.readLine();
+        }
+        if (line == null) {
+            throw new IOException("Unexpected heapHisto output");
+        }
+        Splitter splitter = Splitter.on(' ').omitEmptyStrings();
+        HeapHistogram heapHistogram = new HeapHistogram();
+        long totalBytes = 0;
+        long totalCount = 0;
+        while ((line = reader.readLine()) != null) {
+            Iterator<String> parts = splitter.split(line).iterator();
+            String num = parts.next();
+            if (num.equals("Total")) {
+                break;
+            }
+            long count = Long.parseLong(parts.next());
+            long bytes = Long.parseLong(parts.next());
+            String className = parts.next();
+            if (className.charAt(0) != '<') {
+                // skipping PermGen objects
+                heapHistogram.addItem(className, bytes, count);
+                totalBytes += bytes;
+                totalCount += count;
+            }
+        }
+        heapHistogram.setTotalBytes(totalBytes);
+        heapHistogram.setTotalCount(totalCount);
+        return heapHistogram.toJson();
+    }
+
+    private InputStream heapHisto() throws HeapHistogramException {
+        Object hotSpotVirtualMachine;
+        try {
+            hotSpotVirtualMachine = Reflections.invokeStatic(attachMethod, ProcessId.getPid());
+        } catch (ReflectiveException e) {
+            throw new HeapHistogramException(e);
+        }
+        if (hotSpotVirtualMachine == null) {
+            throw new HeapHistogramException("Method attach() returned null");
+        }
+        InputStream in;
+        try {
+            in = (InputStream) Reflections.invoke(heapHistoMethod, hotSpotVirtualMachine,
+                    new Object[] {new Object[0]});
+        } catch (ReflectiveException e) {
+            throw new HeapHistogramException(e);
+        }
+        try {
+            Reflections.invoke(detachMethod, hotSpotVirtualMachine);
+        } catch (ReflectiveException e) {
+            throw new HeapHistogramException(e);
+        }
+        if (in == null) {
+            throw new HeapHistogramException("Method heapHisto() returned null");
+        }
         return in;
+    }
+
+    @SuppressWarnings("serial")
+    public static class HeapHistogramException extends Exception {
+        private HeapHistogramException(Exception cause) {
+            super(cause);
+        }
+        private HeapHistogramException(String message) {
+            super(message);
+        }
     }
 
     static class Factory implements OptionalServiceFactory<HeapHistograms> {

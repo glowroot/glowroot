@@ -248,7 +248,7 @@ class TracePointJsonService {
                     return traceGrouping.toUpperCase(Locale.ENGLISH)
                             .contains(grouping.toUpperCase(Locale.ENGLISH));
                 default:
-                    throw new IllegalStateException("Unexpected grouping comparator: "
+                    throw new AssertionError("Unknown StringComparator enum: "
                             + groupingComparator);
             }
         }
@@ -275,8 +275,7 @@ class TracePointJsonService {
                     return traceUserId.toUpperCase(Locale.ENGLISH)
                             .contains(userId.toUpperCase(Locale.ENGLISH));
                 default:
-                    throw new IllegalStateException("Unexpected user id comparator: "
-                            + userIdComparator);
+                    throw new AssertionError("Unknown StringComparator enum: " + userIdComparator);
             }
         }
 

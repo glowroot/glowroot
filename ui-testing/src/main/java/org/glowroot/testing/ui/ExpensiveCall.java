@@ -127,6 +127,7 @@ public class ExpensiveCall {
         Executors.newSingleThreadExecutor().execute(new Runnable() {
             public void run() {
                 try {
+                    // this loop is used to block threads executing expensive() below
                     while (true) {
                         synchronized (lock) {
                             Thread.sleep(random.nextInt(10));

@@ -18,7 +18,6 @@ package org.glowroot.container.local;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
@@ -50,7 +49,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 // even though this is thread safe, it is not useful for running tests in parallel since
 // getLastTrace() and others are not scoped to a particular test
 @ThreadSafe
-class LocalTraceService implements TraceService {
+class LocalTraceService extends TraceService {
 
     @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
@@ -70,38 +69,17 @@ class LocalTraceService implements TraceService {
         ticker = Ticker.systemTicker();
     }
 
-    @Nullable
-    public Trace getLastTrace() throws Exception {
-        return getLastTrace(false);
-    }
-
-    @Nullable
-    public Trace getLastTraceSummary() throws Exception {
-        return getLastTrace(true);
-    }
-
-    // this method blocks for an active trace to be available because
-    // sometimes need to give container enough time to start up and for the trace to get stuck
-    @Nullable
-    public Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception {
-        return getActiveTrace(timeout, unit, false);
-    }
-
-    // this method blocks for an active trace to be available because
-    // sometimes need to give container enough time to start up and for the trace to get stuck
-    @Nullable
-    public Trace getActiveTraceSummary(int timeout, TimeUnit unit) throws Exception {
-        return getActiveTrace(timeout, unit, true);
-    }
-
+    @Override
     public int getNumPendingCompleteTraces() {
         return traceCollector.getPendingCompleteTraces().size();
     }
 
+    @Override
     public long getNumStoredSnapshots() {
         return snapshotDao.count();
     }
 
+    @Override
     public InputStream getTraceExport(String id) throws Exception {
         return new ByteArrayInputStream(traceExportHttpService.getExportBytes(id));
     }
@@ -123,8 +101,9 @@ class LocalTraceService implements TraceService {
         snapshotDao.deleteAllSnapshots();
     }
 
+    @Override
     @Nullable
-    private Trace getLastTrace(boolean summary) throws Exception {
+    protected Trace getLastTrace(boolean summary) throws Exception {
         Snapshot snapshot = snapshotDao.getLastSnapshot(summary);
         if (snapshot == null) {
             return null;
@@ -133,25 +112,9 @@ class LocalTraceService implements TraceService {
                 SnapshotWriter.toString(snapshot, false, summary), Trace.class);
     }
 
+    @Override
     @Nullable
-    private Trace getActiveTrace(int timeout, TimeUnit unit, boolean summary) throws Exception {
-        Stopwatch stopwatch = new Stopwatch().start();
-        Trace trace = null;
-        // try at least once (e.g. in case timeoutMillis == 0)
-        boolean first = true;
-        while (first || stopwatch.elapsed(unit) < timeout) {
-            trace = getActiveTrace(summary);
-            if (trace != null) {
-                break;
-            }
-            Thread.sleep(20);
-            first = false;
-        }
-        return trace;
-    }
-
-    @Nullable
-    private Trace getActiveTrace(boolean summary) throws Exception {
+    protected Trace getActiveTrace(boolean summary) throws Exception {
         List<org.glowroot.trace.model.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
         if (traces.isEmpty()) {
             return null;

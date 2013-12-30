@@ -18,14 +18,11 @@ package org.glowroot.jvm;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 
-import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.JMRuntimeException;
-import javax.management.MBeanException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 
 import checkers.igj.quals.Immutable;
@@ -50,22 +47,19 @@ public class HotSpotDiagnostics {
         this.objectName = objectName;
     }
 
-    public void dumpHeap(String path) throws InstanceNotFoundException, ReflectionException,
-            MBeanException {
+    public void dumpHeap(String path) throws JMException {
         ManagementFactory.getPlatformMBeanServer().invoke(objectName, "dumpHeap",
                 new Object[] {path, false}, new String[] {"java.lang.String", "boolean"});
     }
 
-    public VMOption getVMOption(String name) throws InstanceNotFoundException,
-            ReflectionException, MBeanException {
+    public VMOption getVMOption(String name) throws JMException {
         CompositeData wrappedOption = (CompositeData) ManagementFactory.getPlatformMBeanServer()
                 .invoke(objectName, "getVMOption", new Object[] {name},
                         new String[] {"java.lang.String"});
         return new VMOption(wrappedOption);
     }
 
-    public List<VMOption> getDiagnosticOptions() throws AttributeNotFoundException,
-            InstanceNotFoundException, MBeanException, ReflectionException {
+    public List<VMOption> getDiagnosticOptions() throws JMException {
         CompositeData[] wrappedOptions =
                 (CompositeData[]) ManagementFactory.getPlatformMBeanServer()
                         .getAttribute(objectName, "DiagnosticOptions");
@@ -76,8 +70,7 @@ public class HotSpotDiagnostics {
         return vmoptions;
     }
 
-    public void setVMOption(String name, String value) throws InstanceNotFoundException,
-            ReflectionException, MBeanException {
+    public void setVMOption(String name, String value) throws JMException {
         ManagementFactory.getPlatformMBeanServer().invoke(objectName, "setVMOption",
                 new Object[] {name, value}, new String[] {"java.lang.String", "java.lang.String"});
     }

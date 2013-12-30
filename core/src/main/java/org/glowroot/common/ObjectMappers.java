@@ -60,8 +60,7 @@ public class ObjectMappers {
     }
 
     public static <T extends /*@Nullable*/Object> T readRequiredValue(
-            @ReadOnly ObjectMapper mapper, String content, Class<T> type) throws IOException,
-            JsonProcessingException {
+            @ReadOnly ObjectMapper mapper, String content, Class<T> type) throws IOException {
         T value = mapper.readValue(content, type);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
@@ -111,7 +110,7 @@ public class ObjectMappers {
     private static class EnumSerializer extends JsonSerializer<Object> {
         @Override
         public void serialize(@Nullable Object value, JsonGenerator jgen,
-                SerializerProvider provider) throws JsonProcessingException, IOException {
+                SerializerProvider provider) throws IOException {
             if (value == null) {
                 jgen.writeNull();
             } else if (value instanceof Enum) {
@@ -151,8 +150,7 @@ public class ObjectMappers {
 
         @Override
         @Nullable
-        public Enum<?> deserialize(JsonParser jp, DeserializationContext ctxt)
-                throws JsonProcessingException, IOException {
+        public Enum<?> deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
             String text = jp.getText();
             Enum<?> constant = enumMap.get(text);
             if (constant == null) {

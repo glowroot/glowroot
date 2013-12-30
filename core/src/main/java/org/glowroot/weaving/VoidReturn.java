@@ -34,7 +34,8 @@ public class VoidReturn implements OptionalReturn {
     private VoidReturn() {}
 
     public Object getValue() {
-        throw new IllegalStateException("Value is absent");
+        throw new IllegalStateException("Cannot retrieve value from VoidReturn,"
+                + " check isVoid() first");
     }
 
     public boolean isVoid() {

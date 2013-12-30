@@ -16,12 +16,13 @@
 package org.glowroot.jvm;
 
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Reflections;
+import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactory;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
@@ -53,7 +54,7 @@ public class ThreadAllocatedBytes {
             return -1;
         }
         try {
-            Long threadAllocatedBytes = (Long) getThreadAllocatedBytesMethod.invoke(
+            Long threadAllocatedBytes = (Long) Reflections.invoke(getThreadAllocatedBytesMethod,
                     ManagementFactory.getThreadMXBean(), threadId);
             if (threadAllocatedBytes == null) {
                 logger.error("method unexpectedly returned null:"
@@ -62,15 +63,7 @@ public class ThreadAllocatedBytes {
                 return -1;
             }
             return threadAllocatedBytes;
-        } catch (IllegalArgumentException e) {
-            logger.error(e.getMessage(), e);
-            disabledDueToError = true;
-            return -1;
-        } catch (IllegalAccessException e) {
-            logger.error(e.getMessage(), e);
-            disabledDueToError = true;
-            return -1;
-        } catch (InvocationTargetException e) {
+        } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
             disabledDueToError = true;
             return -1;
@@ -91,11 +84,9 @@ public class ThreadAllocatedBytes {
     private static boolean isEnabled(Class<?> sunThreadMXBeanClass) {
         Method isEnabledMethod;
         try {
-            isEnabledMethod = sunThreadMXBeanClass.getMethod("isThreadAllocatedMemoryEnabled");
-        } catch (NoSuchMethodException e) {
-            logger.error(e.getMessage(), e);
-            return false;
-        } catch (SecurityException e) {
+            isEnabledMethod = Reflections.getMethod(sunThreadMXBeanClass,
+                    "isThreadAllocatedMemoryEnabled");
+        } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
             return false;
         }

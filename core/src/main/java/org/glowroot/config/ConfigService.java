@@ -378,8 +378,7 @@ public class ConfigService {
             config = new ConfigMapper(pluginDescriptorCache.getPluginDescriptors())
                     .readValue(content);
         } catch (JsonProcessingException e) {
-            logger.warn("error in config file {}: {}", configFile.getAbsolutePath(),
-                    e.getMessage());
+            logger.warn("error processing config file: {}", configFile.getAbsolutePath(), e);
             File backupFile = new File(configFile.getParentFile(), configFile.getName()
                     + ".invalid-orig");
             config = Config.getDefault(pluginDescriptorCache.getPluginDescriptors());

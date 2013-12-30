@@ -171,8 +171,9 @@ class AdviceMatcher {
                 return !Modifier.isStatic(modifiers);
             case ABSTRACT:
                 return Modifier.isAbstract(modifiers);
+            default:
+                return false;
         }
-        return false;
     }
 
     @Override

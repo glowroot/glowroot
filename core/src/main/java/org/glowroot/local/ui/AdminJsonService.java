@@ -17,7 +17,6 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
-import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
@@ -33,6 +32,7 @@ import org.glowroot.collector.TraceCollectorImpl;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PointcutConfig;
 import org.glowroot.jvm.Jdk6;
+import org.glowroot.jvm.OptionalService;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -59,15 +59,14 @@ class AdminJsonService {
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final Instrumentation instrumentation;
-    @Nullable
-    private final Jdk6 jdk6;
+    private final OptionalService<Jdk6> jdk6;
     private final TraceCollectorImpl traceCollector;
     private final DataSource dataSource;
     private final TraceRegistry traceRegistry;
 
     AdminJsonService(SnapshotDao snapshotDao, ConfigService configService,
             PointcutConfigAdviceCache pointcutConfigAdviceCache, ParsedTypeCache parsedTypeCache,
-            @Nullable Instrumentation instrumentation, @Nullable Jdk6 jdk6,
+            @Nullable Instrumentation instrumentation, OptionalService<Jdk6> jdk6,
             TraceCollectorImpl traceCollector, DataSource dataSource, TraceRegistry traceRegistry) {
         this.snapshotDao = snapshotDao;
         this.configService = configService;
@@ -87,16 +86,13 @@ class AdminJsonService {
     }
 
     @POST("/backend/admin/pointcuts/reweave")
-    void reweavePointcutConfigs() throws IllegalArgumentException, IllegalAccessException,
-            InvocationTargetException {
+    void reweavePointcutConfigs() {
         if (instrumentation == null) {
             logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
             return;
         }
-        if (jdk6 == null) {
-            throw new IllegalStateException("JDK6 is not available");
-        }
-        if (!jdk6.isRetransformClassesSupported(instrumentation)) {
+        Jdk6 service = OptionalJsonServices.validateAvailability(jdk6);
+        if (!service.isRetransformClassesSupported(instrumentation)) {
             logger.warn("retransformClasses is not supported");
             return;
         }
@@ -112,7 +108,7 @@ class AdminJsonService {
         if (classes.isEmpty()) {
             return;
         }
-        jdk6.retransformClasses(instrumentation, classes);
+        service.retransformClasses(instrumentation, classes);
     }
 
     @POST("/backend/admin/data/compact")

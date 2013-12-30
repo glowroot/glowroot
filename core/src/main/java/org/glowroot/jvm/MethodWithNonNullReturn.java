@@ -15,12 +15,13 @@
  */
 package org.glowroot.jvm;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import checkers.nullness.quals.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.common.Reflections;
+import org.glowroot.common.Reflections.ReflectiveException;
 
 /**
  * @author Trask Stalnaker
@@ -38,21 +39,15 @@ class MethodWithNonNullReturn {
         this.fallbackReturnValue = fallbackReturnValue;
     }
 
-    Object invoke(@Nullable Object obj, Object... args) {
+    Object invoke(Object obj, Object... args) {
         try {
-            Object returnValue = method.invoke(obj, args);
+            Object returnValue = Reflections.invoke(method, obj, args);
             if (returnValue == null) {
                 logger.error("method unexpectedly returned null: {}", method);
                 return fallbackReturnValue;
             }
             return returnValue;
-        } catch (IllegalAccessException e) {
-            logger.error(e.getMessage(), e);
-            return fallbackReturnValue;
-        } catch (IllegalArgumentException e) {
-            logger.error(e.getMessage(), e);
-            return fallbackReturnValue;
-        } catch (InvocationTargetException e) {
+        } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
             return fallbackReturnValue;
         }

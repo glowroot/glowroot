@@ -78,7 +78,7 @@ public class PluginDescriptorCache {
                     theAdvisors.addAll(getAdvisors(aspectClass));
                     theMixinTypes.addAll(getMixinTypes(aspectClass));
                 } catch (ClassNotFoundException e) {
-                    logger.warn("aspect not found: {}", aspect);
+                    logger.warn("aspect not found: {}", aspect, e);
                 }
             }
         }
@@ -129,9 +129,7 @@ public class PluginDescriptorCache {
                         ObjectMappers.readRequiredValue(mapper, content, PluginDescriptor.class);
                 plugins.add(pluginDescriptor);
             } catch (JsonProcessingException e) {
-                // no need to log stack trace
-                logger.error("error parsing plugin descriptor {}: {}", url.toExternalForm(),
-                        e.getMessage());
+                logger.error("error parsing plugin descriptor: {}", url.toExternalForm(), e);
             }
         }
         return plugins;
@@ -148,9 +146,7 @@ public class PluginDescriptorCache {
                     ObjectMappers.readRequiredValue(mapper, content, PackageDescriptor.class);
             return packageDescriptor.getPlugins();
         } catch (JsonProcessingException e) {
-            // no need to log stack trace
-            logger.error("error parsing package descriptor {}: {}", url.toExternalForm(),
-                    e.getMessage());
+            logger.error("error parsing package descriptor: {}", url.toExternalForm(), e);
             return ImmutableList.of();
         }
     }
@@ -163,8 +159,7 @@ public class PluginDescriptorCache {
                 try {
                     advisors.add(Advice.from(pointcut, memberClass, false));
                 } catch (AdviceConstructionException e) {
-                    logger.error("error creating advice {}: {}", memberClass.getName(),
-                            e.getMessage());
+                    logger.error("error creating advice: {}", memberClass.getName(), e);
                 }
             }
         }

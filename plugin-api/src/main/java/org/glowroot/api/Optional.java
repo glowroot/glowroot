@@ -123,7 +123,8 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
         private static final Absent INSTANCE = new Absent();
         @Override
         public Object get() {
-            throw new IllegalStateException("Value is absent");
+            throw new IllegalStateException("Cannot retrieve value from Absent,"
+                    + " check isPresent() first");
         }
         @Override
         public boolean isPresent() {

@@ -54,7 +54,6 @@ public class GlowrootModule {
     private static final Logger logger = LoggerFactory.getLogger(GlowrootModule.class);
 
     private final ScheduledExecutorService scheduledExecutor;
-    private final JvmModule jvmModule;
     private final ConfigModule configModule;
     private final StorageModule storageModule;
     private final CollectorModule collectorModule;
@@ -62,8 +61,8 @@ public class GlowrootModule {
     private final LocalUiModule uiModule;
 
     GlowrootModule(@ReadOnly Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, String version) throws SQLException,
-            IOException {
+            @Nullable Instrumentation instrumentation, String version)
+            throws StartupFailedException {
         Ticker ticker = Ticker.systemTicker();
         Clock clock = Clock.systemClock();
         File dataDir = DataDir.getDataDir(properties);
@@ -71,10 +70,16 @@ public class GlowrootModule {
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
                 .setNameFormat("Glowroot-Background-%d").build();
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
-        jvmModule = new JvmModule();
+        JvmModule jvmModule = new JvmModule();
         configModule = new ConfigModule(dataDir);
-        storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
-                scheduledExecutor);
+        try {
+            storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
+                    scheduledExecutor);
+        } catch (SQLException e) {
+            throw new StartupFailedException(e);
+        } catch (IOException e) {
+            throw new StartupFailedException(e);
+        }
         collectorModule = new CollectorModule(clock, ticker, configModule,
                 storageModule.getSnapshotRepository(), storageModule.getAggregateRepository(),
                 scheduledExecutor);
@@ -122,5 +127,13 @@ public class GlowrootModule {
         traceModule.close();
         storageModule.close();
         scheduledExecutor.shutdownNow();
+    }
+
+    @VisibleForTesting
+    @SuppressWarnings("serial")
+    public static class StartupFailedException extends Exception {
+        public StartupFailedException(Throwable cause) {
+            super(cause);
+        }
     }
 }

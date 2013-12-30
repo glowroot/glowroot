@@ -17,10 +17,10 @@ package org.glowroot.trace;
 
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 
 import com.google.common.base.Ticker;
 
+import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.FineProfilingConfig;
 import org.glowroot.config.UserOverridesConfig;
@@ -78,11 +78,12 @@ class FineProfileScheduler {
         // on total (e.g. 100ms interval, 1 second total should result in exactly 10 stack traces)
         long endTick = trace.getStartTick() + SECONDS.toNanos(config.getTotalSeconds())
                 + MILLISECONDS.toNanos(config.getIntervalMillis()) / 2;
-        CollectStackCommand command = new CollectStackCommand(trace, endTick, true, ticker);
+        ScheduledRunnable profilerScheduledRunnable =
+                new ProfilerScheduledRunnable(trace, endTick, true, ticker);
         long initialDelay = Math.max(0,
                 config.getIntervalMillis() - NANOSECONDS.toMillis(trace.getDuration()));
-        ScheduledFuture<?> scheduledFuture = scheduledExecutor.scheduleAtFixedRate(command,
-                initialDelay, config.getIntervalMillis(), MILLISECONDS);
-        trace.setFineProfilingScheduledFuture(scheduledFuture);
+        profilerScheduledRunnable.scheduleAtFixedRate(scheduledExecutor, initialDelay,
+                config.getIntervalMillis(), MILLISECONDS);
+        trace.setFineProfilerScheduledRunnable(profilerScheduledRunnable);
     }
 }

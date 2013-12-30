@@ -125,8 +125,8 @@ public class TraceCollectorImpl implements TraceCollector {
             executorService.execute(new Runnable() {
                 public void run() {
                     try {
-                        Snapshot snapshot = SnapshotCreator.createCompletedSnapshot(trace,
-                                captureTime);
+                        Snapshot snapshot =
+                                SnapshotCreator.createCompletedSnapshot(trace, captureTime);
                         snapshotRepository.store(snapshot);
                         pendingCompleteTraces.remove(trace);
                     } catch (Throwable t) {

@@ -24,6 +24,7 @@ import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -72,7 +73,7 @@ class ConfigMapper {
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
     }
 
-    Config readValue(String content) throws JsonProcessingException, IOException {
+    Config readValue(String content) throws IOException {
         ObjectNode rootNode = (ObjectNode) mapper.readTree(content);
         GeneralConfig generalConfig = readGeneralNode(rootNode);
         CoarseProfilingConfig coarseProfilingConfig = readCoarseProfilingNode(rootNode);
@@ -246,7 +247,7 @@ class ConfigMapper {
 
     private static ImmutableList<PluginConfig> createPluginConfigs(
             @ReadOnly Map<String, ObjectNode> pluginNodes,
-            @ReadOnly List<PluginDescriptor> pluginDescriptors) {
+            @ReadOnly List<PluginDescriptor> pluginDescriptors) throws JsonMappingException {
         ImmutableList.Builder<PluginConfig> pluginConfigs = ImmutableList.builder();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             ObjectNode pluginConfigNode = pluginNodes.get(pluginDescriptor.getId());

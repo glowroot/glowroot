@@ -20,7 +20,6 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import checkers.igj.quals.Immutable;
@@ -39,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.PartiallyThreadSafe;
 
@@ -110,11 +110,11 @@ public class Trace {
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
     @Nullable
-    private volatile ScheduledFuture<?> coarseProfilingScheduledFuture;
+    private volatile ScheduledRunnable coarseProfilerScheduledRunnable;
     @Nullable
-    private volatile ScheduledFuture<?> fineProfilingScheduledFuture;
+    private volatile ScheduledRunnable fineProfilerScheduledRunnable;
     @Nullable
-    private volatile ScheduledFuture<?> stuckScheduledFuture;
+    private volatile ScheduledRunnable stuckScheduledRunnable;
 
     public Trace(long startTime, boolean background, String grouping,
             MessageSupplier messageSupplier, MetricNameImpl metricName,
@@ -255,18 +255,18 @@ public class Trace {
     }
 
     @Nullable
-    public ScheduledFuture<?> getCoarseProfilingScheduledFuture() {
-        return coarseProfilingScheduledFuture;
+    public ScheduledRunnable getCoarseProfilerScheduledRunnable() {
+        return coarseProfilerScheduledRunnable;
     }
 
     @Nullable
-    public ScheduledFuture<?> getFineProfilingScheduledFuture() {
-        return fineProfilingScheduledFuture;
+    public ScheduledRunnable getFineProfilerScheduledRunnable() {
+        return fineProfilerScheduledRunnable;
     }
 
     @Nullable
-    public ScheduledFuture<?> getStuckScheduledFuture() {
-        return stuckScheduledFuture;
+    public ScheduledRunnable getStuckScheduledRunnable() {
+        return stuckScheduledRunnable;
     }
 
     // returns previous value
@@ -295,27 +295,27 @@ public class Trace {
         }
     }
 
-    public void setCoarseProfilingScheduledFuture(ScheduledFuture<?> scheduledFuture) {
-        if (coarseProfilingScheduledFuture != null) {
-            logger.warn("setCoarseProfilingScheduledFuture(): overwriting non-null"
-                    + " coarseProfilingScheduledFuture");
+    public void setCoarseProfilerScheduledRunnable(ScheduledRunnable scheduledRunnable) {
+        if (coarseProfilerScheduledRunnable != null) {
+            logger.warn("setCoarseProfilerScheduledRunnable(): overwriting non-null"
+                    + " coarseProfilingScheduledRunnable");
         }
-        this.coarseProfilingScheduledFuture = scheduledFuture;
+        this.coarseProfilerScheduledRunnable = scheduledRunnable;
     }
 
-    public void setFineProfilingScheduledFuture(ScheduledFuture<?> scheduledFuture) {
-        if (fineProfilingScheduledFuture != null) {
-            logger.warn("setFineProfilingScheduledFuture(): overwriting non-null"
-                    + " fineProfilingScheduledFuture");
+    public void setFineProfilerScheduledRunnable(ScheduledRunnable scheduledRunnable) {
+        if (fineProfilerScheduledRunnable != null) {
+            logger.warn("setFineProfilerScheduledRunnable(): overwriting non-null"
+                    + " fineProfilingScheduledRunnable");
         }
-        this.fineProfilingScheduledFuture = scheduledFuture;
+        this.fineProfilerScheduledRunnable = scheduledRunnable;
     }
 
-    public void setStuckScheduledFuture(ScheduledFuture<?> scheduledFuture) {
-        if (stuckScheduledFuture != null) {
-            logger.warn("setStuckScheduledFuture(): overwriting non-null stuckScheduledFuture");
+    public void setStuckScheduledRunnable(ScheduledRunnable scheduledRunnable) {
+        if (stuckScheduledRunnable != null) {
+            logger.warn("setStuckScheduledRunnable(): overwriting non-null stuckScheduledRunnable");
         }
-        this.stuckScheduledFuture = scheduledFuture;
+        this.stuckScheduledRunnable = scheduledRunnable;
     }
 
     public Span pushSpan(MetricNameImpl metricName, long startTick,
@@ -413,9 +413,9 @@ public class Trace {
                 .add("rootSpan", rootSpan)
                 .add("coarseMergedStackTree", coarseMergedStackTree)
                 .add("fineMergedStackTree", fineMergedStackTree)
-                .add("coarseProfilingScheduledFuture", coarseProfilingScheduledFuture)
-                .add("fineProfilingScheduledFuture", fineProfilingScheduledFuture)
-                .add("stuckScheduledFuture", stuckScheduledFuture)
+                .add("coarseProfilingScheduledRunnable", coarseProfilerScheduledRunnable)
+                .add("fineProfilingScheduledRunnable", fineProfilerScheduledRunnable)
+                .add("stuckScheduledRunnable", stuckScheduledRunnable)
                 .toString();
     }
 

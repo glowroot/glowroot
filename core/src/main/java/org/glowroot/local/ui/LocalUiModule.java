@@ -18,7 +18,6 @@ package org.glowroot.local.ui;
 import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 import checkers.igj.quals.ReadOnly;
@@ -41,6 +40,7 @@ import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.RollingFile;
 import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.local.store.StorageModule;
+import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.TraceModule;
@@ -113,7 +113,7 @@ public class LocalUiModule {
                 jvmModule.getHotSpotDiagnostics(), jvmModule.getFlags());
         AdminJsonService adminJsonService = new AdminJsonService(snapshotDao, configService,
                 traceModule.getPointcutConfigAdviceCache(), parsedTypeCache, instrumentation,
-                jvmModule.getJdk6().getService(), traceCollector, dataSource, traceRegistry);
+                jvmModule.getJdk6(), traceCollector, dataSource, traceRegistry);
 
         ImmutableList.Builder<Object> jsonServices = ImmutableList.builder();
         jsonServices.add(layoutJsonService);
@@ -157,7 +157,7 @@ public class LocalUiModule {
     }
 
     @OnlyUsedByTests
-    public void changeHttpServerPort(int newPort) throws InterruptedException, ExecutionException {
+    public void changeHttpServerPort(int newPort) throws PortChangeFailedException {
         if (httpServer != null) {
             httpServer.changePort(newPort);
         }
@@ -202,8 +202,7 @@ public class LocalUiModule {
                     httpSessionManager, jsonServices);
         } catch (ChannelException e) {
             // binding to the specified port failed and binding to port 0 (any port) failed
-            logger.error("unable to bind http listener to any port, the user interface will not be"
-                    + " available");
+            logger.error("error binding to any port, the user interface will not be available", e);
             return null;
         }
     }

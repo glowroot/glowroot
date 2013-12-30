@@ -78,10 +78,12 @@ public class UnresolvedMethod {
                 });
         try {
             SENTINEL_METHOD = UnresolvedMethod.class.getDeclaredMethod("sentinelMethod");
-        } catch (SecurityException e) {
-            throw new IllegalStateException("Unrecoverable error", e);
         } catch (NoSuchMethodException e) {
-            throw new IllegalStateException("Unrecoverable error", e);
+            // unrecoverable error
+            throw new AssertionError(e);
+        } catch (SecurityException e) {
+            // unrecoverable error
+            throw new AssertionError(e);
         }
     }
 
@@ -154,9 +156,8 @@ public class UnresolvedMethod {
             @Nullable ImmutableList<Class<?>> parameterTypes,
             @Nullable ImmutableList<String> parameterTypeNames) {
         if (parameterTypes == null && parameterTypeNames == null) {
-            throw new IllegalStateException("Constructor args 'parameterTypes' and"
-                    + " 'parameterTypeNames' cannot both be null (enforced by static factory"
-                    + " methods)");
+            throw new AssertionError("Constructor args 'parameterTypes' and 'parameterTypeNames'"
+                    + " cannot both be null (enforced by static factory methods)");
         }
         this.typeName = typeName;
         this.methodName = methodName;
@@ -328,9 +329,8 @@ public class UnresolvedMethod {
                 return resolvedClass.getDeclaredMethod(methodName,
                         Iterables.toArray(parameterTypes, Class.class));
             } else if (parameterTypeNames == null) {
-                throw new IllegalStateException("Fields 'parameterTypes' and"
-                        + " 'parameterTypeNames' cannot both be null (enforced by static factory"
-                        + " methods)");
+                throw new AssertionError("Fields 'parameterTypes' and 'parameterTypeNames'"
+                        + " cannot both be null (enforced by static factory methods)");
             } else {
                 Class<?>[] resolvedParameterTypes = new Class<?>[parameterTypeNames.size()];
                 for (int i = 0; i < parameterTypeNames.size(); i++) {
@@ -343,11 +343,11 @@ public class UnresolvedMethod {
             // this is only logged once because the sentinel method is returned and cached
             logger.warn(e.getMessage(), e);
             return SENTINEL_METHOD;
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // this is only logged once because the sentinel method is returned and cached
             logger.warn(e.getMessage(), e);
             return SENTINEL_METHOD;
-        } catch (NoSuchMethodException e) {
+        } catch (SecurityException e) {
             // this is only logged once because the sentinel method is returned and cached
             logger.warn(e.getMessage(), e);
             return SENTINEL_METHOD;
@@ -356,10 +356,14 @@ public class UnresolvedMethod {
 
     @Nullable
     private Object invokeInternal(Method method, @Nullable Object target, Object... parameters)
-            throws IllegalAccessException, InvocationTargetException {
+            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+        // intentionally not logging InvocationTargetException
         try {
             return method.invoke(target, parameters);
         } catch (IllegalAccessException e) {
+            logger.warn(e.getMessage(), e);
+            throw e;
+        } catch (IllegalArgumentException e) {
             logger.warn(e.getMessage(), e);
             throw e;
         }

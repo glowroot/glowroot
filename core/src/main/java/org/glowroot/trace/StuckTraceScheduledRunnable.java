@@ -20,6 +20,7 @@ import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.model.Trace;
 
@@ -32,26 +33,27 @@ import org.glowroot.trace.model.Trace;
  * @since 0.5
  */
 @ThreadSafe
-class CollectStuckTraceCommand implements Runnable {
+class StuckTraceScheduledRunnable extends ScheduledRunnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(CollectStuckTraceCommand.class);
+    private static final Logger logger =
+            LoggerFactory.getLogger(StuckTraceScheduledRunnable.class);
 
     private final Trace trace;
     private final TraceCollector traceCollector;
     private volatile boolean tracePreviouslyCompleted;
 
-    CollectStuckTraceCommand(Trace trace, TraceCollector traceCollector) {
+    StuckTraceScheduledRunnable(Trace trace, TraceCollector traceCollector) {
         this.trace = trace;
         this.traceCollector = traceCollector;
     }
 
-    public void run() {
+    @Override
+    public void runInternal() {
         logger.debug("run(): trace.id={}", trace.getId());
         if (trace.isCompleted()) {
             if (tracePreviouslyCompleted) {
-                logger.warn("trace already completed: {}", trace);
-                throw new IllegalStateException("Trace already completed, just throwing to"
-                        + " terminate subsequent scheduled executions");
+                // throw marker exception to terminate subsequent scheduled executions
+                throw new TerminateSubsequentExecutionsException();
             } else {
                 // there is a small window between trace completion and cancellation of this command
                 // so give it one extra chance to be completed normally

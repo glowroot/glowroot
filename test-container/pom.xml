@@ -17,54 +17,47 @@
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-plugin-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
       <artifactId>glowroot-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava-jdk5</artifactId>
-      <version>14.0.1</version>
     </dependency>
     <dependency>
       <groupId>com.ning</groupId>
       <artifactId>async-http-client</artifactId>
-      <version>1.7.23</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
-      <!-- netty 4.x requires jdk 6 -->
-      <version>3.9.0.Final</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <!-- jackson 2.2 requires jdk 6 -->
-      <version>2.1.5</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <!-- jackson 2.2 requires jdk 6 -->
-      <version>2.1.5</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <!-- jackson 2.2 requires jdk 6 -->
-      <version>2.1.5</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.5</version>
     </dependency>
     <dependency>
       <!-- logback is needed in order to compile the optional SpyConsoleAppender, testkit users can
         still choose their own slf4j implementation if SpyConsoleAppender is not needed -->
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.0.13</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -72,7 +65,6 @@
         still choose their own slf4j implementation if SpyConsoleAppender is not needed -->
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.0.13</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -85,13 +77,11 @@
       <!-- using org.junit.runner.notification.RunListener -->
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.11</version>
     </dependency>
     <dependency>
       <!-- only annotations are used, so ok the (unshaded) artifact is not provided at runtime -->
       <groupId>edu.washington.cs.types.checker</groupId>
       <artifactId>checker-quals-jdk5</artifactId>
-      <version>1.7.1</version>
       <optional>true</optional>
     </dependency>
   </dependencies>

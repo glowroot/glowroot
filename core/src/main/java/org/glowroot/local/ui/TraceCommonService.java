@@ -16,7 +16,6 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
@@ -86,8 +85,7 @@ class TraceCommonService {
         }
     }
 
-    private CharSource toCharSource(Trace trace, boolean summary) throws IOException,
-            UnsupportedEncodingException {
+    private CharSource toCharSource(Trace trace, boolean summary) throws IOException {
         Snapshot snapshot = SnapshotCreator.createActiveSnapshot(trace,
                 clock.currentTimeMillis(), ticker.read(), summary);
         return SnapshotWriter.toCharSource(snapshot, true, summary);

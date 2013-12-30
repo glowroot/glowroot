@@ -53,7 +53,7 @@ class SocketCommandProcessor implements Runnable {
     public static final String SHUTDOWN_RESPONSE = "SHUTDOWN";
     public static final String KILL = "KILL";
     public static final String INTERRUPT = "INTERRUPT";
-    public static final int NO_PORT = -1;
+    public static final String STARTUP_FAILED = "STARTUP_FAILED";
 
     private static final Logger logger = LoggerFactory.getLogger(SocketCommandProcessor.class);
 
@@ -152,8 +152,7 @@ class SocketCommandProcessor implements Runnable {
     private void respondWithPort(int commandNum) throws Exception {
         GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
         if (glowrootModule == null) {
-            // glowroot failed to start
-            respond(NO_PORT, commandNum);
+            respond(STARTUP_FAILED, commandNum);
         } else {
             respond(glowrootModule.getUiModule().getPort(), commandNum);
         }
@@ -164,7 +163,7 @@ class SocketCommandProcessor implements Runnable {
         GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
         if (glowrootModule == null) {
             // glowroot failed to start
-            respond(SHUTDOWN_RESPONSE, commandNum);
+            respond(STARTUP_FAILED, commandNum);
         } else {
             try {
                 Threads.preShutdownCheck(preExistingThreads);

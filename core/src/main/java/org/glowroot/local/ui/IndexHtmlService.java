@@ -27,10 +27,7 @@ import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
@@ -39,8 +36,6 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
  * @since 0.5
  */
 class IndexHtmlService {
-
-    private static final Logger logger = LoggerFactory.getLogger(IndexHtmlService.class);
 
     private final String baseHref;
     private final HttpSessionManager httpSessionManager;
@@ -53,14 +48,8 @@ class IndexHtmlService {
         this.layoutJsonService = layoutJsonService;
     }
 
-    HttpResponse handleRequest(String path, HttpRequest request) throws IOException {
-        URL url;
-        try {
-            url = Resources.getResource(path);
-        } catch (IllegalArgumentException e) {
-            logger.warn("unexpected path: {}", path);
-            return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
-        }
+    HttpResponse handleRequest(HttpRequest request) throws IOException {
+        URL url = Resources.getResource("org/glowroot/local/ui/app-dist/index.html");
         String indexHtml = Resources.toString(url, Charsets.UTF_8);
         Pattern scriptPattern = Pattern.compile("<script></script>");
         Matcher scriptMatcher = scriptPattern.matcher(indexHtml);

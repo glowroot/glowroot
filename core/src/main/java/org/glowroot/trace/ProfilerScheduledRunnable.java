@@ -18,9 +18,8 @@ package org.glowroot.trace;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import dataflow.quals.Pure;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.model.MergedStackTree;
 import org.glowroot.trace.model.Trace;
@@ -33,26 +32,25 @@ import org.glowroot.trace.model.Trace;
  * @since 0.5
  */
 @ThreadSafe
-class CollectStackCommand implements Runnable {
-
-    private static final Logger logger = LoggerFactory.getLogger(CollectStackCommand.class);
+class ProfilerScheduledRunnable extends ScheduledRunnable {
 
     private final Trace trace;
     private final long endTick;
     private final boolean fine;
     private final Ticker ticker;
 
-    CollectStackCommand(Trace trace, long endTick, boolean fine, Ticker ticker) {
+    ProfilerScheduledRunnable(Trace trace, long endTick, boolean fine, Ticker ticker) {
         this.trace = trace;
         this.endTick = endTick;
         this.fine = fine;
         this.ticker = ticker;
     }
 
+    @Override
     public void run() {
         if (ticker.read() >= endTick) {
-            // just throwing to terminate subsequent scheduled executions
-            throw new TerminateScheduledActionException();
+            // throw marker exception to terminate subsequent scheduled executions
+            throw new TerminateSubsequentExecutionsException();
         }
         if (trace.isCompleted()) {
             // there is a small window between trace completion and cancellation of this command,
@@ -60,19 +58,14 @@ class CollectStackCommand implements Runnable {
             // executions can fire one right after the other in the small window (assuming the first
             // didn't throw an exception which it does now), since this command is scheduled using
             // ScheduledExecutorService.scheduleAtFixedRate()
-            throw new TerminateScheduledActionException();
+            throw new TerminateSubsequentExecutionsException();
         }
-        try {
-            trace.captureStackTrace(fine);
-        } catch (Error e) {
-            // log and re-throw serious error which will terminate subsequent scheduled executions
-            // (see ScheduledExecutorService.scheduleAtFixedRate())
-            logger.error(e.getMessage(), e);
-            throw e;
-        } catch (Throwable t) {
-            // log and terminate successfully
-            logger.error(t.getMessage(), t);
-        }
+        super.run();
+    }
+
+    @Override
+    protected void runInternal() {
+        trace.captureStackTrace(fine);
     }
 
     @Override
@@ -84,7 +77,4 @@ class CollectStackCommand implements Runnable {
                 .add("fine", fine)
                 .toString();
     }
-
-    @SuppressWarnings("serial")
-    static class TerminateScheduledActionException extends RuntimeException {}
 }

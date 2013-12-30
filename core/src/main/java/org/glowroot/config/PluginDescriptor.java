@@ -23,7 +23,6 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Objects;
@@ -121,8 +120,7 @@ public class PluginDescriptor {
     }
 
     // only used by packager-maven-plugin, placed in glowroot to avoid shading issues
-    public static PluginDescriptor readValue(String content) throws JsonProcessingException,
-            IOException {
+    public static PluginDescriptor readValue(String content) throws IOException {
         return ObjectMappers.readRequiredValue(mapper, content, PluginDescriptor.class);
     }
 

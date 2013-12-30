@@ -16,7 +16,6 @@
 package org.glowroot;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.sql.SQLException;
@@ -33,6 +32,7 @@ import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.GlowrootModule.StartupFailedException;
 import org.glowroot.api.PluginServices;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -69,13 +69,9 @@ public class MainEntryPoint {
         ImmutableMap<String, String> properties = getGlowrootProperties();
         // ...WithNoWarning since warning is displayed during start so no need for it twice
         File dataDir = DataDir.getDataDirWithNoWarning(properties);
-        if (DataSource.tryUnlockDatabase(new File(dataDir, "glowroot.lock.db"))) {
-            try {
-                start(properties, instrumentation);
-            } catch (Throwable t) {
-                logger.error("glowroot failed to start: {}", t.getMessage(), t);
-            }
-        } else {
+        try {
+            DataSource.tryUnlockDatabase(new File(dataDir, "glowroot.lock.db"));
+        } catch (SQLException e) {
             // this is common when stopping tomcat since 'catalina.sh stop' launches a java process
             // to stop the tomcat jvm, and it uses the same JAVA_OPTS environment variable that may
             // have been used to specify '-javaagent:glowroot.jar', in which case Glowroot tries
@@ -89,8 +85,15 @@ public class MainEntryPoint {
             // no need for logging in the special (but common) case described above
             if (!isTomcatStop()) {
                 logger.error("embedded database {} is locked by another process.",
-                        dataDir.getAbsolutePath());
+                        dataDir.getAbsolutePath(), e);
             }
+            return;
+        }
+        try {
+            start(properties, instrumentation);
+        } catch (Throwable t) {
+            // log error but don't re-throw which would prevent monitored app from starting
+            logger.error("glowroot failed to start: {}", t.getMessage(), t);
         }
     }
 
@@ -103,13 +106,13 @@ public class MainEntryPoint {
     }
 
     // used by Viewer
-    static void start() throws SQLException, IOException {
+    static void start() throws StartupFailedException {
         start(getGlowrootProperties(), null);
     }
 
     @EnsuresNonNull("glowrootModule")
     private static void start(@ReadOnly Map<String, String> properties,
-            @Nullable Instrumentation instrumentation) throws SQLException, IOException {
+            @Nullable Instrumentation instrumentation) throws StartupFailedException {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
@@ -139,7 +142,7 @@ public class MainEntryPoint {
     @OnlyUsedByTests
     @EnsuresNonNull("glowrootModule")
     public static void start(@ReadOnly Map<String, String> properties)
-            throws SQLException, IOException {
+            throws StartupFailedException {
         start(properties, null);
     }
 

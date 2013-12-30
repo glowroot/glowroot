@@ -25,7 +25,6 @@ import checkers.nullness.quals.EnsuresNonNull;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -61,8 +60,7 @@ public class ObjectMappers {
     }
 
     public static <T extends /*@Nullable*/Object> T readRequiredValue(
-            @ReadOnly ObjectMapper mapper, String content, Class<T> type) throws IOException,
-            JsonProcessingException {
+            @ReadOnly ObjectMapper mapper, String content, Class<T> type) throws IOException {
         T value = mapper.readValue(content, type);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
@@ -70,9 +68,8 @@ public class ObjectMappers {
         return value;
     }
 
-    public static JsonNode getRequiredChildNode(
-            @ReadOnly JsonNode parentNode, String fieldName) throws IOException,
-            JsonProcessingException {
+    public static JsonNode getRequiredChildNode(@ReadOnly JsonNode parentNode, String fieldName)
+            throws IOException {
         JsonNode node = parentNode.get(fieldName);
         if (node == null) {
             throw new JsonMappingException("Missing required field: " + fieldName);
@@ -136,7 +133,7 @@ public class ObjectMappers {
     private static class EnumSerializer extends JsonSerializer<Object> {
         @Override
         public void serialize(@Nullable Object value, JsonGenerator jgen,
-                SerializerProvider provider) throws JsonProcessingException, IOException {
+                SerializerProvider provider) throws IOException {
             if (value == null) {
                 jgen.writeNull();
             } else if (value instanceof Enum) {
@@ -176,8 +173,7 @@ public class ObjectMappers {
 
         @Override
         @Nullable
-        public Enum<?> deserialize(JsonParser jp, DeserializationContext ctxt)
-                throws JsonProcessingException, IOException {
+        public Enum<?> deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
             String text = jp.getText();
             Enum<?> constant = enumMap.get(text);
             if (constant == null) {

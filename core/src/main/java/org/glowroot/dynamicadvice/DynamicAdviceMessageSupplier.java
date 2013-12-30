@@ -22,6 +22,7 @@ import org.glowroot.api.Span;
 import org.glowroot.dynamicadvice.DynamicAdviceMessageTemplate.ArgPathPart;
 import org.glowroot.dynamicadvice.DynamicAdviceMessageTemplate.ConstantPart;
 import org.glowroot.dynamicadvice.DynamicAdviceMessageTemplate.Part;
+import org.glowroot.dynamicadvice.DynamicAdviceMessageTemplate.PartType;
 import org.glowroot.dynamicadvice.DynamicAdviceMessageTemplate.ValuePathPart;
 import org.glowroot.markers.UsedByGeneratedBytecode;
 
@@ -88,7 +89,8 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
         int argPathPartIndex = 0;
         int returnValuePathPartIndex = 0;
         for (Part part : template.getAllParts()) {
-            switch (part.getType()) {
+            PartType partType = part.getType();
+            switch (partType) {
                 case CONSTANT:
                     sb.append(((ConstantPart) part).getConstant());
                     break;
@@ -106,6 +108,8 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
                 case METHOD_NAME:
                     sb.append(methodName);
                     break;
+                default:
+                    throw new AssertionError("Unknown PartType enum: " + partType);
             }
         }
         return sb.toString();

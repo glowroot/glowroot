@@ -15,8 +15,7 @@
  */
 package org.glowroot.config;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
+import java.security.GeneralSecurityException;
 
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
@@ -82,12 +81,11 @@ public class UserInterfaceConfig {
     }
 
     @JsonView(FileView.class)
-    private String getPasswordHash() {
+    public String getPasswordHash() {
         return passwordHash;
     }
 
-    public boolean validatePassword(String password)
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public boolean validatePassword(String password) throws GeneralSecurityException {
         if (passwordHash.equals("")) {
             // need special case for empty password
             return password.equals("");
@@ -170,8 +168,8 @@ public class UserInterfaceConfig {
         public void setNewPassword(@Nullable String newPassword) {
             this.newPassword = newPassword;
         }
-        public UserInterfaceConfig build() throws NoSuchAlgorithmException,
-                InvalidKeySpecException, CurrentPasswordIncorrectException {
+        public UserInterfaceConfig build() throws GeneralSecurityException,
+                CurrentPasswordIncorrectException {
             String passwordHash;
             if (currentPassword != null && newPassword != null) {
                 passwordHash = verifyAndGenerateNewPasswordHash(currentPassword, newPassword,
@@ -183,10 +181,14 @@ public class UserInterfaceConfig {
             return new UserInterfaceConfig(port, sessionTimeoutMinutes, passwordHash);
         }
         private static String verifyAndGenerateNewPasswordHash(String currentPassword,
-                String newPassword, String originalPasswordHash) throws NoSuchAlgorithmException,
-                InvalidKeySpecException, CurrentPasswordIncorrectException {
+                String newPassword, String originalPasswordHash) throws GeneralSecurityException,
+                CurrentPasswordIncorrectException {
             if (currentPassword.equals("") && !newPassword.equals("")) {
                 // enabling password
+                if (!originalPasswordHash.equals("")) {
+                    // UI validation prevents this from happening
+                    throw new IllegalStateException("Password is already enabled");
+                }
                 return PasswordHash.createHash(newPassword);
             } else if (!currentPassword.equals("") && newPassword.equals("")) {
                 // disabling password

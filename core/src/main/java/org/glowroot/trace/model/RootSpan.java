@@ -45,7 +45,7 @@ class RootSpan {
 
     private static final Logger logger = LoggerFactory.getLogger(RootSpan.class);
 
-    // spanStack doesn't need to be thread safe since it is only access by the trace thread
+    // spanStack doesn't need to be thread safe since it is only accessed by the trace thread
     private final List<Span> spanStack = Lists.newArrayList();
 
     private final long startTick;
@@ -56,7 +56,7 @@ class RootSpan {
     // tracking size of spans queue since ConcurrentLinkedQueue.size() is slow
     private volatile int size;
 
-    // this doesn't need to be thread safe as it is only accessed by the trace thread
+    // this doesn't need to be thread safe since it is only accessed by the trace thread
     private boolean spanLimitExceeded;
 
     private final Ticker ticker;
@@ -103,6 +103,7 @@ class RootSpan {
         Span span = createSpan(startTick, messageSupplier, null, metric, false);
         spanStack.add(span);
         spans.add(span);
+        // increment doesn't need to be atomic since size is only modified by the trace thread
         size++;
         return span;
     }
@@ -123,6 +124,7 @@ class RootSpan {
             @Nullable ErrorMessage errorMessage, boolean limitBypassed) {
         Span span = createSpan(startTick, messageSupplier, errorMessage, null, limitBypassed);
         spans.add(span);
+        // increment doesn't need to be atomic since size is only modified by the trace thread
         size++;
         span.setEndTick(endTick);
         return span;
@@ -134,6 +136,7 @@ class RootSpan {
         }
         spanLimitExceeded = true;
         spans.add(Span.getLimitExceededMarker());
+        // increment doesn't need to be atomic since size is only modified by the trace thread
         size++;
     }
 
@@ -146,6 +149,7 @@ class RootSpan {
             // also a different marker ("limit extended") is placed in the spans so that the ui can
             // display this scenario sensibly
             spans.add(Span.getLimitExtendedMarker());
+            // increment doesn't need to be atomic since size is only modified by the trace thread
             size++;
         }
         Span currentSpan = spanStack.get(spanStack.size() - 1);

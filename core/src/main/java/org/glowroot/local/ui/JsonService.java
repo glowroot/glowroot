@@ -40,13 +40,20 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
     String value();
 }
 
+// used for "expected" exceptions, these are not logged on server and their stack trace is not sent
+// back to client
 @SuppressWarnings("serial")
-class JsonServiceException extends Exception {
+class JsonServiceException extends RuntimeException {
 
     private final HttpResponseStatus status;
 
     JsonServiceException(HttpResponseStatus status, Throwable cause) {
         super(cause);
+        this.status = status;
+    }
+
+    JsonServiceException(HttpResponseStatus status, String message) {
+        super(message);
         this.status = status;
     }
 
