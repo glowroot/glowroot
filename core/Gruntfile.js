@@ -399,7 +399,7 @@ module.exports = function (grunt) {
     }
   });
 
-  grunt.registerTask('server', [
+  grunt.registerTask('serve', [
     'clean:server',
     'less:server',
     'handlebars',
