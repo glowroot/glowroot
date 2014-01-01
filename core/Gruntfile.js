@@ -23,10 +23,6 @@ module.exports = function (grunt) {
     exportDist: 'target/ui-resources-dist/org/glowroot/local/ui/export-dist'
   };
 
-  try {
-    yeomanConfig.app = require('./component.json').appPath || yeomanConfig.app;
-  } catch (e) {}
-
   var bowerJson = grunt.file.readJSON('bower.json');
   var jqueryVersion = bowerJson.dependencies.jquery;
   var angularVersion = bowerJson.dependencies.angular;
