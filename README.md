@@ -3,7 +3,7 @@
 
 ## Quick start
 
-1. Download the latest [glowroot.jar](https://s3.amazonaws.com/travis-ci.glowroot.org/snapshots/latest/glowroot.jar) and place it in an empty directory of your choosing
+1. Download the latest [glowroot.jar](https://glowroot.s3.amazonaws.com/snapshots/latest/glowroot.jar) and place it in an empty directory of your choosing
 2. Add `-javaagent:glowroot.jar` to your application's JVM arguments
 3. Start your application
 4. Connect to http://localhost:4000

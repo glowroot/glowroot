@@ -1,23 +1,25 @@
 language: java
 jdk:
   - oraclejdk7
-  - openjdk6
 before_install:
   - npm install -g bower grunt-cli
   - "export DISPLAY=:99.0"
   - sh -e /etc/init.d/xvfb start
-install:
-  - TARGET=install
-  - if [[ "$TRAVIS_JDK_VERSION" == "openjdk6" ]]; then TARGET=test; fi
-  - if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_JDK_VERSION" == "oraclejdk7" ]]; then TARGET=deploy; fi
-  - mvn clean $TARGET -Dgit.commit.hash=$TRAVIS_COMMIT -DdeployAtEnd=true --settings settings.xml -B
-script: true
+install: true
+script: travis-build/travis-build.sh $TARGET
+matrix:
+  include:
+    - jdk: oraclejdk7
+      env: TARGET=checker
+    - jdk: openjdk6
+      env: TARGET=test
 env:
+  matrix:
+    - TARGET=install
   global:
-    # SONATYPE_USERNAME, only used for mvn deploy from glowroot/glowroot master branch
-    - secure: "HCpkVkYORouIXPr39VVIQmZvfz4rnSgVvfTcOBBDqQxs2qg7BJwA0wEH05J2x0GNEyfNiSfrnVmlmXwPK3XpLinEsAVzcJuvLaVqR+rdAxJGFw/L4UgqvK5z6FNZlWbLvLcayvTb14RnAim6XP7OIdH1nmg4nqGy7rs8C5S4VfI="
+    - SONATYPE_USERNAME=trask
     # SONATYPE_PASSWORD, only used for mvn deploy from glowroot/glowroot master branch
-    - secure: "mMqmr+F3CERvhvFSei9a2U34FiCrwHyWDjeKriXGlBC1v1sXvfCVQYyMB0gbO7QFvqUYctZty5nU+5BMDgbpLqhBq+XKjNTuL/Olb0Dj+P/fKDQuqG1SjhE4pZ3SW5yNnvxfOGyHn6O/lIUkfJFEtg1LxG/4N8Rd8v9vpzslKvY="
+    - secure: "gvo+eXfSRTJRzbINt1MG6BzuBPCwcxPRzPkA1P+YukaLdBSSL+daYTfwtXhisg9tTMrb9qRcvlz6+YhSvY9RPfHYvpRy5L3NLJGVbWb73S2/i/sNejX9NR0x3RFH6Ddmzp7yvAnNRsGr5f5NtX81apnlBSh1dxr1+S2EygYgLgA="
 before_deploy:
   - mkdir -p s3/snapshots/latest
   - cp package/target/glowroot-*.jar s3/snapshots/latest
@@ -28,12 +30,13 @@ before_deploy:
 deploy:
   provider: s3
   access_key_id:
-    secure: "bB2vqgDCZgcY1P5d1CdToq9YWg2ykB2kuwizT9EIVsWY4Y290P3UjwC6QtJ5BsCZ/lUzp68FI+SJfc4YQh8a/XCNXEfHRvnowPKA8BvJo75p8orula2lq8tiAMnAZuzi8N72J5xcGrVtYRCayYHDXiXzYPYLfvIQ3ui/fyr0QzM="
+    secure: "LxhncdLw6KQzZ3QW1B7X/izAB/tjkg5N6CrT5K16jV8iy2HeEBFYjWhJw6himAJBAI1ASBR1L6D2yopnCDSzfu6dDAa/xWitd2stU59Obv4k6CVj85VmOxlK3/P3IlJKy7DpeMZ9tf1GErVYI85HK+tXSlk+UA4iKCaY9nGWis0="
   secret_access_key:
-    secure: "F5FwSoUci69w7WedrTgiHbZULfpDZfSgNdyXwl+nMGtmFIsC7CIoWSHStp1rIhwsSMeQqgcq/Ghmu7tb4qFJlFbEQUCXUl6TXdxxuOH2ml7cMhbj/sHvaJNOrHXjCVaZY5IohB9TmvFnGqnZAXyWJPzsnO790W4sNtWaf2s4Ecs="
-  bucket: travis-ci.glowroot.org
+    secure: "EbBNRcwz7p/9JeYPUbzKVkFe1VzWCdfs9zfGBSv2J79LpoDakCwRqnD1RP4kqwgog5AHZicld7YxfyvKaTGYDsL5b5STBXJh1XRtd5+AsPgQUgp+Ftu2D4GtKQ9PVkZ3KduDDbLNjQOLE9G4BseGAVLaBZ7V0TwHHny4Q53sb5k="
+  bucket: glowroot
   skip_cleanup: true
   on:
     jdk: oraclejdk7
     branch: master
     repo: glowroot/glowroot
+    condition: "$TARGET = install"
