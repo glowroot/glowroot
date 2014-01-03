@@ -1,9 +1,0 @@
-Manifest-Version: 1.0
-Implementation-Title: Glowroot
-Implementation-Version: ${project.version}
-Build-Commit: ${git.commit.hash}
-Build-Time: ${maven.build.timestamp.value}
-Main-Class: org.glowroot.Viewer
-Premain-Class: org.glowroot.MainEntryPoint
-Can-Redefine-Classes: true
-Can-Retransform-Classes: true

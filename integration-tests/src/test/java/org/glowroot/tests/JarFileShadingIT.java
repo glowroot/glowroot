@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,8 +60,8 @@ public class JarFileShadingIT {
         acceptableEntries.add("META-INF/maven/.*");
         acceptableEntries.add("META-INF/org.glowroot\\..*");
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
-        acceptableEntries.add("META-INF/THIRD-PARTY-JAVA-LIBRARIES\\.txt");
-        acceptableEntries.add("META-INF/THIRD-PARTY-WEB-LIBRARIES\\.txt");
+        acceptableEntries.add("META-INF/LICENSE");
+        acceptableEntries.add("META-INF/NOTICE");
         JarFile jarFile = new JarFile(glowrootCoreJarFile);
         List<String> unacceptableEntries = Lists.newArrayList();
         for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements();) {

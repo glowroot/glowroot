@@ -15,12 +15,7 @@
   <description>Glowroot Core</description>
 
   <properties>
-    <!-- default it to empty, otherwise it will default to the text "${git.commit.hash}" -->
-    <git.commit.hash></git.commit.hash>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
-    <!-- this extra property is needed since maven.build.timestamp is not directly available to
-      resource filtering, see http://jira.codehaus.org/browse/MRESOURCES-99 -->
-    <maven.build.timestamp.value>${maven.build.timestamp}</maven.build.timestamp.value>
   </properties>
 
   <dependencies>
@@ -176,7 +171,7 @@
   <pluginRepositories>
     <pluginRepository>
       <!-- this is needed temporarily until com.github.trask:exec-maven-plugin:1.2.1+patch.1
-           makes it into maven central -->
+        makes it into maven central -->
       <id>sonatype-nexus-snapshots</id>
       <name>Sonatype Nexus Snapshots</name>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
@@ -193,16 +188,6 @@
     <resources>
       <resource>
         <directory>${basedir}/src/main/resources</directory>
-        <excludes>
-          <exclude>META-INF/MANIFEST.MF</exclude>
-        </excludes>
-      </resource>
-      <resource>
-        <directory>${basedir}/src/main/resources</directory>
-        <filtering>true</filtering>
-        <includes>
-          <include>META-INF/MANIFEST.MF</include>
-        </includes>
       </resource>
       <resource>
         <directory>${project.build.directory}/ui-resources-dist</directory>
@@ -279,44 +264,16 @@
       </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
-        <!-- eclipse m2e-wtp doesn't like maven-jar-plugin 2.4 when using manifestFile, so staying
-          with 2.3.2 for now, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=406507 -->
-        <version>2.3.2</version>
         <configuration>
           <archive>
-            <!-- using build output directory to get the post-filtered MANIFEST.MF -->
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+            <manifestEntries>
+              <Build-Time>${maven.build.timestamp}</Build-Time>
+              <Main-Class>org.glowroot.Viewer</Main-Class>
+              <Premain-Class>org.glowroot.MainEntryPoint</Premain-Class>
+              <Can-Redefine-Classes>true</Can-Redefine-Classes>
+              <Can-Retransform-Classes>true</Can-Retransform-Classes>
+            </manifestEntries>
           </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <version>1.5</version>
-        <executions>
-          <execution>
-            <id>add-third-party</id>
-            <goals>
-              <goal>add-third-party</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <thirdPartyFilename>META-INF/THIRD-PARTY-JAVA-LIBRARIES.txt</thirdPartyFilename>
-          <useMissingFile>true</useMissingFile>
-          <excludedArtifacts>glowroot-plugin-api</excludedArtifacts>
-          <excludedScopes>test,provided</excludedScopes>
-          <licenseMerges>
-            <licenseMerge>
-              Apache License, Version 2.0
-              |The Apache Software License, Version 2.0
-              |Apache License 2.0
-            </licenseMerge>
-            <licenseMerge>
-              BSD License
-              |BSD
-            </licenseMerge>
-          </licenseMerges>
         </configuration>
       </plugin>
     </plugins>
@@ -334,6 +291,15 @@
       </activation>
       <build>
         <plugins>
+          <plugin>
+            <artifactId>maven-remote-resources-plugin</artifactId>
+            <configuration>
+              <!-- only append these when shading -->
+              <appendedResourcesDirectory>
+                ${basedir}/src/main/appended-resources-uberjar
+              </appendedResourcesDirectory>
+            </configuration>
+          </plugin>
           <plugin>
             <artifactId>maven-shade-plugin</artifactId>
             <version>2.2</version>

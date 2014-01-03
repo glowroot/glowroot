@@ -1,0 +1,122 @@
+
+Glowroot includes the following software:
+
+AngularJS
+Copyright (c) 2010-2012 Google, Inc
+http://angularjs.org
+MIT License
+
+AngularUI Bootstrap
+Copyright (c) 2012-2013 the AngularUI Team
+http://angular-ui.github.io/bootstrap
+MIT License
+
+AngularUI Router
+Copyright (c) 2013 Karsten Sperling
+https://github.com/angular-ui/ui-router
+MIT License
+
+ASM
+Copyright (c) 2000-2011 INRIA, France Telecom
+http://asm.ow2.org
+BSD 3-Clause License
+
+Bootstrap
+Copyright (c) 2014 Twitter, Inc
+http://getbootstrap.com
+MIT License
+
+bootstrap-datepicker
+Copyright 2012 Stefan Petre, Improvements by Andrew Rowls
+https://github.com/eternicode/bootstrap-datepicker
+Apache License, Version 2.0
+
+excanvas
+Copyright 2006 Google Inc.
+https://code.google.com/p/explorercanvas
+Apache License, Version 2.0
+
+Flot
+Copyright (c) 2007-2013 IOLA and Ole Laursen
+http://www.flotcharts.org
+MIT License
+
+Guava
+Copyright (C) 2013 The Guava Authors
+http://code.google.com/p/guava-libraries
+Apache License, Version 2.0
+
+H2
+Copyright 2004-2012 H2 Group
+http://www.h2database.com
+Eclipse Public License, Version 1.0
+
+handlebars
+Copyright (C) 2011 by Yehuda Katz
+http://handlebarsjs.com
+MIT License
+
+HTML5 Shiv
+@afarkas @jdalton @jon_neal @rem
+https://github.com/aFarkas/html5shiv
+MIT License
+
+Jackson
+Copyright (c) 2007- Tatu Saloranta, tatu.saloranta@iki.fi
+https://github.com/FasterXML/jackson
+Apache License, Version 2.0
+
+jQuery
+Copyright 2013 jQuery Foundation and other contributors
+http://jquery.com
+MIT License
+
+jQuery Color
+Copyright 2013 jQuery Foundation and other contributors
+https://github.com/jquery/jquery-color
+MIT License
+
+Logback
+Copyright (C) 1999-2012, QOS.ch
+http://logback.qos.ch
+Eclipse Public License, Version 1.0
+
+Love Ya Like A Sister Font
+Copyright (c) 2010, Kimberly Geswein (kimberlygeswein.com)
+http://www.google.com/fonts/specimen/Love+Ya+Like+A+Sister
+SIL Open Font License, Version 1.1
+
+Moment.js
+Copyright (c) 2011-2013 Tim Wood, Iskren Chernev, Moment.js contributors
+http://momentjs.com
+MIT License
+
+Netty
+Copyright 2011 The Netty Project
+http://netty.io
+Apache License, Version 2.0
+
+Ning Compress
+Copyright 2009-2010 Ning, Inc
+http://github.com/ning/compress
+Apache License, Version 2.0
+
+qTip2
+Copyright (c) 2012 Craig Michael Thompson
+http://qtip2.com
+MIT License
+
+Respond.js
+Copyright (c) 2012 Scott Jehl
+https://github.com/scottjehl/Respond
+MIT License
+
+SLF4J
+Copyright (c) 2004-2013 QOS.ch
+http://www.slf4j.org
+MIT License
+
+spin.js
+Copyright (c) 2011 Felix Gnass [fgnass at neteye dot de]
+http://fgnass.github.io/spin.js
+MIT License

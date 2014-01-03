@@ -58,6 +58,4 @@ They can also be found in the following locations and run as standard JUnit test
 
 Glowroot source code is licensed under the Apache License, Version 2.0.
 
-Glowroot's binary distribution is released under the Apache License, Version 2.0. The binary distribution includes [third party web resources](https://github.com/glowroot/glowroot/wiki/Third-Party-Web-Resources) in _source form_ and [third party Java libraries](https://github.com/glowroot/glowroot/wiki/Third-Party-Java-Libraries) in _binary form_.
-
-Glowroot's source distribution (which includes both [third party web resources](https://github.com/glowroot/glowroot/wiki/Third-Party-Web-Resources) and [third party Java libraries](https://github.com/glowroot/glowroot/wiki/Third-Party-Java-Libraries) in _source form_) is released under a mixed license, with each component's source governed by its respective license.
+See [Third Party Software](https://github.com/glowroot/glowroot/wiki/Third-Party-Software) for license detail of subcomponents included in the binary distribution.

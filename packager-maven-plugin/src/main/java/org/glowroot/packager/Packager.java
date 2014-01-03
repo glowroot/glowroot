@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,10 +136,7 @@ public class Packager {
         JarOutputStream jarOut = null;
         try {
             jarOut = new JarOutputStream(fileOut);
-            JarEntry manifestEntry = new JarEntry("META-INF/MANIFEST.MF");
-            jarOut.putNextEntry(manifestEntry);
-            jarOut.write(createManifest(artifacts));
-            jarOut.closeEntry();
+            writeMetaInfFiles(artifacts, jarOut);
             Set<String> seenDirectories = Sets.newHashSet();
             List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
             for (Artifact artifact : artifacts) {
@@ -164,21 +161,32 @@ public class Packager {
         }
     }
 
-    private byte[] createManifest(List<Artifact> artifacts) throws IOException,
-            MojoExecutionException {
+    private void writeMetaInfFiles(List<Artifact> artifacts, JarOutputStream jarOut)
+            throws IOException, MojoExecutionException {
         for (Artifact artifact : artifacts) {
             if (artifact.getGroupId().equals("org.glowroot")
                     && artifact.getArtifactId().equals("glowroot-core")) {
                 JarFile jarFile = new JarFile(artifact.getFile());
-                JarEntry manifestEntry = jarFile.getJarEntry("META-INF/MANIFEST.MF");
-                InputStream manifestIn = jarFile.getInputStream(manifestEntry);
-                byte[] manifestBytes = ByteStreams.toByteArray(manifestIn);
-                manifestIn.close();
+                writeFile("META-INF/MANIFEST.MF", jarFile, jarOut);
+                writeFile("META-INF/LICENSE", jarFile, jarOut);
+                writeFile("META-INF/NOTICE", jarFile, jarOut);
                 jarFile.close();
-                return manifestBytes;
+                return;
             }
         }
         throw new MojoExecutionException("Missing project dependency org.glowroot:glowroot");
+    }
+
+    private void writeFile(String name, JarFile jarFile, JarOutputStream jarOut)
+            throws IOException {
+        JarEntry jarEntryIn = jarFile.getJarEntry(name);
+        InputStream in = jarFile.getInputStream(jarEntryIn);
+        byte[] bytes = ByteStreams.toByteArray(in);
+        in.close();
+        JarEntry jarEntryOut = new JarEntry(name);
+        jarOut.putNextEntry(jarEntryOut);
+        jarOut.write(bytes);
+        jarOut.closeEntry();
     }
 
     private void explode(File jarFile, JarOutputStream jarOut, Set<String> seenDirectories,
@@ -186,14 +194,17 @@ public class Packager {
         JarInputStream jarIn = new JarInputStream(new FileInputStream(jarFile));
         JarEntry jarEntry;
         while ((jarEntry = jarIn.getNextJarEntry()) != null) {
-            if (jarEntry.isDirectory() && !seenDirectories.add(jarEntry.getName())) {
+            String name = jarEntry.getName();
+            if (jarEntry.isDirectory() && !seenDirectories.add(name)) {
                 continue;
             }
-            if (jarEntry.getName().equals("META-INF/org.glowroot.plugin.json")) {
+            if (name.equals("META-INF/org.glowroot.plugin.json")) {
                 String content = CharStreams.toString(new InputStreamReader(jarIn, Charsets.UTF_8));
                 pluginDescriptors.add(PluginDescriptor.readValue(content));
+            } else if (name.equals("META-INF/LICENSE") || name.equals("META-INF/NOTICE")) {
+                // do nothing, already copied LICENSE and NOTICE from glowroot-core above
             } else {
-                JarEntry jarOutEntry = new JarEntry(jarEntry.getName());
+                JarEntry jarOutEntry = new JarEntry(name);
                 jarOut.putNextEntry(jarOutEntry);
                 ByteStreams.copy(jarIn, jarOut);
             }
