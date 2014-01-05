@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,23 @@ public class Flags {
                     OptionalServiceFactoryHelper.getDeclaredMethod(vmOptionClass, "getName");
             getNameMethod.setAccessible(true);
 
-            List<?> flags = (List<?>) OptionalServiceFactoryHelper.invokeStatic(getAllFlagsMethod);
+            List<?> flags;
+            try {
+                flags = (List<?>) Reflections.invokeStatic(getAllFlagsMethod);
+            } catch (ReflectiveTargetException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof InternalError) {
+                    String message = cause.getMessage();
+                    if (message != null && message.startsWith("Unsupported VMGlobal Type")) {
+                        throw new OptionalServiceFactoryException("Unavailable due to a known bug"
+                                + " present in some older JDK versions"
+                                + " (https://bugs.openjdk.java.net/browse/JDK-6915365)");
+                    }
+                }
+                throw new OptionalServiceFactoryException(e);
+            } catch (ReflectiveException e) {
+                throw new OptionalServiceFactoryException(e);
+            }
             if (flags == null) {
                 throw new OptionalServiceFactoryException(
                         "Method sun.management.Flag.getAllFlags() returned null");
@@ -79,12 +95,11 @@ public class Flags {
                     option = Reflections.invoke(getVMOptionMethod, flag);
                 } catch (ReflectiveTargetException e) {
                     if (e.getCause() instanceof NullPointerException) {
-                        // https://bugs.openjdk.java.net/browse/JDK-6658779
-                        throw new OptionalServiceFactoryException("Unavailable due to known JDK"
-                                + " bug, see https://bugs.openjdk.java.net/browse/JDK-6658779");
-                    } else {
-                        throw new OptionalServiceFactoryException(e);
+                        throw new OptionalServiceFactoryException("Unavailable due to a known bug"
+                                + " present in some older JDK versions"
+                                + " (https://bugs.openjdk.java.net/browse/JDK-6658779)");
                     }
+                    throw new OptionalServiceFactoryException(e);
                 } catch (ReflectiveException e) {
                     throw new OptionalServiceFactoryException(e);
                 }

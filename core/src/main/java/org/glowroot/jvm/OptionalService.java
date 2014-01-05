@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,10 +143,12 @@ public class OptionalService<T> {
     @SuppressWarnings("serial")
     static class OptionalServiceFactoryException extends Exception {
 
+        // "expected" reason, will not be logged
         OptionalServiceFactoryException(String message) {
             super(message);
         }
 
+        // "unexpected" reason, will be logged as warning
         OptionalServiceFactoryException(Exception e) {
             super(e);
         }

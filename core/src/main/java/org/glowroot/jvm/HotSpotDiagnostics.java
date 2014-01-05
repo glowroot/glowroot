@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,13 +126,21 @@ public class HotSpotDiagnostics {
                 ManagementFactory.getPlatformMBeanServer().getAttribute(objectName,
                         "DiagnosticOptions");
             } catch (JMRuntimeException e) {
-                if (e.getCause() instanceof NullPointerException) {
-                    // https://bugs.openjdk.java.net/browse/JDK-6658779
-                    throw new OptionalServiceFactoryException("Unavailable due to known JDK bug,"
-                            + " see https://bugs.openjdk.java.net/browse/JDK-6658779");
-                } else {
-                    throw new OptionalServiceFactoryException(e);
+                Throwable cause = e.getCause();
+                if (cause instanceof InternalError) {
+                    String message = cause.getMessage();
+                    if (message != null && message.startsWith("Unsupported VMGlobal Type")) {
+                        throw new OptionalServiceFactoryException("Unavailable due to a known bug"
+                                + " present in some older JDK versions"
+                                + " (https://bugs.openjdk.java.net/browse/JDK-6915365)");
+                    }
                 }
+                if (cause instanceof NullPointerException) {
+                    throw new OptionalServiceFactoryException("Unavailable due to a known bug"
+                            + " present in some older JDK versions"
+                            + " (https://bugs.openjdk.java.net/browse/JDK-6658779)");
+                }
+                throw new OptionalServiceFactoryException(e);
             } catch (JMException e) {
                 throw new OptionalServiceFactoryException(e);
             }
