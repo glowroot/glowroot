@@ -79,7 +79,7 @@ public class JvmInfoTest {
         container.executeAppUnderTest(ShouldWait.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getJvmInfo().getThreadWaitedTime()).isGreaterThan(5);
+        assertThat(trace.getJvmInfo().getThreadWaitedTime()).isGreaterThanOrEqualTo(5);
     }
 
     @Test
@@ -89,7 +89,7 @@ public class JvmInfoTest {
         container.executeAppUnderTest(ShouldBlock.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getJvmInfo().getThreadBlockedTime()).isGreaterThan(5);
+        assertThat(trace.getJvmInfo().getThreadBlockedTime()).isGreaterThanOrEqualTo(5);
     }
 
     @Test
@@ -216,7 +216,8 @@ public class JvmInfoTest {
                 synchronized (notify) {
                     notify.notify();
                 }
-                Thread.sleep(10);
+                // sleeping here while holding lock causes thread blocked time in trace thread
+                Thread.sleep(20);
             }
             return null;
         }
