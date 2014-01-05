@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,9 +110,8 @@ public class Threads {
             }
             // make an exception for H2's Generate Seed thread since it can take a bit of time to
             // complete on some systems (e.g. travis-ci), but is otherwise harmless
-            // note: both the "Generate Seed" thread name and the string in this conditional are
-            // changed to "Glowroot-H2 Generate Seed" during shading
-            if (rogueThreads.size() == 1 && rogueThreads.get(0).getName().equals("Generate Seed")) {
+            if (rogueThreads.size() == 1
+                    && rogueThreads.get(0).getName().equals(getGenerateSeedThreadName())) {
                 // success
                 return;
             }
@@ -160,6 +159,14 @@ public class Threads {
             return true;
         }
         return false;
+    }
+
+    private static String getGenerateSeedThreadName() {
+        if (isShaded()) {
+            return "Glowroot-H2 Generate Seed";
+        } else {
+            return "Generate Seed";
+        }
     }
 
     private static boolean isShaded() {
