@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,10 +51,12 @@ public class PreInitializeClassesTest {
                 "org/glowroot/weaving/WeavingClassFileTransformer", "transform",
                 "(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/Class;"
                         + "Ljava/security/ProtectionDomain;[B)[B"));
-        // "call" DataSource$ShutdownHookThread.run()
+        // "call" DataSource$ShutdownHookThread.run() and RollingFile$ShutdownHookThread.run()
         // because class loading during jvm shutdown throws exception
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/glowroot/local/store/DataSource$ShutdownHookThread", "run", "()V"));
+        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
+                "org/glowroot/local/store/RollingFile$ShutdownHookThread", "run", "()V"));
         globalCollector.processOverrides();
         // these assertions just help for debugging, since it can be hard to see the differences in
         // the very large lists below in the "real" assertion

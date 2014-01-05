@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,8 @@ import org.glowroot.markers.Static;
  * GlowrootClassFileTransformer are pre-initialized (and all classes referenced from those classes,
  * etc).
  * 
- * Class loading is also a bad idea inside of JVM shutdown hooks.
+ * Class loading is also a bad idea inside of JVM shutdown hooks, see
+ * https://bugs.openjdk.java.net/browse/JDK-7142035
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -386,6 +387,10 @@ class PreInitializeClasses {
         types.add("org.glowroot.local.store.DataSource");
         types.add("org.glowroot.local.store.DataSource$1");
         types.add("org.glowroot.local.store.DataSource$ShutdownHookThread");
+        types.add("org.glowroot.local.store.RollingFile");
+        types.add("org.glowroot.local.store.RollingFile$ShutdownHookThread");
+        types.add("org.glowroot.local.store.RollingOutputStream");
+        types.add("org.glowroot.local.store.RollingOutputStream$FsyncScheduledRunnable");
         types.add("org.glowroot.trace.MetricNameCache");
         types.add("org.glowroot.trace.MetricTimerServiceImpl");
         types.add("org.glowroot.trace.MetricTimerServiceImpl$NopMetricTimer");
