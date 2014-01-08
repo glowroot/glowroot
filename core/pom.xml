@@ -190,6 +190,10 @@
               <!-- npm install is not needed when grunt is skipped -->
               <skip>${grunt.skip}</skip>
               <executable>npm</executable>
+              <!-- executableOutputCharset UTF-8 is needed when running on windows, in order to
+                render a couple of special characters that npm uses when displaying the dependency
+                tree structure -->
+              <executableOutputCharset>UTF-8</executableOutputCharset>
               <arguments>
                 <argument>install</argument>
               </arguments>
@@ -207,6 +211,10 @@
               <!-- bower update is not needed when grunt is skipped -->
               <skip>${grunt.skip}</skip>
               <executable>bower</executable>
+              <!-- executableOutputCharset UTF-8 is needed when running on windows, in order to
+                render a couple of special characters that bower uses when displaying the dependency
+                tree structure -->
+              <executableOutputCharset>UTF-8</executableOutputCharset>
               <arguments>
                 <argument>update</argument>
               </arguments>
