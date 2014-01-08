@@ -63,6 +63,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.easytesting</groupId>
+      <artifactId>fest-reflect</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-test-container</artifactId>
       <version>${project.version}</version>
