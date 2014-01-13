@@ -261,25 +261,15 @@
 
   <profiles>
     <profile>
-      <!-- this profile is active by default, and disabled only when running jacoco code coverage
-        reports, see jacoco profile comment in parent pom.xml for more detail -->
-      <id>shade-and-proguard</id>
+      <id>active-by-default-shade</id>
       <activation>
         <property>
-          <name>!jacoco</name>
+          <name>shade.skip</name>
+          <value>!true</value>
         </property>
       </activation>
       <build>
         <plugins>
-          <plugin>
-            <artifactId>maven-remote-resources-plugin</artifactId>
-            <configuration>
-              <!-- only append these when shading -->
-              <appendedResourcesDirectory>
-                ${basedir}/src/main/appended-resources-uberjar
-              </appendedResourcesDirectory>
-            </configuration>
-          </plugin>
           <plugin>
             <artifactId>maven-shade-plugin</artifactId>
             <configuration>

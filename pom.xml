@@ -39,13 +39,12 @@
     <module>core</module>
     <module>test-container</module>
     <module>plugin-testkit</module>
-    <module>packager-maven-plugin</module>
     <module>integration-tests</module>
     <module>webdriver-tests</module>
     <module>ui-testing</module>
     <module>servlet-plugin</module>
     <module>jdbc-plugin</module>
-    <module>package</module>
+    <module>distribution</module>
   </modules>
 
   <scm>
@@ -392,16 +391,7 @@
       </build>
     </profile>
     <profile>
-      <!-- this profile should be activated using -Djacoco since the presence of that property will
-        disable class shading and proguard-ing in core/pom.xml, otherwise the bytecode changes done
-        to the classes during shading and proguard-ing will modify the jacoco class id and the sonar
-        reports won't report usage of those bytecode modified classes. -->
-      <id>active-this-profile-using-the-jacoco-property</id>
-      <activation>
-        <property>
-          <name>jacoco</name>
-        </property>
-      </activation>
+      <id>jacoco</id>
       <build>
         <plugins>
           <plugin>

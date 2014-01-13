@@ -3,8 +3,8 @@
 
 ## Quick start
 
-1. Download the latest [glowroot.jar](https://glowroot.s3.amazonaws.com/snapshots/latest/glowroot.jar) and place it in an empty directory of your choosing
-2. Add `-javaagent:glowroot.jar` to your application's JVM arguments
+1. Download and unzip the [latest snapshot](https://glowroot.s3.amazonaws.com/snapshots/latest/glowroot-dist.zip)
+2. Add `-javaagent:path/to/glowroot.jar` to your application's JVM arguments
 3. Start your application
 4. Connect to http://localhost:4000
 
@@ -58,4 +58,4 @@ They can also be found in the following locations and run as standard JUnit test
 
 Glowroot source code is licensed under the Apache License, Version 2.0.
 
-See [Third Party Software](https://github.com/glowroot/glowroot/wiki/Third-Party-Software) for license detail of subcomponents included in the binary distribution.
+See [Third Party Software](https://github.com/glowroot/glowroot/wiki/Third-Party-Software) for license detail of third party software included in the binary distribution.

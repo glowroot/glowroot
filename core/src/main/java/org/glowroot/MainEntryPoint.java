@@ -19,6 +19,7 @@ import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -27,13 +28,16 @@ import checkers.nullness.quals.EnsuresNonNull;
 import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
 import checkers.nullness.quals.RequiresNonNull;
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.GlowrootModule.StartupFailedException;
 import org.glowroot.api.PluginServices;
+import org.glowroot.config.PluginDescriptor;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Static;
@@ -118,8 +122,17 @@ public class MainEntryPoint {
         String version = Version.getVersion();
         glowrootModule = new GlowrootModule(properties, instrumentation, version);
         infoLogger.info("Glowroot started (version {})", version);
-        infoLogger.info("Glowroot listening at http://localhost:"
-                + glowrootModule.getUiModule().getPort());
+        infoLogger.info("Glowroot listening at http://localhost:{}",
+                glowrootModule.getUiModule().getPort());
+        List<PluginDescriptor> pluginDescriptors =
+                glowrootModule.getConfigModule().getPluginDescriptorCache().getPluginDescriptors();
+        List<String> pluginNames = Lists.newArrayList();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            pluginNames.add(pluginDescriptor.getName());
+        }
+        if (pluginNames.size() > 0) {
+            infoLogger.info("Glowroot plugins loaded: {}", Joiner.on(", ").join(pluginNames));
+        }
     }
 
     private static ImmutableMap<String, String> getGlowrootProperties() {

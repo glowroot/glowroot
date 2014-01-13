@@ -9,10 +9,11 @@
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>glowroot-package</artifactId>
+  <artifactId>glowroot-distribution</artifactId>
+  <packaging>pom</packaging>
 
-  <name>Glowroot Package</name>
-  <description>Glowroot Package</description>
+  <name>Glowroot Distribution</name>
+  <description>Glowroot Distribution</description>
 
   <dependencies>
     <dependency>
@@ -32,36 +33,31 @@
     </dependency>
   </dependencies>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <!-- eclipse doesn't resolve plugins against the current workspace, so it needs this if
-        glowroot-packager-maven-plugin hasn't been installed into the local repo already -->
-      <id>sonatype-nexus-snapshots</id>
-      <name>Sonatype Nexus Snapshots</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </pluginRepository>
-  </pluginRepositories>
-
   <build>
-    <finalName>glowroot-${project.version}</finalName>
+    <finalName>glowroot</finalName>
     <plugins>
       <plugin>
-        <groupId>org.glowroot</groupId>
-        <artifactId>glowroot-packager-maven-plugin</artifactId>
-        <version>${project.version}</version>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <descriptors>
+            <descriptor>${basedir}/dist.xml</descriptor>
+          </descriptors>
+        </configuration>
         <executions>
           <execution>
+            <phase>package</phase>
             <goals>
-              <goal>package</goal>
+              <goal>single</goal>
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
       </plugin>
     </plugins>
   </build>

@@ -18,6 +18,7 @@ package org.glowroot;
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
+import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -71,7 +72,13 @@ public class GlowrootModule {
                 .setNameFormat("Glowroot-Background-%d").build();
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
         JvmModule jvmModule = new JvmModule();
-        configModule = new ConfigModule(dataDir);
+        try {
+            configModule = new ConfigModule(instrumentation, dataDir);
+        } catch (IOException e) {
+            throw new StartupFailedException(e);
+        } catch (URISyntaxException e) {
+            throw new StartupFailedException(e);
+        }
         try {
             storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
                     scheduledExecutor);

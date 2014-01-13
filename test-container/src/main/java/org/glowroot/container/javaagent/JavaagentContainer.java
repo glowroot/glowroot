@@ -234,7 +234,8 @@ public class JavaagentContainer implements Container {
                     + " was created with captureConsoleOutput=true");
         }
         for (String line : splitter.split(capturedOutput)) {
-            if (line.contains("Glowroot started") || line.contains("Glowroot listening")) {
+            if (line.contains("Glowroot started") || line.contains("Glowroot listening")
+                    || line.contains("Glowroot plugins loaded")) {
                 continue;
             }
             unexpectedLines.add(line);
