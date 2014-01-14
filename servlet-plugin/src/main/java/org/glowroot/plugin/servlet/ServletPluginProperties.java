@@ -18,11 +18,12 @@ package org.glowroot.plugin.servlet;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
-import org.glowroot.shaded.google.common.base.Splitter;
-import org.glowroot.shaded.google.common.collect.ImmutableList;
-import org.glowroot.shaded.google.common.collect.ImmutableSet;
 
 /**
  * @author Trask Stalnaker

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,14 @@ import java.util.concurrent.ConcurrentMap;
 
 import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.Optional;
-import org.glowroot.shaded.google.common.base.Joiner;
-import org.glowroot.shaded.google.common.base.Strings;
-import org.glowroot.shaded.google.common.collect.ImmutableMap;
-import org.glowroot.shaded.google.common.collect.Maps;
 
 /**
  * Similar thread safety issues as {@link JdbcMessageSupplier}, see documentation in that class for

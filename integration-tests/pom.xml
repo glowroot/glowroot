@@ -22,12 +22,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <!-- using shaded-guava dependency to take advantage of the shaded guava library that is
-        already provided in the glowroot jar (and more importantly for these tests, the
-        shaded-guava classes are not reloaded for each test by IsolatedWeavingClassLoader which
-        makes the tests run measurably faster) -->
-      <groupId>org.glowroot.shaded</groupId>
-      <artifactId>shaded-guava</artifactId>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -50,11 +46,6 @@
     <dependency>
       <groupId>com.ning</groupId>
       <artifactId>async-http-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

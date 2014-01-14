@@ -22,13 +22,13 @@ import java.util.Set;
 
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.api.Beans;
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
 import org.glowroot.api.UnresolvedMethod;
-import org.glowroot.shaded.google.common.base.Strings;
-import org.glowroot.shaded.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker

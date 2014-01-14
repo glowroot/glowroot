@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,8 @@ import java.sql.Statement;
 import java.util.List;
 
 import checkers.nullness.quals.Nullable;
-
-import org.glowroot.shaded.google.common.collect.ImmutableList;
-import org.glowroot.shaded.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 /**
  * Used to capture and mirror the state of statements since the underlying {@link Statement} values

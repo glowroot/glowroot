@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import java.util.List;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.EnsuresNonNullIf;
 import checkers.nullness.quals.Nullable;
+import com.google.common.collect.ImmutableList;
 
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.shaded.google.common.collect.ImmutableList;
 
 /**
  * Objects in the parameter array, batchedParameters collections and batchedSqls collection aren't

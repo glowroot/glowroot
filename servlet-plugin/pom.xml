@@ -23,10 +23,10 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <!-- using shaded-guava dependency to take advantage of the shaded guava library that is
-        already provided in the glowroot jar -->
-      <groupId>org.glowroot.shaded</groupId>
-      <artifactId>shaded-guava</artifactId>
+      <!-- guava library is shaded below so that the plugin can use the guava library that is
+        already shaded and embedded inside glowroot-core -->
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -45,11 +45,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -84,4 +79,51 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>active-by-default-shade</id>
+      <activation>
+        <property>
+          <name>shade.skip</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-shade-plugin</artifactId>
+            <configuration>
+              <dependencyReducedPomLocation>
+                ${project.build.directory}/dependency-reduced-pom.xml
+              </dependencyReducedPomLocation>
+              <createSourcesJar>true</createSourcesJar>
+              <shadeSourcesContent>true</shadeSourcesContent>
+            </configuration>
+            <executions>
+              <execution>
+                <id>default</id>
+                <goals>
+                  <goal>shade</goal>
+                </goals>
+                <configuration>
+                  <artifactSet>
+                    <includes>
+                  <include>org.glowroot.plugins:servlet-plugin</include>
+                    </includes>
+                  </artifactSet>
+                  <relocations>
+                    <relocation>
+                      <pattern>com.google.common</pattern>
+                      <shadedPattern>org.glowroot.shaded.google.common</shadedPattern>
+                    </relocation>
+                  </relocations>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

@@ -20,12 +20,11 @@ import java.util.Collection;
 import java.util.List;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
+import com.google.common.hash.HashCode;
 import dataflow.quals.Pure;
-
-import org.glowroot.shaded.google.common.collect.ImmutableList;
-import org.glowroot.shaded.google.common.collect.Lists;
-import org.glowroot.shaded.google.common.collect.Queues;
-import org.glowroot.shaded.google.common.hash.HashCode;
 
 /**
  * Used to capture and mirror the state of prepared statements since the underlying

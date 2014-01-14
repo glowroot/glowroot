@@ -96,11 +96,6 @@
         <version>1.7.1</version>
       </dependency>
       <dependency>
-        <groupId>org.glowroot.shaded</groupId>
-        <artifactId>shaded-guava</artifactId>
-        <version>16.0-rc1-SNAPSHOT</version>
-      </dependency>
-      <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>16.0-rc1</version>
@@ -272,6 +267,10 @@
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
           <version>3.3</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>2.2</version>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>

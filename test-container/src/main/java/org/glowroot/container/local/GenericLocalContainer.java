@@ -103,6 +103,8 @@ public class GenericLocalContainer<T> {
                 pointcutConfigAdviceCache.getAdvisors()));
         loader.setMetricTimerService(glowrootModule.getTraceModule().getMetricTimerService());
         loader.addBridgeClasses(appInterface);
+        // TODO add hook to optionally exclude guava package which improves integration-test
+        // performance
         loader.addExcludePackages("org.glowroot.api", "org.glowroot.collector",
                 "org.glowroot.common", "org.glowroot.config", "org.glowroot.dynamicadvice",
                 "org.glowroot.local", "org.glowroot.trace", "org.glowroot.weaving",

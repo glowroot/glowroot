@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.plugin.servlet;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Strings;
 
 import org.glowroot.api.CompletedSpan;
 import org.glowroot.api.ErrorMessage;
@@ -31,7 +32,6 @@ import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.shaded.google.common.base.Strings;
 
 /**
  * Defines pointcuts and captures data on
