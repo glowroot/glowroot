@@ -420,21 +420,13 @@ public class JdbcPluginTest {
         return connection;
     }
 
-    private static void insertRecords(Connection connection) throws SQLException {
-        Statement statement = connection.createStatement();
-        try {
-            try {
-                // in case of previous failure mid-test
-                statement.execute("drop table employee");
-            } catch (SQLException e) {
-            }
-            statement.execute("create table employee (name varchar(100), misc binary(100))");
-            statement.execute("insert into employee (name) values ('john doe')");
-            statement.execute("insert into employee (name) values ('jane doe')");
-            statement.execute("insert into employee (name) values ('sally doe')");
-        } finally {
-            statement.close();
-        }
+    @SuppressWarnings("unused")
+    private static Connection createPostgresConnection() throws SQLException {
+        // set up database
+        Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost/glowroot",
+                "glowroot", "glowroot");
+        insertRecords(connection, "bytea");
+        return connection;
     }
 
     // need to add the oracle driver to the path in order to use this, e.g. install into local repo:
@@ -482,6 +474,29 @@ public class JdbcPluginTest {
                 "sa", "Datac3rt");
         insertRecords(connection);
         return connection;
+    }
+
+    private static void insertRecords(Connection connection) throws SQLException {
+        insertRecords(connection, "binary(100)");
+    }
+
+    private static void insertRecords(Connection connection, String binaryTypeName)
+            throws SQLException {
+        Statement statement = connection.createStatement();
+        try {
+            try {
+                // in case of previous failure mid-test
+                statement.execute("drop table employee");
+            } catch (SQLException e) {
+            }
+            statement.execute("create table employee (name varchar(100), misc " + binaryTypeName
+                    + ")");
+            statement.execute("insert into employee (name) values ('john doe')");
+            statement.execute("insert into employee (name) values ('jane doe')");
+            statement.execute("insert into employee (name) values ('sally doe')");
+        } finally {
+            statement.close();
+        }
     }
 
     private static void closeConnection(Connection connection) throws SQLException {
