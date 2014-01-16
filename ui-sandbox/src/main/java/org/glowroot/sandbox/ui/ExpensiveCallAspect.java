@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.testing.ui;
+package org.glowroot.sandbox.ui;
 
 import java.util.Map;
 import java.util.Random;
@@ -44,10 +44,10 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 public class ExpensiveCallAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-testing");
+    private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
 
     private static final UnresolvedMethod getSpanText =
-            UnresolvedMethod.from("org.glowroot.testing.ui.ExpensiveCall", "getSpanText");
+            UnresolvedMethod.from("org.glowroot.sandbox.ui.ExpensiveCall", "getSpanText");
 
     private static final Random random = new Random();
     private static final Exception nestedCause = new IllegalArgumentException(
@@ -55,7 +55,7 @@ public class ExpensiveCallAspect {
     private static final Exception cause = new IllegalStateException(
             "a cause with a different stack trace", nestedCause);
 
-    @Pointcut(typeName = "org.glowroot.testing.ui.ExpensiveCall", methodName = "execute0",
+    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute0",
             metricName = "expensive 0")
     public static class ExpensiveCallAdvice0 {
         private static final MetricName metricName =
@@ -81,7 +81,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.testing.ui.ExpensiveCall", methodName = "execute1",
+    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute1",
             metricName = "expensive 1")
     public static class ExpensiveCallAdvice1 {
         private static final MetricName metricName =
@@ -107,7 +107,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.testing.ui.ExpensiveCall", methodName = "execute2",
+    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute2",
             metricName = "expensive 2")
     public static class ExpensiveCallAdvice2 {
         private static final MetricName metricName =
@@ -133,7 +133,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.testing.ui.ExpensiveCall", methodName = "execute3",
+    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute3",
             metricName = "expensive 3")
     public static class ExpensiveCallAdvice3 {
         private static final MetricName metricName =
@@ -159,7 +159,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.testing.ui.ExpensiveCall", methodName = "execute4",
+    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute4",
             metricName = "expensive 4")
     public static class ExpensiveCallAdvice4 {
         private static final MetricName metricName =
@@ -185,7 +185,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.testing.ui.ExpensiveCall", methodName = "execute5",
+    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute5",
             metricName = "expensive 5")
     public static class ExpensiveCallAdvice5 {
         private static final MetricName metricName =
@@ -211,7 +211,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.testing.ui.ExpensiveCall", methodName = "execute6",
+    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute6",
             metricName = "expensive 6")
     public static class ExpensiveCallAdvice6 {
         private static final MetricName metricName =
@@ -237,7 +237,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.testing.ui.ExpensiveCall", methodName = "execute7",
+    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute7",
             metricName = "expensive 7")
     public static class ExpensiveCallAdvice7 {
         private static final MetricName metricName =
@@ -263,7 +263,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.testing.ui.ExpensiveCall", methodName = "execute8",
+    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute8",
             metricName = "expensive 8")
     public static class ExpensiveCallAdvice8 {
         private static final MetricName metricName =
@@ -289,7 +289,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.testing.ui.ExpensiveCall", methodName = "execute9",
+    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute9",
             metricName = "expensive 9 really long to test wrapping")
     public static class ExpensiveCallAdvice9 {
         private static final MetricName metricName =

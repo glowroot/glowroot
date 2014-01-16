@@ -9,10 +9,10 @@
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>glowroot-ui-testing</artifactId>
+  <artifactId>glowroot-ui-sandbox</artifactId>
 
-  <name>Glowroot UI Testing</name>
-  <description>Glowroot UI Testing</description>
+  <name>Glowroot UI Sandbox</name>
+  <description>Glowroot UI Sandbox</description>
 
   <dependencies>
     <dependency>

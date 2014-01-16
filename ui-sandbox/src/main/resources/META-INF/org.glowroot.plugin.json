@@ -1,6 +1,6 @@
 {
-  "name": "Ui Testing Plugin",
-  "id": "glowroot-ui-testing",
+  "name": "Ui Sandbox Plugin",
+  "id": "glowroot-ui-sandbox",
   "version": "0.5-SNAPSHOT",
   "properties": [
     {
@@ -31,8 +31,8 @@
     }
   ],
   "aspects": [
-    "org.glowroot.testing.ui.NestableCallAspect",
-    "org.glowroot.testing.ui.ExpensiveCallAspect",
-    "org.glowroot.testing.ui.ExternalJvmMainAspect"
+    "org.glowroot.sandbox.ui.NestableCallAspect",
+    "org.glowroot.sandbox.ui.ExpensiveCallAspect",
+    "org.glowroot.sandbox.ui.ExternalJvmMainAspect"
   ]
 }

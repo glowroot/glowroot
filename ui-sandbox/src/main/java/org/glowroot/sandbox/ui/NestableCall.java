@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.testing.ui;
+package org.glowroot.sandbox.ui;
 
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;

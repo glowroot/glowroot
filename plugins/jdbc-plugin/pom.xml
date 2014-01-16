@@ -7,13 +7,14 @@
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
     <version>0.5-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
   </parent>
 
   <groupId>org.glowroot.plugins</groupId>
-  <artifactId>servlet-plugin</artifactId>
+  <artifactId>jdbc-plugin</artifactId>
 
-  <name>Glowroot Servlet Plugin</name>
-  <description>Glowroot Servlet Plugin</description>
+  <name>Glowroot Jdbc Plugin</name>
+  <description>Glowroot Jdbc Plugin</description>
 
   <dependencies>
     <dependency>
@@ -36,13 +37,6 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <!-- testing against servlet 2.5 -->
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-servlet_2.5_spec</artifactId>
-      <version>1.2</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -59,18 +53,34 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
-      <!-- spring-test 4.0 depends on servlet 3.0 -->
-      <version>3.2.6.RELEASE</version>
+      <!-- this is only needed (directly) for JdbcPluginPerformanceMain -->
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-test-container</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- optional dependency of spring-test that is required by
-        org.springframework.mock.web.MockHttpServletRequest -->
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-core</artifactId>
-      <version>3.2.6.RELEASE</version>
+      <groupId>org.hsqldb</groupId>
+      <artifactId>hsqldb</artifactId>
+      <version>2.3.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>9.3-1100-jdbc4</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-dbcp</groupId>
+      <artifactId>commons-dbcp</artifactId>
+      <version>1.4</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-jdbc</artifactId>
+      <version>7.0.47</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -109,7 +119,7 @@
                 <configuration>
                   <artifactSet>
                     <includes>
-                  <include>org.glowroot.plugins:servlet-plugin</include>
+                      <include>org.glowroot.plugins:jdbc-plugin</include>
                     </includes>
                   </artifactSet>
                   <relocations>

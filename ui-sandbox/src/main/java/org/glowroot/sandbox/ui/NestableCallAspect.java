@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.testing.ui;
+package org.glowroot.sandbox.ui;
 
 import java.util.Map;
 import java.util.Random;
@@ -47,9 +47,9 @@ public class NestableCallAspect {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
-    private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-testing");
+    private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
 
-    @Pointcut(typeName = "org.glowroot.testing.ui.NestableCall", methodName = "execute",
+    @Pointcut(typeName = "org.glowroot.sandbox.ui.NestableCall", methodName = "execute",
             metricName = "nestable", captureNested = false)
     public static class NestableCallAdvice {
         private static final MetricName metricName =
@@ -103,7 +103,7 @@ public class NestableCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.testing.ui.NestableCall", methodName = "execute",
+    @Pointcut(typeName = "org.glowroot.sandbox.ui.NestableCall", methodName = "execute",
             metricName = "nestable and very long", captureNested = false)
     public static class NestableCallLongMetricAdvice {
         private static final MetricName metricName =

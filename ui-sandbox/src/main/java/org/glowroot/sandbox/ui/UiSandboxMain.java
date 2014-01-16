@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.testing.ui;
+package org.glowroot.sandbox.ui;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +40,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class UiTestingMain {
+public class UiSandboxMain {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
 
@@ -54,7 +54,7 @@ public class UiTestingMain {
         System.setProperty("glowroot.internal.collector.aggregateInterval", "15");
     }
 
-    private UiTestingMain() {}
+    private UiSandboxMain() {}
 
     public static void main(String... args) throws Exception {
         Container container;

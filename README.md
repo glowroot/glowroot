@@ -51,8 +51,8 @@ They can also be found in the following locations and run as standard JUnit test
 * Unit tests are under [core/src/test/java](core/src/test/java)
 * Integration tests are under [integration-tests/src/test/java](integration-tests/src/test/java)
 * WebDriver tests are under [webdriver-tests/src/test/java](webdriver-tests/src/test/java)
-* Servlet plugin tests are under [servlet-plugin/src/test/java](servlet-plugin/src/test/java)
-* Jdbc plugin tests are under [jdbc-plugin/src/test/java](jdbc-plugin/src/test/java)
+* Servlet plugin tests are under [plugins/servlet-plugin/src/test/java](plugins/servlet-plugin/src/test/java)
+* Jdbc plugin tests are under [plugins/jdbc-plugin/src/test/java](plugins/jdbc-plugin/src/test/java)
 
 ## License
 

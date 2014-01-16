@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.testing.ui;
+package org.glowroot.sandbox.ui;
 
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
@@ -36,7 +36,7 @@ import org.glowroot.api.weaving.Pointcut;
  */
 public class ExternalJvmMainAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-testing");
+    private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
 
     @Pointcut(typeName = "org.glowroot.container.javaagent.JavaagentContainer",
             methodName = "main", methodArgs = {"java.lang.String[]"},

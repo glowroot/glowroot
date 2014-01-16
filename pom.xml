@@ -41,9 +41,9 @@
     <module>plugin-testkit</module>
     <module>integration-tests</module>
     <module>webdriver-tests</module>
-    <module>ui-testing</module>
-    <module>servlet-plugin</module>
-    <module>jdbc-plugin</module>
+    <module>ui-sandbox</module>
+    <module>plugins/servlet-plugin</module>
+    <module>plugins/jdbc-plugin</module>
     <module>distribution</module>
   </modules>
 
@@ -382,9 +382,7 @@
               <javaParams>
                 -Djsr308_imports=checkers.nullness.quals.*${path.separator}checkers.igj.quals.*
               </javaParams>
-              <javacParams>
-                -Astubs=${basedir}/../core/src/main/stubs
-              </javacParams>
+              <javacParams>-Astubs=core/src/main/stubs</javacParams>
             </configuration>
           </plugin>
         </plugins>
