@@ -59,7 +59,6 @@ public class DataSourceCompactTest {
     @Test
     public void shouldCompact() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         File dbFile = new File(dataDir, "glowroot.h2.db");
         // when
         container.executeAppUnderTest(GenerateLotsOfTraces.class);

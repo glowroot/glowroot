@@ -48,14 +48,7 @@
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-plugin-testkit</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!-- this is only needed (directly) for JdbcPluginPerformanceMain -->
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-test-container</artifactId>
+      <artifactId>glowroot-test-harness</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

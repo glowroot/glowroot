@@ -25,7 +25,8 @@ import checkers.nullness.quals.Nullable;
  */
 public interface ConfigService {
 
-    void setStoreThresholdMillis(int storeThresholdMillis) throws Exception;
+    void setPluginProperty(String pluginId, String propertyName, @Nullable Object propertyValue)
+            throws Exception;
 
     GeneralConfig getGeneralConfig() throws Exception;
 

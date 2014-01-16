@@ -42,7 +42,6 @@ public class SnapshotDaoDeletePerformanceMain {
     public static void main(String... args) throws Exception {
         Container container = Containers.create();
         // set thresholds low so there will be lots of data to view
-        container.getConfigService().setStoreThresholdMillis(0);
         CoarseProfilingConfig profilingConfig = container.getConfigService()
                 .getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(100);

@@ -32,13 +32,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.testkit.AppUnderTest;
-import org.glowroot.testkit.AppUnderTestServices;
-import org.glowroot.testkit.Container;
-import org.glowroot.testkit.Metric;
-import org.glowroot.testkit.Span;
-import org.glowroot.testkit.Trace;
-import org.glowroot.testkit.TraceMarker;
+import org.glowroot.Containers;
+import org.glowroot.container.AppUnderTest;
+import org.glowroot.container.AppUnderTestServices;
+import org.glowroot.container.Container;
+import org.glowroot.container.TraceMarker;
+import org.glowroot.container.trace.Metric;
+import org.glowroot.container.trace.Span;
+import org.glowroot.container.trace.Trace;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -56,7 +57,7 @@ public class JdbcPluginTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Container.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -75,7 +76,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
@@ -88,7 +89,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndUsePrevious.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
@@ -101,7 +102,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndUseRelativeForward.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
@@ -114,7 +115,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndUseRelativeBackward.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
@@ -127,7 +128,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndUseAbsolute.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
@@ -140,7 +141,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndUseFirst.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
@@ -153,7 +154,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndUseLast.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
@@ -166,7 +167,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
@@ -176,11 +177,11 @@ public class JdbcPluginTest {
     @Test
     public void testPreparedStatementWithBindParameters() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
@@ -191,11 +192,11 @@ public class JdbcPluginTest {
     @Test
     public void testPreparedStatementWithSetNull() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // whens
         container.executeAppUnderTest(ExecutePreparedStatementWithSetNull.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
@@ -205,11 +206,11 @@ public class JdbcPluginTest {
     @Test
     public void testPreparedStatementWithBinary() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithBinary.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
@@ -220,11 +221,11 @@ public class JdbcPluginTest {
     @Test
     public void testCallableStatement() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecuteCallableStatement.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
@@ -237,7 +238,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteJdbcCommit.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
         Span jdbcInsertSpan = trace.getSpans().get(1);
         assertThat(jdbcInsertSpan.getMessage().getText()).startsWith(
@@ -255,11 +256,11 @@ public class JdbcPluginTest {
     @Test
     public void testResultSetValueMetric() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         boolean found = false;
         for (Metric metric : trace.getMetrics()) {
             if (metric.getName().equals("jdbc resultset value")) {
@@ -273,11 +274,12 @@ public class JdbcPluginTest {
     @Test
     public void testMetadataMetricDisabledSpan() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureDatabaseMetaDataSpans", false);
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "captureDatabaseMetaDataSpans", false);
         // when
         container.executeAppUnderTest(AccessMetaData.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getMetrics().size()).isEqualTo(2);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
@@ -287,11 +289,12 @@ public class JdbcPluginTest {
     @Test
     public void testMetadataMetricEnabledSpan() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureDatabaseMetaDataSpans", true);
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "captureDatabaseMetaDataSpans", true);
         // when
         container.executeAppUnderTest(AccessMetaData.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc metadata:"
                 + " DatabaseMetaData.getTables() [connection: ");
@@ -303,11 +306,11 @@ public class JdbcPluginTest {
     @Test
     public void testBatchPreparedStatement() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
         assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution: 2 x"
                 + " insert into employee (name) values (?) ['huckle'] ['sally'] [connection: ");
@@ -318,11 +321,11 @@ public class JdbcPluginTest {
     @Test
     public void testBatchPreparedStatementWithoutClear() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecuteBatchPreparedStatementWithoutClear.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
         assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution: 2 x"
                 + " insert into employee (name) values (?) ['huckle'] ['sally'] [connection: ");
@@ -334,11 +337,11 @@ public class JdbcPluginTest {
     @Test
     public void testBatchStatement() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecuteBatchStatement.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
         assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution:"
                 + " insert into employee (name) values ('huckle'),"
@@ -351,11 +354,11 @@ public class JdbcPluginTest {
     @Test
     public void testBatchStatementWithoutClear() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecuteBatchStatementWithoutClear.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
         assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution:"
                 + " insert into employee (name) values ('huckle'),"
@@ -376,7 +379,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementDisableReEnableMidIterating.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith(
                 "jdbc execution: select * from employee where name like ? => 0 rows [connection: ");

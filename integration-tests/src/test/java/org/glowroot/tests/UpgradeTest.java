@@ -73,7 +73,6 @@ public class UpgradeTest {
     public static void main(String... args) throws Exception {
         File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
         Container container = LocalContainer.createWithFileDb(dataDir);
-        container.getConfigService().setStoreThresholdMillis(0);
         StorageConfig storageConfig = container.getConfigService().getStorageConfig();
         // disable trace snapshot expiration so the test data won't expire
         storageConfig.setSnapshotExpirationHours(-1);

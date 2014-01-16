@@ -56,10 +56,14 @@ class JavaagentConfigService implements ConfigService {
     }
 
     @Override
-    public void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
-        GeneralConfig generalConfig = getGeneralConfig();
-        generalConfig.setStoreThresholdMillis(storeThresholdMillis);
-        updateGeneralConfig(generalConfig);
+    public void setPluginProperty(String pluginId, String propertyName,
+            @Nullable Object propertyValue) throws Exception {
+        PluginConfig config = getPluginConfig(pluginId);
+        if (config == null) {
+            throw new IllegalStateException("Plugin not found for pluginId: " + pluginId);
+        }
+        config.setProperty(propertyName, propertyValue);
+        updatePluginConfig(pluginId, config);
     }
 
     @Override
@@ -197,6 +201,14 @@ class JavaagentConfigService implements ConfigService {
 
     void resetAllConfig() throws Exception {
         httpClient.post("/backend/admin/config/reset-all", "");
+        // storeThresholdMillis=0 is by far the most useful setting for testing
+        setStoreThresholdMillis(0);
+    }
+
+    void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
+        GeneralConfig generalConfig = getGeneralConfig();
+        generalConfig.setStoreThresholdMillis(storeThresholdMillis);
+        updateGeneralConfig(generalConfig);
     }
 
     private <T> T getConfig(String url, Class<T> type) throws Exception {

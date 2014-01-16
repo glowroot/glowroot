@@ -64,7 +64,6 @@ public class JvmInfoTest {
     @Test
     public void shouldTestCpuTime() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldUseCpu.class);
         // then
@@ -76,7 +75,6 @@ public class JvmInfoTest {
     @Test
     public void shouldTestWaitTime() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldWait.class);
         // then
@@ -87,7 +85,6 @@ public class JvmInfoTest {
     @Test
     public void shouldTestBlockTime() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldBlock.class);
         // then
@@ -98,7 +95,6 @@ public class JvmInfoTest {
     @Test
     public void shouldTestGarbageCollection() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateGarbage.class);
         // then

@@ -61,7 +61,6 @@ public class MetricTest {
     @Test
     public void shouldReadMetrics() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMetrics.class);
         // then
@@ -73,7 +72,6 @@ public class MetricTest {
     @Test
     public void shouldReadMetricsWithRootAndSameNested() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSameNestedMetric.class);
         // then
@@ -86,7 +84,6 @@ public class MetricTest {
     @Test
     public void shouldReadActiveMetrics() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {

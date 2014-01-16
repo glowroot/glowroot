@@ -40,10 +40,11 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.mock.web.MockServletConfig;
 
-import org.glowroot.testkit.AppUnderTest;
-import org.glowroot.testkit.Container;
-import org.glowroot.testkit.Span;
-import org.glowroot.testkit.Trace;
+import org.glowroot.Containers;
+import org.glowroot.container.AppUnderTest;
+import org.glowroot.container.Container;
+import org.glowroot.container.trace.Span;
+import org.glowroot.container.trace.Trace;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -61,7 +62,7 @@ public class ServletPluginTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Container.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -80,7 +81,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
         assertThat(span.getMessage().getText()).isEqualTo("/testservlet");
@@ -92,7 +93,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(ExecuteFilter.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
         assertThat(span.getMessage().getText()).isEqualTo("/testfilter");
@@ -104,7 +105,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
         assertThat(span.getMessage().getText()).isEqualTo("/testfilter");
@@ -116,7 +117,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(GetParameter.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
         @SuppressWarnings("unchecked")
@@ -129,11 +130,11 @@ public class ServletPluginTest {
     @Test
     public void testWithoutCaptureRequestParameters() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureRequestParameters", "");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestParameters", "");
         // when
         container.executeAppUnderTest(GetParameter.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
         assertThat(span.getMessage().getDetail()).isEmpty();
@@ -145,17 +146,17 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(GetParameterMap.class);
         // then don't throw IllegalStateException (see MockCatalinaHttpServletRequest)
-        container.getLastTrace();
+        container.getTraceService().getLastTrace();
     }
 
     @Test
     public void testSessionInvalidate() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureSessionId", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionId", true);
         // when
         container.executeAppUnderTest(InvalidateSession.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getGrouping()).isEqualTo("/testservlet");
         assertThat(trace.getSpans().get(0).getMessage().getDetail()
@@ -169,11 +170,11 @@ public class ServletPluginTest {
     @Test
     public void testServletContextInitialized() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureStartup", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureStartup", true);
         // when
         container.executeAppUnderTest(TestServletContextListener.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getGrouping()).isEqualTo(
                 "servlet context initialized / " + TestServletContextListener.class.getName());
@@ -182,11 +183,11 @@ public class ServletPluginTest {
     @Test
     public void testServletInit() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureStartup", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureStartup", true);
         // when
         container.executeAppUnderTest(TestServletInit.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getGrouping()).isEqualTo(
                 "servlet init / " + TestServletInit.class.getName());
@@ -197,11 +198,11 @@ public class ServletPluginTest {
     @Test
     public void testFilterInit() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureStartup", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureStartup", true);
         // when
         container.executeAppUnderTest(TestFilterInit.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getGrouping())
                 .isEqualTo("filter init / " + TestFilterInit.class.getName());
@@ -215,7 +216,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(ThrowsException.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getError()).isNotNull();
         assertThat(trace.getError().getText()).isNotNull();
@@ -228,7 +229,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(Send500Error.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getError()).isNotNull();
         assertThat(trace.getError().getText()).isEqualTo("sendError, HTTP status code 500");

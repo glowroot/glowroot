@@ -23,8 +23,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.testkit.Container;
-import org.glowroot.testkit.Trace;
+import org.glowroot.Containers;
+import org.glowroot.container.Container;
+import org.glowroot.container.trace.Trace;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -40,7 +41,7 @@ public class UserIdTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Container.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -56,33 +57,36 @@ public class UserIdTest {
     @Test
     public void testHasSessionUserIdAttribute() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridattr");
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridattr");
         // when
         container.executeAppUnderTest(HasSessionUserIdAttribute.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getUserId()).isEqualTo("abc");
     }
 
     @Test
     public void testSetSessionUserIdAttribute() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridattr");
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridattr");
         // when
         container.executeAppUnderTest(SetSessionUserIdAttribute.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getUserId()).isEqualTo("abc");
     }
 
     @Test
     public void testSetSessionUserIdAttributeNull() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridattr");
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridattr");
         // when
         container.executeAppUnderTest(SetSessionUserIdAttributeNull.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         // this is intentional, setting user id attribute to null shouldn't clear out user id for
         // that particular request (since the request was in fact, originally, for that user id)
         assertThat(trace.getUserId()).isEqualTo("something");
@@ -91,44 +95,48 @@ public class UserIdTest {
     @Test
     public void testHasNestedSessionUserIdAttributePath() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridone.two");
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridone.two");
         // when
         container.executeAppUnderTest(HasNestedSessionUserIdAttribute.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getUserId()).isEqualTo("xyz");
     }
 
     @Test
     public void testSetNestedSessionUserIdAttributePath() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridone.two");
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridone.two");
         // when
         container.executeAppUnderTest(SetNestedSessionUserIdAttribute.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getUserId()).isEqualTo("xyz");
     }
 
     @Test
     public void testHasMissingSessionUserIdAttribute() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "missinguseridattr");
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "missinguseridattr");
         // when
         container.executeAppUnderTest(HasSessionUserIdAttribute.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getUserId()).isNull();
     }
 
     @Test
     public void testHasMissingNestedSessionUserIdAttributePath() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridone.missingtwo");
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridone.missingtwo");
         // when
         container.executeAppUnderTest(HasNestedSessionUserIdAttribute.class);
         // then
-        Trace trace = container.getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getUserId()).isNull();
     }
 

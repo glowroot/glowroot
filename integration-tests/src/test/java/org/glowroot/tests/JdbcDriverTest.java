@@ -56,7 +56,6 @@ public class JdbcDriverTest {
     @Test
     public void shouldNotTriggerMockJdbcDriverToLoad() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         String mockDriverLoaded = container.getTraceService().getLastTrace().getAttributes()

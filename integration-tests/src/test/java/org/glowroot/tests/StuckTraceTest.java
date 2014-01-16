@@ -50,7 +50,6 @@ public class StuckTraceTest {
     public static void setUp() throws Exception {
         container = Containers.create();
         // capture one trace to warm up the system since this test involves some timing
-        container.getConfigService().setStoreThresholdMillis(0);
         container.executeAppUnderTest(WarmupTrace.class);
     }
 
@@ -68,7 +67,6 @@ public class StuckTraceTest {
     public void shouldReadActiveStuckTrace() throws Exception {
         // given
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setStoreThresholdMillis(0);
         generalConfig.setStuckThresholdSeconds(0);
         container.getConfigService().updateGeneralConfig(generalConfig);
         // when

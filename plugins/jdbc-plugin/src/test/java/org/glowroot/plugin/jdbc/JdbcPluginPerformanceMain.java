@@ -122,7 +122,9 @@ public class JdbcPluginPerformanceMain {
 
     private static Container setUpContainer() throws Exception {
         Container container = JavaagentContainer.createWithFileDb();
-        container.getConfigService().setStoreThresholdMillis(60000);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setStoreThresholdMillis(60000);
+        container.getConfigService().updateGeneralConfig(generalConfig);
         return container;
     }
 

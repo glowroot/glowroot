@@ -112,7 +112,6 @@ public class PluginConfigTest {
     @Test
     public void shouldReadAlternateGrouping() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("alternateGrouping", "Level 1");
         pluginConfig.setProperty("starredGrouping", false);
@@ -127,7 +126,6 @@ public class PluginConfigTest {
     @Test
     public void shouldReadStarredGrouping() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("alternateGrouping", "");
         pluginConfig.setProperty("starredGrouping", true);

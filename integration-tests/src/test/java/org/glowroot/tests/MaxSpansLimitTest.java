@@ -49,7 +49,6 @@ public class MaxSpansLimitTest {
     public static void setUp() throws Exception {
         container = Containers.create();
         // capture one trace to warm up the system since this test involves some timing
-        container.getConfigService().setStoreThresholdMillis(0);
         container.executeAppUnderTest(WarmupTrace.class);
     }
 
@@ -67,7 +66,6 @@ public class MaxSpansLimitTest {
     public void shouldReadActiveStuckTrace() throws Exception {
         // given
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setStoreThresholdMillis(0);
         generalConfig.setMaxSpans(100);
         container.getConfigService().updateGeneralConfig(generalConfig);
         // when

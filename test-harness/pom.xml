@@ -9,10 +9,10 @@
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>glowroot-test-container</artifactId>
+  <artifactId>glowroot-test-harness</artifactId>
 
-  <name>Glowroot Test Container</name>
-  <description>Glowroot Test Container</description>
+  <name>Glowroot Test Harness</name>
+  <description>Glowroot Test Harness</description>
 
   <dependencies>
     <dependency>
@@ -54,15 +54,15 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
-      <!-- logback is needed in order to compile the optional SpyConsoleAppender, testkit users can
-        still choose their own slf4j implementation if SpyConsoleAppender is not needed -->
+      <!-- logback is needed in order to compile the optional SpyConsoleAppender, test-harness users
+        can still choose their own slf4j implementation if SpyConsoleAppender is not needed -->
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <!-- logback is needed in order to compile the optional SpyConsoleAppender, testkit users can
-        still choose their own slf4j implementation if SpyConsoleAppender is not needed -->
+      <!-- logback is needed in order to compile the optional SpyConsoleAppender, test-harness users
+        can still choose their own slf4j implementation if SpyConsoleAppender is not needed -->
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <scope>provided</scope>

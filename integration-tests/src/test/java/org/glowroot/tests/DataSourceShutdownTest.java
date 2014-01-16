@@ -47,7 +47,6 @@ public class DataSourceShutdownTest {
         // this test is only relevant in external jvm so that the process can be killed and the jvm
         // shutdown hook can be tested
         final JavaagentContainer container = new JavaagentContainer(null, true, false, true);
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit(new Callable<Void>() {

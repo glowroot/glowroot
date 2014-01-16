@@ -56,7 +56,6 @@ public class TraceAttributesTest {
     @Test
     public void shouldReadTraceAttributesInOrder() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then

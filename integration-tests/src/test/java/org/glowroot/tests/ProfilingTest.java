@@ -34,6 +34,7 @@ import org.glowroot.container.Threads;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.CoarseProfilingConfig;
 import org.glowroot.container.config.FineProfilingConfig;
+import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.UserOverridesConfig;
 import org.glowroot.container.trace.MergedStackTreeNode;
 import org.glowroot.container.trace.Trace;
@@ -54,9 +55,8 @@ public class ProfilingTest {
         container = Containers.create();
         // capture one trace to warm up the system, otherwise sometimes there are delays in class
         // loading and the profiler captures too many or too few samples
-        container.getConfigService().setStoreThresholdMillis(0);
-        CoarseProfilingConfig profilingConfig = container.getConfigService()
-                .getCoarseProfilingConfig();
+        CoarseProfilingConfig profilingConfig =
+                container.getConfigService().getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(60);
         profilingConfig.setIntervalMillis(10);
         container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
@@ -76,9 +76,8 @@ public class ProfilingTest {
     @Test
     public void shouldReadCoarseProfilingTree() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
-        CoarseProfilingConfig profilingConfig = container.getConfigService()
-                .getCoarseProfilingConfig();
+        CoarseProfilingConfig profilingConfig =
+                container.getConfigService().getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(60);
         profilingConfig.setIntervalMillis(10);
         container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
@@ -96,9 +95,8 @@ public class ProfilingTest {
     @Test
     public void shouldReadCoarseProfilingTreeWhenTotalSecondsIsZero() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
-        CoarseProfilingConfig profilingConfig = container.getConfigService()
-                .getCoarseProfilingConfig();
+        CoarseProfilingConfig profilingConfig =
+                container.getConfigService().getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(60);
         profilingConfig.setIntervalMillis(10);
         profilingConfig.setTotalSeconds(0);
@@ -117,9 +115,11 @@ public class ProfilingTest {
     @Test
     public void shouldReadFineProfilingTree() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(10000);
-        CoarseProfilingConfig coarseProfilingConfig = container.getConfigService()
-                .getCoarseProfilingConfig();
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setStoreThresholdMillis(10000);
+        container.getConfigService().updateGeneralConfig(generalConfig);
+        CoarseProfilingConfig coarseProfilingConfig =
+                container.getConfigService().getCoarseProfilingConfig();
         coarseProfilingConfig.setInitialDelayMillis(200);
         coarseProfilingConfig.setIntervalMillis(10);
         coarseProfilingConfig.setTotalSeconds(300);
@@ -144,9 +144,11 @@ public class ProfilingTest {
     @Test
     public void shouldReadFineUserProfilingTree() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(10000);
-        CoarseProfilingConfig coarseProfilingConfig = container.getConfigService()
-                .getCoarseProfilingConfig();
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setStoreThresholdMillis(10000);
+        container.getConfigService().updateGeneralConfig(generalConfig);
+        CoarseProfilingConfig coarseProfilingConfig =
+                container.getConfigService().getCoarseProfilingConfig();
         coarseProfilingConfig.setInitialDelayMillis(200);
         coarseProfilingConfig.setIntervalMillis(10);
         container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
@@ -177,9 +179,11 @@ public class ProfilingTest {
     @Test
     public void shouldReadActiveFineProfilingTree() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(10000);
-        FineProfilingConfig fineProfilingConfig = container.getConfigService()
-                .getFineProfilingConfig();
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setStoreThresholdMillis(10000);
+        container.getConfigService().updateGeneralConfig(generalConfig);
+        FineProfilingConfig fineProfilingConfig =
+                container.getConfigService().getFineProfilingConfig();
         fineProfilingConfig.setTracePercentage(100);
         fineProfilingConfig.setIntervalMillis(10);
         fineProfilingConfig.setStoreThresholdMillis(0);
@@ -205,9 +209,8 @@ public class ProfilingTest {
     @Test
     public void shouldNotReadProfilingTreeWhenDisabled() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
-        CoarseProfilingConfig coarseProfilingConfig = container.getConfigService()
-                .getCoarseProfilingConfig();
+        CoarseProfilingConfig coarseProfilingConfig =
+                container.getConfigService().getCoarseProfilingConfig();
         coarseProfilingConfig.setEnabled(false);
         coarseProfilingConfig.setInitialDelayMillis(60);
         coarseProfilingConfig.setIntervalMillis(10);

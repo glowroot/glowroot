@@ -40,9 +40,12 @@ import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.common.SpyingLogbackFilter;
 import org.glowroot.common.SpyingLogbackFilter.MessageCount;
+import org.glowroot.config.ConfigService.OptimisticLockException;
+import org.glowroot.config.GeneralConfig;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.ClassPath;
 import org.glowroot.container.Container;
@@ -190,6 +193,8 @@ public class JavaagentContainer implements Container {
         traceService.assertNoActiveTraces();
         traceService.deleteAllSnapshots();
         configService.resetAllConfig();
+        // storeThresholdMillis=0 is the default for testing
+        configService.setStoreThresholdMillis(0);
         // check and reset log messages
         MessageCount logMessageCount = (MessageCount) socketCommander
                 .sendCommand(SocketCommandProcessor.CLEAR_LOG_MESSAGES);
@@ -269,6 +274,8 @@ public class JavaagentContainer implements Container {
     public static void main(String... args) throws Exception {
         // TODO move SpyingLogbackFilter init to MainEntryPoint, based on system property
         SpyingLogbackFilter.init();
+        // storeThresholdMillis=0 is the default for testing
+        setStoreThresholdMillisToZero();
         try {
             int port = Integer.parseInt(args[0]);
             // socket is never closed since program is still running after main returns
@@ -288,6 +295,24 @@ public class JavaagentContainer implements Container {
             Thread.sleep(1);
         }
         // non-daemon threads started above keep jvm alive after main returns
+    }
+
+    public static void setStoreThresholdMillisToZero() throws OptimisticLockException, IOException {
+        GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
+        if (glowrootModule == null) {
+            // failed to start, e.g. DataSourceLockTest
+            return;
+        }
+        org.glowroot.config.ConfigService configService =
+                glowrootModule.getConfigModule().getConfigService();
+        GeneralConfig generalConfig = configService.getGeneralConfig();
+        // conditional check is needed to prevent config file timestamp update when testing
+        // ConfigFileLastModifiedTest.shouldNotUpdateFileOnStartupIfNoChanges()
+        if (generalConfig.getStoreThresholdMillis() != 0) {
+            GeneralConfig.Overlay overlay = GeneralConfig.overlay(generalConfig);
+            overlay.setStoreThresholdMillis(0);
+            configService.updateGeneralConfig(overlay.build(), generalConfig.getVersion());
+        }
     }
 
     private static void metricOne() throws InterruptedException {

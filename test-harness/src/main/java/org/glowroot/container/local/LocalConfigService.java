@@ -58,12 +58,14 @@ class LocalConfigService implements ConfigService {
     }
 
     @Override
-    public void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
-        org.glowroot.config.GeneralConfig config = configService.getGeneralConfig();
-        org.glowroot.config.GeneralConfig.Overlay overlay =
-                org.glowroot.config.GeneralConfig.overlay(config);
-        overlay.setStoreThresholdMillis(storeThresholdMillis);
-        configService.updateGeneralConfig(overlay.build(), config.getVersion());
+    public void setPluginProperty(String pluginId, String propertyName,
+            @Nullable Object propertyValue) throws Exception {
+        PluginConfig config = getPluginConfig(pluginId);
+        if (config == null) {
+            throw new IllegalStateException("Plugin not found for pluginId: " + pluginId);
+        }
+        config.setProperty(propertyName, propertyValue);
+        updatePluginConfig(pluginId, config);
     }
 
     @Override
@@ -286,8 +288,16 @@ class LocalConfigService implements ConfigService {
         dataSource.compact();
     }
 
-    public void resetAllConfig() throws Exception {
+    void resetAllConfig() throws Exception {
         configService.resetAllConfig();
+    }
+
+    void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
+        org.glowroot.config.GeneralConfig config = configService.getGeneralConfig();
+        org.glowroot.config.GeneralConfig.Overlay overlay =
+                org.glowroot.config.GeneralConfig.overlay(config);
+        overlay.setStoreThresholdMillis(storeThresholdMillis);
+        configService.updateGeneralConfig(overlay.build(), config.getVersion());
     }
 
     private static PointcutConfig convertToCore(

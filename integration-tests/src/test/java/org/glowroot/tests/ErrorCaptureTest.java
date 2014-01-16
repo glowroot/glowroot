@@ -30,6 +30,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
+import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.trace.ExceptionInfo;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.tests.plugin.LogCauseAspect;
@@ -63,7 +64,9 @@ public class ErrorCaptureTest {
     @Test
     public void shouldCaptureError() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(10000);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setStoreThresholdMillis(10000);
+        container.getConfigService().updateGeneralConfig(generalConfig);
         // when
         container.executeAppUnderTest(ShouldCaptureError.class);
         // then
@@ -81,7 +84,6 @@ public class ErrorCaptureTest {
     @Test
     public void shouldCaptureErrorWithSpanStackTrace() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldCaptureErrorWithSpanStackTrace.class);
         // then
@@ -97,7 +99,6 @@ public class ErrorCaptureTest {
     @Test
     public void shouldCaptureErrorWithCausalChain() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldCaptureErrorWithCausalChain.class);
         // then

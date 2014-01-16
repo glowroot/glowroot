@@ -33,10 +33,13 @@ import org.glowroot.MainEntryPoint;
 import org.glowroot.common.SpyingLogbackFilter;
 import org.glowroot.common.SpyingLogbackFilter.MessageCount;
 import org.glowroot.config.PluginDescriptorCache;
-import org.glowroot.container.Container.StartupFailedException;
+import org.glowroot.container.AppUnderTest;
+import org.glowroot.container.AppUnderTestServices;
+import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.Threads;
 import org.glowroot.container.config.ConfigService;
+import org.glowroot.container.javaagent.JavaagentContainer;
 import org.glowroot.container.trace.TraceService;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.PointcutConfigAdviceCache;
@@ -49,7 +52,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @since 0.5
  */
 @ThreadSafe
-public class GenericLocalContainer<T> {
+public class LocalContainer implements Container {
 
     private final File dataDir;
     private final boolean deleteDataDirOnClose;
@@ -57,15 +60,22 @@ public class GenericLocalContainer<T> {
 
     private final Collection<Thread> preExistingThreads;
     private final IsolatedWeavingClassLoader isolatedWeavingClassLoader;
-    private final Class<T> appInterface;
-    private final AppExecutor<T> appExecutor;
     private final LocalConfigService configService;
     private final LocalTraceService traceService;
     private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
     private final GlowrootModule glowrootModule;
 
-    public GenericLocalContainer(@Nullable File dataDir, boolean useFileDb, boolean shared,
-            Class<T> appInterface, AppExecutor<T> appExecutor) throws Exception {
+    public static Container createWithFileDb(File dataDir) throws Exception {
+        return new LocalContainer(dataDir, true, false);
+    }
+
+    public static Container createWithFileDb() throws Exception {
+        File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
+        return new LocalContainer(dataDir, true, false);
+    }
+
+    public LocalContainer(@Nullable File dataDir, boolean useFileDb, boolean shared)
+            throws Exception {
         if (dataDir == null) {
             this.dataDir = TempDirs.createTempDir("glowroot-test-datadir");
             deleteDataDirOnClose = true;
@@ -92,6 +102,7 @@ public class GenericLocalContainer<T> {
         } catch (org.glowroot.GlowrootModule.StartupFailedException e) {
             throw new StartupFailedException();
         }
+        JavaagentContainer.setStoreThresholdMillisToZero();
         glowrootModule = MainEntryPoint.getGlowrootModule();
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         PluginDescriptorCache pluginDescriptorCache =
@@ -102,37 +113,38 @@ public class GenericLocalContainer<T> {
         loader.setAdvisors(Iterables.concat(pluginDescriptorCache.getAdvisors(),
                 pointcutConfigAdviceCache.getAdvisors()));
         loader.setMetricTimerService(glowrootModule.getTraceModule().getMetricTimerService());
-        loader.addBridgeClasses(appInterface);
+        loader.addBridgeClasses(AppUnderTest.class, AppUnderTestServices.class);
         // TODO add hook to optionally exclude guava package which improves integration-test
         // performance
         loader.addExcludePackages("org.glowroot.api", "org.glowroot.collector",
                 "org.glowroot.common", "org.glowroot.config", "org.glowroot.dynamicadvice",
                 "org.glowroot.local", "org.glowroot.trace", "org.glowroot.weaving",
-                "org.glowroot.shaded", "org.glowroot.testkit");
+                "org.glowroot.shaded");
         loader.setWeavingDisabled(glowrootModule.getConfigModule().getConfigService()
                 .getAdvancedConfig().isWeavingDisabled());
         isolatedWeavingClassLoader = loader.build();
-        this.appInterface = appInterface;
-        this.appExecutor = appExecutor;
         configService = new LocalConfigService(glowrootModule);
         traceService = new LocalTraceService(glowrootModule);
     }
 
+    @Override
     public ConfigService getConfigService() {
         return configService;
     }
 
+    @Override
     public void addExpectedLogMessage(String loggerName, String partialMessage) {
         SpyingLogbackFilter.addExpectedMessage(loggerName, partialMessage);
     }
 
-    public void executeAppUnderTest(Class<? extends T> appClass) throws Exception {
+    @Override
+    public void executeAppUnderTest(Class<? extends AppUnderTest> appClass) throws Exception {
         ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
         executingAppThreads.add(Thread.currentThread());
         try {
-            T app = isolatedWeavingClassLoader.newInstance(appClass, appInterface);
-            appExecutor.executeApp(app);
+            AppUnderTest app = isolatedWeavingClassLoader.newInstance(appClass, AppUnderTest.class);
+            app.executeApp();
         } finally {
             executingAppThreads.remove(Thread.currentThread());
             Thread.currentThread().setContextClassLoader(previousContextClassLoader);
@@ -144,24 +156,30 @@ public class GenericLocalContainer<T> {
         }
     }
 
+    @Override
     public void interruptAppUnderTest() throws Exception {
         for (Thread thread : executingAppThreads) {
             thread.interrupt();
         }
     }
 
+    @Override
     public TraceService getTraceService() {
         return traceService;
     }
 
+    @Override
     public int getUiPort() {
         return glowrootModule.getUiModule().getPort();
     }
 
+    @Override
     public void checkAndReset() throws Exception {
         traceService.assertNoActiveTraces();
         traceService.deleteAllSnapshots();
         configService.resetAllConfig();
+        // storeThresholdMillis=0 is the default for testing
+        configService.setStoreThresholdMillis(0);
         // check and reset log messages
         MessageCount logMessageCount = SpyingLogbackFilter.clearMessages();
 
@@ -173,10 +191,12 @@ public class GenericLocalContainer<T> {
         }
     }
 
+    @Override
     public void close() throws Exception {
         close(false);
     }
 
+    @Override
     public void close(boolean evenIfShared) throws Exception {
         if (shared && !evenIfShared) {
             // this is the shared container and will be closed at the end of the run
@@ -188,9 +208,5 @@ public class GenericLocalContainer<T> {
         if (deleteDataDirOnClose) {
             TempDirs.deleteRecursively(dataDir);
         }
-    }
-
-    public interface AppExecutor<T> {
-        void executeApp(T appUnderTest) throws Exception;
     }
 }

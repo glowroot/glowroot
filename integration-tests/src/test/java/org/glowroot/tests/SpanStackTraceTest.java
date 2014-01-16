@@ -61,7 +61,6 @@ public class SpanStackTraceTest {
     public void shouldReadSpanStackTrace() throws Exception {
         // given
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setStoreThresholdMillis(0);
         container.getConfigService().updateGeneralConfig(generalConfig);
         PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("captureSpanStackTraces", true);

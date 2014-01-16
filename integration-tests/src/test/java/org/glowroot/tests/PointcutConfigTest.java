@@ -72,7 +72,6 @@ public class PointcutConfigTest {
     @Test
     public void shouldExecute1() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldExecute1.class);
         // then
@@ -87,7 +86,6 @@ public class PointcutConfigTest {
     @Test
     public void shouldRenderSpanTextWithReturnValue() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldExecuteWithReturn.class);
         // then
@@ -102,7 +100,6 @@ public class PointcutConfigTest {
     @Test
     public void shouldRenderTraceGrouping() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldExecuteWithArgs.class);
         // then

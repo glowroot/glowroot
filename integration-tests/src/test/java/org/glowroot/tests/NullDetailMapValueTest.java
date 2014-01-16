@@ -58,7 +58,6 @@ public class NullDetailMapValueTest {
     @Test
     public void shouldReadTraces() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then

@@ -70,7 +70,6 @@ public class UiSandboxMain {
         }
         // set thresholds low so there will be lots of data to view
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setStoreThresholdMillis(0);
         container.getConfigService().updateGeneralConfig(generalConfig);
         CoarseProfilingConfig coarseProfilingConfig = container.getConfigService()
                 .getCoarseProfilingConfig();

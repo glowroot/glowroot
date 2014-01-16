@@ -76,7 +76,7 @@
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-test-container</artifactId>
+      <artifactId>glowroot-test-harness</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

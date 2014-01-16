@@ -52,9 +52,8 @@ public class ThreadInterruptTest {
     @Test
     public void shouldNotInterfereWithInterrupt() throws Exception {
         // given
-        container.getConfigService().setStoreThresholdMillis(0);
-        FineProfilingConfig fineProfilingConfig = container.getConfigService()
-                .getFineProfilingConfig();
+        FineProfilingConfig fineProfilingConfig =
+                container.getConfigService().getFineProfilingConfig();
         fineProfilingConfig.setTracePercentage(100);
         fineProfilingConfig.setIntervalMillis(10);
         container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);

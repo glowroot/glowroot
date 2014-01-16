@@ -37,8 +37,7 @@
   <modules>
     <module>plugin-api</module>
     <module>core</module>
-    <module>test-container</module>
-    <module>plugin-testkit</module>
+    <module>test-harness</module>
     <module>integration-tests</module>
     <module>webdriver-tests</module>
     <module>ui-sandbox</module>

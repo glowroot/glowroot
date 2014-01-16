@@ -35,7 +35,7 @@ public class TraceMarkerAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-test-container");
 
-    @Pointcut(typeName = "org.glowroot.container.TraceMarker|org.glowroot.testkit.TraceMarker",
+    @Pointcut(typeName = "org.glowroot.container.TraceMarker",
             methodName = "traceMarker", metricName = "mock trace marker")
     public static class TraceMarkerAdvice {
 
