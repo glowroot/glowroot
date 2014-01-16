@@ -28,7 +28,6 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PluginDescriptorCache;
-import org.glowroot.jvm.Flags;
 import org.glowroot.jvm.HeapHistograms;
 import org.glowroot.jvm.HotSpotDiagnostics;
 import org.glowroot.markers.Singleton;
@@ -55,19 +54,16 @@ class LayoutJsonService {
     private final HeapHistograms heapHistograms;
     @Nullable
     private final HotSpotDiagnostics hotSpotDiagnosticService;
-    @Nullable
-    private final Flags flags;
 
     LayoutJsonService(String version, boolean aggregatesEnabled, ConfigService configService,
             PluginDescriptorCache pluginDescriptorCache, @Nullable HeapHistograms heapHistograms,
-            @Nullable HotSpotDiagnostics hotSpotDiagnosticService, @Nullable Flags flags) {
+            @Nullable HotSpotDiagnostics hotSpotDiagnosticService) {
         this.version = version;
         this.aggregatesEnabled = aggregatesEnabled;
         this.configService = configService;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.heapHistograms = heapHistograms;
         this.hotSpotDiagnosticService = hotSpotDiagnosticService;
-        this.flags = flags;
     }
 
     // this is only used when running under 'grunt server' and is just to get get back layout data
@@ -82,7 +78,6 @@ class LayoutJsonService {
         jg.writeBooleanField("jvmHeapHistogram", heapHistograms != null);
         jg.writeBooleanField("jvmHeapDump", hotSpotDiagnosticService != null);
         jg.writeBooleanField("jvmManageableFlags", hotSpotDiagnosticService != null);
-        jg.writeBooleanField("jvmAllFlags", flags != null && hotSpotDiagnosticService != null);
         jg.writeStringField("footerMessage", "version " + version);
         jg.writeBooleanField("passwordEnabled",
                 configService.getUserInterfaceConfig().isPasswordEnabled());

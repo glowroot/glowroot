@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013 the original author or authors.
+  Copyright 2013-2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -48,16 +48,10 @@
       Heap dump
     </a>
     <a class="list-group-item"
-       ng-class="{active: isCurrentView('jvm.manageableFlags')}"
-       href="#/jvm/manageable-flags"
-       ng-show="layout.jvmManageableFlags">
-      Manageable flags
-    </a>
-    <a class="list-group-item"
-       ng-class="{active: isCurrentView('jvm.allFlags')}"
-       href="#/jvm/all-flags"
-       ng-show="layout.jvmAllFlags">
-      All flags
+       ng-class="{active: isCurrentView('jvm.diagnosticOptions')}"
+       href="#/jvm/diagnostic-options"
+       ng-show="layout.jvmDiagnosticOptions">
+      Diagnostic options
     </a>
     <a class="list-group-item"
        ng-class="{active: isCurrentView('jvm.capabilities')}"

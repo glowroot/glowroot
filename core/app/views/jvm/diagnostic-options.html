@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013 the original author or authors.
+  Copyright 2013-2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 -->
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>Manageable flags</h2>
+    <h2>Diagnostic options</h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
@@ -23,21 +23,21 @@
     <div ng-form
          gt-form-with-primary-button
          gt-form-autofocus-on-first-input
-         class="form-horizontal jvm-manageable-flags-form"
+         class="form-horizontal jvm-diagnostic-options-form"
          name="formCtrl">
-      <div ng-repeat="flag in flags">
+      <div ng-repeat="option in options">
         <div class="row">
-          <div class="checkbox jvm-manageable-flag col-lg-offset-3 col-lg-9">
-            <label for="{{flag.name}}">
+          <div class="checkbox jvm-diagnostic-option col-lg-offset-3 col-lg-9">
+            <label for="{{option.name}}">
               <input type="checkbox"
                      class="gt-form-checkbox"
-                     ng-model="flag.value"
-                     name="{{flag.name}}"
-                     id="{{flag.name}}">
-            <span class="jvm-manageable-flag-name">
-              {{flag.name}}
-              <span ng-show="flag.origin !== 'DEFAULT'">
-                ({{flag.origin}})
+                     ng-model="option.value"
+                     name="{{option.name}}"
+                     id="{{option.name}}">
+            <span class="jvm-diagnostic-option-name">
+              {{option.name}}
+              <span ng-show="option.origin !== 'DEFAULT'">
+                ({{option.origin}})
               </span>
             </span>
             </label>
@@ -46,8 +46,8 @@
       </div>
       <div class="form-group" style="margin-bottom: 5px;">
         <div class="col-lg-offset-3 col-lg-9 help-block">
-          These flags are updated in the running JVM only. To update flags permanently, they must be added to the jvm
-          args, e.g. <code>-XX:+PrintGCDetails</code>.
+          These options are updated in the running JVM only. To update options permanently, they
+          must be added to the jvm args, e.g. <code>-XX:+PrintGCDetails</code>.
         </div>
       </div>
       <div class="form-group form-buttons">

@@ -26,16 +26,17 @@ public class JvmModule {
 
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapHistograms> heapHistograms;
-    private final OptionalService<Flags> flags;
     private final OptionalService<HotSpotDiagnostics> hotSpotDiagnostics;
+    private final OptionalService<HotSpotDiagnosticOptions> hotSpotDiagnosticOptions;
 
     public JvmModule() {
         threadAllocatedBytes = new OptionalService<ThreadAllocatedBytes>(
                 new ThreadAllocatedBytes.Factory());
         heapHistograms = new OptionalService<HeapHistograms>(new HeapHistograms.Factory());
-        flags = new OptionalService<Flags>(new Flags.Factory());
         hotSpotDiagnostics = new OptionalService<HotSpotDiagnostics>(
                 new HotSpotDiagnostics.Factory());
+        hotSpotDiagnosticOptions = new OptionalService<HotSpotDiagnosticOptions>(
+                new HotSpotDiagnosticOptions.Factory());
     }
 
     public OptionalService<ThreadAllocatedBytes> getThreadAllocatedBytes() {
@@ -46,11 +47,11 @@ public class JvmModule {
         return heapHistograms;
     }
 
-    public OptionalService<Flags> getFlags() {
-        return flags;
-    }
-
     public OptionalService<HotSpotDiagnostics> getHotSpotDiagnostics() {
         return hotSpotDiagnostics;
+    }
+
+    public OptionalService<HotSpotDiagnosticOptions> getHotSpotDiagnosticOptions() {
+        return hotSpotDiagnosticOptions;
     }
 }

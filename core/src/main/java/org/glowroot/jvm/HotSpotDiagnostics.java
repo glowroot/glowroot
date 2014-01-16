@@ -16,18 +16,13 @@
 package org.glowroot.jvm;
 
 import java.lang.management.ManagementFactory;
-import java.util.List;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
-import javax.management.JMRuntimeException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-import javax.management.openmbean.CompositeData;
 
 import checkers.igj.quals.Immutable;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 
 import org.glowroot.jvm.OptionalService.OptionalServiceFactory;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
@@ -52,61 +47,6 @@ public class HotSpotDiagnostics {
                 new Object[] {path, false}, new String[] {"java.lang.String", "boolean"});
     }
 
-    public VMOption getVMOption(String name) throws JMException {
-        CompositeData wrappedOption = (CompositeData) ManagementFactory.getPlatformMBeanServer()
-                .invoke(objectName, "getVMOption", new Object[] {name},
-                        new String[] {"java.lang.String"});
-        return new VMOption(wrappedOption);
-    }
-
-    public List<VMOption> getDiagnosticOptions() throws JMException {
-        CompositeData[] wrappedOptions =
-                (CompositeData[]) ManagementFactory.getPlatformMBeanServer()
-                        .getAttribute(objectName, "DiagnosticOptions");
-        List<VMOption> vmoptions = Lists.newArrayList();
-        for (CompositeData wrappedOption : wrappedOptions) {
-            vmoptions.add(new VMOption(wrappedOption));
-        }
-        return vmoptions;
-    }
-
-    public void setVMOption(String name, String value) throws JMException {
-        ManagementFactory.getPlatformMBeanServer().invoke(objectName, "setVMOption",
-                new Object[] {name, value}, new String[] {"java.lang.String", "java.lang.String"});
-    }
-
-    public static class VMOption {
-
-        public static final Ordering<VMOption> orderingByName = new Ordering<VMOption>() {
-            @Override
-            public int compare(VMOption left, VMOption right) {
-                return left.name.compareTo(right.name);
-            }
-        };
-
-        private final String name;
-        private final String value;
-        private final String origin;
-
-        private VMOption(CompositeData wrappedOption) {
-            name = (String) wrappedOption.get("name");
-            value = (String) wrappedOption.get("value");
-            origin = (String) wrappedOption.get("origin");
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getValue() {
-            return value;
-        }
-
-        public String getOrigin() {
-            return origin;
-        }
-    }
-
     static class Factory implements OptionalServiceFactory<HotSpotDiagnostics> {
         @Override
         public HotSpotDiagnostics create() throws OptionalServiceFactoryException {
@@ -122,28 +62,6 @@ public class HotSpotDiagnostics {
             } catch (InstanceNotFoundException e) {
                 throw new OptionalServiceFactoryException("No such MBean " + MBEAN_NAME
                         + " (introduced in Oracle Java SE 6)");
-            }
-            try {
-                ManagementFactory.getPlatformMBeanServer().getAttribute(objectName,
-                        "DiagnosticOptions");
-            } catch (JMRuntimeException e) {
-                Throwable cause = e.getCause();
-                if (cause instanceof InternalError) {
-                    String message = cause.getMessage();
-                    if (message != null && message.startsWith("Unsupported VMGlobal Type")) {
-                        throw new OptionalServiceFactoryException("Unavailable due to a known bug"
-                                + " present in some older JDK versions"
-                                + " (https://bugs.openjdk.java.net/browse/JDK-6915365)");
-                    }
-                }
-                if (cause instanceof NullPointerException) {
-                    throw new OptionalServiceFactoryException("Unavailable due to a known bug"
-                            + " present in some older JDK versions"
-                            + " (https://bugs.openjdk.java.net/browse/JDK-6658779)");
-                }
-                throw new OptionalServiceFactoryException(e);
-            } catch (JMException e) {
-                throw new OptionalServiceFactoryException(e);
             }
             return new HotSpotDiagnostics(objectName);
         }

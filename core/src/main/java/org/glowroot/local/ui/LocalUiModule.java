@@ -89,7 +89,7 @@ public class LocalUiModule {
         LayoutJsonService layoutJsonService = new LayoutJsonService(version,
                 collectorModule.getAggregatesEnabled(), configService, pluginDescriptorCache,
                 jvmModule.getHeapHistograms().getService(),
-                jvmModule.getHotSpotDiagnostics().getService(), jvmModule.getFlags().getService());
+                jvmModule.getHotSpotDiagnostics().getService());
         HttpSessionManager httpSessionManager = new HttpSessionManager(configService, clock,
                 layoutJsonService);
         String baseHref = getBaseHref(properties);
@@ -118,7 +118,7 @@ public class LocalUiModule {
                 new PointcutConfigJsonService(parsedTypeCache, classpathCache);
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getThreadAllocatedBytes(),
                 jvmModule.getHeapHistograms(), jvmModule.getHotSpotDiagnostics(),
-                jvmModule.getFlags());
+                jvmModule.getHotSpotDiagnosticOptions());
         AdminJsonService adminJsonService = new AdminJsonService(snapshotDao, configService,
                 traceModule.getPointcutConfigAdviceCache(), parsedTypeCache, instrumentation,
                 traceCollector, dataSource, traceRegistry);

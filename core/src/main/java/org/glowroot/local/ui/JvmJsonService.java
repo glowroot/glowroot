@@ -56,11 +56,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ObjectMappers;
-import org.glowroot.jvm.Flags;
 import org.glowroot.jvm.HeapHistograms;
 import org.glowroot.jvm.HeapHistograms.HeapHistogramException;
+import org.glowroot.jvm.HotSpotDiagnosticOptions;
+import org.glowroot.jvm.HotSpotDiagnosticOptions.VMOption;
 import org.glowroot.jvm.HotSpotDiagnostics;
-import org.glowroot.jvm.HotSpotDiagnostics.VMOption;
 import org.glowroot.jvm.OptionalService;
 import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.ProcessId;
@@ -92,16 +92,16 @@ class JvmJsonService {
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapHistograms> heapHistograms;
     private final OptionalService<HotSpotDiagnostics> hotSpotDiagnostics;
-    private final OptionalService<Flags> flags;
+    private final OptionalService<HotSpotDiagnosticOptions> hotSpotDiagnosticOptions;
 
     JvmJsonService(OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
             OptionalService<HeapHistograms> heapHistograms,
             OptionalService<HotSpotDiagnostics> hotSpotDiagnosticService,
-            OptionalService<Flags> flags) {
+            OptionalService<HotSpotDiagnosticOptions> hotSpotDiagnosticOptions) {
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.heapHistograms = heapHistograms;
         this.hotSpotDiagnostics = hotSpotDiagnosticService;
-        this.flags = flags;
+        this.hotSpotDiagnosticOptions = hotSpotDiagnosticOptions;
     }
 
     @GET("/backend/jvm/general")
@@ -115,8 +115,8 @@ class JvmJsonService {
             int index = command.indexOf(' ');
             if (index > 0) {
                 mainClass = command.substring(0, index);
-                arguments = Lists
-                        .newArrayList(Splitter.on(' ').split(command.substring(index + 1)));
+                arguments =
+                        Lists.newArrayList(Splitter.on(' ').split(command.substring(index + 1)));
             }
         }
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
@@ -292,8 +292,15 @@ class JvmJsonService {
     @GET("/backend/jvm/heap-dump-defaults")
     String getHeapDumpDefaults() throws IOException, JMException {
         logger.debug("getHeapDumpDefaults()");
-        HotSpotDiagnostics service = OptionalJsonServices.validateAvailability(hotSpotDiagnostics);
-        String heapDumpPath = service.getVMOption("HeapDumpPath").getValue();
+        String heapDumpPath = null;
+        HotSpotDiagnosticOptions service = hotSpotDiagnosticOptions.getService();
+        if (service != null) {
+            // use HeapDumpPath for default heap dump location if available
+            heapDumpPath = service.getVMOption("HeapDumpPath").getValue();
+        }
+        if (heapDumpPath == null) {
+            heapDumpPath = getHeapDumpPathFromCommandLine();
+        }
         if (Strings.isNullOrEmpty(heapDumpPath)) {
             heapDumpPath = new File(System.getProperty("java.io.tmpdir")).getAbsolutePath();
         }
@@ -354,10 +361,11 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/jvm/manageable-flags")
-    String getManageableFlags() throws IOException, JMException {
-        logger.debug("getManageableFlags()");
-        HotSpotDiagnostics service = OptionalJsonServices.validateAvailability(hotSpotDiagnostics);
+    @GET("/backend/jvm/diagnostic-options")
+    String getDiagnosticOptions() throws IOException, JMException {
+        logger.debug("getDiagnosticOptions()");
+        HotSpotDiagnosticOptions service =
+                OptionalJsonServices.validateAvailability(hotSpotDiagnosticOptions);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartArray();
@@ -382,42 +390,22 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @POST("/backend/jvm/update-manageable-flags")
-    String updateManageableFlags(String content) throws IOException, JMException {
-        logger.debug("updateManageableFlags(): content={}", content);
-        HotSpotDiagnostics service = OptionalJsonServices.validateAvailability(hotSpotDiagnostics);
+    @POST("/backend/jvm/update-diagnostic-options")
+    String updateDiagnosticOptions(String content) throws IOException, JMException {
+        logger.debug("updateDiagnosticOptions(): content={}", content);
+        HotSpotDiagnosticOptions service =
+                OptionalJsonServices.validateAvailability(hotSpotDiagnosticOptions);
         Map<String, Object> values =
                 mapper.readValue(content, new TypeReference<Map<String, Object>>() {});
         for (Entry<String, Object> value : values.entrySet()) {
             service.setVMOption(value.getKey(), value.getValue().toString());
         }
-        return getManageableFlags();
-    }
-
-    @GET("/backend/jvm/all-flags")
-    String getAllFlags() throws IOException, JMException {
-        logger.debug("getAllFlags()");
-        Flags flagService = OptionalJsonServices.validateAvailability(flags);
-        HotSpotDiagnostics hotSpotDiagnosticService =
-                OptionalJsonServices.validateAvailability(hotSpotDiagnostics);
-        List<VMOption> options = Lists.newArrayList();
-        for (String name : flagService.getFlagNames()) {
-            options.add(hotSpotDiagnosticService.getVMOption(name));
-        }
-        return mapper.writeValueAsString(VMOption.orderingByName.sortedCopy(options));
+        return getDiagnosticOptions();
     }
 
     @GET("/backend/jvm/capabilities")
     String getCapabilities() throws IOException {
         logger.debug("getCapabilities()");
-        Availability hotSpotDiagnosticAvailability =
-                hotSpotDiagnostics.getAvailability();
-        Availability allFlagsAvailability;
-        if (!hotSpotDiagnosticAvailability.isAvailable()) {
-            allFlagsAvailability = hotSpotDiagnosticAvailability;
-        } else {
-            allFlagsAvailability = flags.getAvailability();
-        }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
@@ -430,11 +418,9 @@ class JvmJsonService {
         jg.writeFieldName("heapHistogram");
         mapper.writeValue(jg, heapHistograms.getAvailability());
         jg.writeFieldName("heapDump");
-        mapper.writeValue(jg, hotSpotDiagnosticAvailability);
-        jg.writeFieldName("manageableFlags");
-        mapper.writeValue(jg, hotSpotDiagnosticAvailability);
-        jg.writeFieldName("allFlags");
-        mapper.writeValue(jg, allFlagsAvailability);
+        mapper.writeValue(jg, hotSpotDiagnostics.getAvailability());
+        jg.writeFieldName("diagnosticOptions");
+        mapper.writeValue(jg, hotSpotDiagnosticOptions.getAvailability());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -496,6 +482,17 @@ class JvmJsonService {
                     + ".isThreadContentionMonitoringEnabled() returned false");
         }
         return new Availability(true, "");
+    }
+
+    @Nullable
+    private static String getHeapDumpPathFromCommandLine() {
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        for (String arg : runtimeMXBean.getInputArguments()) {
+            if (arg.startsWith("-XX:HeapDumpPath=")) {
+                return arg.substring("-XX:HeapDumpPath=".length());
+            }
+        }
+        return null;
     }
 
     private static class RequestWithDirectory {

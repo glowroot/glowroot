@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,15 +66,10 @@ glowroot.config([
       templateUrl: 'views/jvm/heap-dump.html',
       controller: 'JvmHeapDumpCtrl'
     });
-    $stateProvider.state('jvm.manageableFlags', {
-      url: '/manageable-flags',
-      templateUrl: 'views/jvm/manageable-flags.html',
-      controller: 'JvmManageableFlagsCtrl'
-    });
-    $stateProvider.state('jvm.allFlags', {
-      url: '/all-flags',
-      templateUrl: 'views/jvm/all-flags.html',
-      controller: 'JvmAllFlagsCtrl'
+    $stateProvider.state('jvm.diagnosticOptions', {
+      url: '/diagnostic-options',
+      templateUrl: 'views/jvm/diagnostic-options.html',
+      controller: 'JvmDiagnosticOptionsCtrl'
     });
     $stateProvider.state('jvm.capabilities', {
       url: '/capabilities',

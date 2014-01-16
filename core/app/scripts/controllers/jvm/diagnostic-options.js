@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,39 +16,40 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('JvmManageableFlagsCtrl', [
+glowroot.controller('JvmDiagnosticOptionsCtrl', [
   '$scope',
   '$http',
   'confirmIfHasChanges',
   'httpErrors',
   function ($scope, $http, confirmIfHasChanges, httpErrors) {
     $scope.hasChanges = function () {
-      return $scope.originalFlags && !angular.equals($scope.flags, $scope.originalFlags);
+      return $scope.originalOptions && !angular.equals($scope.options, $scope.originalOptions);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     function onNewData(data) {
       $scope.loaded = true;
-      $scope.flags = data;
-      $scope.originalFlags = angular.copy(data);
+      $scope.options = data;
+      $scope.originalOptions = angular.copy(data);
     }
 
     $scope.update = function (deferred) {
       var postData = {};
       // only pass diff to limit clobbering
-      // (and also because setting flag to same value will update the flag origin to MANAGEMENT)
-      var originalFlagsHash = {};
-      angular.forEach($scope.originalFlags, function (flag) {
-        originalFlagsHash[flag.name] = flag.value;
+      // (and also because re-setting the option to same value will update the option origin to
+      // MANAGEMENT)
+      var originalOptionsHash = {};
+      angular.forEach($scope.originalOptions, function (option) {
+        originalOptionsHash[option.name] = option.value;
       });
-      angular.forEach($scope.flags, function (flag) {
-        var originalFlagValue = originalFlagsHash[flag.name];
-        var updatedFlagValue = flag.value;
-        if (updatedFlagValue !== originalFlagValue) {
-          postData[flag.name] = updatedFlagValue;
+      angular.forEach($scope.options, function (option) {
+        var originalOptionValue = originalOptionsHash[option.name];
+        var updatedOptionValue = option.value;
+        if (updatedOptionValue !== originalOptionValue) {
+          postData[option.name] = updatedOptionValue;
         }
       });
-      $http.post('backend/jvm/update-manageable-flags', postData)
+      $http.post('backend/jvm/update-diagnostic-options', postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Updated');
@@ -56,7 +57,7 @@ glowroot.controller('JvmManageableFlagsCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/jvm/manageable-flags')
+    $http.get('backend/jvm/diagnostic-options')
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

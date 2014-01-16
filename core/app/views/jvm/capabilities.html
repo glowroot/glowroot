@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013 the original author or authors.
+  Copyright 2013-2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -82,25 +82,13 @@
     </div>
     <div class="row system-property">
       <div class="col-sm-4">
-        <label>Manageable flags</label>
+        <label>Diagnostic options</label>
       </div>
       <div class="col-sm-8">
-        {{capabilities.manageableFlags.available | gtOnOff}}
+        {{capabilities.diagnosticOptions.available | gtOnOff}}
         <div class="secondary-text"
-             ng-show="!capabilities.manageableFlags.available">
-          {{capabilities.manageableFlags.reason}}
-        </div>
-      </div>
-    </div>
-    <div class="row system-property">
-      <div class="col-sm-4">
-        <label>All flags</label>
-      </div>
-      <div class="col-sm-8">
-        {{capabilities.allFlags.available | gtOnOff}}
-        <div class="secondary-text"
-             ng-show="!capabilities.allFlags.available">
-          {{capabilities.allFlags.reason}}
+             ng-show="!capabilities.diagnosticOptions.available">
+          {{capabilities.diagnosticOptions.reason}}
         </div>
       </div>
     </div>
