@@ -13,21 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.tests;
+package org.glowroot.tests.javaagent;
 
 import java.lang.instrument.ClassFileTransformer;
 
 import org.fest.reflect.core.Reflection;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.IgnoreOnJdk6;
 import org.glowroot.weaving.WeavingClassFileTransformer;
 
 /**
@@ -46,19 +45,22 @@ import org.glowroot.weaving.WeavingClassFileTransformer;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@RunWith(IgnoreOnJdk6.class)
 public class MethodHandleWeavingTest {
 
     private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
+        assumeJdk7();
         container = Containers.createJavaagentContainer();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.close();
+        // need null check in case assumption is false in setUp()
+        if (container != null) {
+            container.close();
+        }
     }
 
     @After
@@ -95,5 +97,9 @@ public class MethodHandleWeavingTest {
                     .in(lookup)
                     .invoke(Object.class, "toString", methodType);
         }
+    }
+
+    private static void assumeJdk7() {
+        Assume.assumeFalse(System.getProperty("java.version").startsWith("1.6"));
     }
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.tests;
+package org.glowroot.tests.javaagent;
 
 import java.net.ConnectException;
 import java.net.ServerSocket;
@@ -30,7 +30,6 @@ import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.ConfigService.PortChangeFailedException;
 import org.glowroot.container.config.UserInterfaceConfig;
-import org.glowroot.container.javaagent.JavaagentContainer;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -45,7 +44,9 @@ public class ChangePortTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.create();
+        // TODO move this class out of javaagent package once LocalContainer uses http same as
+        // JavaagentContainer
+        container = Containers.createJavaagentContainer();
         asyncHttpClient = new AsyncHttpClient();
     }
 
@@ -92,10 +93,8 @@ public class ChangePortTest {
     @Test
     public void shouldFailIfPortNotFree() throws Exception {
         // given
-        if (container instanceof JavaagentContainer) {
-            container.addExpectedLogMessage("org.glowroot.local.ui.ConfigJsonService",
-                    "Failed to bind");
-        }
+        container.addExpectedLogMessage("org.glowroot.local.ui.ConfigJsonService",
+                "Failed to bind");
         UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
         ServerSocket serverSocket = new ServerSocket(0);
         int newPort = serverSocket.getLocalPort();

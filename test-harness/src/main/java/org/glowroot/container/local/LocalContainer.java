@@ -69,11 +69,6 @@ public class LocalContainer implements Container {
         return new LocalContainer(dataDir, true, false);
     }
 
-    public static Container createWithFileDb() throws Exception {
-        File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
-        return new LocalContainer(dataDir, true, false);
-    }
-
     public LocalContainer(@Nullable File dataDir, boolean useFileDb, boolean shared)
             throws Exception {
         if (dataDir == null) {

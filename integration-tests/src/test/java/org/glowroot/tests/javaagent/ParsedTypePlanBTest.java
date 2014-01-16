@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.tests;
+package org.glowroot.tests.javaagent;
 
 import java.io.IOException;
 import java.net.URL;
@@ -41,7 +41,6 @@ public class ParsedTypePlanBTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        // this cannot be tested using IsolatedWeavingClassLoader
         container = Containers.createJavaagentContainer();
     }
 
@@ -67,12 +66,11 @@ public class ParsedTypePlanBTest {
     @Test
     public void shouldLogWarningInParsedTypeCachePlanB() throws Exception {
         // given
-        container.addExpectedLogMessage(ParsedTypeCache.class.getName(),
-                "could not find resource " + TypeNames.toInternal(Y.class.getName()) + ".class");
+        container.addExpectedLogMessage(ParsedTypeCache.class.getName(), "could not find resource "
+                + TypeNames.toInternal(Y.class.getName()) + ".class");
         // when
         container.executeAppUnderTest(ShouldLogWarningInParsedTypeCachePlanB.class);
         // then
-
     }
 
     public static class ShouldNotLogWarningInParsedTypeCachePlanB implements AppUnderTest {

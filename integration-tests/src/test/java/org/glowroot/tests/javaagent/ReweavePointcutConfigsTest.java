@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.tests;
+package org.glowroot.tests.javaagent;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.container.javaagent.JavaagentContainer;
+import org.glowroot.Containers;
+import org.glowroot.tests.PointcutConfigTest;
 
 /**
  * @author Trask Stalnaker
@@ -30,7 +31,7 @@ public class ReweavePointcutConfigsTest extends PointcutConfigTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = JavaagentContainer.create();
+        container = Containers.createJavaagentContainer();
         container.executeAppUnderTest(ShouldExecute1.class);
         addPointcutConfigForExecute1();
         addPointcutConfigForExecute1MetricOnly();

@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.tests;
+package org.glowroot.tests.javaagent;
 
 import java.io.File;
 
 import org.junit.Test;
 
-import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.Container.StartupFailedException;
 import org.glowroot.container.TempDirs;
@@ -44,7 +43,7 @@ public class DataSourceLockTest {
         // when
         boolean exception = false;
         try {
-            Containers.createWithFileDb(dataDir);
+            JavaagentContainer.createWithFileDb(dataDir);
         } catch (StartupFailedException e) {
             exception = true;
         }

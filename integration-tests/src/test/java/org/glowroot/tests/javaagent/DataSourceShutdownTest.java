@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.tests;
+package org.glowroot.tests.javaagent;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -41,11 +41,11 @@ import static org.fest.assertions.api.Assertions.assertThat;
 // and exceptions would get thrown/logged
 public class DataSourceShutdownTest {
 
+    // this test is only relevant in external jvm so that the process can be killed and the jvm
+    // shutdown hook can be tested
     @Test
     public void shouldShutdown() throws Exception {
         // given
-        // this test is only relevant in external jvm so that the process can be killed and the jvm
-        // shutdown hook can be tested
         final JavaagentContainer container = new JavaagentContainer(null, true, false, true);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
