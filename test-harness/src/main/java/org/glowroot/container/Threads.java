@@ -44,10 +44,18 @@ public class Threads {
         List<Thread> threads = Lists.newArrayList();
         for (Thread thread : Thread.getAllStackTraces().keySet()) {
             // DestroyJavaVM is a JVM thread that appears sporadically, easier to just filter it out
+            //
             // AWT-AppKit is a JVM thread on OS X that appears during webdriver tests
+            //
+            // "process reaper" are JVM threads on linux that monitors subprocesses, these use a
+            // thread pool in jdk7 and so the threads stay around in the pool even after the
+            // subprocess ends, they show up here when mixing local container and javaagent
+            // container tests since javaagent container tests create subprocesses and then local
+            // container tests check for rogue threads and find these
             if (thread.getState() != State.TERMINATED
                     && !thread.getName().equals("DestroyJavaVM")
-                    && !thread.getName().equals("AWT-AppKit")) {
+                    && !thread.getName().equals("AWT-AppKit")
+                    && !thread.getName().equals("process reaper")) {
                 threads.add(thread);
             }
         }

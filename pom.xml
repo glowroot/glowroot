@@ -52,14 +52,6 @@
     <url>https://github.com/glowroot/glowroot</url>
   </scm>
 
-  <properties>
-    <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
-    <!-- put combined jacoco results under core/target since that dir is cleaned by mvn clean -->
-    <sonar.jacoco.reportPath>
-      ${basedir}/../core/target/jacoco-combined.exec
-    </sonar.jacoco.reportPath>
-  </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -157,7 +149,7 @@
             <manifestEntries>
               <Implementation-Title>${project.name}</Implementation-Title>
               <Implementation-Version>${project.version}</Implementation-Version>
-              <Build-Commit>${buildCommit}</Build-Commit>
+              <Build-Commit>${glowroot.build.commit}</Build-Commit>
             </manifestEntries>
           </archive>
         </configuration>
@@ -342,6 +334,7 @@
       </build>
     </profile>
     <profile>
+      <!-- use "travis-build/travis-build.sh checker" to execute this profile -->
       <id>checker</id>
       <dependencies>
         <dependency>
@@ -395,9 +388,6 @@
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
             <version>0.6.4.201312101107</version>
-            <configuration>
-              <destFile>${sonar.jacoco.reportPath}</destFile>
-            </configuration>
             <executions>
               <execution>
                 <id>prepare-agent</id>

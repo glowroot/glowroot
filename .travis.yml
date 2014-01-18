@@ -1,6 +1,8 @@
 language: java
 jdk:
   - oraclejdk7
+  - openjdk7
+  - openjdk6
 before_install:
   - npm install -g bower grunt-cli
   - "export DISPLAY=:99.0"
@@ -10,33 +12,38 @@ script: travis-build/travis-build.sh $TARGET
 matrix:
   include:
     - jdk: oraclejdk7
+      env: TARGET=deploy
+    - jdk: oraclejdk7
+      env: TARGET=sonarqube
+    - jdk: oraclejdk7
       env: TARGET=checker
-    - jdk: openjdk6
-      env: TARGET=test
 env:
-  matrix:
-    - TARGET=install
   global:
     - SONATYPE_USERNAME=trask
     # SONATYPE_PASSWORD, only used for mvn deploy from glowroot/glowroot master branch
-    - secure: "gvo+eXfSRTJRzbINt1MG6BzuBPCwcxPRzPkA1P+YukaLdBSSL+daYTfwtXhisg9tTMrb9qRcvlz6+YhSvY9RPfHYvpRy5L3NLJGVbWb73S2/i/sNejX9NR0x3RFH6Ddmzp7yvAnNRsGr5f5NtX81apnlBSh1dxr1+S2EygYgLgA="
+    - secure: "YzGuP91Q/7L6rWXUvbGYqr+adYDXA7Cz8CwYjDhRiNK+M48Ta9s3gVbRzgrXyyACERZfrS8t1tqyk0broQiXp8YRSZIK2afjAYq+wI8xWKJsBGspv2Db77zavXEhfezdmnEd5GFMqtKpws2QRDwfJjkIiFBis+ZkUlNRMlFX0PM="
+    # SONARQUBE_DB_PASSWORD, only used for mvn sonar:sonar from glowroot/glowroot master branch
+    - secure: "TltnDS/ZNZWh/2Wdag9JGb3Xk9mZI9gFri7iNoOGcCKWnQ4UV+YNrlLHEG/Q3xrmnCxMwLjYZNEcUC8qHnxvwK9lxYgBi4ilWTxLJtpimJr2sASroQVq8dwgwLRrJLDZXInykaznlD6yBobO4L85OsdYuavabeP8Bq7ODbjQR0U="
+  matrix:
+    - TARGET=test GLOWROOT_UNSHADED=false GLOWROOT_HARNESS=javaagent
+    - TARGET=test GLOWROOT_UNSHADED=false GLOWROOT_HARNESS=local
+    - TARGET=test GLOWROOT_UNSHADED=true GLOWROOT_HARNESS=javaagent
+    - TARGET=test GLOWROOT_UNSHADED=true GLOWROOT_HARNESS=local
 before_deploy:
   - mkdir -p s3/snapshots/latest
-  - cp package/target/glowroot-*.jar s3/snapshots/latest
-  - rm s3/snapshots/latest/glowroot-*-sources.jar
-  - mv s3/snapshots/latest/glowroot-*.jar s3/snapshots/latest/glowroot.jar
-  - "cp s3/snapshots/latest/glowroot.jar s3/snapshots/glowroot-${TRAVIS_COMMIT:0:10}.jar"
+  - cp distribution/target/glowroot-dist.zip s3/snapshots/latest
+  - "cp s3/snapshots/latest/glowroot-dist.zip s3/snapshots/glowroot-dist-${TRAVIS_COMMIT:0:10}.zip"
   - cd s3
 deploy:
   provider: s3
   access_key_id:
-    secure: "LxhncdLw6KQzZ3QW1B7X/izAB/tjkg5N6CrT5K16jV8iy2HeEBFYjWhJw6himAJBAI1ASBR1L6D2yopnCDSzfu6dDAa/xWitd2stU59Obv4k6CVj85VmOxlK3/P3IlJKy7DpeMZ9tf1GErVYI85HK+tXSlk+UA4iKCaY9nGWis0="
+    secure: "TKm8rMaM7//dszw+GpTj+HzZ5BXdiYZmG/EpMRTIy1uKHnXvw5Lf63B1rOQjUclnwqYHSV1r890XHUPeIZddcxJK9nRaOmVg/5AUZIh/HbjqT+M91OkX4SIQiyW+HV2aF5LF+RPTVIB24NbSok3jrZnPRRVGX6VjeEIFYQRXBQY="
   secret_access_key:
-    secure: "EbBNRcwz7p/9JeYPUbzKVkFe1VzWCdfs9zfGBSv2J79LpoDakCwRqnD1RP4kqwgog5AHZicld7YxfyvKaTGYDsL5b5STBXJh1XRtd5+AsPgQUgp+Ftu2D4GtKQ9PVkZ3KduDDbLNjQOLE9G4BseGAVLaBZ7V0TwHHny4Q53sb5k="
+    secure: "ItGgSVtNccZaA7BGRDFPmTjw2Gb6R0xLPGbF4F2W1CbUVA+qlW7MaOeQ8jZwlh5O6YelFN2dcehCXbsHnPnkfdl+bCsBJ4QqdSWiCuRYIh0gHFwNjdS7syJ3/T55nhrhSzd398R/IquSbSSk/s2UkpUoAj4NgmIqrlt8MScaslU="
   bucket: glowroot
   skip_cleanup: true
   on:
     jdk: oraclejdk7
     branch: master
     repo: glowroot/glowroot
-    condition: "$TARGET = install"
+    condition: "$TARGET = deploy"
