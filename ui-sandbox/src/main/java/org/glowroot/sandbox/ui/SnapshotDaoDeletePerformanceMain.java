@@ -40,7 +40,7 @@ public class SnapshotDaoDeletePerformanceMain {
     private SnapshotDaoDeletePerformanceMain() {}
 
     public static void main(String... args) throws Exception {
-        Container container = Containers.create();
+        Container container = Containers.getSharedContainer();
         // set thresholds low so there will be lots of data to view
         CoarseProfilingConfig profilingConfig = container.getConfigService()
                 .getCoarseProfilingConfig();

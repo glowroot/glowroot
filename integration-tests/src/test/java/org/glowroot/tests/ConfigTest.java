@@ -51,7 +51,7 @@ public class ConfigTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.create();
+        container = Containers.getSharedContainer();
     }
 
     @AfterClass

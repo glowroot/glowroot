@@ -43,7 +43,7 @@ public class ConfigTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.create();
+        container = Containers.getSharedContainer();
         seleniumServer = new SeleniumServer();
         seleniumServer.start();
         driver = new FirefoxDriver();

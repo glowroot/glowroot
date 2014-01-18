@@ -264,7 +264,7 @@
       <id>active-by-default-shade</id>
       <activation>
         <property>
-          <name>shade.skip</name>
+          <name>glowroot.shading.skip</name>
           <value>!true</value>
         </property>
       </activation>

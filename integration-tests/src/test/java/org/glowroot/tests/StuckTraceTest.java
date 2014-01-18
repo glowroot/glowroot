@@ -48,7 +48,7 @@ public class StuckTraceTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.create();
+        container = Containers.getSharedContainer();
         // capture one trace to warm up the system since this test involves some timing
         container.executeAppUnderTest(WarmupTrace.class);
     }

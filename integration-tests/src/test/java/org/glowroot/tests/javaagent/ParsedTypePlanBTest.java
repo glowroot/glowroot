@@ -41,7 +41,7 @@ public class ParsedTypePlanBTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.createJavaagentContainer();
+        container = Containers.getSharedJavaagentContainer();
     }
 
     @AfterClass

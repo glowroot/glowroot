@@ -20,6 +20,9 @@ import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
 
+import org.glowroot.container.javaagent.JavaagentContainer;
+import org.glowroot.container.local.LocalContainer;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -28,19 +31,30 @@ public class SharedContainerRunListener extends RunListener {
 
     private static volatile boolean useSharedContainer;
     @Nullable
-    private static volatile Container sharedContainer;
+    private static volatile LocalContainer sharedLocalContainer;
+    @Nullable
+    private static volatile JavaagentContainer sharedJavaagentContainer;
 
     public static boolean useSharedContainer() {
         return useSharedContainer;
     }
 
     @Nullable
-    public static Container getSharedContainer() {
-        return sharedContainer;
+    public static LocalContainer getSharedLocalContainer() {
+        return sharedLocalContainer;
     }
 
-    public static void setSharedContainer(Container container) {
-        sharedContainer = container;
+    @Nullable
+    public static JavaagentContainer getSharedJavaagentContainer() {
+        return sharedJavaagentContainer;
+    }
+
+    public static void setSharedLocalContainer(LocalContainer container) {
+        sharedLocalContainer = container;
+    }
+
+    public static void setSharedJavaagentContainer(JavaagentContainer container) {
+        sharedJavaagentContainer = container;
     }
 
     @Override
@@ -50,9 +64,16 @@ public class SharedContainerRunListener extends RunListener {
 
     @Override
     public void testRunFinished(Result result) throws Exception {
-        if (sharedContainer != null) {
-            sharedContainer.close(true);
-            sharedContainer = null;
+        // need to shut down javaagent container first, otherwise local container close() will fail
+        // on Threads.preShutdownCheck() since javaagent container creates local threads to manage
+        // the external jvm
+        if (sharedJavaagentContainer != null) {
+            sharedJavaagentContainer.close(true);
+            sharedJavaagentContainer = null;
+        }
+        if (sharedLocalContainer != null) {
+            sharedLocalContainer.close(true);
+            sharedLocalContainer = null;
         }
     }
 }

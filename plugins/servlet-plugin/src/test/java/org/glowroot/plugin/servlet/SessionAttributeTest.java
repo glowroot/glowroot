@@ -44,7 +44,7 @@ public class SessionAttributeTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.create();
+        container = Containers.getSharedContainer();
     }
 
     @AfterClass

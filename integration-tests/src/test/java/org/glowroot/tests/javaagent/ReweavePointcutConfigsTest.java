@@ -31,7 +31,7 @@ public class ReweavePointcutConfigsTest extends PointcutConfigTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.createJavaagentContainer();
+        container = Containers.getSharedJavaagentContainer();
         container.executeAppUnderTest(ShouldExecute1.class);
         addPointcutConfigForExecute1();
         addPointcutConfigForExecute1MetricOnly();

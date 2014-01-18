@@ -75,27 +75,15 @@
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <executions>
-          <execution>
-            <!-- run tests a second time using the javaagent container -->
-            <id>with-javaagent-container-test</id>
-            <phase>test</phase>
-            <goals>
-              <goal>test</goal>
-            </goals>
-            <configuration>
-              <systemPropertyVariables>
-                <glowroot.container.javaagent>true</glowroot.container.javaagent>
-              </systemPropertyVariables>
-              <properties>
-                <property>
-                  <name>listener</name>
-                  <value>org.glowroot.container.SharedContainerRunListener</value>
-                </property>
-              </properties>
-            </configuration>
-          </execution>
-        </executions>
+        <configuration>
+          <properties>
+            <property>
+              <!-- this is just a test performance optimization -->
+              <name>listener</name>
+              <value>org.glowroot.container.SharedContainerRunListener</value>
+            </property>
+          </properties>
+        </configuration>
       </plugin>
       <plugin>
         <!-- maven-failsafe-plugin is used to execute JarFileShadingIT since it needs to run after

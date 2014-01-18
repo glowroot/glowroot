@@ -164,4 +164,8 @@ public class MainEntryPoint {
     public static GlowrootModule getGlowrootModule() {
         return glowrootModule;
     }
+
+    public static void setGlowrootModule(GlowrootModule glowrootModule) {
+        MainEntryPoint.glowrootModule = glowrootModule;
+    }
 }

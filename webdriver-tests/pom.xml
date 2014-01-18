@@ -97,11 +97,9 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <systemPropertyVariables>
-            <glowroot.container.javaagent>true</glowroot.container.javaagent>
-          </systemPropertyVariables>
           <properties>
             <property>
+              <!-- this is just a test performance optimization -->
               <name>listener</name>
               <value>org.glowroot.container.SharedContainerRunListener</value>
             </property>

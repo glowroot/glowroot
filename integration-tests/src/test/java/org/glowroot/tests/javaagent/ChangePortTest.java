@@ -46,7 +46,7 @@ public class ChangePortTest {
     public static void setUp() throws Exception {
         // TODO move this class out of javaagent package once LocalContainer uses http same as
         // JavaagentContainer
-        container = Containers.createJavaagentContainer();
+        container = Containers.getSharedJavaagentContainer();
         asyncHttpClient = new AsyncHttpClient();
     }
 

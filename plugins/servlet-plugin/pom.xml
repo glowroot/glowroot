@@ -81,12 +81,29 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <properties>
+            <property>
+              <!-- this is just a test performance optimization -->
+              <name>listener</name>
+              <value>org.glowroot.container.SharedContainerRunListener</value>
+            </property>
+          </properties>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <profiles>
     <profile>
       <id>active-by-default-shade</id>
       <activation>
         <property>
-          <name>shade.skip</name>
+          <name>glowroot.shading.skip</name>
           <value>!true</value>
         </property>
       </activation>
@@ -110,7 +127,7 @@
                 <configuration>
                   <artifactSet>
                     <includes>
-                  <include>org.glowroot.plugins:servlet-plugin</include>
+                      <include>org.glowroot.plugins:servlet-plugin</include>
                     </includes>
                   </artifactSet>
                   <relocations>

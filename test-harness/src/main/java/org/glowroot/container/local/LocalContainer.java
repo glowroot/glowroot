@@ -204,4 +204,8 @@ public class LocalContainer implements Container {
             TempDirs.deleteRecursively(dataDir);
         }
     }
+
+    public void reopen() {
+        MainEntryPoint.setGlowrootModule(glowrootModule);
+    }
 }
