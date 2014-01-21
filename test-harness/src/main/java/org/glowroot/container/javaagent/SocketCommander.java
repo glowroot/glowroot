@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import dataflow.quals.Pure;
 import org.slf4j.Logger;
@@ -63,11 +64,12 @@ class SocketCommander {
     }
 
     @Nullable
-    Object sendCommand(Object command) throws Exception {
+    Object sendCommand(String commandName, Object... args) throws Exception {
         int commandNum = commandCounter.getAndIncrement();
         ResponseHolder responseHolder = new ResponseHolder();
         responseHolders.put(commandNum, responseHolder);
-        CommandWrapper commandWrapper = new CommandWrapper(commandNum, command);
+        CommandWrapper commandWrapper =
+                new CommandWrapper(commandName, ImmutableList.copyOf(args), commandNum);
         // need to acquire lock on responseHolder before sending command to ensure
         // responseHolder.notify() cannot happen before responseHolder.wait()
         // (in case response comes back super quick)
@@ -92,8 +94,8 @@ class SocketCommander {
     }
 
     void sendKillCommand() throws Exception {
-        CommandWrapper commandWrapper = new CommandWrapper(commandCounter.getAndIncrement(),
-                SocketCommandProcessor.KILL);
+        CommandWrapper commandWrapper = new CommandWrapper(SocketCommandProcessor.KILL,
+                ImmutableList.of(), commandCounter.getAndIncrement());
         synchronized (lock) {
             objectOut.writeObject(commandWrapper);
         }
@@ -106,24 +108,30 @@ class SocketCommander {
 
     static class CommandWrapper implements Serializable {
         private static final long serialVersionUID = 1L;
+        private final String commandName;
+        private final ImmutableList<Object> args;
         private final int commandNum;
-        private final Object command;
-        private CommandWrapper(int commandNum, Object command) {
+        private CommandWrapper(String commandName, ImmutableList<Object> args, int commandNum) {
             this.commandNum = commandNum;
-            this.command = command;
+            this.commandName = commandName;
+            this.args = args;
         }
         int getCommandNum() {
             return commandNum;
         }
-        Object getCommand() {
-            return command;
+        String getCommandName() {
+            return commandName;
+        }
+        ImmutableList<Object> getArgs() {
+            return args;
         }
         @Override
         @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("commandNum", commandNum)
-                    .add("command", command)
+                    .add("commandName", commandName)
+                    .add("args", args)
                     .toString();
         }
     }

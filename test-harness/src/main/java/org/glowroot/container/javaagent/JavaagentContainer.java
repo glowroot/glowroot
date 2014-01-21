@@ -34,7 +34,6 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
@@ -157,15 +156,15 @@ public class JavaagentContainer implements Container {
 
     @Override
     public void addExpectedLogMessage(String loggerName, String partialMessage) throws Exception {
-        socketCommander.sendCommand(ImmutableList.of(
-                SocketCommandProcessor.ADD_EXPECTED_LOG_MESSAGE, loggerName, partialMessage));
+        socketCommander.sendCommand(SocketCommandProcessor.ADD_EXPECTED_LOG_MESSAGE, loggerName,
+                partialMessage);
     }
 
     @Override
     public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass)
             throws Exception {
-        socketCommander.sendCommand(ImmutableList.of(SocketCommandProcessor.EXECUTE_APP,
-                appUnderTestClass.getName()));
+        socketCommander.sendCommand(SocketCommandProcessor.EXECUTE_APP,
+                appUnderTestClass.getName());
         // wait for all traces to be stored
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (traceService.getNumPendingCompleteTraces() > 0 && stopwatch.elapsed(SECONDS) < 5) {

@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -110,43 +111,26 @@ class SocketCommandProcessor implements Runnable {
     }
 
     private void runCommandAndRespond(CommandWrapper commandWrapper) throws Exception {
-        Object command = commandWrapper.getCommand();
+        String commandName = commandWrapper.getCommandName();
+        ImmutableList<Object> args = commandWrapper.getArgs();
         int commandNum = commandWrapper.getCommandNum();
-        if (command instanceof String) {
-            if (command.equals(GET_PORT)) {
-                respondWithPort(commandNum);
-            } else if (command.equals(CLEAR_LOG_MESSAGES)) {
-                respond(SpyingLogbackFilter.clearMessages(), commandNum);
-            } else if (command.equals(KILL)) {
-                terminateJvm(0);
-            } else if (command.equals(SHUTDOWN)) {
-                shutdown(commandNum);
-                terminateJvm(0);
-            } else if (command.equals(INTERRUPT)) {
-                interruptAppAndRespond(commandNum);
-            } else {
-                logger.error("unexpected command: {}", command);
-                respond(EXCEPTION_RESPONSE, commandNum);
-            }
-        } else if (command instanceof List) {
-            List<?> argList = (List<?>) command;
-            if (argList.isEmpty()) {
-                logger.error("unexpected empty command");
-                respond(EXCEPTION_RESPONSE, commandNum);
-            } else {
-                Object commandName = argList.get(0);
-                List<?> args = argList.subList(1, argList.size());
-                if (commandName.equals(EXECUTE_APP)) {
-                    executeAppAndRespond(commandNum, args);
-                } else if (commandName.equals(ADD_EXPECTED_LOG_MESSAGE)) {
-                    addExpectedMessageAndRespond(commandNum, args);
-                } else {
-                    logger.error("unexpected command: {}", commandName);
-                    respond(EXCEPTION_RESPONSE, commandNum);
-                }
-            }
+        if (commandName.equals(GET_PORT)) {
+            respondWithPort(commandNum);
+        } else if (commandName.equals(CLEAR_LOG_MESSAGES)) {
+            respond(SpyingLogbackFilter.clearMessages(), commandNum);
+        } else if (commandName.equals(KILL)) {
+            terminateJvm(0);
+        } else if (commandName.equals(SHUTDOWN)) {
+            shutdown(commandNum);
+            terminateJvm(0);
+        } else if (commandName.equals(INTERRUPT)) {
+            interruptAppAndRespond(commandNum);
+        } else if (commandName.equals(EXECUTE_APP)) {
+            executeAppAndRespond(commandNum, args);
+        } else if (commandName.equals(ADD_EXPECTED_LOG_MESSAGE)) {
+            addExpectedMessageAndRespond(commandNum, args);
         } else {
-            logger.error("unexpected command type: {}", command.getClass().getName());
+            logger.error("unexpected command: {}", commandName);
             respond(EXCEPTION_RESPONSE, commandNum);
         }
     }
