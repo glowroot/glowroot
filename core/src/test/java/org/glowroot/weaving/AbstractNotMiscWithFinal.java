@@ -19,22 +19,16 @@ package org.glowroot.weaving;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public abstract class AbstractMisc implements Misc {
+public abstract class AbstractNotMiscWithFinal {
 
-    @Override
-    public void execute1() {}
+    public final void execute1() {}
 
-    @Override
-    public abstract String executeWithReturn();
-
-    @Override
-    public abstract void executeWithArgs(String one, int two);
-
-    public static class ExtendsAbstractMisc extends AbstractMisc {
+    public static class ExtendsAbstractNotMiscWithFinal extends AbstractNotMiscWithFinal
+            implements Misc {
 
         @Override
         public String executeWithReturn() {
-            return "extends abstract";
+            return null;
         }
 
         @Override

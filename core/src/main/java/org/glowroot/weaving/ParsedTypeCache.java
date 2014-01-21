@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -385,8 +385,14 @@ public class ParsedTypeCache {
                 argTypes.add(Type.getType(parameterType));
             }
             Type returnType = Type.getType(method.getReturnType());
+            String desc = Type.getMethodDescriptor(method);
+            int nExceptions = method.getExceptionTypes().length;
+            String[] exceptions = new String[nExceptions];
+            for (int i = 0; i < nExceptions; i++) {
+                exceptions[i] = Type.getInternalName(method.getExceptionTypes()[i]);
+            }
             parsedMethods.add(ParsedMethod.from(method.getName(), argTypes.build(), returnType,
-                    method.getModifiers()));
+                    method.getModifiers(), desc, null, exceptions));
         }
         ImmutableList.Builder<String> interfaceNames = ImmutableList.builder();
         for (Class<?> interfaceClass : type.getInterfaces()) {
@@ -479,13 +485,7 @@ public class ParsedTypeCache {
 
     public static class ParsedTypeClassVisitor extends ClassVisitor {
 
-        private boolean iface;
-        @Nullable
-        private String name;
-        @Nullable
-        private String superName;
-        private String/*@Nullable*/[] interfaceNames;
-        private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
+        private ParsedType./*@Nullable*/Builder parsedTypeBuilder;
 
         public ParsedTypeClassVisitor() {
             super(ASM4);
@@ -494,34 +494,26 @@ public class ParsedTypeCache {
         @Override
         public void visit(int version, int access, String name, @Nullable String signature,
                 @Nullable String superName, String/*@Nullable*/[] interfaceNames) {
-            this.iface = Modifier.isInterface(access);
-            this.name = name;
-            if (superName == null || superName.equals("java/lang/Object")) {
-                this.superName = null;
-            } else {
-                this.superName = superName;
-            }
-            this.interfaceNames = interfaceNames;
+            parsedTypeBuilder = ParsedType.builder(Modifier.isInterface(access),
+                    TypeNames.fromInternal(name), TypeNames.fromInternal(superName),
+                    TypeNames.fromInternal(interfaceNames));
         }
 
         @Override
         @Nullable
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String/*@Nullable*/[] exceptions) {
+            checkNotNull(parsedTypeBuilder, "Call to visit() is required");
             if ((access & (ACC_NATIVE | ACC_SYNTHETIC)) == 0) {
                 // don't add native or synthetic methods to the parsed type model
-                methods.add(ParsedMethod.from(name,
-                        ImmutableList.copyOf(Type.getArgumentTypes(desc)),
-                        Type.getReturnType(desc), access));
+                parsedTypeBuilder.addParsedMethod(access, name, desc, signature, exceptions);
             }
             return null;
         }
 
         public ParsedType build() {
-            checkNotNull(name, "Call to visit() is required");
-            return ParsedType.from(iface, TypeNames.fromInternal(name),
-                    TypeNames.fromInternal(superName), TypeNames.fromInternal(interfaceNames),
-                    methods.build());
+            checkNotNull(parsedTypeBuilder, "Call to visit() is required");
+            return parsedTypeBuilder.build();
         }
     }
 }

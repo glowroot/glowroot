@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
 import checkers.nullness.quals.RequiresNonNull;
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
@@ -47,7 +48,6 @@ import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.weaving.ParsedType.Builder;
 import org.glowroot.weaving.ParsedTypeCache.ParseContext;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -55,6 +55,7 @@ import static org.glowroot.common.Nullness.castNonNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_NATIVE;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ASM4;
@@ -85,14 +86,15 @@ class WeavingClassVisitor extends ClassVisitor {
     private ImmutableList<MixinType> matchedMixinTypes = ImmutableList.of();
     @MonotonicNonNull
     private Type type;
+    @MonotonicNonNull
+    private List<ParsedType> superHierarchy;
+    @MonotonicNonNull
+    private List<ParsedType> interfaceHierarchy;
 
     private int innerMethodCounter;
     private boolean nothingAtAllToWeave;
 
-    @MonotonicNonNull
-    // can't use ParsedType.Builder for now, as that leads to error when running checker framework
-    // "nested type cannot be annotated"
-    private Builder parsedType;
+    private ParsedType./*@MonotonicNonNull*/Builder parsedTypeBuilder;
 
     public WeavingClassVisitor(ClassVisitor cv, ImmutableList<MixinType> mixinTypes,
             @ReadOnly Iterable<Advice> advisors, @Nullable ClassLoader loader,
@@ -114,7 +116,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
         String[] interfaceNames = interfaceNamesNullable == null ? new String[0]
                 : interfaceNamesNullable;
-        parsedType = ParsedType.builder(Modifier.isInterface(access),
+        parsedTypeBuilder = ParsedType.builder(Modifier.isInterface(access),
                 TypeNames.fromInternal(name), TypeNames.fromInternal(superName),
                 TypeNames.fromInternal(interfaceNames));
         if (Modifier.isInterface(access)) {
@@ -123,7 +125,14 @@ class WeavingClassVisitor extends ClassVisitor {
             return;
         }
         type = Type.getObjectType(name);
-        List<ParsedType> superTypes = getSuperTypes(superName, interfaceNames);
+        ParseContext parseContext = new ParseContext(type.getClassName(), codeSource);
+        superHierarchy = parsedTypeCache.getTypeHierarchy(TypeNames.fromInternal(superName),
+                loader, parseContext);
+        interfaceHierarchy = getInterfaceHierarchy(interfaceNames);
+        // it's ok if there are duplicates in the superTypes list (e.g. an interface that appears
+        // twice in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it
+        // doesn't seem worth the (minor) performance hit to de-dup every time
+        Iterable<ParsedType> superTypes = Iterables.concat(superHierarchy, interfaceHierarchy);
         adviceMatchers = getAdviceMatchers(type, superTypes);
         matchedMixinTypes = getMatchedMixinTypes(type, superTypes);
         if (adviceMatchers.isEmpty() && matchedMixinTypes.isEmpty()) {
@@ -140,11 +149,12 @@ class WeavingClassVisitor extends ClassVisitor {
     public MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
         // visit() must be called
-        checkNotNull(parsedType, "Call to visit() is required");
+        checkNotNull(parsedTypeBuilder, "Call to visit() is required");
         ParsedMethod parsedMethod = null;
         if ((access & (ACC_NATIVE | ACC_SYNTHETIC)) == 0) {
             // don't add native or synthetic methods to the parsed type model
-            parsedMethod = parsedType.addParsedMethod(access, name, desc);
+            parsedMethod =
+                    parsedTypeBuilder.addParsedMethod(access, name, desc, signature, exceptions);
         }
         if (nothingAtAllToWeave) {
             // no need to pass method on to class writer
@@ -168,62 +178,31 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @Override
     public void visitEnd() {
-        checkNotNull(parsedType, "Call to visit() is required");
-        parsedTypeCache.add(parsedType.build(), loader);
+        checkNotNull(parsedTypeBuilder, "Call to visit() is required");
+        ParsedType parsedType = parsedTypeBuilder.build();
+        parsedTypeCache.add(parsedType, loader);
         if (nothingAtAllToWeave) {
             return;
         }
-        // type can be null, but not if nothingAtAllToWeave is false
+        // type, superHierarchy and interfaceHierarchy can be null, but not if nothingAtAllToWeave
+        // is false
         checkNotNull(type, "Call to visit() is required");
+        checkNotNull(superHierarchy, "Call to visit() is required");
+        checkNotNull(interfaceHierarchy, "Call to visit() is required");
         for (MixinType mixinType : matchedMixinTypes) {
-            ClassReader cr;
-            try {
-                cr = new ClassReader(mixinType.getImplementation().getName());
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-                continue;
-            }
-            ClassNode cn = new ClassNode();
-            cr.accept(cn, ClassReader.SKIP_FRAMES);
-            // SuppressWarnings because generics are explicitly removed from asm binaries
-            // see http://forge.ow2.org/tracker/?group_id=23&atid=100023&func=detail&aid=316377
-            @SuppressWarnings("unchecked")
-            List<FieldNode> fieldNodes = cn.fields;
-            for (FieldNode fieldNode : fieldNodes) {
-                fieldNode.accept(this);
-            }
-            // SuppressWarnings because generics are explicitly removed from asm binaries
-            @SuppressWarnings("unchecked")
-            List<MethodNode> methodNodes = cn.methods;
-            for (MethodNode mn : methodNodes) {
-                if (mn.name.equals("<init>")) {
-                    continue;
-                }
-                // SuppressWarnings because generics are explicitly removed from asm binaries
-                @SuppressWarnings("unchecked")
-                String[] exceptions = Iterables.toArray(mn.exceptions, String.class);
-                MethodVisitor mv = cv.visitMethod(mn.access, mn.name, mn.desc, mn.signature,
-                        exceptions);
-                castNonNull(mv);
-                mn.accept(new RemappingMethodAdapter(mn.access, mn.desc, mv,
-                        new SimpleRemapper(cn.name, type.getInternalName())));
-            }
+            addMixin(mixinType);
         }
+        handleInheritedMethodsFulfillingAnInterface(parsedType);
     }
 
     boolean isNothingAtAllToWeave() {
         return nothingAtAllToWeave;
     }
 
-    // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
-    // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
-    // seem worth the (minor) performance hit to de-dup every time
     @RequiresNonNull("type")
-    private List<ParsedType> getSuperTypes(@Nullable String superName, String[] interfaceNames) {
+    private List<ParsedType> getInterfaceHierarchy(String[] interfaceNames) {
         List<ParsedType> superTypes = Lists.newArrayList();
         ParseContext parseContext = new ParseContext(type.getClassName(), codeSource);
-        superTypes.addAll(parsedTypeCache.getTypeHierarchy(
-                TypeNames.fromInternal(superName), loader, parseContext));
         for (String interfaceName : interfaceNames) {
             superTypes.addAll(parsedTypeCache.getTypeHierarchy(
                     TypeNames.fromInternal(interfaceName), loader, parseContext));
@@ -231,7 +210,8 @@ class WeavingClassVisitor extends ClassVisitor {
         return superTypes;
     }
 
-    private ImmutableList<AdviceMatcher> getAdviceMatchers(Type type, List<ParsedType> superTypes) {
+    private ImmutableList<AdviceMatcher> getAdviceMatchers(Type type,
+            Iterable<ParsedType> superTypes) {
         ImmutableList.Builder<AdviceMatcher> adviceMatchersBuilder = ImmutableList.builder();
         for (Advice advice : advisors) {
             AdviceMatcher adviceMatcher = new AdviceMatcher(advice, type, superTypes);
@@ -242,7 +222,8 @@ class WeavingClassVisitor extends ClassVisitor {
         return adviceMatchersBuilder.build();
     }
 
-    private ImmutableList<MixinType> getMatchedMixinTypes(Type type, List<ParsedType> superTypes) {
+    private ImmutableList<MixinType> getMatchedMixinTypes(Type type,
+            Iterable<ParsedType> superTypes) {
         ImmutableList.Builder<MixinType> matchedMixinTypesBuilder = ImmutableList.builder();
         for (MixinType mixinType : mixinTypes) {
             if (MixinMatcher.isMatch(mixinType, type, superTypes)) {
@@ -266,14 +247,14 @@ class WeavingClassVisitor extends ClassVisitor {
         return Iterables.toArray(interfacesIncludingMixins, String.class);
     }
 
-    @RequiresNonNull("parsedType")
+    @RequiresNonNull("parsedTypeBuilder")
     private List<Advice> getMatchingAdvisors(int access, ParsedMethod parsedMethod) {
         List<Advice> matchingAdvisors = Lists.newArrayList();
         for (AdviceMatcher adviceMatcher : adviceMatchers) {
             if (adviceMatcher.isMethodLevelMatch(access, parsedMethod)) {
                 matchingAdvisors.add(adviceMatcher.getAdvice());
                 if (adviceMatcher.getAdvice().isReweavable()) {
-                    parsedType.setHasReweavableAdvice(true);
+                    parsedTypeBuilder.setHasReweavableAdvice(true);
                 }
             }
         }
@@ -357,6 +338,141 @@ class WeavingClassVisitor extends ClassVisitor {
         return first ? null : currMethodName;
     }
 
+    @RequiresNonNull("type")
+    private void addMixin(MixinType mixinType) {
+        ClassReader cr;
+        try {
+            cr = new ClassReader(mixinType.getImplementation().getName());
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+            return;
+        }
+        ClassNode cn = new ClassNode();
+        cr.accept(cn, ClassReader.SKIP_FRAMES);
+        // SuppressWarnings because generics are explicitly removed from asm binaries
+        // see http://forge.ow2.org/tracker/?group_id=23&atid=100023&func=detail&aid=316377
+        @SuppressWarnings("unchecked")
+        List<FieldNode> fieldNodes = cn.fields;
+        for (FieldNode fieldNode : fieldNodes) {
+            fieldNode.accept(this);
+        }
+        // SuppressWarnings because generics are explicitly removed from asm binaries
+        @SuppressWarnings("unchecked")
+        List<MethodNode> methodNodes = cn.methods;
+        for (MethodNode mn : methodNodes) {
+            if (mn.name.equals("<init>")) {
+                continue;
+            }
+            // SuppressWarnings because generics are explicitly removed from asm binaries
+            @SuppressWarnings("unchecked")
+            String[] exceptions = Iterables.toArray(mn.exceptions, String.class);
+            MethodVisitor mv = cv.visitMethod(mn.access, mn.name, mn.desc, mn.signature,
+                    exceptions);
+            castNonNull(mv);
+            mn.accept(new RemappingMethodAdapter(mn.access, mn.desc, mv,
+                    new SimpleRemapper(cn.name, type.getInternalName())));
+        }
+    }
+
+    // handle inherited methods which are used to fulfill an interface contract, so may need to be
+    // woven now that they are part of the interface contract, but are in a super class so its too
+    // late to weave them
+    //
+    // * look at interfaces added to this class (and not its super class)
+    // * look at methods for those interfaces that are implemented in the super class but not
+    // * implemented in this class
+    // * check if those methods need weaving if they were implemented in this class
+    //
+    // these methods should be woven, so override these methods in this class to simply call
+    // super, and then weave them as normal
+    @RequiresNonNull({"type", "interfaceHierarchy", "superHierarchy", "parsedTypeBuilder"})
+    private void handleInheritedMethodsFulfillingAnInterface(ParsedType parsedType) {
+        Set<ParsedMethod> inheritedMethods = Sets.newHashSet();
+        for (ParsedType interfaceType : interfaceHierarchy) {
+            if (superHierarchy.contains(interfaceType)) {
+                // this interface's methods have already been checked/dealt with a the super class
+                continue;
+            }
+            for (ParsedMethod method : interfaceType.getMethods()) {
+                if (parsedType.getMethod(method) != null) {
+                    continue;
+                }
+                // this interface method was not implemented in this class
+                // check to see if it was implemented in a super class
+                for (ParsedType inheritedType : superHierarchy) {
+                    if (inheritedType.isInterface()) {
+                        continue;
+                    }
+                    ParsedMethod inheritedMethod = inheritedType.getMethod(method);
+                    if (inheritedMethod == null
+                            || Modifier.isAbstract(inheritedMethod.getModifiers())) {
+                        continue;
+                    }
+                    if (inheritedMethods.contains(inheritedMethod)) {
+                        // already added from another super type
+                        continue;
+                    }
+                    List<Advice> matchingAdvisors =
+                            getMatchingAdvisors(inheritedMethod.getModifiers(), inheritedMethod);
+                    if (matchingAdvisors.isEmpty()) {
+                        // doesn't need to be woven
+                        continue;
+                    }
+                    if (inheritedMethod.isFinal()) {
+                        logWarningCannotOverrideAndWeaveInheritedFinalMethod(inheritedType,
+                                inheritedMethod, parsedType, interfaceType);
+                        continue;
+                    }
+                    // keep track so
+                    inheritedMethods.add(inheritedMethod);
+                    overrideAndWeaveInheritedMethod(parsedType, inheritedMethod, matchingAdvisors);
+                }
+            }
+        }
+    }
+
+    private void logWarningCannotOverrideAndWeaveInheritedFinalMethod(ParsedType inheritedType,
+            ParsedMethod inheritedMethod, ParsedType parsedType, ParsedType interfaceType) {
+        StringBuilder inheritedMethodDisplay = new StringBuilder();
+        inheritedMethodDisplay.append(inheritedMethod.getReturnTypeName());
+        inheritedMethodDisplay.append(' ');
+        inheritedMethodDisplay.append(inheritedMethod.getName());
+        inheritedMethodDisplay.append('(');
+        inheritedMethodDisplay.append(
+                Joiner.on(", ").join(inheritedMethod.getArgTypeNames()));
+        inheritedMethodDisplay.append(')');
+        logger.warn("cannot weave final methods that are then inherited to fulfill an interface:"
+                + " superClass={}, superClassMethod={}, subClass={}, subClassInterface={}",
+                inheritedType.getName(), inheritedMethodDisplay, parsedType.getName(),
+                interfaceType.getName());
+    }
+
+    @RequiresNonNull({"type"})
+    private void overrideAndWeaveInheritedMethod(ParsedType parsedType,
+            ParsedMethod inheritedMethod, List<Advice> matchingAdvisors) {
+        MethodVisitor mv = visitMethodWithAdvice(ACC_PUBLIC, inheritedMethod.getName(),
+                inheritedMethod.getDesc(), inheritedMethod.getSignature(),
+                inheritedMethod.getExceptions(), matchingAdvisors);
+        castNonNull(mv);
+        GeneratorAdapter mg = new GeneratorAdapter(mv, ACC_PUBLIC, inheritedMethod.getName(),
+                inheritedMethod.getDesc());
+        mg.visitCode();
+        mg.loadThis();
+        mg.loadArgs();
+        String superName = parsedType.getSuperName();
+        Type superType;
+        if (superName == null) {
+            superType = Type.getType(Object.class);
+        } else {
+            superType = Type.getType(TypeNames.toInternal(superName));
+        }
+        // method is called invokeConstructor, but should really be called invokeSpecial
+        mg.invokeConstructor(superType,
+                new Method(inheritedMethod.getName(), inheritedMethod.getDesc()));
+        mg.returnValue();
+        mg.endMethod();
+    }
+
     @Override
     @Pure
     public String toString() {
@@ -368,8 +484,8 @@ class WeavingClassVisitor extends ClassVisitor {
                 .add("type", type)
                 .add("innerMethodCounter", innerMethodCounter)
                 .add("nothingAtAllToWeave", nothingAtAllToWeave);
-        if (parsedType != null) {
-            toStringHelper.add("parsedType", parsedType.build());
+        if (parsedTypeBuilder != null) {
+            toStringHelper.add("parsedType", parsedTypeBuilder.build());
         }
         return toStringHelper.toString();
     }

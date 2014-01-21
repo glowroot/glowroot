@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 package org.glowroot.weaving;
-
-import java.util.List;
 
 import checkers.igj.quals.ReadOnly;
 import org.objectweb.asm.Type;
@@ -32,7 +30,7 @@ class MixinMatcher {
     private MixinMatcher() {}
 
     static boolean isMatch(MixinType mixinType, Type targetType,
-            @ReadOnly List<ParsedType> superTypes) {
+            @ReadOnly Iterable<ParsedType> superTypes) {
         boolean targetTypeClassMatch = isTypeMatch(mixinType, targetType.getClassName());
         boolean superClassMatch = false;
         boolean alreadyImplementsMixin = false;

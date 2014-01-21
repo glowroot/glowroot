@@ -42,6 +42,12 @@ import org.glowroot.api.weaving.Pointcut;
  */
 public class SomeAspect {
 
+    public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
+    public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+    public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+    public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+    public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "execute1|execute2",
             metricName = "xyz")
     public static class BasicAdvice {
@@ -51,11 +57,6 @@ public class SomeAspect {
                 return true;
             }
         };
-        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -102,10 +103,6 @@ public class SomeAspect {
                 return true;
             }
         };
-        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -147,10 +144,6 @@ public class SomeAspect {
                 return true;
             }
         };
-        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -192,11 +185,6 @@ public class SomeAspect {
                 return true;
             }
         };
-        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -242,11 +230,6 @@ public class SomeAspect {
                 return true;
             }
         };
-        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -675,7 +658,6 @@ public class SomeAspect {
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = {".."})
     public static class MethodArgsDotDotAdvice1 {
-        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -688,7 +670,6 @@ public class SomeAspect {
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = {"java.lang.String", ".."})
     public static class MethodArgsDotDotAdvice2 {
-        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -701,7 +682,6 @@ public class SomeAspect {
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = {"java.lang.String", "int", ".."})
     public static class MethodArgsDotDotAdvice3 {
-        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -778,10 +758,6 @@ public class SomeAspect {
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "execute1",
             captureNested = false)
     public static class NotNestingWithNoIsEnabledAdvice {
-        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -850,13 +826,13 @@ public class SomeAspect {
 
     @Pointcut(typeName = "org.glowroot.weaving.StaticMisc", methodName = "executeStatic")
     public static class StaticBindTargetClassAdvice {
-        public static final ThreadLocal<Class<?>> onBeforeCount = new ThreadLocal<Class<?>>();
+        public static final ThreadLocal<Class<?>> onBeforeTarget = new ThreadLocal<Class<?>>();
         @OnBefore
         public static void onBefore(@BindTarget Class<?> type) {
-            onBeforeCount.set(type);
+            onBeforeTarget.set(type);
         }
         public static void resetThreadLocals() {
-            onBeforeCount.remove();
+            onBeforeTarget.remove();
         }
     }
 
@@ -867,8 +843,6 @@ public class SomeAspect {
     @Pointcut(typeName = "org.glowroot.weaving.PrimitiveMisc", methodName = "executePrimitive",
             methodArgs = {"int", "double", "*", ".."})
     public static class PrimitiveWithWildcardAdvice {
-        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled(@SuppressWarnings("unused") @BindMethodArg int x) {
             enabledCount.increment();
@@ -887,7 +861,6 @@ public class SomeAspect {
     @Pointcut(typeName = "org.glowroot.weaving.PrimitiveMisc", methodName = "executePrimitive",
             methodArgs = {"int", "double", "*", ".."})
     public static class PrimitiveWithAutoboxAdvice {
-        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled(@SuppressWarnings("unused") @BindMethodArg Object x) {
             enabledCount.increment();
@@ -917,9 +890,6 @@ public class SomeAspect {
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = {"java.lang.String", "int"})
     public static class VeryBadAdvice {
-        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @OnBefore
         public static Object onBefore() {
             onBeforeCount.increment();
@@ -945,9 +915,6 @@ public class SomeAspect {
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = {"java.lang.String", "int"})
     public static class MoreVeryBadAdvice {
-        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @OnReturn
         public static void onReturn() {
             onReturnCount.increment();
@@ -973,9 +940,6 @@ public class SomeAspect {
     // same as MoreVeryBadAdvice, but testing weaving a method with a non-void return type
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
     public static class MoreVeryBadAdvice2 {
-        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @OnReturn
         public static void onReturn() {
             onReturnCount.increment();
@@ -1001,7 +965,6 @@ public class SomeAspect {
     @Pointcut(typeName = "org.glowroot.weaving.Misc3", methodName = "identity",
             methodArgs = {"org.glowroot.weaving.BasicMisc"})
     public static class CircularClassDependencyAdvice {
-        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -1013,7 +976,6 @@ public class SomeAspect {
 
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class InterfaceAppearsTwiceInHierarchyAdvice {
-        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();

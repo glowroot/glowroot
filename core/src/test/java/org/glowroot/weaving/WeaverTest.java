@@ -24,6 +24,8 @@ import org.glowroot.api.OptionalReturn;
 import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.weaving.AbstractMisc.ExtendsAbstractMisc;
+import org.glowroot.weaving.AbstractNotMisc.ExtendsAbstractNotMisc;
+import org.glowroot.weaving.AbstractNotMiscWithFinal.ExtendsAbstractNotMiscWithFinal;
 import org.glowroot.weaving.SomeAspect.BasicAdvice;
 import org.glowroot.weaving.SomeAspect.BasicMiscConstructorAdvice;
 import org.glowroot.weaving.SomeAspect.BasicMiscConstructorOnInterfaceImplAdvice;
@@ -91,10 +93,10 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(BasicAdvice.onBeforeCount.get()).isEqualTo(1);
-        assertThat(BasicAdvice.onReturnCount.get()).isEqualTo(1);
-        assertThat(BasicAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onAfterCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
     }
 
     @Test
@@ -109,10 +111,10 @@ public class WeaverTest {
         } catch (Throwable t) {
         }
         // then
-        assertThat(BasicAdvice.onBeforeCount.get()).isEqualTo(1);
-        assertThat(BasicAdvice.onReturnCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onThrowCount.get()).isEqualTo(1);
-        assertThat(BasicAdvice.onAfterCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
     }
 
     @Test
@@ -124,10 +126,10 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(BasicAdvice.onBeforeCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onReturnCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onAfterCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(0);
     }
 
     @Test
@@ -142,10 +144,10 @@ public class WeaverTest {
         } catch (Throwable t) {
         }
         // then
-        assertThat(BasicAdvice.onBeforeCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onReturnCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onAfterCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(0);
     }
 
     // ===================== @BindTarget =====================
@@ -449,10 +451,10 @@ public class WeaverTest {
         // when
         test.execute2();
         // then
-        assertThat(BasicAdvice.onBeforeCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onReturnCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onAfterCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(0);
     }
 
     // ===================== methodArgs '..' =====================
@@ -465,7 +467,7 @@ public class WeaverTest {
         // when
         test.executeWithArgs("one", 2);
         // then
-        assertThat(MethodArgsDotDotAdvice1.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
     }
 
     @Test
@@ -476,7 +478,7 @@ public class WeaverTest {
         // when
         test.executeWithArgs("one", 2);
         // then
-        assertThat(MethodArgsDotDotAdvice2.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
     }
 
     @Test
@@ -487,7 +489,7 @@ public class WeaverTest {
         // when
         test.executeWithArgs("one", 2);
         // then
-        assertThat(MethodArgsDotDotAdvice3.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
     }
 
     // ===================== @Mixin =====================
@@ -545,10 +547,10 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(NotNestingAdvice.onBeforeCount.get()).isEqualTo(1);
-        assertThat(NotNestingAdvice.onReturnCount.get()).isEqualTo(1);
-        assertThat(NotNestingAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(NotNestingAdvice.onAfterCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
         assertThat(test.executeWithReturn()).isEqualTo("yes");
     }
 
@@ -561,10 +563,10 @@ public class WeaverTest {
         test.execute1();
         test.execute1();
         // then
-        assertThat(NotNestingAdvice.onBeforeCount.get()).isEqualTo(2);
-        assertThat(NotNestingAdvice.onReturnCount.get()).isEqualTo(2);
-        assertThat(NotNestingAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(NotNestingAdvice.onAfterCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(2);
         assertThat(test.executeWithReturn()).isEqualTo("yes");
     }
 
@@ -576,10 +578,10 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(NotNestingAdvice.onBeforeCount.get()).isEqualTo(1);
-        assertThat(NotNestingAdvice.onReturnCount.get()).isEqualTo(1);
-        assertThat(NotNestingAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(NotNestingAdvice.onAfterCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
         assertThat(test.executeWithReturn()).isEqualTo("yes");
     }
 
@@ -591,10 +593,10 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(BasicAdvice.onBeforeCount.get()).isEqualTo(2);
-        assertThat(BasicAdvice.onReturnCount.get()).isEqualTo(2);
-        assertThat(BasicAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onAfterCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(2);
     }
 
     @Test
@@ -606,10 +608,10 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(NotNestingWithNoIsEnabledAdvice.onBeforeCount.get()).isEqualTo(1);
-        assertThat(NotNestingWithNoIsEnabledAdvice.onReturnCount.get()).isEqualTo(1);
-        assertThat(NotNestingWithNoIsEnabledAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(NotNestingWithNoIsEnabledAdvice.onAfterCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
         assertThat(test.executeWithReturn()).isEqualTo("yes");
     }
 
@@ -638,10 +640,10 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(StaticAdvice.onBeforeCount.get()).isEqualTo(1);
-        assertThat(StaticAdvice.onReturnCount.get()).isEqualTo(1);
-        assertThat(StaticAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(StaticAdvice.onAfterCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
     }
 
     @Test
@@ -653,8 +655,8 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(StaticBindTargetClassAdvice.onBeforeCount.get().getName()).isEqualTo(
-                StaticMisc.class.getName());
+        assertThat(StaticBindTargetClassAdvice.onBeforeTarget.get().getName())
+                .isEqualTo(StaticMisc.class.getName());
     }
     // ===================== primitive args =====================
 
@@ -667,10 +669,10 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(PrimitiveAdvice.onBeforeCount.get()).isEqualTo(1);
-        assertThat(PrimitiveAdvice.onReturnCount.get()).isEqualTo(1);
-        assertThat(PrimitiveAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(PrimitiveAdvice.onAfterCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
     }
 
     // ===================== wildcard args =====================
@@ -684,8 +686,8 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(PrimitiveWithWildcardAdvice.enabledCount.get()).isEqualTo(1);
-        assertThat(PrimitiveWithWildcardAdvice.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
     }
 
     // ===================== type name pattern =====================
@@ -698,8 +700,8 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(TypeNamePatternAdvice.enabledCount.get()).isEqualTo(1);
-        assertThat(TypeNamePatternAdvice.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
     }
 
     // ===================== autobox args =====================
@@ -713,7 +715,7 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(PrimitiveWithAutoboxAdvice.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
     }
 
     // ===================== return type matching =====================
@@ -726,8 +728,8 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(MethodReturnVoidAdvice.onBeforeCount.get()).isEqualTo(1);
-        assertThat(MethodReturnVoidAdvice.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
     }
 
     @Test
@@ -739,8 +741,8 @@ public class WeaverTest {
         // when
         test.executeWithReturn();
         // then
-        assertThat(MethodReturnStringAdvice.onBeforeCount.get()).isEqualTo(1);
-        assertThat(MethodReturnStringAdvice.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
     }
 
     @Test
@@ -751,8 +753,8 @@ public class WeaverTest {
         // when
         test.executeWithReturn();
         // then
-        assertThat(MethodReturnStringAdvice.onBeforeCount.get()).isEqualTo(0);
-        assertThat(MethodReturnStringAdvice.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(0);
     }
 
     @Test
@@ -764,8 +766,8 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(NonMatchingMethodReturnAdvice.onBeforeCount.get()).isEqualTo(0);
-        assertThat(NonMatchingMethodReturnAdvice.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(0);
     }
 
     @Test
@@ -777,8 +779,8 @@ public class WeaverTest {
         // when
         test.executeWithReturn();
         // then
-        assertThat(NonMatchingMethodReturnAdvice2.onBeforeCount.get()).isEqualTo(0);
-        assertThat(NonMatchingMethodReturnAdvice2.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(0);
     }
 
     // ===================== constructor =====================
@@ -793,10 +795,10 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(BasicMiscConstructorAdvice.enabledCount.get()).isEqualTo(1);
-        assertThat(BasicMiscConstructorAdvice.onReturnCount.get()).isEqualTo(1);
-        assertThat(BasicMiscConstructorAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(BasicMiscConstructorAdvice.onAfterCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
     }
 
     @Test
@@ -810,10 +812,38 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(BasicMiscConstructorOnInterfaceImplAdvice.enabledCount.get()).isEqualTo(1);
-        assertThat(BasicMiscConstructorOnInterfaceImplAdvice.onReturnCount.get()).isEqualTo(1);
-        assertThat(BasicMiscConstructorOnInterfaceImplAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(BasicMiscConstructorOnInterfaceImplAdvice.onAfterCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldHandleInheritedMethodFulfillingAnInterface() throws Exception {
+        // given
+        BasicAdvice.resetThreadLocals();
+        BasicAdvice.enable();
+        Misc test = newWovenObject(ExtendsAbstractNotMisc.class, Misc.class, BasicAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldHandleGracefullyInheritedFinalMethodFulfillingAnInterface() throws Exception {
+        // given
+        BasicAdvice.resetThreadLocals();
+        BasicAdvice.enable();
+        Misc test = newWovenObject(ExtendsAbstractNotMiscWithFinal.class, Misc.class,
+                BasicAdvice.class);
+        // when
+        test.execute1();
+        // then
+        // TODO check for warning message
     }
 
     @Test
@@ -824,11 +854,11 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(BasicWithInnerClassArgAdvice.enabledCount.get()).isEqualTo(1);
-        assertThat(BasicWithInnerClassArgAdvice.onBeforeCount.get()).isEqualTo(1);
-        assertThat(BasicWithInnerClassArgAdvice.onReturnCount.get()).isEqualTo(1);
-        assertThat(BasicWithInnerClassArgAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(BasicWithInnerClassArgAdvice.onAfterCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
     }
 
     @Test
@@ -840,11 +870,11 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(BasicWithInnerClassAdvice.enabledCount.get()).isEqualTo(1);
-        assertThat(BasicWithInnerClassAdvice.onBeforeCount.get()).isEqualTo(1);
-        assertThat(BasicWithInnerClassAdvice.onReturnCount.get()).isEqualTo(1);
-        assertThat(BasicWithInnerClassAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(BasicWithInnerClassAdvice.onAfterCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
     }
 
     @Test
@@ -856,10 +886,10 @@ public class WeaverTest {
         test.execute1();
         test.executeWithArgs("one", 2);
         // then
-        assertThat(MultipleMethodsAdvice.onBeforeCount.get()).isEqualTo(2);
-        assertThat(MultipleMethodsAdvice.onReturnCount.get()).isEqualTo(2);
-        assertThat(MultipleMethodsAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(MultipleMethodsAdvice.onAfterCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(2);
     }
 
     @Test
@@ -898,10 +928,10 @@ public class WeaverTest {
         // when
         test.execute1();
         // then
-        assertThat(NonMatchingStaticAdvice.onBeforeCount.get()).isEqualTo(0);
-        assertThat(NonMatchingStaticAdvice.onReturnCount.get()).isEqualTo(0);
-        assertThat(NonMatchingStaticAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(NonMatchingStaticAdvice.onAfterCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(0);
     }
 
     @Test
@@ -944,7 +974,7 @@ public class WeaverTest {
                 InterfaceAppearsTwiceInHierarchyAdvice.class);
         test.execute1();
         // then
-        assertThat(InterfaceAppearsTwiceInHierarchyAdvice.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
     }
 
     @Test

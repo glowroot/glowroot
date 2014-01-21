@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.glowroot.weaving;
 
+import java.lang.reflect.Modifier;
+
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
@@ -29,6 +31,7 @@ import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// TODO intern all Strings in this class to minimize long term memory usage
 @Immutable
 public class ParsedMethod {
 
@@ -37,23 +40,39 @@ public class ParsedMethod {
     private final String returnTypeName;
     private final int modifiers;
 
+    // fields below are needed for public methods in case they end up fulfilling an interface in a
+    // subclass
+    private final boolean isFinal;
+    private final String desc;
+    @Nullable
+    private final String signature;
+    private final String/*@Nullable*/[] exceptions;
+
     static ParsedMethod from(String name, ImmutableList<Type> argTypes, Type returnType,
-            int modifiers) {
+            int modifiers, String desc, @Nullable String signature,
+            String/*@Nullable*/[] exceptions) {
         ImmutableList.Builder<String> argTypeNames = ImmutableList.builder();
         for (Type argType : argTypes) {
             argTypeNames.add(argType.getClassName());
         }
         String returnTypeName = returnType.getClassName();
-        return new ParsedMethod(name, argTypeNames.build(), returnTypeName, modifiers);
+        return new ParsedMethod(name, argTypeNames.build(), returnTypeName, modifiers, desc,
+                signature, exceptions);
     }
 
     private ParsedMethod(String name, ImmutableList<String> argTypeNames, String returnTypeName,
-            int modifiers) {
+            int modifiers, String desc, @Nullable String signature,
+            String/*@Nullable*/[] exceptions) {
         this.name = name;
         this.argTypeNames = argTypeNames;
         this.returnTypeName = returnTypeName;
         // remove final and synchronized modifiers from the parsed method model
         this.modifiers = modifiers & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
+        // but still need to keep track of whether method is final
+        isFinal = Modifier.isFinal(modifiers);
+        this.desc = desc;
+        this.signature = signature;
+        this.exceptions = exceptions;
     }
 
     public String getName() {
@@ -71,6 +90,23 @@ public class ParsedMethod {
 
     public int getModifiers() {
         return modifiers;
+    }
+
+    boolean isFinal() {
+        return isFinal;
+    }
+
+    String getDesc() {
+        return desc;
+    }
+
+    @Nullable
+    String getSignature() {
+        return signature;
+    }
+
+    String/*@Nullable*/[] getExceptions() {
+        return exceptions;
     }
 
     // equals and hashCode are only defined in terms of name and argTypeNames since those uniquely

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.glowroot.markers.NotThreadSafe;
  * @since 0.5
  */
 // a ParsedType is never created for Object.class
+// TODO intern all Strings in this class to minimize long term memory usage
 @Immutable
 public class ParsedType {
 
@@ -133,10 +134,11 @@ public class ParsedType {
             this.interfaceNames = interfaceNames;
         }
 
-        ParsedMethod addParsedMethod(int access, String name, String desc) {
+        ParsedMethod addParsedMethod(int access, String name, String desc,
+                @Nullable String signature, String/*@Nullable*/[] exceptions) {
             ParsedMethod method =
                     ParsedMethod.from(name, ImmutableList.copyOf(Type.getArgumentTypes(desc)),
-                            Type.getReturnType(desc), access);
+                            Type.getReturnType(desc), access, desc, signature, exceptions);
             methods.add(method);
             return method;
         }

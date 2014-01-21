@@ -74,9 +74,9 @@ public class WeaverErrorHandlingTest {
             test.executeWithArgs("one", 2);
         } catch (IllegalStateException e) {
             assertThat(e.getMessage()).isEqualTo("Sorry");
-            assertThat(VeryBadAdvice.onBeforeCount.get()).isEqualTo(1);
-            assertThat(VeryBadAdvice.onThrowCount.get()).isEqualTo(0);
-            assertThat(VeryBadAdvice.onAfterCount.get()).isEqualTo(0);
+            assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+            assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+            assertThat(SomeAspect.onAfterCount.get()).isEqualTo(0);
             return;
         }
         throw new AssertionError("Expecting IllegalStateException");
@@ -92,9 +92,9 @@ public class WeaverErrorHandlingTest {
             test.executeWithArgs("one", 2);
         } catch (IllegalStateException e) {
             assertThat(e.getMessage()).isEqualTo("Sorry");
-            assertThat(MoreVeryBadAdvice.onReturnCount.get()).isEqualTo(1);
-            assertThat(MoreVeryBadAdvice.onThrowCount.get()).isEqualTo(0);
-            assertThat(MoreVeryBadAdvice.onAfterCount.get()).isEqualTo(0);
+            assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+            assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+            assertThat(SomeAspect.onAfterCount.get()).isEqualTo(0);
             return;
         }
         throw new AssertionError("Expecting IllegalStateException");
@@ -111,9 +111,9 @@ public class WeaverErrorHandlingTest {
             test.executeWithReturn();
         } catch (IllegalStateException e) {
             assertThat(e.getMessage()).isEqualTo("Sorry");
-            assertThat(MoreVeryBadAdvice2.onReturnCount.get()).isEqualTo(1);
-            assertThat(MoreVeryBadAdvice2.onThrowCount.get()).isEqualTo(0);
-            assertThat(MoreVeryBadAdvice2.onAfterCount.get()).isEqualTo(0);
+            assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+            assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+            assertThat(SomeAspect.onAfterCount.get()).isEqualTo(0);
             return;
         }
         throw new AssertionError("Expecting IllegalStateException");
