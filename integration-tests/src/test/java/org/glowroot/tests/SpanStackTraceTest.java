@@ -30,7 +30,7 @@ import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

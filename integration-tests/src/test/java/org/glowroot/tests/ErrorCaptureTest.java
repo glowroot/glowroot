@@ -36,7 +36,7 @@ import org.glowroot.container.trace.Trace;
 import org.glowroot.tests.plugin.LogCauseAspect;
 import org.glowroot.tests.plugin.LogCauseAspect.LogCauseAdvice;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

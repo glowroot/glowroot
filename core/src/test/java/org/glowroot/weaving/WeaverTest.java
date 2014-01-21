@@ -74,7 +74,7 @@ import org.glowroot.weaving.SomeAspect.StaticBindTargetClassAdvice;
 import org.glowroot.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
 import org.glowroot.weaving.SomeAspect.TypeNamePatternAdvice;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

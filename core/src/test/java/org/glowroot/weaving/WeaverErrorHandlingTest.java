@@ -28,7 +28,7 @@ import org.glowroot.weaving.SomeAspect.MoreVeryBadAdvice;
 import org.glowroot.weaving.SomeAspect.MoreVeryBadAdvice2;
 import org.glowroot.weaving.SomeAspect.VeryBadAdvice;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

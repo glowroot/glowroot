@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.container.ClassPath;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

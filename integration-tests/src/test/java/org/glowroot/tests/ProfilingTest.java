@@ -40,7 +40,7 @@ import org.glowroot.container.trace.MergedStackTreeNode;
 import org.glowroot.container.trace.Trace;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker
@@ -88,8 +88,7 @@ public class ProfilingTest {
         assertThat(trace.getCoarseMergedStackTree()).isNotNull();
         // coarse profiler should have captured exactly 5 stack traces
         int sampleCount = trace.getCoarseMergedStackTree().getSampleCount();
-        assertThat(sampleCount).isGreaterThanOrEqualTo(3);
-        assertThat(sampleCount).isLessThanOrEqualTo(7);
+        assertThat(sampleCount).isBetween(3, 7);
         assertThatTreeDoesNotContainSyntheticMetricMethods(trace.getCoarseMergedStackTree());
         assertThat(trace.getFineMergedStackTree()).isNull();
     }
@@ -139,8 +138,7 @@ public class ProfilingTest {
         assertThat(trace.getCoarseMergedStackTree()).isNull();
         assertThat(trace.getFineMergedStackTree()).isNotNull();
         // fine profiler should have captured about 10 stack traces
-        assertThat(trace.getFineMergedStackTree().getSampleCount()).isGreaterThanOrEqualTo(5);
-        assertThat(trace.getFineMergedStackTree().getSampleCount()).isLessThanOrEqualTo(15);
+        assertThat(trace.getFineMergedStackTree().getSampleCount()).isBetween(5, 15);
     }
 
     @Test
@@ -173,8 +171,7 @@ public class ProfilingTest {
         assertThat(trace.getCoarseMergedStackTree()).isNull();
         assertThat(trace.getFineMergedStackTree()).isNotNull();
         // fine profiler should have captured about 10 stack traces
-        assertThat(trace.getFineMergedStackTree().getSampleCount()).isGreaterThanOrEqualTo(5);
-        assertThat(trace.getFineMergedStackTree().getSampleCount()).isLessThanOrEqualTo(15);
+        assertThat(trace.getFineMergedStackTree().getSampleCount()).isBetween(5, 15);
     }
 
     // set fine store threshold to 0, and see if trace shows up in active list right away

@@ -37,7 +37,7 @@ import org.glowroot.trace.TraceRegistry;
 import org.glowroot.trace.model.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

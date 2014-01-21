@@ -41,7 +41,7 @@ import org.glowroot.container.trace.Metric;
 import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Basic tests of the jdbc plugin.

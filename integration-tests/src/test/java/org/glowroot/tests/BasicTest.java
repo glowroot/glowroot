@@ -29,7 +29,7 @@ import org.glowroot.container.Container;
 import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker
