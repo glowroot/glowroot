@@ -21,6 +21,8 @@ import java.sql.Statement;
 
 import checkers.nullness.quals.Nullable;
 
+import org.glowroot.api.Logger;
+import org.glowroot.api.LoggerFactory;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
@@ -34,8 +36,6 @@ import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.plugin.jdbc.StatementAspect.HasStatementMirror;
-import org.glowroot.shaded.slf4j.Logger;
-import org.glowroot.shaded.slf4j.LoggerFactory;
 
 /**
  * @author Trask Stalnaker

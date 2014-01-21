@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
+import org.glowroot.common.SpyingLogbackFilter;
 import org.glowroot.container.AppUnderTest;
-import org.glowroot.container.SpyingLogFilter;
 import org.glowroot.container.Threads;
 import org.glowroot.container.Threads.ThreadsException;
 import org.glowroot.container.javaagent.SocketCommander.CommandWrapper;
@@ -116,7 +116,7 @@ class SocketCommandProcessor implements Runnable {
             if (command.equals(GET_PORT)) {
                 respondWithPort(commandNum);
             } else if (command.equals(CLEAR_LOG_MESSAGES)) {
-                respond(SpyingLogFilter.clearMessages(), commandNum);
+                respond(SpyingLogbackFilter.clearMessages(), commandNum);
             } else if (command.equals(KILL)) {
                 terminateJvm(0);
             } else if (command.equals(SHUTDOWN)) {
@@ -214,7 +214,7 @@ class SocketCommandProcessor implements Runnable {
     private void addExpectedMessageAndRespond(int commandNum, List<?> args) throws Exception {
         String loggerName = (String) args.get(0);
         String partialMessage = (String) args.get(1);
-        SpyingLogFilter.addExpectedMessage(loggerName, partialMessage);
+        SpyingLogbackFilter.addExpectedMessage(loggerName, partialMessage);
         respond(null, commandNum);
     }
 

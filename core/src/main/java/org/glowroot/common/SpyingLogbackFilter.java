@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,27 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.container;
+package org.glowroot.common;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
+import checkers.nullness.quals.Nullable;
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.glowroot.markers.OnlyUsedByTests;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class SpyingLogFilter extends Filter<ILoggingEvent> {
+// this is needed in glowroot-core so that the references to logback classes will be shaded whenever
+// glowroot-core is shaded
+@OnlyUsedByTests
+public class SpyingLogbackFilter extends Filter<ILoggingEvent> {
 
-    private static final List<ExpectedMessage> expectedMessages = Lists.newCopyOnWriteArrayList();
+    private final List<ExpectedMessage> expectedMessages = Lists.newCopyOnWriteArrayList();
 
-    private static final AtomicInteger unexpectedMessageCount = new AtomicInteger();
+    private final AtomicInteger unexpectedMessageCount = new AtomicInteger();
 
     @Override
     public String getName() {
@@ -71,16 +82,60 @@ public class SpyingLogFilter extends Filter<ILoggingEvent> {
         }
     }
 
+    public static void init() {
+        Appender<ILoggingEvent> consoleAppender = getConsoleAppender();
+        SpyingLogbackFilter spyingLogbackFilter = getSpyingLogbackFilter(consoleAppender);
+        if (spyingLogbackFilter == null) {
+            consoleAppender.addFilter(new SpyingLogbackFilter());
+        }
+    }
+
     public static void addExpectedMessage(String loggerName, String partialMessage) {
-        expectedMessages.add(new ExpectedMessage(loggerName, partialMessage));
+        SpyingLogbackFilter spyingLogbackFilter = getSpyingLogbackFilter();
+        if (spyingLogbackFilter == null) {
+            throw new IllegalStateException("SpyingLogbackFilter.init() was never called");
+        }
+        spyingLogbackFilter.expectedMessages.add(new ExpectedMessage(loggerName, partialMessage));
     }
 
     public static MessageCount clearMessages() {
-        MessageCount counts = new MessageCount(expectedMessages.size(),
-                unexpectedMessageCount.get());
-        expectedMessages.clear();
-        unexpectedMessageCount.set(0);
+        SpyingLogbackFilter spyingLogbackFilter = getSpyingLogbackFilter();
+        if (spyingLogbackFilter == null) {
+            throw new IllegalStateException("SpyingLogbackFilter.init() was never called");
+        }
+        MessageCount counts = new MessageCount(spyingLogbackFilter.expectedMessages.size(),
+                spyingLogbackFilter.unexpectedMessageCount.get());
+        spyingLogbackFilter.expectedMessages.clear();
+        spyingLogbackFilter.unexpectedMessageCount.set(0);
         return counts;
+    }
+
+    @Nullable
+    private static SpyingLogbackFilter getSpyingLogbackFilter() {
+        Appender<ILoggingEvent> consoleAppender = getConsoleAppender();
+        return getSpyingLogbackFilter(consoleAppender);
+    }
+
+    private static Appender<ILoggingEvent> getConsoleAppender() {
+        ch.qos.logback.classic.Logger root =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        for (Iterator<Appender<ILoggingEvent>> i = root.iteratorForAppenders(); i.hasNext();) {
+            Appender<ILoggingEvent> appender = i.next();
+            if (appender instanceof ConsoleAppender) {
+                return appender;
+            }
+        }
+        throw new IllegalStateException("No console appender found");
+    }
+
+    @Nullable
+    private static SpyingLogbackFilter getSpyingLogbackFilter(Appender<ILoggingEvent> appender) {
+        for (Filter<ILoggingEvent> filter : appender.getCopyOfAttachedFiltersList()) {
+            if (filter instanceof SpyingLogbackFilter) {
+                return (SpyingLogbackFilter) filter;
+            }
+        }
+        return null;
     }
 
     @SuppressWarnings("serial")

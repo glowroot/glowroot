@@ -23,11 +23,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.glowroot.shaded</groupId>
-      <artifactId>shaded-slf4j-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <!-- using shaded-guava dependency to take advantage of the shaded guava library that is
         already provided in the glowroot jar -->
       <groupId>org.glowroot.shaded</groupId>

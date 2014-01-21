@@ -97,11 +97,6 @@
       </dependency>
       <dependency>
         <groupId>org.glowroot.shaded</groupId>
-        <artifactId>shaded-slf4j-api</artifactId>
-        <version>1.7.5-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.glowroot.shaded</groupId>
         <artifactId>shaded-guava</artifactId>
         <version>16.0-rc1-SNAPSHOT</version>
       </dependency>

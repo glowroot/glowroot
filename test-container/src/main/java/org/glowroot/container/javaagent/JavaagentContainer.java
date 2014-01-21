@@ -41,12 +41,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.MainEntryPoint;
+import org.glowroot.common.SpyingLogbackFilter;
+import org.glowroot.common.SpyingLogbackFilter.MessageCount;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.ClassPath;
 import org.glowroot.container.Container;
-import org.glowroot.container.SpyingLogFilter;
-import org.glowroot.container.SpyingLogFilter.MessageCount;
-import org.glowroot.container.SpyingLogFilterCheck;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.ConfigService;
 import org.glowroot.container.javaagent.JavaagentConfigService.GetUiPortCommand;
@@ -155,12 +154,8 @@ public class JavaagentContainer implements Container {
 
     @Override
     public void addExpectedLogMessage(String loggerName, String partialMessage) throws Exception {
-        if (SpyingLogFilterCheck.isSpyingLogFilterEnabled()) {
-            socketCommander.sendCommand(ImmutableList.of(
-                    SocketCommandProcessor.ADD_EXPECTED_LOG_MESSAGE, loggerName, partialMessage));
-        } else {
-            throw new AssertionError(SpyingLogFilter.class.getSimpleName() + " is not enabled");
-        }
+        socketCommander.sendCommand(ImmutableList.of(
+                SocketCommandProcessor.ADD_EXPECTED_LOG_MESSAGE, loggerName, partialMessage));
     }
 
     @Override
@@ -196,19 +191,17 @@ public class JavaagentContainer implements Container {
         traceService.deleteAllSnapshots();
         configService.resetAllConfig();
         // check and reset log messages
-        if (SpyingLogFilterCheck.isSpyingLogFilterEnabled()) {
-            MessageCount logMessageCount = (MessageCount) socketCommander
-                    .sendCommand(SocketCommandProcessor.CLEAR_LOG_MESSAGES);
-            if (logMessageCount == null) {
-                throw new AssertionError("Command returned null: "
-                        + SocketCommandProcessor.CLEAR_LOG_MESSAGES);
-            }
-            if (logMessageCount.getExpectedCount() > 0) {
-                throw new AssertionError("One or more expected messages were not logged");
-            }
-            if (logMessageCount.getUnexpectedCount() > 0) {
-                throw new AssertionError("One or more unexpected messages were logged");
-            }
+        MessageCount logMessageCount = (MessageCount) socketCommander
+                .sendCommand(SocketCommandProcessor.CLEAR_LOG_MESSAGES);
+        if (logMessageCount == null) {
+            throw new AssertionError("Command returned null: "
+                    + SocketCommandProcessor.CLEAR_LOG_MESSAGES);
+        }
+        if (logMessageCount.getExpectedCount() > 0) {
+            throw new AssertionError("One or more expected messages were not logged");
+        }
+        if (logMessageCount.getUnexpectedCount() > 0) {
+            throw new AssertionError("One or more unexpected messages were logged");
         }
     }
 
@@ -272,7 +265,9 @@ public class JavaagentContainer implements Container {
         return (Integer) response;
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String... args) throws Exception {
+        // TODO move SpyingLogbackFilter init to MainEntryPoint, based on system property
+        SpyingLogbackFilter.init();
         try {
             int port = Integer.parseInt(args[0]);
             // socket is never closed since program is still running after main returns

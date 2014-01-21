@@ -8,28 +8,34 @@ package org.glowroot.shaded.slf4j;
 public interface Logger {
     public String getName() @ReadOnly;
     public void trace(@Nullable String msg) @ReadOnly;
-    public void trace(String format, @Nullable Object arg) @ReadOnly;
-    public void trace(String format, @Nullable Object arg1, @Nullable Object arg2) @ReadOnly;
-    public void trace(String format, @Nullable Object... arguments) @ReadOnly;
-    public void trace(@Nullable String msg, Throwable t) @ReadOnly;
+    public void trace(@Nullable String msg) @ReadOnly;
+    public void trace(@Nullable String format, @Nullable Object arg) @ReadOnly;
+    public void trace(@Nullable String format, @Nullable Object arg1,
+            @Nullable Object arg2) @ReadOnly;
+    public void trace(@Nullable String format, @Nullable Object... arguments) @ReadOnly;
+    public void trace(@Nullable String msg, @Nullable Throwable t) @ReadOnly;
     public void debug(@Nullable String msg) @ReadOnly;
-    public void debug(String format, @Nullable Object arg) @ReadOnly;
-    public void debug(String format, @Nullable Object arg1, @Nullable Object arg2) @ReadOnly;
-    public void debug(String format, @Nullable Object... arguments) @ReadOnly;
-    public void debug(@Nullable String msg, Throwable t) @ReadOnly;
+    public void debug(@Nullable String format, @Nullable Object arg) @ReadOnly;
+    public void debug(@Nullable String format, @Nullable Object arg1,
+            @Nullable Object arg2) @ReadOnly;
+    public void debug(@Nullable String format, @Nullable Object... arguments) @ReadOnly;
+    public void debug(@Nullable String msg, @Nullable Throwable t) @ReadOnly;
     public void info(@Nullable String msg) @ReadOnly;
-    public void info(String format, @Nullable Object arg) @ReadOnly;
-    public void info(String format, @Nullable Object arg1, @Nullable Object arg2) @ReadOnly;
-    public void info(String format, @Nullable Object... arguments) @ReadOnly;
-    public void info(@Nullable String msg, Throwable t) @ReadOnly;
+    public void info(@Nullable String format, @Nullable Object arg) @ReadOnly;
+    public void info(@Nullable String format, @Nullable Object arg1,
+            @Nullable Object arg2) @ReadOnly;
+    public void info(@Nullable String format, @Nullable Object... arguments) @ReadOnly;
+    public void info(@Nullable String msg, @Nullable Throwable t) @ReadOnly;
     public void warn(@Nullable String msg) @ReadOnly;
-    public void warn(String format, @Nullable Object arg) @ReadOnly;
-    public void warn(String format, @Nullable Object arg1, @Nullable Object arg2) @ReadOnly;
-    public void warn(String format, @Nullable Object... arguments) @ReadOnly;
-    public void warn(@Nullable String msg, Throwable t) @ReadOnly;
+    public void warn(@Nullable String format, @Nullable Object arg) @ReadOnly;
+    public void warn(@Nullable String format, @Nullable Object arg1,
+            @Nullable Object arg2) @ReadOnly;
+    public void warn(@Nullable String format, @Nullable Object... arguments) @ReadOnly;
+    public void warn(@Nullable String msg, @Nullable Throwable t) @ReadOnly;
     public void error(@Nullable String msg) @ReadOnly;
-    public void error(String format, @Nullable Object arg) @ReadOnly;
-    public void error(String format, @Nullable Object arg1, @Nullable Object arg2) @ReadOnly;
-    public void error(String format, @Nullable Object... arguments) @ReadOnly;
-    public void error(@Nullable String msg, Throwable t) @ReadOnly;
+    public void error(@Nullable String format, @Nullable Object arg) @ReadOnly;
+    public void error(@Nullable String format, @Nullable Object arg1,
+            @Nullable Object arg2) @ReadOnly;
+    public void error(@Nullable String format, @Nullable Object... arguments) @ReadOnly;
+    public void error(@Nullable String msg, @Nullable Throwable t) @ReadOnly;
 }

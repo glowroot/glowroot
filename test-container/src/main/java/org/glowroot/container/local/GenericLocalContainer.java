@@ -30,11 +30,10 @@ import com.google.common.io.Files;
 
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
+import org.glowroot.common.SpyingLogbackFilter;
+import org.glowroot.common.SpyingLogbackFilter.MessageCount;
 import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.container.Container.StartupFailedException;
-import org.glowroot.container.SpyingLogFilter;
-import org.glowroot.container.SpyingLogFilter.MessageCount;
-import org.glowroot.container.SpyingLogFilterCheck;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.Threads;
 import org.glowroot.container.config.ConfigService;
@@ -86,6 +85,8 @@ public class GenericLocalContainer<T> {
         if (!useFileDb) {
             properties.put("internal.h2.memdb", "true");
         }
+        // TODO move SpyingLogbackFilter init to MainEntryPoint, based on system property
+        SpyingLogbackFilter.init();
         try {
             MainEntryPoint.start(properties);
         } catch (org.glowroot.GlowrootModule.StartupFailedException e) {
@@ -120,11 +121,7 @@ public class GenericLocalContainer<T> {
     }
 
     public void addExpectedLogMessage(String loggerName, String partialMessage) {
-        if (SpyingLogFilterCheck.isSpyingLogFilterEnabled()) {
-            SpyingLogFilter.addExpectedMessage(loggerName, partialMessage);
-        } else {
-            throw new AssertionError(SpyingLogFilter.class.getSimpleName() + " is not enabled");
-        }
+        SpyingLogbackFilter.addExpectedMessage(loggerName, partialMessage);
     }
 
     public void executeAppUnderTest(Class<? extends T> appClass) throws Exception {
@@ -164,15 +161,13 @@ public class GenericLocalContainer<T> {
         traceService.deleteAllSnapshots();
         configService.resetAllConfig();
         // check and reset log messages
-        if (SpyingLogFilterCheck.isSpyingLogFilterEnabled()) {
-            MessageCount logMessageCount = SpyingLogFilter.clearMessages();
+        MessageCount logMessageCount = SpyingLogbackFilter.clearMessages();
 
-            if (logMessageCount.getExpectedCount() > 0) {
-                throw new AssertionError("One or more expected messages were not logged");
-            }
-            if (logMessageCount.getUnexpectedCount() > 0) {
-                throw new AssertionError("One or more unexpected messages were logged");
-            }
+        if (logMessageCount.getExpectedCount() > 0) {
+            throw new AssertionError("One or more expected messages were not logged");
+        }
+        if (logMessageCount.getUnexpectedCount() > 0) {
+            throw new AssertionError("One or more unexpected messages were logged");
         }
     }
 

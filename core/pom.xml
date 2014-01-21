@@ -91,9 +91,11 @@
       <version>1.0.0</version>
     </dependency>
     <dependency>
-      <groupId>org.glowroot.shaded</groupId>
-      <artifactId>shaded-slf4j-impl</artifactId>
-      <version>1.0.13-SNAPSHOT</version>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <!-- needed for compiling org.glowroot.testing.SpyingLogbackFilter and needed during shading,
+        but optional as a transitive dependency of unshaded core -->
+      <optional>true</optional>
     </dependency>
     <dependency>
       <!-- only annotations are used, so ok the (unshaded) artifact is not provided at runtime -->
@@ -133,11 +135,6 @@
       <!-- this is the latest version compiled to jdk 5 and therefore the latest version to include
         JSR bytecode since JSR bytecode was deprecated in jdk 6 -->
       <version>2.5.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -291,6 +288,7 @@
                 ${project.build.directory}/dependency-reduced-pom.xml
               </dependencyReducedPomLocation>
               <createSourcesJar>true</createSourcesJar>
+              <shadeSourcesContent>true</shadeSourcesContent>
             </configuration>
             <executions>
               <execution>
@@ -299,7 +297,6 @@
                   <goal>shade</goal>
                 </goals>
                 <configuration>
-                  <shadeSourcesContent>true</shadeSourcesContent>
                   <filters>
                     <filter>
                       <artifact>com.google.guava:guava</artifact>
@@ -342,15 +339,6 @@
                       <artifact>com.fasterxml.jackson.core:jackson-annotations</artifact>
                       <excludes>
                         <exclude>META-INF/LICENSE</exclude>
-                      </excludes>
-                    </filter>
-                    <filter>
-                      <!-- this is not excluded via artifactSet so that it will still be removed
-                        from the dependency reduced pom, the classes will be added (without shading)
-                        below in a second maven-shade-plugin execution -->
-                      <artifact>org.glowroot.shaded:shaded-slf4j-impl</artifact>
-                      <excludes>
-                        <exclude>**</exclude>
                       </excludes>
                     </filter>
                   </filters>
@@ -407,27 +395,67 @@
                       <shadedPattern>org.glowroot.shaded.slf4j</shadedPattern>
                     </relocation>
                     <relocation>
-                      <pattern>com.github.mustachejava</pattern>
-                      <shadedPattern>org.glowroot.shaded.github.mustachejava</shadedPattern>
+                      <pattern>ch.qos.logback.core</pattern>
+                      <shadedPattern>org.glowroot.shaded.qos.logback.core</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>ch.qos.logback.classic</pattern>
+                      <shadedPattern>org.glowroot.shaded.qos.logback.classic</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <!--
+                        ch.qos.logback.classic.util.ContextInitializer : "logback.configurationFile"
+                      -->
+                      <rawString>true</rawString>
+                      <pattern>^logback.configurationFile$</pattern>
+                      <shadedPattern>org.glowroot.logback.configurationFile</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <!--
+                        ch.qos.logback.classic.util.ContextInitializer : "logback.groovy"
+                      -->
+                      <rawString>true</rawString>
+                      <pattern>^logback.groovy$</pattern>
+                      <shadedPattern>org.glowroot.logback.groovy</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <!--
+                        ch.qos.logback.classic.util.ContextInitializer : "logback.xml"
+                        ch.qos.logback.classic.util.ContextInitializer : "logback-test.xml"
+                      -->
+                      <rawString>true</rawString>
+                      <pattern>^logback(-test)?.xml$</pattern>
+                      <shadedPattern>org.glowroot.logback$1.xml</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <!--
+                        ch.qos.logback.classic.ClassicConstants : "logback.ContextSelector"
+                      -->
+                      <rawString>true</rawString>
+                      <pattern>^logback.ContextSelector$</pattern>
+                      <shadedPattern>org.glowroot.logback.ContextSelector</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <!--
+                        ch.qos.logback.classic.ClassicConstants :
+                        "java:comp/env/logback/configuration-resource"
+                      -->
+                      <rawString>true</rawString>
+                      <pattern>^java:comp/env/logback/configuration-resource$</pattern>
+                      <shadedPattern>
+                        java:comp/env/org.glowroot.logback/configuration-resource
+                      </shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <!--
+                        ch.qos.logback.classic.ClassicConstants :
+                        "java:comp/env/logback/context-name"
+                      -->
+                      <rawString>true</rawString>
+                      <pattern>^java:comp/env/logback/context-name$</pattern>
+                      <shadedPattern>java:comp/env/org.glowroot.logback/context-name</shadedPattern>
                     </relocation>
                   </relocations>
-                </configuration>
-              </execution>
-              <execution>
-                <!-- shaded-slf4j-impl can't be included above since its (intentionally) unshaded
-                  slf4j references would then get shaded -->
-                <id>shade-with-logback</id>
-                <goals>
-                  <goal>shade</goal>
-                </goals>
-                <configuration>
-                  <createDependencyReducedPom>false</createDependencyReducedPom>
-                  <artifactSet>
-                    <includes>
-                      <include>org.glowroot:glowroot</include>
-                      <include>org.glowroot.shaded:shaded-slf4j-impl</include>
-                    </includes>
-                  </artifactSet>
                 </configuration>
               </execution>
             </executions>
@@ -448,8 +476,9 @@
               <includeDependency>false</includeDependency>
               <obfuscate>false</obfuscate>
               <libs>
-                <!-- this path is overridden on osx, see the mac profile below -->
-                <lib>${java.home}/lib/rt.jar</lib>
+                <!-- see auto-activated-mac and auto-activated-not-mac profiles below for
+                  ${rt.jar.path} definition -->
+                <lib>${rt.jar.path}</lib>
               </libs>
               <options>
                 <option>-dontoptimize</option>
@@ -461,23 +490,14 @@
                 <option>-keep class org.glowroot.common.** { *; }</option>
                 <option>-keep class org.glowroot.config.** { *; }</option>
                 <option>-keep class org.glowroot.dynamicadvice.** { *; }</option>
+                <option>-keep class org.glowroot.jvm.** { *; }</option>
                 <option>-keep class org.glowroot.local.** { *; }</option>
                 <!-- keep marker annotations so they can be used to doc tests also -->
                 <option>-keep class org.glowroot.markers.** { *; }</option>
                 <option>-keep class org.glowroot.trace.** { *; }</option>
                 <option>-keep class org.glowroot.weaving.** { *; }</option>
-                <!-- keep all guava classes so that plugins can use shaded-guava artifact -->
+                <!-- keep all guava classes so that plugins can use them -->
                 <option>-keep class org.glowroot.shaded.google.common.** { *; }</option>
-                <!-- keep all slf4j classes so that plugins can use shaded-slf4j-api artifact -->
-                <option>-keep class org.glowroot.shaded.org.slf4j.** { *; }</option>
-                <!-- keep DefaultMustacheFactory.compile() which is used by generated advice -->
-                <option>
-                  -keep class org.glowroot.shaded.github.mustachejava.DefaultMustacheFactory
-                  {
-                  public org.glowroot.shaded.github.mustachejava.Mustache
-                  compile(java.io.Reader,
-                  java.lang.String); }
-                </option>
                 <!-- keep all logback appenders -->
                 <option>
                   -keep class * extends org.glowroot.shaded.qos.logback.core.Appender { *; }
@@ -485,17 +505,15 @@
                 <!-- keep special enumeration methods (see "Processing enumeration classes" section
                   at http://proguard.sourceforge.net/manual/examples.html) -->
                 <option>
-                  -keepclassmembers enum *
-                  { public static **[] values();
-                  public static **
+                  -keepclassmembers enum * { public static **[] values(); public static **
                   valueOf(java.lang.String); }
                 </option>
                 <!-- if the FilterAttachable<E> interface is not kept, then the interface is
-                  stripped from org.glowroot.shaded.qos.logback.core.Appender<E>, and proguard
-                  then strips the generic parameter type from Appender, but proguard
-                  (at least as of version 4.10) leaves behind the generic parameter on the
-                  doAppend(E paramE) method, which leads to a MalformedParameterizedTypeException
-                  on JDK 7 (maybe due to more strict validation in JDK 7) -->
+                  stripped from org.glowroot.shaded.qos.logback.core.Appender<E>, and proguard then
+                  strips the generic parameter type from Appender, but proguard (at least as of
+                  version 4.10) leaves behind the generic parameter on the doAppend(E paramE)
+                  method, which leads to a MalformedParameterizedTypeException on JDK 7 (maybe due
+                  to more strict validation in JDK 7) -->
                 <option>
                   -keep class org.glowroot.shaded.qos.logback.core.spi.FilterAttachable { *; }
                 </option>
@@ -513,25 +531,26 @@
       </build>
     </profile>
     <profile>
-      <id>mac</id>
+      <id>auto-activated-not-mac</id>
+      <activation>
+        <os>
+          <family>!mac</family>
+        </os>
+      </activation>
+      <properties>
+        <rt.jar.path>${java.home}/lib/rt.jar</rt.jar.path>
+      </properties>
+    </profile>
+    <profile>
+      <id>auto-activated-mac</id>
       <activation>
         <os>
           <family>mac</family>
         </os>
       </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.github.wvengen</groupId>
-            <artifactId>proguard-maven-plugin</artifactId>
-            <configuration>
-              <libs>
-                <lib>${java.home}/../Classes/classes.jar</lib>
-              </libs>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
+      <properties>
+        <rt.jar.path>${java.home}/../Classes/classes.jar</rt.jar.path>
+      </properties>
     </profile>
   </profiles>
 </project>
