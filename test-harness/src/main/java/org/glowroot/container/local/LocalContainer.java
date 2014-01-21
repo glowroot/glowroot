@@ -16,7 +16,6 @@
 package org.glowroot.container.local;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +36,6 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.AppUnderTestServices;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
-import org.glowroot.container.Threads;
 import org.glowroot.container.config.ConfigService;
 import org.glowroot.container.javaagent.JavaagentContainer;
 import org.glowroot.container.trace.TraceService;
@@ -58,7 +56,6 @@ public class LocalContainer implements Container {
     private final boolean deleteDataDirOnClose;
     private final boolean shared;
 
-    private final Collection<Thread> preExistingThreads;
     private final IsolatedWeavingClassLoader isolatedWeavingClassLoader;
     private final LocalConfigService configService;
     private final LocalTraceService traceService;
@@ -79,7 +76,6 @@ public class LocalContainer implements Container {
             deleteDataDirOnClose = false;
         }
         this.shared = shared;
-        preExistingThreads = Threads.currentThreads();
         // default to port 0 (any available)
         File configFile = new File(this.dataDir, "config.json");
         if (!configFile.exists()) {
@@ -197,9 +193,7 @@ public class LocalContainer implements Container {
             // this is the shared container and will be closed at the end of the run
             return;
         }
-        Threads.preShutdownCheck(preExistingThreads);
         glowrootModule.close();
-        Threads.postShutdownCheck(preExistingThreads);
         if (deleteDataDirOnClose) {
             TempDirs.deleteRecursively(dataDir);
         }
