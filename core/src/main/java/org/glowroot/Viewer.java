@@ -28,8 +28,6 @@ class Viewer {
     private Viewer() {}
 
     public static void main(String... args) throws StartupFailedException, InterruptedException {
-        MainEntryPoint.start();
-        // Glowroot does not create any non-daemon threads, so need to block jvm from exiting
-        Thread.sleep(Long.MAX_VALUE);
+        MainEntryPoint.runViewer();
     }
 }

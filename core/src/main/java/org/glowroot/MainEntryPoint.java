@@ -58,8 +58,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Static
 public class MainEntryPoint {
 
-    private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
-    private static final Logger infoLogger = LoggerFactory.getLogger("org.glowroot");
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     @MonotonicNonNull
     private static volatile GlowrootModule glowrootModule;
@@ -69,7 +69,6 @@ public class MainEntryPoint {
     // javaagent entry point
     public static void premain(@SuppressWarnings("unused") @Nullable String agentArgs,
             Instrumentation instrumentation) {
-        logger.debug("premain()");
         ImmutableMap<String, String> properties = getGlowrootProperties();
         // ...WithNoWarning since warning is displayed during start so no need for it twice
         File dataDir = DataDir.getDataDirWithNoWarning(properties);
@@ -88,8 +87,10 @@ public class MainEntryPoint {
             //
             // no need for logging in the special (but common) case described above
             if (!isTomcatStop()) {
-                logger.error("embedded database {} is locked by another process.",
-                        dataDir.getAbsolutePath(), e);
+                startupLogger.error("Glowroot not started: database file {} is locked by another"
+                        + " process.", dataDir.getAbsolutePath());
+                // log exception stack trace at debug level
+                startupLogger.debug(e.getMessage(), e);
             }
             return;
         }
@@ -97,7 +98,7 @@ public class MainEntryPoint {
             start(properties, instrumentation);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
-            logger.error("glowroot failed to start: {}", t.getMessage(), t);
+            startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
         }
     }
 
@@ -109,9 +110,25 @@ public class MainEntryPoint {
         return glowrootModule.getPluginServices(pluginId);
     }
 
-    // used by Viewer
-    static void start() throws StartupFailedException {
-        start(getGlowrootProperties(), null);
+    static void runViewer() throws StartupFailedException, InterruptedException {
+        ImmutableMap<String, String> properties = getGlowrootProperties();
+        // ...WithNoWarning since warning is displayed during start so no need for it twice
+        File dataDir = DataDir.getDataDirWithNoWarning(properties);
+        try {
+            DataSource.tryUnlockDatabase(new File(dataDir, "glowroot.lock.db"));
+        } catch (SQLException e) {
+            startupLogger.error("Viewer cannot start: database file {} is locked by another"
+                    + " process.", dataDir.getAbsolutePath());
+            return;
+        }
+        String version = Version.getVersion();
+        glowrootModule = new GlowrootModule(properties, null, version);
+        startupLogger.info("Viewer started (version {})", version);
+        startupLogger.info("Viewer listening at http://localhost:{}",
+                glowrootModule.getUiModule().getPort());
+        // Glowroot does not create any non-daemon threads, so need to block jvm from exiting when
+        // running the viewer
+        Thread.sleep(Long.MAX_VALUE);
     }
 
     @EnsuresNonNull("glowrootModule")
@@ -121,8 +138,8 @@ public class MainEntryPoint {
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
         glowrootModule = new GlowrootModule(properties, instrumentation, version);
-        infoLogger.info("Glowroot started (version {})", version);
-        infoLogger.info("Glowroot listening at http://localhost:{}",
+        startupLogger.info("Glowroot started (version {})", version);
+        startupLogger.info("Glowroot listening at http://localhost:{}",
                 glowrootModule.getUiModule().getPort());
         List<PluginDescriptor> pluginDescriptors =
                 glowrootModule.getConfigModule().getPluginDescriptorCache().getPluginDescriptors();
@@ -130,8 +147,8 @@ public class MainEntryPoint {
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             pluginNames.add(pluginDescriptor.getName());
         }
-        if (pluginNames.size() > 0) {
-            infoLogger.info("Glowroot plugins loaded: {}", Joiner.on(", ").join(pluginNames));
+        if (!pluginNames.isEmpty()) {
+            startupLogger.info("Glowroot plugins loaded: {}", Joiner.on(", ").join(pluginNames));
         }
     }
 

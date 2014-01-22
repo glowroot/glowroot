@@ -23,7 +23,9 @@ import checkers.nullness.quals.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public abstract class LoggerFactory {
+public class LoggerFactory {
+
+    private LoggerFactory() {}
 
     public static Logger getLogger(String name) {
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(name);

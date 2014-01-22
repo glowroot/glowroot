@@ -100,7 +100,9 @@ public class HttpServer {
         } catch (ChannelException e) {
             serverChannel = bootstrap.bind(new InetSocketAddress(0));
             logger.error("error binding to port: {} (bound to port {} instead)", port,
-                    ((InetSocketAddress) serverChannel.getLocalAddress()).getPort(), e);
+                    ((InetSocketAddress) serverChannel.getLocalAddress()).getPort());
+            // log exception stack trace at debug level
+            logger.debug(e.getMessage(), e);
         }
         this.serverChannel = serverChannel;
         this.port = ((InetSocketAddress) serverChannel.getLocalAddress()).getPort();

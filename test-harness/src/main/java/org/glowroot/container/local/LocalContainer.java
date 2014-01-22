@@ -91,7 +91,7 @@ public class LocalContainer implements Container {
         try {
             MainEntryPoint.start(properties);
         } catch (org.glowroot.GlowrootModule.StartupFailedException e) {
-            throw new StartupFailedException();
+            throw new StartupFailedException(e);
         }
         JavaagentContainer.setStoreThresholdMillisToZero();
         glowrootModule = MainEntryPoint.getGlowrootModule();
