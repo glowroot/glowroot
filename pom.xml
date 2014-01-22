@@ -83,7 +83,7 @@
       <dependency>
         <groupId>edu.washington.cs.types.checker</groupId>
         <artifactId>checker-quals-jdk5</artifactId>
-        <version>1.7.1</version>
+        <version>1.7.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
@@ -354,7 +354,7 @@
             <!-- running checker framework check requires jdk7 -->
             <groupId>edu.washington.cs.types.checker</groupId>
             <artifactId>checker-maven-plugin</artifactId>
-            <version>1.7.1</version>
+            <version>1.7.2</version>
             <executions>
               <execution>
                 <phase>process-classes</phase>
@@ -370,7 +370,6 @@
               </processors>
               <procOnly>false</procOnly>
               <!-- implicit imports for commented out uses of /*@Nullable*/, etc -->
-              <!-- TODO test without implicit imports, maybe fixed now in 1.7.1?? -->
               <javaParams>
                 -Djsr308_imports=checkers.nullness.quals.*${path.separator}checkers.igj.quals.*
               </javaParams>
