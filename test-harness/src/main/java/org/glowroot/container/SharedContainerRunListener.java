@@ -20,9 +20,6 @@ import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
 
-import org.glowroot.container.javaagent.JavaagentContainer;
-import org.glowroot.container.local.LocalContainer;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -31,29 +28,29 @@ public class SharedContainerRunListener extends RunListener {
 
     private static volatile boolean useSharedContainer;
     @Nullable
-    private static volatile LocalContainer sharedLocalContainer;
+    private static volatile Container sharedLocalContainer;
     @Nullable
-    private static volatile JavaagentContainer sharedJavaagentContainer;
+    private static volatile Container sharedJavaagentContainer;
 
     public static boolean useSharedContainer() {
         return useSharedContainer;
     }
 
     @Nullable
-    public static LocalContainer getSharedLocalContainer() {
+    public static Container getSharedLocalContainer() {
         return sharedLocalContainer;
     }
 
     @Nullable
-    public static JavaagentContainer getSharedJavaagentContainer() {
+    public static Container getSharedJavaagentContainer() {
         return sharedJavaagentContainer;
     }
 
-    public static void setSharedLocalContainer(LocalContainer container) {
+    public static void setSharedLocalContainer(Container container) {
         sharedLocalContainer = container;
     }
 
-    public static void setSharedJavaagentContainer(JavaagentContainer container) {
+    public static void setSharedJavaagentContainer(Container container) {
         sharedJavaagentContainer = container;
     }
 

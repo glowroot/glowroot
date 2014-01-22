@@ -70,7 +70,8 @@ public class Containers {
         if (!SharedContainerRunListener.useSharedContainer()) {
             return new JavaagentContainer(null, false, false, false);
         }
-        JavaagentContainer container = SharedContainerRunListener.getSharedJavaagentContainer();
+        JavaagentContainer container =
+                (JavaagentContainer) SharedContainerRunListener.getSharedJavaagentContainer();
         if (container == null) {
             container = new JavaagentContainer(null, false, true, false);
             SharedContainerRunListener.setSharedJavaagentContainer(container);
@@ -99,7 +100,8 @@ public class Containers {
         if (!SharedContainerRunListener.useSharedContainer()) {
             return create(false);
         }
-        LocalContainer container = SharedContainerRunListener.getSharedLocalContainer();
+        LocalContainer container =
+                (LocalContainer) SharedContainerRunListener.getSharedLocalContainer();
         if (container == null) {
             container = new LocalContainer(null, false, true);
             SharedContainerRunListener.setSharedLocalContainer(container);

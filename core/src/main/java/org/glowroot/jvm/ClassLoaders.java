@@ -19,7 +19,6 @@ import java.lang.reflect.Method;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
-import org.glowroot.dynamicadvice.DynamicAdviceGenerator;
 import org.glowroot.markers.Static;
 
 import static org.glowroot.common.Nullness.castNonNull;
@@ -36,7 +35,7 @@ public class ClassLoaders {
     public static Class<?> defineClass(String name, byte[] bytes) throws ReflectiveException {
         Method defineClassMethod = Reflections.getDeclaredMethod(ClassLoader.class, "defineClass",
                 String.class, byte[].class, int.class, int.class);
-        ClassLoader classLoader = DynamicAdviceGenerator.class.getClassLoader();
+        ClassLoader classLoader = ClassLoaders.class.getClassLoader();
         if (classLoader == null) {
             // this can be handled if needed, by using a private ClassLoader to generate classes
             // and using interfaces to access the generated classes (since then the generated
