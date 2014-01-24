@@ -1,17 +1,17 @@
 {
   "name": "glowroot",
   "dependencies": {
-    "angular": "1.2.6",
-    "angular-ui-bootstrap": "trask/angular-ui-bootstrap#bootstrap3_bis2+patch.1",
-    "angular-ui-router": "0.2.7",
+    "angular": "1.2.9",
+    "angular-ui-bootstrap": "chrisirhc/angular-ui-bootstrap#a907ce1c139d4a2fbcc823b4c1fb35b6a92f3962",
+    "angular-ui-router": "0.2.8-bowratic-tedium",
     "bootstrap": "3.0.3",
-    "bootstrap-datepicker": "fda46bbcf5747c54c3f795ed259a215ae1e1fbf6",
+    "bootstrap-datepicker": "1.3.0",
     "flot": "trask/flot#0.9-work+patch",
-    "handlebars": "1.2.1",
+    "handlebars": "1.3.0",
     "html5shiv": "3.7.0",
     "jquery": "1.10.2",
     "jquery-color": "2.1.2",
-    "moment": "2.5.0",
+    "moment": "2.5.1",
     "qtip2": "2.2.0",
     "respond": "1.4.2",
     "spinjs": "1.3.3"
