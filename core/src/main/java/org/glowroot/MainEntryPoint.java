@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,6 +119,8 @@ public class MainEntryPoint {
         } catch (SQLException e) {
             startupLogger.error("Viewer cannot start: database file {} is locked by another"
                     + " process.", dataDir.getAbsolutePath());
+            // log exception stack trace at debug level
+            startupLogger.debug(e.getMessage(), e);
             return;
         }
         String version = Version.getVersion();

@@ -173,7 +173,6 @@ public class LocalContainer implements Container {
         configService.setStoreThresholdMillis(0);
         // check and reset log messages
         MessageCount logMessageCount = SpyingLogbackFilter.clearMessages();
-
         if (logMessageCount.getExpectedCount() > 0) {
             throw new AssertionError("One or more expected messages were not logged");
         }

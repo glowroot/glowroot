@@ -386,13 +386,12 @@ public class ParsedTypeCache {
             }
             Type returnType = Type.getType(method.getReturnType());
             String desc = Type.getMethodDescriptor(method);
-            int nExceptions = method.getExceptionTypes().length;
-            String[] exceptions = new String[nExceptions];
-            for (int i = 0; i < nExceptions; i++) {
-                exceptions[i] = Type.getInternalName(method.getExceptionTypes()[i]);
+            ImmutableList.Builder<String> exceptions = ImmutableList.builder();
+            for (Class<?> exceptionType : method.getExceptionTypes()) {
+                exceptions.add(Type.getInternalName(exceptionType));
             }
             parsedMethods.add(ParsedMethod.from(method.getName(), argTypes.build(), returnType,
-                    method.getModifiers(), desc, null, exceptions));
+                    method.getModifiers(), desc, null, exceptions.build()));
         }
         ImmutableList.Builder<String> interfaceNames = ImmutableList.builder();
         for (Class<?> interfaceClass : type.getInterfaces()) {
@@ -485,7 +484,7 @@ public class ParsedTypeCache {
 
     public static class ParsedTypeClassVisitor extends ClassVisitor {
 
-        private ParsedType./*@Nullable*/Builder parsedTypeBuilder;
+        private ParsedType./*@MonotonicNonNull*/Builder parsedTypeBuilder;
 
         public ParsedTypeClassVisitor() {
             super(ASM4);
@@ -506,7 +505,10 @@ public class ParsedTypeCache {
             checkNotNull(parsedTypeBuilder, "Call to visit() is required");
             if ((access & (ACC_NATIVE | ACC_SYNTHETIC)) == 0) {
                 // don't add native or synthetic methods to the parsed type model
-                parsedTypeBuilder.addParsedMethod(access, name, desc, signature, exceptions);
+                ImmutableList<String> exceptionList = exceptions == null
+                        ? ImmutableList.<String>of() : ImmutableList.copyOf(exceptions);
+                parsedTypeBuilder.addParsedMethod(access, name, desc, signature,
+                        exceptionList);
             }
             return null;
         }

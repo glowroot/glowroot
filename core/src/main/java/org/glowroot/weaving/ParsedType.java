@@ -135,10 +135,10 @@ public class ParsedType {
         }
 
         ParsedMethod addParsedMethod(int access, String name, String desc,
-                @Nullable String signature, String/*@Nullable*/[] exceptions) {
-            ParsedMethod method =
-                    ParsedMethod.from(name, ImmutableList.copyOf(Type.getArgumentTypes(desc)),
-                            Type.getReturnType(desc), access, desc, signature, exceptions);
+                @Nullable String signature, ImmutableList<String> exceptions) {
+            ParsedMethod method = ParsedMethod.from(name,
+                    ImmutableList.copyOf(Type.getArgumentTypes(desc)), Type.getReturnType(desc),
+                    access, desc, signature, exceptions);
             methods.add(method);
             return method;
         }

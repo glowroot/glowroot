@@ -35,7 +35,6 @@ import org.glowroot.MainEntryPoint;
 import org.glowroot.common.SpyingLogbackFilter;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Threads;
-import org.glowroot.container.Threads.ThreadsException;
 import org.glowroot.container.javaagent.SocketCommander.CommandWrapper;
 import org.glowroot.container.javaagent.SocketCommander.ResponseWrapper;
 
@@ -111,6 +110,17 @@ class SocketCommandProcessor implements Runnable {
     }
 
     private void runCommandAndRespond(CommandWrapper commandWrapper) throws Exception {
+        try {
+            runCommandAndRespondInternal(commandWrapper);
+        } catch (Throwable t) {
+            // catch Throwable so response can (hopefully) be sent even under extreme
+            // circumstances like OutOfMemoryError
+            logger.error(t.getMessage(), t);
+            respond(EXCEPTION_RESPONSE, commandWrapper.getCommandNum());
+        }
+    }
+
+    private void runCommandAndRespondInternal(CommandWrapper commandWrapper) throws Exception {
         String commandName = commandWrapper.getCommandName();
         ImmutableList<Object> args = commandWrapper.getArgs();
         int commandNum = commandWrapper.getCommandNum();
@@ -150,31 +160,19 @@ class SocketCommandProcessor implements Runnable {
         if (glowrootModule == null) {
             // glowroot failed to start
             respond(STARTUP_FAILED, commandNum);
-        } else {
-            try {
-                Threads.preShutdownCheck(preExistingThreads);
-                glowrootModule.close();
-                Threads.postShutdownCheck(preExistingThreads);
-                respond(SHUTDOWN_RESPONSE, commandNum);
-            } catch (ThreadsException e) {
-                logger.error(e.getMessage(), e);
-                respond(EXCEPTION_RESPONSE, commandNum);
-            }
+            return;
         }
+        Threads.preShutdownCheck(preExistingThreads);
+        glowrootModule.close();
+        Threads.postShutdownCheck(preExistingThreads);
+        respond(SHUTDOWN_RESPONSE, commandNum);
     }
 
     private void interruptAppAndRespond(int commandNum) throws Exception {
-        try {
-            for (Thread thread : executingAppThreads) {
-                thread.interrupt();
-            }
-            respond(null, commandNum);
-        } catch (Throwable t) {
-            // catch Throwable so response can (hopefully) be sent even under extreme
-            // circumstances like OutOfMemoryError
-            logger.error(t.getMessage(), t);
-            respond(EXCEPTION_RESPONSE, commandNum);
+        for (Thread thread : executingAppThreads) {
+            thread.interrupt();
         }
+        respond(null, commandNum);
     }
 
     private void executeAppAndRespond(int commandNum, List<?> args) throws Exception {
@@ -185,11 +183,6 @@ class SocketCommandProcessor implements Runnable {
             AppUnderTest app = (AppUnderTest) appClass.newInstance();
             app.executeApp();
             respond(null, commandNum);
-        } catch (Throwable t) {
-            // catch Throwable so response can (hopefully) be sent even under extreme
-            // circumstances like OutOfMemoryError
-            logger.error(t.getMessage(), t);
-            respond(EXCEPTION_RESPONSE, commandNum);
         } finally {
             executingAppThreads.remove(Thread.currentThread());
         }

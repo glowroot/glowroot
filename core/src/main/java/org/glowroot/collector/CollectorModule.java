@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,12 +32,11 @@ import org.glowroot.markers.ThreadSafe;
 @ThreadSafe
 public class CollectorModule {
 
-    private static final boolean aggregatesEnabled =
-            Boolean.valueOf(System.getProperty("glowroot.experimental.aggregates"));
-
+    private static final boolean aggregatesEnabled;
     private static final long fixedAggregateIntervalSeconds;
 
     static {
+        aggregatesEnabled = Boolean.getBoolean("glowroot.experimental.aggregates");
         fixedAggregateIntervalSeconds =
                 Long.getLong("glowroot.internal.collector.aggregateInterval", 300);
     }

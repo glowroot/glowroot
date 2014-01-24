@@ -46,11 +46,11 @@ public class ParsedMethod {
     private final String desc;
     @Nullable
     private final String signature;
-    private final String/*@Nullable*/[] exceptions;
+    private final ImmutableList<String> exceptions;
 
     static ParsedMethod from(String name, ImmutableList<Type> argTypes, Type returnType,
             int modifiers, String desc, @Nullable String signature,
-            String/*@Nullable*/[] exceptions) {
+            ImmutableList<String> exceptions) {
         ImmutableList.Builder<String> argTypeNames = ImmutableList.builder();
         for (Type argType : argTypes) {
             argTypeNames.add(argType.getClassName());
@@ -62,7 +62,7 @@ public class ParsedMethod {
 
     private ParsedMethod(String name, ImmutableList<String> argTypeNames, String returnTypeName,
             int modifiers, String desc, @Nullable String signature,
-            String/*@Nullable*/[] exceptions) {
+            ImmutableList<String> exceptions) {
         this.name = name;
         this.argTypeNames = argTypeNames;
         this.returnTypeName = returnTypeName;
@@ -105,7 +105,7 @@ public class ParsedMethod {
         return signature;
     }
 
-    String/*@Nullable*/[] getExceptions() {
+    ImmutableList<String> getExceptions() {
         return exceptions;
     }
 

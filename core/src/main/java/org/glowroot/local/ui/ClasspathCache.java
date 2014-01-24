@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,10 +112,9 @@ class ClasspathCache {
 
     void updateCache() {
         for (ClassLoader loader : getKnownClassLoaders()) {
-            if (!(loader instanceof URLClassLoader)) {
-                continue;
+            if (loader instanceof URLClassLoader) {
+                updateCache((URLClassLoader) loader);
             }
-            updateCache(loader);
         }
     }
 
@@ -127,10 +126,10 @@ class ClasspathCache {
         return cv.build();
     }
 
-    private void updateCache(ClassLoader loader) {
+    private void updateCache(URLClassLoader loader) {
         URL[] urls;
         try {
-            urls = ((URLClassLoader) loader).getURLs();
+            urls = loader.getURLs();
         } catch (Exception e) {
             // tomcat WebappClassLoader.getURLs() throws NullPointerException after stop() has been
             // called on the WebappClassLoader
@@ -150,16 +149,14 @@ class ClasspathCache {
         for (URI uri : uris) {
             synchronized (classpathURIs) {
                 if (!classpathURIs.contains(uri)) {
-                    // this can take a few seconds in the case of maven surefire booter jar which
-                    // includes many of other jar files via its manifest's Class-Path attribute
                     loadTypeNames(uri);
                     classpathURIs.add(uri);
                 }
             }
         }
         ClassLoader parent = loader.getParent();
-        if (parent != null) {
-            updateCache(parent);
+        if (parent != null && parent instanceof URLClassLoader) {
+            updateCache((URLClassLoader) parent);
         }
     }
 

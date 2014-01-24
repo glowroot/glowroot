@@ -153,8 +153,10 @@ class WeavingClassVisitor extends ClassVisitor {
         ParsedMethod parsedMethod = null;
         if ((access & (ACC_NATIVE | ACC_SYNTHETIC)) == 0) {
             // don't add native or synthetic methods to the parsed type model
-            parsedMethod =
-                    parsedTypeBuilder.addParsedMethod(access, name, desc, signature, exceptions);
+            ImmutableList<String> exceptionList = exceptions == null
+                    ? ImmutableList.<String>of() : ImmutableList.copyOf(exceptions);
+            parsedMethod = parsedTypeBuilder.addParsedMethod(access, name, desc, signature,
+                    exceptionList);
         }
         if (nothingAtAllToWeave) {
             // no need to pass method on to class writer
@@ -450,9 +452,10 @@ class WeavingClassVisitor extends ClassVisitor {
     @RequiresNonNull({"type"})
     private void overrideAndWeaveInheritedMethod(ParsedType parsedType,
             ParsedMethod inheritedMethod, List<Advice> matchingAdvisors) {
+        String[] exceptions = Iterables.toArray(inheritedMethod.getExceptions(), String.class);
         MethodVisitor mv = visitMethodWithAdvice(ACC_PUBLIC, inheritedMethod.getName(),
-                inheritedMethod.getDesc(), inheritedMethod.getSignature(),
-                inheritedMethod.getExceptions(), matchingAdvisors);
+                inheritedMethod.getDesc(), inheritedMethod.getSignature(), exceptions,
+                matchingAdvisors);
         castNonNull(mv);
         GeneratorAdapter mg = new GeneratorAdapter(mv, ACC_PUBLIC, inheritedMethod.getName(),
                 inheritedMethod.getDesc());

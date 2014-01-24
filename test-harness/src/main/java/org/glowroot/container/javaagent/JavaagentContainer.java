@@ -275,18 +275,13 @@ public class JavaagentContainer implements Container {
         SpyingLogbackFilter.init();
         // storeThresholdMillis=0 is the default for testing
         setStoreThresholdMillisToZero();
-        try {
-            int port = Integer.parseInt(args[0]);
-            // socket is never closed since program is still running after main returns
-            Socket socket = new Socket((String) null, port);
-            ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
-            ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
-            new Thread(new SocketHeartbeat(objectOut)).start();
-            new Thread(new SocketCommandProcessor(objectIn, objectOut)).start();
-        } catch (Throwable t) {
-            // log error and exit gracefully
-            logger.error(t.getMessage(), t);
-        }
+        int port = Integer.parseInt(args[0]);
+        // socket is never closed since program is still running after main returns
+        Socket socket = new Socket((String) null, port);
+        ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
+        ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
+        new Thread(new SocketHeartbeat(objectOut)).start();
+        new Thread(new SocketCommandProcessor(objectIn, objectOut)).start();
         // spin a bit to so that caller can capture a trace with <multiple root nodes> if desired
         for (int i = 0; i < 1000; i++) {
             metricOne();

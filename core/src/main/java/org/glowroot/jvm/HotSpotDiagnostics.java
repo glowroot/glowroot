@@ -23,6 +23,8 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import checkers.igj.quals.Immutable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.jvm.OptionalService.OptionalServiceFactory;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
@@ -35,6 +37,8 @@ import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
 public class HotSpotDiagnostics {
 
     private static final String MBEAN_NAME = "com.sun.management:type=HotSpotDiagnostic";
+
+    private static final Logger logger = LoggerFactory.getLogger(HotSpotDiagnostics.class);
 
     private final ObjectName objectName;
 
@@ -60,6 +64,8 @@ public class HotSpotDiagnostics {
             try {
                 ManagementFactory.getPlatformMBeanServer().getObjectInstance(objectName);
             } catch (InstanceNotFoundException e) {
+                // log original exception at debug level
+                logger.debug(e.getMessage(), e);
                 throw new OptionalServiceFactoryException("No such MBean " + MBEAN_NAME
                         + " (introduced in Oracle Java SE 6)");
             }
