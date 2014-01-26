@@ -4,6 +4,17 @@
   "version": "0.5-SNAPSHOT",
   "properties": [
     {
+      "prompt": "Capture bind parameters",
+      "name": "captureBindParameters",
+      "type": "boolean",
+      "default": true,
+      "description": [
+        "Capture jdbc bind parameters for PreparedStatement executions. This is disabled by",
+        " default as it can cause Glowroot to capture potentially secure data, e.g. account",
+        " data being stored to an account table."
+      ]
+    },
+    {
       "prompt": "ResultSet.next() metrics",
       "name": "captureResultSetNext",
       "type": "boolean",
@@ -42,16 +53,6 @@
         "Any jdbc call that exceeds this threshold will have a stack trace captured and attached",
         " to it. An empty value will not collect any stack traces, a zero value will collect a",
         " stack trace for every jdbc call."
-      ]
-    },
-    {
-      "prompt": "Capture bind parameters",
-      "name": "captureBindParameters",
-      "type": "boolean",
-      "description": [
-        "Capture jdbc bind parameters for PreparedStatement executions. This is disabled by",
-        " default as it can cause Glowroot to capture potentially secure data, e.g. account",
-        " data being stored to an account table."
       ]
     }
   ],

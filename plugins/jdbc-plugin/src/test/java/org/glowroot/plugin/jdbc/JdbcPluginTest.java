@@ -171,13 +171,14 @@ public class JdbcPluginTest {
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee where name like ? => 1 row [connection: ");
+                "jdbc execution: select * from employee"
+                        + " where name like ? ['john%'] => 1 row [connection: ");
     }
 
     @Test
-    public void testPreparedStatementWithBindParameters() throws Exception {
+    public void testPreparedStatementWithoutBindParameters() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", false);
         // when
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
@@ -185,8 +186,7 @@ public class JdbcPluginTest {
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee"
-                        + " where name like ? ['john%'] => 1 row [connection: ");
+                "jdbc execution: select * from employee where name like ? => 1 row [connection: ");
     }
 
     @Test
@@ -382,7 +382,8 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee where name like ? => 0 rows [connection: ");
+                "jdbc execution: select * from employee where name like ? ['nomatch%'] => 0 rows"
+                        + " [connection: ");
     }
 
     // TODO make a release build profile that runs all tests against
