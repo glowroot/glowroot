@@ -178,6 +178,23 @@
         <version>1.2.1+patch.1-SNAPSHOT</version>
         <executions>
           <execution>
+            <!-- could delete node_modules using maven-clean-plugin, but that adds unnecessary
+              overhead to simple mvn clean install -->
+            <id>npm-prune</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <!-- npm prune is not needed when grunt is skipped -->
+              <skip>${glowroot.grunt.skip}</skip>
+              <executable>npm</executable>
+              <arguments>
+                <argument>prune</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
             <id>npm-install</id>
             <phase>generate-sources</phase>
             <goals>
@@ -193,6 +210,23 @@
               <executableOutputCharset>UTF-8</executableOutputCharset>
               <arguments>
                 <argument>install</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <!-- could delete app/bower_components using maven-clean-plugin, but that adds
+              unnecessary overhead to simple mvn clean install -->
+            <id>bower-prune</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <!-- bower prune is not needed when grunt is skipped -->
+              <skip>${glowroot.grunt.skip}</skip>
+              <executable>bower</executable>
+              <arguments>
+                <argument>prune</argument>
               </arguments>
             </configuration>
           </execution>
