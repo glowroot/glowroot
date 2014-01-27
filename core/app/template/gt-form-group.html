@@ -24,6 +24,7 @@
         <div ng-style="{display : gtWidth ? 'inline' : 'block'}">
           <div ng-class="{'input-group' : gtAddon}">
             <!-- gtType "text" and "password" are both used -->
+            <!-- using max-width below (instead of width) results in the addon floating to the right in IE9 -->
             <input type="{{gtType}}"
                    class="form-control"
                    ng-model="$parent.ngModel"
@@ -31,7 +32,7 @@
                    id="{{gtId}}"
                    ng-pattern="ngPattern"
                    ng-required="gtRequired()"
-                   ng-style="{'max-width': gtWidth ? gtWidth : 'none'}">
+                   ng-style="{width: gtWidth ? gtWidth : 'none'}">
             <span ng-if="gtAddon" class="input-group-addon">{{gtAddon}}</span>
           </div>
         </div>
