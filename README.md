@@ -16,7 +16,7 @@ Post 'em all to the [GitHub issue tracker](https://github.com/glowroot/glowroot/
 
 #### How to build it
 
-Glowroot uses [Bower](http://bower.io) and [Grunt](http://gruntjs.com) to build its web assets (dependency management, Javascript concat/minify, SASS compile/minify, AngularJS template concat/minify, asset revving and more).
+Glowroot uses [Bower](http://bower.io) and [Grunt](http://gruntjs.com) to build its web assets (dependency management, Javascript concat/minify, LESS compile/minify, AngularJS template concat/minify, asset revving and more).
 
 To install Bower and Grunt, first install [Node.js](http://nodejs.org), then install Bower and Grunt from the command line:
 
