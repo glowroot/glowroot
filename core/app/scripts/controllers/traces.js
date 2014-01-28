@@ -274,7 +274,7 @@ glowroot.controller('TracesCtrl', [
                 summaryTrace.truncateMetrics = true;
                 var html = TraceRenderer.renderSummary(summaryTrace);
                 var showDetailHtml = '<div style="margin-top: 0.5em;">' +
-                    '<button class="flat-btn flat-btn-big-pad1aligned glowroot-red" id="showDetail"' +
+                    '<button class="flat-btn flat-btn-big-pad1aligned glowroot-link-color" id="showDetail"' +
                     ' style="font-size: 12px;">show detail</button></div>';
                 text = html + showDetailHtml;
               }

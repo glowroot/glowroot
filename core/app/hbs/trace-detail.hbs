@@ -3,7 +3,7 @@
     <div>spans <strong>rolled over</strong></div>
   {{^}}
     <button class="flat-btn flat-btn-big-pad1aligned sps-toggle">
-      <span class="glowroot-red">spans</span> ({{numberOfSpans spans}})
+      <span class="glowroot-link-color">spans</span> ({{numberOfSpans spans}})
     </button>
     <br>
     <div id="sps"></div>
@@ -15,7 +15,7 @@
     <div>coarse-grained profile <strong>rolled over</strong></div>
   {{^}}
     <button class="flat-btn flat-btn-big-pad1aligned mst-coarse-toggle">
-      <span class="glowroot-red">coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})
+      <span class="glowroot-link-color">coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})
     </button>
     <br>
     <div class="nowrap hide" id="mstCoarseOuter">
@@ -23,7 +23,7 @@
               style="margin: 4px;">
       </select>
       <div class="mst-common hide">
-        <span class="inline-block unexpanded-content glowroot-red">common base</span>
+        <span class="inline-block unexpanded-content glowroot-link-color">common base</span>
         {{! standard expanded-content bottom margin is not needed since nothing can be expanded
             directly below using span so background will stretch beyond page border if needed }}
         <span class="inline-block expanded-content hide" style="margin-bottom: 0;"></span>
@@ -37,7 +37,7 @@
     <div>fine-grained profile <strong>rolled over</strong></div>
   {{^}}
     <button class="flat-btn flat-btn-big-pad1aligned mst-fine-toggle">
-      <span class="glowroot-red">fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})
+      <span class="glowroot-link-color">fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})
     </button>
     <br>
     <div class="nowrap hide" id="mstFineOuter">
@@ -45,7 +45,7 @@
               style="margin: 4px;">
       </select>
       <div class="mst-common hide">
-        <span class="inline-block unexpanded-content glowroot-red">common base</span>
+        <span class="inline-block unexpanded-content glowroot-link-color">common base</span>
         {{! standard expanded-content bottom margin is not needed since nothing can be expanded
             directly below using span so background will stretch beyond page border if needed }}
         <span class="inline-block expanded-content hide" style="margin-bottom: 0;"></span>
