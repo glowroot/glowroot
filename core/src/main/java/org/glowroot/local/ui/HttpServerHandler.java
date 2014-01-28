@@ -23,18 +23,22 @@ import java.net.URL;
 import java.nio.channels.ClosedChannelException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import checkers.nullness.quals.Nullable;
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.CaseFormat;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -57,6 +61,7 @@ import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.common.Reflections.ReflectiveTargetException;
@@ -82,7 +87,7 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 class HttpServerHandler extends SimpleChannelUpstreamHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerHandler.class);
-    private static final JsonFactory jsonFactory = new JsonFactory();
+    private static final ObjectMapper mapper = ObjectMappers.create();
     private static final long TEN_YEARS = DAYS.toMillis(365 * 10);
     private static final long ONE_DAY = DAYS.toMillis(1);
     private static final long FIVE_MINUTES = MINUTES.toMillis(5);
@@ -261,7 +266,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                 if (httpSessionManager.needsAuthentication(request)) {
                     return handleUnauthorized(request);
                 }
-                String requestText = request.getContent().toString(Charsets.ISO_8859_1);
+                String requestText = getRequestText(request, decoder);
                 String[] args = new String[matcher.groupCount()];
                 for (int i = 0; i < args.length; i++) {
                     String group = matcher.group(i + 1);
@@ -386,7 +391,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         // this is an "expected" exception, no need to send back stack trace
         StringBuilder sb = new StringBuilder();
         try {
-            JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
             jg.writeStringField("message", e.getMessage());
             jg.writeEndObject();
@@ -406,7 +411,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         e.printStackTrace(new PrintWriter(sw));
         StringBuilder sb = new StringBuilder();
         try {
-            JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
             Throwable rootCause = e;
             while (rootCause.getCause() != null) {
@@ -460,6 +465,27 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
         return Reflections.invoke(method, object,
                 parameters.toArray(new Object[parameters.size()]));
+    }
+
+    private static String getRequestText(HttpRequest request, QueryStringDecoder decoder)
+            throws JsonProcessingException {
+        if (request.getMethod() == org.jboss.netty.handler.codec.http.HttpMethod.POST) {
+            return request.getContent().toString(Charsets.ISO_8859_1);
+        } else {
+            // create json message out of the query string
+            // flatten map values from list to single element where possible
+            Map<String, Object> parameters = Maps.newHashMap();
+            for (Entry<String, List<String>> entry : decoder.getParameters().entrySet()) {
+                String key = entry.getKey();
+                key = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, key);
+                if (entry.getValue().size() == 1) {
+                    parameters.put(key, entry.getValue().get(0));
+                } else {
+                    parameters.put(key, entry.getValue());
+                }
+            }
+            return mapper.writeValueAsString(parameters);
+        }
     }
 
     private static class JsonServiceMapping {

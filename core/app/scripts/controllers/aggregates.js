@@ -22,7 +22,8 @@ glowroot.controller('AggregatesCtrl', [
   '$http',
   '$q',
   'traceModal',
-  function ($scope, $filter, $http, $q, traceModal) {
+  'queryStrings',
+  function ($scope, $filter, $http, $q, traceModal, queryStrings) {
     // \u00b7 is &middot;
     document.title = 'Aggregates \u00b7 Glowroot';
     $scope.$parent.title = 'Aggregates';
@@ -51,7 +52,7 @@ glowroot.controller('AggregatesCtrl', [
         to: $scope.filter.to
       };
       var spinner = Glowroot.showSpinner('#chartSpinner');
-      $http.post('backend/aggregate/points', query)
+      $http.get('backend/aggregate/points?' + queryStrings.encodeObject(query))
           .success(function (data) {
             if (refreshId !== currentRefreshId) {
               return;
@@ -252,7 +253,7 @@ glowroot.controller('AggregatesCtrl', [
         to: $scope.filter.to,
         limit: 10
       };
-      $http.post('backend/aggregate/groupings', query)
+      $http.get('backend/aggregate/groupings?' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.refreshGroupingsError = false;
             $('#groupAggregates').html('');

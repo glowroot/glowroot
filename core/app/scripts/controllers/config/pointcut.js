@@ -22,7 +22,8 @@ glowroot.controller('PointcutCtrl', [
   '$timeout',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, $timeout, confirmIfHasChanges, httpErrors) {
+  'queryStrings',
+  function ($scope, $http, $timeout, confirmIfHasChanges, httpErrors, queryStrings) {
     // initialize page binding object
     $scope.page = {};
 
@@ -62,7 +63,7 @@ glowroot.controller('PointcutCtrl', [
         limit: 10
       };
       // use 'then' method to return promise
-      return $http.post('backend/pointcut/matching-type-names', postData)
+      return $http.get('backend/pointcut/matching-type-names?' + queryStrings.encodeObject(postData))
           .then(function (response) {
             return response.data;
           }, function () {
@@ -94,7 +95,7 @@ glowroot.controller('PointcutCtrl', [
         partialMethodName: suggestion,
         limit: 10
       };
-      return $http.post('backend/pointcut/matching-method-names', postData)
+      return $http.get('backend/pointcut/matching-method-names?' + queryStrings.encodeObject(postData))
           .then(function (response) {
             return response.data;
           }, function () {
@@ -204,7 +205,7 @@ glowroot.controller('PointcutCtrl', [
         methodName: methodName
       };
       $scope.signaturesLoading = true;
-      $http.post('backend/pointcut/matching-methods', postData)
+      $http.get('backend/pointcut/matching-methods?' + queryStrings.encodeObject(postData))
           .success(function (data) {
             $scope.signaturesLoading = false;
             $scope.signatures = data;

@@ -38,7 +38,7 @@ glowroot.controller('PointcutListCtrl', [
           $scope.page.dirty = data.jvmOutOfSync;
           $scope.jvmRetransformClassesSupported = data.jvmRetransformClassesSupported;
           // pre-load cache for class name and method name auto completion
-          $http.post('backend/pointcut/pre-load-auto-complete');
+          $http.get('backend/pointcut/pre-load-auto-complete');
         })
         .error(httpErrors.handler($scope));
 

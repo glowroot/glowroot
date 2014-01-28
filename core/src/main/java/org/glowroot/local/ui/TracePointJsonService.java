@@ -78,7 +78,7 @@ class TracePointJsonService {
         this.clock = clock;
     }
 
-    @POST("/backend/trace/points")
+    @GET("/backend/trace/points")
     String getPoints(String content) throws IOException {
         logger.debug("getPoints(): content={}", content);
         TracePointRequest request =

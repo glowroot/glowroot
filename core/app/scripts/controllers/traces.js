@@ -21,7 +21,8 @@ glowroot.controller('TracesCtrl', [
   '$http',
   '$q',
   'traceModal',
-  function ($scope, $http, $q, traceModal) {
+  'queryStrings',
+  function ($scope, $http, $q, traceModal, queryStrings) {
     // \u00b7 is &middot;
     document.title = 'Traces \u00b7 Glowroot';
     $scope.$parent.title = 'Traces';
@@ -52,7 +53,7 @@ glowroot.controller('TracesCtrl', [
       var high = $scope.filter.high;
       var refreshId = ++currentRefreshId;
       var spinner = Glowroot.showSpinner('#chartSpinner');
-      $http.post('backend/trace/points', $scope.filter)
+      $http.get('backend/trace/points?' + queryStrings.encodeObject($scope.filter))
           .success(function (data) {
             if (refreshId !== currentRefreshId) {
               return;
