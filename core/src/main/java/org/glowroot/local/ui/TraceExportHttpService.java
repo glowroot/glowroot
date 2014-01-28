@@ -18,6 +18,7 @@ package org.glowroot.local.ui;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,6 +40,8 @@ import org.jboss.netty.handler.stream.ChunkedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.collector.Snapshot;
+import org.glowroot.collector.SnapshotWriter;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
 
@@ -72,15 +75,16 @@ public class TraceExportHttpService implements HttpService {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
-        ChunkedInput in = getExportChunkedInput(id);
-        if (in == null) {
+        Snapshot snapshot = traceCommonService.getSnapshot(id, false);
+        if (snapshot == null) {
             logger.warn("no trace found for id: {}", id);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
+        ChunkedInput in = getExportChunkedInput(snapshot);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.headers().set(CONTENT_TYPE, MediaType.ZIP.toString());
-        response.headers().set("Content-Disposition", "attachment; filename=" + getFilename(id)
-                + ".zip");
+        response.headers().set("Content-Disposition",
+                "attachment; filename=" + getFilename(snapshot) + ".zip");
         HttpServices.preventCaching(response);
         response.setChunked(true);
         channel.write(response);
@@ -89,24 +93,21 @@ public class TraceExportHttpService implements HttpService {
         return null;
     }
 
-    @Nullable
-    private ChunkedInput getExportChunkedInput(String id) throws IOException {
-        CharSource traceCharSource =
-                traceCommonService.createCharSourceForSnapshotOrActiveTrace(id, false);
-        if (traceCharSource == null) {
-            return null;
-        }
+    private ChunkedInput getExportChunkedInput(Snapshot snapshot) throws IOException {
+        CharSource traceCharSource = SnapshotWriter.toCharSource(snapshot, false);
         CharSource charSource = render(traceCharSource);
-        return ChunkedInputs.fromReaderToZipFileDownload(charSource.openStream(), getFilename(id));
+        return ChunkedInputs.fromReaderToZipFileDownload(charSource.openStream(),
+                getFilename(snapshot));
     }
 
     // this method exists because tests cannot use (sometimes) shaded netty ChunkedInput
     @OnlyUsedByTests
     public byte[] getExportBytes(String id) throws Exception {
-        ChunkedInput chunkedInput = getExportChunkedInput(id);
-        if (chunkedInput == null) {
+        Snapshot snapshot = traceCommonService.getSnapshot(id, false);
+        if (snapshot == null) {
             throw new IllegalStateException("No trace found for id '" + id + "'");
         }
+        ChunkedInput chunkedInput = getExportChunkedInput(snapshot);
         ByteArrayOutputStream baos = new ByteArrayOutputStream(65536);
         while (chunkedInput.hasNextChunk()) {
             DefaultHttpChunk chunk = (DefaultHttpChunk) chunkedInput.nextChunk();
@@ -120,8 +121,10 @@ public class TraceExportHttpService implements HttpService {
         return baos.toByteArray();
     }
 
-    private static String getFilename(String id) {
-        return "trace-" + id;
+    private static String getFilename(Snapshot snapshot) {
+        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss-SSS")
+                .format(snapshot.getStartTime());
+        return "trace-" + timestamp;
     }
 
     private static CharSource render(CharSource traceCharSource) throws IOException {

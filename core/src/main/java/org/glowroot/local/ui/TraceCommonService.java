@@ -20,11 +20,9 @@ import java.io.IOException;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Ticker;
-import com.google.common.io.CharSource;
 
 import org.glowroot.collector.Snapshot;
 import org.glowroot.collector.SnapshotCreator;
-import org.glowroot.collector.SnapshotWriter;
 import org.glowroot.collector.TraceCollectorImpl;
 import org.glowroot.common.Clock;
 import org.glowroot.local.store.SnapshotDao;
@@ -56,38 +54,28 @@ class TraceCommonService {
 
     @ReadOnly
     @Nullable
-    CharSource createCharSourceForSnapshotOrActiveTrace(String id, boolean summary)
-            throws IOException {
+    Snapshot getSnapshot(String id, boolean summary) throws IOException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {
             if (active.getId().equals(id)) {
-                return toCharSource(active, summary);
+                return SnapshotCreator.createActiveSnapshot(active,
+                        clock.currentTimeMillis(), ticker.read(), summary);
             }
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
         // and stored
         for (Trace pending : traceCollectorImpl.getPendingCompleteTraces()) {
             if (pending.getId().equals(id)) {
-                return toCharSource(pending, summary);
+                return SnapshotCreator.createPendingSnapshot(pending,
+                        clock.currentTimeMillis(), ticker.read(), summary);
             }
         }
-        Snapshot snapshot;
         if (summary) {
-            snapshot = snapshotDao.readSnapshotWithoutDetail(id);
+            return snapshotDao.readSnapshotWithoutDetail(id);
         } else {
-            snapshot = snapshotDao.readSnapshot(id);
+            return snapshotDao.readSnapshot(id);
         }
-        if (snapshot == null) {
-            return null;
-        } else {
-            return SnapshotWriter.toCharSource(snapshot, false, summary);
-        }
-    }
-
-    private CharSource toCharSource(Trace trace, boolean summary) throws IOException {
-        Snapshot snapshot = SnapshotCreator.createActiveSnapshot(trace,
-                clock.currentTimeMillis(), ticker.read(), summary);
-        return SnapshotWriter.toCharSource(snapshot, true, summary);
+        // return SnapshotWriter.toCharSource(snapshot, false, summary)
     }
 }

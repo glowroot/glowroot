@@ -37,20 +37,20 @@ public class SnapshotWriter {
     private final List</*@ReadOnly*/CharSource> charSources = Lists.newArrayList();
 
     @ReadOnly
-    public static CharSource toCharSource(Snapshot snapshot, boolean active, boolean summary)
+    public static CharSource toCharSource(Snapshot snapshot, boolean summary)
             throws UnsupportedEncodingException {
-        return new SnapshotWriter().toCharSourceInternal(snapshot, active, summary);
+        return new SnapshotWriter().toCharSourceInternal(snapshot, summary);
     }
 
     private SnapshotWriter() {}
 
     @ReadOnly
-    private CharSource toCharSourceInternal(Snapshot snapshot, boolean active, boolean summary)
+    private CharSource toCharSourceInternal(Snapshot snapshot, boolean summary)
             throws UnsupportedEncodingException {
         sb.append("{\"id\":\"");
         sb.append(snapshot.getId());
         sb.append("\",\"active\":");
-        sb.append(active);
+        sb.append(snapshot.isActive());
         sb.append(",\"stuck\":");
         sb.append(snapshot.isStuck());
         sb.append(",\"startTime\":");
@@ -143,8 +143,7 @@ public class SnapshotWriter {
 
     // this method exists because tests cannot use (sometimes) shaded guava CharSource
     @OnlyUsedByTests
-    public static String toString(Snapshot snapshot, boolean active, boolean summary)
-            throws IOException {
-        return toCharSource(snapshot, active, summary).read();
+    public static String toString(Snapshot snapshot, boolean summary) throws IOException {
+        return toCharSource(snapshot, summary).read();
     }
 }

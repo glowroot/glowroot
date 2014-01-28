@@ -65,20 +65,26 @@ public class SnapshotCreator {
 
     public static Snapshot createActiveSnapshot(Trace trace, long captureTime, long captureTick,
             boolean summary) throws IOException {
-        return createSnapshot(trace, trace.isStuck(), captureTime, captureTick, summary);
+        return createSnapshot(trace, true, trace.isStuck(), captureTime, captureTick, summary);
+    }
+
+    public static Snapshot createPendingSnapshot(Trace trace, long captureTime, long captureTick,
+            boolean summary) throws IOException {
+        return createSnapshot(trace, false, trace.isStuck(), captureTime, captureTick, summary);
     }
 
     static Snapshot createCompletedSnapshot(Trace trace, long captureTime) throws IOException {
-        return createSnapshot(trace, false, captureTime, trace.getEndTick(), false);
+        return createSnapshot(trace, false, false, captureTime, trace.getEndTick(), false);
     }
 
     // timings for traces that are still active are normalized to the capture tick in order to
     // *attempt* to present a picture of the trace at that exact tick
     // (without using synchronization to block updates to the trace while it is being read)
-    private static Snapshot createSnapshot(Trace trace, boolean stuck, long captureTime,
-            long captureTick, boolean summary) throws IOException {
+    private static Snapshot createSnapshot(Trace trace, boolean active, boolean stuck,
+            long captureTime, long captureTick, boolean summary) throws IOException {
         Snapshot.Builder builder = Snapshot.builder();
         builder.id(trace.getId());
+        builder.active(active);
         builder.stuck(stuck);
         builder.startTime(trace.getStartTime());
         builder.captureTime(captureTime);

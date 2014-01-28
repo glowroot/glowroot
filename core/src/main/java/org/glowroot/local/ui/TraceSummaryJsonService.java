@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.collector.Snapshot;
+import org.glowroot.collector.SnapshotWriter;
 import org.glowroot.markers.Singleton;
 
 /**
@@ -44,12 +46,12 @@ class TraceSummaryJsonService {
     @GET("/backend/trace/summary/(.+)")
     String getSummary(String id) throws IOException {
         logger.debug("getSummary(): id={}", id);
-        CharSource charSource =
-                traceCommonService.createCharSourceForSnapshotOrActiveTrace(id, true);
-        if (charSource == null) {
+        Snapshot snapshot = traceCommonService.getSnapshot(id, true);
+        if (snapshot == null) {
             logger.debug("no trace found for id: {}", id);
             return "{\"expired\":true}";
         } else {
+            CharSource charSource = SnapshotWriter.toCharSource(snapshot, true);
             // summary is small and doesn't need to be streamed
             return charSource.read();
         }

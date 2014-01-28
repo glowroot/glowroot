@@ -34,6 +34,7 @@ import dataflow.quals.Pure;
 public class Snapshot {
 
     private final String id;
+    private final boolean active;
     private final boolean stuck;
     private final long startTime;
     private final long captureTime;
@@ -63,14 +64,15 @@ public class Snapshot {
     @Nullable
     private final CharSource fineMergedStackTree; // json data
 
-    private Snapshot(String id, boolean stuck, long startTime, long captureTime, long duration,
-            boolean background, String grouping, @Nullable String attributes,
+    private Snapshot(String id, boolean active, boolean stuck, long startTime, long captureTime,
+            long duration, boolean background, String grouping, @Nullable String attributes,
             @Nullable String userId, @Nullable String errorText, @Nullable String errorDetail,
             @Nullable String exception, @Nullable String metrics, @Nullable String jvmInfo,
             @Immutable @Nullable CharSource spans,
             @Immutable @Nullable CharSource coarseMergedStackTree,
             @Immutable @Nullable CharSource fineMergedStackTree) {
         this.id = id;
+        this.active = active;
         this.stuck = stuck;
         this.startTime = startTime;
         this.captureTime = captureTime;
@@ -91,6 +93,10 @@ public class Snapshot {
 
     public String getId() {
         return id;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 
     public boolean isStuck() {
@@ -175,6 +181,7 @@ public class Snapshot {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
+                .add("active", active)
                 .add("stuck", stuck)
                 .add("startTime", startTime)
                 .add("captureTime", captureTime)
@@ -198,6 +205,7 @@ public class Snapshot {
 
         @MonotonicNonNull
         private String id;
+        private boolean active;
         private boolean stuck;
         private long startTime;
         private long captureTime;
@@ -234,6 +242,11 @@ public class Snapshot {
         @EnsuresNonNull("id")
         public Builder id(String id) {
             this.id = id;
+            return this;
+        }
+
+        public Builder active(boolean active) {
+            this.active = active;
             return this;
         }
 
@@ -321,9 +334,9 @@ public class Snapshot {
 
         @RequiresNonNull({"id", "grouping"})
         public Snapshot build() {
-            return new Snapshot(id, stuck, startTime, captureTime, duration, background, grouping,
-                    attributes, userId, errorText, errorDetail, exception, metrics, jvmInfo, spans,
-                    coarseMergedStackTree, fineMergedStackTree);
+            return new Snapshot(id, active, stuck, startTime, captureTime, duration, background,
+                    grouping, attributes, userId, errorText, errorDetail, exception, metrics,
+                    jvmInfo, spans, coarseMergedStackTree, fineMergedStackTree);
         }
     }
 }

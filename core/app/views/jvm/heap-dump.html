@@ -79,11 +79,12 @@
           <div class="well">
             <table class="heap-dump-response">
               <tr>
-                <td>Heap dump</td>
-                <td><strong>{{heapDumpResponse.filename}}</strong></td>
+                <td class="nowrap">Heap dump</td>
+                <!-- break-word is for long paths with no spaces or hyphens -->
+                <td><strong style="word-wrap: break-word;">{{heapDumpResponse.filename}}</strong></td>
               </tr>
               <tr>
-                <td>File size</td>
+                <td class="nowrap">File size</td>
                 <td><strong>{{heapDumpResponse.size | gtBytes}}</strong></td>
               </tr>
             </table>

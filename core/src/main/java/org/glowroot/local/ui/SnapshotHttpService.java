@@ -29,6 +29,8 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.collector.Snapshot;
+import org.glowroot.collector.SnapshotWriter;
 import org.glowroot.markers.Singleton;
 
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
@@ -57,17 +59,17 @@ class SnapshotHttpService implements HttpService {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
-        CharSource charSource =
-                traceCommonService.createCharSourceForSnapshotOrActiveTrace(id, false);
+        Snapshot snapshot = traceCommonService.getSnapshot(id, false);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.headers().set(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
-        if (charSource == null) {
+        if (snapshot == null) {
             logger.debug("no trace found for id: {}", id);
             String content = "{\"expired\":true}";
             response.setContent(ChannelBuffers.copiedBuffer(content, Charsets.UTF_8));
             response.headers().set(Names.CONTENT_LENGTH, content.length());
             return response;
         }
+        CharSource charSource = SnapshotWriter.toCharSource(snapshot, false);
         HttpServices.preventCaching(response);
         response.setChunked(true);
         channel.write(response);

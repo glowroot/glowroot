@@ -342,12 +342,13 @@ class JvmJsonService {
         if (!dir.isDirectory()) {
             return "{\"error\": \"Path is not a directory\"}";
         }
-        String date = new SimpleDateFormat("yyyyMMdd").format(new Date());
-        File file = new File(dir, "heapdump-" + date + ".hprof");
+        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
+        File file = new File(dir, "heap-dump-" + timestamp + ".hprof");
         int i = 1;
         while (file.exists()) {
+            // this seems unlikely now that timestamp is included in filename
             i++;
-            file = new File(dir, "heapdump-" + date + "-" + i + ".hprof");
+            file = new File(dir, "heap-dump-" + timestamp + "-" + i + ".hprof");
         }
         service.dumpHeap(file.getAbsolutePath());
 

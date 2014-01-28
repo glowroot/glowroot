@@ -109,7 +109,7 @@ class LocalTraceService extends TraceService {
             return null;
         }
         return ObjectMappers.readRequiredValue(mapper,
-                SnapshotWriter.toString(snapshot, false, summary), Trace.class);
+                SnapshotWriter.toString(snapshot, summary), Trace.class);
     }
 
     @Override
@@ -124,7 +124,7 @@ class LocalTraceService extends TraceService {
             Snapshot snapshot = SnapshotCreator.createActiveSnapshot(traces.get(0),
                     traces.get(0).getEndTick(), ticker.read(), summary);
             return ObjectMappers.readRequiredValue(mapper,
-                    SnapshotWriter.toString(snapshot, true, summary), Trace.class);
+                    SnapshotWriter.toString(snapshot, summary), Trace.class);
         }
     }
 }
