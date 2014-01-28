@@ -257,8 +257,7 @@ module.exports = function (grunt) {
         cwd: '<%= yeoman.app %>/bower_components/angular-ui-bootstrap',
         src: [
           'template/typeahead/*.html',
-          'template/modal/*.html',
-          'template/dialog/*.html'
+          'template/modal/*.html'
         ],
         dest: '.tmp/scripts/generated/angular-ui-bootstrap-templates.js'
       },

@@ -26,25 +26,9 @@ glowroot.factory('confirmIfHasChanges', [
         if (!$scope.httpError && !confirmed && $scope.hasChanges()) {
           event.preventDefault();
           var modal = $modal.open({
-            templateUrl: 'template/dialog/message.html',
+            templateUrl: 'template/gt-modal-has-changes.html',
             controller: ['$scope', '$modalInstance', function ($scope, $modalInstance) {
-              $scope.title = 'You have unsaved changes';
-              $scope.message = 'Are you sure you want to navigate away from this page?';
-              $scope.buttons = [
-                {
-                  label: 'Yes',
-                  result: true,
-                  cssClass: 'btn-default'
-                },
-                {
-                  label: 'Cancel',
-                  result: false,
-                  cssClass: 'btn-primary'
-                }
-              ];
-              $scope.close = function (result) {
-                $modalInstance.close(result);
-              };
+              $scope.close = $modalInstance.close;
             }]
           });
           modal.result.then(function (result) {
