@@ -9,7 +9,7 @@
   {{/if}}
 {{/if}}
 {{#if background}}
-  <strong>background</strong><br>
+  <strong>Background</strong><br>
 {{/if}}
 <div class="second-line-indent">
   {{grouping}}
@@ -19,20 +19,20 @@
     </button>
   {{/if}}
 </div>
-start: {{date startTime}}
+Start: {{date startTime}}
 <br>
-duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
+Duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
 <br>
 {{#eachKeyValuePair attributes}}
   <div class="second-line-indent">{{key}}: {{value}}</div>
 {{/eachKeyValuePair}}
 {{#if userId}}
-  <div class="second-line-indent">user ID: {{userId}}</div>
+  <div class="second-line-indent">User ID: {{userId}}</div>
 {{/if}}
 {{#if error}}
-  <div class="second-line-indent"><strong>error: {{error.text}}</strong></div>
+  <div class="second-line-indent"><strong>Error: {{error.text}}</strong></div>
 {{/if}}
-breakdown (in milliseconds):
+Breakdown (in milliseconds):
 <br>
 <table class="metrics-table indent2" style="border-spacing: 0;">
   <thead>
@@ -70,31 +70,31 @@ breakdown (in milliseconds):
   </tbody>
 </table>
 {{#ifThreadInfo jvmInfo}}
-  thread info
+  Thread info
   <br>
   {{#ifExists jvmInfo.threadCpuTime}}
     <div class="indent2">
-      cpu time: {{nanosToMillis jvmInfo.threadCpuTime}} milliseconds
+      CPU time: {{nanosToMillis jvmInfo.threadCpuTime}} milliseconds
     </div>
   {{/ifExists}}
   {{#ifExists jvmInfo.threadBlockedTime}}
     <div class="indent2">
-      blocked time: {{jvmInfo.threadBlockedTime}} milliseconds
+      Blocked time: {{jvmInfo.threadBlockedTime}} milliseconds
     </div>
   {{/ifExists}}
   {{#ifExists jvmInfo.threadWaitedTime}}
     <div class="indent2">
-      waited time: {{jvmInfo.threadWaitedTime}} milliseconds
+      Waited time: {{jvmInfo.threadWaitedTime}} milliseconds
     </div>
   {{/ifExists}}
   {{#ifExists jvmInfo.threadAllocatedBytes}}
     <div class="indent2">
-      allocated memory: {{formatAllocatedBytes jvmInfo.threadAllocatedBytes}}
+      Allocated memory: {{formatAllocatedBytes jvmInfo.threadAllocatedBytes}}
     </div>
   {{/ifExists}}
 {{/ifThreadInfo}}
 {{#if jvmInfo.garbageCollectorInfos}}
-  gc info
+  GC info
   <br>
   {{#eachGarbageCollectorInfoOrdered jvmInfo.garbageCollectorInfos}}
     <div class="indent2">

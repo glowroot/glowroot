@@ -1,9 +1,9 @@
 {{#if spans}}
   {{#if spans.rolledOver}}
-    <div>spans <strong>rolled over</strong></div>
+    <div>Spans <strong>rolled over</strong></div>
   {{^}}
     <button class="flat-btn flat-btn-big-pad1aligned sps-toggle">
-      <span class="glowroot-link-color">spans</span> ({{numberOfSpans spans}})
+      <span class="glowroot-link-color">Spans</span> ({{numberOfSpans spans}})
     </button>
     <br>
     <div id="sps"></div>
@@ -12,10 +12,10 @@
 {{! TODO combine merged stack tree into template and share code between coarse and fine mst }}
 {{#if coarseMergedStackTree}}
   {{#if coarseMergedStackTree.rolledOver}}
-    <div>coarse-grained profile <strong>rolled over</strong></div>
+    <div>Coarse-grained profile <strong>rolled over</strong></div>
   {{^}}
     <button class="flat-btn flat-btn-big-pad1aligned mst-coarse-toggle">
-      <span class="glowroot-link-color">coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})
+      <span class="glowroot-link-color">Coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})
     </button>
     <br>
     <div class="nowrap hide" id="mstCoarseOuter">
@@ -34,10 +34,10 @@
 {{/if}}
 {{#if fineMergedStackTree}}
   {{#if fineMergedStackTree.rolledOver}}
-    <div>fine-grained profile <strong>rolled over</strong></div>
+    <div>Fine-grained profile <strong>rolled over</strong></div>
   {{^}}
     <button class="flat-btn flat-btn-big-pad1aligned mst-fine-toggle">
-      <span class="glowroot-link-color">fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})
+      <span class="glowroot-link-color">Fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})
     </button>
     <br>
     <div class="nowrap hide" id="mstFineOuter">
