@@ -324,6 +324,8 @@ public class JavaagentContainer implements Container {
                 + File.separator + "java";
         command.add(javaExecutable);
         String classpath = System.getProperty("java.class.path");
+        // limit MaxPermSize for ClassLoaderLeakTest
+        command.add("-XX:MaxPermSize=64m");
         command.add("-cp");
         command.add(classpath);
         command.addAll(getJavaAgentsFromCurrentJvm());

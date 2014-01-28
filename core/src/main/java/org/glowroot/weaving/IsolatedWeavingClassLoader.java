@@ -82,7 +82,6 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return new Builder();
     }
 
-    @SuppressWarnings("initialization")
     private IsolatedWeavingClassLoader(ImmutableList<MixinType> mixinTypes,
             ImmutableList<Advice> advisors, MetricTimerService metricTimerService,
             ImmutableList<Class<?>> bridgeClasses, ImmutableList<String> excludePackages,
@@ -93,13 +92,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         if (weavingDisabled) {
             weaver = null;
         } else {
-            // it is safe to pass @UnderInitialization IsolatedWeavingClassLoader to Weaver
-            // constructor since Weaver only stores the reference for later use,
-            // see Java Concurrency in Practice:
-            // "The this reference can be stored somewhere by the constructor as long as it is not
-            // used by another thread until after construction."
-            @SuppressWarnings("initialization")
-            Weaver weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE, this,
+            Weaver weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE,
                     new ParsedTypeCache(), metricTimerService, generateMetricNameWrapperMethods);
             this.weaver = weaver;
         }
@@ -172,7 +165,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             // the weaving itself)
             inWeaving.set(true);
             try {
-                byte[] wovenBytes = weaver.weave(bytes, name, null);
+                byte[] wovenBytes = weaver.weave(bytes, name, null, this);
                 if (wovenBytes == null) {
                     return bytes;
                 } else {

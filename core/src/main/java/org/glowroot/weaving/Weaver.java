@@ -59,8 +59,6 @@ class Weaver {
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> pluginAdvisors;
     private final Supplier<ImmutableList<Advice>> pointcutConfigAdvisors;
-    @Nullable
-    private final ClassLoader loader;
     private final ParsedTypeCache parsedTypeCache;
     private final MetricTimerService metricTimerService;
     private final boolean generateMetricNameWrapperMethods;
@@ -69,12 +67,11 @@ class Weaver {
 
     Weaver(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
-            @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
-            MetricTimerService metricTimerService, boolean generateMetricNameWrapperMethods) {
+            ParsedTypeCache parsedTypeCache, MetricTimerService metricTimerService,
+            boolean generateMetricNameWrapperMethods) {
         this.mixinTypes = mixinTypes;
         this.pluginAdvisors = pluginAdvisors;
         this.pointcutConfigAdvisors = pointcutConfigAdvisors;
-        this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
         this.metricTimerService = metricTimerService;
         this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
@@ -82,22 +79,23 @@ class Weaver {
     }
 
     byte/*@Nullable*/[] weave(byte[] classBytes, String className,
-            @Nullable CodeSource codeSource) {
+            @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         if (generateMetricNameWrapperMethods) {
-            return weave$glowroot$metric$glowroot$weaving$0(classBytes, className, codeSource);
+            return weave$glowroot$metric$glowroot$weaving$0(classBytes, className, codeSource,
+                    loader);
         } else {
-            return weaveInternal(classBytes, className, codeSource);
+            return weaveInternal(classBytes, className, codeSource, loader);
         }
     }
 
     // weird method name is following "metric marker" method naming
     private byte/*@Nullable*/[] weave$glowroot$metric$glowroot$weaving$0(byte[] classBytes,
-            String className, @Nullable CodeSource codeSource) {
-        return weaveInternal(classBytes, className, codeSource);
+            String className, @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
+        return weaveInternal(classBytes, className, codeSource, loader);
     }
 
     private byte/*@Nullable*/[] weaveInternal(byte[] classBytes, String className,
-            @Nullable CodeSource codeSource) {
+            @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         MetricTimer metricTimer = metricTimerService.startMetricTimer(weavingMetricName);
         try {
             // from http://www.oracle.com/technetwork/java/javase/compatibility-417013.html:
@@ -148,7 +146,6 @@ class Weaver {
                 .add("mixinTypes", mixinTypes)
                 .add("pluginAdvisors", pluginAdvisors)
                 .add("pointcutConfigAdvisors", pointcutConfigAdvisors)
-                .add("loader", loader)
                 .add("parsedTypeCache", parsedTypeCache)
                 .toString();
     }

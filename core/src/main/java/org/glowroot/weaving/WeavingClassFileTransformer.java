@@ -60,7 +60,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                         @Override
                         public Weaver load(ClassLoader loader) {
                             return new Weaver(mixinTypes, pluginAdvisors, pointcutConfigAdvisors,
-                                    loader, parsedTypeCache, metricTimerService,
+                                    parsedTypeCache, metricTimerService,
                                     generateMetricNameWrapperMethods);
                         }
                     });
@@ -87,7 +87,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         this.metricTimerService = metricTimerService;
         this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
         bootLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors,
-                this.pointcutConfigAdvisors, null, parsedTypeCache, metricTimerService,
+                this.pointcutConfigAdvisors, parsedTypeCache, metricTimerService,
                 generateMetricNameWrapperMethods);
         PreInitializeClasses.preInitializeClasses(WeavingClassFileTransformer.class
                 .getClassLoader());
@@ -137,7 +137,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             weaver = weavers.getUnchecked(loader);
         }
         CodeSource codeSource = protectionDomain == null ? null : protectionDomain.getCodeSource();
-        byte[] transformedBytes = weaver.weave(bytes, className, codeSource);
+        byte[] transformedBytes = weaver.weave(bytes, className, codeSource, loader);
         if (transformedBytes != null) {
             logger.debug("transform(): transformed {}", className);
         }
