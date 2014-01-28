@@ -24,8 +24,7 @@ glowroot.controller('PointcutCtrl', [
   'httpErrors',
   'queryStrings',
   function ($scope, $http, $timeout, confirmIfHasChanges, httpErrors, queryStrings) {
-    // initialize page binding object
-    $scope.page = {};
+    // don't initialize page binding object since it is inherited from pointcut-list.js
 
     function onNewData(data) {
       $scope.config = data;
