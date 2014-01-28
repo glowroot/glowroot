@@ -254,6 +254,27 @@ public class JdbcPluginTest {
     }
 
     @Test
+    public void testRollback() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteJdbcRollback.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(3);
+        Span jdbcInsertSpan = trace.getSpans().get(1);
+        assertThat(jdbcInsertSpan.getMessage().getText()).startsWith(
+                "jdbc execution: insert into employee (name) values ('john doe') [connection: ");
+        Span jdbcCommitSpan = trace.getSpans().get(2);
+        assertThat(jdbcCommitSpan.getMessage().getText()).startsWith("jdbc rollback [connection: ");
+        assertThat(trace.getMetrics()).hasSize(4);
+        // ordering is by total desc, so not fixed (though root span will be first since it
+        // encompasses all other timings)
+        assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getMetricNames()).containsOnly("mock trace marker", "jdbc execute",
+                "jdbc rollback", "jdbc statement close");
+    }
+
+    @Test
     public void testResultSetValueMetric() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
@@ -818,8 +839,8 @@ public class JdbcPluginTest {
         }
     }
 
-    public static class ExecuteJdbcCommit implements AppUnderTest, TraceMarker {
-        private Connection connection;
+    public static class ExecuteJdbcCommitBase implements AppUnderTest, TraceMarker {
+        protected Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = createConnection();
@@ -838,7 +859,22 @@ public class JdbcPluginTest {
             } finally {
                 statement.close();
             }
+        }
+    }
+
+    public static class ExecuteJdbcCommit extends ExecuteJdbcCommitBase {
+        @Override
+        public void traceMarker() throws Exception {
+            super.traceMarker();
             connection.commit();
+        }
+    }
+
+    public static class ExecuteJdbcRollback extends ExecuteJdbcCommitBase {
+        @Override
+        public void traceMarker() throws Exception {
+            super.traceMarker();
+            connection.rollback();
         }
     }
 

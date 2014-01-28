@@ -72,4 +72,24 @@ public class ConnectionAspect {
             span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
         }
     }
+
+    @Pointcut(typeName = "java.sql.Connection", methodName = "rollback", captureNested = false,
+            metricName = "jdbc rollback")
+    public static class RollbackAdvice {
+        private static final MetricName metricName =
+                pluginServices.getMetricName(RollbackAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+        @OnBefore
+        public static Span onBefore(@BindTarget Connection connection) {
+            return pluginServices.startSpan(MessageSupplier.from("jdbc rollback [connection: {}]",
+                    Integer.toHexString(connection.hashCode())), metricName);
+        }
+        @OnAfter
+        public static void onAfter(@BindTraveler Span span) {
+            span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+        }
+    }
 }
