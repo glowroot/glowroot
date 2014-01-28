@@ -267,7 +267,8 @@ glowroot.controller('PointcutCtrl', [
     });
 
     $scope.$watch('page.selectedSignature', function (newValue, oldValue) {
-      if (newValue === oldValue) {
+      // need to use angular.equals to filter out $$hashKey property that is added by ng-repeat
+      if (angular.equals(newValue, oldValue)) {
         // called due to watcher initialization
         return;
       }
