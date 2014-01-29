@@ -115,7 +115,8 @@
         {{title}}
       </div>
     </div>
-    <div ui-view></div>
+    <!-- autoscroll=true behavior is overridden to scroll to top of page, see $uiViewScroll decorator in routes.js -->
+    <div ui-view autoscroll="true"></div>
     <div id="push"></div>
   </div>
   <div class="ng-cloak" id="footer">

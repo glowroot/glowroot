@@ -17,9 +17,18 @@
 /* global glowroot */
 
 glowroot.config([
+  '$provide',
   '$stateProvider',
   '$urlRouterProvider',
-  function ($stateProvider, $urlRouterProvider) {
+  function ($provide, $stateProvider, $urlRouterProvider) {
+    // overriding autoscroll=true behavior to scroll to the top of the page
+    $provide.decorator('$uiViewScroll', [
+      function () {
+        return function () {
+          window.scrollTo(0, 0);
+        };
+      }
+    ]);
     $urlRouterProvider.otherwise('/traces');
     $stateProvider.state('traces', {
       url: '/traces',
