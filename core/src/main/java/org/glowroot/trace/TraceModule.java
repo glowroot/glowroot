@@ -66,7 +66,7 @@ public class TraceModule {
     private final FineProfileScheduler fineProfileScheduler;
 
     private final boolean weavingDisabled;
-    private final boolean generateMetricNameWrapperMethods;
+    private final boolean metricWrapperMethodsDisabled;
     private final boolean jvmRetransformClassesSupported;
 
     private final LoadingCache<String, PluginServices> pluginServices =
@@ -112,8 +112,8 @@ public class TraceModule {
                 CoarseProfilerWatcher.PERIOD_MILLIS, MILLISECONDS);
 
         weavingDisabled = configModule.getConfigService().getAdvancedConfig().isWeavingDisabled();
-        generateMetricNameWrapperMethods = configModule.getConfigService().getAdvancedConfig()
-                .isGenerateMetricNameWrapperMethods();
+        metricWrapperMethodsDisabled = configModule.getConfigService().getAdvancedConfig()
+                .isMetricWrapperMethodsDisabled();
         // instrumentation is null when debugging with IsolatedWeavingClassLoader
         // instead of javaagent
         if (instrumentation != null && !weavingDisabled) {
@@ -121,7 +121,7 @@ public class TraceModule {
                     configModule.getPluginDescriptorCache().getMixinTypes(),
                     configModule.getPluginDescriptorCache().getAdvisors(),
                     pointcutConfigAdviceCache.getAdvisorsSupplier(), parsedTypeCache,
-                    metricTimerService, generateMetricNameWrapperMethods);
+                    metricTimerService, metricWrapperMethodsDisabled);
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
                 jvmRetransformClassesSupported = true;
@@ -161,8 +161,8 @@ public class TraceModule {
         return weavingDisabled;
     }
 
-    public boolean isGenerateMetricNameWrapperMethods() {
-        return generateMetricNameWrapperMethods;
+    public boolean isMetricWrapperMethodsDisabled() {
+        return metricWrapperMethodsDisabled;
     }
 
     public boolean isJvmRetransformClassesSupported() {

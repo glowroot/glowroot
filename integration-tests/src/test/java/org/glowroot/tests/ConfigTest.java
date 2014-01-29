@@ -293,7 +293,7 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(AdvancedConfig config) {
-        config.setGenerateMetricNameWrapperMethods(!config.isGenerateMetricNameWrapperMethods());
+        config.setMetricWrapperMethodsDisabled(!config.isMetricWrapperMethodsDisabled());
         config.setWarnOnSpanOutsideTrace(!config.isWarnOnSpanOutsideTrace());
         config.setWeavingDisabled(!config.isWeavingDisabled());
     }

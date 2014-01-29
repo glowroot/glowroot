@@ -47,7 +47,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private final ParsedTypeCache parsedTypeCache;
     private final MetricTimerService metricTimerService;
-    private final boolean generateMetricNameWrapperMethods;
+    private final boolean metricWrapperMethodsDisabled;
 
     // it is important to only have a single weaver per class loader because storing state of each
     // previously parsed class in order to re-construct class hierarchy in case one or more .class
@@ -61,7 +61,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                         public Weaver load(ClassLoader loader) {
                             return new Weaver(mixinTypes, pluginAdvisors, pointcutConfigAdvisors,
                                     parsedTypeCache, metricTimerService,
-                                    generateMetricNameWrapperMethods);
+                                    metricWrapperMethodsDisabled);
                         }
                     });
     // the weaver for the bootstrap class loader (null) has to be stored separately since
@@ -79,16 +79,16 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             @ReadOnly List<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
             ParsedTypeCache parsedTypeCache, MetricTimerService metricTimerService,
-            boolean generateMetricNameWrapperMethods) {
+            boolean metricWrapperMethodsDisabled) {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
         this.pointcutConfigAdvisors = pointcutConfigAdvisors;
         this.parsedTypeCache = parsedTypeCache;
         this.metricTimerService = metricTimerService;
-        this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
+        this.metricWrapperMethodsDisabled = metricWrapperMethodsDisabled;
         bootLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors,
                 this.pointcutConfigAdvisors, parsedTypeCache, metricTimerService,
-                generateMetricNameWrapperMethods);
+                metricWrapperMethodsDisabled);
         PreInitializeClasses.preInitializeClasses(WeavingClassFileTransformer.class
                 .getClassLoader());
     }

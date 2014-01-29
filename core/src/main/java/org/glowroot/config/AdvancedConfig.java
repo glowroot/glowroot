@@ -35,17 +35,17 @@ import org.glowroot.markers.UsedByJsonBinding;
 @Immutable
 public class AdvancedConfig {
 
-    private final boolean generateMetricNameWrapperMethods;
+    private final boolean metricWrapperMethodsDisabled;
     private final boolean warnOnSpanOutsideTrace;
     private final boolean weavingDisabled;
 
     private final String version;
 
     static AdvancedConfig getDefault() {
-        final boolean generateMetricNameWrapperMethods = false;
+        final boolean metricWrapperMethodsDisabled = false;
         final boolean warnOnSpanOutsideTrace = false;
         final boolean weavingDisabled = false;
-        return new AdvancedConfig(generateMetricNameWrapperMethods, warnOnSpanOutsideTrace,
+        return new AdvancedConfig(metricWrapperMethodsDisabled, warnOnSpanOutsideTrace,
                 weavingDisabled);
     }
 
@@ -54,17 +54,17 @@ public class AdvancedConfig {
     }
 
     @VisibleForTesting
-    public AdvancedConfig(boolean generateMetricNameWrapperMethods, boolean warnOnSpanOutsideTrace,
+    public AdvancedConfig(boolean metricWrapperMethodsDisabled, boolean warnOnSpanOutsideTrace,
             boolean weavingDisabled) {
-        this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
+        this.metricWrapperMethodsDisabled = metricWrapperMethodsDisabled;
         this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
         this.weavingDisabled = weavingDisabled;
-        this.version = VersionHashes.sha1(generateMetricNameWrapperMethods, warnOnSpanOutsideTrace,
+        this.version = VersionHashes.sha1(metricWrapperMethodsDisabled, warnOnSpanOutsideTrace,
                 weavingDisabled);
     }
 
-    public boolean isGenerateMetricNameWrapperMethods() {
-        return generateMetricNameWrapperMethods;
+    public boolean isMetricWrapperMethodsDisabled() {
+        return metricWrapperMethodsDisabled;
     }
 
     public boolean isWarnOnSpanOutsideTrace() {
@@ -84,7 +84,7 @@ public class AdvancedConfig {
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("generateMetricNameWrapperMethods", generateMetricNameWrapperMethods)
+                .add("metricWrapperMethodsDisabled", metricWrapperMethodsDisabled)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
                 .add("weavingDisabled", weavingDisabled)
                 .add("version", version)
@@ -95,17 +95,17 @@ public class AdvancedConfig {
     @UsedByJsonBinding
     public static class Overlay {
 
-        private boolean generateMetricNameWrapperMethods;
+        private boolean metricWrapperMethodsDisabled;
         private boolean warnOnSpanOutsideTrace;
         private boolean weavingDisabled;
 
         private Overlay(AdvancedConfig base) {
-            generateMetricNameWrapperMethods = base.generateMetricNameWrapperMethods;
+            metricWrapperMethodsDisabled = base.metricWrapperMethodsDisabled;
             warnOnSpanOutsideTrace = base.warnOnSpanOutsideTrace;
             weavingDisabled = base.weavingDisabled;
         }
-        public void setGenerateMetricNameWrapperMethods(boolean generateMetricNameWrapperMethods) {
-            this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
+        public void setMetricWrapperMethodsDisabled(boolean metricWrapperMethodsDisabled) {
+            this.metricWrapperMethodsDisabled = metricWrapperMethodsDisabled;
         }
         public void setWarnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
             this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
@@ -114,7 +114,7 @@ public class AdvancedConfig {
             this.weavingDisabled = weavingDisabled;
         }
         public AdvancedConfig build() {
-            return new AdvancedConfig(generateMetricNameWrapperMethods, warnOnSpanOutsideTrace,
+            return new AdvancedConfig(metricWrapperMethodsDisabled, warnOnSpanOutsideTrace,
                     weavingDisabled);
         }
     }

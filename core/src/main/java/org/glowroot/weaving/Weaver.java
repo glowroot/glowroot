@@ -61,26 +61,26 @@ class Weaver {
     private final Supplier<ImmutableList<Advice>> pointcutConfigAdvisors;
     private final ParsedTypeCache parsedTypeCache;
     private final MetricTimerService metricTimerService;
-    private final boolean generateMetricNameWrapperMethods;
+    private final boolean metricWrapperMethodsDisabled;
 
     private final MetricName weavingMetricName;
 
     Weaver(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
             ParsedTypeCache parsedTypeCache, MetricTimerService metricTimerService,
-            boolean generateMetricNameWrapperMethods) {
+            boolean metricWrapperMethodsDisabled) {
         this.mixinTypes = mixinTypes;
         this.pluginAdvisors = pluginAdvisors;
         this.pointcutConfigAdvisors = pointcutConfigAdvisors;
         this.parsedTypeCache = parsedTypeCache;
         this.metricTimerService = metricTimerService;
-        this.generateMetricNameWrapperMethods = generateMetricNameWrapperMethods;
+        this.metricWrapperMethodsDisabled = metricWrapperMethodsDisabled;
         weavingMetricName = metricTimerService.getMetricName("glowroot weaving");
     }
 
     byte/*@Nullable*/[] weave(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
-        if (generateMetricNameWrapperMethods) {
+        if (metricWrapperMethodsDisabled) {
             return weave$glowroot$metric$glowroot$weaving$0(classBytes, className, codeSource,
                     loader);
         } else {
@@ -116,7 +116,7 @@ class Weaver {
             Iterable<Advice> advisors = Iterables.concat(pluginAdvisors,
                     pointcutConfigAdvisors.get());
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors, loader,
-                    parsedTypeCache, codeSource, generateMetricNameWrapperMethods);
+                    parsedTypeCache, codeSource, metricWrapperMethodsDisabled);
             ClassReader cr = new ClassReader(classBytes);
             try {
                 cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);

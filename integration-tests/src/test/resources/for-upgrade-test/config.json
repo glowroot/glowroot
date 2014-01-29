@@ -32,7 +32,7 @@
     "passwordHash" : ""
   },
   "advanced" : {
-    "generateMetricNameWrapperMethods" : false,
+    "metricWrapperMethodsDisabled" : false,
     "warnOnSpanOutsideTrace" : false,
     "weavingDisabled" : false
   },
