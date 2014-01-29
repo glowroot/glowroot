@@ -24,6 +24,8 @@ import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter.Lf2SpacesIndenter;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -96,9 +98,11 @@ class ConfigMapper {
     }
 
     static String writeValueAsString(Config config) throws IOException {
+        DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
+        prettyPrinter.indentArraysWith(Lf2SpacesIndenter.instance);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))
-                .useDefaultPrettyPrinter();
+                .setPrettyPrinter(prettyPrinter);
         // this view will exclude version properties
         ObjectWriter writer = mapper.writerWithView(FileView.class);
         jg.writeStartObject();

@@ -36,19 +36,22 @@
     "warnOnSpanOutsideTrace" : false,
     "weavingDisabled" : false
   },
-  "plugins" : [ {
-    "id" : "glowroot-integration-tests",
-    "enabled" : true,
-    "properties" : {
-      "hasDefaultVal" : "one",
-      "captureSpanStackTraces" : false,
-      "alternateGrouping" : "",
-      "starredGrouping" : false
+  "plugins" : [
+    {
+	  "id" : "glowroot-integration-tests",
+	  "enabled" : true,
+	  "properties" : {
+	    "hasDefaultVal" : "one",
+	    "captureSpanStackTraces" : false,
+	    "alternateGrouping" : "",
+	    "starredGrouping" : false
+	  }
+    },
+    {
+      "id" : "glowroot-test-container",
+      "enabled" : true,
+      "properties" : { }
     }
-  }, {
-    "id" : "glowroot-test-container",
-    "enabled" : true,
-    "properties" : { }
-  } ],
+  ],
   "pointcuts" : [ ]
 }
