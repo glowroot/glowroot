@@ -35,6 +35,7 @@ class PointcutConfigSection {
     }
 
     WebElement getTypeNameTextField() {
+        Utils.waitForAngular(driver);
         return form.findElement(xpath("//div[label[text()='Type name']]//input"));
     }
 
@@ -45,6 +46,7 @@ class PointcutConfigSection {
     }
 
     WebElement getMethodNameTextField() {
+        Utils.waitForAngular(driver);
         return form.findElement(xpath("//div[label[text()='Method name']]//input"));
     }
 
@@ -55,34 +57,42 @@ class PointcutConfigSection {
     }
 
     WebElement getMetricCheckbox() {
+        Utils.waitForAngular(driver);
         return form.findElement(xpath("//label[text()='Metric']/input"));
     }
 
     WebElement getSpanCheckbox() {
+        Utils.waitForAngular(driver);
         return form.findElement(xpath("//label[span[text()='Span']]/input"));
     }
 
     WebElement getTraceCheckbox() {
+        Utils.waitForAngular(driver);
         return form.findElement(xpath("//label[span[text()='Trace']]/input"));
     }
 
     WebElement getMetricNameTextField() {
+        Utils.waitForAngular(driver);
         return form.findElement(xpath("//div[label[text()='Metric name']]//input"));
     }
 
     WebElement getSpanTextTextField() {
+        Utils.waitForAngular(driver);
         return form.findElement(xpath("//div[label[text()='Span text']]//textarea"));
     }
 
     WebElement getTraceGroupingTextField() {
+        Utils.waitForAngular(driver);
         return form.findElement(xpath("//div[label[text()='Trace grouping']]//textarea"));
     }
 
     WebElement getAddButton() {
+        Utils.waitForAngular(driver);
         return form.findElement(xpath("//button[text()='Add']"));
     }
 
     WebElement getDeleteButton() {
+        Utils.waitForAngular(driver);
         return form.findElement(xpath("//button[text()='Delete']"));
     }
 }

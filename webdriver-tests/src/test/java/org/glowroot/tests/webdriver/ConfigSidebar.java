@@ -34,15 +34,16 @@ class ConfigSidebar {
     }
 
     WebElement getGeneralLink() {
+        Utils.waitForAngular(driver);
         return getSidebar().findElement(linkText("General"));
     }
 
     WebElement getPointcutsLink() {
+        Utils.waitForAngular(driver);
         return getSidebar().findElement(linkText("Pointcuts"));
     }
 
     private WebElement getSidebar() {
-        Utils.waitForAngular(driver);
         return driver.findElement(cssSelector("div.gt-sidebar"));
     }
 }

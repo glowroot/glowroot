@@ -62,6 +62,7 @@ public class ConfigTest {
     @After
     public void afterEachTest() throws Exception {
         container.checkAndReset();
+        Thread.sleep(2000);
     }
 
     @Test
@@ -92,8 +93,7 @@ public class ConfigTest {
                 .isEqualTo("2345");
         assertThat(generalPage.getStuckThresholdTextField().getAttribute("value"))
                 .isEqualTo("3456");
-        assertThat(generalPage.getMaxSpansTextField().getAttribute("value"))
-                .isEqualTo("4567");
+        assertThat(generalPage.getMaxSpansTextField().getAttribute("value")).isEqualTo("4567");
     }
 
     @Test

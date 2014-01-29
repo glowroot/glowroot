@@ -31,8 +31,12 @@ public class Utils {
     public static void waitForAngular(WebDriver driver) {
         driver.manage().timeouts().setScriptTimeout(30, SECONDS);
         String javascript = "var callback = arguments[arguments.length - 1];"
-                + "angular.element(document.body).injector().get('$browser')"
-                + ".notifyWhenNoOutstandingRequests(callback);";
+                + "if (window.angular) {"
+                + "  angular.element(document.body).injector().get('$browser')"
+                + "      .notifyWhenNoOutstandingRequests(callback);"
+                + "} else {"
+                + "  callback();"
+                + "}";
         ((JavascriptExecutor) driver).executeAsyncScript(javascript);
     }
 

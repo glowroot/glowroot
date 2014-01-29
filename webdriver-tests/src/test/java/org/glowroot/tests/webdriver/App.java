@@ -38,6 +38,7 @@ class App {
     }
 
     void openHomePage() throws IOException {
+        Utils.waitForAngular(driver);
         driver.get(baseUrl);
         addBindPolyfillIfNecessary();
         Utils.waitForAngular(driver);

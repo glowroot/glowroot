@@ -33,27 +33,31 @@ class ConfigGeneralPage {
     }
 
     WebElement getEnabledCheckbox() {
+        Utils.waitForAngular(driver);
         return getForm().findElement(xpath("//div[@gt-label='Enabled']//input"));
     }
 
     WebElement getStoreThresholdTextField() {
+        Utils.waitForAngular(driver);
         return getForm().findElement(xpath("//div[@gt-label='Store threshold']//input"));
     }
 
     WebElement getStuckThresholdTextField() {
+        Utils.waitForAngular(driver);
         return getForm().findElement(xpath("//div[@gt-label='Stuck threshold']//input"));
     }
 
     WebElement getMaxSpansTextField() {
+        Utils.waitForAngular(driver);
         return getForm().findElement(xpath("//div[@gt-label='Max spans']//input"));
     }
 
     WebElement getSaveButton() {
+        Utils.waitForAngular(driver);
         return getForm().findElement(xpath("//div[@gt-label='Save changes']//button"));
     }
 
     private WebElement getForm() {
-        Utils.waitForAngular(driver);
         return driver.findElement(xpath("//div[@name='formCtrl']"));
     }
 }

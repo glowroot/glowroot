@@ -33,11 +33,11 @@ class GlobalNavbar {
     }
 
     WebElement getConfigurationLink() {
+        Utils.waitForAngular(driver);
         return getNav().findElement(xpath("//li[@gt-item-name='config']//a"));
     }
 
     private WebElement getNav() {
-        Utils.waitForAngular(driver);
         return driver.findElement(xpath("//nav"));
     }
 }
