@@ -164,11 +164,9 @@ glowroot.controller('TracesCtrl', [
           $scope.filterDurationComparator = 'greater';
           $scope.filter.low = 0;
           $scope.filter.high = undefined;
-          $scope.filterHighText = '';
         } else {
           $scope.filter.low = low;
           $scope.filter.high = high;
-          $scope.filterHighText = high ? high : '';
           if (high && low !== 0) {
             $scope.filterDurationComparator = 'between';
           } else if (high) {
@@ -423,11 +421,11 @@ glowroot.controller('TracesCtrl', [
       $scope.filter.to = date.getTime() + ($scope.filter.to - midnight);
     });
 
-    $scope.$watch('filterHighText', function (text) {
-      if (text !== '') {
-        $scope.filter.high = parseFloat(text);
-      } else {
+    $scope.$watch('filterDurationComparator', function(value) {
+      if (value === 'greater') {
         $scope.filter.high = undefined;
+      } else if (value === 'less') {
+        $scope.filter.low = 0;
       }
     });
 
