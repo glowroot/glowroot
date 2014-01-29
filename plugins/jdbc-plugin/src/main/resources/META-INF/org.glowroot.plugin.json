@@ -48,7 +48,7 @@
       "prompt": "Stack trace threshold (millis)",
       "name": "stackTraceThresholdMillis",
       "type": "double",
-      "default": null,
+      "default": 1000.0,
       "description": [
         "Any jdbc call that exceeds this threshold will have a stack trace captured and attached",
         " to it. An empty value will not collect any stack traces, a zero value will collect a",
