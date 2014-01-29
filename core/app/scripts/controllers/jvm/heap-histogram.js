@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,7 +119,7 @@ glowroot.controller('JvmHeapHistogramCtrl', [
       var items = $scope.histogram.items;
       for (var i = 0; i < items.length; i++) {
         var item = items[i];
-        if (item.className.indexOf($scope.filterValue) !== -1) {
+        if (matchesFilter(item.className)) {
           if ($scope.displayedItems.length < $scope.filterLimit) {
             $scope.displayedItems.push(item);
           } else {
@@ -130,6 +130,25 @@ glowroot.controller('JvmHeapHistogramCtrl', [
         }
       }
     }
+
+    function matchesFilter(className) {
+      if ($scope.filterComparator === 'begins') {
+        return className.indexOf($scope.filterValue) === 0;
+      }
+      if ($scope.filterComparator === 'ends') {
+        return className.indexOf($scope.filterValue, className.length - $scope.filterValue.length) !== -1;
+      }
+      // contains
+      return className.indexOf($scope.filterValue) !== -1;
+    }
+
+    $scope.$watch('filterComparator', function (newValue) {
+      if ($scope.displayedItems === undefined) {
+        // histogram hasn't loaded yet
+        return;
+      }
+      applyFilter();
+    });
 
     $scope.$watch('filterValue', function (newValue) {
       if ($scope.displayedItems === undefined) {
