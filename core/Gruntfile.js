@@ -316,7 +316,6 @@ module.exports = function (grunt) {
               'bower_components/jquery/jquery.min.map',
               'bower_components/angular/angular.min.js',
               'bower_components/angular/angular.min.js.map',
-              'bower_components/flot/excanvas.min.js',
               'styles/fonts/*',
               'favicon.ico',
               'index.html'
@@ -340,20 +339,25 @@ module.exports = function (grunt) {
       }
     },
     replace: {
-      // not using grunt-google-cdn because it is not updated with support for the latest Angular
-      // releases at this time
-      // see https://github.com/passy/google-cdn/pull/9
       cdn: {
         src: '<%= yeoman.dist %>/index.html',
         overwrite: true,
         replacements: [
           {
-            from: 'bower_components/jquery/jquery.js',
+            from: 'JQUERY_CDN_URL',
             to: '//ajax.googleapis.com/ajax/libs/jquery/' + jqueryVersion + '/jquery.min.js'
           },
           {
-            from: 'bower_components/angular/angular.js',
+            from: 'ANGULAR_CDN_URL',
             to: '//ajax.googleapis.com/ajax/libs/angularjs/' + angularVersion + '/angular.min.js'
+          },
+          {
+            from: 'bower_components/jquery/jquery.js',
+            to: 'bower_components/jquery/jquery.min.js'
+          },
+          {
+            from: 'bower_components/angular/angular.js',
+            to: 'bower_components/angular/angular.min.js'
           }
         ]
       },
@@ -377,10 +381,8 @@ module.exports = function (grunt) {
       dist: {
         files: {
           src: [
-            // jquery.min.js and angular.min.js are used for cdn fallback
             '<%= yeoman.dist %>/bower_components/jquery/jquery.min.js',
             '<%= yeoman.dist %>/bower_components/angular/angular.min.js',
-            '<%= yeoman.dist %>/bower_components/flot/excanvas.min.js',
             '<%= yeoman.dist %>/styles/fonts/*',
             '<%= yeoman.dist %>/scripts/*.js',
             '<%= yeoman.dist %>/styles/main.css'

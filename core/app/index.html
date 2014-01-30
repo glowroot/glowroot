@@ -123,21 +123,22 @@
     {{layout.footerMessage}}
   </div>
 
-  <!-- jquery and angular are replaced by google cdn links during grunt build -->
-  <!-- jquery needs to come before angular so that angular will wrap elements with real jquery
-       instead of with jquery lite -->
-  <script src="bower_components/jquery/jquery.js"></script>
-  <!-- fallback if cdn is not available -->
   <script>
-    window.jQuery || document.write('<script src="bower_components/jquery/jquery.min.js"><\/script>');
+    // jquery needs to come before angular so that angular will wrap elements with real jquery instead of jquery lite
+    if (window.layout && window.layout.tryCdnForJqueryAndAngular) {
+      document.write('<script src="JQUERY_CDN_URL"><\/script>');
+      document.write('<script src="ANGULAR_CDN_URL"><\/script>');
+    }
   </script>
-
-  <script src="bower_components/angular/angular.js"></script>
-  <!-- don't group angular fallback into the same script tag as jquery because need to make sure jquery is loaded
-       before angular even if one is available via cdn and the other one uses the fallback
-       (though this is very unlikely since they are both hosted by the same cdn provider) -->
   <script>
-    window.jQuery || document.write('<script src="bower_components/angular/angular.min.js"><\/script>');
+    // this needs to be in a separate script tag from the cdn loading script tag above so that the browser will process
+    // the dynamic cdn script tags before checking window.jQuery and window.angular
+    if (!window.jQuery) {
+      document.write('<script src="bower_components/jquery/jquery.js"><\/script>');
+    }
+    if (!window.angular) {
+      document.write('<script src="bower_components/angular/angular.js"><\/script>');
+    }
   </script>
 
   <!-- build:js({app,.tmp}) scripts/app.components.js -->
