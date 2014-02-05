@@ -23,10 +23,6 @@ module.exports = function (grunt) {
     exportDist: 'target/ui-resources-dist/org/glowroot/local/ui/export-dist'
   };
 
-  var bowerJson = grunt.file.readJSON('bower.json');
-  var jqueryVersion = bowerJson.dependencies.jquery;
-  var angularVersion = bowerJson.dependencies.angular;
-
   grunt.initConfig({
     yeoman: yeomanConfig,
     watch: {
@@ -311,11 +307,6 @@ module.exports = function (grunt) {
             cwd: '<%= yeoman.app %>',
             dest: '<%= yeoman.dist %>',
             src: [
-              // jquery.min.js and angular.min.js are used for cdn fallback
-              'bower_components/jquery/jquery.min.js',
-              'bower_components/jquery/jquery.min.map',
-              'bower_components/angular/angular.min.js',
-              'bower_components/angular/angular.min.js.map',
               'styles/fonts/*',
               'favicon.ico',
               'index.html'
@@ -339,29 +330,7 @@ module.exports = function (grunt) {
       }
     },
     replace: {
-      cdn: {
-        src: '<%= yeoman.dist %>/index.html',
-        overwrite: true,
-        replacements: [
-          {
-            from: 'JQUERY_CDN_URL',
-            to: '//ajax.googleapis.com/ajax/libs/jquery/' + jqueryVersion + '/jquery.min.js'
-          },
-          {
-            from: 'ANGULAR_CDN_URL',
-            to: '//ajax.googleapis.com/ajax/libs/angularjs/' + angularVersion + '/angular.min.js'
-          },
-          {
-            from: 'bower_components/jquery/jquery.js',
-            to: 'bower_components/jquery/jquery.min.js'
-          },
-          {
-            from: 'bower_components/angular/angular.js',
-            to: 'bower_components/angular/angular.min.js'
-          }
-        ]
-      },
-      sourceMaps: {
+      dist: {
         src: [
           '<%= yeoman.dist %>/sources/*.js.map'
         ],
@@ -381,8 +350,6 @@ module.exports = function (grunt) {
       dist: {
         files: {
           src: [
-            '<%= yeoman.dist %>/bower_components/jquery/jquery.min.js',
-            '<%= yeoman.dist %>/bower_components/angular/angular.min.js',
             '<%= yeoman.dist %>/styles/fonts/*',
             '<%= yeoman.dist %>/scripts/*.js',
             '<%= yeoman.dist %>/styles/main.css'

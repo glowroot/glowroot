@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,12 +44,6 @@ class LayoutJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(LayoutJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
-    private static final boolean tryCdnForJqueryAndAngular;
-
-    static {
-        // this is primarily for use on demo site
-        tryCdnForJqueryAndAngular = Boolean.getBoolean("glowroot.internal.ui.tryCdn");
-    }
 
     private final String version;
     private final boolean aggregatesEnabled;
@@ -80,7 +74,6 @@ class LayoutJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeBooleanField("tryCdnForJqueryAndAngular", tryCdnForJqueryAndAngular);
         jg.writeBooleanField("aggregates", aggregatesEnabled);
         jg.writeBooleanField("jvmHeapHistogram", heapHistograms != null);
         jg.writeBooleanField("jvmHeapDump", hotSpotDiagnosticService != null);
@@ -112,7 +105,6 @@ class LayoutJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeBooleanField("tryCdnForJqueryAndAngular", tryCdnForJqueryAndAngular);
         jg.writeBooleanField("needsAuthentication", true);
         jg.writeStringField("footerMessage", "version " + version);
         jg.writeEndObject();
