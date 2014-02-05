@@ -16,13 +16,9 @@
 package org.glowroot.sandbox.ui;
 
 import java.io.File;
-import java.io.IOException;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
-import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
 
 import org.glowroot.container.AppUnderTest;
@@ -42,10 +38,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class UiSandboxMain {
 
-    private static final JsonFactory jsonFactory = new JsonFactory();
-
-    // need to use javaagent when testing pointcuts.html, otherwise class/method auto completion
-    // won't be available
     private static final boolean useJavaagent = false;
     private static final int INITIAL_UI_PORT = 4001;
     private static final boolean rollOverQuickly = false;
@@ -61,7 +53,7 @@ public class UiSandboxMain {
         File dataDir = new File("target");
         File configFile = new File(dataDir, "config.json");
         if (!configFile.exists()) {
-            writeConfigJson(dataDir, INITIAL_UI_PORT);
+            Files.write("{\"ui\":{\"port\":" + INITIAL_UI_PORT + "}}", configFile, Charsets.UTF_8);
         }
         if (useJavaagent) {
             container = new JavaagentContainer(dataDir, true, false, false);
@@ -89,18 +81,6 @@ public class UiSandboxMain {
             container.getConfigService().updateStorageConfig(storageConfig);
         }
         container.executeAppUnderTest(GenerateTraces.class);
-    }
-
-    private static void writeConfigJson(File dataDir, int uiPort) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectFieldStart("ui");
-        jg.writeNumberField("port", uiPort);
-        jg.writeEndObject();
-        jg.writeEndObject();
-        jg.close();
-        Files.write(sb, new File(dataDir, "config.json"), Charsets.UTF_8);
     }
 
     public static class GenerateTraces implements AppUnderTest {
