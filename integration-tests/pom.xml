@@ -19,18 +19,14 @@
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-plugin-api</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>edu.washington.cs.types.checker</groupId>
       <artifactId>checker-quals-jdk5</artifactId>
-      <!-- only annotations are used, so don't need this dependency at runtime -->
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

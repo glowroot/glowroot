@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.net.MediaType;
@@ -163,12 +162,10 @@ class JavaagentHttpClient {
 
     private static AsyncHttpClient createAsyncHttpClient() {
         ExecutorService executorService = Executors.newCachedThreadPool();
-        ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()
                 .setCompressionEnabled(true)
                 .setMaxRequestRetry(0)
-                .setExecutorService(executorService)
-                .setScheduledExecutorService(scheduledExecutor);
+                .setExecutorService(executorService);
         NettyAsyncHttpProviderConfig providerConfig = new NettyAsyncHttpProviderConfig();
         providerConfig.addProperty(NettyAsyncHttpProviderConfig.BOSS_EXECUTOR_SERVICE,
                 executorService);

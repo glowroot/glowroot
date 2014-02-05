@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -317,25 +317,6 @@ glowroot.directive('gtSpinner', function () {
             spinner.stop();
           }
         });
-  };
-});
-
-glowroot.directive('gtTypeaheadOpenOnEmpty', function () {
-  return {
-    require: ['typeahead', 'ngModel'],
-    link: function (scope, iElement, iAttrs, ctrls) {
-      iElement.bind('keyup', function (e) {
-        var typeaheadCtrl = ctrls[0];
-        var ngModelCtrl = ctrls[1];
-        if (e.which === 40 && (ngModelCtrl.$viewValue === undefined || ngModelCtrl.$viewValue === '') &&
-            typeaheadCtrl.active === -1) {
-          // down arrow key was pressed, and text input is empty, and the typeahead select is not already open
-          scope.$apply(function () {
-            typeaheadCtrl.getMatches('');
-          });
-        }
-      });
-    }
   };
 });
 

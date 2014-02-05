@@ -44,8 +44,6 @@
     <dependency>
       <groupId>edu.washington.cs.types.checker</groupId>
       <artifactId>checker-quals-jdk5</artifactId>
-      <!-- only annotations are used, so don't need this dependency at runtime -->
-      <optional>true</optional>
     </dependency>
   </dependencies>
 
