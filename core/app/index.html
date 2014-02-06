@@ -36,8 +36,10 @@
   <script src="bower_components/respond/dest/respond.src.js"></script>
   <!-- html5shiv must be loaded in head -->
   <script src="bower_components/html5shiv/dist/html5shiv.js"></script>
-  <!-- excanvas doesn't need to be loaded in head, just here to concat with other ie8 scripts -->
+  <!-- excanvas and es5-shim don't need to be loaded in head, just here to concat with other ie8 scripts -->
   <script src="bower_components/flot/excanvas.js"></script>
+  <!-- es5-shim is needed at least for IE8, see https://github.com/angular-ui/bootstrap/issues/194 -->
+  <script src="bower_components/es5-shim/es5-shim.js"></script>
   <!-- endbuild -->
   <![endif]-->
 
