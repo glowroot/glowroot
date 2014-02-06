@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,7 +130,8 @@ public class TracePointQuery {
         BEGINS("like", "%s%%"),
         EQUALS("=", "%s"),
         ENDS("like", "%%%s"),
-        CONTAINS("like", "%%%s%%");
+        CONTAINS("like", "%%%s%%"),
+        NOT_CONTAINS("not like", "%%%s%%");
 
         private final String comparator;
         private final String parameterFormat;

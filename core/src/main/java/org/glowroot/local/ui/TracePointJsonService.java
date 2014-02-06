@@ -248,6 +248,9 @@ class TracePointJsonService {
                 case CONTAINS:
                     return traceGrouping.toUpperCase(Locale.ENGLISH)
                             .contains(grouping.toUpperCase(Locale.ENGLISH));
+                case NOT_CONTAINS:
+                    return !traceGrouping.toUpperCase(Locale.ENGLISH)
+                            .contains(grouping.toUpperCase(Locale.ENGLISH));
                 default:
                     throw new AssertionError("Unknown StringComparator enum: "
                             + groupingComparator);
