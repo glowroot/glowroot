@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.tests.webdriver;
 
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
@@ -39,10 +40,15 @@ class PointcutConfigSection {
         return form.findElement(xpath("//div[label[text()='Type name']]//input"));
     }
 
-    WebElement getTypeNameAutoCompleteItem(String highlightedPart) {
+    WebElement getTypeNameAutoCompleteItem(String typeName) {
         Utils.waitForAngular(driver);
-        return form.findElement(xpath("//div[label[text()='Type name']]//ul/li/a[strong[text()='"
-                + highlightedPart + "']]"));
+        By xpath = xpath("//div[label[text()='Type name']]//ul/li/a");
+        for (WebElement element : form.findElements(xpath)) {
+            if (element.getText().equals(typeName)) {
+                return element;
+            }
+        }
+        throw new IllegalStateException("Could not find typeahead option: " + typeName);
     }
 
     WebElement getMethodNameTextField() {
@@ -50,10 +56,15 @@ class PointcutConfigSection {
         return form.findElement(xpath("//div[label[text()='Method name']]//input"));
     }
 
-    WebElement getMethodNameAutoCompleteItem(String highlightedPart) {
+    WebElement getMethodNameAutoCompleteItem(String methodName) {
         Utils.waitForAngular(driver);
-        return form.findElement(xpath("//div[label[text()='Method name']]//ul/li/a[strong[text()='"
-                + highlightedPart + "']]"));
+        By xpath = xpath("//div[label[text()='Method name']]//ul/li/a");
+        for (WebElement element : form.findElements(xpath)) {
+            if (element.getText().equals(methodName)) {
+                return element;
+            }
+        }
+        throw new IllegalStateException("Could not find typeahead option: " + methodName);
     }
 
     WebElement getMetricCheckbox() {

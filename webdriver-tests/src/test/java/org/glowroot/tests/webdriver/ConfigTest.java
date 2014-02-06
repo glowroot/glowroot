@@ -228,9 +228,10 @@ public class ConfigTest {
         pointcutConfigListPage.getAddPointcutButton().click();
         PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
         pointcutConfigSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
-        pointcutConfigSection.getTypeNameAutoCompleteItem("container.AppUnderTest").click();
+        pointcutConfigSection.getTypeNameAutoCompleteItem("org.glowroot.container.AppUnderTest")
+                .click();
         pointcutConfigSection.getMethodNameTextField().sendKeys("exec");
-        pointcutConfigSection.getMethodNameAutoCompleteItem("exec").click();
+        pointcutConfigSection.getMethodNameAutoCompleteItem("executeApp").click();
         pointcutConfigSection.getMetricCheckbox().click();
         pointcutConfigSection.getSpanCheckbox().click();
         pointcutConfigSection.getTraceCheckbox().click();
@@ -247,9 +248,10 @@ public class ConfigTest {
         pointcutConfigListPage.getAddPointcutButton().click();
         PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
         pointcutConfigSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
-        pointcutConfigSection.getTypeNameAutoCompleteItem("container.AppUnderTest").click();
+        pointcutConfigSection.getTypeNameAutoCompleteItem("org.glowroot.container.AppUnderTest")
+                .click();
         pointcutConfigSection.getMethodNameTextField().sendKeys("exec");
-        pointcutConfigSection.getMethodNameAutoCompleteItem("exec").click();
+        pointcutConfigSection.getMethodNameAutoCompleteItem("executeApp").click();
         pointcutConfigSection.getMetricCheckbox().click();
         pointcutConfigSection.getMetricNameTextField().clear();
         pointcutConfigSection.getMetricNameTextField().sendKeys("a metric");
@@ -261,9 +263,10 @@ public class ConfigTest {
         pointcutConfigListPage.getAddPointcutButton().click();
         PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
         pointcutConfigSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
-        pointcutConfigSection.getTypeNameAutoCompleteItem("container.AppUnderTest").click();
+        pointcutConfigSection.getTypeNameAutoCompleteItem("org.glowroot.container.AppUnderTest")
+                .click();
         pointcutConfigSection.getMethodNameTextField().sendKeys("exec");
-        pointcutConfigSection.getMethodNameAutoCompleteItem("exec").click();
+        pointcutConfigSection.getMethodNameAutoCompleteItem("executeApp").click();
         pointcutConfigSection.getMetricCheckbox().click();
         pointcutConfigSection.getSpanCheckbox().click();
         pointcutConfigSection.getMetricNameTextField().clear();
