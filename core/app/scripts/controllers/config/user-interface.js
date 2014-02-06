@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
       var enablingPassword = false;
       var disablingPassword = false;
       var changingPort = false;
-      var previousPort;
+      var previousActivePort;
       if (!$scope.originalConfig.passwordEnabled && $scope.config.passwordEnabled) {
         enablingPassword = true;
         if ($scope.page.verifyInitialPassword !== $scope.page.initialPassword) {
@@ -99,7 +99,7 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
       }
       if ($scope.originalConfig.port !== $scope.config.port) {
         changingPort = true;
-        previousPort = $scope.originalConfig.port;
+        previousActivePort = $scope.activePort;
       }
       $http.post('backend/config/user-interface', postData)
           .success(function (data) {
@@ -121,7 +121,7 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
               if (changingPort && data.portChangeFailed) {
                 deferred.reject('Save succeeded, but switching over to the new port failed');
               } else if (changingPort) {
-                if ($location.port() === previousPort) {
+                if ($location.port() === previousActivePort) {
                   deferred.resolve('Saved, redirecting to new port ...');
                   $timeout(function () {
                     var newUrl = $location.protocol() + '://' + $location.host();
@@ -132,8 +132,9 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
                     document.location.href = newUrl;
                   }, 500);
                 } else {
-                  deferred.reject('Save succeeded, switching over the port succeeded, but not sure how to redirect' +
-                      ' you since you are not connecting directly the old port is no longer available');
+                  deferred.reject('The save succeeded, and switching the http listener over to the new port' +
+                      ' succeeded, but you are not being redirected to the new port since it seems you are using an' +
+                      ' intermediary proxy?');
                 }
               } else {
                 deferred.resolve('Saved');
