@@ -52,6 +52,12 @@
     <url>https://github.com/glowroot/glowroot</url>
   </scm>
 
+  <properties>
+    <!-- the sonar.jdbc.password system property is set here instead of on the command line so it is
+      not visible to ps -->
+    <sonar.jdbc.password>${env.SONARQUBE_DB_PASSWORD}</sonar.jdbc.password>
+  </properties>
+
   <dependencyManagement>
     <dependencies>
       <dependency>

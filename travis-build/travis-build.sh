@@ -59,9 +59,12 @@ case "$1" in
                  # to report on timings and failure rates
                  #
                  # using local harness since it is faster (and the default anyways)
+                 #
+                 # the sonar.jdbc.password system property is set in the pom.xml using the
+                 # environment variable SONARQUBE_DB_PASSWORD (instead of setting the system
+                 # property on the command line which which would make it visible to ps)
                  mvn sonar:sonar -Dsonar.jdbc.url=jdbc:postgresql://sonarqube.glowroot.org/sonar \
                                  -Dsonar.jdbc.username=sonar \
-                                 -Dsonar.jdbc.password=$SONARQUBE_DB_PASSWORD \
                                  -Dsonar.host.url=http://sonarqube.glowroot.org \
                                  -Dsonar.dynamicAnalysis=reuseReports \
                                  -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
