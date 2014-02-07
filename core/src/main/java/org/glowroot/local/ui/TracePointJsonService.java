@@ -211,7 +211,7 @@ class TracePointJsonService {
                         && matchesUserId(trace)
                         && matchesBackground(trace)) {
                     points.add(TracePoint.from(trace.getId(), clock.currentTimeMillis(),
-                            trace.getDuration(), trace.isError()));
+                            trace.getDuration(), trace.getErrorMessage() != null));
                 }
             }
             return points;
@@ -223,7 +223,7 @@ class TracePointJsonService {
         }
 
         private boolean matchesErrorOnly(Trace trace) {
-            return !request.isErrorOnly() || trace.isError();
+            return !request.isErrorOnly() || trace.getErrorMessage() != null;
         }
 
         private boolean matchesFineOnly(Trace trace) {

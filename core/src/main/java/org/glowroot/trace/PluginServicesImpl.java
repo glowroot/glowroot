@@ -336,6 +336,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
+    public void setTraceErrorMessage(@Nullable String errorMessage) {
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace != null) {
+            trace.setErrorMessage(errorMessage);
+        }
+    }
+
+    @Override
     public void onChange() {
         GeneralConfig generalConfig = configService.getGeneralConfig();
         if (pluginId == null) {

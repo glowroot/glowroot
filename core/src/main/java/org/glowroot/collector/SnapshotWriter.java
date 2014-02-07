@@ -64,9 +64,9 @@ public class SnapshotWriter {
         sb.append(",\"grouping\":\"");
         sb.append(JsonStringEncoder.getInstance().quoteAsString(snapshot.getGrouping()));
         sb.append("\"");
+        writeErrorMessage(snapshot);
         writeAttributes(snapshot);
         writeUserId(snapshot);
-        writeError(snapshot);
         writeMetrics(snapshot);
         sb.append(",\"jvmInfo\":");
         sb.append(snapshot.getJvmInfo());
@@ -79,6 +79,15 @@ public class SnapshotWriter {
         sb.append("}");
         flushStringBuilder();
         return CharSource.concat(charSources);
+    }
+
+    private void writeErrorMessage(Snapshot snapshot) {
+        String errorMessage = snapshot.getErrorMessage();
+        if (errorMessage != null) {
+            sb.append(",\"errorMessage\":\"");
+            sb.append(JsonStringEncoder.getInstance().quoteAsString(errorMessage));
+            sb.append("\"");
+        }
     }
 
     private void writeAttributes(Snapshot snapshot) {
@@ -95,24 +104,6 @@ public class SnapshotWriter {
             sb.append(",\"userId\":\"");
             sb.append(JsonStringEncoder.getInstance().quoteAsString(userId));
             sb.append("\"");
-        }
-    }
-
-    private void writeError(Snapshot snapshot) {
-        String errorText = snapshot.getErrorText();
-        if (errorText != null) {
-            sb.append(",\"error\":{\"text\":\"");
-            sb.append(JsonStringEncoder.getInstance().quoteAsString(errorText));
-            sb.append("\"");
-            if (snapshot.getErrorDetail() != null) {
-                sb.append(",\"detail\":");
-                sb.append(snapshot.getErrorDetail());
-            }
-            if (snapshot.getException() != null) {
-                sb.append(",\"exception\":");
-                sb.append(snapshot.getException());
-            }
-            sb.append("}");
         }
     }
 

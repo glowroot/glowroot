@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,13 +50,13 @@ public class Trace {
     private final long duration;
     private final boolean background;
     private final String grouping;
+    @Nullable
+    private final String errorMessage;
     // can't use ImmutableMap since attributes can have null values
     @Immutable
     private final Map<String, /*@Nullable*/String> attributes;
     @Nullable
     private final String userId;
-    @Nullable
-    private final TraceError error;
     private final ImmutableList<Metric> metrics;
     private final JvmInfo jvmInfo;
     @Nullable
@@ -69,13 +69,11 @@ public class Trace {
     private final boolean summary;
 
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
-            long duration, boolean background, String grouping,
+            long duration, boolean background, String grouping, @Nullable String errorMessage,
             @ReadOnly Map<String, /*@Nullable*/String> attributes, @Nullable String userId,
-            @Nullable TraceError error, @ReadOnly List<Metric> metrics, JvmInfo jvmInfo,
-            @ReadOnly @Nullable List<Span> spans,
+            @ReadOnly List<Metric> metrics, JvmInfo jvmInfo, @ReadOnly @Nullable List<Span> spans,
             @Nullable MergedStackTreeNode coarseMergedStackTree,
             @Nullable MergedStackTreeNode fineMergedStackTree, boolean summary) {
-        super();
         this.id = id;
         this.active = active;
         this.stuck = stuck;
@@ -84,9 +82,9 @@ public class Trace {
         this.duration = duration;
         this.background = background;
         this.grouping = grouping;
+        this.errorMessage = errorMessage;
         this.attributes = attributes;
         this.userId = userId;
-        this.error = error;
         this.metrics = ImmutableList.copyOf(metrics);
         this.jvmInfo = jvmInfo;
         this.spans = spans == null ? null : ImmutableList.copyOf(spans);
@@ -127,6 +125,11 @@ public class Trace {
         return grouping;
     }
 
+    @Nullable
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
     // can't use ImmutableMap since attributes can have null values
     @Immutable
     public Map<String, /*@Nullable*/String> getAttributes() {
@@ -136,11 +139,6 @@ public class Trace {
     @Nullable
     public String getUserId() {
         return userId;
-    }
-
-    @Nullable
-    public TraceError getError() {
-        return error;
     }
 
     public ImmutableList<Metric> getMetrics() {
@@ -213,9 +211,9 @@ public class Trace {
                 .add("duration", duration)
                 .add("background", background)
                 .add("grouping", grouping)
+                .add("errorMessage", errorMessage)
                 .add("attributes", attributes)
                 .add("userId", userId)
-                .add("error", error)
                 .add("metrics", metrics)
                 .add("jvmInfo", jvmInfo)
                 .add("spans", spans)
@@ -235,9 +233,9 @@ public class Trace {
             @JsonProperty("duration") @Nullable Long duration,
             @JsonProperty("background") @Nullable Boolean background,
             @JsonProperty("grouping") @Nullable String grouping,
+            @JsonProperty("errorMessage") @Nullable String errorMessage,
             @JsonProperty("attributes") @Nullable Map<String, /*@Nullable*/String> attributes,
             @JsonProperty("userId") @Nullable String userId,
-            @JsonProperty("error") @Nullable TraceError error,
             @JsonProperty("metrics") @Nullable List<Metric> metrics,
             @JsonProperty("jvmInfo") @Nullable JvmInfo jvmInfo,
             @JsonProperty("spans") @Nullable List<Span> spans,
@@ -256,7 +254,7 @@ public class Trace {
         checkRequiredProperty(metrics, "metrics");
         checkRequiredProperty(jvmInfo, "jvmInfo");
         return new Trace(id, active, stuck, startTime, captureTime, duration, background, grouping,
-                nullToEmpty(attributes), userId, error, metrics, jvmInfo, spans,
+                errorMessage, nullToEmpty(attributes), userId, metrics, jvmInfo, spans,
                 coarseMergedStackTree, fineMergedStackTree, nullToFalse(summary));
     }
 }

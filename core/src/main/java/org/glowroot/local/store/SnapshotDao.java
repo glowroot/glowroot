@@ -56,14 +56,12 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("capture_time", Types.BIGINT),
             new Column("duration", Types.BIGINT), // nanoseconds
             new Column("background", Types.BOOLEAN),
-            new Column("error", Types.BOOLEAN),
+            new Column("error", Types.BOOLEAN), // for searching only
             new Column("fine", Types.BOOLEAN), // for searching only
             new Column("grouping", Types.VARCHAR),
+            new Column("error_message", Types.VARCHAR),
             new Column("attributes", Types.VARCHAR), // json data
             new Column("user_id", Types.VARCHAR),
-            new Column("error_text", Types.VARCHAR),
-            new Column("error_detail", Types.VARCHAR), // json data
-            new Column("exception", Types.VARCHAR), // json data
             new Column("metrics", Types.VARCHAR), // json data
             new Column("jvm_info", Types.VARCHAR), // json data
             new Column("spans", Types.VARCHAR), // rolling file block id
@@ -106,17 +104,16 @@ public class SnapshotDao implements SnapshotRepository {
         }
         try {
             dataSource.update("merge into snapshot (id, stuck, start_time, capture_time, duration,"
-                    + " background, error, fine, grouping, attributes, user_id, error_text,"
-                    + " error_detail, exception, metrics, jvm_info, spans,"
-                    + " coarse_merged_stack_tree, fine_merged_stack_tree) values (?, ?, ?, ?, ?,"
-                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(),
+                    + " background, error, fine, grouping, error_message, attributes, user_id,"
+                    + " metrics, jvm_info, spans, coarse_merged_stack_tree,"
+                    + " fine_merged_stack_tree) values (?, ?, ?, ?, ?,"
+                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(),
                     snapshot.isStuck(), snapshot.getStartTime(), snapshot.getCaptureTime(),
                     snapshot.getDuration(), snapshot.isBackground(),
-                    snapshot.getErrorText() != null, fineMergedStackTreeBlockId != null,
-                    snapshot.getGrouping(), snapshot.getAttributes(), snapshot.getUserId(),
-                    snapshot.getErrorText(), snapshot.getErrorDetail(), snapshot.getException(),
-                    snapshot.getMetrics(), snapshot.getJvmInfo(), spansBlockId,
-                    coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
+                    snapshot.getErrorMessage() != null, fineMergedStackTreeBlockId != null,
+                    snapshot.getGrouping(), snapshot.getErrorMessage(), snapshot.getAttributes(),
+                    snapshot.getUserId(), snapshot.getMetrics(), snapshot.getJvmInfo(),
+                    spansBlockId, coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -140,10 +137,10 @@ public class SnapshotDao implements SnapshotRepository {
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
             partiallyHydratedTraces = dataSource.query("select id, stuck, start_time,"
-                    + " capture_time, duration, background, grouping, attributes, user_id,"
-                    + " error_text, error_detail, exception, metrics, jvm_info, spans,"
-                    + " coarse_merged_stack_tree, fine_merged_stack_tree from snapshot"
-                    + " where id = ?", ImmutableList.of(id), new TraceRowMapper());
+                    + " capture_time, duration, background, grouping, error_message, attributes,"
+                    + " user_id, metrics, jvm_info, spans, coarse_merged_stack_tree,"
+                    + " fine_merged_stack_tree from snapshot where id = ?", ImmutableList.of(id),
+                    new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -163,9 +160,9 @@ public class SnapshotDao implements SnapshotRepository {
         List<Snapshot> snapshots;
         try {
             snapshots = dataSource.query("select id, stuck, start_time, capture_time, duration,"
-                    + " background, grouping, attributes, user_id, error_text, error_detail,"
-                    + " exception, metrics, jvm_info from snapshot where id = ?",
-                    ImmutableList.of(id), new SnapshotRowMapper());
+                    + " background, grouping, error_message, attributes, user_id, metrics,"
+                    + " jvm_info from snapshot where id = ?", ImmutableList.of(id),
+                    new SnapshotRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -235,13 +232,11 @@ public class SnapshotDao implements SnapshotRepository {
                 .duration(resultSet.getLong(5))
                 .background(resultSet.getBoolean(6))
                 .grouping(resultSet.getString(7))
-                .attributes(resultSet.getString(8))
-                .userId(resultSet.getString(9))
-                .errorText(resultSet.getString(10))
-                .errorDetail(resultSet.getString(11))
-                .exception(resultSet.getString(12))
-                .metrics(resultSet.getString(13))
-                .jvmInfo(resultSet.getString(14));
+                .errorMessage(resultSet.getString(8))
+                .attributes(resultSet.getString(9))
+                .userId(resultSet.getString(10))
+                .metrics(resultSet.getString(11))
+                .jvmInfo(resultSet.getString(12));
     }
 
     private static void upgradeSnapshotTable(DataSource dataSource) throws SQLException {
@@ -265,9 +260,9 @@ public class SnapshotDao implements SnapshotRepository {
         public PartiallyHydratedTrace mapRow(ResultSet resultSet) throws SQLException {
             Snapshot.Builder builder = createBuilder(resultSet);
             // wait and read from rolling file outside of the jdbc connection
-            String spansFileBlockId = resultSet.getString(15);
-            String coarseMergedStackTreeFileBlockId = resultSet.getString(16);
-            String fineMergedStackTreeFileBlockId = resultSet.getString(17);
+            String spansFileBlockId = resultSet.getString(13);
+            String coarseMergedStackTreeFileBlockId = resultSet.getString(14);
+            String fineMergedStackTreeFileBlockId = resultSet.getString(15);
             return new PartiallyHydratedTrace(builder, spansFileBlockId,
                     coarseMergedStackTreeFileBlockId, fineMergedStackTreeFileBlockId);
         }

@@ -312,6 +312,23 @@ public abstract class PluginServices {
      */
     public abstract void setTraceAttribute(String name, @Nullable String value);
 
+    /**
+     * Marks the trace as error. Normally traces are only marked as error if
+     * {@link Span#endWithError(ErrorMessage)} is called on the root span. This method can be used
+     * to mark the entire trace as error from a nested span.
+     * 
+     * This should be used sparingly. Normally, spans should only mark themselves as error (using
+     * {@link Span#endWithError(ErrorMessage)}), and let the root span determine if the transaction
+     * as a whole should be marked as an error.
+     * 
+     * E.g., this method is called from the logging plugin, to mark the entire trace as error if an
+     * error is logged through one of the supported logging APIs.
+     * 
+     * If this is called multiple times within a single trace, only the first call has any effect,
+     * and subsequent calls are ignored.
+     */
+    public abstract void setTraceErrorMessage(String message);
+
     private static PluginServices getPluginServices(String pluginId) {
         try {
             Class<?> mainEntryPointClass = Class.forName(MAIN_ENTRY_POINT_CLASS_NAME);
@@ -417,6 +434,8 @@ public abstract class PluginServices {
         public void setUserId(@Nullable String userId) {}
         @Override
         public void setTraceAttribute(String name, @Nullable String value) {}
+        @Override
+        public void setTraceErrorMessage(@Nullable String message) {}
 
         private static class NopMetric implements MetricName {
             private static final NopMetric INSTANCE = new NopMetric();

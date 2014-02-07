@@ -218,9 +218,8 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.getError()).isNotNull();
-        assertThat(trace.getError().getText()).isNotNull();
-        assertThat(trace.getError().getException()).isNotNull();
+        assertThat(trace.getErrorMessage()).isNotNull();
+        assertThat(trace.getSpans().get(0).getError().getException()).isNotNull();
     }
 
     @Test
@@ -231,9 +230,7 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        assertThat(trace.getError()).isNotNull();
-        assertThat(trace.getError().getText()).isEqualTo("sendError, HTTP status code 500");
-        assertThat(trace.getError().getException()).isNull();
+        assertThat(trace.getErrorMessage()).isEqualTo("sendError, HTTP status code 500");
         assertThat(trace.getSpans().get(0).getError()).isNotNull();
         assertThat(trace.getSpans().get(0).getError().getText()).isEqualTo(
                 "sendError, HTTP status code 500");

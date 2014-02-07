@@ -91,12 +91,7 @@ public class SnapshotCreator {
         builder.duration(captureTick - trace.getStartTick());
         builder.background(trace.isBackground());
         builder.grouping(trace.getGrouping());
-        ReadableErrorMessage errorMessage = trace.getRootSpan().getErrorMessage();
-        if (errorMessage != null) {
-            builder.errorText(errorMessage.getText());
-            builder.errorDetail(writeErrorDetailAsString(errorMessage.getDetail()));
-            builder.exception(writeExceptionInfoAsString(errorMessage.getExceptionInfo()));
-        }
+        builder.errorMessage(trace.getErrorMessage());
         builder.attributes(writeAttributesAsString(trace.getAttributes()));
         builder.userId(trace.getUserId());
         builder.metrics(writeMetricsAsString(trace.getMetrics()));

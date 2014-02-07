@@ -38,14 +38,14 @@
   },
   "plugins" : [
     {
-	  "id" : "glowroot-integration-tests",
-	  "enabled" : true,
-	  "properties" : {
-	    "hasDefaultVal" : "one",
-	    "captureSpanStackTraces" : false,
-	    "alternateGrouping" : "",
-	    "starredGrouping" : false
-	  }
+      "id" : "glowroot-integration-tests",
+      "enabled" : true,
+      "properties" : {
+        "hasDefaultVal" : "one",
+        "captureSpanStackTraces" : false,
+        "alternateGrouping" : "",
+        "starredGrouping" : false
+      }
     },
     {
       "id" : "glowroot-test-container",

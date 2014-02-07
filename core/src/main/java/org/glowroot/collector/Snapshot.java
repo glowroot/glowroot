@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,15 +42,11 @@ public class Snapshot {
     private final boolean background;
     private final String grouping;
     @Nullable
+    private final String errorMessage;
+    @Nullable
     private final String attributes; // json data
     @Nullable
     private final String userId;
-    @Nullable
-    private final String errorText;
-    @Nullable
-    private final String errorDetail; // json data
-    @Nullable
-    private final String exception; // json data
     @Nullable
     private final String metrics; // json data
     @Nullable
@@ -65,10 +61,9 @@ public class Snapshot {
     private final CharSource fineMergedStackTree; // json data
 
     private Snapshot(String id, boolean active, boolean stuck, long startTime, long captureTime,
-            long duration, boolean background, String grouping, @Nullable String attributes,
-            @Nullable String userId, @Nullable String errorText, @Nullable String errorDetail,
-            @Nullable String exception, @Nullable String metrics, @Nullable String jvmInfo,
-            @Immutable @Nullable CharSource spans,
+            long duration, boolean background, String grouping, @Nullable String errorMessage,
+            @Nullable String attributes, @Nullable String userId, @Nullable String metrics,
+            @Nullable String jvmInfo, @Immutable @Nullable CharSource spans,
             @Immutable @Nullable CharSource coarseMergedStackTree,
             @Immutable @Nullable CharSource fineMergedStackTree) {
         this.id = id;
@@ -81,9 +76,7 @@ public class Snapshot {
         this.grouping = grouping;
         this.attributes = attributes;
         this.userId = userId;
-        this.errorText = errorText;
-        this.errorDetail = errorDetail;
-        this.exception = exception;
+        this.errorMessage = errorMessage;
         this.metrics = metrics;
         this.jvmInfo = jvmInfo;
         this.spans = spans;
@@ -124,6 +117,11 @@ public class Snapshot {
     }
 
     @Nullable
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    @Nullable
     public String getAttributes() {
         return attributes;
     }
@@ -131,21 +129,6 @@ public class Snapshot {
     @Nullable
     public String getUserId() {
         return userId;
-    }
-
-    @Nullable
-    public String getErrorText() {
-        return errorText;
-    }
-
-    @Nullable
-    public String getErrorDetail() {
-        return errorDetail;
-    }
-
-    @Nullable
-    public String getException() {
-        return exception;
     }
 
     @Nullable
@@ -188,11 +171,9 @@ public class Snapshot {
                 .add("duration", duration)
                 .add("background", background)
                 .add("grouping", grouping)
+                .add("errorMessage", errorMessage)
                 .add("attributes", attributes)
                 .add("userId", userId)
-                .add("errorText", errorText)
-                .add("errorDetail", errorDetail)
-                .add("exception", exception)
                 .add("metrics", metrics)
                 .toString();
     }
@@ -214,15 +195,11 @@ public class Snapshot {
         @MonotonicNonNull
         private String grouping;
         @Nullable
+        private String errorMessage;
+        @Nullable
         private String attributes;
         @Nullable
         private String userId;
-        @Nullable
-        private String errorText;
-        @Nullable
-        private String errorDetail;
-        @Nullable
-        private String exception;
         @Nullable
         private String metrics;
         @Nullable
@@ -281,6 +258,11 @@ public class Snapshot {
             return this;
         }
 
+        public Builder errorMessage(@Nullable String errorMessage) {
+            this.errorMessage = errorMessage;
+            return this;
+        }
+
         public Builder attributes(@Nullable String attributes) {
             this.attributes = attributes;
             return this;
@@ -288,21 +270,6 @@ public class Snapshot {
 
         public Builder userId(@Nullable String userId) {
             this.userId = userId;
-            return this;
-        }
-
-        public Builder errorText(@Nullable String errorText) {
-            this.errorText = errorText;
-            return this;
-        }
-
-        public Builder errorDetail(@Nullable String errorDetail) {
-            this.errorDetail = errorDetail;
-            return this;
-        }
-
-        public Builder exception(@Nullable String exception) {
-            this.exception = exception;
             return this;
         }
 
@@ -335,8 +302,8 @@ public class Snapshot {
         @RequiresNonNull({"id", "grouping"})
         public Snapshot build() {
             return new Snapshot(id, active, stuck, startTime, captureTime, duration, background,
-                    grouping, attributes, userId, errorText, errorDetail, exception, metrics,
-                    jvmInfo, spans, coarseMergedStackTree, fineMergedStackTree);
+                    grouping, errorMessage, attributes, userId, metrics, jvmInfo, spans,
+                    coarseMergedStackTree, fineMergedStackTree);
         }
     }
 }

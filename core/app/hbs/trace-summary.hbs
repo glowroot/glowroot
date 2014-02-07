@@ -1,4 +1,4 @@
-{{#if error}}
+{{#if errorMessage}}
   <strong>ERROR</strong><br>
 {{/if}}
 {{#if active}}
@@ -23,14 +23,14 @@ Start: {{date startTime}}
 <br>
 Duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
 <br>
+{{#if errorMessage}}
+  <div class="second-line-indent"><strong>Error: {{errorMessage}}</strong></div>
+{{/if}}
 {{#eachKeyValuePair attributes}}
   <div class="second-line-indent">{{key}}: {{value}}</div>
 {{/eachKeyValuePair}}
 {{#if userId}}
   <div class="second-line-indent">User ID: {{userId}}</div>
-{{/if}}
-{{#if error}}
-  <div class="second-line-indent"><strong>Error: {{error.text}}</strong></div>
 {{/if}}
 Breakdown (in milliseconds):
 <br>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.PartiallyThreadSafe;
@@ -73,6 +74,10 @@ public class Trace {
     private final boolean background;
 
     private volatile String grouping;
+
+    // trace-level error, only used if rootSpan doesn't have ErrorMessage
+    @Nullable
+    private volatile String errorMessage;
 
     @Nullable
     private volatile String userId;
@@ -209,8 +214,13 @@ public class Trace {
         return orderedAttributes.build();
     }
 
-    public boolean isError() {
-        return rootSpan.getRootSpan().getErrorMessage() != null;
+    @Nullable
+    public String getErrorMessage() {
+        ReadableErrorMessage message = rootSpan.getRootSpan().getErrorMessage();
+        if (message != null) {
+            return message.getText();
+        }
+        return errorMessage;
     }
 
     public boolean isFine() {
@@ -292,6 +302,12 @@ public class Trace {
         }
         synchronized (attributes) {
             attributes.add(new TraceAttribute(pluginId, name, value));
+        }
+    }
+
+    public void setErrorMessage(@Nullable String errorMessage) {
+        if (this.errorMessage == null && errorMessage != null) {
+            this.errorMessage = errorMessage;
         }
     }
 
@@ -411,6 +427,7 @@ public class Trace {
                 .add("metrics", metrics)
                 .add("jvmInfo", jvmInfo)
                 .add("rootSpan", rootSpan)
+                .add("errorMessage", errorMessage)
                 .add("coarseMergedStackTree", coarseMergedStackTree)
                 .add("fineMergedStackTree", fineMergedStackTree)
                 .add("coarseProfilingScheduledRunnable", coarseProfilerScheduledRunnable)

@@ -32,6 +32,7 @@ import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.trace.ExceptionInfo;
+import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.tests.plugin.LogCauseAspect;
 import org.glowroot.tests.plugin.LogCauseAspect.LogCauseAdvice;
@@ -71,12 +72,13 @@ public class ErrorCaptureTest {
         container.executeAppUnderTest(ShouldCaptureError.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getError()).isNotNull();
-        assertThat(trace.getError().getDetail()).isNotNull();
-        assertThat(trace.getError().getDetail()).isEqualTo(
-                mapOf("erra", null, "errb", mapOf("errc", null, "errd", "xyz")));
+        assertThat(trace.getErrorMessage()).isNotNull();
         assertThat(trace.getSpans()).hasSize(3);
-        assertThat(trace.getSpans().get(0).getError()).isNotNull();
+        Span rootSpan = trace.getSpans().get(0);
+        assertThat(rootSpan.getError()).isNotNull();
+        assertThat(rootSpan.getError().getDetail()).isNotNull();
+        assertThat(rootSpan.getError().getDetail()).isEqualTo(
+                mapOf("erra", null, "errb", mapOf("errc", null, "errd", "xyz")));
         assertThat(trace.getSpans().get(1).getError()).isNull();
         assertThat(trace.getSpans().get(2).getError()).isNull();
     }
@@ -88,7 +90,7 @@ public class ErrorCaptureTest {
         container.executeAppUnderTest(ShouldCaptureErrorWithSpanStackTrace.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getError()).isNull();
+        assertThat(trace.getErrorMessage()).isNull();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getError()).isNotNull();
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
@@ -103,7 +105,7 @@ public class ErrorCaptureTest {
         container.executeAppUnderTest(ShouldCaptureErrorWithCausalChain.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getError()).isNull();
+        assertThat(trace.getErrorMessage()).isNull();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getError()).isNotNull();
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
