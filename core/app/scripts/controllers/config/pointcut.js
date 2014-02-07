@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ glowroot.controller('PointcutCtrl', [
           modifiers: data.methodModifiers
         };
         $scope.heading = data.typeName + '.' + data.methodName + '(' + data.methodArgTypeNames.join(', ') + ')';
-        $scope.page.selectedSignature = signature;
+        $scope.selectedSignature = signature;
         $scope.signatures = [ signature ];
       } else {
         $scope.heading = '<New pointcut>';
@@ -117,7 +117,7 @@ glowroot.controller('PointcutCtrl', [
         if (methodName === undefined) {
           // this can happen if user clears the text input and tabs away (onSelectMethodName is called on blur)
           $scope.signatures = [];
-          $scope.page.selectedSignature = undefined;
+          $scope.selectedSignature = undefined;
         } else if (methodName.indexOf('*') !== -1) {
           $scope.signatures = [
             {
@@ -127,7 +127,7 @@ glowroot.controller('PointcutCtrl', [
               modifiers: []
             }
           ];
-          $scope.page.selectedSignature = $scope.signatures[0];
+          $scope.selectedSignature = $scope.signatures[0];
         } else {
           matchingMethods(methodName);
         }
@@ -156,7 +156,7 @@ glowroot.controller('PointcutCtrl', [
 
     // TODO this needs access to outer scope update retransformClassesButton
     $scope.pointcutSave = function (deferred) {
-      var signature = $scope.page.selectedSignature;
+      var signature = $scope.selectedSignature;
       if (!signature) {
         deferred.reject('method for pointcut must be selected');
         return;
@@ -219,9 +219,9 @@ glowroot.controller('PointcutCtrl', [
               });
             }
             if (data.length === 1) {
-              $scope.page.selectedSignature = data[0];
+              $scope.selectedSignature = data[0];
             } else {
-              $scope.page.selectedSignature = undefined;
+              $scope.selectedSignature = undefined;
             }
           })
           .error(httpErrors.handler($scope));
@@ -265,7 +265,7 @@ glowroot.controller('PointcutCtrl', [
       }
     });
 
-    $scope.$watch('page.selectedSignature', function (newValue, oldValue) {
+    $scope.$watch('selectedSignature', function (newValue, oldValue) {
       // need to use angular.equals to filter out $$hashKey property that is added by ng-repeat
       if (angular.equals(newValue, oldValue)) {
         // called due to watcher initialization
@@ -280,7 +280,7 @@ glowroot.controller('PointcutCtrl', [
     });
 
     function initSpanText() {
-      var signature = $scope.page.selectedSignature;
+      var signature = $scope.selectedSignature;
       if (!signature) {
         // no radio button selected
         $scope.config.spanText = '';
@@ -322,7 +322,7 @@ glowroot.controller('PointcutCtrl', [
     }
 
     function initTraceGrouping() {
-      var signature = $scope.page.selectedSignature;
+      var signature = $scope.selectedSignature;
       if (!signature) {
         // no radio button selected
         return;
