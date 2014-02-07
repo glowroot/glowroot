@@ -40,8 +40,9 @@
         {{/if}}
         {{#if error}}
           <div class="{{{errorIndentClass message}}}">
-            <strong><span class="inline-block content-padding">{{error.text}}</span></strong>
-            <br>
+            <div>
+              <strong><span class="inline-block content-padding">{{error.text}}</span></strong>
+            </div>
             {{#if error.detail}}
               <div class="content-detail">
                 <span class="inline-block unexpanded-content glowroot-link-color">detail</span>

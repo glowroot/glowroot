@@ -2,10 +2,11 @@
   {{#if spans.rolledOver}}
     <div>Spans <strong>rolled over</strong></div>
   {{^}}
-    <button class="flat-btn flat-btn-big-pad1aligned sps-toggle">
-      <span class="glowroot-link-color">Spans</span> ({{numberOfSpans spans}})
-    </button>
-    <br>
+    <div>
+      <button class="flat-btn flat-btn-big-pad1aligned sps-toggle">
+        <span class="glowroot-link-color">Spans</span> ({{numberOfSpans spans}})
+      </button>
+    </div>
     <div id="sps"></div>
   {{/if}}
 {{/if}}
@@ -14,10 +15,11 @@
   {{#if coarseMergedStackTree.rolledOver}}
     <div>Coarse-grained profile <strong>rolled over</strong></div>
   {{^}}
-    <button class="flat-btn flat-btn-big-pad1aligned mst-coarse-toggle">
-      <span class="glowroot-link-color">Coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})
-    </button>
-    <br>
+    <div>
+      <button class="flat-btn flat-btn-big-pad1aligned mst-coarse-toggle">
+        <span class="glowroot-link-color">Coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})
+      </button>
+    </div>
     <div class="nowrap hide" id="mstCoarseOuter">
       <select class="form-control mst-filter input-xlarge lt-ie9-width-auto hide" onchange="this.blur()"
               style="margin: 4px;">
@@ -36,10 +38,11 @@
   {{#if fineMergedStackTree.rolledOver}}
     <div>Fine-grained profile <strong>rolled over</strong></div>
   {{^}}
-    <button class="flat-btn flat-btn-big-pad1aligned mst-fine-toggle">
-      <span class="glowroot-link-color">Fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})
-    </button>
-    <br>
+    <div>
+      <button class="flat-btn flat-btn-big-pad1aligned mst-fine-toggle">
+        <span class="glowroot-link-color">Fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})
+      </button>
+    </div>
     <div class="nowrap hide" id="mstFineOuter">
       <select class="form-control mst-filter input-xlarge lt-ie9-width-auto hide" onchange="this.blur()"
               style="margin: 4px;">

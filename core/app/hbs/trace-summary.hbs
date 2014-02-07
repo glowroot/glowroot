@@ -1,15 +1,23 @@
 {{#if errorMessage}}
-  <strong>ERROR</strong><br>
+  <div>
+    <strong>ERROR</strong>
+  </div>
 {{/if}}
 {{#if active}}
-  <strong>ACTIVE {{#if stuck}}/ STUCK{{/if}}</strong><br>
+  <div>
+    <strong>ACTIVE {{#if stuck}}/ STUCK{{/if}}</strong>
+  </div>
 {{^}}
   {{#if stuck}}
-    <strong>STUCK</strong><br>
+    <div>
+      <strong>STUCK</strong>
+    </div>
   {{/if}}
 {{/if}}
 {{#if background}}
-  <strong>Background</strong><br>
+  <div>
+    <strong>Background</strong>
+  </div>
 {{/if}}
 <div class="second-line-indent">
   {{grouping}}
@@ -19,21 +27,30 @@
     </button>
   {{/if}}
 </div>
-Start: {{date startTime}}
-<br>
-Duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
-<br>
+<div>
+  Start: {{date startTime}}
+</div>
+<div>
+  Duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
+</div>
 {{#if errorMessage}}
-  <div class="second-line-indent"><strong>Error: {{errorMessage}}</strong></div>
+  <div class="second-line-indent">
+    <strong>Error: {{errorMessage}}</strong>
+  </div>
 {{/if}}
 {{#eachKeyValuePair attributes}}
-  <div class="second-line-indent">{{key}}: {{value}}</div>
+  <div class="second-line-indent">
+    {{key}}: {{value}}
+  </div>
 {{/eachKeyValuePair}}
 {{#if userId}}
-  <div class="second-line-indent">User ID: {{userId}}</div>
+  <div class="second-line-indent">
+    User ID: {{userId}}
+  </div>
 {{/if}}
-Breakdown (in milliseconds):
-<br>
+<div>
+  Breakdown (in milliseconds):
+</div>
 <table class="metrics-table indent2" style="border-spacing: 0;">
   <thead>
     <tr>
@@ -47,9 +64,7 @@ Breakdown (in milliseconds):
   <tbody>
     {{#eachMetricOrdered .}}
       <tr class="align-top">
-        <td style="text-align: left;">
-          <div class="second-line-indent">{{name}}</div>
-        </td>
+        <td style="text-align: left;"><div class="second-line-indent">{{name}}</div></td>
         <td>{{nanosToMillis total}}{{#if active}}..{{/if}}</td>
         <td>{{nanosToMillis min}}{{#if minActive}}..{{/if}}</td>
         <td>{{nanosToMillis max}}{{#if maxActive}}..{{/if}}</td>
@@ -58,9 +73,7 @@ Breakdown (in milliseconds):
     {{/eachMetricOrdered}}
     {{#ifMetricsTruncated .}}
       <tr class="align-top">
-        <td style="text-align: left;">
-          <div class="second-line-indent">...</div>
-        </td>
+        <td style="text-align: left;"><div class="second-line-indent">...</div></td>
         <td></td>
         <td></td>
         <td></td>
@@ -70,8 +83,9 @@ Breakdown (in milliseconds):
   </tbody>
 </table>
 {{#ifThreadInfo jvmInfo}}
-  Thread info
-  <br>
+  <div>
+    Thread info
+  </div>
   {{#ifExists jvmInfo.threadCpuTime}}
     <div class="indent2">
       CPU time: {{nanosToMillis jvmInfo.threadCpuTime}} milliseconds
@@ -94,8 +108,9 @@ Breakdown (in milliseconds):
   {{/ifExists}}
 {{/ifThreadInfo}}
 {{#if jvmInfo.garbageCollectorInfos}}
-  GC info
-  <br>
+  <div>
+    GC info
+  </div>
   {{#eachGarbageCollectorInfoOrdered jvmInfo.garbageCollectorInfos}}
     <div class="indent2">
       {{name}}: {{collectionTime}} milliseconds ({{collectionCount}}
