@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,16 +34,14 @@ class ConfigSidebar {
     }
 
     WebElement getGeneralLink() {
-        Utils.waitForAngular(driver);
-        return getSidebar().findElement(linkText("General"));
+        return Utils.withWait(driver, getSidebar(), linkText("General"));
     }
 
     WebElement getPointcutsLink() {
-        Utils.waitForAngular(driver);
-        return getSidebar().findElement(linkText("Pointcuts"));
+        return Utils.withWait(driver, getSidebar(), linkText("Pointcuts"));
     }
 
     private WebElement getSidebar() {
-        return driver.findElement(cssSelector("div.gt-sidebar"));
+        return Utils.withWait(driver, cssSelector("div.gt-sidebar"));
     }
 }

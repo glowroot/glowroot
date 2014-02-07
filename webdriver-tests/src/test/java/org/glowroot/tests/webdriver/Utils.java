@@ -15,12 +15,15 @@
  */
 package org.glowroot.tests.webdriver;
 
-import org.openqa.selenium.JavascriptExecutor;
+import java.util.List;
+
+import com.google.common.base.Function;
+import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 /**
  * @author Trask Stalnaker
@@ -28,16 +31,23 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class Utils {
 
-    public static void waitForAngular(WebDriver driver) {
-        driver.manage().timeouts().setScriptTimeout(30, SECONDS);
-        String javascript = "var callback = arguments[arguments.length - 1];"
-                + "if (window.angular) {"
-                + "  angular.element(document.body).injector().get('$browser')"
-                + "      .notifyWhenNoOutstandingRequests(callback);"
-                + "} else {"
-                + "  callback();"
-                + "}";
-        ((JavascriptExecutor) driver).executeAsyncScript(javascript);
+    public static WebElement withWait(WebDriver driver, By by) {
+        return new WebDriverWait(driver, 30)
+                .until(ExpectedConditions.visibilityOfElementLocated(by));
+    }
+
+    public static WebElement withWait(WebDriver driver, final WebElement element, final By by) {
+        return new WebDriverWait(driver, 30).until(new Function<WebDriver, WebElement>() {
+            @Override
+            public WebElement apply(WebDriver driver) {
+                List<WebElement> elements = element.findElements(by);
+                if (elements.isEmpty()) {
+                    return null;
+                } else {
+                    return elements.get(0);
+                }
+            }
+        });
     }
 
     // WebElement.clear() does not trigger events (e.g. required validation), so need to send

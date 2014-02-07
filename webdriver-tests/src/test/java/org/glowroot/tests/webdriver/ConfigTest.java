@@ -22,8 +22,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.server.SeleniumServer;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
@@ -109,7 +112,7 @@ public class ConfigTest {
         configSidebar.getPointcutsLink().click();
 
         // when
-        createPointcutConfig1(pointcutConfigListPage);
+        createPointcutConfig(pointcutConfigListPage);
 
         // then
         app.openHomePage();
@@ -142,19 +145,20 @@ public class ConfigTest {
         app.openHomePage();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
-        createPointcutConfig1(pointcutConfigListPage);
+        createPointcutConfig(pointcutConfigListPage);
 
         app.openHomePage();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
         PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
+        WebElement typeNameTextField = pointcutConfigSection.getTypeNameTextField();
 
         // when
         Utils.clearInput(pointcutConfigSection.getMetricNameTextField());
         pointcutConfigSection.getDeleteButton().click();
 
         // then
-        assertThat(pointcutConfigListPage.getNumSections()).isEqualTo(0);
+        new WebDriverWait(driver, 30).until(ExpectedConditions.stalenessOf(typeNameTextField));
     }
 
     @Test
@@ -224,7 +228,7 @@ public class ConfigTest {
         assertThat(pointcutConfigSection.getTraceGroupingTextField().isDisplayed()).isFalse();
     }
 
-    private void createPointcutConfig1(PointcutConfigListPage pointcutConfigListPage) {
+    private void createPointcutConfig(PointcutConfigListPage pointcutConfigListPage) {
         pointcutConfigListPage.getAddPointcutButton().click();
         PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
         pointcutConfigSection.getTypeNameTextField().sendKeys("container.AppUnderTest");
@@ -242,6 +246,8 @@ public class ConfigTest {
         pointcutConfigSection.getTraceGroupingTextField().clear();
         pointcutConfigSection.getTraceGroupingTextField().sendKeys("a trace");
         pointcutConfigSection.getAddButton().click();
+        // getSaveButton() waits for the Save button to become visible (after adding is successful)
+        pointcutConfigSection.getSaveButton();
     }
 
     private void createMetricOnlyPointcutConfig(PointcutConfigListPage pointcutConfigListPage) {
@@ -256,6 +262,8 @@ public class ConfigTest {
         pointcutConfigSection.getMetricNameTextField().clear();
         pointcutConfigSection.getMetricNameTextField().sendKeys("a metric");
         pointcutConfigSection.getAddButton().click();
+        // getSaveButton() waits for the Save button to become visible (after adding is successful)
+        pointcutConfigSection.getSaveButton();
     }
 
     private void createMetricAndSpanOnlyPointcutConfig(
@@ -274,5 +282,7 @@ public class ConfigTest {
         pointcutConfigSection.getSpanTextTextField().clear();
         pointcutConfigSection.getSpanTextTextField().sendKeys("a span");
         pointcutConfigSection.getAddButton().click();
+        // getSaveButton() waits for the Save button to become visible (after adding is successful)
+        pointcutConfigSection.getSaveButton();
     }
 }

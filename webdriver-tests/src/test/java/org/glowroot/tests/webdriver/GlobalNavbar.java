@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,11 +33,6 @@ class GlobalNavbar {
     }
 
     WebElement getConfigurationLink() {
-        Utils.waitForAngular(driver);
-        return getNav().findElement(xpath("//li[@gt-item-name='config']//a"));
-    }
-
-    private WebElement getNav() {
-        return driver.findElement(xpath("//nav"));
+        return Utils.withWait(driver, xpath("//nav//li[@gt-item-name='config']//a"));
     }
 }

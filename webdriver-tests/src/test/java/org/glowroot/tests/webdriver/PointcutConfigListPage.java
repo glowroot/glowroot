@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,20 +33,13 @@ class PointcutConfigListPage {
     }
 
     WebElement getAddPointcutButton() {
-        Utils.waitForAngular(driver);
-        WebElement sectionDiv = driver.findElement(xpath("//div[div[h2[text()='New pointcut']]]"));
-        return sectionDiv.findElement(xpath("//button[text()='Add pointcut']"));
-    }
-
-    int getNumSections() {
-        Utils.waitForAngular(driver);
-        return driver.findElements(xpath("(//div[@name='formCtrl'])")).size();
+        return Utils.withWait(driver,
+                xpath("//div[div[h2[text()='New pointcut']]]//button[text()='Add pointcut']"));
     }
 
     PointcutConfigSection getSection(int index) {
-        Utils.waitForAngular(driver);
-        WebElement form = driver.findElement(xpath("(//div[@name='formCtrl'])[" + (index + 1)
-                + "]"));
+        WebElement form = Utils.withWait(driver,
+                xpath("(//div[@name='formCtrl'])[" + (index + 1) + "]"));
         return new PointcutConfigSection(driver, form);
     }
 }

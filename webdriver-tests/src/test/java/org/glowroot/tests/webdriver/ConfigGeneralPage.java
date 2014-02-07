@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.tests.webdriver;
 
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
@@ -33,31 +34,26 @@ class ConfigGeneralPage {
     }
 
     WebElement getEnabledCheckbox() {
-        Utils.waitForAngular(driver);
-        return getForm().findElement(xpath("//div[@gt-label='Enabled']//input"));
+        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Enabled']//input"));
     }
 
     WebElement getStoreThresholdTextField() {
-        Utils.waitForAngular(driver);
-        return getForm().findElement(xpath("//div[@gt-label='Store threshold']//input"));
+        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Store threshold']//input"));
     }
 
     WebElement getStuckThresholdTextField() {
-        Utils.waitForAngular(driver);
-        return getForm().findElement(xpath("//div[@gt-label='Stuck threshold']//input"));
+        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Stuck threshold']//input"));
     }
 
     WebElement getMaxSpansTextField() {
-        Utils.waitForAngular(driver);
-        return getForm().findElement(xpath("//div[@gt-label='Max spans']//input"));
+        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Max spans']//input"));
     }
 
     WebElement getSaveButton() {
-        Utils.waitForAngular(driver);
-        return getForm().findElement(xpath("//div[@gt-label='Save changes']//button"));
+        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Save changes']//button"));
     }
 
-    private WebElement getForm() {
-        return driver.findElement(xpath("//div[@name='formCtrl']"));
+    private WebElement withWait(By by) {
+        return Utils.withWait(driver, by);
     }
 }

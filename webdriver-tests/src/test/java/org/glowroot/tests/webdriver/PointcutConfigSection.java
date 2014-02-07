@@ -15,9 +15,11 @@
  */
 package org.glowroot.tests.webdriver;
 
+import com.google.common.base.Function;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import static org.openqa.selenium.By.xpath;
 
@@ -36,74 +38,73 @@ class PointcutConfigSection {
     }
 
     WebElement getTypeNameTextField() {
-        Utils.waitForAngular(driver);
-        return form.findElement(xpath("//div[label[text()='Type name']]//input"));
+        return withWait(xpath(".//div[label[text()='Type name']]//input"));
     }
 
     WebElement getTypeNameAutoCompleteItem(String typeName) {
-        Utils.waitForAngular(driver);
-        By xpath = xpath("//div[label[text()='Type name']]//ul/li/a");
-        for (WebElement element : form.findElements(xpath)) {
-            if (element.getText().equals(typeName)) {
-                return element;
-            }
-        }
-        throw new IllegalStateException("Could not find typeahead option: " + typeName);
+        return getTypeAheadItem("Type name", typeName);
     }
 
     WebElement getMethodNameTextField() {
-        Utils.waitForAngular(driver);
-        return form.findElement(xpath("//div[label[text()='Method name']]//input"));
+        return withWait(xpath(".//div[label[text()='Method name']]//input"));
     }
 
     WebElement getMethodNameAutoCompleteItem(String methodName) {
-        Utils.waitForAngular(driver);
-        By xpath = xpath("//div[label[text()='Method name']]//ul/li/a");
-        for (WebElement element : form.findElements(xpath)) {
-            if (element.getText().equals(methodName)) {
-                return element;
-            }
-        }
-        throw new IllegalStateException("Could not find typeahead option: " + methodName);
+        return getTypeAheadItem("Method name", methodName);
     }
 
     WebElement getMetricCheckbox() {
-        Utils.waitForAngular(driver);
-        return form.findElement(xpath("//label[text()='Metric']/input"));
+        return withWait(xpath(".//label[text()='Metric']/input"));
     }
 
     WebElement getSpanCheckbox() {
-        Utils.waitForAngular(driver);
-        return form.findElement(xpath("//label[span[text()='Span']]/input"));
+        return withWait(xpath(".//label[span[text()='Span']]/input"));
     }
 
     WebElement getTraceCheckbox() {
-        Utils.waitForAngular(driver);
-        return form.findElement(xpath("//label[span[text()='Trace']]/input"));
+        return withWait(xpath(".//label[span[text()='Trace']]/input"));
     }
 
     WebElement getMetricNameTextField() {
-        Utils.waitForAngular(driver);
-        return form.findElement(xpath("//div[label[text()='Metric name']]//input"));
+        return withWait(xpath(".//div[label[text()='Metric name']]//input"));
     }
 
     WebElement getSpanTextTextField() {
-        Utils.waitForAngular(driver);
-        return form.findElement(xpath("//div[label[text()='Span text']]//textarea"));
+        return withWait(xpath(".//div[label[text()='Span text']]//textarea"));
     }
 
     WebElement getTraceGroupingTextField() {
-        Utils.waitForAngular(driver);
-        return form.findElement(xpath("//div[label[text()='Trace grouping']]//textarea"));
+        return withWait(xpath(".//div[label[text()='Trace grouping']]//textarea"));
     }
 
     WebElement getAddButton() {
-        Utils.waitForAngular(driver);
-        return form.findElement(xpath("//button[text()='Add']"));
+        return withWait(xpath(".//button[text()='Add']"));
+    }
+
+    WebElement getSaveButton() {
+        return withWait(xpath(".//button[text()='Save']"));
     }
 
     WebElement getDeleteButton() {
-        Utils.waitForAngular(driver);
-        return form.findElement(xpath("//button[text()='Delete']"));
+        return withWait(xpath(".//button[text()='Delete']"));
+    }
+
+    private WebElement withWait(By by) {
+        return Utils.withWait(driver, form, by);
+    }
+
+    private WebElement getTypeAheadItem(String label, final String text) {
+        final By xpath = xpath(".//div[label[text()='" + label + "']]//ul/li/a");
+        return new WebDriverWait(driver, 30).until(new Function<WebDriver, WebElement>() {
+            @Override
+            public WebElement apply(WebDriver driver) {
+                for (WebElement element : form.findElements(xpath)) {
+                    if (element.getText().equals(text)) {
+                        return element;
+                    }
+                }
+                return null;
+            }
+        });
     }
 }
