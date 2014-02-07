@@ -15,8 +15,9 @@
  */
 package org.glowroot.tests.webdriver;
 
-import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import org.openqa.selenium.By;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -41,16 +42,16 @@ class PointcutConfigSection {
         return withWait(xpath(".//div[label[text()='Type name']]//input"));
     }
 
-    WebElement getTypeNameAutoCompleteItem(String typeName) {
-        return getTypeAheadItem("Type name", typeName);
+    void clickTypeNameAutoCompleteItem(String typeName) {
+        clickTypeAheadItem("Type name", typeName);
     }
 
     WebElement getMethodNameTextField() {
         return withWait(xpath(".//div[label[text()='Method name']]//input"));
     }
 
-    WebElement getMethodNameAutoCompleteItem(String methodName) {
-        return getTypeAheadItem("Method name", methodName);
+    void clickMethodNameAutoCompleteItem(String methodName) {
+        clickTypeAheadItem("Method name", methodName);
     }
 
     WebElement getMetricCheckbox() {
@@ -93,17 +94,23 @@ class PointcutConfigSection {
         return Utils.withWait(driver, form, by);
     }
 
-    private WebElement getTypeAheadItem(String label, final String text) {
+    private void clickTypeAheadItem(String label, final String text) {
         final By xpath = xpath(".//div[label[text()='" + label + "']]//ul/li/a");
-        return new WebDriverWait(driver, 30).until(new Function<WebDriver, WebElement>() {
+        new WebDriverWait(driver, 30).until(new Predicate<WebDriver>() {
             @Override
-            public WebElement apply(WebDriver driver) {
+            public boolean apply(WebDriver driver) {
                 for (WebElement element : form.findElements(xpath)) {
                     if (element.getText().equals(text)) {
-                        return element;
+                        try {
+                            element.click();
+                            return true;
+                        } catch (StaleElementReferenceException e) {
+                            // type ahead was catching up and replaced li with a new one
+                            return false;
+                        }
                     }
                 }
-                return null;
+                return false;
             }
         });
     }
