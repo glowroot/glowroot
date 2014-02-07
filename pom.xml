@@ -43,6 +43,7 @@
     <module>ui-sandbox</module>
     <module>plugins/servlet-plugin</module>
     <module>plugins/jdbc-plugin</module>
+    <module>plugins/logger-plugin</module>
     <module>distribution</module>
   </modules>
 

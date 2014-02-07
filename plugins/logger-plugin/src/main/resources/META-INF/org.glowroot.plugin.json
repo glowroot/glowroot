@@ -1,0 +1,8 @@
+{
+  "name": "Logger Plugin",
+  "id": "logger",
+  "version": "0.5-SNAPSHOT",
+  "aspects": [
+    "org.glowroot.plugin.logger.Log4jAspect"
+  ]
+}
