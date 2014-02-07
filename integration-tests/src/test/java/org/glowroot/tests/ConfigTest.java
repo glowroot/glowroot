@@ -277,7 +277,7 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(UserOverridesConfig config) {
-        config.setUserId(config.getUserId() + "x");
+        config.setUser(config.getUser() + "x");
         config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
         config.setFineProfiling(!config.isFineProfiling());
     }

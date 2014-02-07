@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class UserIdTest {
+public class UserTest {
 
     private static final String PLUGIN_ID = "servlet";
 
@@ -55,132 +55,132 @@ public class UserIdTest {
     }
 
     @Test
-    public void testHasSessionUserIdAttribute() throws Exception {
+    public void testHasSessionUserAttribute() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridattr");
+                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "userattr");
         // when
-        container.executeAppUnderTest(HasSessionUserIdAttribute.class);
+        container.executeAppUnderTest(HasSessionUserAttribute.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUserId()).isEqualTo("abc");
+        assertThat(trace.getUser()).isEqualTo("abc");
     }
 
     @Test
-    public void testSetSessionUserIdAttribute() throws Exception {
+    public void testSetSessionUserAttribute() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridattr");
+                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "userattr");
         // when
-        container.executeAppUnderTest(SetSessionUserIdAttribute.class);
+        container.executeAppUnderTest(SetSessionUserAttribute.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUserId()).isEqualTo("abc");
+        assertThat(trace.getUser()).isEqualTo("abc");
     }
 
     @Test
-    public void testSetSessionUserIdAttributeNull() throws Exception {
+    public void testSetSessionUserAttributeNull() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridattr");
+                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "userattr");
         // when
-        container.executeAppUnderTest(SetSessionUserIdAttributeNull.class);
+        container.executeAppUnderTest(SetSessionUserAttributeNull.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        // this is intentional, setting user id attribute to null shouldn't clear out user id for
-        // that particular request (since the request was in fact, originally, for that user id)
-        assertThat(trace.getUserId()).isEqualTo("something");
+        // this is intentional, setting user attribute to null shouldn't clear out user for
+        // that particular request (since the request was in fact, originally, for that user)
+        assertThat(trace.getUser()).isEqualTo("something");
     }
 
     @Test
-    public void testHasNestedSessionUserIdAttributePath() throws Exception {
+    public void testHasNestedSessionUserAttributePath() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridone.two");
+                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "userone.two");
         // when
-        container.executeAppUnderTest(HasNestedSessionUserIdAttribute.class);
+        container.executeAppUnderTest(HasNestedSessionUserAttribute.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUserId()).isEqualTo("xyz");
+        assertThat(trace.getUser()).isEqualTo("xyz");
     }
 
     @Test
-    public void testSetNestedSessionUserIdAttributePath() throws Exception {
+    public void testSetNestedSessionUserAttributePath() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridone.two");
+                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "userone.two");
         // when
-        container.executeAppUnderTest(SetNestedSessionUserIdAttribute.class);
+        container.executeAppUnderTest(SetNestedSessionUserAttribute.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUserId()).isEqualTo("xyz");
+        assertThat(trace.getUser()).isEqualTo("xyz");
     }
 
     @Test
-    public void testHasMissingSessionUserIdAttribute() throws Exception {
+    public void testHasMissingSessionUserAttribute() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "missinguseridattr");
+                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "missinguserattr");
         // when
-        container.executeAppUnderTest(HasSessionUserIdAttribute.class);
+        container.executeAppUnderTest(HasSessionUserAttribute.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUserId()).isNull();
+        assertThat(trace.getUser()).isNull();
     }
 
     @Test
-    public void testHasMissingNestedSessionUserIdAttributePath() throws Exception {
+    public void testHasMissingNestedSessionUserAttributePath() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridone.missingtwo");
+                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "userone.missingtwo");
         // when
-        container.executeAppUnderTest(HasNestedSessionUserIdAttribute.class);
+        container.executeAppUnderTest(HasNestedSessionUserAttribute.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUserId()).isNull();
+        assertThat(trace.getUser()).isNull();
     }
 
     @SuppressWarnings("serial")
-    public static class HasSessionUserIdAttribute extends TestServlet {
+    public static class HasSessionUserAttribute extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("useridattr", "abc");
+            request.getSession().setAttribute("userattr", "abc");
         }
     }
 
     @SuppressWarnings("serial")
-    public static class SetSessionUserIdAttribute extends TestServlet {
+    public static class SetSessionUserAttribute extends TestServlet {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("useridattr", "abc");
+            request.getSession().setAttribute("userattr", "abc");
         }
     }
 
     @SuppressWarnings("serial")
-    public static class SetSessionUserIdAttributeNull extends TestServlet {
+    public static class SetSessionUserAttributeNull extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("useridattr", "something");
+            request.getSession().setAttribute("userattr", "something");
         }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("useridattr", null);
+            request.getSession().setAttribute("userattr", null);
         }
     }
 
     @SuppressWarnings("serial")
-    public static class HasNestedSessionUserIdAttribute extends TestServlet {
+    public static class HasNestedSessionUserAttribute extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("useridone", new NestedTwo("xyz"));
+            request.getSession().setAttribute("userone", new NestedTwo("xyz"));
         }
     }
 
     @SuppressWarnings("serial")
-    public static class SetNestedSessionUserIdAttribute extends TestServlet {
+    public static class SetNestedSessionUserAttribute extends TestServlet {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("useridone", new NestedTwo("xyz"));
+            request.getSession().setAttribute("userone", new NestedTwo("xyz"));
         }
     }
 

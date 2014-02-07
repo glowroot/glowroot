@@ -160,7 +160,7 @@ public class ProfilingTest {
         container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
         UserOverridesConfig userOverridesConfig =
                 container.getConfigService().getUserOverridesConfig();
-        userOverridesConfig.setUserId("able");
+        userOverridesConfig.setUser("able");
         userOverridesConfig.setStoreThresholdMillis(0);
         userOverridesConfig.setFineProfiling(true);
         container.getConfigService().updateUserOverridesConfig(userOverridesConfig);
@@ -260,8 +260,8 @@ public class ProfilingTest {
         }
         @Override
         public void traceMarker() throws InterruptedException {
-            // normally the plugin/aspect should set the user id, this is just a shortcut for test
-            pluginServices.setUserId("able");
+            // normally the plugin/aspect should set the user, this is just a shortcut for test
+            pluginServices.setUser("able");
             Threads.moreAccurateSleep(105);
         }
     }

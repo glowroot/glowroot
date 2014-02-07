@@ -80,7 +80,7 @@ public class Trace {
     private volatile String errorMessage;
 
     @Nullable
-    private volatile String userId;
+    private volatile String user;
 
     // lazy loaded to reduce memory when attributes are not used
     @GuardedBy("attributes")
@@ -180,8 +180,8 @@ public class Trace {
     }
 
     @Nullable
-    public String getUserId() {
-        return userId;
+    public String getUser() {
+        return user;
     }
 
     public ImmutableList<TraceAttribute> getAttributes() {
@@ -288,8 +288,8 @@ public class Trace {
         this.grouping = grouping;
     }
 
-    public void setUserId(@Nullable String userId) {
-        this.userId = userId;
+    public void setUser(@Nullable String user) {
+        this.user = user;
     }
 
     public void setAttribute(String pluginId, String name, @Nullable String value) {
@@ -423,7 +423,7 @@ public class Trace {
                 .add("stuck", stuck)
                 .add("background", background)
                 .add("attributes", attributes)
-                .add("userId", userId)
+                .add("user", user)
                 .add("metrics", metrics)
                 .add("jvmInfo", jvmInfo)
                 .add("rootSpan", rootSpan)

@@ -81,7 +81,7 @@ public class SnapshotDaoTest {
         assertThat(snapshot2.getCaptureTime()).isEqualTo(snapshot.getCaptureTime());
         assertThat(snapshot2.getDuration()).isEqualTo(snapshot.getDuration());
         assertThat(snapshot2.getGrouping()).isEqualTo("test grouping");
-        assertThat(snapshot2.getUserId()).isEqualTo(snapshot.getUserId());
+        assertThat(snapshot2.getUser()).isEqualTo(snapshot.getUser());
     }
 
     @Test

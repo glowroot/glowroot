@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 public class UserOverridesConfig {
 
     @Nullable
-    private String userId;
+    private String user;
     private int storeThresholdMillis;
     private boolean fineProfiling;
 
@@ -42,12 +42,12 @@ public class UserOverridesConfig {
     }
 
     @Nullable
-    public String getUserId() {
-        return userId;
+    public String getUser() {
+        return user;
     }
 
-    public void setUserId(@Nullable String userId) {
-        this.userId = userId;
+    public void setUser(@Nullable String user) {
+        this.user = user;
     }
 
     public int getStoreThresholdMillis() {
@@ -78,7 +78,7 @@ public class UserOverridesConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(userId, that.userId)
+            return Objects.equal(user, that.user)
                     && Objects.equal(storeThresholdMillis, that.storeThresholdMillis)
                     && Objects.equal(fineProfiling, that.fineProfiling);
         }
@@ -91,14 +91,14 @@ public class UserOverridesConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(userId, storeThresholdMillis, fineProfiling);
+        return Objects.hashCode(user, storeThresholdMillis, fineProfiling);
     }
 
     @Override
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("userId", userId)
+                .add("user", user)
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("fineProfiling", fineProfiling)
                 .add("version", version)
@@ -106,7 +106,7 @@ public class UserOverridesConfig {
     }
 
     @JsonCreator
-    static UserOverridesConfig readValue(@JsonProperty("userId") @Nullable String userId,
+    static UserOverridesConfig readValue(@JsonProperty("user") @Nullable String user,
             @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
             @JsonProperty("fineProfiling") @Nullable Boolean fineProfiling,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
@@ -114,7 +114,7 @@ public class UserOverridesConfig {
         checkRequiredProperty(fineProfiling, "fineProfiling");
         checkRequiredProperty(version, "version");
         UserOverridesConfig config = new UserOverridesConfig(version);
-        config.setUserId(userId);
+        config.setUser(user);
         config.setStoreThresholdMillis(storeThresholdMillis);
         config.setFineProfiling(fineProfiling);
         return config;

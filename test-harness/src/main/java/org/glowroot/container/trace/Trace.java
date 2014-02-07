@@ -52,11 +52,11 @@ public class Trace {
     private final String grouping;
     @Nullable
     private final String errorMessage;
+    @Nullable
+    private final String user;
     // can't use ImmutableMap since attributes can have null values
     @Immutable
     private final Map<String, /*@Nullable*/String> attributes;
-    @Nullable
-    private final String userId;
     private final ImmutableList<Metric> metrics;
     private final JvmInfo jvmInfo;
     @Nullable
@@ -70,7 +70,7 @@ public class Trace {
 
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, boolean background, String grouping, @Nullable String errorMessage,
-            @ReadOnly Map<String, /*@Nullable*/String> attributes, @Nullable String userId,
+            @Nullable String user, @ReadOnly Map<String, /*@Nullable*/String> attributes,
             @ReadOnly List<Metric> metrics, JvmInfo jvmInfo, @ReadOnly @Nullable List<Span> spans,
             @Nullable MergedStackTreeNode coarseMergedStackTree,
             @Nullable MergedStackTreeNode fineMergedStackTree, boolean summary) {
@@ -83,8 +83,8 @@ public class Trace {
         this.background = background;
         this.grouping = grouping;
         this.errorMessage = errorMessage;
+        this.user = user;
         this.attributes = attributes;
-        this.userId = userId;
         this.metrics = ImmutableList.copyOf(metrics);
         this.jvmInfo = jvmInfo;
         this.spans = spans == null ? null : ImmutableList.copyOf(spans);
@@ -130,15 +130,15 @@ public class Trace {
         return errorMessage;
     }
 
+    @Nullable
+    public String getUser() {
+        return user;
+    }
+
     // can't use ImmutableMap since attributes can have null values
     @Immutable
     public Map<String, /*@Nullable*/String> getAttributes() {
         return attributes;
-    }
-
-    @Nullable
-    public String getUserId() {
-        return userId;
     }
 
     public ImmutableList<Metric> getMetrics() {
@@ -212,8 +212,8 @@ public class Trace {
                 .add("background", background)
                 .add("grouping", grouping)
                 .add("errorMessage", errorMessage)
+                .add("user", user)
                 .add("attributes", attributes)
-                .add("userId", userId)
                 .add("metrics", metrics)
                 .add("jvmInfo", jvmInfo)
                 .add("spans", spans)
@@ -234,8 +234,8 @@ public class Trace {
             @JsonProperty("background") @Nullable Boolean background,
             @JsonProperty("grouping") @Nullable String grouping,
             @JsonProperty("errorMessage") @Nullable String errorMessage,
+            @JsonProperty("user") @Nullable String user,
             @JsonProperty("attributes") @Nullable Map<String, /*@Nullable*/String> attributes,
-            @JsonProperty("userId") @Nullable String userId,
             @JsonProperty("metrics") @Nullable List<Metric> metrics,
             @JsonProperty("jvmInfo") @Nullable JvmInfo jvmInfo,
             @JsonProperty("spans") @Nullable List<Span> spans,
@@ -254,7 +254,7 @@ public class Trace {
         checkRequiredProperty(metrics, "metrics");
         checkRequiredProperty(jvmInfo, "jvmInfo");
         return new Trace(id, active, stuck, startTime, captureTime, duration, background, grouping,
-                errorMessage, nullToEmpty(attributes), userId, metrics, jvmInfo, spans,
+                errorMessage, user, nullToEmpty(attributes), metrics, jvmInfo, spans,
                 coarseMergedStackTree, fineMergedStackTree, nullToFalse(summary));
     }
 }

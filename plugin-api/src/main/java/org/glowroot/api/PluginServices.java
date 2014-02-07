@@ -271,28 +271,28 @@ public abstract class PluginServices {
     public abstract void setGrouping(String grouping);
 
     /**
-     * Sets the user id attribute on the trace. This attribute is shared across all plugins, and is
+     * Sets the user attribute on the trace. This attribute is shared across all plugins, and is
      * generally set by the plugin that initiated the trace, but can be set by other plugins if
      * needed.
      * 
-     * The user id is used in a few ways:
+     * The user is used in a few ways:
      * <ul>
-     * <li>The user id is displayed when viewing a trace summary on the trace explorer page
-     * <li>Traces can be filtered by their user id on the trace explorer page
+     * <li>The user is displayed when viewing a trace summary on the trace explorer page
+     * <li>Traces can be filtered by their user on the trace explorer page
      * <li>Glowroot can be configured (using the configuration page) to capture traces for a
-     * specific user id using a lower threshold than normal (e.g. threshold=0 to capture all
-     * requests for a specific user id)
+     * specific user using a lower threshold than normal (e.g. threshold=0 to capture all requests
+     * for a specific user)
      * <li>Glowroot can be configured (using the configuration page) to perform fine-grained
-     * profiling on all traces for a specific user id
+     * profiling on all traces for a specific user
      * </ul>
      * 
-     * If fine-grained profiling is enabled for a specific user id, this is activated (if the
-     * {@code userId} matches) at the time that this method is called, so it is best to call this
+     * If fine-grained profiling is enabled for a specific user, this is activated (if the
+     * {@code user} matches) at the time that this method is called, so it is best to call this
      * method early in the trace.
      * 
-     * @param userId
+     * @param user
      */
-    public abstract void setUserId(@Nullable String userId);
+    public abstract void setUser(@Nullable String user);
 
     /**
      * Adds an attribute on the current trace with the specified {@code name} and {@code value}. A
@@ -431,7 +431,7 @@ public abstract class PluginServices {
         @Override
         public void setGrouping(String grouping) {}
         @Override
-        public void setUserId(@Nullable String userId) {}
+        public void setUser(@Nullable String user) {}
         @Override
         public void setTraceAttribute(String name, @Nullable String value) {}
         @Override

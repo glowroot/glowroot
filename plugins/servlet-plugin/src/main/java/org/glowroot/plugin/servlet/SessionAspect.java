@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ public class SessionAspect {
             // (which per the javadoc is the same as calling removeAttribute())
             ServletMessageSupplier messageSupplier = getServletMessageSupplier(session);
             if (messageSupplier != null) {
-                updateUserIdIfApplicable(name, value, session);
+                updateUserIfApplicable(name, value, session);
                 updateSessionAttributesIfApplicable(messageSupplier, name, value, session);
             }
         }
@@ -148,22 +148,22 @@ public class SessionAspect {
         }
     }
 
-    private static void updateUserIdIfApplicable(String name, @Nullable Object value,
+    private static void updateUserIfApplicable(String name, @Nullable Object value,
             HttpSession session) {
         if (value == null) {
-            // if user id value is set to null, don't clear it
+            // if user value is set to null, don't clear it
             return;
         }
-        String sessionUserIdAttributePath = ServletPluginProperties.sessionUserIdAttributePath();
-        if (!sessionUserIdAttributePath.equals("")) {
-            // capture user id now, don't use a lazy supplier
-            if (sessionUserIdAttributePath.equals(name)) {
-                pluginServices.setUserId(value.toString());
-            } else if (sessionUserIdAttributePath.startsWith(name + ".")) {
-                String userId = session.getSessionAttributeTextValue(sessionUserIdAttributePath);
-                if (userId != null) {
-                    // if user id is null, don't clear it by setting Suppliers.ofInstance(null)
-                    pluginServices.setUserId(userId);
+        String sessionUserAttributePath = ServletPluginProperties.sessionUserAttributePath();
+        if (!sessionUserAttributePath.equals("")) {
+            // capture user now, don't use a lazy supplier
+            if (sessionUserAttributePath.equals(name)) {
+                pluginServices.setUser(value.toString());
+            } else if (sessionUserAttributePath.startsWith(name + ".")) {
+                String user = session.getSessionAttributeTextValue(sessionUserAttributePath);
+                if (user != null) {
+                    // if user is null, don't clear it by setting Suppliers.ofInstance(null)
+                    pluginServices.setUser(user);
                 }
             }
         }

@@ -42,15 +42,15 @@ public class TracePointQuery {
     @Nullable
     private final String grouping;
     @Nullable
-    private final StringComparator userIdComparator;
+    private final StringComparator userComparator;
     @Nullable
-    private final String userId;
+    private final String user;
     private final int limit;
 
     public TracePointQuery(long captureTimeFrom, long captureTimeTo, long durationLow,
             long durationHigh, @Nullable Boolean background, boolean errorOnly, boolean fineOnly,
             @Nullable StringComparator groupingComparator, @Nullable String grouping,
-            @Nullable StringComparator userIdComparator, @Nullable String userId, int limit) {
+            @Nullable StringComparator userComparator, @Nullable String user, int limit) {
         this.captureTimeFrom = captureTimeFrom;
         this.captureTimeTo = captureTimeTo;
         this.durationLow = durationLow;
@@ -60,8 +60,8 @@ public class TracePointQuery {
         this.fineOnly = fineOnly;
         this.groupingComparator = groupingComparator;
         this.grouping = grouping;
-        this.userIdComparator = userIdComparator;
-        this.userId = userId;
+        this.userComparator = userComparator;
+        this.user = user;
         this.limit = limit;
     }
 
@@ -97,9 +97,9 @@ public class TracePointQuery {
             sql += " and upper(grouping) " + groupingComparator.getComparator() + " ?";
             args.add(groupingComparator.formatParameter(grouping.toUpperCase(Locale.ENGLISH)));
         }
-        if (userIdComparator != null && userId != null) {
-            sql += " and upper(user_id) " + userIdComparator.getComparator() + " ?";
-            args.add(userIdComparator.formatParameter(userId.toUpperCase(Locale.ENGLISH)));
+        if (userComparator != null && user != null) {
+            sql += " and upper(user) " + userComparator.getComparator() + " ?";
+            args.add(userComparator.formatParameter(user.toUpperCase(Locale.ENGLISH)));
         }
         sql += " order by duration desc limit ?";
         args.add(limit);
@@ -119,8 +119,8 @@ public class TracePointQuery {
                 .add("fineOnly", fineOnly)
                 .add("groupingComparator", groupingComparator)
                 .add("grouping", grouping)
-                .add("userIdComparator", userIdComparator)
-                .add("userId", userId)
+                .add("userComparator", userComparator)
+                .add("user", user)
                 .add("limit", limit)
                 .toString();
     }

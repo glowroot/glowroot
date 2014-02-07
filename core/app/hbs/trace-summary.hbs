@@ -38,16 +38,16 @@
     <strong>Error: {{errorMessage}}</strong>
   </div>
 {{/if}}
+{{#if user}}
+  <div class="second-line-indent">
+    User: {{user}}
+  </div>
+{{/if}}
 {{#eachKeyValuePair attributes}}
   <div class="second-line-indent">
     {{key}}: {{value}}
   </div>
 {{/eachKeyValuePair}}
-{{#if userId}}
-  <div class="second-line-indent">
-    User ID: {{userId}}
-  </div>
-{{/if}}
 <div>
   Breakdown (in milliseconds):
 </div>

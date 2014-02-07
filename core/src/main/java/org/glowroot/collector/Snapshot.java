@@ -16,7 +16,6 @@
 package org.glowroot.collector;
 
 import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.EnsuresNonNull;
 import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
 import checkers.nullness.quals.RequiresNonNull;
@@ -44,9 +43,9 @@ public class Snapshot {
     @Nullable
     private final String errorMessage;
     @Nullable
-    private final String attributes; // json data
+    private final String user;
     @Nullable
-    private final String userId;
+    private final String attributes; // json data
     @Nullable
     private final String metrics; // json data
     @Nullable
@@ -62,7 +61,7 @@ public class Snapshot {
 
     private Snapshot(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, boolean background, String grouping, @Nullable String errorMessage,
-            @Nullable String attributes, @Nullable String userId, @Nullable String metrics,
+            @Nullable String user, @Nullable String attributes, @Nullable String metrics,
             @Nullable String jvmInfo, @Immutable @Nullable CharSource spans,
             @Immutable @Nullable CharSource coarseMergedStackTree,
             @Immutable @Nullable CharSource fineMergedStackTree) {
@@ -74,9 +73,9 @@ public class Snapshot {
         this.duration = duration;
         this.background = background;
         this.grouping = grouping;
-        this.attributes = attributes;
-        this.userId = userId;
         this.errorMessage = errorMessage;
+        this.user = user;
+        this.attributes = attributes;
         this.metrics = metrics;
         this.jvmInfo = jvmInfo;
         this.spans = spans;
@@ -122,13 +121,13 @@ public class Snapshot {
     }
 
     @Nullable
-    public String getAttributes() {
-        return attributes;
+    public String getUser() {
+        return user;
     }
 
     @Nullable
-    public String getUserId() {
-        return userId;
+    public String getAttributes() {
+        return attributes;
     }
 
     @Nullable
@@ -172,8 +171,8 @@ public class Snapshot {
                 .add("background", background)
                 .add("grouping", grouping)
                 .add("errorMessage", errorMessage)
+                .add("user", user)
                 .add("attributes", attributes)
-                .add("userId", userId)
                 .add("metrics", metrics)
                 .toString();
     }
@@ -197,9 +196,9 @@ public class Snapshot {
         @Nullable
         private String errorMessage;
         @Nullable
-        private String attributes;
+        private String user;
         @Nullable
-        private String userId;
+        private String attributes;
         @Nullable
         private String metrics;
         @Nullable
@@ -216,7 +215,6 @@ public class Snapshot {
 
         private Builder() {}
 
-        @EnsuresNonNull("id")
         public Builder id(String id) {
             this.id = id;
             return this;
@@ -252,7 +250,6 @@ public class Snapshot {
             return this;
         }
 
-        @EnsuresNonNull("grouping")
         public Builder grouping(String grouping) {
             this.grouping = grouping;
             return this;
@@ -263,13 +260,13 @@ public class Snapshot {
             return this;
         }
 
-        public Builder attributes(@Nullable String attributes) {
-            this.attributes = attributes;
+        public Builder user(@Nullable String user) {
+            this.user = user;
             return this;
         }
 
-        public Builder userId(@Nullable String userId) {
-            this.userId = userId;
+        public Builder attributes(@Nullable String attributes) {
+            this.attributes = attributes;
             return this;
         }
 
@@ -302,7 +299,7 @@ public class Snapshot {
         @RequiresNonNull({"id", "grouping"})
         public Snapshot build() {
             return new Snapshot(id, active, stuck, startTime, captureTime, duration, background,
-                    grouping, errorMessage, attributes, userId, metrics, jvmInfo, spans,
+                    grouping, errorMessage, user, attributes, metrics, jvmInfo, spans,
                     coarseMergedStackTree, fineMergedStackTree);
         }
     }

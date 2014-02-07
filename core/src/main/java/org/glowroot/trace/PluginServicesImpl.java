@@ -310,12 +310,12 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setUserId(@Nullable String userId) {
+    public void setUser(@Nullable String user) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
-            trace.setUserId(userId);
-            if (userId != null && trace.getFineProfilerScheduledRunnable() == null) {
-                fineProfileScheduler.maybeScheduleFineProfilingUsingUserId(trace, userId);
+            trace.setUser(user);
+            if (user != null && trace.getFineProfilerScheduledRunnable() == null) {
+                fineProfileScheduler.maybeScheduleFineProfilingUsingUser(trace, user);
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,10 +53,10 @@ class FineProfileScheduler {
         this.random = random;
     }
 
-    void maybeScheduleFineProfilingUsingUserId(Trace trace, String userId) {
+    void maybeScheduleFineProfilingUsingUser(Trace trace, String user) {
         UserOverridesConfig userOverridesConfig = configService.getUserOverridesConfig();
-        String overrideUserId = userOverridesConfig.getUserId();
-        if (userId.equals(overrideUserId) && userOverridesConfig.isFineProfiling()) {
+        String overrideUser = userOverridesConfig.getUser();
+        if (user.equals(overrideUser) && userOverridesConfig.isFineProfiling()) {
             scheduleProfiling(trace);
         }
     }

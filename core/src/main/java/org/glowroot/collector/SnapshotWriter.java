@@ -66,7 +66,7 @@ public class SnapshotWriter {
         sb.append("\"");
         writeErrorMessage(snapshot);
         writeAttributes(snapshot);
-        writeUserId(snapshot);
+        writeUser(snapshot);
         writeMetrics(snapshot);
         sb.append(",\"jvmInfo\":");
         sb.append(snapshot.getJvmInfo());
@@ -98,11 +98,11 @@ public class SnapshotWriter {
         }
     }
 
-    private void writeUserId(Snapshot snapshot) {
-        String userId = snapshot.getUserId();
-        if (userId != null) {
-            sb.append(",\"userId\":\"");
-            sb.append(JsonStringEncoder.getInstance().quoteAsString(userId));
+    private void writeUser(Snapshot snapshot) {
+        String user = snapshot.getUser();
+        if (user != null) {
+            sb.append(",\"user\":\"");
+            sb.append(JsonStringEncoder.getInstance().quoteAsString(user));
             sb.append("\"");
         }
     }

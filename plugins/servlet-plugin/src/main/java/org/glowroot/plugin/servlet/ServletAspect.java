@@ -90,13 +90,12 @@ public class ServletAspect {
             topLevel.set(messageSupplier);
             Span span = pluginServices.startTrace(requestUri, messageSupplier, metricName);
             if (session != null) {
-                String sessionUserIdAttributePath =
-                        ServletPluginProperties.sessionUserIdAttributePath();
-                if (!sessionUserIdAttributePath.equals("")) {
-                    // capture user id now, don't use a lazy supplier
-                    String userId =
-                            session.getSessionAttributeTextValue(sessionUserIdAttributePath);
-                    pluginServices.setUserId(userId);
+                String sessionUserAttributePath =
+                        ServletPluginProperties.sessionUserAttributePath();
+                if (!sessionUserAttributePath.equals("")) {
+                    // capture user now, don't use a lazy supplier
+                    String user = session.getSessionAttributeTextValue(sessionUserAttributePath);
+                    pluginServices.setUser(user);
                 }
             }
             return span;

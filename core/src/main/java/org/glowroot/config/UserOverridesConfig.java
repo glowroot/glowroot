@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import org.glowroot.markers.UsedByJsonBinding;
 public class UserOverridesConfig {
 
     @Nullable
-    private final String userId;
+    private final String user;
     // store threshold of -1 means use general config store threshold
     // for session traces, the real threshold is the minimum of this and the general threshold
     private final int storeThresholdMillis;
@@ -43,10 +43,10 @@ public class UserOverridesConfig {
     private final String version;
 
     static UserOverridesConfig getDefault() {
-        final String userId = null;
+        final String user = null;
         final int storeThresholdMillis = 0;
         final boolean fineProfiling = true;
-        return new UserOverridesConfig(userId, storeThresholdMillis, fineProfiling);
+        return new UserOverridesConfig(user, storeThresholdMillis, fineProfiling);
     }
 
     public static Overlay overlay(UserOverridesConfig base) {
@@ -54,17 +54,17 @@ public class UserOverridesConfig {
     }
 
     @VisibleForTesting
-    public UserOverridesConfig(@Nullable String userId, int storeThresholdMillis,
+    public UserOverridesConfig(@Nullable String user, int storeThresholdMillis,
             boolean fineProfiling) {
-        this.userId = userId;
+        this.user = user;
         this.storeThresholdMillis = storeThresholdMillis;
         this.fineProfiling = fineProfiling;
-        version = VersionHashes.sha1(userId, storeThresholdMillis, fineProfiling);
+        version = VersionHashes.sha1(user, storeThresholdMillis, fineProfiling);
     }
 
     @Nullable
-    public String getUserId() {
-        return userId;
+    public String getUser() {
+        return user;
     }
 
     public int getStoreThresholdMillis() {
@@ -84,7 +84,7 @@ public class UserOverridesConfig {
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("userId", userId)
+                .add("user", user)
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("fineProfiling", fineProfiling)
                 .add("version", version)
@@ -96,17 +96,17 @@ public class UserOverridesConfig {
     public static class Overlay {
 
         @Nullable
-        private String userId;
+        private String user;
         private int storeThresholdMillis;
         private boolean fineProfiling;
 
         private Overlay(UserOverridesConfig base) {
-            userId = base.userId;
+            user = base.user;
             storeThresholdMillis = base.storeThresholdMillis;
             fineProfiling = base.fineProfiling;
         }
-        public void setUserId(@Nullable String userId) {
-            this.userId = userId;
+        public void setUser(@Nullable String user) {
+            this.user = user;
         }
         public void setStoreThresholdMillis(int storeThresholdMillis) {
             this.storeThresholdMillis = storeThresholdMillis;
@@ -115,7 +115,7 @@ public class UserOverridesConfig {
             this.fineProfiling = fineProfiling;
         }
         public UserOverridesConfig build() {
-            return new UserOverridesConfig(userId, storeThresholdMillis, fineProfiling);
+            return new UserOverridesConfig(user, storeThresholdMillis, fineProfiling);
         }
     }
 }

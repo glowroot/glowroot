@@ -33,7 +33,7 @@ class ServletPluginProperties {
 
     private static final String CAPTURE_REQUEST_PARAMS_PROPERTY_NAME = "captureRequestParameters";
     private static final String MASK_REQUEST_PARAMS_PROPERTY_NAME = "maskRequestParameters";
-    private static final String SESSION_USER_ID_ATTRIBUTE_PROPERTY_NAME = "sessionUserIdAttribute";
+    private static final String SESSION_USER_ATTRIBUTE_PROPERTY_NAME = "sessionUserAttribute";
     private static final String CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME =
             "captureSessionAttributes";
     private static final String CAPTURE_SESSION_ID_PROPERTY_NAME = "captureSessionId";
@@ -46,7 +46,7 @@ class ServletPluginProperties {
     private static volatile ImmutableList<Pattern> captureRequestParameters = ImmutableList.of();
     private static volatile ImmutableList<Pattern> maskRequestParameters = ImmutableList.of();
 
-    private static volatile String sessionUserIdAttributePath = "";
+    private static volatile String sessionUserAttributePath = "";
     private static volatile ImmutableSet<String> captureSessionAttributePaths = ImmutableSet.of();
     private static volatile ImmutableSet<String> captureSessionAttributeNames = ImmutableSet.of();
     private static volatile boolean captureSessionId;
@@ -72,8 +72,8 @@ class ServletPluginProperties {
         return maskRequestParameters;
     }
 
-    static String sessionUserIdAttributePath() {
-        return sessionUserIdAttributePath;
+    static String sessionUserAttributePath() {
+        return sessionUserAttributePath;
     }
 
     static ImmutableSet<String> captureSessionAttributePaths() {
@@ -113,8 +113,8 @@ class ServletPluginProperties {
         }
         maskRequestParameters = maskParameters.build();
 
-        sessionUserIdAttributePath =
-                pluginServices.getStringProperty(SESSION_USER_ID_ATTRIBUTE_PROPERTY_NAME);
+        sessionUserAttributePath =
+                pluginServices.getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME);
         String captureSessionAttributesText =
                 pluginServices.getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME);
         captureSessionAttributePaths = ImmutableSet.copyOf(splitter

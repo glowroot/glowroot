@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,7 @@ import org.glowroot.api.weaving.Pointcut;
  */
 public class NestableCallAspect {
 
-    private static final ImmutableList<String> USER_IDS =
-            ImmutableList.of("able", "baker", "charlie");
+    private static final ImmutableList<String> USERS = ImmutableList.of("able", "baker", "charlie");
 
     private static final AtomicInteger counter = new AtomicInteger();
 
@@ -77,11 +76,11 @@ public class NestableCallAspect {
                 span = pluginServices.startBackgroundTrace(grouping,
                         getRootMessageSupplier(grouping), metricName);
             }
-            int index = count % (USER_IDS.size() + 1);
-            if (index < USER_IDS.size()) {
-                pluginServices.setUserId(USER_IDS.get(index));
+            int index = count % (USERS.size() + 1);
+            if (index < USERS.size()) {
+                pluginServices.setUser(USERS.get(index));
             } else {
-                pluginServices.setUserId(null);
+                pluginServices.setUser(null);
             }
             return span;
         }

@@ -40,7 +40,7 @@ class SnapshotTestData {
                 .duration(MILLISECONDS.toNanos(10))
                 .background(false)
                 .grouping("test grouping")
-                .userId("j")
+                .user("j")
                 .spans(CharSource.wrap("[{\"offset\":0,\"duration\":0,\"index\":0,"
                         + "\"level\":0,\"message\":{\"text\":\"Level One\","
                         + "\"detail\":{\"arg1\":\"a\",\"arg2\":\"b\","

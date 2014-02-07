@@ -135,7 +135,7 @@ class LocalConfigService implements ConfigService {
     public UserOverridesConfig getUserOverridesConfig() {
         org.glowroot.config.UserOverridesConfig coreConfig = configService.getUserOverridesConfig();
         UserOverridesConfig config = new UserOverridesConfig(coreConfig.getVersion());
-        config.setUserId(coreConfig.getUserId());
+        config.setUser(coreConfig.getUser());
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
         config.setFineProfiling(coreConfig.isFineProfiling());
         return config;
@@ -144,7 +144,7 @@ class LocalConfigService implements ConfigService {
     @Override
     public void updateUserOverridesConfig(UserOverridesConfig config) throws Exception {
         org.glowroot.config.UserOverridesConfig updatedConfig =
-                new org.glowroot.config.UserOverridesConfig(config.getUserId(),
+                new org.glowroot.config.UserOverridesConfig(config.getUser(),
                         config.getStoreThresholdMillis(), config.isFineProfiling());
         configService.updateUserOverridesConfig(updatedConfig, config.getVersion());
     }

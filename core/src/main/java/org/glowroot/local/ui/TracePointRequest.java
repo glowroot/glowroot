@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,9 +41,9 @@ class TracePointRequest {
     @Nullable
     private String grouping;
     @Nullable
-    private String userIdComparator;
+    private String userComparator;
     @Nullable
-    private String userId;
+    private String user;
     @Nullable
     private Boolean background;
     private int limit;
@@ -115,21 +115,21 @@ class TracePointRequest {
     }
 
     @Nullable
-    public String getUserIdComparator() {
-        return userIdComparator;
+    public String getUserComparator() {
+        return userComparator;
     }
 
-    public void setUserIdComparator(@Nullable String userIdComparator) {
-        this.userIdComparator = userIdComparator;
+    public void setUserComparator(@Nullable String userComparator) {
+        this.userComparator = userComparator;
     }
 
     @Nullable
-    public String getUserId() {
-        return userId;
+    public String getUser() {
+        return user;
     }
 
-    public void setUserId(@Nullable String userId) {
-        this.userId = userId;
+    public void setUser(@Nullable String user) {
+        this.user = user;
     }
 
     @Nullable
@@ -161,8 +161,8 @@ class TracePointRequest {
                 .add("fineOnly", fineOnly)
                 .add("groupingComparator", groupingComparator)
                 .add("grouping", grouping)
-                .add("userIdComparator", userIdComparator)
-                .add("userId", userId)
+                .add("userComparator", userComparator)
+                .add("user", user)
                 .add("background", background)
                 .add("limit", limit)
                 .toString();
