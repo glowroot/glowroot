@@ -99,7 +99,7 @@ public class ProfilingTest {
         CoarseProfilingConfig profilingConfig =
                 container.getConfigService().getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(60);
-        profilingConfig.setIntervalMillis(10);
+        profilingConfig.setIntervalMillis(50);
         profilingConfig.setTotalSeconds(0);
         container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
         // when
