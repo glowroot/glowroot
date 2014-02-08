@@ -60,7 +60,7 @@ They can also be found in the following locations and run as standard JUnit test
 
 [Checker Framework](http://types.cs.washington.edu/checker-framework/) is used to completely eradicate null pointer exceptions. It is run as part of every Travis CI build (see the job with TARGET=checker) and any violation fails the overall Travis CI build.
 
-[JSHint](http://www.jshint.com) is used for basic Javascript coding conventions. It is fast, so it runs on every maven build (both local and Travis CI builds) and any violation fails the maven build.
+[JSHint](http://www.jshint.com) is used for basic Javascript coding conventions. It is fast, so it runs on every maven build (both local and Travis CI builds) and any violation fails the build.
 
 ## License
 
