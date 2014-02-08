@@ -63,7 +63,7 @@ public class Log4jTest {
         container.executeAppUnderTest(ShouldLog.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("efg");
+        assertThat(trace.getError()).isEqualTo("efg");
         assertThat(trace.getSpans()).hasSize(4);
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("log warn: def");
         assertThat(trace.getSpans().get(2).getMessage().getText()).isEqualTo("log error: efg");
@@ -77,7 +77,7 @@ public class Log4jTest {
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("efg_");
+        assertThat(trace.getError()).isEqualTo("efg_");
         assertThat(trace.getSpans()).hasSize(4);
 
         Span warnSpan = trace.getSpans().get(1);
@@ -108,7 +108,7 @@ public class Log4jTest {
         container.executeAppUnderTest(ShouldLogWithPriority.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("efg__");
+        assertThat(trace.getError()).isEqualTo("efg__");
         assertThat(trace.getSpans()).hasSize(4);
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("log warn: def__");
         assertThat(trace.getSpans().get(2).getMessage().getText()).isEqualTo("log error: efg__");
@@ -122,7 +122,7 @@ public class Log4jTest {
         container.executeAppUnderTest(ShouldLogWithPriorityAndThrowable.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("efg___");
+        assertThat(trace.getError()).isEqualTo("efg___");
         assertThat(trace.getSpans()).hasSize(4);
 
         Span warnSpan = trace.getSpans().get(1);
@@ -154,7 +154,7 @@ public class Log4jTest {
         container.executeAppUnderTest(ShouldLogWithPriorityAndNullThrowable.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("efg___null");
+        assertThat(trace.getError()).isEqualTo("efg___null");
         assertThat(trace.getSpans()).hasSize(4);
 
         Span warnSpan = trace.getSpans().get(1);
@@ -175,7 +175,7 @@ public class Log4jTest {
         container.executeAppUnderTest(ShouldLocalizedLog.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("efg____");
+        assertThat(trace.getError()).isEqualTo("efg____");
         assertThat(trace.getSpans()).hasSize(4);
 
         Span warnSpan = trace.getSpans().get(1);
@@ -207,7 +207,7 @@ public class Log4jTest {
         container.executeAppUnderTest(ShouldLocalizedLogWithNullThrowable.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("efg____null");
+        assertThat(trace.getError()).isEqualTo("efg____null");
         assertThat(trace.getSpans()).hasSize(4);
 
         Span warnSpan = trace.getSpans().get(1);
@@ -230,7 +230,7 @@ public class Log4jTest {
         container.executeAppUnderTest(ShouldLocalizedLogWithParameters.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("efg____");
+        assertThat(trace.getError()).isEqualTo("efg____");
         assertThat(trace.getSpans()).hasSize(4);
 
         Span warnSpan = trace.getSpans().get(1);
@@ -265,7 +265,7 @@ public class Log4jTest {
         container.executeAppUnderTest(ShouldLocalizedLogWithParametersAndNullThrowable.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("efg____null");
+        assertThat(trace.getError()).isEqualTo("efg____null");
         assertThat(trace.getSpans()).hasSize(4);
 
         Span warnSpan = trace.getSpans().get(1);

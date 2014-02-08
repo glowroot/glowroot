@@ -82,10 +82,10 @@ public class SnapshotWriter {
     }
 
     private void writeErrorMessage(Snapshot snapshot) {
-        String errorMessage = snapshot.getErrorMessage();
-        if (errorMessage != null) {
-            sb.append(",\"errorMessage\":\"");
-            sb.append(JsonStringEncoder.getInstance().quoteAsString(errorMessage));
+        String error = snapshot.getError();
+        if (error != null) {
+            sb.append(",\"error\":\"");
+            sb.append(JsonStringEncoder.getInstance().quoteAsString(error));
             sb.append("\"");
         }
     }

@@ -109,11 +109,11 @@ public class SnapshotDao implements SnapshotRepository {
                     + " fine_merged_stack_tree) values (?, ?, ?, ?, ?,"
                     + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(),
                     snapshot.isStuck(), snapshot.getStartTime(), snapshot.getCaptureTime(),
-                    snapshot.getDuration(), snapshot.isBackground(),
-                    snapshot.getErrorMessage() != null, fineMergedStackTreeBlockId != null,
-                    snapshot.getGrouping(), snapshot.getErrorMessage(), snapshot.getUser(),
-                    snapshot.getAttributes(), snapshot.getMetrics(), snapshot.getJvmInfo(),
-                    spansBlockId, coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
+                    snapshot.getDuration(), snapshot.isBackground(), snapshot.getError() != null,
+                    fineMergedStackTreeBlockId != null, snapshot.getGrouping(),
+                    snapshot.getError(), snapshot.getUser(), snapshot.getAttributes(),
+                    snapshot.getMetrics(), snapshot.getJvmInfo(), spansBlockId,
+                    coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -232,7 +232,7 @@ public class SnapshotDao implements SnapshotRepository {
                 .duration(resultSet.getLong(5))
                 .background(resultSet.getBoolean(6))
                 .grouping(resultSet.getString(7))
-                .errorMessage(resultSet.getString(8))
+                .error(resultSet.getString(8))
                 .user(resultSet.getString(9))
                 .attributes(resultSet.getString(10))
                 .metrics(resultSet.getString(11))

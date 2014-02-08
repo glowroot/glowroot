@@ -310,6 +310,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
+    public void setTraceError(@Nullable String error) {
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace != null) {
+            trace.setError(error);
+        }
+    }
+
+    @Override
     public void setUser(@Nullable String user) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
@@ -332,14 +340,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setAttribute(pluginId, name, value);
-        }
-    }
-
-    @Override
-    public void setTraceErrorMessage(@Nullable String errorMessage) {
-        Trace trace = traceRegistry.getCurrentTrace();
-        if (trace != null) {
-            trace.setErrorMessage(errorMessage);
         }
     }
 

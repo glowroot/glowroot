@@ -75,9 +75,9 @@ public class Trace {
 
     private volatile String grouping;
 
-    // trace-level error, only used if rootSpan doesn't have ErrorMessage
+    // trace-level error, only used if root span doesn't have an ErrorMessage
     @Nullable
-    private volatile String errorMessage;
+    private volatile String error;
 
     @Nullable
     private volatile String user;
@@ -180,6 +180,15 @@ public class Trace {
     }
 
     @Nullable
+    public String getError() {
+        ReadableErrorMessage message = rootSpan.getRootSpan().getErrorMessage();
+        if (message != null) {
+            return message.getText();
+        }
+        return error;
+    }
+
+    @Nullable
     public String getUser() {
         return user;
     }
@@ -214,19 +223,6 @@ public class Trace {
         return orderedAttributes.build();
     }
 
-    @Nullable
-    public String getErrorMessage() {
-        ReadableErrorMessage message = rootSpan.getRootSpan().getErrorMessage();
-        if (message != null) {
-            return message.getText();
-        }
-        return errorMessage;
-    }
-
-    public boolean isFine() {
-        return fineMergedStackTree != null;
-    }
-
     // this is called from a non-trace thread
     public ImmutableList<Metric> getMetrics() {
         // metrics is a non-thread safe list, but it is guarded by itself, so ok to make a copy
@@ -252,6 +248,10 @@ public class Trace {
     @ReadOnly
     public Iterable<Span> getSpans() {
         return rootSpan.getSpans();
+    }
+
+    public boolean isFine() {
+        return fineMergedStackTree != null;
     }
 
     @Nullable
@@ -305,9 +305,9 @@ public class Trace {
         }
     }
 
-    public void setErrorMessage(@Nullable String errorMessage) {
-        if (this.errorMessage == null && errorMessage != null) {
-            this.errorMessage = errorMessage;
+    public void setError(@Nullable String error) {
+        if (this.error == null && error != null) {
+            this.error = error;
         }
     }
 
@@ -422,12 +422,12 @@ public class Trace {
                 .add("startDate", startTime)
                 .add("stuck", stuck)
                 .add("background", background)
-                .add("attributes", attributes)
+                .add("error", error)
                 .add("user", user)
+                .add("attributes", attributes)
                 .add("metrics", metrics)
                 .add("jvmInfo", jvmInfo)
                 .add("rootSpan", rootSpan)
-                .add("errorMessage", errorMessage)
                 .add("coarseMergedStackTree", coarseMergedStackTree)
                 .add("fineMergedStackTree", fineMergedStackTree)
                 .add("coarseProfilingScheduledRunnable", coarseProfilerScheduledRunnable)

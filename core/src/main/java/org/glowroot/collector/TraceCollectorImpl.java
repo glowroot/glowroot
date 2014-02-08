@@ -74,7 +74,7 @@ public class TraceCollectorImpl implements TraceCollector {
     }
 
     public boolean shouldStore(Trace trace) {
-        if (trace.isStuck() || trace.getErrorMessage() != null) {
+        if (trace.isStuck() || trace.getError() != null) {
             return true;
         }
         long duration = trace.getDuration();

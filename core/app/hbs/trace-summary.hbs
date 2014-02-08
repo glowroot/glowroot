@@ -1,4 +1,4 @@
-{{#if errorMessage}}
+{{#if error}}
   <div>
     <strong>ERROR</strong>
   </div>
@@ -33,9 +33,9 @@
 <div>
   Duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
 </div>
-{{#if errorMessage}}
+{{#if error}}
   <div class="second-line-indent">
-    <strong>Error: {{errorMessage}}</strong>
+    <strong>Error: {{error}}</strong>
   </div>
 {{/if}}
 {{#if user}}

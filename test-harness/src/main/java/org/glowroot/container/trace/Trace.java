@@ -51,7 +51,7 @@ public class Trace {
     private final boolean background;
     private final String grouping;
     @Nullable
-    private final String errorMessage;
+    private final String error;
     @Nullable
     private final String user;
     // can't use ImmutableMap since attributes can have null values
@@ -69,7 +69,7 @@ public class Trace {
     private final boolean summary;
 
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
-            long duration, boolean background, String grouping, @Nullable String errorMessage,
+            long duration, boolean background, String grouping, @Nullable String error,
             @Nullable String user, @ReadOnly Map<String, /*@Nullable*/String> attributes,
             @ReadOnly List<Metric> metrics, JvmInfo jvmInfo, @ReadOnly @Nullable List<Span> spans,
             @Nullable MergedStackTreeNode coarseMergedStackTree,
@@ -82,7 +82,7 @@ public class Trace {
         this.duration = duration;
         this.background = background;
         this.grouping = grouping;
-        this.errorMessage = errorMessage;
+        this.error = error;
         this.user = user;
         this.attributes = attributes;
         this.metrics = ImmutableList.copyOf(metrics);
@@ -126,8 +126,8 @@ public class Trace {
     }
 
     @Nullable
-    public String getErrorMessage() {
-        return errorMessage;
+    public String getError() {
+        return error;
     }
 
     @Nullable
@@ -211,7 +211,7 @@ public class Trace {
                 .add("duration", duration)
                 .add("background", background)
                 .add("grouping", grouping)
-                .add("errorMessage", errorMessage)
+                .add("errorMessage", error)
                 .add("user", user)
                 .add("attributes", attributes)
                 .add("metrics", metrics)
@@ -233,7 +233,7 @@ public class Trace {
             @JsonProperty("duration") @Nullable Long duration,
             @JsonProperty("background") @Nullable Boolean background,
             @JsonProperty("grouping") @Nullable String grouping,
-            @JsonProperty("errorMessage") @Nullable String errorMessage,
+            @JsonProperty("error") @Nullable String error,
             @JsonProperty("user") @Nullable String user,
             @JsonProperty("attributes") @Nullable Map<String, /*@Nullable*/String> attributes,
             @JsonProperty("metrics") @Nullable List<Metric> metrics,
@@ -254,7 +254,7 @@ public class Trace {
         checkRequiredProperty(metrics, "metrics");
         checkRequiredProperty(jvmInfo, "jvmInfo");
         return new Trace(id, active, stuck, startTime, captureTime, duration, background, grouping,
-                errorMessage, user, nullToEmpty(attributes), metrics, jvmInfo, spans,
+                error, user, nullToEmpty(attributes), metrics, jvmInfo, spans,
                 coarseMergedStackTree, fineMergedStackTree, nullToFalse(summary));
     }
 }

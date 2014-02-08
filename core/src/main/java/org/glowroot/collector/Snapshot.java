@@ -41,7 +41,7 @@ public class Snapshot {
     private final boolean background;
     private final String grouping;
     @Nullable
-    private final String errorMessage;
+    private final String error;
     @Nullable
     private final String user;
     @Nullable
@@ -60,7 +60,7 @@ public class Snapshot {
     private final CharSource fineMergedStackTree; // json data
 
     private Snapshot(String id, boolean active, boolean stuck, long startTime, long captureTime,
-            long duration, boolean background, String grouping, @Nullable String errorMessage,
+            long duration, boolean background, String grouping, @Nullable String error,
             @Nullable String user, @Nullable String attributes, @Nullable String metrics,
             @Nullable String jvmInfo, @Immutable @Nullable CharSource spans,
             @Immutable @Nullable CharSource coarseMergedStackTree,
@@ -73,7 +73,7 @@ public class Snapshot {
         this.duration = duration;
         this.background = background;
         this.grouping = grouping;
-        this.errorMessage = errorMessage;
+        this.error = error;
         this.user = user;
         this.attributes = attributes;
         this.metrics = metrics;
@@ -116,8 +116,8 @@ public class Snapshot {
     }
 
     @Nullable
-    public String getErrorMessage() {
-        return errorMessage;
+    public String getError() {
+        return error;
     }
 
     @Nullable
@@ -170,7 +170,7 @@ public class Snapshot {
                 .add("duration", duration)
                 .add("background", background)
                 .add("grouping", grouping)
-                .add("errorMessage", errorMessage)
+                .add("error", error)
                 .add("user", user)
                 .add("attributes", attributes)
                 .add("metrics", metrics)
@@ -194,7 +194,7 @@ public class Snapshot {
         @MonotonicNonNull
         private String grouping;
         @Nullable
-        private String errorMessage;
+        private String error;
         @Nullable
         private String user;
         @Nullable
@@ -255,8 +255,8 @@ public class Snapshot {
             return this;
         }
 
-        public Builder errorMessage(@Nullable String errorMessage) {
-            this.errorMessage = errorMessage;
+        public Builder error(@Nullable String error) {
+            this.error = error;
             return this;
         }
 
@@ -299,7 +299,7 @@ public class Snapshot {
         @RequiresNonNull({"id", "grouping"})
         public Snapshot build() {
             return new Snapshot(id, active, stuck, startTime, captureTime, duration, background,
-                    grouping, errorMessage, user, attributes, metrics, jvmInfo, spans,
+                    grouping, error, user, attributes, metrics, jvmInfo, spans,
                     coarseMergedStackTree, fineMergedStackTree);
         }
     }

@@ -271,6 +271,23 @@ public abstract class PluginServices {
     public abstract void setGrouping(String grouping);
 
     /**
+     * Marks the trace as an error with the given message. Normally traces are only marked as an
+     * error if {@link Span#endWithError(ErrorMessage)} is called on the root span. This method can
+     * be used to mark the entire trace as an error from a nested span.
+     * 
+     * This should be used sparingly. Normally, spans should only mark themselves (using
+     * {@link Span#endWithError(ErrorMessage)}), and let the root span determine if the transaction
+     * as a whole should be marked as an error.
+     * 
+     * E.g., this method is called from the logger plugin, to mark the entire trace as an error if
+     * an error is logged through one of the supported logger APIs.
+     * 
+     * If this is called multiple times within a single trace, only the first call has any effect,
+     * and subsequent calls are ignored.
+     */
+    public abstract void setTraceError(String error);
+
+    /**
      * Sets the user attribute on the trace. This attribute is shared across all plugins, and is
      * generally set by the plugin that initiated the trace, but can be set by other plugins if
      * needed.
@@ -311,23 +328,6 @@ public abstract class PluginServices {
      *            value of the attribute
      */
     public abstract void setTraceAttribute(String name, @Nullable String value);
-
-    /**
-     * Marks the trace as error. Normally traces are only marked as error if
-     * {@link Span#endWithError(ErrorMessage)} is called on the root span. This method can be used
-     * to mark the entire trace as error from a nested span.
-     * 
-     * This should be used sparingly. Normally, spans should only mark themselves as error (using
-     * {@link Span#endWithError(ErrorMessage)}), and let the root span determine if the transaction
-     * as a whole should be marked as an error.
-     * 
-     * E.g., this method is called from the logging plugin, to mark the entire trace as error if an
-     * error is logged through one of the supported logging APIs.
-     * 
-     * If this is called multiple times within a single trace, only the first call has any effect,
-     * and subsequent calls are ignored.
-     */
-    public abstract void setTraceErrorMessage(String message);
 
     private static PluginServices getPluginServices(String pluginId) {
         try {
@@ -431,11 +431,11 @@ public abstract class PluginServices {
         @Override
         public void setGrouping(String grouping) {}
         @Override
+        public void setTraceError(@Nullable String error) {}
+        @Override
         public void setUser(@Nullable String user) {}
         @Override
         public void setTraceAttribute(String name, @Nullable String value) {}
-        @Override
-        public void setTraceErrorMessage(@Nullable String message) {}
 
         private static class NopMetric implements MetricName {
             private static final NopMetric INSTANCE = new NopMetric();

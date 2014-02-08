@@ -51,7 +51,7 @@ public class Log4jAspect {
         public static Span onBefore(@BindMethodArg Object message,
                 @BindMethodName String methodName) {
             if (!methodName.equals("warn")) {
-                pluginServices.setTraceErrorMessage(String.valueOf(message));
+                pluginServices.setTraceError(String.valueOf(message));
             }
             return pluginServices.startSpan(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
@@ -76,7 +76,7 @@ public class Log4jAspect {
         public static Span onBefore(@BindMethodArg Object message,
                 @BindMethodName String methodName) {
             if (!methodName.equals("warn")) {
-                pluginServices.setTraceErrorMessage(String.valueOf(message));
+                pluginServices.setTraceError(String.valueOf(message));
             }
             return pluginServices.startSpan(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
@@ -110,7 +110,7 @@ public class Log4jAspect {
         public static Span onBefore(@BindMethodArg Object priority, @BindMethodArg Object message) {
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (!level.equals("warn")) {
-                pluginServices.setTraceErrorMessage(String.valueOf(message));
+                pluginServices.setTraceError(String.valueOf(message));
             }
             return pluginServices.startSpan(
                     MessageSupplier.from("log {}: {}", level, String.valueOf(message)), metricName);
@@ -139,7 +139,7 @@ public class Log4jAspect {
         public static Span onBefore(@BindMethodArg Object priority, @BindMethodArg Object message) {
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (!level.equals("warn")) {
-                pluginServices.setTraceErrorMessage(String.valueOf(message));
+                pluginServices.setTraceError(String.valueOf(message));
             }
             return pluginServices.startSpan(
                     MessageSupplier.from("log {}: {}", level, String.valueOf(message)), metricName);
@@ -174,7 +174,7 @@ public class Log4jAspect {
         public static Span onBefore(@BindMethodArg Object priority, @BindMethodArg String key) {
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (!level.equals("warn")) {
-                pluginServices.setTraceErrorMessage(key);
+                pluginServices.setTraceError(key);
             }
             return pluginServices.startSpan(
                     MessageSupplier.from("log {} (localized): {}", level, key), metricName);
@@ -210,7 +210,7 @@ public class Log4jAspect {
                 @BindMethodArg Object[] params) {
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (!level.equals("warn")) {
-                pluginServices.setTraceErrorMessage(key);
+                pluginServices.setTraceError(key);
             }
             if (params.length > 0) {
                 StringBuilder sb = new StringBuilder();

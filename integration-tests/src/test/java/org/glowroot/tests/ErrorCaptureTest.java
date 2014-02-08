@@ -72,7 +72,7 @@ public class ErrorCaptureTest {
         container.executeAppUnderTest(ShouldCaptureError.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isNotNull();
+        assertThat(trace.getError()).isNotNull();
         assertThat(trace.getSpans()).hasSize(3);
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getError()).isNotNull();
@@ -90,7 +90,7 @@ public class ErrorCaptureTest {
         container.executeAppUnderTest(ShouldCaptureErrorWithSpanStackTrace.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isNull();
+        assertThat(trace.getError()).isNull();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getError()).isNotNull();
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
@@ -105,7 +105,7 @@ public class ErrorCaptureTest {
         container.executeAppUnderTest(ShouldCaptureErrorWithCausalChain.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isNull();
+        assertThat(trace.getError()).isNull();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getError()).isNotNull();
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
