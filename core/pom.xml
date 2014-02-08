@@ -186,8 +186,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-              <!-- npm prune is not needed when grunt is skipped -->
-              <skip>${glowroot.grunt.skip}</skip>
+              <skip>${glowroot.ui.skip}</skip>
               <executable>npm</executable>
               <arguments>
                 <argument>prune</argument>
@@ -201,8 +200,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-              <!-- npm install is not needed when grunt is skipped -->
-              <skip>${glowroot.grunt.skip}</skip>
+              <skip>${glowroot.ui.skip}</skip>
               <executable>npm</executable>
               <!-- executableOutputCharset UTF-8 is needed when running on windows, in order to
                 render a couple of special characters that npm uses when displaying the dependency
@@ -222,8 +220,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-              <!-- bower prune is not needed when grunt is skipped -->
-              <skip>${glowroot.grunt.skip}</skip>
+              <skip>${glowroot.ui.skip}</skip>
               <executable>bower</executable>
               <arguments>
                 <argument>prune</argument>
@@ -239,8 +236,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-              <!-- bower update is not needed when grunt is skipped -->
-              <skip>${glowroot.grunt.skip}</skip>
+              <skip>${glowroot.ui.skip}</skip>
               <executable>bower</executable>
               <!-- executableOutputCharset UTF-8 is needed when running on windows, in order to
                 render a couple of special characters that bower uses when displaying the dependency
@@ -258,7 +254,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-              <skip>${glowroot.grunt.skip}</skip>
+              <skip>${glowroot.ui.skip}</skip>
               <executable>grunt</executable>
               <arguments>
                 <argument>--no-color</argument>

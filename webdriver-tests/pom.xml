@@ -137,4 +137,28 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>auto-activated-ui-skip</id>
+      <activation>
+        <property>
+          <name>glowroot.ui.skip</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <!-- webdriver tests cannot be run if the ui has not been built,
+                can't just use <skipTests>${glowroot.ui.skip}</skipTests> since that prevents
+                "mvn -DskipTests=true" from working -->
+              <skipTests>true</skipTests>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
