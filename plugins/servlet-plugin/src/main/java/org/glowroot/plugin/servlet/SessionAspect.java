@@ -158,12 +158,12 @@ public class SessionAspect {
         if (!sessionUserAttributePath.equals("")) {
             // capture user now, don't use a lazy supplier
             if (sessionUserAttributePath.equals(name)) {
-                pluginServices.setUser(value.toString());
+                pluginServices.setTraceUser(value.toString());
             } else if (sessionUserAttributePath.startsWith(name + ".")) {
                 String user = session.getSessionAttributeTextValue(sessionUserAttributePath);
                 if (user != null) {
                     // if user is null, don't clear it by setting Suppliers.ofInstance(null)
-                    pluginServices.setUser(user);
+                    pluginServices.setTraceUser(user);
                 }
             }
         }

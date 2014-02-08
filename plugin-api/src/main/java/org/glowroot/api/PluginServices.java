@@ -268,7 +268,7 @@ public abstract class PluginServices {
      */
     public abstract CompletedSpan addErrorSpan(ErrorMessage errorMessage);
 
-    public abstract void setGrouping(String grouping);
+    public abstract void setTraceGrouping(String grouping);
 
     /**
      * Marks the trace as an error with the given message. Normally traces are only marked as an
@@ -309,7 +309,7 @@ public abstract class PluginServices {
      * 
      * @param user
      */
-    public abstract void setUser(@Nullable String user);
+    public abstract void setTraceUser(@Nullable String user);
 
     /**
      * Adds an attribute on the current trace with the specified {@code name} and {@code value}. A
@@ -429,11 +429,11 @@ public abstract class PluginServices {
             return NopCompletedSpan.INSTANCE;
         }
         @Override
-        public void setGrouping(String grouping) {}
+        public void setTraceGrouping(String grouping) {}
         @Override
         public void setTraceError(@Nullable String error) {}
         @Override
-        public void setUser(@Nullable String user) {}
+        public void setTraceUser(@Nullable String user) {}
         @Override
         public void setTraceAttribute(String name, @Nullable String value) {}
 

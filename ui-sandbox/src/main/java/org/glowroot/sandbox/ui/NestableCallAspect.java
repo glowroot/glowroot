@@ -78,9 +78,9 @@ public class NestableCallAspect {
             }
             int index = count % (USERS.size() + 1);
             if (index < USERS.size()) {
-                pluginServices.setUser(USERS.get(index));
+                pluginServices.setTraceUser(USERS.get(index));
             } else {
-                pluginServices.setUser(null);
+                pluginServices.setTraceUser(null);
             }
             return span;
         }

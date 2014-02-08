@@ -95,7 +95,7 @@ public class ServletAspect {
                 if (!sessionUserAttributePath.equals("")) {
                     // capture user now, don't use a lazy supplier
                     String user = session.getSessionAttributeTextValue(sessionUserAttributePath);
-                    pluginServices.setUser(user);
+                    pluginServices.setTraceUser(user);
                 }
             }
             return span;

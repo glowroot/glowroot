@@ -302,7 +302,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setGrouping(String grouping) {
+    public void setTraceGrouping(String grouping) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setGrouping(grouping);
@@ -318,7 +318,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setUser(@Nullable String user) {
+    public void setTraceUser(@Nullable String user) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setUser(user);

@@ -261,7 +261,7 @@ public class ProfilingTest {
         @Override
         public void traceMarker() throws InterruptedException {
             // normally the plugin/aspect should set the user, this is just a shortcut for test
-            pluginServices.setUser("able");
+            pluginServices.setTraceUser("able");
             Threads.moreAccurateSleep(105);
         }
     }
