@@ -478,7 +478,7 @@ glowroot.controller('TracesCtrl', [
         },
         zoom: {
           interactive: true,
-          amount: 1.5,
+          amount: 2,
           skipDraw: true
         },
         colors: [
