@@ -95,6 +95,8 @@ class TracePointJsonService {
         @MonotonicNonNull
         private StringComparator groupingComparator;
         @MonotonicNonNull
+        private StringComparator errorComparator;
+        @MonotonicNonNull
         private StringComparator userComparator;
 
         public Handler(TracePointRequest request) {
@@ -109,14 +111,20 @@ class TracePointJsonService {
             low = (long) Math.ceil(request.getLow() * NANOSECONDS_PER_SECOND);
             high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request.getHigh()
                     * NANOSECONDS_PER_SECOND);
-            String grouping = request.getGroupingComparator();
-            if (grouping != null) {
-                groupingComparator = StringComparator.valueOf(grouping.toUpperCase(Locale.ENGLISH));
+            String groupingComparator = request.getGroupingComparator();
+            if (groupingComparator != null) {
+                this.groupingComparator =
+                        StringComparator.valueOf(groupingComparator.toUpperCase(Locale.ENGLISH));
             }
-            String comparatorText = request.getUserComparator();
-            if (comparatorText != null) {
-                userComparator = StringComparator.valueOf(comparatorText
-                        .toUpperCase(Locale.ENGLISH));
+            String errorComparator = request.getErrorComparator();
+            if (errorComparator != null) {
+                this.errorComparator =
+                        StringComparator.valueOf(errorComparator.toUpperCase(Locale.ENGLISH));
+            }
+            String userComparator = request.getUserComparator();
+            if (userComparator != null) {
+                this.userComparator =
+                        StringComparator.valueOf(userComparator.toUpperCase(Locale.ENGLISH));
             }
             boolean captureActiveTraces = shouldCaptureActiveTraces();
             List<Trace> activeTraces = Lists.newArrayList();
@@ -162,8 +170,8 @@ class TracePointJsonService {
             }
             TracePointQuery query = new TracePointQuery(request.getFrom(), request.getTo(), low,
                     high, request.isBackground(), request.isErrorOnly(), request.isFineOnly(),
-                    groupingComparator, request.getGrouping(), userComparator,
-                    request.getUser(), request.getLimit() + 1);
+                    groupingComparator, request.getGrouping(), errorComparator, request.getError(),
+                    userComparator, request.getUser(), request.getLimit() + 1);
             List<TracePoint> points = snapshotDao.readPoints(query);
             // create single merged and limited list of points
             List<TracePoint> orderedPoints = Lists.newArrayList(points);

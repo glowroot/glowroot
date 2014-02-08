@@ -70,7 +70,7 @@ public class SnapshotDaoTest {
         Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         TracePointQuery query = new TracePointQuery(0, 0, 0, Long.MAX_VALUE, false, false, false,
-                null, null, null, null, 1);
+                null, null, null, null, null, null, 1);
         // when
         List<TracePoint> points = snapshotDao.readPoints(query);
         Snapshot snapshot2 = snapshotDao.readSnapshot(points.get(0).getId());
@@ -90,7 +90,7 @@ public class SnapshotDaoTest {
         Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         TracePointQuery query = new TracePointQuery(0, 0, snapshot.getDuration(),
-                snapshot.getDuration(), false, false, false, null, null, null, null, 1);
+                snapshot.getDuration(), false, false, false, null, null, null, null, null, null, 1);
         // when
         List<TracePoint> points = snapshotDao.readPoints(query);
         // then
@@ -103,7 +103,8 @@ public class SnapshotDaoTest {
         Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         TracePointQuery query = new TracePointQuery(0, 0, snapshot.getDuration() + 1,
-                snapshot.getDuration() + 2, false, false, false, null, null, null, null, 1);
+                snapshot.getDuration() + 2, false, false, false, null, null, null, null, null,
+                null, 1);
         // when
         List<TracePoint> points = snapshotDao.readPoints(query);
         // then
@@ -116,7 +117,8 @@ public class SnapshotDaoTest {
         Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         TracePointQuery query = new TracePointQuery(0, 0, snapshot.getDuration() - 2,
-                snapshot.getDuration() - 1, false, false, false, null, null, null, null, 1);
+                snapshot.getDuration() - 1, false, false, false, null, null, null, null, null,
+                null, 1);
         // when
         List<TracePoint> points = snapshotDao.readPoints(query);
         // then

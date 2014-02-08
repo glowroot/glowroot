@@ -377,6 +377,7 @@ glowroot.controller('TracesCtrl', [
     $scope.filter.low = 0;
     $scope.filterHighText = '';
     $scope.filter.groupingComparator = 'begins';
+    $scope.filter.errorComparator = 'begins';
     $scope.filter.userComparator = 'begins';
     $scope.filter.limit = $('html').hasClass('lt-ie9') ? 100 : 500;
     $scope.filterDurationComparator = 'greater';

@@ -41,6 +41,10 @@ class TracePointRequest {
     @Nullable
     private String grouping;
     @Nullable
+    private String errorComparator;
+    @Nullable
+    private String error;
+    @Nullable
     private String userComparator;
     @Nullable
     private String user;
@@ -112,6 +116,24 @@ class TracePointRequest {
 
     public void setGrouping(@Nullable String grouping) {
         this.grouping = grouping;
+    }
+
+    @Nullable
+    public String getErrorComparator() {
+        return errorComparator;
+    }
+
+    public void setErrorComparator(String errorComparator) {
+        this.errorComparator = errorComparator;
+    }
+
+    @Nullable
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
     }
 
     @Nullable
