@@ -111,10 +111,8 @@ class ClasspathCache {
     }
 
     void updateCache() {
-        for (ClassLoader loader : getKnownClassLoaders()) {
-            if (loader instanceof URLClassLoader) {
-                updateCache((URLClassLoader) loader);
-            }
+        for (URLClassLoader loader : getKnownURLClassLoaders()) {
+            updateCache(loader);
         }
     }
 
@@ -154,10 +152,19 @@ class ClasspathCache {
                 }
             }
         }
-        ClassLoader parent = loader.getParent();
-        if (parent != null && parent instanceof URLClassLoader) {
-            updateCache((URLClassLoader) parent);
+    }
+
+    private Set<URLClassLoader> getKnownURLClassLoaders() {
+        Set<URLClassLoader> loaders = Sets.newHashSet();
+        for (ClassLoader loader : getKnownClassLoaders()) {
+            while (loader != null) {
+                if (loader instanceof URLClassLoader) {
+                    loaders.add((URLClassLoader) loader);
+                }
+                loader = loader.getParent();
+            }
         }
+        return loaders;
     }
 
     private List<ClassLoader> getKnownClassLoaders() {
