@@ -59,6 +59,8 @@ public class Log4jTest {
     @Test
     public void testLog() throws Exception {
         // given
+        container.getConfigService().setPluginProperty("logger",
+                "traceErrorOnErrorWithNoThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
@@ -73,6 +75,8 @@ public class Log4jTest {
     @Test
     public void testLogWithThrowable() throws Exception {
         // given
+        container.getConfigService().setPluginProperty("logger",
+                "traceErrorOnErrorWithNoThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
         // then
@@ -82,28 +86,53 @@ public class Log4jTest {
 
         Span warnSpan = trace.getSpans().get(1);
         assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn: def_");
-        assertThat(warnSpan.getError().getText()).isEqualTo("java.lang.IllegalStateException: 456");
+        assertThat(warnSpan.getError().getText()).isEqualTo("456");
         assertThat(warnSpan.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
         Span errorSpan = trace.getSpans().get(2);
         assertThat(errorSpan.getMessage().getText()).isEqualTo("log error: efg_");
         assertThat(errorSpan.getError().getText())
-                .isEqualTo("java.lang.IllegalStateException: 567");
+                .isEqualTo("567");
         assertThat(errorSpan.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
         Span fatalSpan = trace.getSpans().get(3);
         assertThat(fatalSpan.getMessage().getText()).isEqualTo("log fatal: fgh_");
         assertThat(fatalSpan.getError().getText())
-                .isEqualTo("java.lang.IllegalStateException: 678");
+                .isEqualTo("678");
         assertThat(fatalSpan.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
     }
 
     @Test
+    public void testLogWithNullThrowable() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty("logger",
+                "traceErrorOnErrorWithNoThrowable", true);
+        // when
+        container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getError()).isEqualTo("efg_");
+        assertThat(trace.getSpans()).hasSize(4);
+
+        Span warnSpan = trace.getSpans().get(1);
+        assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn: def_");
+        assertThat(warnSpan.getError().getText()).isEqualTo("def_");
+        Span errorSpan = trace.getSpans().get(2);
+        assertThat(errorSpan.getMessage().getText()).isEqualTo("log error: efg_");
+        assertThat(errorSpan.getError().getText()).isEqualTo("efg_");
+        Span fatalSpan = trace.getSpans().get(3);
+        assertThat(fatalSpan.getMessage().getText()).isEqualTo("log fatal: fgh_");
+        assertThat(fatalSpan.getError().getText()).isEqualTo("fgh_");
+    }
+
+    @Test
     public void testLogWithPriority() throws Exception {
         // given
+        container.getConfigService().setPluginProperty("logger",
+                "traceErrorOnErrorWithNoThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithPriority.class);
         // then
@@ -128,21 +157,21 @@ public class Log4jTest {
         Span warnSpan = trace.getSpans().get(1);
         assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn: def___");
         assertThat(warnSpan.getError().getText())
-                .isEqualTo("java.lang.IllegalStateException: 456_");
+                .isEqualTo("456_");
         assertThat(warnSpan.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
         Span errorSpan = trace.getSpans().get(2);
         assertThat(errorSpan.getMessage().getText()).isEqualTo("log error: efg___");
         assertThat(errorSpan.getError().getText())
-                .isEqualTo("java.lang.IllegalStateException: 567_");
+                .isEqualTo("567_");
         assertThat(errorSpan.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
         Span fatalSpan = trace.getSpans().get(3);
         assertThat(fatalSpan.getMessage().getText()).isEqualTo("log fatal: fgh___");
         assertThat(fatalSpan.getError().getText())
-                .isEqualTo("java.lang.IllegalStateException: 678_");
+                .isEqualTo("678_");
         assertThat(fatalSpan.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
     }
@@ -150,6 +179,8 @@ public class Log4jTest {
     @Test
     public void testLogWithPriorityAndNullThrowable() throws Exception {
         // given
+        container.getConfigService().setPluginProperty("logger",
+                "traceErrorOnErrorWithNoThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithPriorityAndNullThrowable.class);
         // then
@@ -159,13 +190,13 @@ public class Log4jTest {
 
         Span warnSpan = trace.getSpans().get(1);
         assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn: def___null");
-        assertThat(warnSpan.getError()).isNull();
+        assertThat(warnSpan.getError().getText()).isEqualTo("def___null");
         Span errorSpan = trace.getSpans().get(2);
         assertThat(errorSpan.getMessage().getText()).isEqualTo("log error: efg___null");
-        assertThat(errorSpan.getError()).isNull();
+        assertThat(errorSpan.getError().getText()).isEqualTo("efg___null");
         Span fatalSpan = trace.getSpans().get(3);
         assertThat(fatalSpan.getMessage().getText()).isEqualTo("log fatal: fgh___null");
-        assertThat(fatalSpan.getError()).isNull();
+        assertThat(fatalSpan.getError().getText()).isEqualTo("fgh___null");
     }
 
     @Test
@@ -181,21 +212,21 @@ public class Log4jTest {
         Span warnSpan = trace.getSpans().get(1);
         assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn (localized): def____");
         assertThat(warnSpan.getError().getText())
-                .isEqualTo("java.lang.IllegalStateException: 456__");
+                .isEqualTo("456__");
         assertThat(warnSpan.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
         Span errorSpan = trace.getSpans().get(2);
         assertThat(errorSpan.getMessage().getText()).isEqualTo("log error (localized): efg____");
         assertThat(errorSpan.getError().getText())
-                .isEqualTo("java.lang.IllegalStateException: 567__");
+                .isEqualTo("567__");
         assertThat(errorSpan.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
         Span fatalSpan = trace.getSpans().get(3);
         assertThat(fatalSpan.getMessage().getText()).isEqualTo("log fatal (localized): fgh____");
         assertThat(fatalSpan.getError().getText())
-                .isEqualTo("java.lang.IllegalStateException: 678__");
+                .isEqualTo("678__");
         assertThat(fatalSpan.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
     }
@@ -203,6 +234,8 @@ public class Log4jTest {
     @Test
     public void testLocalizedLogWithNullThrowable() throws Exception {
         // given
+        container.getConfigService().setPluginProperty("logger",
+                "traceErrorOnErrorWithNoThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLocalizedLogWithNullThrowable.class);
         // then
@@ -212,15 +245,15 @@ public class Log4jTest {
 
         Span warnSpan = trace.getSpans().get(1);
         assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn (localized): def____null");
-        assertThat(warnSpan.getError()).isNull();
+        assertThat(warnSpan.getError().getText()).isEqualTo("def____null");
         Span errorSpan = trace.getSpans().get(2);
         assertThat(errorSpan.getMessage().getText())
                 .isEqualTo("log error (localized): efg____null");
-        assertThat(errorSpan.getError()).isNull();
+        assertThat(errorSpan.getError().getText()).isEqualTo("efg____null");
         Span fatalSpan = trace.getSpans().get(3);
         assertThat(fatalSpan.getMessage().getText())
                 .isEqualTo("log fatal (localized): fgh____null");
-        assertThat(fatalSpan.getError()).isNull();
+        assertThat(fatalSpan.getError().getText()).isEqualTo("fgh____null");
     }
 
     @Test
@@ -237,7 +270,7 @@ public class Log4jTest {
         assertThat(warnSpan.getMessage().getText())
                 .isEqualTo("log warn (localized): def____ [d, e, f]");
         assertThat(warnSpan.getError().getText())
-                .isEqualTo("java.lang.IllegalStateException: 456__");
+                .isEqualTo("456__");
         assertThat(warnSpan.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
@@ -245,7 +278,7 @@ public class Log4jTest {
         assertThat(errorSpan.getMessage().getText())
                 .isEqualTo("log error (localized): efg____ [e, f, g]");
         assertThat(errorSpan.getError().getText())
-                .isEqualTo("java.lang.IllegalStateException: 567__");
+                .isEqualTo("567__");
         assertThat(errorSpan.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
@@ -253,7 +286,7 @@ public class Log4jTest {
         assertThat(fatalSpan.getMessage().getText())
                 .isEqualTo("log fatal (localized): fgh____ [f, g, h]");
         assertThat(fatalSpan.getError().getText())
-                .isEqualTo("java.lang.IllegalStateException: 678__");
+                .isEqualTo("678__");
         assertThat(fatalSpan.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
     }
@@ -261,6 +294,8 @@ public class Log4jTest {
     @Test
     public void testLocalizedLogWithParametersAndNullThrowable() throws Exception {
         // given
+        container.getConfigService().setPluginProperty("logger",
+                "traceErrorOnErrorWithNoThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLocalizedLogWithParametersAndNullThrowable.class);
         // then
@@ -271,15 +306,15 @@ public class Log4jTest {
         Span warnSpan = trace.getSpans().get(1);
         assertThat(warnSpan.getMessage().getText())
                 .isEqualTo("log warn (localized): def____null [d_, e_, f_]");
-        assertThat(warnSpan.getError()).isNull();
+        assertThat(warnSpan.getError().getText()).isEqualTo("def____null [d_, e_, f_]");
         Span errorSpan = trace.getSpans().get(2);
         assertThat(errorSpan.getMessage().getText())
                 .isEqualTo("log error (localized): efg____null [e_, f_, g_]");
-        assertThat(errorSpan.getError()).isNull();
+        assertThat(errorSpan.getError().getText()).isEqualTo("efg____null [e_, f_, g_]");
         Span fatalSpan = trace.getSpans().get(3);
         assertThat(fatalSpan.getMessage().getText())
                 .isEqualTo("log fatal (localized): fgh____null [f_, g_, h_]");
-        assertThat(fatalSpan.getError()).isNull();
+        assertThat(fatalSpan.getError().getText()).isEqualTo("fgh____null [f_, g_, h_]");
     }
 
     public static class ShouldLog implements AppUnderTest, TraceMarker {
@@ -313,6 +348,23 @@ public class Log4jTest {
             logger.warn("def_", new IllegalStateException("456"));
             logger.error("efg_", new IllegalStateException("567"));
             logger.fatal("fgh_", new IllegalStateException("678"));
+        }
+    }
+
+    public static class ShouldLogWithNullThrowable implements AppUnderTest, TraceMarker {
+        private static final Logger logger = Logger.getLogger(ShouldLogWithNullThrowable.class);
+        @Override
+        public void executeApp() {
+            traceMarker();
+        }
+        @Override
+        public void traceMarker() {
+            logger.trace("abc_", null);
+            logger.debug("bcd_", null);
+            logger.info("cde_", null);
+            logger.warn("def_", null);
+            logger.error("efg_", null);
+            logger.fatal("fgh_", null);
         }
     }
 

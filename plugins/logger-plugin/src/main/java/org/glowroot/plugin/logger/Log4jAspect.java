@@ -34,9 +34,18 @@ import org.glowroot.api.weaving.Pointcut;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// add option to mark trace as error on warn
+// add option to mark trace as error on error with no throwable
 public class Log4jAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("logger");
+
+    private static boolean markTraceAsError(boolean warn, boolean throwable) {
+        boolean traceErrorOnErrorWithNoThrowable =
+                pluginServices.getBooleanProperty("traceErrorOnErrorWithNoThrowable");
+        boolean traceErrorOnWarn = pluginServices.getBooleanProperty("traceErrorOnWarn");
+        return (!warn || traceErrorOnWarn) && (throwable || traceErrorOnErrorWithNoThrowable);
+    }
 
     @Pointcut(typeName = "org.apache.log4j.Category", methodName = "warn|error|fatal",
             methodArgs = {"java.lang.Object"}, metricName = "logging")
@@ -50,7 +59,7 @@ public class Log4jAspect {
         @OnBefore
         public static Span onBefore(@BindMethodArg Object message,
                 @BindMethodName String methodName) {
-            if (!methodName.equals("warn")) {
+            if (markTraceAsError(methodName.equals("warn"), false)) {
                 pluginServices.setTraceError(String.valueOf(message));
             }
             return pluginServices.startSpan(
@@ -58,8 +67,8 @@ public class Log4jAspect {
                     metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            span.end();
+        public static void onAfter(@BindTraveler Span span, @BindMethodArg Object message) {
+            span.endWithError(ErrorMessage.from(String.valueOf(message)));
         }
     }
 
@@ -73,9 +82,9 @@ public class Log4jAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindMethodArg Object message,
+        public static Span onBefore(@BindMethodArg Object message, @BindMethodArg Throwable t,
                 @BindMethodName String methodName) {
-            if (!methodName.equals("warn")) {
+            if (markTraceAsError(methodName.equals("warn"), t != null)) {
                 pluginServices.setTraceError(String.valueOf(message));
             }
             return pluginServices.startSpan(
@@ -83,12 +92,12 @@ public class Log4jAspect {
                     metricName);
         }
         @OnAfter
-        public static void onAfter(@SuppressWarnings("unused") @BindMethodArg Object message,
-                @BindMethodArg Throwable t, @BindTraveler Span span) {
+        public static void onAfter(@BindMethodArg Object message, @BindMethodArg Throwable t,
+                @BindTraveler Span span) {
             if (t == null) {
-                span.end();
+                span.endWithError(ErrorMessage.from(String.valueOf(message)));
             } else {
-                span.endWithError(ErrorMessage.from(t));
+                span.endWithError(ErrorMessage.from(t.getMessage(), t));
             }
         }
     }
@@ -109,15 +118,15 @@ public class Log4jAspect {
         @OnBefore
         public static Span onBefore(@BindMethodArg Object priority, @BindMethodArg Object message) {
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
-            if (!level.equals("warn")) {
+            if (markTraceAsError(level.equals("warn"), false)) {
                 pluginServices.setTraceError(String.valueOf(message));
             }
             return pluginServices.startSpan(
                     MessageSupplier.from("log {}: {}", level, String.valueOf(message)), metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            span.end();
+        public static void onAfter(@BindTraveler Span span, @BindMethodArg Object message) {
+            span.endWithError(ErrorMessage.from(String.valueOf(message)));
         }
     }
 
@@ -136,9 +145,10 @@ public class Log4jAspect {
             return level.equals("FATAL") || level.equals("ERROR") || level.equals("WARN");
         }
         @OnBefore
-        public static Span onBefore(@BindMethodArg Object priority, @BindMethodArg Object message) {
+        public static Span onBefore(@BindMethodArg Object priority, @BindMethodArg Object message,
+                @BindMethodArg Throwable t) {
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
-            if (!level.equals("warn")) {
+            if (markTraceAsError(level.equals("warn"), t != null)) {
                 pluginServices.setTraceError(String.valueOf(message));
             }
             return pluginServices.startSpan(
@@ -146,12 +156,12 @@ public class Log4jAspect {
         }
         @OnAfter
         public static void onAfter(@SuppressWarnings("unused") @BindMethodArg Object priority,
-                @SuppressWarnings("unused") @BindMethodArg Object message,
-                @BindMethodArg Throwable t, @BindTraveler Span span) {
+                @BindMethodArg Object message, @BindMethodArg Throwable t,
+                @BindTraveler Span span) {
             if (t == null) {
-                span.end();
+                span.endWithError(ErrorMessage.from(String.valueOf(message)));
             } else {
-                span.endWithError(ErrorMessage.from(t));
+                span.endWithError(ErrorMessage.from(t.getMessage(), t));
             }
         }
     }
@@ -171,9 +181,10 @@ public class Log4jAspect {
             return level.equals("FATAL") || level.equals("ERROR") || level.equals("WARN");
         }
         @OnBefore
-        public static Span onBefore(@BindMethodArg Object priority, @BindMethodArg String key) {
+        public static Span onBefore(@BindMethodArg Object priority, @BindMethodArg String key,
+                @BindMethodArg Throwable t) {
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
-            if (!level.equals("warn")) {
+            if (markTraceAsError(level.equals("warn"), t != null)) {
                 pluginServices.setTraceError(key);
             }
             return pluginServices.startSpan(
@@ -181,12 +192,11 @@ public class Log4jAspect {
         }
         @OnAfter
         public static void onAfter(@SuppressWarnings("unused") @BindMethodArg Object priority,
-                @SuppressWarnings("unused") @BindMethodArg String key,
-                @BindMethodArg Throwable t, @BindTraveler Span span) {
+                @BindMethodArg String key, @BindMethodArg Throwable t, @BindTraveler Span span) {
             if (t == null) {
-                span.end();
+                span.endWithError(ErrorMessage.from(key));
             } else {
-                span.endWithError(ErrorMessage.from(t));
+                span.endWithError(ErrorMessage.from(t.getMessage(), t));
             }
         }
     }
@@ -207,9 +217,9 @@ public class Log4jAspect {
         }
         @OnBefore
         public static Span onBefore(@BindMethodArg Object priority, @BindMethodArg String key,
-                @BindMethodArg Object[] params) {
+                @BindMethodArg Object[] params, @BindMethodArg Throwable t) {
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
-            if (!level.equals("warn")) {
+            if (markTraceAsError(level.equals("warn"), t != null)) {
                 pluginServices.setTraceError(key);
             }
             if (params.length > 0) {
@@ -230,13 +240,24 @@ public class Log4jAspect {
         }
         @OnAfter
         public static void onAfter(@SuppressWarnings("unused") @BindMethodArg Object priority,
-                @SuppressWarnings("unused") @BindMethodArg String key,
-                @SuppressWarnings("unused") @BindMethodArg Object[] params,
+                @BindMethodArg String key, @BindMethodArg Object[] params,
                 @BindMethodArg Throwable t, @BindTraveler Span span) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(key);
+            if (params.length > 0) {
+                sb.append(" [");
+                for (int i = 0; i < params.length; i++) {
+                    if (i > 0) {
+                        sb.append(", ");
+                    }
+                    sb.append(params[i]);
+                }
+                sb.append("]");
+            }
             if (t == null) {
-                span.end();
+                span.endWithError(ErrorMessage.from(sb.toString()));
             } else {
-                span.endWithError(ErrorMessage.from(t));
+                span.endWithError(ErrorMessage.from(t.getMessage(), t));
             }
         }
     }

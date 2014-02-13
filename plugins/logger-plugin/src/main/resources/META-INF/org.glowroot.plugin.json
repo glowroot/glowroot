@@ -2,6 +2,28 @@
   "name": "Logger Plugin",
   "id": "logger",
   "version": "0.5-SNAPSHOT",
+  "properties": [
+    {
+      "prompt": "Mark trace as error on error log with no throwable",
+      "name": "traceErrorOnErrorWithNoThrowable",
+      "type": "boolean",
+      "default": false,
+      "description": [
+        "Mark the entire trace as an error any time an error message is logged inside the trace",
+        " using a supported logger."
+      ]
+    },
+    {
+      "prompt": "Mark trace as error on warn log",
+      "name": "traceErrorOnWarn",
+      "type": "boolean",
+      "default": false,
+      "description": [
+        "Mark the entire trace as an error any time a warning message is logged inside the trace",
+        " using a supported logger."
+      ]
+    }
+  ],
   "aspects": [
     "org.glowroot.plugin.logger.Log4jAspect"
   ]
