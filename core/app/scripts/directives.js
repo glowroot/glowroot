@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, Glowroot, $, Spinner */
+/* global glowroot, angular, Glowroot, $, Spinner */
 
 glowroot.factory('gtButtonGroupControllerFactory', [
   '$q',
@@ -223,11 +223,14 @@ glowroot.directive('gtInputGroupDropdown', function () {
     // replace is needed in order to not mess up bootstrap css hierarchical selectors
     replace: true,
     link: function (scope, iElement, iAttrs) {
-      scope.setItem = function (item) {
-        scope.gtModel = item.value;
-        scope.gtDisplay = item.display;
-      };
-      scope.setItem(scope.gtItems()[0]);
+      // update display when model changes
+      scope.$watch('gtModel', function (newGtModel) {
+        angular.forEach(scope.gtItems(), function (item) {
+          if (item.value === newGtModel) {
+            scope.gtDisplay = item.display;
+          }
+        });
+      });
       if (scope.gtClass) {
         scope.classes = 'input-group-btn ' + scope.gtClass;
       } else {

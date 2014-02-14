@@ -5,7 +5,8 @@
   <!-- override bootstrap .dropdown-menu { min-width: 160px } -->
   <ul class="dropdown-menu" style="min-width: 0;">
     <li ng-repeat="item in gtItems()">
-      <a ng-click="setItem(item)" href="">{{item.display}}</a>
+      <!-- using $parent.gtModel below since ng-repeat create child scopes -->
+      <a ng-click="$parent.gtModel = item.value" href="">{{item.display}}</a>
     </li>
   </ul>
 </div>
