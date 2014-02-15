@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013 the original author or authors.
+  Copyright 2013-2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -64,7 +64,8 @@
               <em>none</em>
             </div>
             <div ng-switch-default>
-              <div ng-repeat="argument in data.mainClassArguments">
+              <!-- track by $index is needed since duplicates are possible in this list -->
+              <div ng-repeat="argument in data.mainClassArguments track by $index">
                 <div class="jvm-argument break-word">
                   {{argument}}
                 </div>
@@ -103,7 +104,8 @@
         <label>JVM args</label>
       </div>
       <div class="col-md-10">
-        <div ng-repeat="argument in data.jvmArguments">
+        <!-- track by $index is needed since duplicates are possible in this list -->
+        <div ng-repeat="argument in data.jvmArguments track by $index">
           <div class="jvm-argument break-word">
             {{argument}}
           </div>
