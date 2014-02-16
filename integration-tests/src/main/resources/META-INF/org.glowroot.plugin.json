@@ -33,5 +33,23 @@
     "org.glowroot.tests.plugin.LogCauseAspect",
     "org.glowroot.tests.plugin.PauseAspect",
     "org.glowroot.tests.plugin.MatchAllTypesAspect"
+  ],
+  "pointcuts" : [
+    {
+      "metric" : true,
+      "span" : true,
+      "trace" : false,
+      "typeName" : "org.glowroot.tests.LevelFour",
+      "methodName" : "call",
+      "methodArgTypeNames" : [
+        "java.lang.String",
+        "java.lang.String"
+      ],
+      "methodReturnTypeName" : "void",
+      "methodModifiers" : [ ],
+      "metricName" : "level four",
+      "spanText" : "Level Four: {{0}}, {{1}}",
+      "traceGrouping" : ""
+    }
   ]
 }

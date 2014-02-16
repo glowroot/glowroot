@@ -73,7 +73,7 @@ public class ErrorCaptureTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getError()).isNotNull();
-        assertThat(trace.getSpans()).hasSize(3);
+        assertThat(trace.getSpans()).hasSize(4);
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getError()).isNotNull();
         assertThat(rootSpan.getError().getDetail()).isNotNull();
@@ -81,6 +81,7 @@ public class ErrorCaptureTest {
                 mapOf("erra", null, "errb", mapOf("errc", null, "errd", "xyz")));
         assertThat(trace.getSpans().get(1).getError()).isNull();
         assertThat(trace.getSpans().get(2).getError()).isNull();
+        assertThat(trace.getSpans().get(3).getError()).isNull();
     }
 
     @Test

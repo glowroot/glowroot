@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,26 +15,12 @@
  */
 package org.glowroot.tests;
 
-import checkers.nullness.quals.Nullable;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-class LevelThree {
+class LevelFour {
 
-    @Nullable
-    private final RuntimeException exception;
-
-    LevelThree(@Nullable RuntimeException e) {
-        this.exception = e;
-    }
-
-    // this method corresponds to LevelThreeAspect
-    void call(String arg1, String arg2) {
-        new LevelFour().call(arg1, arg2);
-        if (exception != null) {
-            throw exception;
-        }
-    }
+    // this method corresponds to pointcut defined in org.glowroot.plugin.json
+    void call(@SuppressWarnings("unused") String arg1, @SuppressWarnings("unused") String arg2) {}
 }

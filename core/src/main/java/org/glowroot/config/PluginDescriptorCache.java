@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.dynamicadvice.DynamicAdviceGenerator;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.Advice.AdviceConstructionException;
 import org.glowroot.weaving.MixinType;
@@ -81,6 +82,8 @@ public class PluginDescriptorCache {
                     logger.warn("aspect not found: {}", aspect, e);
                 }
             }
+            theAdvisors.addAll(
+                    DynamicAdviceGenerator.getAdvisors(pluginDescriptor.getPointcuts(), false));
         }
         this.mixinTypes = theMixinTypes.build();
         this.advisors = theAdvisors.build();

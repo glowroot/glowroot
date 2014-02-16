@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,18 +49,21 @@ public class PluginDescriptor {
     private final String version;
     private final ImmutableList<PropertyDescriptor> properties;
     private final ImmutableList<String> aspects;
+    private final ImmutableList<PointcutConfig> pointcuts;
 
     public static PluginDescriptor.Builder builder(PluginDescriptor base) {
         return new Builder(base);
     }
 
     private PluginDescriptor(String name, String id, String version,
-            @ReadOnly List<PropertyDescriptor> properties, @ReadOnly List<String> aspects) {
+            @ReadOnly List<PropertyDescriptor> properties, @ReadOnly List<String> aspects,
+            @ReadOnly List<PointcutConfig> pointcuts) {
         this.name = name;
         this.id = id;
         this.version = version;
         this.properties = ImmutableList.copyOf(properties);
         this.aspects = ImmutableList.copyOf(aspects);
+        this.pointcuts = ImmutableList.copyOf(pointcuts);
     }
 
     public String getName() {
@@ -75,15 +78,16 @@ public class PluginDescriptor {
         return version;
     }
 
-    // don't return ImmutableList since this method is used by unshaded code in
-    // org.glowroot.packager.Packager
-    @Immutable
-    public List<PropertyDescriptor> getProperties() {
+    public ImmutableList<PropertyDescriptor> getProperties() {
         return properties;
     }
 
     public ImmutableList<String> getAspects() {
         return aspects;
+    }
+
+    public ImmutableList<PointcutConfig> getPointcuts() {
+        return pointcuts;
     }
 
     @Override
@@ -103,11 +107,14 @@ public class PluginDescriptor {
             @JsonProperty("id") @Nullable String id,
             @JsonProperty("version") @Nullable String version,
             @JsonProperty("properties") @Nullable List<PropertyDescriptor> properties,
-            @JsonProperty("aspects") @Nullable List<String> aspects) throws JsonMappingException {
+            @JsonProperty("aspects") @Nullable List<String> aspects,
+            @JsonProperty("pointcuts") @Nullable List<PointcutConfig> pointcuts)
+            throws JsonMappingException {
         checkRequiredProperty(name, "name");
         checkRequiredProperty(id, "id");
         checkRequiredProperty(version, "version");
-        return new PluginDescriptor(name, id, version, orEmpty(properties), orEmpty(aspects));
+        return new PluginDescriptor(name, id, version, orEmpty(properties), orEmpty(aspects),
+                orEmpty(pointcuts));
     }
 
     @ReadOnly
@@ -133,6 +140,8 @@ public class PluginDescriptor {
         private List<PropertyDescriptor> properties = ImmutableList.of();
         @ReadOnly
         private List<String> aspects = ImmutableList.of();
+        @ReadOnly
+        private List<PointcutConfig> pointcuts = ImmutableList.of();
 
         private Builder(PluginDescriptor base) {
             name = base.name;
@@ -140,6 +149,7 @@ public class PluginDescriptor {
             version = base.version;
             properties = base.properties;
             aspects = base.aspects;
+            pointcuts = base.pointcuts;
         }
 
         public Builder properties(List<PropertyDescriptor> properties) {
@@ -148,7 +158,7 @@ public class PluginDescriptor {
         }
 
         public PluginDescriptor build() {
-            return new PluginDescriptor(name, id, version, properties, aspects);
+            return new PluginDescriptor(name, id, version, properties, aspects, pointcuts);
         }
     }
 }

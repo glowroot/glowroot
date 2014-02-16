@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,27 @@
  */
 package org.glowroot.dynamicadvice;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import checkers.igj.quals.ReadOnly;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.config.PointcutConfig;
 import org.glowroot.jvm.ClassLoaders;
+import org.glowroot.weaving.Advice;
+import org.glowroot.weaving.Advice.AdviceConstructionException;
 import org.glowroot.weaving.TypeNames;
 
 import static org.glowroot.common.Nullness.castNonNull;
@@ -56,12 +64,37 @@ import static org.objectweb.asm.Opcodes.V1_5;
  */
 public class DynamicAdviceGenerator {
 
+    @ReadOnly
+    private static final Logger logger = LoggerFactory.getLogger(DynamicAdviceGenerator.class);
+
     private static final AtomicInteger counter = new AtomicInteger();
 
     private final PointcutConfig pointcutConfig;
     private final String adviceTypeName;
 
-    public DynamicAdviceGenerator(PointcutConfig pointcutConfig) {
+    public static ImmutableList<Advice> getAdvisors(@ReadOnly List<PointcutConfig> pointcutConfigs,
+            boolean reweavable) {
+        ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
+        for (PointcutConfig pointcutConfig : pointcutConfigs) {
+            try {
+                Class<?> dynamicAdviceClass = new DynamicAdviceGenerator(pointcutConfig).generate();
+                Pointcut pointcut = dynamicAdviceClass.getAnnotation(Pointcut.class);
+                if (pointcut == null) {
+                    logger.error("class was generated without @Pointcut annotation");
+                    continue;
+                }
+                Advice advice = Advice.from(pointcut, dynamicAdviceClass, reweavable);
+                advisors.add(advice);
+            } catch (ReflectiveException e) {
+                logger.error("error creating advice for pointcut config: {}", pointcutConfig, e);
+            } catch (AdviceConstructionException e) {
+                logger.error("error creating advice for pointcut config: {}", pointcutConfig, e);
+            }
+        }
+        return advisors.build();
+    }
+
+    private DynamicAdviceGenerator(PointcutConfig pointcutConfig) {
         this.pointcutConfig = pointcutConfig;
         adviceTypeName = "org/glowroot/dynamicadvice/GeneratedAdvice" + counter.incrementAndGet();
     }

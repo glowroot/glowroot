@@ -26,14 +26,11 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.config.PointcutConfig;
 import org.glowroot.dynamicadvice.DynamicAdviceGenerator;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.Advice;
-import org.glowroot.weaving.Advice.AdviceConstructionException;
 
 /**
  * @author Trask Stalnaker
@@ -49,7 +46,7 @@ public class PointcutConfigAdviceCache {
     private volatile ImmutableSet<String> pointcutConfigVersions;
 
     PointcutConfigAdviceCache(@ReadOnly List<PointcutConfig> pointcutConfigs) {
-        advisors = getAdvisors(pointcutConfigs);
+        advisors = DynamicAdviceGenerator.getAdvisors(pointcutConfigs, true);
         pointcutConfigVersions = getPointcutConfigVersions(pointcutConfigs);
     }
 
@@ -63,7 +60,7 @@ public class PointcutConfigAdviceCache {
     }
 
     public void updateAdvisors(@ReadOnly List<PointcutConfig> pointcutConfigs) {
-        advisors = getAdvisors(pointcutConfigs);
+        advisors = DynamicAdviceGenerator.getAdvisors(pointcutConfigs, true);
         pointcutConfigVersions = getPointcutConfigVersions(pointcutConfigs);
     }
 
@@ -73,28 +70,6 @@ public class PointcutConfigAdviceCache {
             versions.add(pointcutConfig.getVersion());
         }
         return !versions.equals(this.pointcutConfigVersions);
-    }
-
-    private static ImmutableList<Advice> getAdvisors(
-            @ReadOnly List<PointcutConfig> pointcutConfigs) {
-        ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
-        for (PointcutConfig pointcutConfig : pointcutConfigs) {
-            try {
-                Class<?> dynamicAdviceClass = new DynamicAdviceGenerator(pointcutConfig).generate();
-                Pointcut pointcut = dynamicAdviceClass.getAnnotation(Pointcut.class);
-                if (pointcut == null) {
-                    logger.error("class was generated without @Pointcut annotation");
-                    continue;
-                }
-                Advice advice = Advice.from(pointcut, dynamicAdviceClass, true);
-                advisors.add(advice);
-            } catch (ReflectiveException e) {
-                logger.error("error creating advice for pointcut config: {}", pointcutConfig, e);
-            } catch (AdviceConstructionException e) {
-                logger.error("error creating advice for pointcut config: {}", pointcutConfig, e);
-            }
-        }
-        return advisors.build();
     }
 
     private static ImmutableSet<String> getPointcutConfigVersions(

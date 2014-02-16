@@ -63,7 +63,7 @@ public class NullDetailMapValueTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getGrouping()).isEqualTo("Level One");
-        assertThat(trace.getSpans()).hasSize(3);
+        assertThat(trace.getSpans()).hasSize(4);
         Span span1 = trace.getSpans().get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");
         assertThat(span1.getMessage().getDetail()).isEqualTo(mapOf("arg1", "a", "arg2", null,

@@ -62,7 +62,7 @@ public class BasicTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getGrouping()).isEqualTo("Level One");
-        assertThat(trace.getSpans()).hasSize(3);
+        assertThat(trace.getSpans()).hasSize(4);
         Span span1 = trace.getSpans().get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");
         assertThat(span1.getMessage().getDetail()).isEqualTo(mapOf("arg1", "a", "arg2", "b",
@@ -77,6 +77,8 @@ public class BasicTest {
         assertThat(span3.getMessage().getDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
         // offset is measured in nanoseconds so there's no way this should be 0
         assertThat(span3.getOffset()).isGreaterThan(0);
+        Span span4 = trace.getSpans().get(3);
+        assertThat(span4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
     }
 
     private static Map<String, Object> mapOf(String k1, Object v1, String k2, Object v2) {
