@@ -67,6 +67,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // the weaver for the bootstrap class loader (null) has to be stored separately since
     // LoadingCache doesn't accept null keys, and using an Optional<ClassLoader> for the key makes
     // the weakness on the Optional instance instead of on the ClassLoader instance
+    @Nullable
     private final Weaver bootLoaderWeaver;
 
     // because of the crazy pre-initialization of javaagent classes (see
@@ -86,9 +87,16 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         this.parsedTypeCache = parsedTypeCache;
         this.metricTimerService = metricTimerService;
         this.metricWrapperMethods = metricWrapperMethods;
-        bootLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors,
-                this.pointcutConfigAdvisors, parsedTypeCache, metricTimerService,
-                metricWrapperMethods);
+        if (isInBootstrapClassLoader()) {
+            // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
+            // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
+            // the woven code will not be able to see glowroot classes (e.g. PluginServices)
+            bootLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors,
+                    this.pointcutConfigAdvisors, parsedTypeCache, metricTimerService,
+                    metricWrapperMethods);
+        } else {
+            bootLoaderWeaver = null;
+        }
         PreInitializeClasses.preInitializeClasses(WeavingClassFileTransformer.class
                 .getClassLoader());
     }
@@ -129,18 +137,32 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                 || className.startsWith("org/glowroot/weaving/")) {
             return null;
         }
-        logger.trace("transform(): className={}", className);
-        Weaver weaver;
-        if (loader == null) {
-            weaver = bootLoaderWeaver;
-        } else {
-            weaver = weavers.getUnchecked(loader);
+        Weaver weaver = getWeaver(loader);
+        if (weaver == null) {
+            // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
+            // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
+            // the woven code will not be able to see glowroot classes (e.g. PluginServices)
+            return null;
         }
+        logger.trace("transform(): className={}", className);
         CodeSource codeSource = protectionDomain == null ? null : protectionDomain.getCodeSource();
         byte[] transformedBytes = weaver.weave(bytes, className, codeSource, loader);
         if (transformedBytes != null) {
             logger.debug("transform(): transformed {}", className);
         }
         return transformedBytes;
+    }
+
+    @Nullable
+    private Weaver getWeaver(@Nullable ClassLoader loader) {
+        if (loader == null) {
+            return bootLoaderWeaver;
+        } else {
+            return weavers.getUnchecked(loader);
+        }
+    }
+
+    public static boolean isInBootstrapClassLoader() {
+        return WeavingClassFileTransformer.class.getClassLoader() == null;
     }
 }

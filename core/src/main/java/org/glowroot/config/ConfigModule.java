@@ -24,6 +24,7 @@ import java.util.jar.JarFile;
 import checkers.nullness.quals.Nullable;
 
 import org.glowroot.markers.ThreadSafe;
+import org.glowroot.weaving.WeavingClassFileTransformer;
 
 /**
  * @author Trask Stalnaker
@@ -40,7 +41,7 @@ public class ConfigModule {
         // instrumentation is null when debugging with IsolatedWeavingClassLoader instead of
         // javaagent
         if (instrumentation != null) {
-            addPluginJarsToSystemClasspath(instrumentation);
+            addPluginJarsToClasspath(instrumentation);
         }
         pluginDescriptorCache = new PluginDescriptorCache();
         configService = new ConfigService(dataDir, pluginDescriptorCache);
@@ -54,10 +55,15 @@ public class ConfigModule {
         return configService;
     }
 
-    private static void addPluginJarsToSystemClasspath(Instrumentation instrumentation)
+    private static void addPluginJarsToClasspath(Instrumentation instrumentation)
             throws URISyntaxException, IOException {
+        boolean useBootstrapClassLoader = WeavingClassFileTransformer.isInBootstrapClassLoader();
         for (File pluginJar : Plugins.getPluginJars()) {
-            instrumentation.appendToSystemClassLoaderSearch(new JarFile(pluginJar));
+            if (useBootstrapClassLoader) {
+                instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(pluginJar));
+            } else {
+                instrumentation.appendToSystemClassLoaderSearch(new JarFile(pluginJar));
+            }
         }
     }
 }
