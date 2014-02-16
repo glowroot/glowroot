@@ -167,6 +167,8 @@ public class ConfigTest {
         // then
         app.openHomePage();
         globalNavbar.getConfigurationLink().click();
+        // need to give angular view a chance to render before assertions
+        Thread.sleep(100);
         assertThat(generalPage.getEnabledCheckbox().isSelected()).isFalse();
         assertThat(generalPage.getStoreThresholdTextField().getAttribute("value"))
                 .isEqualTo("2345");
@@ -195,6 +197,8 @@ public class ConfigTest {
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
         PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
+        // need to give angular view a chance to render before assertions
+        Thread.sleep(100);
         assertThat(pointcutConfigSection.getTypeNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.AppUnderTest");
         assertThat(pointcutConfigSection.getMethodNameTextField().getAttribute("value"))
@@ -257,6 +261,8 @@ public class ConfigTest {
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
         PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
+        // need to give angular view a chance to render before assertions
+        Thread.sleep(100);
         assertThat(pointcutConfigSection.getTypeNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.AppUnderTest");
         assertThat(pointcutConfigSection.getMethodNameTextField().getAttribute("value"))
@@ -290,6 +296,8 @@ public class ConfigTest {
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
         PointcutConfigSection pointcutConfigSection = pointcutConfigListPage.getSection(0);
+        // need to give angular view a chance to render before assertions
+        Thread.sleep(100);
         assertThat(pointcutConfigSection.getTypeNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.AppUnderTest");
         assertThat(pointcutConfigSection.getMethodNameTextField().getAttribute("value"))
