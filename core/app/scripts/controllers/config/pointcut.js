@@ -258,7 +258,6 @@ glowroot.controller('PointcutCtrl', [
         return;
       }
       if (newValue) {
-        initSpanText();
         initTraceGrouping();
       } else {
         $scope.config.traceGrouping = '';
