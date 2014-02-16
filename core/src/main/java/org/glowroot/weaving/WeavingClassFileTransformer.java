@@ -68,7 +68,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // LoadingCache doesn't accept null keys, and using an Optional<ClassLoader> for the key makes
     // the weakness on the Optional instance instead of on the ClassLoader instance
     @Nullable
-    private final Weaver bootLoaderWeaver;
+    private final Weaver bootstrapLoaderWeaver;
 
     // because of the crazy pre-initialization of javaagent classes (see
     // org.glowroot.core.weaving.PreInitializeClasses), all inputs into this class should be
@@ -91,11 +91,11 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
             // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
             // the woven code will not be able to see glowroot classes (e.g. PluginServices)
-            bootLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors,
+            bootstrapLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors,
                     this.pointcutConfigAdvisors, parsedTypeCache, metricTimerService,
                     metricWrapperMethods);
         } else {
-            bootLoaderWeaver = null;
+            bootstrapLoaderWeaver = null;
         }
         PreInitializeClasses.preInitializeClasses(WeavingClassFileTransformer.class
                 .getClassLoader());
@@ -156,7 +156,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     @Nullable
     private Weaver getWeaver(@Nullable ClassLoader loader) {
         if (loader == null) {
-            return bootLoaderWeaver;
+            return bootstrapLoaderWeaver;
         } else {
             return weavers.getUnchecked(loader);
         }

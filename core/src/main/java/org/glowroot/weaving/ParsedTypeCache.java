@@ -108,7 +108,7 @@ public class ParsedTypeCache {
     // therefore the keys will most likely be cleared while their class loaders are still being used
     //
     // intentionally avoiding Maps.newConcurrentMap() for the same reason as above
-    private final ConcurrentMap<String, ParsedType> bootLoaderParsedTypeCache =
+    private final ConcurrentMap<String, ParsedType> bootstrapLoaderParsedTypeCache =
             new ConcurrentHashMap<String, ParsedType>();
 
     @GuardedBy("typeNameUppers")
@@ -159,7 +159,7 @@ public class ParsedTypeCache {
 
     public List<ParsedType> getParsedTypes(String typeName) {
         List<ParsedType> parsedTypes = Lists.newArrayList();
-        ParsedType parsedType = bootLoaderParsedTypeCache.get(typeName);
+        ParsedType parsedType = bootstrapLoaderParsedTypeCache.get(typeName);
         if (parsedType != null) {
             parsedTypes.add(parsedType);
         }
@@ -294,7 +294,7 @@ public class ParsedTypeCache {
     private ParsedType getExistingParsedType(String typeName, @Nullable ClassLoader loader) {
         ClassLoader parsedTypeLoader = getParsedTypeLoader(typeName, loader);
         if (parsedTypeLoader == null) {
-            return bootLoaderParsedTypeCache.get(typeName);
+            return bootstrapLoaderParsedTypeCache.get(typeName);
         }
         return parsedTypeCache.getUnchecked(parsedTypeLoader).get(typeName);
     }
@@ -405,7 +405,7 @@ public class ParsedTypeCache {
 
     private ConcurrentMap<String, ParsedType> getParsedTypes(@Nullable ClassLoader loader) {
         if (loader == null) {
-            return bootLoaderParsedTypeCache;
+            return bootstrapLoaderParsedTypeCache;
         } else {
             return parsedTypeCache.getUnchecked(loader);
         }
@@ -428,7 +428,7 @@ public class ParsedTypeCache {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("parsedTypes", parsedTypeCache)
-                .add("bootLoaderParsedTypes", bootLoaderParsedTypeCache)
+                .add("bootstrapLoaderParsedTypes", bootstrapLoaderParsedTypeCache)
                 .toString();
     }
 
