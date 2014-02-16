@@ -85,7 +85,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     private IsolatedWeavingClassLoader(ImmutableList<MixinType> mixinTypes,
             ImmutableList<Advice> advisors, MetricTimerService metricTimerService,
             ImmutableList<Class<?>> bridgeClasses, ImmutableList<String> excludePackages,
-            boolean weavingDisabled, boolean metricWrapperMethodsDisabled) {
+            boolean weavingDisabled, boolean metricWrapperMethods) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
         this.bridgeClasses = bridgeClasses;
         this.excludePackages = excludePackages;
@@ -93,7 +93,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             weaver = null;
         } else {
             Weaver weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE,
-                    new ParsedTypeCache(), metricTimerService, metricWrapperMethodsDisabled);
+                    new ParsedTypeCache(), metricTimerService, metricWrapperMethods);
             this.weaver = weaver;
         }
     }
@@ -233,7 +233,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         @MonotonicNonNull
         private MetricTimerService metricTimerService;
         private boolean weavingDisabled;
-        private boolean metricWrapperMethodsDisabled;
+        private boolean metricWrapperMethods = true;
         private final ImmutableList.Builder<Class<?>> bridgeClasses = ImmutableList.builder();
         private final ImmutableList.Builder<String> excludePackages = ImmutableList.builder();
 
@@ -256,8 +256,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.weavingDisabled = weavingDisabled;
         }
 
-        public void setMetricWrapperMethodsDisabled(boolean metricWrapperMethodsDisabled) {
-            this.metricWrapperMethodsDisabled = metricWrapperMethodsDisabled;
+        public void setMetricWrapperMethods(boolean metricWrapperMethods) {
+            this.metricWrapperMethods = metricWrapperMethods;
         }
 
         public void addBridgeClasses(Class<?>... bridgeClasses) {
@@ -280,7 +280,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                             return new IsolatedWeavingClassLoader(mixinTypes, advisors,
                                     metricTimerService, bridgeClasses.build(),
                                     excludePackages.build(), weavingDisabled,
-                                    metricWrapperMethodsDisabled);
+                                    metricWrapperMethods);
                         }
                     });
         }

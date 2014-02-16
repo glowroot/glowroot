@@ -121,7 +121,7 @@ public class TraceModule {
                     configModule.getPluginDescriptorCache().getMixinTypes(),
                     configModule.getPluginDescriptorCache().getAdvisors(),
                     pointcutConfigAdviceCache.getAdvisorsSupplier(), parsedTypeCache,
-                    metricTimerService, metricWrapperMethodsDisabled);
+                    metricTimerService, !metricWrapperMethodsDisabled);
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
                 jvmRetransformClassesSupported = true;

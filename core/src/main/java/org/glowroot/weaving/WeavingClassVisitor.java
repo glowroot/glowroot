@@ -80,7 +80,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final CodeSource codeSource;
-    private final boolean metricWrapperMethodsDisabled;
+    private final boolean metricWrapperMethods;
 
     private ImmutableList<AdviceMatcher> adviceMatchers = ImmutableList.of();
     private ImmutableList<MixinType> matchedMixinTypes = ImmutableList.of();
@@ -99,7 +99,7 @@ class WeavingClassVisitor extends ClassVisitor {
     public WeavingClassVisitor(ClassVisitor cv, ImmutableList<MixinType> mixinTypes,
             @ReadOnly Iterable<Advice> advisors, @Nullable ClassLoader loader,
             ParsedTypeCache parsedTypeCache, @Nullable CodeSource codeSource,
-            boolean metricWrapperMethodsDisabled) {
+            boolean metricWrapperMethods) {
         super(ASM4, cv);
         this.cv = cv;
         this.mixinTypes = mixinTypes;
@@ -107,7 +107,7 @@ class WeavingClassVisitor extends ClassVisitor {
         this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
         this.codeSource = codeSource;
-        this.metricWrapperMethodsDisabled = metricWrapperMethodsDisabled;
+        this.metricWrapperMethods = metricWrapperMethods;
     }
 
     @Override
@@ -283,11 +283,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions,
             List<Advice> matchingAdvisors) {
-        if (metricWrapperMethodsDisabled) {
-            MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
-            castNonNull(mv);
-            return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors);
-        } else {
+        if (metricWrapperMethods) {
             String innerWrappedName = wrapWithSyntheticMetricMarkerMethods(access, name, desc,
                     signature, exceptions, matchingAdvisors);
             String methodName = name;
@@ -301,6 +297,10 @@ class WeavingClassVisitor extends ClassVisitor {
             castNonNull(mv);
             return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type,
                     matchingAdvisors);
+        } else {
+            MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
+            castNonNull(mv);
+            return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors);
         }
     }
 

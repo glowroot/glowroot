@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,26 +61,26 @@ class Weaver {
     private final Supplier<ImmutableList<Advice>> pointcutConfigAdvisors;
     private final ParsedTypeCache parsedTypeCache;
     private final MetricTimerService metricTimerService;
-    private final boolean metricWrapperMethodsDisabled;
+    private final boolean metricWrapperMethods;
 
     private final MetricName weavingMetricName;
 
     Weaver(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
             ParsedTypeCache parsedTypeCache, MetricTimerService metricTimerService,
-            boolean metricWrapperMethodsDisabled) {
+            boolean metricWrapperMethods) {
         this.mixinTypes = mixinTypes;
         this.pluginAdvisors = pluginAdvisors;
         this.pointcutConfigAdvisors = pointcutConfigAdvisors;
         this.parsedTypeCache = parsedTypeCache;
         this.metricTimerService = metricTimerService;
-        this.metricWrapperMethodsDisabled = metricWrapperMethodsDisabled;
+        this.metricWrapperMethods = metricWrapperMethods;
         weavingMetricName = metricTimerService.getMetricName("glowroot weaving");
     }
 
     byte/*@Nullable*/[] weave(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
-        if (metricWrapperMethodsDisabled) {
+        if (metricWrapperMethods) {
             return weave$glowroot$metric$glowroot$weaving$0(classBytes, className, codeSource,
                     loader);
         } else {
@@ -116,7 +116,7 @@ class Weaver {
             Iterable<Advice> advisors = Iterables.concat(pluginAdvisors,
                     pointcutConfigAdvisors.get());
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors, loader,
-                    parsedTypeCache, codeSource, metricWrapperMethodsDisabled);
+                    parsedTypeCache, codeSource, metricWrapperMethods);
             ClassReader cr = new ClassReader(classBytes);
             try {
                 cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
