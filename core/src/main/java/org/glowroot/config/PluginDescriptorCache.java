@@ -58,15 +58,7 @@ public class PluginDescriptorCache {
     private final ImmutableList<Advice> advisors;
 
     public PluginDescriptorCache() {
-        ImmutableList.Builder<PluginDescriptor> thePluginDescriptors = ImmutableList.builder();
-        try {
-            thePluginDescriptors.addAll(readPackagedPlugins());
-            thePluginDescriptors.addAll(readInstalledPlugins());
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        }
-        this.pluginDescriptors = thePluginDescriptors.build();
-
+        this.pluginDescriptors = readPluginDescriptors();
         ImmutableList.Builder<MixinType> theMixinTypes = ImmutableList.builder();
         ImmutableList.Builder<Advice> theAdvisors = ImmutableList.builder();
         for (PluginDescriptor pluginDescriptor : this.pluginDescriptors) {
@@ -122,9 +114,15 @@ public class PluginDescriptorCache {
         return advisors;
     }
 
-    private static List<PluginDescriptor> readInstalledPlugins() throws IOException {
-        List<PluginDescriptor> plugins = Lists.newArrayList();
-        List<URL> urls = getResources("META-INF/org.glowroot.plugin.json");
+    private static ImmutableList<PluginDescriptor> readPluginDescriptors() {
+        List<URL> urls;
+        try {
+            urls = getResources("META-INF/org.glowroot.plugin.json");
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+            return ImmutableList.of();
+        }
+        ImmutableList.Builder<PluginDescriptor> plugins = ImmutableList.builder();
         for (URL url : urls) {
             try {
                 String content = Resources.toString(url, Charsets.UTF_8);
@@ -133,25 +131,11 @@ public class PluginDescriptorCache {
                 plugins.add(pluginDescriptor);
             } catch (JsonProcessingException e) {
                 logger.error("error parsing plugin descriptor: {}", url.toExternalForm(), e);
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
             }
         }
-        return plugins;
-    }
-
-    private static ImmutableList<PluginDescriptor> readPackagedPlugins() throws IOException {
-        URL url = getResource("META-INF/org.glowroot.package.json");
-        if (url == null) {
-            return ImmutableList.of();
-        }
-        String content = Resources.toString(url, Charsets.UTF_8);
-        try {
-            PackageDescriptor packageDescriptor =
-                    ObjectMappers.readRequiredValue(mapper, content, PackageDescriptor.class);
-            return packageDescriptor.getPlugins();
-        } catch (JsonProcessingException e) {
-            logger.error("error parsing package descriptor: {}", url.toExternalForm(), e);
-            return ImmutableList.of();
-        }
+        return plugins.build();
     }
 
     private static List<Advice> getAdvisors(Class<?> aspectClass) {
