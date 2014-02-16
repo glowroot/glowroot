@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,12 @@
 package org.glowroot.config;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.jar.JarFile;
 
 import checkers.nullness.quals.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.ThreadSafe;
 
@@ -35,8 +31,6 @@ import org.glowroot.markers.ThreadSafe;
  */
 @ThreadSafe
 public class ConfigModule {
-
-    private static final Logger logger = LoggerFactory.getLogger(ConfigModule.class);
 
     private final PluginDescriptorCache pluginDescriptorCache;
     private final ConfigService configService;
@@ -62,45 +56,8 @@ public class ConfigModule {
 
     private static void addPluginJarsToSystemClasspath(Instrumentation instrumentation)
             throws URISyntaxException, IOException {
-        URL agentJarLocation =
-                ConfigModule.class.getProtectionDomain().getCodeSource().getLocation();
-        if (agentJarLocation == null) {
-            throw new IOException("Could not determine glowroot jar location");
-        }
-        File agentJarFile = new File(agentJarLocation.toURI());
-        if (!agentJarFile.getName().endsWith(".jar")) {
-            if (isRunningDelegatingJavaagent()) {
-                // this is ok, running tests under delegating javaagent
-                return;
-            }
-            throw new IOException("Could not determine glowroot jar location");
-        }
-        File pluginsDir = new File(agentJarFile.getParentFile(), "plugins");
-        if (!pluginsDir.exists()) {
-            // it is ok to run without any plugins
-            return;
-        }
-        File[] pluginJars = pluginsDir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.endsWith(".jar");
-            }
-        });
-        if (pluginJars == null) {
-            logger.warn("listFiles() returned null on directory: {}", pluginsDir.getAbsolutePath());
-            return;
-        }
-        for (File pluginJar : pluginJars) {
+        for (File pluginJar : Plugins.getPluginJars()) {
             instrumentation.appendToSystemClassLoaderSearch(new JarFile(pluginJar));
-        }
-    }
-
-    private static boolean isRunningDelegatingJavaagent() {
-        try {
-            Class.forName("org.glowroot.container.javaagent.DelegatingJavaagent");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
         }
     }
 }

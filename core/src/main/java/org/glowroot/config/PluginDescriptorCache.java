@@ -15,7 +15,9 @@
  */
 package org.glowroot.config;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
@@ -58,7 +60,17 @@ public class PluginDescriptorCache {
     private final ImmutableList<Advice> advisors;
 
     public PluginDescriptorCache() {
-        this.pluginDescriptors = readPluginDescriptors();
+        ImmutableList.Builder<PluginDescriptor> thePluginDescriptors = ImmutableList.builder();
+        try {
+            thePluginDescriptors.addAll(readClasspathPluginDescriptors());
+            thePluginDescriptors.addAll(readStandalonePluginDescriptors());
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        } catch (URISyntaxException e) {
+            logger.error(e.getMessage(), e);
+        }
+        this.pluginDescriptors = thePluginDescriptors.build();
+
         ImmutableList.Builder<MixinType> theMixinTypes = ImmutableList.builder();
         ImmutableList.Builder<Advice> theAdvisors = ImmutableList.builder();
         for (PluginDescriptor pluginDescriptor : this.pluginDescriptors) {
@@ -114,28 +126,32 @@ public class PluginDescriptorCache {
         return advisors;
     }
 
-    private static ImmutableList<PluginDescriptor> readPluginDescriptors() {
-        List<URL> urls;
-        try {
-            urls = getResources("META-INF/org.glowroot.plugin.json");
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            return ImmutableList.of();
-        }
-        ImmutableList.Builder<PluginDescriptor> plugins = ImmutableList.builder();
+    private static ImmutableList<PluginDescriptor> readClasspathPluginDescriptors()
+            throws IOException {
+        ImmutableList.Builder<PluginDescriptor> pluginDescriptors = ImmutableList.builder();
+        List<URL> urls = getResources("META-INF/org.glowroot.plugin.json");
         for (URL url : urls) {
             try {
                 String content = Resources.toString(url, Charsets.UTF_8);
                 PluginDescriptor pluginDescriptor =
                         ObjectMappers.readRequiredValue(mapper, content, PluginDescriptor.class);
-                plugins.add(pluginDescriptor);
+                pluginDescriptors.add(pluginDescriptor);
             } catch (JsonProcessingException e) {
                 logger.error("error parsing plugin descriptor: {}", url.toExternalForm(), e);
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
             }
         }
-        return plugins.build();
+        return pluginDescriptors.build();
+    }
+
+    private static ImmutableList<PluginDescriptor> readStandalonePluginDescriptors()
+            throws IOException, URISyntaxException {
+        ImmutableList.Builder<PluginDescriptor> pluginDescriptors = ImmutableList.builder();
+        for (File pluginDescriptorFile : Plugins.getStandalonePluginDescriptorFiles()) {
+            PluginDescriptor pluginDescriptor = ObjectMappers.readRequiredValue(mapper,
+                    pluginDescriptorFile, PluginDescriptor.class);
+            pluginDescriptors.add(pluginDescriptor);
+        }
+        return pluginDescriptors.build();
     }
 
     private static List<Advice> getAdvisors(Class<?> aspectClass) {

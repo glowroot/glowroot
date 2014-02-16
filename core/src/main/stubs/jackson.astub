@@ -26,6 +26,7 @@ public class ObjectMapper {
     public @I JsonFactory getFactory() @I;
     public ObjectWriter writerWithView(Class<?> serializationView) @ReadOnly;
     public <T extends @Nullable Object> T readValue(String content, Class<T> valueType) @ReadOnly;
+    public <T extends @Nullable Object> T readValue(File src, Class<T> valueType) @ReadOnly;
     public String writeValueAsString(@ReadOnly Object value) @ReadOnly;
     public ObjectNode createObjectNode() @ReadOnly;
     public ObjectNode createArrayNode() @ReadOnly;

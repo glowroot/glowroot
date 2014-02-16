@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.common;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Locale;
 
@@ -62,6 +63,15 @@ public class ObjectMappers {
     public static <T extends /*@Nullable*/Object> T readRequiredValue(
             @ReadOnly ObjectMapper mapper, String content, Class<T> type) throws IOException {
         T value = mapper.readValue(content, type);
+        if (value == null) {
+            throw new JsonMappingException("Content is json null");
+        }
+        return value;
+    }
+
+    public static <T extends /*@Nullable*/Object> T readRequiredValue(
+            @ReadOnly ObjectMapper mapper, File file, Class<T> type) throws IOException {
+        T value = mapper.readValue(file, type);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
         }
