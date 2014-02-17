@@ -312,8 +312,6 @@ public class ConfigTest {
 
     private static PointcutConfig createPointcutConfig() {
         PointcutConfig config = new PointcutConfig();
-        config.setMetric(true);
-        config.setSpan(true);
         config.setTypeName("java.util.Collections");
         config.setMethodName("yak");
         config.setMethodArgTypeNames(Lists.newArrayList("java.lang.String", "java.util.List"));
@@ -322,13 +320,11 @@ public class ConfigTest {
                 .newArrayList(MethodModifier.PUBLIC, MethodModifier.STATIC));
         config.setMetricName("yako");
         config.setSpanText("yak(): {{0}}, {{1}} => {{?}}");
+        config.setTraceGrouping("");
         return config;
     }
 
     private static void updateAllFields(PointcutConfig config) {
-        config.setMetric(!config.isMetric());
-        config.setSpan(!config.isSpan());
-        config.setTrace(!config.isTrace());
         config.setTypeName(config.getTypeName() + "a");
         config.setMethodName(config.getMethodName() + "b");
         if (config.getMethodArgTypeNames().size() == 0) {
@@ -346,5 +342,13 @@ public class ConfigTest {
         }
         config.setMetricName(config.getMetricName() + "e");
         config.setSpanText(config.getSpanText() + "f");
+        Long spanStackTraceThresholdMillis = config.getSpanStackTraceThresholdMillis();
+        if (spanStackTraceThresholdMillis == null) {
+            config.setSpanStackTraceThresholdMillis(1000L);
+        } else {
+            config.setSpanStackTraceThresholdMillis(spanStackTraceThresholdMillis + 1);
+        }
+        config.setTraceGrouping(config.getTraceGrouping() + "g");
+        config.setTraceBackground(!config.isTraceBackground());
     }
 }

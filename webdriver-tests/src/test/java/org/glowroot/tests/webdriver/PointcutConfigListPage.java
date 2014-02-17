@@ -33,8 +33,7 @@ class PointcutConfigListPage {
     }
 
     WebElement getAddPointcutButton() {
-        return Utils.withWait(driver,
-                xpath("//div[div[h2[text()='New pointcut']]]//button[text()='Add pointcut']"));
+        return Utils.withWait(driver, xpath("//button[@ng-click='addPointcut()']"));
     }
 
     PointcutConfigSection getSection(int index) {

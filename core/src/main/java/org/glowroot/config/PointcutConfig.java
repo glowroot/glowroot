@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -44,31 +45,25 @@ import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 @Immutable
 public class PointcutConfig {
 
-    private final boolean metric;
-    private final boolean span;
-    private final boolean trace;
     private final String typeName;
     private final String methodName;
     private final ImmutableList<String> methodArgTypeNames;
     private final String methodReturnTypeName;
     private final ImmutableList<MethodModifier> methodModifiers;
-    @Nullable
     private final String metricName;
-    @Nullable
     private final String spanText;
     @Nullable
+    private final Long spanStackTraceThresholdMillis;
     private final String traceGrouping;
+    private final boolean traceBackground;
     private final String version;
 
     @VisibleForTesting
-    public PointcutConfig(boolean metric, boolean span, boolean trace, String typeName,
-            String methodName, @ReadOnly List<String> methodArgTypeNames,
-            String methodReturnTypeName, @ReadOnly List<MethodModifier> methodModifiers,
-            @Nullable String metricName, @Nullable String spanText,
-            @Nullable String traceGrouping) {
-        this.metric = metric;
-        this.span = span;
-        this.trace = trace;
+    public PointcutConfig(String typeName, String methodName,
+            @ReadOnly List<String> methodArgTypeNames, String methodReturnTypeName,
+            @ReadOnly List<MethodModifier> methodModifiers, String metricName, String spanText,
+            @Nullable Long spanStackTraceThresholdMillis, String traceGrouping,
+            boolean traceBackground) {
         this.typeName = typeName;
         this.methodName = methodName;
         this.methodArgTypeNames = ImmutableList.copyOf(methodArgTypeNames);
@@ -76,21 +71,12 @@ public class PointcutConfig {
         this.methodModifiers = ImmutableList.copyOf(methodModifiers);
         this.metricName = metricName;
         this.spanText = spanText;
+        this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
         this.traceGrouping = traceGrouping;
-        version = VersionHashes.sha1(metric, span, trace, typeName, methodName, methodArgTypeNames,
-                methodReturnTypeName, methodModifiers, metricName, spanText, traceGrouping);
-    }
-
-    public boolean isMetric() {
-        return metric;
-    }
-
-    public boolean isSpan() {
-        return span;
-    }
-
-    public boolean isTrace() {
-        return trace;
+        this.traceBackground = traceBackground;
+        version = VersionHashes.sha1(typeName, methodName, methodArgTypeNames,
+                methodReturnTypeName, methodModifiers, metricName, spanText,
+                spanStackTraceThresholdMillis, traceGrouping, traceBackground);
     }
 
     public String getTypeName() {
@@ -115,19 +101,25 @@ public class PointcutConfig {
         return methodModifiers;
     }
 
-    @Nullable
     public String getMetricName() {
         return metricName;
     }
 
-    @Nullable
     public String getSpanText() {
         return spanText;
     }
 
     @Nullable
+    public Long getSpanStackTraceThresholdMillis() {
+        return spanStackTraceThresholdMillis;
+    }
+
     public String getTraceGrouping() {
         return traceGrouping;
+    }
+
+    public boolean isTraceBackground() {
+        return traceBackground;
     }
 
     @JsonView(UiView.class)
@@ -135,11 +127,23 @@ public class PointcutConfig {
         return version;
     }
 
+    @JsonIgnore
+    public boolean isMetric() {
+        return metricName.length() > 0;
+    }
+
+    @JsonIgnore
+    public boolean isSpan() {
+        return spanText.length() > 0;
+    }
+
+    @JsonIgnore
+    public boolean isTrace() {
+        return traceGrouping.length() > 0;
+    }
+
     @JsonCreator
     static PointcutConfig readValue(
-            @JsonProperty("metric") @Nullable Boolean metric,
-            @JsonProperty("span") @Nullable Boolean span,
-            @JsonProperty("trace") @Nullable Boolean trace,
             @JsonProperty("typeName") @Nullable String typeName,
             @JsonProperty("methodName") @Nullable String methodName,
             @JsonProperty("methodArgTypeNames") @Nullable List<String> methodArgTypeNames,
@@ -147,7 +151,9 @@ public class PointcutConfig {
             @JsonProperty("methodModifiers") @Nullable List<MethodModifier> methodModifiers,
             @JsonProperty("metricName") @Nullable String metricName,
             @JsonProperty("spanText") @Nullable String spanText,
+            @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
             @JsonProperty("traceGrouping") @Nullable String traceGrouping,
+            @JsonProperty("traceBackground") @Nullable Boolean traceBackground,
             // without including a parameter for version, jackson will use direct field access after
             // this method in order to set the version field if it is included in the json being
             // deserialized (overwriting the hashed version that is calculated in the constructor)
@@ -158,9 +164,10 @@ public class PointcutConfig {
         if (version != null) {
             throw new JsonMappingException("Version field is not allowed for deserialization");
         }
-        return new PointcutConfig(orFalse(metric), orFalse(span), orFalse(trace), typeName,
-                methodName, orEmpty(methodArgTypeNames), methodReturnTypeName,
-                orEmpty(methodModifiers), metricName, spanText, traceGrouping);
+        return new PointcutConfig(typeName, methodName, orEmpty(methodArgTypeNames),
+                methodReturnTypeName, orEmpty(methodModifiers), orEmpty(metricName),
+                orEmpty(spanText), spanStackTraceThresholdMillis, orEmpty(traceGrouping),
+                orFalse(traceBackground));
     }
 
     private static <T> List<T> orEmpty(@Nullable List<T> list) {
@@ -174,13 +181,14 @@ public class PointcutConfig {
         return value != null && value;
     }
 
+    private static String orEmpty(@Nullable String value) {
+        return Objects.firstNonNull(value, "");
+    }
+
     @Override
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("metric", metric)
-                .add("span", span)
-                .add("trace", trace)
                 .add("typeName", typeName)
                 .add("methodName", methodName)
                 .add("methodArgTypeNames", methodArgTypeNames)
@@ -188,7 +196,9 @@ public class PointcutConfig {
                 .add("methodModifiers", methodModifiers)
                 .add("metricName", metricName)
                 .add("spanText", spanText)
+                .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("traceGrouping", traceGrouping)
+                .add("traceBackground", traceBackground)
                 .add("version", version)
                 .toString();
     }

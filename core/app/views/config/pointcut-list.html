@@ -30,7 +30,7 @@
          class="form-horizontal"
          name="formCtrl">
       <div class="form-group"
-           ng-class="{'has-error': formCtrl['typeName' + $id].$invalid}">
+           ng-class="{'has-error': showError('typeName')}">
         <label class="col-lg-2 control-label"
                for="typeName{{$id}}">
           Type name
@@ -43,7 +43,7 @@
                  typeahead="suggestion for suggestion in typeNames($viewValue)"
                  typeahead-on-select="onSelectTypeName()"
                  typeahead-loading="typeNamesLoading"
-                 name="typeName{{$id}}"
+                 name="typeName"
                  id="typeName{{$id}}"
                  gt-set-focus="isFocus"
                  style="max-width: 40em; display: inline-block">
@@ -55,7 +55,7 @@
         </div>
       </div>
       <div class="form-group"
-           ng-class="{'has-error': formCtrl['methodName' + $id].$invalid}">
+           ng-class="{'has-error': showError('methodName')}">
         <label class="col-lg-2 control-label"
                for="methodName{{$id}}">
           Method name
@@ -70,7 +70,7 @@
                  typeahead-loading="methodNamesLoading"
                  gt-typeahead-open-on-empty
                  ng-blur="onSelectMethodName()"
-                 name="methodName{{$id}}"
+                 name="methodName"
                  id="methodName{{$id}}"
                  style="max-width: 40em; display: inline-block;">
           <div gt-spinner
@@ -104,45 +104,8 @@
           </div>
         </div>
       </div>
-      <div class="form-group">
-        <label class="col-lg-2 control-label">
-          Capture
-        </label>
-        <div class="col-lg-10"
-             style="padding-top: 1px;">
-          <div class="checkbox" style="padding-top: 6px !important;">
-            <label>
-              <input type="checkbox"
-                     ng-model="config.metric"
-                     style="margin-top: 3px;">
-              Metric
-            </label>
-          </div>
-          <div class="checkbox">
-            <label>
-              <input type="checkbox"
-                     ng-model="config.span"
-                     ng-disabled="!config.metric">
-                  <span ng-class="{disabled: !config.metric}">
-                    Span
-                  </span>
-            </label>
-          </div>
-          <div class="checkbox">
-            <label>
-              <input type="checkbox"
-                     ng-model="config.trace"
-                     ng-disabled="!config.span">
-                  <span ng-class="{disabled: !config.span}">
-                    Trace
-                  </span>
-            </label>
-          </div>
-        </div>
-      </div>
       <div class="form-group"
-           ng-class="{'has-error': formCtrl['metricName' + $id].$invalid}"
-           ng-show="config.metric">
+           ng-class="{'has-error': showError('metricName')}">
         <label class="col-lg-2 control-label"
                for="metricName{{$id}}">
           Metric name
@@ -151,47 +114,122 @@
           <input type="text"
                  class="form-control"
                  ng-model="config.metricName"
-                 ng-required="config.metric"
-                 name="metricName{{$id}}"
+                 ng-required="true"
+                 ng-pattern="/^[a-zA-Z0-9 ]*$/"
+                 name="metricName"
                  id="metricName{{$id}}"
                  style="max-width: 20em;">
         </div>
       </div>
-      <div ng-show="config.span">
-        <div class="form-group"
-             ng-class="{'has-error': formCtrl['spanText' + $id].$invalid}">
-          <label class="col-lg-2 control-label"
-                 for="spanText{{$id}}">
-            Span text
-          </label>
-          <div class="col-lg-10">
-            <textarea class="form-control"
-                      ng-model="config.spanText"
-                      ng-required="config.span"
-                      name="spanText{{$id}}"
-                      id="spanText{{$id}}"
-                      rows="2"
-                      style="max-width: 40em;">
-            </textarea>
+      <div class="form-group">
+        <label class="col-lg-2 control-label">
+          Span definition
+        </label>
+        <div class="col-lg-10"
+             style="padding-top: 1px;">
+          <div class="checkbox"
+               style="padding-top: 6px !important;">
+            <label>
+              <input type="checkbox"
+                     ng-model="spanDefinition"
+                     style="margin-top: 3px;">
+              Capture a span when this pointcut is called
+            </label>
+          </div>
+          <div ng-show="spanDefinition"
+               style="margin-left: 3em;">
+            <div ng-class="{'has-error': showError('spanText')}">
+              <label class="control-label"
+                     style="margin-top: 15px;">
+                Span text
+              </label>
+              <textarea class="form-control"
+                        ng-model="config.spanText"
+                        ng-required="spanDefinition"
+                        name="spanText"
+                        id="spanText{{$id}}"
+                        rows="2"
+                        style="max-width: 37em; vertical-align: top;">
+              </textarea>
+            </div>
+            <div ng-class="{'has-error': showError('spanStackTraceThresholdMillis')}">
+              <label class="control-label"
+                     style="margin-top: 15px;">
+                Stack trace threshold
+              </label>
+              <div class="input-group">
+                <input type="text"
+                       class="form-control"
+                       ng-model="config.spanStackTraceThresholdMillis"
+                       ng-pattern="pattern.integer"
+                       name="spanStackTraceThresholdMillis"
+                       id="spanStackTraceThresholdMillis{{$id}}"
+                       style="width: 7em;">
+                <span class="input-group-addon">
+                  milliseconds
+                </span>
+              </div>
+              <div class="help-block">
+                Any span that exceeds this threshold will have a stack trace captured and attached to it.
+                Empty means never capture a stack trace.
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div ng-show="config.trace">
-        <div class="form-group"
-             ng-class="{'has-error': formCtrl['traceGrouping' + $id].$invalid}">
-          <label class="col-lg-2 control-label"
-                 for="traceGrouping{{$id}}">
-            Trace grouping
-          </label>
-          <div class="col-lg-10">
-            <textarea class="form-control"
-                      ng-model="config.traceGrouping"
-                      ng-required="config.trace"
-                      name="traceGrouping{{$id}}"
-                      id="traceGrouping{{$id}}"
-                      rows="2"
-                      style="max-width: 40em;">
-            </textarea>
+      <div class="form-group" ng-class="{'gt-disabled': !spanDefinition}">
+        <label class="col-lg-2 control-label">
+          Trace definition
+        </label>
+        <div class="col-lg-10"
+             style="padding-top: 1px;">
+          <div class="checkbox"
+               style="padding-top: 6px !important;">
+            <label>
+              <input type="checkbox"
+                     ng-model="traceDefinition"
+                     ng-disabled="!spanDefinition"
+                     style="margin-top: 3px;">
+              Start a new trace when this pointcut is called outside an existing trace
+            </label>
+            <p>
+              (The span definition above will be used to define the root span)
+            </p>
+          </div>
+          <div ng-show="traceDefinition"
+               style="margin-left: 3em;">
+            <div ng-class="{'has-error': showError('traceGrouping')}">
+              <label class="control-label"
+                     style="margin-top: 15px;">
+                Trace grouping
+              </label>
+              <textarea class="form-control"
+                        ng-model="config.traceGrouping"
+                        ng-required="traceDefinition"
+                        name="traceGrouping"
+                        id="traceGrouping{{$id}}"
+                        rows="2"
+                        style="max-width: 37em; vertical-align: top;">
+              </textarea>
+              <div class="help-block">
+                The trace grouping is displayed at the top of a trace capture,
+                and traces can be filtered using the trace grouping field.
+                Also, with aggregation enabled, trace data is aggregated across traces in the same grouping.
+              </div>
+            </div>
+            <div>
+              <label style="margin-top: 15px;">
+                Background
+              </label>
+              <div class="checkbox"
+                   style="padding-top: 0;">
+                <label>
+                  <input type="checkbox"
+                         ng-model="config.traceBackground">
+                  Mark as background trace
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 
 import org.glowroot.GlowrootModule;
@@ -306,11 +307,7 @@ class LocalConfigService implements ConfigService {
                 .getMethodModifiers()) {
             methodModifiers.add(MethodModifier.valueOf(methodModifier.name()));
         }
-
         PointcutConfig config = new PointcutConfig(coreConfig.getVersion());
-        config.setMetric(coreConfig.isMetric());
-        config.setSpan(coreConfig.isSpan());
-        config.setTrace(coreConfig.isTrace());
         config.setTypeName(coreConfig.getTypeName());
         config.setMethodName(coreConfig.getMethodName());
         config.setMethodArgTypeNames(coreConfig.getMethodArgTypeNames());
@@ -318,6 +315,9 @@ class LocalConfigService implements ConfigService {
         config.setMethodModifiers(methodModifiers);
         config.setMetricName(coreConfig.getMetricName());
         config.setSpanText(coreConfig.getSpanText());
+        config.setSpanStackTraceThresholdMillis(coreConfig.getSpanStackTraceThresholdMillis());
+        config.setTraceGrouping(coreConfig.getTraceGrouping());
+        config.setTraceBackground(coreConfig.isTraceBackground());
         return config;
     }
 
@@ -334,9 +334,14 @@ class LocalConfigService implements ConfigService {
         checkNotNull(typeName, "PointcutConfig typeName is null");
         checkNotNull(methodName, "PointcutConfig methodName is null");
         checkNotNull(methodReturnTypeName, "PointcutConfig methodReturnTypeName is null");
-        return new org.glowroot.config.PointcutConfig(config.isMetric(), config.isSpan(),
-                config.isTrace(), typeName, methodName, config.getMethodArgTypeNames(),
-                methodReturnTypeName, methodModifiers, config.getMetricName(),
-                config.getSpanText(), config.getTraceGrouping());
+        return new org.glowroot.config.PointcutConfig(typeName, methodName,
+                config.getMethodArgTypeNames(), methodReturnTypeName, methodModifiers,
+                orEmpty(config.getMetricName()), orEmpty(config.getSpanText()),
+                config.getSpanStackTraceThresholdMillis(), orEmpty(config.getTraceGrouping()),
+                config.isTraceBackground());
+    }
+
+    private static String orEmpty(@Nullable String value) {
+        return Objects.firstNonNull(value, "");
     }
 }

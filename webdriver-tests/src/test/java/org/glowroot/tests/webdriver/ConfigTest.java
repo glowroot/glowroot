@@ -203,15 +203,17 @@ public class ConfigTest {
                 .isEqualTo("org.glowroot.container.AppUnderTest");
         assertThat(pointcutConfigSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(pointcutConfigSection.getMetricCheckbox().isSelected()).isTrue();
-        assertThat(pointcutConfigSection.getSpanCheckbox().isSelected()).isTrue();
-        assertThat(pointcutConfigSection.getTraceCheckbox().isSelected()).isTrue();
         assertThat(pointcutConfigSection.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
+        assertThat(pointcutConfigSection.getSpanDefinitionCheckbox().isSelected()).isTrue();
         assertThat(pointcutConfigSection.getSpanTextTextField().getAttribute("value"))
                 .isEqualTo("a span");
+        assertThat(pointcutConfigSection.getSpanStackTraceThresholdTextTextField()
+                .getAttribute("value")).isEqualTo("");
+        assertThat(pointcutConfigSection.getTraceDefinitionCheckbox().isSelected()).isTrue();
         assertThat(pointcutConfigSection.getTraceGroupingTextField().getAttribute("value"))
                 .isEqualTo("a trace");
+        assertThat(pointcutConfigSection.getTraceBackgroundCheckbox().isSelected()).isFalse();
     }
 
     @Test
@@ -267,13 +269,15 @@ public class ConfigTest {
                 .isEqualTo("org.glowroot.container.AppUnderTest");
         assertThat(pointcutConfigSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(pointcutConfigSection.getMetricCheckbox().isSelected()).isTrue();
-        assertThat(pointcutConfigSection.getSpanCheckbox().isSelected()).isFalse();
-        assertThat(pointcutConfigSection.getTraceCheckbox().isSelected()).isFalse();
         assertThat(pointcutConfigSection.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
+        assertThat(pointcutConfigSection.getSpanDefinitionCheckbox().isSelected()).isFalse();
         assertThat(pointcutConfigSection.getSpanTextTextField().isDisplayed()).isFalse();
+        assertThat(pointcutConfigSection.getSpanStackTraceThresholdTextTextField().isDisplayed())
+                .isFalse();
+        assertThat(pointcutConfigSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
         assertThat(pointcutConfigSection.getTraceGroupingTextField().isDisplayed()).isFalse();
+        assertThat(pointcutConfigSection.getTraceBackgroundCheckbox().isDisplayed()).isFalse();
     }
 
     @Test
@@ -302,14 +306,16 @@ public class ConfigTest {
                 .isEqualTo("org.glowroot.container.AppUnderTest");
         assertThat(pointcutConfigSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(pointcutConfigSection.getMetricCheckbox().isSelected()).isTrue();
-        assertThat(pointcutConfigSection.getSpanCheckbox().isSelected()).isTrue();
-        assertThat(pointcutConfigSection.getTraceCheckbox().isSelected()).isFalse();
         assertThat(pointcutConfigSection.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
+        assertThat(pointcutConfigSection.getSpanDefinitionCheckbox().isSelected()).isTrue();
         assertThat(pointcutConfigSection.getSpanTextTextField().getAttribute("value"))
                 .isEqualTo("a span");
+        assertThat(pointcutConfigSection.getSpanStackTraceThresholdTextTextField()
+                .getAttribute("value")).isEqualTo("");
+        assertThat(pointcutConfigSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
         assertThat(pointcutConfigSection.getTraceGroupingTextField().isDisplayed()).isFalse();
+        assertThat(pointcutConfigSection.getTraceBackgroundCheckbox().isDisplayed()).isFalse();
     }
 
     private void createPointcutConfig(PointcutConfigListPage pointcutConfigListPage) {
@@ -319,13 +325,12 @@ public class ConfigTest {
         pointcutConfigSection.clickTypeNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
         pointcutConfigSection.getMethodNameTextField().sendKeys("exec");
         pointcutConfigSection.clickMethodNameAutoCompleteItem("executeApp");
-        pointcutConfigSection.getMetricCheckbox().click();
-        pointcutConfigSection.getSpanCheckbox().click();
-        pointcutConfigSection.getTraceCheckbox().click();
         pointcutConfigSection.getMetricNameTextField().clear();
         pointcutConfigSection.getMetricNameTextField().sendKeys("a metric");
+        pointcutConfigSection.getSpanDefinitionCheckbox().click();
         pointcutConfigSection.getSpanTextTextField().clear();
         pointcutConfigSection.getSpanTextTextField().sendKeys("a span");
+        pointcutConfigSection.getTraceDefinitionCheckbox().click();
         pointcutConfigSection.getTraceGroupingTextField().clear();
         pointcutConfigSection.getTraceGroupingTextField().sendKeys("a trace");
         pointcutConfigSection.getAddButton().click();
@@ -340,7 +345,6 @@ public class ConfigTest {
         pointcutConfigSection.clickTypeNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
         pointcutConfigSection.getMethodNameTextField().sendKeys("exec");
         pointcutConfigSection.clickMethodNameAutoCompleteItem("executeApp");
-        pointcutConfigSection.getMetricCheckbox().click();
         pointcutConfigSection.getMetricNameTextField().clear();
         pointcutConfigSection.getMetricNameTextField().sendKeys("a metric");
         pointcutConfigSection.getAddButton().click();
@@ -356,10 +360,9 @@ public class ConfigTest {
         pointcutConfigSection.clickTypeNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
         pointcutConfigSection.getMethodNameTextField().sendKeys("exec");
         pointcutConfigSection.clickMethodNameAutoCompleteItem("executeApp");
-        pointcutConfigSection.getMetricCheckbox().click();
-        pointcutConfigSection.getSpanCheckbox().click();
         pointcutConfigSection.getMetricNameTextField().clear();
         pointcutConfigSection.getMetricNameTextField().sendKeys("a metric");
+        pointcutConfigSection.getSpanDefinitionCheckbox().click();
         pointcutConfigSection.getSpanTextTextField().clear();
         pointcutConfigSection.getSpanTextTextField().sendKeys("a span");
         pointcutConfigSection.getAddButton().click();

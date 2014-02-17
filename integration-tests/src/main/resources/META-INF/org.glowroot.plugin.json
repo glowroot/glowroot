@@ -36,9 +36,6 @@
   ],
   "pointcuts" : [
     {
-      "metric" : true,
-      "span" : true,
-      "trace" : false,
       "typeName" : "org.glowroot.tests.LevelFour",
       "methodName" : "call",
       "methodArgTypeNames" : [

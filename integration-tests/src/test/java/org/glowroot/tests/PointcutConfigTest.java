@@ -81,6 +81,7 @@ public class PointcutConfigTest {
         assertThat(trace.getMetricNames()).contains("mock trace marker", "execute one",
                 "execute one metric only");
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("execute1() => void");
+        assertThat(trace.getSpans().get(1).getStackTrace()).isNotNull();
     }
 
     @Test
@@ -114,8 +115,6 @@ public class PointcutConfigTest {
 
     protected static void addPointcutConfigForExecute1() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setMetric(true);
-        config.setSpan(true);
         config.setTypeName("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("execute1");
         config.setMethodArgTypeNames(ImmutableList.<String>of());
@@ -123,12 +122,12 @@ public class PointcutConfigTest {
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setMetricName("execute one");
         config.setSpanText("execute1() => {{ret}}");
+        config.setSpanStackTraceThresholdMillis(0L);
         container.getConfigService().addPointcutConfig(config);
     }
 
     protected static void addPointcutConfigForExecute1MetricOnly() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setMetric(true);
         config.setTypeName("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("execute1");
         config.setMethodArgTypeNames(ImmutableList.<String>of());
@@ -140,8 +139,6 @@ public class PointcutConfigTest {
 
     protected static void addPointcutConfigForExecuteWithReturn() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setMetric(true);
-        config.setSpan(true);
         config.setTypeName("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("executeWithReturn");
         config.setMethodArgTypeNames(ImmutableList.<String>of());
@@ -154,9 +151,6 @@ public class PointcutConfigTest {
 
     protected static void addPointcutConfigForExecuteWithArgs() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setMetric(true);
-        config.setSpan(true);
-        config.setTrace(true);
         config.setTypeName("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("executeWithArgs");
         config.setMethodArgTypeNames(ImmutableList.of("java.lang.String", "int"));

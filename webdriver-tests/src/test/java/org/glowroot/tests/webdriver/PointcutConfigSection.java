@@ -39,7 +39,7 @@ class PointcutConfigSection {
     }
 
     WebElement getTypeNameTextField() {
-        return withWait(xpath(".//div[label[text()='Type name']]//input"));
+        return withWait(xpath(".//input[@ng-model='config.typeName']"));
     }
 
     void clickTypeNameAutoCompleteItem(String typeName) {
@@ -47,35 +47,39 @@ class PointcutConfigSection {
     }
 
     WebElement getMethodNameTextField() {
-        return withWait(xpath(".//div[label[text()='Method name']]//input"));
+        return withWait(xpath(".//input[@ng-model='config.methodName']"));
     }
 
     void clickMethodNameAutoCompleteItem(String methodName) {
         clickTypeAheadItem("Method name", methodName);
     }
 
-    WebElement getMetricCheckbox() {
-        return withWait(xpath(".//label[text()='Metric']/input"));
-    }
-
-    WebElement getSpanCheckbox() {
-        return withWait(xpath(".//label[span[text()='Span']]/input"));
-    }
-
-    WebElement getTraceCheckbox() {
-        return withWait(xpath(".//label[span[text()='Trace']]/input"));
-    }
-
     WebElement getMetricNameTextField() {
-        return withWait(xpath(".//div[label[text()='Metric name']]//input"));
+        return withWait(xpath(".//input[@ng-model='config.metricName']"));
+    }
+
+    WebElement getSpanDefinitionCheckbox() {
+        return withWait(xpath(".//input[@ng-model='spanDefinition']"));
     }
 
     WebElement getSpanTextTextField() {
-        return withWait(xpath(".//div[label[text()='Span text']]//textarea"));
+        return withWait(xpath(".//textarea[@ng-model='config.spanText']"));
+    }
+
+    WebElement getSpanStackTraceThresholdTextTextField() {
+        return withWait(xpath(".//input[@ng-model='config.spanStackTraceThresholdMillis']"));
+    }
+
+    WebElement getTraceDefinitionCheckbox() {
+        return withWait(xpath(".//input[@ng-model='traceDefinition']"));
     }
 
     WebElement getTraceGroupingTextField() {
-        return withWait(xpath(".//div[label[text()='Trace grouping']]//textarea"));
+        return withWait(xpath(".//textarea[@ng-model='config.traceGrouping']"));
+    }
+
+    WebElement getTraceBackgroundCheckbox() {
+        return withWait(xpath(".//input[@ng-model='config.traceBackground']"));
     }
 
     WebElement getAddButton() {

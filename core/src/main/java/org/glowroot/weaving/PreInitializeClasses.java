@@ -86,6 +86,24 @@ class PreInitializeClasses {
         List<String> types = Lists.newArrayList();
 
         types.add("com.google.common.base.Ascii");
+        types.add("com.google.common.base.CharMatcher");
+        types.add("com.google.common.base.CharMatcher$1");
+        types.add("com.google.common.base.CharMatcher$10");
+        types.add("com.google.common.base.CharMatcher$13");
+        types.add("com.google.common.base.CharMatcher$15");
+        types.add("com.google.common.base.CharMatcher$2");
+        types.add("com.google.common.base.CharMatcher$3");
+        types.add("com.google.common.base.CharMatcher$4");
+        types.add("com.google.common.base.CharMatcher$5");
+        types.add("com.google.common.base.CharMatcher$6");
+        types.add("com.google.common.base.CharMatcher$7");
+        types.add("com.google.common.base.CharMatcher$8");
+        types.add("com.google.common.base.CharMatcher$9");
+        types.add("com.google.common.base.CharMatcher$FastMatcher");
+        types.add("com.google.common.base.CharMatcher$NegatedFastMatcher");
+        types.add("com.google.common.base.CharMatcher$NegatedMatcher");
+        types.add("com.google.common.base.CharMatcher$Or");
+        types.add("com.google.common.base.CharMatcher$RangesMatcher");
         types.add("com.google.common.base.Equivalence");
         types.add("com.google.common.base.Equivalence$Equals");
         types.add("com.google.common.base.Equivalence$Identity");
@@ -314,7 +332,6 @@ class PreInitializeClasses {
         types.add("com.google.common.util.concurrent.Uninterruptibles");
         return types;
     }
-
     private static List<String> getJacksonUsedTypes() {
         List<String> types = Lists.newArrayList();
         types.add("com.fasterxml.jackson.core.JsonFactory");

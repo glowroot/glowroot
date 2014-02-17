@@ -25,6 +25,7 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
 import checkers.nullness.quals.RequiresNonNull;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
@@ -67,6 +68,11 @@ import static org.objectweb.asm.Opcodes.ASM4;
 class WeavingClassVisitor extends ClassVisitor {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassVisitor.class);
+
+    private static final CharMatcher metricNameCharMatcher =
+            CharMatcher.JAVA_LETTER_OR_DIGIT.or(CharMatcher.is(' '));
+
+    private static final Set<String> invalidMetricNameSet = Sets.newConcurrentHashSet();
 
     // this field is just a @NonNull version of the field with the same name in the super class to
     // help with null flow analysis
@@ -318,6 +324,10 @@ class WeavingClassVisitor extends ClassVisitor {
             if (metricName.length() == 0) {
                 continue;
             }
+            if (!metricNameCharMatcher.matchesAllOf(metricName)) {
+                logInvalidMetricNameWarningOnce(metricName);
+                metricName = metricNameCharMatcher.negate().replaceFrom(metricName, '_');
+            }
             String nextMethodName = outerName + "$glowroot$metric$" + metricName.replace(' ', '$')
                     + '$' + innerMethodCounter++;
             int access = first ? outerAccess : innerAccess;
@@ -491,6 +501,12 @@ class WeavingClassVisitor extends ClassVisitor {
             toStringHelper.add("parsedType", parsedTypeBuilder.build());
         }
         return toStringHelper.toString();
+    }
+
+    private static void logInvalidMetricNameWarningOnce(String metricName) {
+        if (invalidMetricNameSet.add(metricName)) {
+            logger.warn("metric name must contain only letters, digits and spaces: {}", metricName);
+        }
     }
 
     private static class InitMixins extends AdviceAdapter {

@@ -107,7 +107,7 @@ public class DynamicAdviceGenerator {
         addStaticInitializer(cw);
         addIsEnabledMethod(cw);
         if (pointcutConfig.isSpan()) {
-            addOnBeforeMethod(cw, pointcutConfig.isTrace());
+            addOnBeforeMethod(cw);
             addOnThrowMethod(cw);
             addOnReturnMethod(cw);
         } else {
@@ -221,7 +221,7 @@ public class DynamicAdviceGenerator {
         mv.visitEnd();
     }
 
-    private void addOnBeforeMethod(ClassVisitor cv, boolean startTrace) {
+    private void addOnBeforeMethod(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
                 "(Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;)Lorg/glowroot/api/Span;",
                 null, null);
@@ -237,7 +237,7 @@ public class DynamicAdviceGenerator {
         mv.visitCode();
         mv.visitFieldInsn(GETSTATIC, adviceTypeName, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;");
-        if (startTrace) {
+        if (pointcutConfig.isTrace()) {
             mv.visitFieldInsn(GETSTATIC, adviceTypeName, "traceGrouping",
                     "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;");
             mv.visitVarInsn(ALOAD, 0);
@@ -263,8 +263,10 @@ public class DynamicAdviceGenerator {
                         + "Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;)"
                         + "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageSupplier;");
         mv.visitFieldInsn(GETSTATIC, adviceTypeName, "metric", "Lorg/glowroot/api/MetricName;");
-        if (startTrace) {
-            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", "startTrace",
+        if (pointcutConfig.isTrace()) {
+            String methodName = pointcutConfig.isTraceBackground() ? "startBackgroundTrace"
+                    : "startTrace";
+            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", methodName,
                     "(Ljava/lang/String;Lorg/glowroot/api/MessageSupplier;"
                             + "Lorg/glowroot/api/MetricName;)Lorg/glowroot/api/Span;");
         } else {
@@ -366,8 +368,17 @@ public class DynamicAdviceGenerator {
                     "updateWithReturnValue", "(Lorg/glowroot/api/Span;Ljava/lang/Object;)V");
             mv.visitVarInsn(ALOAD, 1);
         }
-        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/Span", "end",
-                "()Lorg/glowroot/api/CompletedSpan;");
+        Long spanStackTraceThresholdMillis = pointcutConfig.getSpanStackTraceThresholdMillis();
+        if (spanStackTraceThresholdMillis == null) {
+            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/Span", "end",
+                    "()Lorg/glowroot/api/CompletedSpan;");
+        } else {
+            mv.visitLdcInsn(spanStackTraceThresholdMillis);
+            mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
+                    "Ljava/util/concurrent/TimeUnit;");
+            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/Span", "endWithStackTrace",
+                    "(JLjava/util/concurrent/TimeUnit;)Lorg/glowroot/api/CompletedSpan;");
+        }
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
@@ -393,6 +404,5 @@ public class DynamicAdviceGenerator {
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
-
     }
 }

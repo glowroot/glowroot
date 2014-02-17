@@ -40,6 +40,8 @@ glowroot.controller('PointcutCtrl', [
         $scope.heading = data.typeName + '.' + data.methodName + '(' + data.methodArgTypeNames.join(', ') + ')';
         $scope.selectedSignature = signature;
         $scope.signatures = [ signature ];
+        $scope.spanDefinition = Boolean(data.spanText);
+        $scope.traceDefinition = Boolean(data.traceGrouping);
       } else {
         $scope.heading = '<New pointcut>';
         $timeout(function () {
@@ -79,9 +81,6 @@ glowroot.controller('PointcutCtrl', [
         $scope.selectedMethodName = '';
         $scope.signatures = [];
         $scope.config.methodName = '';
-        $scope.config.metricName = '';
-        $scope.config.spanText = '';
-        $scope.config.traceGrouping = '';
       }
     };
 
@@ -152,6 +151,10 @@ glowroot.controller('PointcutCtrl', [
       }
       text += ')';
       return text;
+    };
+
+    $scope.showError = function (name) {
+      return $scope.formCtrl[name].$invalid;
     };
 
     // TODO this needs access to outer scope update retransformClassesButton
@@ -227,107 +230,33 @@ glowroot.controller('PointcutCtrl', [
           .error(httpErrors.handler($scope));
     }
 
-    $scope.$watch('config.metric', function (newValue, oldValue) {
+    $scope.$watch('spanDefinition', function (newValue, oldValue) {
       if (newValue === oldValue) {
         // called due to watcher initialization
         return;
       }
       if (!newValue) {
-        $scope.config.span = false;
-        $scope.config.trace = false;
+        $scope.config.spanText = '';
+        $scope.config.spanStackTraceThresholdMillis = '';
+        $scope.config.spanIgnoreSameNested = '';
+        $scope.traceDefinition = false;
       }
     });
 
-    $scope.$watch('config.span', function (newValue, oldValue) {
+    $scope.$watch('traceDefinition', function (newValue, oldValue) {
       if (newValue === oldValue) {
         // called due to watcher initialization
         return;
       }
-      if (newValue) {
-        initSpanText();
-      } else {
-        $scope.config.trace = false;
-        $scope.config.spanText = '';
+      if (!newValue) {
         $scope.config.traceGrouping = '';
+        $scope.config.traceBackground = '';
       }
     });
-
-    $scope.$watch('config.trace', function (newValue, oldValue) {
-      if (newValue === oldValue) {
-        // called due to watcher initialization
-        return;
-      }
-      if (newValue) {
-        initTraceGrouping();
-      } else {
-        $scope.config.traceGrouping = '';
-      }
-    });
-
-    $scope.$watch('selectedSignature', function (newValue, oldValue) {
-      // need to use angular.equals to filter out $$hashKey property that is added by ng-repeat
-      if (angular.equals(newValue, oldValue)) {
-        // called due to watcher initialization
-        return;
-      }
-      if ($scope.config.span) {
-        initSpanText();
-      }
-      if ($scope.config.trace) {
-        initTraceGrouping();
-      }
-    });
-
-    function initSpanText() {
-      var signature = $scope.selectedSignature;
-      if (!signature) {
-        // no radio button selected
-        $scope.config.spanText = '';
-        return;
-      }
-      var template;
-      if (signature.modifiers.indexOf('abstract') !== -1) {
-        template = '{{this.class.name}}.';
-      } else {
-        template = $scope.config.typeName + '.';
-      }
-      if (signature.name.indexOf('*') !== -1) {
-        template += '{{methodName}}()';
-        $scope.config.spanText = template;
-        return;
-      }
-      template += signature.name + '()';
-      if (isSignatureAll(signature)) {
-        $scope.config.spanText = template;
-        return;
-      }
-      var i;
-      for (i = 0; i < signature.argTypeNames.length; i++) {
-        if (i === 0) {
-          template += ': {{' + i + '}}';
-        } else {
-          template += ', {{' + i + '}}';
-        }
-      }
-      if (signature.returnTypeName !== 'void') {
-        template += ' => {{ret}}';
-      }
-      $scope.config.spanText = template;
-    }
 
     function isSignatureAll(signature) {
       return signature.modifiers.length === 0 && signature.returnTypeName === '' &&
           signature.argTypeNames.length === 1 && signature.argTypeNames[0] === '..';
-    }
-
-    function initTraceGrouping() {
-      var signature = $scope.selectedSignature;
-      if (!signature) {
-        // no radio button selected
-        return;
-      }
-      var grouping = $scope.config.typeName + '.' + signature.name + '()';
-      $scope.config.traceGrouping = grouping;
     }
   }
 ]);
