@@ -74,6 +74,7 @@ public class Trace {
     private final boolean background;
 
     private volatile String grouping;
+    private volatile boolean explicitSetGrouping;
 
     // trace-level error, only used if root span doesn't have an ErrorMessage
     @Nullable
@@ -285,11 +286,18 @@ public class Trace {
     }
 
     public void setGrouping(String grouping) {
-        this.grouping = grouping;
+        // use the first explicit call to setGrouping()
+        if (!explicitSetGrouping) {
+            this.grouping = grouping;
+            explicitSetGrouping = true;
+        }
     }
 
     public void setUser(@Nullable String user) {
-        this.user = user;
+        // use the first non-null user
+        if (this.user == null && user != null) {
+            this.user = user;
+        }
     }
 
     public void setAttribute(String pluginId, String name, @Nullable String value) {
@@ -306,6 +314,7 @@ public class Trace {
     }
 
     public void setError(@Nullable String error) {
+        // use the first non-null error
         if (this.error == null && error != null) {
             this.error = error;
         }
