@@ -135,8 +135,7 @@ public class DynamicAdviceGenerator {
         } else {
             annotationVisitor.visit("metricName", metricName);
         }
-        // all pointcut config advice is set to captureNested=false
-        annotationVisitor.visit("captureNested", false);
+        annotationVisitor.visit("captureNested", true);
         annotationVisitor.visitEnd();
     }
 
