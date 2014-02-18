@@ -85,7 +85,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private boolean visitedLocalVariableThis;
 
     WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
-            @ReadOnly List<Advice> advisors) {
+            @ReadOnly Iterable<Advice> advisors) {
         super(ASM4, mv, access, name, desc);
         this.access = access;
         this.name = name;

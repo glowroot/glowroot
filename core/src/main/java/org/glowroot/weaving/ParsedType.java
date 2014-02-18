@@ -19,10 +19,13 @@ import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import dataflow.quals.Pure;
 import org.objectweb.asm.Type;
 
 import org.glowroot.markers.NotThreadSafe;
+
+import static org.objectweb.asm.Opcodes.ACC_NATIVE;
 
 /**
  * @author Trask Stalnaker
@@ -41,22 +44,26 @@ public class ParsedType {
     private final String superName;
     private final ImmutableList<String> interfaceNames;
     private final ImmutableList<ParsedMethod> methods;
+    private final ImmutableList<ParsedMethod> nativeMethods;
     private final boolean hasReweavableAdvice;
 
     // interfaces that do not extend anything have null superClass
     static ParsedType from(boolean iface, String name, @Nullable String superName,
-            ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods) {
-        return new ParsedType(iface, name, superName, interfaceNames, methods, false);
+            ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods,
+            ImmutableList<ParsedMethod> nativeMethods) {
+        return new ParsedType(iface, name, superName, interfaceNames, methods, nativeMethods,
+                false);
     }
 
     private ParsedType(boolean iface, String name, @Nullable String superName,
             ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods,
-            boolean hasReweavableAdvice) {
+            ImmutableList<ParsedMethod> nativeMethods, boolean hasReweavableAdvice) {
         this.iface = iface;
         this.name = name;
         this.superName = superName;
         this.interfaceNames = interfaceNames;
         this.methods = methods;
+        this.nativeMethods = nativeMethods;
         this.hasReweavableAdvice = hasReweavableAdvice;
     }
 
@@ -83,6 +90,10 @@ public class ParsedType {
         return methods;
     }
 
+    public Iterable<ParsedMethod> getMethodsIncludingNative() {
+        return Iterables.concat(methods, nativeMethods);
+    }
+
     @Nullable
     ParsedMethod getMethod(ParsedMethod parsedMethod) {
         for (ParsedMethod method : methods) {
@@ -106,6 +117,7 @@ public class ParsedType {
                 .add("superName", superName)
                 .add("interfaceNames", interfaceNames)
                 .add("methods", methods)
+                .add("nativeMethods", nativeMethods)
                 .add("hasReweavableAdvice", hasReweavableAdvice)
                 .toString();
     }
@@ -124,6 +136,7 @@ public class ParsedType {
         private final String superName;
         private final ImmutableList<String> interfaceNames;
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
+        private final ImmutableList.Builder<ParsedMethod> nativeMethods = ImmutableList.builder();
         private boolean hasReweavableAdvice;
 
         private Builder(boolean iface, String name, @Nullable String superName,
@@ -139,7 +152,11 @@ public class ParsedType {
             ParsedMethod method = ParsedMethod.from(name,
                     ImmutableList.copyOf(Type.getArgumentTypes(desc)), Type.getReturnType(desc),
                     access, desc, signature, exceptions);
-            methods.add(method);
+            if ((access & ACC_NATIVE) == 0) {
+                methods.add(method);
+            } else {
+                nativeMethods.add(method);
+            }
             return method;
         }
 
@@ -149,7 +166,7 @@ public class ParsedType {
 
         ParsedType build() {
             return new ParsedType(iface, name, superName, interfaceNames, methods.build(),
-                    hasReweavableAdvice);
+                    nativeMethods.build(), hasReweavableAdvice);
         }
     }
 }

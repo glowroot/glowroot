@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -61,10 +62,16 @@ class AdviceMatcher {
         return targetTypeMatch || !preMatchedSuperTypes.isEmpty();
     }
 
-    boolean isMethodLevelMatch(int access, ParsedMethod parsedMethod) {
+    boolean isMethodLevelMatch(int access, ParsedMethod parsedMethod,
+            @Nullable String exactTargetTypeOverride) {
         if (!isMethodNameMatch(parsedMethod.getName())
                 || !isMethodArgTypesMatch(parsedMethod.getArgTypeNames())) {
             return false;
+        }
+        if (exactTargetTypeOverride != null) {
+            return isTypeMatch(exactTargetTypeOverride, advice)
+                    && isMethodReturnMatch(parsedMethod.getReturnTypeName())
+                    && isMethodModifiersMatch(parsedMethod.getModifiers());
         }
         if (targetTypeMatch && isMethodReturnMatch(parsedMethod.getReturnTypeName())
                 && isMethodModifiersMatch(parsedMethod.getModifiers())) {

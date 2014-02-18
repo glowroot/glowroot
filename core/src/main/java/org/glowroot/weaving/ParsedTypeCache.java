@@ -57,7 +57,6 @@ import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.Singleton;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.objectweb.asm.Opcodes.ACC_NATIVE;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ASM4;
 
@@ -113,6 +112,12 @@ public class ParsedTypeCache {
 
     @GuardedBy("typeNameUppers")
     private final SortedMap<String, SortedSet<String>> typeNameUppers = Maps.newTreeMap();
+
+    private final ParsedType javaLangObjectParsedType;
+
+    public ParsedTypeCache() {
+        javaLangObjectParsedType = createParsedTypePlanC("java/lang/Object", Object.class);
+    }
 
     public List<String> getMatchingTypeNames(String partialTypeName, int limit) {
         String partialTypeNameUpper = partialTypeName.toUpperCase(Locale.ENGLISH);
@@ -197,6 +202,10 @@ public class ParsedTypeCache {
     ParsedType getParsedType(String typeName, @Nullable ClassLoader loader)
             throws ClassNotFoundException, IOException {
         return getOrCreateParsedType(typeName, loader);
+    }
+
+    ParsedType getJavaLangObjectParsedType() {
+        return javaLangObjectParsedType;
     }
 
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
@@ -372,37 +381,6 @@ public class ParsedTypeCache {
         }
     }
 
-    // now that the type has been loaded anyways, build the parsed type via reflection
-    private ParsedType createParsedTypePlanC(String typeName, Class<?> type) {
-        ImmutableList.Builder<ParsedMethod> parsedMethods = ImmutableList.builder();
-        for (Method method : type.getDeclaredMethods()) {
-            if (Modifier.isNative(method.getModifiers()) || method.isSynthetic()) {
-                // don't add native or synthetic methods to the parsed type model
-                continue;
-            }
-            ImmutableList.Builder<Type> argTypes = ImmutableList.builder();
-            for (Class<?> parameterType : method.getParameterTypes()) {
-                argTypes.add(Type.getType(parameterType));
-            }
-            Type returnType = Type.getType(method.getReturnType());
-            String desc = Type.getMethodDescriptor(method);
-            ImmutableList.Builder<String> exceptions = ImmutableList.builder();
-            for (Class<?> exceptionType : method.getExceptionTypes()) {
-                exceptions.add(Type.getInternalName(exceptionType));
-            }
-            parsedMethods.add(ParsedMethod.from(method.getName(), argTypes.build(), returnType,
-                    method.getModifiers(), desc, null, exceptions.build()));
-        }
-        ImmutableList.Builder<String> interfaceNames = ImmutableList.builder();
-        for (Class<?> interfaceClass : type.getInterfaces()) {
-            interfaceNames.add(interfaceClass.getName());
-        }
-        Class<?> superclass = type.getSuperclass();
-        String superName = superclass == null ? null : superclass.getName();
-        return ParsedType.from(type.isInterface(), typeName, superName, interfaceNames.build(),
-                parsedMethods.build());
-    }
-
     private ConcurrentMap<String, ParsedType> getParsedTypes(@Nullable ClassLoader loader) {
         if (loader == null) {
             return bootstrapLoaderParsedTypeCache;
@@ -430,6 +408,43 @@ public class ParsedTypeCache {
                 .add("parsedTypes", parsedTypeCache)
                 .add("bootstrapLoaderParsedTypes", bootstrapLoaderParsedTypeCache)
                 .toString();
+    }
+
+    // now that the type has been loaded anyways, build the parsed type via reflection
+    private static ParsedType createParsedTypePlanC(String typeName, Class<?> type) {
+        ImmutableList.Builder<ParsedMethod> parsedMethods = ImmutableList.builder();
+        ImmutableList.Builder<ParsedMethod> nativeParsedMethods = ImmutableList.builder();
+        for (Method method : type.getDeclaredMethods()) {
+            if (method.isSynthetic()) {
+                // don't add synthetic methods to the parsed type model
+                continue;
+            }
+            ImmutableList.Builder<Type> argTypes = ImmutableList.builder();
+            for (Class<?> parameterType : method.getParameterTypes()) {
+                argTypes.add(Type.getType(parameterType));
+            }
+            Type returnType = Type.getType(method.getReturnType());
+            String desc = Type.getMethodDescriptor(method);
+            ImmutableList.Builder<String> exceptions = ImmutableList.builder();
+            for (Class<?> exceptionType : method.getExceptionTypes()) {
+                exceptions.add(Type.getInternalName(exceptionType));
+            }
+            ParsedMethod parsedMethod = ParsedMethod.from(method.getName(), argTypes.build(),
+                    returnType, method.getModifiers(), desc, null, exceptions.build());
+            if (Modifier.isNative(method.getModifiers())) {
+                nativeParsedMethods.add(parsedMethod);
+            } else {
+                parsedMethods.add(parsedMethod);
+            }
+        }
+        ImmutableList.Builder<String> interfaceNames = ImmutableList.builder();
+        for (Class<?> interfaceClass : type.getInterfaces()) {
+            interfaceNames.add(interfaceClass.getName());
+        }
+        Class<?> superclass = type.getSuperclass();
+        String superName = superclass == null ? null : superclass.getName();
+        return ParsedType.from(type.isInterface(), TypeNames.fromInternal(typeName), superName,
+                interfaceNames.build(), parsedMethods.build(), nativeParsedMethods.build());
     }
 
     static class ParseContext {
@@ -503,16 +518,14 @@ public class ParsedTypeCache {
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String/*@Nullable*/[] exceptions) {
             checkNotNull(parsedTypeBuilder, "Call to visit() is required");
-            if ((access & (ACC_NATIVE | ACC_SYNTHETIC)) == 0) {
-                // don't add native or synthetic methods to the parsed type model
+            if ((access & ACC_SYNTHETIC) == 0) {
+                // don't add synthetic methods to the parsed type model
                 ImmutableList<String> exceptionList = exceptions == null
                         ? ImmutableList.<String>of() : ImmutableList.copyOf(exceptions);
-                parsedTypeBuilder.addParsedMethod(access, name, desc, signature,
-                        exceptionList);
+                parsedTypeBuilder.addParsedMethod(access, name, desc, signature, exceptionList);
             }
             return null;
         }
-
         public ParsedType build() {
             checkNotNull(parsedTypeBuilder, "Call to visit() is required");
             return parsedTypeBuilder.build();

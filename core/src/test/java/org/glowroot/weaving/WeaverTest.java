@@ -25,7 +25,6 @@ import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.weaving.AbstractMisc.ExtendsAbstractMisc;
 import org.glowroot.weaving.AbstractNotMisc.ExtendsAbstractNotMisc;
-import org.glowroot.weaving.AbstractNotMiscWithFinal.ExtendsAbstractNotMiscWithFinal;
 import org.glowroot.weaving.SomeAspect.BasicAdvice;
 import org.glowroot.weaving.SomeAspect.BasicMiscConstructorAdvice;
 import org.glowroot.weaving.SomeAspect.BasicMiscConstructorOnInterfaceImplAdvice;
@@ -52,6 +51,7 @@ import org.glowroot.weaving.SomeAspect.HasString;
 import org.glowroot.weaving.SomeAspect.HasStringClassMixin;
 import org.glowroot.weaving.SomeAspect.HasStringInterfaceMixin;
 import org.glowroot.weaving.SomeAspect.HasStringMultipleMixin;
+import org.glowroot.weaving.SomeAspect.HashCodeAdvice;
 import org.glowroot.weaving.SomeAspect.InnerMethodAdvice;
 import org.glowroot.weaving.SomeAspect.InterfaceAppearsTwiceInHierarchyAdvice;
 import org.glowroot.weaving.SomeAspect.MethodArgsDotDotAdvice1;
@@ -73,6 +73,7 @@ import org.glowroot.weaving.SomeAspect.StaticAdvice;
 import org.glowroot.weaving.SomeAspect.StaticBindTargetClassAdvice;
 import org.glowroot.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
 import org.glowroot.weaving.SomeAspect.TypeNamePatternAdvice;
+import org.glowroot.weaving.SomeAspect.WildMethodAdvice;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -690,6 +691,18 @@ public class WeaverTest {
         assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
     }
 
+    @Test
+    public void shouldNotBombWithWithWildcardArg() throws Exception {
+        // given
+        WildMethodAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, WildMethodAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+    }
+
     // ===================== type name pattern =====================
 
     @Test
@@ -834,16 +847,33 @@ public class WeaverTest {
     }
 
     @Test
-    public void shouldHandleGracefullyInheritedFinalMethodFulfillingAnInterface() throws Exception {
+    public void shouldHandleInheritedMethod() throws Exception {
         // given
         BasicAdvice.resetThreadLocals();
         BasicAdvice.enable();
-        Misc test = newWovenObject(ExtendsAbstractNotMiscWithFinal.class, Misc.class,
-                BasicAdvice.class);
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, HashCodeAdvice.class);
+        // when
+        test.hashCode();
+        // then
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldHandleInheritedPublicMethodFromPackagePrivateClass() throws Exception {
+        // given
+        BasicAdvice.resetThreadLocals();
+        BasicAdvice.enable();
+        Misc test = newWovenObject(ExtendsPackagePrivateMisc.class, Misc.class, BasicAdvice.class);
         // when
         test.execute1();
         // then
-        // TODO check for warning message
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
     }
 
     @Test

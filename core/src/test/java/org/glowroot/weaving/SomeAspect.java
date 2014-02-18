@@ -94,6 +94,52 @@ public class SomeAspect {
         }
     }
 
+    @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "hashCode",
+            metricName = "hashcode")
+    public static class HashCodeAdvice {
+        public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
+            @Override
+            protected Boolean initialValue() {
+                return true;
+            }
+        };
+        @IsEnabled
+        public static boolean isEnabled() {
+            enabledCount.increment();
+            return enabled.get();
+        }
+        @OnBefore
+        public static void onBefore() {
+            onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            onAfterCount.increment();
+        }
+        public static void resetThreadLocals() {
+            enabled.set(true);
+            enabledCount.set(0);
+            onBeforeCount.set(0);
+            onReturnCount.set(0);
+            onThrowCount.set(0);
+            onAfterCount.set(0);
+        }
+        public static void enable() {
+            enabled.set(true);
+        }
+        public static void disable() {
+            enabled.set(false);
+        }
+    }
+
     // note: constructor pointcuts do not currently support @OnBefore
     @Pointcut(typeName = "org.glowroot.weaving.BasicMisc", methodName = "<init>")
     public static class BasicMiscConstructorAdvice {
@@ -835,6 +881,10 @@ public class SomeAspect {
             onBeforeTarget.remove();
         }
     }
+
+    @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "*",
+            methodArgs = {".."}, metricName = "wild")
+    public static class WildMethodAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "org.glowroot.weaving.PrimitiveMisc", methodName = "executePrimitive",
             methodArgs = {"int", "double", "long", "byte[]"})
