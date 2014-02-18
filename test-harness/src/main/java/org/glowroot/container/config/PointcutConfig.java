@@ -49,6 +49,7 @@ public class PointcutConfig {
     private String spanText;
     @Nullable
     private Long spanStackTraceThresholdMillis;
+    private boolean spanIgnoreSameNested;
     @Nullable
     private String traceGrouping;
     private boolean traceBackground;
@@ -140,6 +141,14 @@ public class PointcutConfig {
         this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
     }
 
+    public boolean isSpanIgnoreSameNested() {
+        return spanIgnoreSameNested;
+    }
+
+    public void setSpanIgnoreSameNested(boolean spanIgnoreSameNested) {
+        this.spanIgnoreSameNested = spanIgnoreSameNested;
+    }
+
     @Nullable
     public String getTraceGrouping() {
         return traceGrouping;
@@ -181,6 +190,7 @@ public class PointcutConfig {
                     && Objects.equal(spanText, that.spanText)
                     && Objects.equal(spanStackTraceThresholdMillis,
                             that.spanStackTraceThresholdMillis)
+                    && Objects.equal(spanIgnoreSameNested, that.spanIgnoreSameNested)
                     && Objects.equal(traceGrouping, that.traceGrouping)
                     && Objects.equal(traceBackground, that.traceBackground);
         }
@@ -195,8 +205,7 @@ public class PointcutConfig {
         // server
         return Objects.hashCode(typeName, methodName, methodArgTypeNames, methodReturnTypeName,
                 methodModifiers, metricName, spanText, spanStackTraceThresholdMillis,
-                traceGrouping,
-                traceBackground);
+                spanIgnoreSameNested, traceGrouping, traceBackground);
     }
 
     @Override
@@ -211,6 +220,7 @@ public class PointcutConfig {
                 .add("metricName", metricName)
                 .add("spanText", spanText)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
+                .add("spanIgnoreSameNested", spanIgnoreSameNested)
                 .add("traceGrouping", traceGrouping)
                 .add("traceBackground", traceBackground)
                 .add("version", version)
@@ -227,6 +237,7 @@ public class PointcutConfig {
             @JsonProperty("metricName") @Nullable String metricName,
             @JsonProperty("spanText") @Nullable String spanText,
             @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
+            @JsonProperty("spanIgnoreSameNested") @Nullable Boolean spanIgnoreSameNested,
             @JsonProperty("traceGrouping") @Nullable String traceGrouping,
             @JsonProperty("traceBackground") @Nullable Boolean traceBackground,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
@@ -237,6 +248,7 @@ public class PointcutConfig {
         checkRequiredProperty(methodModifiers, "methodModifiers");
         checkRequiredProperty(metricName, "metricName");
         checkRequiredProperty(spanText, "spanText");
+        checkRequiredProperty(spanIgnoreSameNested, "spanIgnoreSameNested");
         checkRequiredProperty(traceGrouping, "traceGrouping");
         checkRequiredProperty(traceBackground, "traceBackground");
         checkRequiredProperty(version, "version");
@@ -249,6 +261,7 @@ public class PointcutConfig {
         config.setMetricName(metricName);
         config.setSpanText(spanText);
         config.setSpanStackTraceThresholdMillis(spanStackTraceThresholdMillis);
+        config.setSpanIgnoreSameNested(spanIgnoreSameNested);
         config.setTraceGrouping(traceGrouping);
         config.setTraceBackground(traceBackground);
         return config;

@@ -135,7 +135,9 @@ public class DynamicAdviceGenerator {
         } else {
             annotationVisitor.visit("metricName", metricName);
         }
-        annotationVisitor.visit("ignoreSameNested", false);
+        if (pointcutConfig.isSpan() && pointcutConfig.isSpanIgnoreSameNested()) {
+            annotationVisitor.visit("ignoreSameNested", true);
+        }
         annotationVisitor.visitEnd();
     }
 

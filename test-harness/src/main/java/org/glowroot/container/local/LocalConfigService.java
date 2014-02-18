@@ -316,6 +316,7 @@ class LocalConfigService implements ConfigService {
         config.setMetricName(coreConfig.getMetricName());
         config.setSpanText(coreConfig.getSpanText());
         config.setSpanStackTraceThresholdMillis(coreConfig.getSpanStackTraceThresholdMillis());
+        config.setSpanIgnoreSameNested(coreConfig.isSpanIgnoreSameNested());
         config.setTraceGrouping(coreConfig.getTraceGrouping());
         config.setTraceBackground(coreConfig.isTraceBackground());
         return config;
@@ -337,8 +338,8 @@ class LocalConfigService implements ConfigService {
         return new org.glowroot.config.PointcutConfig(typeName, methodName,
                 config.getMethodArgTypeNames(), methodReturnTypeName, methodModifiers,
                 orEmpty(config.getMetricName()), orEmpty(config.getSpanText()),
-                config.getSpanStackTraceThresholdMillis(), orEmpty(config.getTraceGrouping()),
-                config.isTraceBackground());
+                config.getSpanStackTraceThresholdMillis(), config.isSpanIgnoreSameNested(),
+                orEmpty(config.getTraceGrouping()), config.isTraceBackground());
     }
 
     private static String orEmpty(@Nullable String value) {

@@ -54,6 +54,7 @@ public class PointcutConfig {
     private final String spanText;
     @Nullable
     private final Long spanStackTraceThresholdMillis;
+    private final boolean spanIgnoreSameNested;
     private final String traceGrouping;
     private final boolean traceBackground;
     private final String version;
@@ -62,8 +63,8 @@ public class PointcutConfig {
     public PointcutConfig(String typeName, String methodName,
             @ReadOnly List<String> methodArgTypeNames, String methodReturnTypeName,
             @ReadOnly List<MethodModifier> methodModifiers, String metricName, String spanText,
-            @Nullable Long spanStackTraceThresholdMillis, String traceGrouping,
-            boolean traceBackground) {
+            @Nullable Long spanStackTraceThresholdMillis, boolean spanIgnoreSameNested,
+            String traceGrouping, boolean traceBackground) {
         this.typeName = typeName;
         this.methodName = methodName;
         this.methodArgTypeNames = ImmutableList.copyOf(methodArgTypeNames);
@@ -72,11 +73,13 @@ public class PointcutConfig {
         this.metricName = metricName;
         this.spanText = spanText;
         this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
+        this.spanIgnoreSameNested = spanIgnoreSameNested;
         this.traceGrouping = traceGrouping;
         this.traceBackground = traceBackground;
         version = VersionHashes.sha1(typeName, methodName, methodArgTypeNames,
                 methodReturnTypeName, methodModifiers, metricName, spanText,
-                spanStackTraceThresholdMillis, traceGrouping, traceBackground);
+                spanStackTraceThresholdMillis, spanIgnoreSameNested, traceGrouping,
+                traceBackground);
     }
 
     public String getTypeName() {
@@ -112,6 +115,10 @@ public class PointcutConfig {
     @Nullable
     public Long getSpanStackTraceThresholdMillis() {
         return spanStackTraceThresholdMillis;
+    }
+
+    public boolean isSpanIgnoreSameNested() {
+        return spanIgnoreSameNested;
     }
 
     public String getTraceGrouping() {
@@ -152,6 +159,7 @@ public class PointcutConfig {
             @JsonProperty("metricName") @Nullable String metricName,
             @JsonProperty("spanText") @Nullable String spanText,
             @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
+            @JsonProperty("spanIgnoreSameNested") @Nullable Boolean spanIgnoreSameNested,
             @JsonProperty("traceGrouping") @Nullable String traceGrouping,
             @JsonProperty("traceBackground") @Nullable Boolean traceBackground,
             // without including a parameter for version, jackson will use direct field access after
@@ -166,8 +174,8 @@ public class PointcutConfig {
         }
         return new PointcutConfig(typeName, methodName, orEmpty(methodArgTypeNames),
                 methodReturnTypeName, orEmpty(methodModifiers), orEmpty(metricName),
-                orEmpty(spanText), spanStackTraceThresholdMillis, orEmpty(traceGrouping),
-                orFalse(traceBackground));
+                orEmpty(spanText), spanStackTraceThresholdMillis, orFalse(spanIgnoreSameNested),
+                orEmpty(traceGrouping), orFalse(traceBackground));
     }
 
     private static <T> List<T> orEmpty(@Nullable List<T> list) {
@@ -197,6 +205,7 @@ public class PointcutConfig {
                 .add("metricName", metricName)
                 .add("spanText", spanText)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
+                .add("spanIgnoreSameNested", spanIgnoreSameNested)
                 .add("traceGrouping", traceGrouping)
                 .add("traceBackground", traceBackground)
                 .add("version", version)

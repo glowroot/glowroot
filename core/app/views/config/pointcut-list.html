@@ -174,6 +174,20 @@
                 Empty means never capture a stack trace.
               </div>
             </div>
+            <div>
+              <label class="control-label"
+                     style="margin-top: 15px;">
+                Ignore self nesting
+              </label>
+              <div class="checkbox"
+                   style="padding-top: 0;">
+                <label>
+                  <input type="checkbox"
+                         ng-model="config.spanIgnoreSameNested">
+                  Ignore if this occurs anywhere under a span for the same pointcut
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -218,7 +232,8 @@
               </div>
             </div>
             <div>
-              <label style="margin-top: 15px;">
+              <label class="control-label"
+                     style="margin-top: 15px;">
                 Background
               </label>
               <div class="checkbox"
