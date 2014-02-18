@@ -82,6 +82,12 @@ public class NestableCallAspect {
             } else {
                 pluginServices.setTraceUser(null);
             }
+            pluginServices.setTraceAttribute("my first attribute", "hello world");
+            pluginServices.setTraceAttribute("and second", "val");
+            pluginServices.setTraceAttribute("and a very long attribute value", "abcdefghijkl"
+                    + "mnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
+            pluginServices.setTraceAttribute("and another", "a b c d e f g h i j k l m n o p q"
+                    + " r s t u v w x y z a b c d e f g h i j k l m n o p q r s t u v w x y z");
             return span;
         }
         @OnAfter
@@ -99,31 +105,6 @@ public class NestableCallAspect {
                         new IllegalStateException(), ImmutableMap.of("roota", Optional.absent(),
                                 "rootb", "a non-null value for rootb")));
             }
-        }
-    }
-
-    @Pointcut(typeName = "org.glowroot.sandbox.ui.NestableCall", methodName = "execute",
-            metricName = "nestable and very long", captureNested = false)
-    public static class NestableCallLongMetricAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(NestableCallLongMetricAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return pluginServices.isEnabled();
-        }
-        @OnBefore
-        public static Span onBefore() {
-            pluginServices.setTraceAttribute("my first attribute", "hello world");
-            pluginServices.setTraceAttribute("and second", "val");
-            pluginServices.setTraceAttribute("and a very long attribute value", "abcdefghijkl"
-                    + "mnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
-            pluginServices.setTraceAttribute("and another", "a b c d e f g h i j k l m n o p q"
-                    + " r s t u v w x y z a b c d e f g h i j k l m n o p q r s t u v w x y z");
-            return pluginServices.startSpan(MessageSupplier.from("Nestable"), metricName);
-        }
-        @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            span.end();
         }
     }
 
