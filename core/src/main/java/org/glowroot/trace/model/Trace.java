@@ -19,7 +19,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import checkers.igj.quals.Immutable;
@@ -31,7 +31,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -202,22 +202,11 @@ public class Trace {
         synchronized (this.attributes) {
             theAttributes = ImmutableList.copyOf(this.attributes);
         }
-        // filter out duplicates (last one wins) and order so that each plugin's attributes are
-        // together (and the plugins are ordered by the order they added their first attribute to
-        // this trace)
-        Map<String, Map<String, TraceAttribute>> attributeMap = Maps.newLinkedHashMap();
-        for (TraceAttribute attribute : theAttributes) {
-            Map<String, TraceAttribute> pluginAttributeMap =
-                    attributeMap.get(attribute.getPluginId());
-            if (pluginAttributeMap == null) {
-                pluginAttributeMap = Maps.newLinkedHashMap();
-                attributeMap.put(attribute.getPluginId(), pluginAttributeMap);
-            }
-            pluginAttributeMap.put(attribute.getName(), attribute);
-        }
         ImmutableList.Builder<TraceAttribute> orderedAttributes = ImmutableList.builder();
-        for (Map<String, TraceAttribute> pluginAttributeMap : attributeMap.values()) {
-            for (TraceAttribute attribute : pluginAttributeMap.values()) {
+        // filter out duplicate attributes by name (first one wins)
+        Set<String> attributeNames = Sets.newHashSet();
+        for (TraceAttribute attribute : theAttributes) {
+            if (attributeNames.add(attribute.getName())) {
                 orderedAttributes.add(attribute);
             }
         }
@@ -300,7 +289,7 @@ public class Trace {
         }
     }
 
-    public void setAttribute(String pluginId, String name, @Nullable String value) {
+    public void setAttribute(String name, @Nullable String value) {
         if (attributes == null) {
             // no race condition here since only trace thread calls setAttribute()
             //
@@ -309,7 +298,7 @@ public class Trace {
             attributes = Lists.newArrayListWithCapacity(ATTRIBUTES_LIST_INITIAL_CAPACITY);
         }
         synchronized (attributes) {
-            attributes.add(new TraceAttribute(pluginId, name, value));
+            attributes.add(new TraceAttribute(name, value));
         }
     }
 
@@ -447,12 +436,10 @@ public class Trace {
 
     @Immutable
     public static class TraceAttribute {
-        private final String pluginId;
         private final String name;
         @Nullable
         private final String value;
-        private TraceAttribute(String pluginId, String name, @Nullable String value) {
-            this.pluginId = pluginId;
+        private TraceAttribute(String name, @Nullable String value) {
             this.name = name;
             this.value = value;
         }
@@ -462,9 +449,6 @@ public class Trace {
         @Nullable
         public String getValue() {
             return value;
-        }
-        private String getPluginId() {
-            return pluginId;
         }
     }
 }
