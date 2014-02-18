@@ -125,6 +125,7 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
         DynamicAdviceMessageSupplier messageSupplier =
                 (DynamicAdviceMessageSupplier) span.getMessageSupplier();
         if (messageSupplier != null) {
+            // can be null if max spans was exceeded
             messageSupplier.setReturnValue(String.valueOf(returnValue));
         }
     }

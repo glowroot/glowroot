@@ -39,6 +39,12 @@
       ]
     },
     {
+      "prompt": "DataSource.getConnection() spans",
+      "name": "captureGetConnectionSpans",
+      "type": "boolean",
+      "description": "Capture spans for executions of DataSource.getConnection()"
+    },
+    {
       "prompt": "DatabaseMetaData.*() spans",
       "name": "captureDatabaseMetaDataSpans",
       "type": "boolean",
@@ -60,6 +66,7 @@
     "org.glowroot.plugin.jdbc.DatabaseMetaDataAspect",
     "org.glowroot.plugin.jdbc.StatementAspect",
     "org.glowroot.plugin.jdbc.ResultSetAspect",
-    "org.glowroot.plugin.jdbc.ConnectionAspect"
+    "org.glowroot.plugin.jdbc.ConnectionAspect",
+    "org.glowroot.plugin.jdbc.DataSourceAspect"
   ]
 }
