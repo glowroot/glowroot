@@ -49,7 +49,7 @@ public class ResultSetAspect {
 
     @Pointcut(typeName = "java.sql.ResultSet",
             methodName = "next|previous|relative|absolute|first|last", methodArgs = "..",
-            captureNested = false, metricName = "jdbc resultset navigate")
+            ignoreSameNested = true, metricName = "jdbc resultset navigate")
     public static class NavigateAdvice {
         private static final MetricName metricName = pluginServices
                 .getMetricName(NavigateAdvice.class);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         argumentTypes = Type.getArgumentTypes(desc);
         returnType = Type.getReturnType(desc);
         for (Advice advice : advisors) {
-            if (!advice.getPointcut().captureNested() || advice.getOnThrowAdvice() != null
+            if (advice.getPointcut().ignoreSameNested() || advice.getOnThrowAdvice() != null
                     || advice.getOnAfterAdvice() != null) {
                 needsTryCatch = true;
                 break;
@@ -250,7 +250,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             enabledLocals.put(advice, enabledLocal);
             storeLocal(enabledLocal);
         }
-        if (!advice.getPointcut().captureNested()) {
+        if (advice.getPointcut().ignoreSameNested()) {
             // topFlowLocal must be defined/initialized outside of any code branches since it is
             // referenced later on in resetAdviceFlowIfNecessary()
             int adviceFlowHolderLocal = newLocal(adviceFlowHolderType);
@@ -484,16 +484,16 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private void resetAdviceFlowIfNecessary() {
         for (Advice advice : advisors) {
-            if (!advice.getPointcut().captureNested()) {
+            if (advice.getPointcut().ignoreSameNested()) {
                 Integer enabledLocal = enabledLocals.get(advice);
                 Integer adviceFlowLocal = adviceFlowLocals.get(advice);
                 Integer adviceFlowHolderLocal = adviceFlowHolderLocals.get(advice);
                 // enabledLocal is non-null for all advice
                 checkNotNull(enabledLocal, "enabledLocal is null");
-                // adviceFlowLocal is non-null for all advice with captureNested = false
+                // adviceFlowLocal is non-null for all advice with ignoreSameNested = true
                 // (same condition as tested above)
                 checkNotNull(adviceFlowLocal, "adviceFlowLocal is null");
-                // adviceFlowHolderLocal is non-null for all advice with captureNested = false
+                // adviceFlowHolderLocal is non-null for all advice with ignoreSameNested = true
                 // (same condition as tested above)
                 checkNotNull(adviceFlowHolderLocal, "adviceFlowHolderLocal is null");
 

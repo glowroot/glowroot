@@ -752,11 +752,11 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "execute1",
-            captureNested = false)
+            ignoreSameNested = true)
     public static class NotNestingAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "execute1",
-            captureNested = false)
+            ignoreSameNested = true)
     public static class NotNestingWithNoIsEnabledAdvice {
         @OnBefore
         public static void onBefore() {
@@ -787,7 +787,7 @@ public class SomeAspect {
     public static class InnerMethodAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "execute*",
-            methodArgs = {".."}, captureNested = false)
+            methodArgs = {".."}, ignoreSameNested = true)
     public static class MultipleMethodsAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "org.glowroot.weaving.StaticMisc", methodName = "executeStatic")

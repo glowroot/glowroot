@@ -53,7 +53,7 @@ public class ConnectionAspect {
         stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
     }
 
-    @Pointcut(typeName = "java.sql.Connection", methodName = "commit", captureNested = false,
+    @Pointcut(typeName = "java.sql.Connection", methodName = "commit", ignoreSameNested = true,
             metricName = "jdbc commit")
     public static class CommitAdvice {
         private static final MetricName metricName =
@@ -73,7 +73,7 @@ public class ConnectionAspect {
         }
     }
 
-    @Pointcut(typeName = "java.sql.Connection", methodName = "rollback", captureNested = false,
+    @Pointcut(typeName = "java.sql.Connection", methodName = "rollback", ignoreSameNested = true,
             metricName = "jdbc rollback")
     public static class RollbackAdvice {
         private static final MetricName metricName =

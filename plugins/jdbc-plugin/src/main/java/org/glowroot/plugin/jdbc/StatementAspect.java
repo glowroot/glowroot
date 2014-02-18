@@ -110,7 +110,7 @@ public class StatementAspect {
 
     // capture the sql used to create the PreparedStatement
     @Pointcut(typeName = "java.sql.Connection", methodName = "prepare*",
-            methodArgs = {"java.lang.String", ".."}, captureNested = false,
+            methodArgs = {"java.lang.String", ".."}, ignoreSameNested = true,
             metricName = "jdbc prepare")
     public static class PrepareAdvice {
         private static final MetricName metricName =
@@ -147,7 +147,7 @@ public class StatementAspect {
     // parameters bound via setNull(..)
     // see special case below to handle setNull()
     @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "/(?!setNull$)set.*/",
-            methodArgs = {"int", "*", ".."}, captureNested = false)
+            methodArgs = {"int", "*", ".."}, ignoreSameNested = true)
     public static class SetXAdvice {
         @OnReturn
         public static void onReturn(@BindTarget PreparedStatement preparedStatement,
@@ -167,7 +167,7 @@ public class StatementAspect {
     }
 
     @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "setNull",
-            methodArgs = {"int", "int", ".."}, captureNested = false)
+            methodArgs = {"int", "int", ".."}, ignoreSameNested = true)
     public static class SetNullAdvice {
         @OnReturn
         public static void onReturn(@BindTarget PreparedStatement preparedStatement,
@@ -180,7 +180,7 @@ public class StatementAspect {
     // ================== Statement Batching ==================
 
     @Pointcut(typeName = "java.sql.Statement", methodName = "addBatch",
-            methodArgs = {"java.lang.String"}, captureNested = false)
+            methodArgs = {"java.lang.String"}, ignoreSameNested = true)
     public static class StatementAddBatchAdvice {
         @OnReturn
         public static void onReturn(@BindTarget Statement statement,
@@ -190,7 +190,7 @@ public class StatementAspect {
     }
 
     @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "addBatch",
-            captureNested = false)
+            ignoreSameNested = true)
     public static class PreparedStatementAddBatchAdvice {
         @OnReturn
         public static void onReturn(@BindTarget PreparedStatement preparedStatement) {
@@ -212,7 +212,7 @@ public class StatementAspect {
     // =================== Statement Execution ===================
 
     @Pointcut(typeName = "java.sql.Statement", methodName = "execute*",
-            methodArgs = {"java.lang.String", ".."}, captureNested = false,
+            methodArgs = {"java.lang.String", ".."}, ignoreSameNested = true,
             metricName = "jdbc execute")
     public static class StatementExecuteAdvice {
         private static final MetricName metricName =
@@ -256,7 +256,7 @@ public class StatementAspect {
 
     // executeBatch is not included since it is handled separately (below)
     @Pointcut(typeName = "java.sql.PreparedStatement",
-            methodName = "execute|executeQuery|executeUpdate", captureNested = false,
+            methodName = "execute|executeQuery|executeUpdate", ignoreSameNested = true,
             metricName = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
         private static final MetricName metricName =
@@ -303,7 +303,7 @@ public class StatementAspect {
         }
     }
 
-    @Pointcut(typeName = "java.sql.Statement", methodName = "executeBatch", captureNested = false,
+    @Pointcut(typeName = "java.sql.Statement", methodName = "executeBatch", ignoreSameNested = true,
             metricName = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
         private static final MetricName metricName =
@@ -368,7 +368,7 @@ public class StatementAspect {
 
     // ================== Statement Closing ==================
 
-    @Pointcut(typeName = "java.sql.Statement", methodName = "close", captureNested = false,
+    @Pointcut(typeName = "java.sql.Statement", methodName = "close", ignoreSameNested = true,
             metricName = "jdbc statement close")
     public static class CloseAdvice {
         private static final MetricName metricName =

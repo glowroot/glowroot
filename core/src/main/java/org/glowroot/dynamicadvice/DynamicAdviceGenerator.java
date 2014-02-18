@@ -135,7 +135,7 @@ public class DynamicAdviceGenerator {
         } else {
             annotationVisitor.visit("metricName", metricName);
         }
-        annotationVisitor.visit("captureNested", true);
+        annotationVisitor.visit("ignoreSameNested", false);
         annotationVisitor.visitEnd();
     }
 

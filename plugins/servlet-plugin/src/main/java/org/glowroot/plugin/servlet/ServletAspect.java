@@ -165,7 +165,7 @@ public class ServletAspect {
     }
 
     @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "sendError",
-            methodArgs = {"int", ".."}, captureNested = false)
+            methodArgs = {"int", ".."}, ignoreSameNested = true)
     public static class SendErrorAdvice {
         @OnAfter
         public static void onAfter(@BindMethodArg Integer statusCode) {

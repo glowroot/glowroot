@@ -49,7 +49,7 @@ public class NestableCallAspect {
     private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
 
     @Pointcut(typeName = "org.glowroot.sandbox.ui.NestableCall", methodName = "execute",
-            metricName = "nestable", captureNested = false)
+            metricName = "nestable", ignoreSameNested = true)
     public static class NestableCallAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(NestableCallAdvice.class);

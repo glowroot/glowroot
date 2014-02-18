@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ public class TraceMarkerAspect {
             PluginServices.get("glowroot-test-container");
 
     @Pointcut(typeName = "org.glowroot.container.TraceMarker", methodName = "traceMarker",
-            metricName = "mock trace marker", captureNested = false)
+            metricName = "mock trace marker", ignoreSameNested = true)
     public static class TraceMarkerAdvice {
 
         private static final MetricName metricName =

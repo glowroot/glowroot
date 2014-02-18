@@ -55,7 +55,7 @@ public class DatabaseMetaDataAspect {
             new ThreadLocal</*@Nullable*/String>();
 
     @Pointcut(typeName = "java.sql.DatabaseMetaData", methodName = "*", methodArgs = {".."},
-            captureNested = false, metricName = "jdbc metadata")
+            ignoreSameNested = true, metricName = "jdbc metadata")
     public static class AllMethodAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(AllMethodAdvice.class);
@@ -95,7 +95,7 @@ public class DatabaseMetaDataAspect {
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Object spanOrTimer) {
             // don't need to track prior value and reset to that value, since
-            // @Pointcut.captureNested = false prevents re-entrant calls
+            // @Pointcut.ignoreSameNested = true prevents re-entrant calls
             currentlyExecutingMethodName.remove();
             if (spanOrTimer == null) {
                 return;

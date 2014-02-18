@@ -44,7 +44,6 @@ public @interface Pointcut {
     String[] methodArgs() default {};
     String methodReturn() default "";
     MethodModifier[] methodModifiers() default {};
-    // default value is true since there is small overhead to track and avoid nesting when false
-    boolean captureNested() default true;
+    boolean ignoreSameNested() default false;
     String metricName() default "";
 }
