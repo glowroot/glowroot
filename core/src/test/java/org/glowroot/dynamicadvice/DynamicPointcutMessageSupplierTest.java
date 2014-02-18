@@ -57,6 +57,17 @@ public class DynamicPointcutMessageSupplierTest {
         assertThat(text).isEqualTo(HasName.class.getName() + ".execute(): the name trailing");
     }
 
+    @Test
+    public void shouldRenderBadText() {
+        DynamicAdviceMessageTemplate template = DynamicAdviceMessageTemplate
+                .create("{{this.class.name}}.{{methodName}}(): {{1.name}} trailing");
+        Message message = DynamicAdviceMessageSupplier.create(template, new HasName(),
+                "execute", new HasName()).get();
+        String text = ((ReadableMessage) message).getText();
+        assertThat(text).isEqualTo(HasName.class.getName()
+                + ".execute(): <requested arg index out of bounds: 1> trailing");
+    }
+
     public static class HasName {
         public String getName() {
             return "the name";

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,8 +52,13 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
         String[] resolvedArgPathParts = new String[template.getArgPathParts().size()];
         i = 0;
         for (ArgPathPart part : template.getArgPathParts()) {
-            resolvedArgPathParts[i++] =
-                    String.valueOf(Beans.value(args[part.getArgNumber()], part.getPropertyPath()));
+            if (part.getArgNumber() >= args.length) {
+                resolvedArgPathParts[i++] =
+                        "<requested arg index out of bounds: " + part.getArgNumber() + ">";
+            } else {
+                resolvedArgPathParts[i++] = String.valueOf(
+                        Beans.value(args[part.getArgNumber()], part.getPropertyPath()));
+            }
         }
         return new DynamicAdviceMessageSupplier(template, resolvedThisPathParts,
                 resolvedArgPathParts, methodName);
