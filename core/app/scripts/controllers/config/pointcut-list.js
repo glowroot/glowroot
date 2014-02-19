@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,11 @@ glowroot.controller('PointcutListCtrl', [
       $http.post('backend/admin/pointcuts/reweave', '')
           .success(function (data) {
             $scope.page.dirty = false;
-            deferred.resolve('Success');
+            if (data.classes) {
+              deferred.resolve('Success (re-transformed ' + data.classes + ' classes)');
+            } else {
+              deferred.resolve('Success (no classes needed re-transforming)');
+            }
           })
           .error(httpErrors.handler($scope, deferred));
     };

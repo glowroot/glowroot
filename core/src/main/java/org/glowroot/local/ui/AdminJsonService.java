@@ -83,14 +83,14 @@ class AdminJsonService {
     }
 
     @POST("/backend/admin/pointcuts/reweave")
-    void reweavePointcutConfigs() throws UnmodifiableClassException {
+    String reweavePointcutConfigs() throws UnmodifiableClassException {
         if (instrumentation == null) {
             logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
-            return;
+            return "{}";
         }
         if (!instrumentation.isRetransformClassesSupported()) {
             logger.warn("retransformClasses is not supported");
-            return;
+            return "{}";
         }
         List<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
         pointcutConfigAdviceCache.updateAdvisors(pointcutConfigs);
@@ -102,9 +102,10 @@ class AdminJsonService {
         classes.addAll(parsedTypeCache.getClassesWithReweavableAdvice());
         classes.addAll(parsedTypeCache.getExistingSubClasses(typeNames));
         if (classes.isEmpty()) {
-            return;
+            return "{\"classes\":0}";
         }
         instrumentation.retransformClasses(Iterables.toArray(classes, Class.class));
+        return "{\"classes\":" + classes.size() + "}";
     }
 
     @POST("/backend/admin/data/compact")
