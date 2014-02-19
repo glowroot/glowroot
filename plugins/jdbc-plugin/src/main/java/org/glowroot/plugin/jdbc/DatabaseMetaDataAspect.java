@@ -17,6 +17,7 @@ package org.glowroot.plugin.jdbc;
 
 import checkers.nullness.quals.Nullable;
 
+import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.MetricTimer;
@@ -24,10 +25,14 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
 import org.glowroot.api.weaving.BindMethodName;
+import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
-import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
+import org.glowroot.api.weaving.OnReturn;
+import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * @author Trask Stalnaker
@@ -36,6 +41,20 @@ import org.glowroot.api.weaving.Pointcut;
 public class DatabaseMetaDataAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
+
+    private static volatile int stackTraceThresholdMillis;
+
+    static {
+        pluginServices.registerConfigListener(new ConfigListener() {
+            @Override
+            public void onChange() {
+                Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
+                stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
+            }
+        });
+        Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
+        stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
+    }
 
     // DatabaseMetaData method timings are captured below, so this thread local is used to
     // avoid capturing driver-specific java.sql.Statement executions used to implement the
@@ -82,8 +101,8 @@ public class DatabaseMetaDataAspect {
                 return null;
             }
         }
-        @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Object spanOrTimer) {
+        @OnReturn
+        public static void onReturn(@BindTraveler @Nullable Object spanOrTimer) {
             // don't need to track prior value and reset to that value, since
             // @Pointcut.ignoreSameNested = true prevents re-entrant calls
             currentlyExecutingMethodName.remove();
@@ -91,7 +110,22 @@ public class DatabaseMetaDataAspect {
                 return;
             }
             if (spanOrTimer instanceof Span) {
-                ((Span) spanOrTimer).end();
+                ((Span) spanOrTimer).endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+            } else {
+                ((MetricTimer) spanOrTimer).stop();
+            }
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable Object spanOrTimer) {
+            // don't need to track prior value and reset to that value, since
+            // @Pointcut.ignoreSameNested = true prevents re-entrant calls
+            currentlyExecutingMethodName.remove();
+            if (spanOrTimer == null) {
+                return;
+            }
+            if (spanOrTimer instanceof Span) {
+                ((Span) spanOrTimer).endWithError(ErrorMessage.from(t));
             } else {
                 ((MetricTimer) spanOrTimer).stop();
             }

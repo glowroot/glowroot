@@ -15,15 +15,18 @@
  */
 package org.glowroot.plugin.jdbc;
 
+import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
+import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
-import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
+import org.glowroot.api.weaving.OnReturn;
+import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -63,9 +66,13 @@ public class ConnectionAspect {
         public static Span onBefore() {
             return pluginServices.startSpan(MessageSupplier.from("jdbc commit"), metricName);
         }
-        @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
+        @OnReturn
+        public static void onReturn(@BindTraveler Span span) {
             span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
+            span.endWithError(ErrorMessage.from(t));
         }
     }
 
@@ -82,9 +89,13 @@ public class ConnectionAspect {
         public static Span onBefore() {
             return pluginServices.startSpan(MessageSupplier.from("jdbc rollback"), metricName);
         }
-        @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
+        @OnReturn
+        public static void onReturn(@BindTraveler Span span) {
             span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
+            span.endWithError(ErrorMessage.from(t));
         }
     }
 }
