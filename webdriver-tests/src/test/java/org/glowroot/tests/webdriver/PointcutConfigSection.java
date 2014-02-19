@@ -67,7 +67,7 @@ class PointcutConfigSection {
     }
 
     WebElement getSpanStackTraceThresholdTextTextField() {
-        return withWait(xpath(".//input[@ng-model='config.spanStackTraceThresholdMillis']"));
+        return withWait(xpath(".//input[@ng-model='spanStackTraceThresholdMillis']"));
     }
 
     WebElement getTraceDefinitionCheckbox() {

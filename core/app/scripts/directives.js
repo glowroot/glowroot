@@ -71,8 +71,8 @@ glowroot.directive('gtButtonGroup', [
           '<div class="clearfix">' +
           '  <div ng-transclude style="float: left;"></div>' +
           '  <span class="button-spinner inline-block hide" style="float: left;"></span>' +
-          // this needs to be div, and it's child needs to be div, for formatting of multi-line messages
-          // same as done in gt-button.html template
+        // this needs to be div, and it's child needs to be div, for formatting of multi-line messages
+        // same as done in gt-button.html template
           '  <div style="overflow-x: hidden;">' +
           '    <div class="button-message hide" style="padding-top: 5px;"></div>' +
           '  </div>' +
@@ -122,71 +122,61 @@ glowroot.directive('gtButton', [
   }
 ]);
 
-glowroot.directive('gtFormGroup', function () {
-  return {
-    scope: {
-      gtType: '@',
-      gtLabel: '@',
-      gtModel: '=',
-      gtWidth: '@',
-      gtAddon: '@',
-      gtPattern: '@',
-      // gtRequired accepts string binding for inline patterns and RegExp binding for scope expressions
-      // (same as ngPattern on angular input directive)
-      gtRequired: '&',
-      gtNumber: '&'
-    },
-    transclude: true,
-    require: '^form',
-    templateUrl: 'template/gt-form-group.html',
-    link: function (scope, iElement, iAttrs, formCtrl) {
-      scope.formCtrl = formCtrl;
-      // just need a unique id
-      scope.gtId = scope.$id;
-      if (!scope.gtType) {
-        // default
-        scope.gtType = 'text';
-      }
-      scope.$watch('gtModel', function (newValue) {
-        scope.ngModel = newValue;
-      });
-      scope.$watch('ngModel', function (newValue) {
-        if (scope.gtNumber()) {
-          if (newValue === '') {
-            // map empty string to null number
-            scope.gtModel = null;
-            return;
+glowroot.directive('gtFormGroup', [
+  'conversions',
+  function (conversions) {
+    return {
+      scope: {
+        gtType: '@',
+        gtLabel: '@',
+        gtModel: '=',
+        gtWidth: '@',
+        gtAddon: '@',
+        gtPattern: '@',
+        // gtRequired accepts string binding for inline patterns and RegExp binding for scope expressions
+        // (same as ngPattern on angular input directive)
+        gtRequired: '&',
+        gtNumber: '&'
+      },
+      transclude: true,
+      require: '^form',
+      templateUrl: 'template/gt-form-group.html',
+      link: function (scope, iElement, iAttrs, formCtrl) {
+        scope.formCtrl = formCtrl;
+        // just need a unique id
+        scope.gtId = scope.$id;
+        if (!scope.gtType) {
+          // default
+          scope.gtType = 'text';
+        }
+        scope.$watch('gtModel', function (newValue) {
+          scope.ngModel = newValue;
+        });
+        scope.$watch('ngModel', function (newValue) {
+          if (scope.gtNumber()) {
+            scope.gtModel = conversions.toNumber(newValue);
           } else {
-            // try to convert to number
-            var float = parseFloat(newValue);
-            if (isNaN(float)) {
-              scope.gtModel = newValue;
-              return;
+            scope.gtModel = newValue;
+          }
+        });
+        scope.$watch('gtPattern', function (newValue) {
+          if (newValue) {
+            var match = newValue.match(/^\/(.*)\/$/);
+            if (match) {
+              scope.ngPattern = new RegExp(match[1]);
             } else {
-              scope.gtModel = float;
+              scope.ngPattern = scope.$parent.$eval(newValue);
             }
-          }
-        } else {
-          scope.gtModel = newValue;
-        }
-      });
-      scope.$watch('gtPattern', function (newValue) {
-        if (newValue) {
-          var match = newValue.match(/^\/(.*)\/$/);
-          if (match) {
-            scope.ngPattern = new RegExp(match[1]);
           } else {
-            scope.ngPattern = scope.$parent.$eval(newValue);
+            // ngPattern doesn't understand falsy values (maybe it should?)
+            // so just pass a pattern that will match everything
+            scope.ngPattern = /.?/;
           }
-        } else {
-          // ngPattern doesn't understand falsy values (maybe it should?)
-          // so just pass a pattern that will match everything
-          scope.ngPattern = /.?/;
-        }
-      });
-    }
-  };
-});
+        });
+      }
+    };
+  }
+]);
 
 glowroot.directive('gtDatepicker', function () {
   return {
@@ -344,7 +334,7 @@ glowroot.directive('gtFormAutofocusOnFirstInput', function () {
       if (newValue) {
         // setTimeout is needed for IE8
         // (and IE9 sometimes, e.g. on Config > Fine-grained profiling)
-        setTimeout(function() {
+        setTimeout(function () {
           iElement.find('input').first().focus();
         });
         unregisterWatch();

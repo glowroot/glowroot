@@ -23,7 +23,8 @@ glowroot.controller('PointcutCtrl', [
   'confirmIfHasChanges',
   'httpErrors',
   'queryStrings',
-  function ($scope, $http, $timeout, confirmIfHasChanges, httpErrors, queryStrings) {
+  'conversions',
+  function ($scope, $http, $timeout, confirmIfHasChanges, httpErrors, queryStrings, conversions) {
     // don't initialize page binding object since it is inherited from pointcut-list.js
 
     function onNewData(data) {
@@ -42,8 +43,11 @@ glowroot.controller('PointcutCtrl', [
         $scope.signatures = [ signature ];
         $scope.spanDefinition = Boolean(data.spanText);
         $scope.traceDefinition = Boolean(data.traceGrouping);
+        $scope.spanStackTraceThresholdMillis = data.spanStackTraceThresholdMillis;
       } else {
         $scope.heading = '<New pointcut>';
+        $scope.spanDefinition = false;
+        $scope.traceDefinition = false;
         $timeout(function () {
           // focus on type name
           $scope.isFocus = true;
@@ -252,6 +256,10 @@ glowroot.controller('PointcutCtrl', [
         $scope.config.traceGrouping = '';
         $scope.config.traceBackground = '';
       }
+    });
+
+    $scope.$watch('spanStackTraceThresholdMillis', function (newValue) {
+      $scope.config.spanStackTraceThresholdMillis = conversions.toNumber(newValue);
     });
 
     function isSignatureAll(signature) {
