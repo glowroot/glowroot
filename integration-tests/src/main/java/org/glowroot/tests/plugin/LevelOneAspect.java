@@ -91,16 +91,16 @@ public class LevelOneAspect {
             return span;
         }
 
+        @OnReturn
+        public static void onReturn(@BindTraveler Span span) {
+            span.end();
+        }
+
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
             Map<String, ?> detail = ImmutableMap.of("erra", Optional.absent(), "errb",
                     ImmutableMap.of("errc", Optional.absent(), "errd", "xyz"));
             span.endWithError(ErrorMessage.withDetail(t, detail));
-        }
-
-        @OnReturn
-        public static void onReturn(@BindTraveler Span span) {
-            span.end();
         }
     }
 }

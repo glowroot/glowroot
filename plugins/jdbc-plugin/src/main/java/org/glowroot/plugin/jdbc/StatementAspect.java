@@ -237,17 +237,17 @@ public class StatementAspect {
                 return null;
             }
         }
+        @OnReturn
+        public static void onReturn(@BindTraveler @Nullable Span span) {
+            if (span != null) {
+                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+            }
+        }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler @Nullable Span span) {
             if (span != null) {
                 span.endWithError(ErrorMessage.from(t));
-            }
-        }
-        @OnReturn
-        public static void onReturn(@BindTraveler @Nullable Span span) {
-            if (span != null) {
-                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
         }
     }
@@ -284,17 +284,17 @@ public class StatementAspect {
                 return null;
             }
         }
+        @OnReturn
+        public static void onReturn(@BindTraveler @Nullable Span span) {
+            if (span != null) {
+                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+            }
+        }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler @Nullable Span span) {
             if (span != null) {
                 span.endWithError(ErrorMessage.from(t));
-            }
-        }
-        @OnReturn
-        public static void onReturn(@BindTraveler @Nullable Span span) {
-            if (span != null) {
-                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
         }
     }
@@ -346,17 +346,17 @@ public class StatementAspect {
                 }
             }
         }
+        @OnReturn
+        public static void onReturn(@BindTraveler @Nullable Span span) {
+            if (span != null) {
+                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+            }
+        }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler @Nullable Span span) {
             if (span != null) {
                 span.endWithError(ErrorMessage.from(t));
-            }
-        }
-        @OnReturn
-        public static void onReturn(@BindTraveler @Nullable Span span) {
-            if (span != null) {
-                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
         }
     }

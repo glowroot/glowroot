@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,13 +60,13 @@ public class ServletInitAspect {
                     MessageSupplier.from(listener.getClass().getName() + ".contextInitialized()"),
                     metricName);
         }
-        @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            span.endWithError(ErrorMessage.from(t));
-        }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
             span.end();
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
+            span.endWithError(ErrorMessage.from(t));
         }
     }
 
@@ -85,13 +85,13 @@ public class ServletInitAspect {
             return pluginServices.startBackgroundTrace(grouping,
                     MessageSupplier.from(servlet.getClass().getName() + ".init()"), metricName);
         }
-        @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            span.endWithError(ErrorMessage.from(t));
-        }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
             span.end();
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
+            span.endWithError(ErrorMessage.from(t));
         }
     }
 
@@ -110,13 +110,13 @@ public class ServletInitAspect {
             return pluginServices.startBackgroundTrace(grouping,
                     MessageSupplier.from(filter.getClass().getName() + ".init()"), metricName);
         }
-        @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            span.endWithError(ErrorMessage.from(t));
-        }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
             span.end();
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
+            span.endWithError(ErrorMessage.from(t));
         }
     }
 }

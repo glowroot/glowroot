@@ -101,13 +101,6 @@ public class ServletAspect {
             }
             return span;
         }
-        @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            // ignoring potential sendError since this seems worse
-            sendError.remove();
-            span.endWithError(ErrorMessage.from(t));
-            topLevel.remove();
-        }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
             ErrorMessage errorMessage = sendError.get();
@@ -117,6 +110,13 @@ public class ServletAspect {
             } else {
                 span.end();
             }
+            topLevel.remove();
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
+            // ignoring potential sendError since this seems worse
+            sendError.remove();
+            span.endWithError(ErrorMessage.from(t));
             topLevel.remove();
         }
     }
@@ -133,13 +133,13 @@ public class ServletAspect {
         public static Span onBefore(@BindMethodArg Object realRequest) {
             return ServiceAdvice.onBefore(realRequest);
         }
-        @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            ServiceAdvice.onThrow(t, span);
-        }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
             ServiceAdvice.onReturn(span);
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
+            ServiceAdvice.onThrow(t, span);
         }
     }
 
@@ -155,13 +155,13 @@ public class ServletAspect {
         public static Span onBefore(@BindMethodArg Object realRequest) {
             return ServiceAdvice.onBefore(realRequest);
         }
-        @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            ServiceAdvice.onThrow(t, span);
-        }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
             ServiceAdvice.onReturn(span);
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
+            ServiceAdvice.onThrow(t, span);
         }
     }
 
