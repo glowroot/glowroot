@@ -42,20 +42,6 @@ public class DatabaseMetaDataAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    private static volatile int stackTraceThresholdMillis;
-
-    static {
-        pluginServices.registerConfigListener(new ConfigListener() {
-            @Override
-            public void onChange() {
-                Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
-                stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
-            }
-        });
-        Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
-        stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
-    }
-
     // DatabaseMetaData method timings are captured below, so this thread local is used to
     // avoid capturing driver-specific java.sql.Statement executions used to implement the
     // method internally (especially since it is haphazard whether a particular driver
@@ -110,7 +96,8 @@ public class DatabaseMetaDataAspect {
                 return;
             }
             if (spanOrTimer instanceof Span) {
-                ((Span) spanOrTimer).endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+                ((Span) spanOrTimer).endWithStackTrace(
+                        JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
             } else {
                 ((MetricTimer) spanOrTimer).stop();
             }

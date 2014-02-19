@@ -19,7 +19,6 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -39,20 +38,6 @@ public class ConnectionAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    private static volatile int stackTraceThresholdMillis;
-
-    static {
-        pluginServices.registerConfigListener(new ConfigListener() {
-            @Override
-            public void onChange() {
-                Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
-                stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
-            }
-        });
-        Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
-        stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
-    }
-
     @Pointcut(typeName = "java.sql.Connection", methodName = "commit", ignoreSameNested = true,
             metricName = "jdbc commit")
     public static class CommitAdvice {
@@ -68,7 +53,7 @@ public class ConnectionAspect {
         }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
-            span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+            span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
@@ -91,7 +76,7 @@ public class ConnectionAspect {
         }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
-            span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+            span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {

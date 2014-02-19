@@ -63,20 +63,15 @@ public class StatementAspect {
 
     private static final AtomicBoolean noSqlTextAvailableLoggedOnce = new AtomicBoolean();
 
-    private static volatile int stackTraceThresholdMillis;
     private static volatile boolean captureBindParameters;
 
     static {
         pluginServices.registerConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
-                Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
-                stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
                 captureBindParameters = pluginServices.getBooleanProperty("captureBindParameters");
             }
         });
-        Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
-        stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
         captureBindParameters = pluginServices.getBooleanProperty("captureBindParameters");
     }
 
@@ -240,7 +235,8 @@ public class StatementAspect {
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable Span span) {
             if (span != null) {
-                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+                span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                        MILLISECONDS);
             }
         }
         @OnThrow
@@ -287,7 +283,8 @@ public class StatementAspect {
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable Span span) {
             if (span != null) {
-                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+                span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                        MILLISECONDS);
             }
         }
         @OnThrow
@@ -349,7 +346,8 @@ public class StatementAspect {
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable Span span) {
             if (span != null) {
-                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+                span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                        MILLISECONDS);
             }
         }
         @OnThrow

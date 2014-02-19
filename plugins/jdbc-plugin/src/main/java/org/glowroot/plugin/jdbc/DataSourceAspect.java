@@ -42,21 +42,16 @@ public class DataSourceAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    private static volatile int stackTraceThresholdMillis;
     private static volatile boolean captureGetConnectionSpans;
 
     static {
         pluginServices.registerConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
-                Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
-                stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
                 captureGetConnectionSpans =
                         pluginServices.getBooleanProperty("captureGetConnectionSpans");
             }
         });
-        Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
-        stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
         captureGetConnectionSpans = pluginServices.getBooleanProperty("captureGetConnectionSpans");
     }
 
@@ -81,7 +76,8 @@ public class DataSourceAspect {
         @OnReturn
         public static void onReturn(@BindTraveler Object spanOrTimer) {
             if (spanOrTimer instanceof Span) {
-                ((Span) spanOrTimer).endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+                ((Span) spanOrTimer).endWithStackTrace(
+                        JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
             } else {
                 ((MetricTimer) spanOrTimer).stop();
             }
