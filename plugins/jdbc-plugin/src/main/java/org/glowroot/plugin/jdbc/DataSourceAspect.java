@@ -15,19 +15,13 @@
  */
 package org.glowroot.plugin.jdbc;
 
-import java.sql.Connection;
-
-import checkers.nullness.quals.Nullable;
-
 import org.glowroot.api.ErrorMessage;
-import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
-import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -78,23 +72,16 @@ public class DataSourceAspect {
         @OnBefore
         public static Object onBefore() {
             if (captureGetConnectionSpans) {
-                return pluginServices.startSpan(new GetConnectionMessageSupplier(), metricName);
+                return pluginServices.startSpan(MessageSupplier.from("jdbc get connection"),
+                        metricName);
             } else {
                 return pluginServices.startMetricTimer(metricName);
             }
         }
         @OnReturn
-        public static void onReturn(@BindReturn Connection connection,
-                @BindTraveler Object spanOrTimer) {
+        public static void onReturn(@BindTraveler Object spanOrTimer) {
             if (spanOrTimer instanceof Span) {
-                Span span = (Span) spanOrTimer;
-                GetConnectionMessageSupplier messageSupplier =
-                        (GetConnectionMessageSupplier) span.getMessageSupplier();
-                if (messageSupplier != null) {
-                    // can be null if max spans was exceeded
-                    messageSupplier.setConnectionHashCode(connection.hashCode());
-                }
-                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+                ((Span) spanOrTimer).endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             } else {
                 ((MetricTimer) spanOrTimer).stop();
             }
@@ -102,23 +89,6 @@ public class DataSourceAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
             span.endWithError(ErrorMessage.from(t));
-        }
-    }
-
-    private static class GetConnectionMessageSupplier extends MessageSupplier {
-        @Nullable
-        private volatile Integer connectionHashCode;
-        private void setConnectionHashCode(Integer connectionHashCode) {
-            this.connectionHashCode = connectionHashCode;
-        }
-        @Override
-        public Message get() {
-            if (connectionHashCode == null) {
-                return Message.from("jdbc datasource get connection");
-            } else {
-                return Message.from("jdbc datasource get connection [connection: {}]",
-                        Integer.toHexString(connectionHashCode));
-            }
         }
     }
 }

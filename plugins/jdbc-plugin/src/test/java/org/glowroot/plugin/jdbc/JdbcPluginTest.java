@@ -79,8 +79,8 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee => 3 rows [connection: ");
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee => 3 rows");
     }
 
     @Test
@@ -92,8 +92,8 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee => 3 rows [connection: ");
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee => 3 rows");
     }
 
     @Test
@@ -105,8 +105,8 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee => 3 rows [connection: ");
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee => 3 rows");
     }
 
     @Test
@@ -118,8 +118,8 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee => 3 rows [connection: ");
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee => 3 rows");
     }
 
     @Test
@@ -131,8 +131,8 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee => 2 rows [connection: ");
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee => 2 rows");
     }
 
     @Test
@@ -144,8 +144,8 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee => 1 row [connection: ");
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee => 1 row");
     }
 
     @Test
@@ -157,8 +157,8 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee => 3 rows [connection: ");
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee => 3 rows");
     }
 
     @Test
@@ -170,9 +170,9 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getMessage().getText()).startsWith(
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee"
-                        + " where name like ? ['john%'] => 1 row [connection: ");
+                        + " where name like ? ['john%'] => 1 row");
     }
 
     @Test
@@ -185,8 +185,8 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee where name like ? => 1 row [connection: ");
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee where name like ? => 1 row");
     }
 
     @Test
@@ -199,8 +199,8 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getMessage().getText()).startsWith(
-                "jdbc execution: insert into employee values (?, ?) [NULL, NULL] [connection: ");
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
+                "jdbc execution: insert into employee values (?, ?) [NULL, NULL]");
     }
 
     @Test
@@ -213,9 +213,9 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getMessage().getText()).startsWith(
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: insert into employee values (?, ?) ['jane',"
-                        + " 0x00010203040506070809] [connection: ");
+                        + " 0x00010203040506070809]");
     }
 
     @Test
@@ -228,8 +228,8 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getMessage().getText()).startsWith(
-                "jdbc execution: insert into employee values (?, ?) ['jane', NULL] [connection: ");
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
+                "jdbc execution: insert into employee values (?, ?) ['jane', NULL]");
     }
 
     @Test
@@ -241,10 +241,10 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
         Span jdbcInsertSpan = trace.getSpans().get(1);
-        assertThat(jdbcInsertSpan.getMessage().getText()).startsWith(
-                "jdbc execution: insert into employee (name) values ('john doe') [connection: ");
+        assertThat(jdbcInsertSpan.getMessage().getText()).isEqualTo(
+                "jdbc execution: insert into employee (name) values ('john doe')");
         Span jdbcCommitSpan = trace.getSpans().get(2);
-        assertThat(jdbcCommitSpan.getMessage().getText()).startsWith("jdbc commit [connection: ");
+        assertThat(jdbcCommitSpan.getMessage().getText()).isEqualTo("jdbc commit");
         assertThat(trace.getMetrics()).hasSize(4);
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)
@@ -262,10 +262,10 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
         Span jdbcInsertSpan = trace.getSpans().get(1);
-        assertThat(jdbcInsertSpan.getMessage().getText()).startsWith(
-                "jdbc execution: insert into employee (name) values ('john doe') [connection: ");
+        assertThat(jdbcInsertSpan.getMessage().getText()).isEqualTo(
+                "jdbc execution: insert into employee (name) values ('john doe')");
         Span jdbcCommitSpan = trace.getSpans().get(2);
-        assertThat(jdbcCommitSpan.getMessage().getText()).startsWith("jdbc rollback [connection: ");
+        assertThat(jdbcCommitSpan.getMessage().getText()).isEqualTo("jdbc rollback");
         assertThat(trace.getMetrics()).hasSize(4);
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)
@@ -317,8 +317,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc metadata:"
-                + " DatabaseMetaData.getTables() [connection: ");
+        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("jdbc metadata:"
+                + " DatabaseMetaData.getTables()");
         assertThat(trace.getMetrics().size()).isEqualTo(2);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
         assertThat(trace.getMetrics().get(1).getName()).isEqualTo("jdbc metadata");
@@ -333,10 +333,10 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
-        assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution: 2 x"
-                + " insert into employee (name) values (?) ['huckle'] ['sally'] [connection: ");
-        assertThat(trace.getSpans().get(2).getMessage().getText()).startsWith("jdbc execution: 2 x"
-                + " insert into employee (name) values (?) ['lowly'] ['pig will'] [connection: ");
+        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+                + " insert into employee (name) values (?) ['huckle'] ['sally']");
+        assertThat(trace.getSpans().get(2).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+                + " insert into employee (name) values (?) ['lowly'] ['pig will']");
     }
 
     @Test
@@ -348,11 +348,11 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
-        assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution: 2 x"
-                + " insert into employee (name) values (?) ['huckle'] ['sally'] [connection: ");
-        assertThat(trace.getSpans().get(2).getMessage().getText()).startsWith("jdbc execution: 4 x"
+        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+                + " insert into employee (name) values (?) ['huckle'] ['sally']");
+        assertThat(trace.getSpans().get(2).getMessage().getText()).isEqualTo("jdbc execution: 4 x"
                 + " insert into employee (name) values (?) ['huckle'] ['sally'] ['lowly']"
-                + " ['pig will'] [connection: ");
+                + " ['pig will']");
     }
 
     @Test
@@ -364,12 +364,12 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
-        assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution:"
+        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("jdbc execution:"
                 + " insert into employee (name) values ('huckle'),"
-                + " insert into employee (name) values ('sally') [connection: ");
-        assertThat(trace.getSpans().get(2).getMessage().getText()).startsWith("jdbc execution:"
+                + " insert into employee (name) values ('sally')");
+        assertThat(trace.getSpans().get(2).getMessage().getText()).isEqualTo("jdbc execution:"
                 + " insert into employee (name) values ('lowly'),"
-                + " insert into employee (name) values ('pig will') [connection: ");
+                + " insert into employee (name) values ('pig will')");
     }
 
     @Test
@@ -381,14 +381,14 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
-        assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution:"
+        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("jdbc execution:"
                 + " insert into employee (name) values ('huckle'),"
-                + " insert into employee (name) values ('sally') [connection: ");
-        assertThat(trace.getSpans().get(2).getMessage().getText()).startsWith("jdbc execution:"
+                + " insert into employee (name) values ('sally')");
+        assertThat(trace.getSpans().get(2).getMessage().getText()).isEqualTo("jdbc execution:"
                 + " insert into employee (name) values ('huckle'),"
                 + " insert into employee (name) values ('sally'),"
                 + " insert into employee (name) values ('lowly'),"
-                + " insert into employee (name) values ('pig will') [connection: ");
+                + " insert into employee (name) values ('pig will')");
     }
 
     // this test validates that lastJdbcMessageSupplier is cleared so that its numRows won't be
@@ -402,9 +402,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee where name like ? ['nomatch%'] => 0 rows"
-                        + " [connection: ");
+        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee where name like ? ['nomatch%'] => 0 rows");
     }
 
     // TODO make a release build profile that runs all tests against

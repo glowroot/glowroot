@@ -15,13 +15,8 @@
  */
 package org.glowroot.plugin.jdbc;
 
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
-
 import checkers.nullness.quals.Nullable;
 
-import org.glowroot.api.Logger;
-import org.glowroot.api.LoggerFactory;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.MetricTimer;
@@ -29,7 +24,6 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
 import org.glowroot.api.weaving.BindMethodName;
-import org.glowroot.api.weaving.BindTarget;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
@@ -40,8 +34,6 @@ import org.glowroot.api.weaving.Pointcut;
  * @since 0.5
  */
 public class DatabaseMetaDataAspect {
-
-    private static final Logger logger = LoggerFactory.getLogger(DatabaseMetaDataAspect.class);
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
@@ -77,14 +69,12 @@ public class DatabaseMetaDataAspect {
         }
         @OnBefore
         @Nullable
-        public static Object onBefore(@BindTarget DatabaseMetaData databaseMetaData,
-                @BindMethodName String methodName) {
+        public static Object onBefore(@BindMethodName String methodName) {
             currentlyExecutingMethodName.set(methodName);
             if (pluginServices.isEnabled()) {
                 if (spanEnabled) {
                     return pluginServices.startSpan(MessageSupplier.from("jdbc metadata:"
-                            + " DatabaseMetaData.{}() [connection: {}]", methodName,
-                            getConnectionHashCode(databaseMetaData)), metricName);
+                            + " DatabaseMetaData.{}()", methodName), metricName);
                 } else {
                     return pluginServices.startMetricTimer(metricName);
                 }
@@ -115,14 +105,5 @@ public class DatabaseMetaDataAspect {
     @Nullable
     static String getCurrentlyExecutingMethodName() {
         return currentlyExecutingMethodName.get();
-    }
-
-    private static String getConnectionHashCode(DatabaseMetaData databaseMetaData) {
-        try {
-            return Integer.toHexString(databaseMetaData.getConnection().hashCode());
-        } catch (SQLException e) {
-            logger.warn(e.getMessage(), e);
-            return "???";
-        }
     }
 }

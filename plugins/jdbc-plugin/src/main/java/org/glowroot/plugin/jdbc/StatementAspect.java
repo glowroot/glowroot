@@ -18,7 +18,6 @@ package org.glowroot.plugin.jdbc;
 import java.io.InputStream;
 import java.io.Reader;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -228,8 +227,7 @@ public class StatementAspect {
                 @BindMethodArg String sql) {
             StatementMirror mirror = getStatementMirror(statement);
             if (pluginServices.isEnabled()) {
-                JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.create(sql,
-                        getConnectionHashCode(statement));
+                JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.create(sql);
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                 return pluginServices.startSpan(jdbcMessageSupplier, metricName);
             } else {
@@ -273,11 +271,9 @@ public class StatementAspect {
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier;
                 if (captureBindParameters) {
-                    jdbcMessageSupplier = JdbcMessageSupplier.createWithParameters(mirror,
-                            getConnectionHashCode(preparedStatement));
+                    jdbcMessageSupplier = JdbcMessageSupplier.createWithParameters(mirror);
                 } else {
-                    jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql(),
-                            getConnectionHashCode(preparedStatement));
+                    jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
                 }
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                 return pluginServices.startSpan(jdbcMessageSupplier, metricName);
@@ -322,11 +318,10 @@ public class StatementAspect {
                 if (pluginServices.isEnabled()) {
                     JdbcMessageSupplier jdbcMessageSupplier;
                     if (captureBindParameters) {
-                        jdbcMessageSupplier = JdbcMessageSupplier.createWithBatchedParameters(
-                                mirror, getConnectionHashCode(statement));
+                        jdbcMessageSupplier =
+                                JdbcMessageSupplier.createWithBatchedParameters(mirror);
                     } else {
-                        jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql(),
-                                getConnectionHashCode(statement));
+                        jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
                     }
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                     return pluginServices.startSpan(jdbcMessageSupplier, metricName);
@@ -339,8 +334,8 @@ public class StatementAspect {
             } else {
                 StatementMirror mirror = getStatementMirror(statement);
                 if (pluginServices.isEnabled()) {
-                    JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier
-                            .createWithBatchedSqls(mirror, getConnectionHashCode(statement));
+                    JdbcMessageSupplier jdbcMessageSupplier =
+                            JdbcMessageSupplier.createWithBatchedSqls(mirror);
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                     return pluginServices.startSpan(jdbcMessageSupplier, metricName);
                 } else {
@@ -429,17 +424,5 @@ public class StatementAspect {
             }
         }
         return mirror;
-    }
-
-    // return Integer (as opposed to DatabaseMetaData method below) in order to delay the
-    // hex conversion until/if needed
-    @Nullable
-    private static Integer getConnectionHashCode(Statement statement) {
-        try {
-            return statement.getConnection().hashCode();
-        } catch (SQLException e) {
-            logger.warn(e.getMessage(), e);
-            return null;
-        }
     }
 }

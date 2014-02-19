@@ -15,14 +15,11 @@
  */
 package org.glowroot.plugin.jdbc;
 
-import java.sql.Connection;
-
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
-import org.glowroot.api.weaving.BindTarget;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -63,9 +60,8 @@ public class ConnectionAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindTarget Connection connection) {
-            return pluginServices.startSpan(MessageSupplier.from("jdbc commit [connection: {}]",
-                    Integer.toHexString(connection.hashCode())), metricName);
+        public static Span onBefore() {
+            return pluginServices.startSpan(MessageSupplier.from("jdbc commit"), metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
@@ -83,9 +79,8 @@ public class ConnectionAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindTarget Connection connection) {
-            return pluginServices.startSpan(MessageSupplier.from("jdbc rollback [connection: {}]",
-                    Integer.toHexString(connection.hashCode())), metricName);
+        public static Span onBefore() {
+            return pluginServices.startSpan(MessageSupplier.from("jdbc rollback"), metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {

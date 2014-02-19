@@ -68,38 +68,29 @@ class JdbcMessageSupplier extends MessageSupplier {
     @Nullable
     private final ImmutableList<String> batchedSqls;
 
-    @Nullable
-    private final Integer connectionHashCode;
-
     private volatile int numRows = NEXT_HAS_NOT_BEEN_CALLED;
 
-    static JdbcMessageSupplier create(String sql, @Nullable Integer connectionHashCode) {
-        return new JdbcMessageSupplier(sql, null, null, null, connectionHashCode);
+    static JdbcMessageSupplier create(String sql) {
+        return new JdbcMessageSupplier(sql, null, null, null);
     }
 
-    static JdbcMessageSupplier createWithParameters(PreparedStatementMirror mirror,
-            @Nullable Integer connectionHashCode) {
-        return new JdbcMessageSupplier(mirror.getSql(), mirror.getParametersCopy(), null, null,
-                connectionHashCode);
+    static JdbcMessageSupplier createWithParameters(PreparedStatementMirror mirror) {
+        return new JdbcMessageSupplier(mirror.getSql(), mirror.getParametersCopy(), null, null);
     }
 
-    static JdbcMessageSupplier createWithBatchedSqls(StatementMirror mirror,
-            @Nullable Integer connectionHashCode) {
-        return new JdbcMessageSupplier(null, null, null, mirror.getBatchedSqlCopy(),
-                connectionHashCode);
+    static JdbcMessageSupplier createWithBatchedSqls(StatementMirror mirror) {
+        return new JdbcMessageSupplier(null, null, null, mirror.getBatchedSqlCopy());
     }
 
-    static JdbcMessageSupplier createWithBatchedParameters(PreparedStatementMirror mirror,
-            @Nullable Integer connectionHashCode) {
+    static JdbcMessageSupplier createWithBatchedParameters(PreparedStatementMirror mirror) {
         return new JdbcMessageSupplier(mirror.getSql(), null, mirror.getBatchedParametersCopy(),
-                null, connectionHashCode);
+                null);
     }
 
     private JdbcMessageSupplier(@Nullable String sql,
             @Nullable List</*@Nullable*/Object> parameters,
             @Nullable ImmutableList<List</*@Nullable*/Object>> batchedParameters,
-            @Nullable ImmutableList<String> batchedSqls, @Nullable Integer connectionHashCode) {
-
+            @Nullable ImmutableList<String> batchedSqls) {
         if (sql == null && batchedSqls == null) {
             throw new AssertionError("Constructor args 'sql' and 'batchedSqls' cannot both"
                     + " be null (enforced by static factory methods)");
@@ -108,7 +99,6 @@ class JdbcMessageSupplier extends MessageSupplier {
         this.parameters = parameters;
         this.batchedParameters = batchedParameters;
         this.batchedSqls = batchedSqls;
-        this.connectionHashCode = connectionHashCode;
     }
 
     @Override
@@ -117,7 +107,6 @@ class JdbcMessageSupplier extends MessageSupplier {
         sb.append("jdbc execution: ");
         if (batchedSqls != null) {
             appendBatchedSqls(sb, batchedSqls);
-            appendConnectionHashCode(sb);
             return Message.from(sb.toString());
         }
         if (sql == null) {
@@ -135,7 +124,6 @@ class JdbcMessageSupplier extends MessageSupplier {
         args[0] = sql;
         appendParameters(sb);
         appendRowCount(sb, args);
-        appendConnectionHashCode(sb);
         return Message.from(sb.toString(), args);
     }
 
@@ -180,16 +168,6 @@ class JdbcMessageSupplier extends MessageSupplier {
             sb.append(" rows");
         }
         args[1] = Integer.toString(numRows);
-    }
-
-    private void appendConnectionHashCode(StringBuilder sb) {
-        sb.append(" [connection: ");
-        if (connectionHashCode == null) {
-            sb.append("???");
-        } else {
-            sb.append(Integer.toHexString(connectionHashCode));
-        }
-        sb.append("]");
     }
 
     private static void appendBatchedSqls(StringBuilder sb, @ReadOnly List<String> batchedSqls) {
