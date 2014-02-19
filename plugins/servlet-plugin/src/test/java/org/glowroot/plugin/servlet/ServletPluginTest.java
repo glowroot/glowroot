@@ -82,9 +82,10 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getGrouping()).isEqualTo("/testservlet");
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getMessage().getText()).isEqualTo("/testservlet");
+        assertThat(span.getMessage().getText()).isEqualTo("GET /testservlet");
     }
 
     @Test
@@ -94,9 +95,10 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteFilter.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getGrouping()).isEqualTo("/testfilter");
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getMessage().getText()).isEqualTo("/testfilter");
+        assertThat(span.getMessage().getText()).isEqualTo("GET /testfilter");
     }
 
     @Test
@@ -106,9 +108,10 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getGrouping()).isEqualTo("/testfilter");
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getMessage().getText()).isEqualTo("/testfilter");
+        assertThat(span.getMessage().getText()).isEqualTo("GET /testfilter");
     }
 
     @Test
@@ -164,7 +167,7 @@ public class ServletPluginTest {
         assertThat(trace.getSpans().get(0).getMessage().getDetail()
                 .get("session id (updated during this request)")).isEqualTo("");
         Span span = trace.getSpans().get(0);
-        assertThat(span.getMessage().getText()).isEqualTo("/testservlet");
+        assertThat(span.getMessage().getText()).isEqualTo("GET /testservlet");
     }
 
     @Test

@@ -81,11 +81,12 @@ public class ServletAspect {
             // passing "false" so it won't create a session if the request doesn't already have one
             HttpSession session = request.getSession(false);
             String requestUri = Strings.nullToEmpty(request.getRequestURI());
+            String requestMethod = Strings.nullToEmpty(request.getMethod());
             if (session == null) {
-                messageSupplier = new ServletMessageSupplier(requestUri, null, null);
+                messageSupplier = new ServletMessageSupplier(requestMethod, requestUri, null, null);
             } else {
-                messageSupplier = new ServletMessageSupplier(requestUri, session.getId(),
-                        session.getSessionAttributes());
+                messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
+                        session.getId(), session.getSessionAttributes());
             }
             topLevel.set(messageSupplier);
             Span span = pluginServices.startTrace(requestUri, messageSupplier, metricName);

@@ -57,6 +57,7 @@ class ServletMessageSupplier extends MessageSupplier {
     // expired when the session attributes are stored, so instead
     // (references to) the session attributes must be stored here
 
+    private final String requestMethod;
     private final String requestUri;
 
     @MonotonicNonNull
@@ -80,8 +81,9 @@ class ServletMessageSupplier extends MessageSupplier {
     @MonotonicNonNull
     private volatile ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
-    ServletMessageSupplier(String requestUri, @Nullable String sessionId,
+    ServletMessageSupplier(String requestMethod, String requestUri, @Nullable String sessionId,
             @Nullable ImmutableMap<String, String> sessionAttributeMap) {
+        this.requestMethod = requestMethod;
         this.requestUri = requestUri;
         this.sessionIdInitialValue = sessionId;
         if (sessionAttributeMap == null || sessionAttributeMap.isEmpty()) {
@@ -96,7 +98,7 @@ class ServletMessageSupplier extends MessageSupplier {
         Map<String, Object> detail = Maps.newHashMap();
         addRequestParameterDetail(detail);
         addSessionAttributeDetail(detail);
-        return Message.withDetail(requestUri, detail);
+        return Message.withDetail(requestMethod + ' ' + requestUri, detail);
     }
 
     boolean isRequestParameterMapCaptured() {
