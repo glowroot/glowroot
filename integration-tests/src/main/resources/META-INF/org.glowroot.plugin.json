@@ -23,6 +23,16 @@
       "prompt": "Capture span stack traces",
       "name": "captureSpanStackTraces",
       "type": "boolean"
+    },
+    {
+      "prompt": "Capture LevelFive",
+      "name": "levelFiveEnabled",
+      "type": "boolean"
+    },
+    {
+      "prompt": "Capture LevelFive spans",
+      "name": "levelFiveSpanEnabled",
+      "type": "boolean"
     }
   ],
   "aspects": [
@@ -47,6 +57,21 @@
       "metricName" : "level four",
       "spanText" : "Level Four: {{0}}, {{1}}",
       "traceGrouping" : ""
+    },
+    {
+      "typeName" : "org.glowroot.tests.LevelFive",
+      "methodName" : "call",
+      "methodArgTypeNames" : [
+        "java.lang.String",
+        "java.lang.String"
+      ],
+      "methodReturnTypeName" : "void",
+      "methodModifiers" : [ ],
+      "metricName" : "level five",
+      "spanText" : "Level Five: {{0}}, {{1}}",
+      "traceGrouping" : "",
+      "enabledProperty": "levelFiveEnabled",
+      "spanEnabledProperty": "levelFiveSpanEnabled"
     }
   ]
 }

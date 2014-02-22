@@ -19,10 +19,8 @@ package org.glowroot.tests;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class LevelFour {
+class LevelFive {
 
     // this method corresponds to pointcut defined in org.glowroot.plugin.json
-    void call(String arg1, String arg2) {
-        new LevelFive().call(arg1, arg2);
-    }
+    void call(@SuppressWarnings("unused") String arg1, @SuppressWarnings("unused") String arg2) {}
 }

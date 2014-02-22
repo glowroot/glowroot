@@ -51,7 +51,7 @@ public class ConfigTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedContainer();
+        container = Containers.getSharedJavaagentContainer();
     }
 
     @AfterClass
@@ -321,6 +321,8 @@ public class ConfigTest {
         config.setMetricName("yako");
         config.setSpanText("yak(): {{0}}, {{1}} => {{?}}");
         config.setTraceGrouping("");
+        config.setEnabledProperty("");
+        config.setSpanEnabledProperty("");
         return config;
     }
 

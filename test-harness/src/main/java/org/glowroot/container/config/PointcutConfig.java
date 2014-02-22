@@ -53,6 +53,10 @@ public class PointcutConfig {
     @Nullable
     private String traceGrouping;
     private boolean traceBackground;
+    @Nullable
+    private String enabledProperty;
+    @Nullable
+    private String spanEnabledProperty;
 
     // null for new PointcutConfig records that haven't been sent to server yet
     @Nullable
@@ -166,6 +170,24 @@ public class PointcutConfig {
         this.traceBackground = traceBackground;
     }
 
+    @Nullable
+    public String getEnabledProperty() {
+        return enabledProperty;
+    }
+
+    public void setEnabledProperty(@Nullable String enabledProperty) {
+        this.enabledProperty = enabledProperty;
+    }
+
+    @Nullable
+    public String getSpanEnabledProperty() {
+        return spanEnabledProperty;
+    }
+
+    public void setSpanEnabledProperty(@Nullable String spanEnabledProperty) {
+        this.spanEnabledProperty = spanEnabledProperty;
+    }
+
     // JsonIgnore so it won't get sent to the server
     @JsonIgnore
     @Nullable
@@ -192,7 +214,9 @@ public class PointcutConfig {
                             that.spanStackTraceThresholdMillis)
                     && Objects.equal(spanIgnoreSameNested, that.spanIgnoreSameNested)
                     && Objects.equal(traceGrouping, that.traceGrouping)
-                    && Objects.equal(traceBackground, that.traceBackground);
+                    && Objects.equal(traceBackground, that.traceBackground)
+                    && Objects.equal(enabledProperty, that.enabledProperty)
+                    && Objects.equal(spanEnabledProperty, that.spanEnabledProperty);
         }
         return false;
     }
@@ -205,7 +229,8 @@ public class PointcutConfig {
         // server
         return Objects.hashCode(typeName, methodName, methodArgTypeNames, methodReturnTypeName,
                 methodModifiers, metricName, spanText, spanStackTraceThresholdMillis,
-                spanIgnoreSameNested, traceGrouping, traceBackground);
+                spanIgnoreSameNested, traceGrouping, traceBackground, enabledProperty,
+                spanEnabledProperty);
     }
 
     @Override
@@ -223,6 +248,8 @@ public class PointcutConfig {
                 .add("spanIgnoreSameNested", spanIgnoreSameNested)
                 .add("traceGrouping", traceGrouping)
                 .add("traceBackground", traceBackground)
+                .add("enabledProperty", enabledProperty)
+                .add("spanEnabledProperty", spanEnabledProperty)
                 .add("version", version)
                 .toString();
     }
@@ -240,6 +267,8 @@ public class PointcutConfig {
             @JsonProperty("spanIgnoreSameNested") @Nullable Boolean spanIgnoreSameNested,
             @JsonProperty("traceGrouping") @Nullable String traceGrouping,
             @JsonProperty("traceBackground") @Nullable Boolean traceBackground,
+            @JsonProperty("enabledProperty") @Nullable String enabledProperty,
+            @JsonProperty("spanEnabledProperty") @Nullable String spanEnabledProperty,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(typeName, "typeName");
         checkRequiredProperty(methodName, "methodName");
@@ -251,6 +280,8 @@ public class PointcutConfig {
         checkRequiredProperty(spanIgnoreSameNested, "spanIgnoreSameNested");
         checkRequiredProperty(traceGrouping, "traceGrouping");
         checkRequiredProperty(traceBackground, "traceBackground");
+        checkRequiredProperty(traceBackground, "enabledProperty");
+        checkRequiredProperty(traceBackground, "spanEnabledProperty");
         checkRequiredProperty(version, "version");
         PointcutConfig config = new PointcutConfig(version);
         config.setTypeName(typeName);
@@ -264,6 +295,8 @@ public class PointcutConfig {
         config.setSpanIgnoreSameNested(spanIgnoreSameNested);
         config.setTraceGrouping(traceGrouping);
         config.setTraceBackground(traceBackground);
+        config.setEnabledProperty(enabledProperty);
+        config.setSpanEnabledProperty(spanEnabledProperty);
         return config;
     }
 

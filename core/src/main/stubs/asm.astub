@@ -14,6 +14,11 @@ public class ClassVisitor {
             @Nullable String signature, @Nullable Object value);
 }
 
+public class MethodVisitor {
+    public void visitFrame(int type, int nLocal, Object @Nullable [] local, int nStack,
+            Object @Nullable [] stack);
+}
+
 public class ClassWriter {
     public void visit(int version, int access, String name, @Nullable String signature,
             @Nullable String superName, String @Nullable [] interfaces);

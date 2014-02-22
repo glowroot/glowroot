@@ -86,8 +86,8 @@ public class PluginDescriptorCache {
                     logger.warn("aspect not found: {}", aspect, e);
                 }
             }
-            theAdvisors.addAll(
-                    DynamicAdviceGenerator.getAdvisors(pluginDescriptor.getPointcuts(), false));
+            theAdvisors.addAll(DynamicAdviceGenerator.getAdvisors(pluginDescriptor.getPointcuts(),
+                    pluginDescriptor.getId()));
         }
         this.mixinTypes = theMixinTypes.build();
         this.advisors = theAdvisors.build();

@@ -319,6 +319,8 @@ class LocalConfigService implements ConfigService {
         config.setSpanIgnoreSameNested(coreConfig.isSpanIgnoreSameNested());
         config.setTraceGrouping(coreConfig.getTraceGrouping());
         config.setTraceBackground(coreConfig.isTraceBackground());
+        config.setEnabledProperty(coreConfig.getEnabledProperty());
+        config.setSpanEnabledProperty(coreConfig.getSpanEnabledProperty());
         return config;
     }
 
@@ -326,8 +328,8 @@ class LocalConfigService implements ConfigService {
             PointcutConfig config) {
         List<org.glowroot.api.weaving.MethodModifier> methodModifiers = Lists.newArrayList();
         for (MethodModifier methodModifier : config.getMethodModifiers()) {
-            methodModifiers.add(org.glowroot.api.weaving.MethodModifier.valueOf(methodModifier
-                    .name()));
+            methodModifiers.add(
+                    org.glowroot.api.weaving.MethodModifier.valueOf(methodModifier.name()));
         }
         String typeName = config.getTypeName();
         String methodName = config.getMethodName();
@@ -339,7 +341,8 @@ class LocalConfigService implements ConfigService {
                 config.getMethodArgTypeNames(), methodReturnTypeName, methodModifiers,
                 orEmpty(config.getMetricName()), orEmpty(config.getSpanText()),
                 config.getSpanStackTraceThresholdMillis(), config.isSpanIgnoreSameNested(),
-                orEmpty(config.getTraceGrouping()), config.isTraceBackground());
+                orEmpty(config.getTraceGrouping()), config.isTraceBackground(),
+                orEmpty(config.getEnabledProperty()), orEmpty(config.getSpanEnabledProperty()));
     }
 
     private static String orEmpty(@Nullable String value) {

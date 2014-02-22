@@ -57,6 +57,11 @@ public class PointcutConfig {
     private final boolean spanIgnoreSameNested;
     private final String traceGrouping;
     private final boolean traceBackground;
+
+    // enabledProperty and spanEnabledProperty are for plugin authors
+    private final String enabledProperty;
+    private final String spanEnabledProperty;
+
     private final String version;
 
     @VisibleForTesting
@@ -64,7 +69,8 @@ public class PointcutConfig {
             @ReadOnly List<String> methodArgTypeNames, String methodReturnTypeName,
             @ReadOnly List<MethodModifier> methodModifiers, String metricName, String spanText,
             @Nullable Long spanStackTraceThresholdMillis, boolean spanIgnoreSameNested,
-            String traceGrouping, boolean traceBackground) {
+            String traceGrouping, boolean traceBackground, String enabledProperty,
+            String spanEnabledProperty) {
         this.typeName = typeName;
         this.methodName = methodName;
         this.methodArgTypeNames = ImmutableList.copyOf(methodArgTypeNames);
@@ -76,10 +82,12 @@ public class PointcutConfig {
         this.spanIgnoreSameNested = spanIgnoreSameNested;
         this.traceGrouping = traceGrouping;
         this.traceBackground = traceBackground;
+        this.enabledProperty = enabledProperty;
+        this.spanEnabledProperty = spanEnabledProperty;
         version = VersionHashes.sha1(typeName, methodName, methodArgTypeNames,
                 methodReturnTypeName, methodModifiers, metricName, spanText,
                 spanStackTraceThresholdMillis, spanIgnoreSameNested, traceGrouping,
-                traceBackground);
+                traceBackground, enabledProperty, spanEnabledProperty);
     }
 
     public String getTypeName() {
@@ -129,6 +137,14 @@ public class PointcutConfig {
         return traceBackground;
     }
 
+    public String getEnabledProperty() {
+        return enabledProperty;
+    }
+
+    public String getSpanEnabledProperty() {
+        return spanEnabledProperty;
+    }
+
     @JsonView(UiView.class)
     public String getVersion() {
         return version;
@@ -162,6 +178,8 @@ public class PointcutConfig {
             @JsonProperty("spanIgnoreSameNested") @Nullable Boolean spanIgnoreSameNested,
             @JsonProperty("traceGrouping") @Nullable String traceGrouping,
             @JsonProperty("traceBackground") @Nullable Boolean traceBackground,
+            @JsonProperty("enabledProperty") @Nullable String enabledProperty,
+            @JsonProperty("spanEnabledProperty") @Nullable String spanEnabledProperty,
             // without including a parameter for version, jackson will use direct field access after
             // this method in order to set the version field if it is included in the json being
             // deserialized (overwriting the hashed version that is calculated in the constructor)
@@ -175,7 +193,8 @@ public class PointcutConfig {
         return new PointcutConfig(typeName, methodName, orEmpty(methodArgTypeNames),
                 methodReturnTypeName, orEmpty(methodModifiers), orEmpty(metricName),
                 orEmpty(spanText), spanStackTraceThresholdMillis, orFalse(spanIgnoreSameNested),
-                orEmpty(traceGrouping), orFalse(traceBackground));
+                orEmpty(traceGrouping), orFalse(traceBackground), orEmpty(enabledProperty),
+                orEmpty(spanEnabledProperty));
     }
 
     private static <T> List<T> orEmpty(@Nullable List<T> list) {
@@ -208,6 +227,8 @@ public class PointcutConfig {
                 .add("spanIgnoreSameNested", spanIgnoreSameNested)
                 .add("traceGrouping", traceGrouping)
                 .add("traceBackground", traceBackground)
+                .add("enabledProperty", enabledProperty)
+                .add("spanEnabledProperty", spanEnabledProperty)
                 .add("version", version)
                 .toString();
     }

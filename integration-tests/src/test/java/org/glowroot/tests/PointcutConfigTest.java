@@ -77,8 +77,7 @@ public class PointcutConfigTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        assertThat(trace.getMetricNames()).hasSize(3);
-        assertThat(trace.getMetricNames()).contains("mock trace marker", "execute one",
+        assertThat(trace.getMetricNames()).containsOnly("mock trace marker", "execute one",
                 "execute one metric only");
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("execute1() => void");
         assertThat(trace.getSpans().get(1).getStackTrace()).isNotNull();
@@ -92,8 +91,7 @@ public class PointcutConfigTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        assertThat(trace.getMetricNames()).hasSize(2);
-        assertThat(trace.getMetricNames()).contains("mock trace marker", "execute with return");
+        assertThat(trace.getMetricNames()).containsOnly("mock trace marker", "execute with return");
         assertThat(trace.getSpans().get(1).getMessage().getText())
                 .isEqualTo("executeWithReturn() => xyz");
     }
@@ -107,8 +105,7 @@ public class PointcutConfigTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getGrouping()).isEqualTo("Misc / executeWithArgs");
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.getMetricNames()).hasSize(1);
-        assertThat(trace.getMetricNames().get(0)).isEqualTo("execute with args");
+        assertThat(trace.getMetricNames()).containsOnly("execute with args");
         assertThat(trace.getSpans().get(0).getMessage().getText())
                 .isEqualTo("executeWithArgs(): abc, 123");
     }

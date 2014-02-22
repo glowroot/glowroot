@@ -62,6 +62,8 @@ public class BasicTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getGrouping()).isEqualTo("Level One");
+        assertThat(trace.getMetricNames()).containsOnly("level one", "level two", "level three",
+                "level four");
         assertThat(trace.getSpans()).hasSize(4);
         Span span1 = trace.getSpans().get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");
@@ -79,6 +81,72 @@ public class BasicTest {
         assertThat(span3.getOffset()).isGreaterThan(0);
         Span span4 = trace.getSpans().get(3);
         assertThat(span4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
+    }
+
+    @Test
+    public void shouldReadTracesWithEnabledFifthMetric() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty("glowroot-integration-tests",
+                "levelFiveEnabled", true);
+        // when
+        container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getGrouping()).isEqualTo("Level One");
+        assertThat(trace.getMetricNames()).containsOnly("level one", "level two", "level three",
+                "level four", "level five");
+        assertThat(trace.getSpans()).hasSize(4);
+        Span span1 = trace.getSpans().get(0);
+        assertThat(span1.getMessage().getText()).isEqualTo("Level One");
+        assertThat(span1.getMessage().getDetail()).isEqualTo(mapOf("arg1", "a", "arg2", "b",
+                "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
+                        "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
+                "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b")));
+        Span span2 = trace.getSpans().get(1);
+        assertThat(span2.getMessage().getText()).isEqualTo("Level Two");
+        assertThat(span2.getMessage().getDetail()).isEqualTo(mapOf("arg1", "ax", "arg2", "bx"));
+        Span span3 = trace.getSpans().get(2);
+        assertThat(span3.getMessage().getText()).isEqualTo("Level Three");
+        assertThat(span3.getMessage().getDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
+        // offset is measured in nanoseconds so there's no way this should be 0
+        assertThat(span3.getOffset()).isGreaterThan(0);
+        Span span4 = trace.getSpans().get(3);
+        assertThat(span4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
+    }
+
+    @Test
+    public void shouldReadTracesWithEnabledFifthSpan() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty("glowroot-integration-tests",
+                "levelFiveEnabled", true);
+        container.getConfigService().setPluginProperty("glowroot-integration-tests",
+                "levelFiveSpanEnabled", true);
+        // when
+        container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getGrouping()).isEqualTo("Level One");
+        assertThat(trace.getMetricNames()).containsOnly("level one", "level two", "level three",
+                "level four", "level five");
+        assertThat(trace.getSpans()).hasSize(5);
+        Span span1 = trace.getSpans().get(0);
+        assertThat(span1.getMessage().getText()).isEqualTo("Level One");
+        assertThat(span1.getMessage().getDetail()).isEqualTo(mapOf("arg1", "a", "arg2", "b",
+                "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
+                        "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
+                "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b")));
+        Span span2 = trace.getSpans().get(1);
+        assertThat(span2.getMessage().getText()).isEqualTo("Level Two");
+        assertThat(span2.getMessage().getDetail()).isEqualTo(mapOf("arg1", "ax", "arg2", "bx"));
+        Span span3 = trace.getSpans().get(2);
+        assertThat(span3.getMessage().getText()).isEqualTo("Level Three");
+        assertThat(span3.getMessage().getDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
+        // offset is measured in nanoseconds so there's no way this should be 0
+        assertThat(span3.getOffset()).isGreaterThan(0);
+        Span span4 = trace.getSpans().get(3);
+        assertThat(span4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
+        Span span5 = trace.getSpans().get(4);
+        assertThat(span5.getMessage().getText()).isEqualTo("Level Five: axy, bxy");
     }
 
     private static Map<String, Object> mapOf(String k1, Object v1, String k2, Object v2) {

@@ -46,7 +46,7 @@ public class PointcutConfigAdviceCache {
     private volatile ImmutableSet<String> pointcutConfigVersions;
 
     PointcutConfigAdviceCache(@ReadOnly List<PointcutConfig> pointcutConfigs) {
-        advisors = DynamicAdviceGenerator.getAdvisors(pointcutConfigs, true);
+        advisors = DynamicAdviceGenerator.getAdvisors(pointcutConfigs, null);
         pointcutConfigVersions = getPointcutConfigVersions(pointcutConfigs);
     }
 
@@ -60,7 +60,7 @@ public class PointcutConfigAdviceCache {
     }
 
     public void updateAdvisors(@ReadOnly List<PointcutConfig> pointcutConfigs) {
-        advisors = DynamicAdviceGenerator.getAdvisors(pointcutConfigs, true);
+        advisors = DynamicAdviceGenerator.getAdvisors(pointcutConfigs, null);
         pointcutConfigVersions = getPointcutConfigVersions(pointcutConfigs);
     }
 
