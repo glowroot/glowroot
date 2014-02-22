@@ -373,8 +373,8 @@ class PreInitializeClasses {
         types.add("org.glowroot.api.weaving.BindMethodArgArray");
         types.add("org.glowroot.api.weaving.BindMethodName");
         types.add("org.glowroot.api.weaving.BindOptionalReturn");
+        types.add("org.glowroot.api.weaving.BindReceiver");
         types.add("org.glowroot.api.weaving.BindReturn");
-        types.add("org.glowroot.api.weaving.BindTarget");
         types.add("org.glowroot.api.weaving.BindThrowable");
         types.add("org.glowroot.api.weaving.BindTraveler");
         types.add("org.glowroot.api.weaving.IsEnabled");

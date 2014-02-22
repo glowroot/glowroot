@@ -19,7 +19,7 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.weaving.BindTarget;
+import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -48,10 +48,10 @@ public class TraceMarkerAspect {
         }
 
         @OnBefore
-        public static Span onBefore(@BindTarget Object target) {
-            String targetClassName = target.getClass().getName();
-            return pluginServices.startTrace("trace marker / " + targetClassName,
-                    MessageSupplier.from("{}.traceMarker()", targetClassName), metricName);
+        public static Span onBefore(@BindReceiver Object receiver) {
+            String receiverClassName = receiver.getClass().getName();
+            return pluginServices.startTrace("trace marker / " + receiverClassName,
+                    MessageSupplier.from("{}.traceMarker()", receiverClassName), metricName);
         }
 
         @OnAfter

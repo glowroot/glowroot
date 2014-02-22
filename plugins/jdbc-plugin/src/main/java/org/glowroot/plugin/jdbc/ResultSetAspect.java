@@ -28,7 +28,7 @@ import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.weaving.BindReturn;
-import org.glowroot.api.weaving.BindTarget;
+import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -85,7 +85,7 @@ public class ResultSetAspect {
         }
         @OnReturn
         public static void onReturn(@BindReturn boolean currentRowValid,
-                @BindTarget ResultSet resultSet) {
+                @BindReceiver ResultSet resultSet) {
             try {
                 Statement statement = resultSet.getStatement();
                 if (statement == null) {

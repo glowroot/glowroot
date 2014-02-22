@@ -33,7 +33,7 @@ import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindReturn;
-import org.glowroot.api.weaving.BindTarget;
+import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -144,7 +144,7 @@ public class StatementAspect {
             methodArgs = {"int", "*", ".."}, ignoreSameNested = true)
     public static class SetXAdvice {
         @OnReturn
-        public static void onReturn(@BindTarget PreparedStatement preparedStatement,
+        public static void onReturn(@BindReceiver PreparedStatement preparedStatement,
                 @BindMethodArg int parameterIndex, @BindMethodArg Object x) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
             if (x instanceof InputStream || x instanceof Reader) {
@@ -164,7 +164,7 @@ public class StatementAspect {
             methodArgs = {"int", "int", ".."}, ignoreSameNested = true)
     public static class SetNullAdvice {
         @OnReturn
-        public static void onReturn(@BindTarget PreparedStatement preparedStatement,
+        public static void onReturn(@BindReceiver PreparedStatement preparedStatement,
                 @BindMethodArg int parameterIndex) {
             getPreparedStatementMirror(preparedStatement).setParameterValue(parameterIndex,
                     new NullParameterValue());
@@ -177,7 +177,7 @@ public class StatementAspect {
             methodArgs = {"java.lang.String"}, ignoreSameNested = true)
     public static class StatementAddBatchAdvice {
         @OnReturn
-        public static void onReturn(@BindTarget Statement statement,
+        public static void onReturn(@BindReceiver Statement statement,
                 @BindMethodArg String sql) {
             getStatementMirror(statement).addBatch(sql);
         }
@@ -187,7 +187,7 @@ public class StatementAspect {
             ignoreSameNested = true)
     public static class PreparedStatementAddBatchAdvice {
         @OnReturn
-        public static void onReturn(@BindTarget PreparedStatement preparedStatement) {
+        public static void onReturn(@BindReceiver PreparedStatement preparedStatement) {
             getPreparedStatementMirror(preparedStatement).addBatch();
         }
     }
@@ -197,7 +197,7 @@ public class StatementAspect {
     @Pointcut(typeName = "java.sql.Statement", methodName = "clearBatch")
     public static class ClearBatchAdvice {
         @OnReturn
-        public static void onReturn(@BindTarget Statement statement) {
+        public static void onReturn(@BindReceiver Statement statement) {
             StatementMirror mirror = getStatementMirror(statement);
             mirror.clearBatch();
         }
@@ -218,7 +218,7 @@ public class StatementAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget Statement statement,
+        public static Span onBefore(@BindReceiver Statement statement,
                 @BindMethodArg String sql) {
             StatementMirror mirror = getStatementMirror(statement);
             if (pluginServices.isEnabled()) {
@@ -262,7 +262,7 @@ public class StatementAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget PreparedStatement preparedStatement) {
+        public static Span onBefore(@BindReceiver PreparedStatement preparedStatement) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier;
@@ -308,7 +308,7 @@ public class StatementAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget Statement statement) {
+        public static Span onBefore(@BindReceiver Statement statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror =
                         getPreparedStatementMirror((PreparedStatement) statement);
@@ -373,7 +373,7 @@ public class StatementAspect {
                     && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
-        public static MetricTimer onBefore(@BindTarget Statement statement) {
+        public static MetricTimer onBefore(@BindReceiver Statement statement) {
             // help out gc a little by clearing the weak reference, don't want to solely rely on
             // this (and use strong reference) in case a jdbc driver implementation closes
             // statements in finalize by calling an internal method and not calling public close()

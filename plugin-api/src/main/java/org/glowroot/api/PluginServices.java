@@ -49,7 +49,7 @@ import org.glowroot.api.weaving.Pointcut;
  *             return pluginServices.isEnabled();
  *         }
  *         &#064;OnBefore
- *         public static Span onBefore(@BindTarget Object validator) {
+ *         public static Span onBefore(@BindReceiver Object validator) {
  *             return pluginServices.startSpan(
  *                     MessageSupplier.from(&quot;spring validator: {}&quot;, validator.getClass().getName()),
  *                     metric);

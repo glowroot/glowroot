@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@literal @}{@link OnThrow} methods, if either of those are present.
  * <p>
  * An {@literal @}{@code OnAfter} method can accept parameters annotated with any of the following:
- * {@literal @}{@link BindTarget}, {@literal @}{@link BindMethodArg},
+ * {@literal @}{@link BindReceiver}, {@literal @}{@link BindMethodArg},
  * 
  * {@literal @}{@link BindMethodArgArray}, {@literal @}{@link BindMethodName} or
  * 

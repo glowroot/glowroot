@@ -48,7 +48,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *             .from(&quot;org.apache.jasper.JspCompilationContext&quot;, &quot;getJspFile&quot;);
  * 
  *     &#064;OnBefore
- *     public static Span onBefore(@BindTarget Object context) {
+ *     public static Span onBefore(@BindReceiver Object context) {
  *         String jspFile = (String) getJspFileMethod.invoke(context, &quot;&lt;unknown&gt;&quot;);
  *         ...
  *     }

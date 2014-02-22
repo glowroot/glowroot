@@ -22,8 +22,8 @@ import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindMethodArgArray;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindOptionalReturn;
+import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
-import org.glowroot.api.weaving.BindTarget;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -314,39 +314,39 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "execute1")
-    public static class BindTargetAdvice {
-        public static final ThreadLocal<Misc> isEnabledTarget = new ThreadLocal<Misc>();
-        public static final ThreadLocal<Misc> onBeforeTarget = new ThreadLocal<Misc>();
-        public static final ThreadLocal<Misc> onReturnTarget = new ThreadLocal<Misc>();
-        public static final ThreadLocal<Misc> onThrowTarget = new ThreadLocal<Misc>();
-        public static final ThreadLocal<Misc> onAfterTarget = new ThreadLocal<Misc>();
+    public static class BindReceiverAdvice {
+        public static final ThreadLocal<Misc> isEnabledReceiver = new ThreadLocal<Misc>();
+        public static final ThreadLocal<Misc> onBeforeReceiver = new ThreadLocal<Misc>();
+        public static final ThreadLocal<Misc> onReturnReceiver = new ThreadLocal<Misc>();
+        public static final ThreadLocal<Misc> onThrowReceiver = new ThreadLocal<Misc>();
+        public static final ThreadLocal<Misc> onAfterReceiver = new ThreadLocal<Misc>();
         @IsEnabled
-        public static boolean isEnabled(@BindTarget Misc target) {
-            isEnabledTarget.set(target);
+        public static boolean isEnabled(@BindReceiver Misc receiver) {
+            isEnabledReceiver.set(receiver);
             return true;
         }
         @OnBefore
-        public static void onBefore(@BindTarget Misc target) {
-            onBeforeTarget.set(target);
+        public static void onBefore(@BindReceiver Misc receiver) {
+            onBeforeReceiver.set(receiver);
         }
         @OnReturn
-        public static void onReturn(@BindTarget Misc target) {
-            onReturnTarget.set(target);
+        public static void onReturn(@BindReceiver Misc receiver) {
+            onReturnReceiver.set(receiver);
         }
         @OnThrow
-        public static void onThrow(@BindTarget Misc target) {
-            onThrowTarget.set(target);
+        public static void onThrow(@BindReceiver Misc receiver) {
+            onThrowReceiver.set(receiver);
         }
         @OnAfter
-        public static void onAfter(@BindTarget Misc target) {
-            onAfterTarget.set(target);
+        public static void onAfter(@BindReceiver Misc receiver) {
+            onAfterReceiver.set(receiver);
         }
         public static void resetThreadLocals() {
-            isEnabledTarget.remove();
-            onBeforeTarget.remove();
-            onReturnTarget.remove();
-            onThrowTarget.remove();
-            onAfterTarget.remove();
+            isEnabledReceiver.remove();
+            onBeforeReceiver.remove();
+            onReturnReceiver.remove();
+            onThrowReceiver.remove();
+            onAfterReceiver.remove();
         }
     }
 
@@ -869,18 +869,6 @@ public class SomeAspect {
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
             methodReturn = "java.lang.")
     public static class MethodReturnNarrowingAdvice extends BasicAdvice {}
-
-    @Pointcut(typeName = "org.glowroot.weaving.StaticMisc", methodName = "executeStatic")
-    public static class StaticBindTargetClassAdvice {
-        public static final ThreadLocal<Class<?>> onBeforeTarget = new ThreadLocal<Class<?>>();
-        @OnBefore
-        public static void onBefore(@BindTarget Class<?> type) {
-            onBeforeTarget.set(type);
-        }
-        public static void resetThreadLocals() {
-            onBeforeTarget.remove();
-        }
-    }
 
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "*",
             methodArgs = {".."}, metricName = "wild")

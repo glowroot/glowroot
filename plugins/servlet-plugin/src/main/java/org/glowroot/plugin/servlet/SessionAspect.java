@@ -23,7 +23,7 @@ import org.glowroot.api.Beans;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindReturn;
-import org.glowroot.api.weaving.BindTarget;
+import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
@@ -73,7 +73,7 @@ public class SessionAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static void onBefore(@BindTarget Object realSession) {
+        public static void onBefore(@BindReceiver Object realSession) {
             HttpSession session = HttpSession.from(realSession);
             ServletMessageSupplier messageSupplier = getServletMessageSupplier(session);
             if (messageSupplier != null) {
@@ -90,7 +90,7 @@ public class SessionAspect {
             return pluginServices.isEnabled();
         }
         @OnAfter
-        public static void onAfter(@BindTarget Object realSession,
+        public static void onAfter(@BindReceiver Object realSession,
                 @BindMethodArg @Nullable String name,
                 @BindMethodArg @Nullable Object value) {
             if (name == null) {
@@ -116,7 +116,7 @@ public class SessionAspect {
             return pluginServices.isEnabled();
         }
         @OnAfter
-        public static void onAfter(@BindTarget Object realSession,
+        public static void onAfter(@BindReceiver Object realSession,
                 @BindMethodArg @Nullable String name) {
             // calling HttpSession.setAttribute() with null value is the same as calling
             // removeAttribute(), per the setAttribute() javadoc

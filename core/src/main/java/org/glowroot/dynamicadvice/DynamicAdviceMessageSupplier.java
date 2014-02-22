@@ -34,20 +34,20 @@ import org.glowroot.markers.UsedByGeneratedBytecode;
 public class DynamicAdviceMessageSupplier extends MessageSupplier {
 
     private final DynamicAdviceMessageTemplate template;
-    private final String[] resolvedThisPathParts;
+    private final String[] resolvedReceiverPathParts;
     private final String[] resolvedArgPathParts;
     private volatile String/*@Nullable*/[] resolvedReturnValuePathParts;
     private final String methodName;
 
     @UsedByGeneratedBytecode
     public static DynamicAdviceMessageSupplier create(DynamicAdviceMessageTemplate template,
-            Object target, String methodName, Object... args) {
+            Object receiver, String methodName, Object... args) {
         // render paths to strings immediately in case the objects are mutable
-        String[] resolvedThisPathParts = new String[template.getThisPathParts().size()];
+        String[] resolvedReceiverPathParts = new String[template.getThisPathParts().size()];
         int i = 0;
         for (ValuePathPart part : template.getThisPathParts()) {
-            resolvedThisPathParts[i++] =
-                    String.valueOf(Beans.value(target, part.getPropertyPath()));
+            resolvedReceiverPathParts[i++] =
+                    String.valueOf(Beans.value(receiver, part.getPropertyPath()));
         }
         String[] resolvedArgPathParts = new String[template.getArgPathParts().size()];
         i = 0;
@@ -60,14 +60,14 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
                         Beans.value(args[part.getArgNumber()], part.getPropertyPath()));
             }
         }
-        return new DynamicAdviceMessageSupplier(template, resolvedThisPathParts,
+        return new DynamicAdviceMessageSupplier(template, resolvedReceiverPathParts,
                 resolvedArgPathParts, methodName);
     }
 
     private DynamicAdviceMessageSupplier(DynamicAdviceMessageTemplate template,
-            String[] resolvedThisPathParts, String[] resolvedArgPathParts, String methodName) {
+            String[] resolvedReceiverPathParts, String[] resolvedArgPathParts, String methodName) {
         this.template = template;
-        this.resolvedThisPathParts = resolvedThisPathParts;
+        this.resolvedReceiverPathParts = resolvedReceiverPathParts;
         this.resolvedArgPathParts = resolvedArgPathParts;
         this.methodName = methodName;
     }
@@ -90,7 +90,7 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
     @UsedByGeneratedBytecode
     public String getMessageText() {
         StringBuilder sb = new StringBuilder();
-        int thisPathPartIndex = 0;
+        int receiverPathPartIndex = 0;
         int argPathPartIndex = 0;
         int returnValuePathPartIndex = 0;
         for (Part part : template.getAllParts()) {
@@ -100,7 +100,7 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
                     sb.append(((ConstantPart) part).getConstant());
                     break;
                 case THIS_PATH:
-                    sb.append(resolvedThisPathParts[thisPathPartIndex++]);
+                    sb.append(resolvedReceiverPathParts[receiverPathPartIndex++]);
                     break;
                 case ARG_PATH:
                     sb.append(resolvedArgPathParts[argPathPartIndex++]);

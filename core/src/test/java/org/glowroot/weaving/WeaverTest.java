@@ -40,8 +40,8 @@ import org.glowroot.weaving.SomeAspect.BindOptionalVoidReturnAdvice;
 import org.glowroot.weaving.SomeAspect.BindPrimitiveBooleanTravelerAdvice;
 import org.glowroot.weaving.SomeAspect.BindPrimitiveReturnAdvice;
 import org.glowroot.weaving.SomeAspect.BindPrimitiveTravelerAdvice;
+import org.glowroot.weaving.SomeAspect.BindReceiverAdvice;
 import org.glowroot.weaving.SomeAspect.BindReturnAdvice;
-import org.glowroot.weaving.SomeAspect.BindTargetAdvice;
 import org.glowroot.weaving.SomeAspect.BindThrowableAdvice;
 import org.glowroot.weaving.SomeAspect.BindTravelerAdvice;
 import org.glowroot.weaving.SomeAspect.BrokenAdvice;
@@ -70,7 +70,6 @@ import org.glowroot.weaving.SomeAspect.PrimitiveAdvice;
 import org.glowroot.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
 import org.glowroot.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
 import org.glowroot.weaving.SomeAspect.StaticAdvice;
-import org.glowroot.weaving.SomeAspect.StaticBindTargetClassAdvice;
 import org.glowroot.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
 import org.glowroot.weaving.SomeAspect.TypeNamePatternAdvice;
 import org.glowroot.weaving.SomeAspect.WildMethodAdvice;
@@ -151,39 +150,39 @@ public class WeaverTest {
         assertThat(SomeAspect.onAfterCount.get()).isEqualTo(0);
     }
 
-    // ===================== @BindTarget =====================
+    // ===================== @BindReceiver =====================
 
     @Test
-    public void shouldBindTarget() throws Exception {
+    public void shouldBindReceiver() throws Exception {
         // given
-        BindTargetAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindTargetAdvice.class);
+        BindReceiverAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindReceiverAdvice.class);
         // when
         test.execute1();
         // then
-        assertThat(BindTargetAdvice.isEnabledTarget.get()).isEqualTo(test);
-        assertThat(BindTargetAdvice.onBeforeTarget.get()).isEqualTo(test);
-        assertThat(BindTargetAdvice.onReturnTarget.get()).isEqualTo(test);
-        assertThat(BindTargetAdvice.onThrowTarget.get()).isNull();
-        assertThat(BindTargetAdvice.onAfterTarget.get()).isEqualTo(test);
+        assertThat(BindReceiverAdvice.isEnabledReceiver.get()).isEqualTo(test);
+        assertThat(BindReceiverAdvice.onBeforeReceiver.get()).isEqualTo(test);
+        assertThat(BindReceiverAdvice.onReturnReceiver.get()).isEqualTo(test);
+        assertThat(BindReceiverAdvice.onThrowReceiver.get()).isNull();
+        assertThat(BindReceiverAdvice.onAfterReceiver.get()).isEqualTo(test);
     }
 
     @Test
-    public void shouldBindTargetOnThrow() throws Exception {
+    public void shouldBindReceiverOnThrow() throws Exception {
         // given
-        BindTargetAdvice.resetThreadLocals();
-        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, BindTargetAdvice.class);
+        BindReceiverAdvice.resetThreadLocals();
+        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, BindReceiverAdvice.class);
         // when
         try {
             test.execute1();
         } catch (Throwable t) {
         }
         // then
-        assertThat(BindTargetAdvice.isEnabledTarget.get()).isEqualTo(test);
-        assertThat(BindTargetAdvice.onBeforeTarget.get()).isEqualTo(test);
-        assertThat(BindTargetAdvice.onReturnTarget.get()).isNull();
-        assertThat(BindTargetAdvice.onThrowTarget.get()).isEqualTo(test);
-        assertThat(BindTargetAdvice.onAfterTarget.get()).isEqualTo(test);
+        assertThat(BindReceiverAdvice.isEnabledReceiver.get()).isEqualTo(test);
+        assertThat(BindReceiverAdvice.onBeforeReceiver.get()).isEqualTo(test);
+        assertThat(BindReceiverAdvice.onReturnReceiver.get()).isNull();
+        assertThat(BindReceiverAdvice.onThrowReceiver.get()).isEqualTo(test);
+        assertThat(BindReceiverAdvice.onAfterReceiver.get()).isEqualTo(test);
     }
 
     // ===================== @BindMethodArg =====================
@@ -647,18 +646,6 @@ public class WeaverTest {
         assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
     }
 
-    @Test
-    public void shouldWeaveStaticMethodBindTargetClass() throws Exception {
-        // given
-        StaticBindTargetClassAdvice.resetThreadLocals();
-        Misc test = newWovenObject(StaticMisc.class, Misc.class,
-                StaticBindTargetClassAdvice.class);
-        // when
-        test.execute1();
-        // then
-        assertThat(StaticBindTargetClassAdvice.onBeforeTarget.get().getName())
-                .isEqualTo(StaticMisc.class.getName());
-    }
     // ===================== primitive args =====================
 
     @Test

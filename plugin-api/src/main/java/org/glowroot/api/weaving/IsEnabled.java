@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@literal @}{@link Pointcut} class may be annotated with {@literal @}{@code IsEnabled}.
  * <p>
  * An {@literal @}{@code IsEnabled} method can accept parameters annotated with any of the
- * following: {@link BindTarget}, {@link BindMethodArg}, {@link BindMethodArgArray} or
+ * following: {@link BindReceiver}, {@link BindMethodArg}, {@link BindMethodArgArray} or
  * {@link BindMethodName}.
  * <p>
  * An {@literal @}{@code IsEnabled} method must return a {@code boolean}. If it returns

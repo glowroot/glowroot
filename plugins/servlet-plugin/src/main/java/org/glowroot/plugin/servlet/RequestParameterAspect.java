@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.weaving.BindTarget;
+import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.Pointcut;
@@ -47,7 +47,7 @@ public class RequestParameterAspect {
             return pluginServices.isEnabled();
         }
         @OnAfter
-        public static void onAfter(@BindTarget Object realRequest) {
+        public static void onAfter(@BindReceiver Object realRequest) {
             // only now is it safe to get parameters (if parameters are retrieved before this, it
             // could prevent a servlet from choosing to read the underlying stream instead of using
             // the getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"

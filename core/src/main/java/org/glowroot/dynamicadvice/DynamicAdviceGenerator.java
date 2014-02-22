@@ -296,7 +296,7 @@ public class DynamicAdviceGenerator {
         castNonNull(mv);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnBefore;", true)
                 .visitEnd();
-        mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindTarget;", true)
+        mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindReceiver;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(1, "Lorg/glowroot/api/weaving/BindMethodName;", true)
                 .visitEnd();

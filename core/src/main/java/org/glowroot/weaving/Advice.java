@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindMethodArgArray;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindOptionalReturn;
+import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
-import org.glowroot.api.weaving.BindTarget;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -55,25 +55,25 @@ import org.glowroot.api.weaving.Pointcut;
 public class Advice {
 
     private static final ImmutableList<Class<? extends Annotation>> isEnabledBindAnnotationTypes =
-            ImmutableList.of(BindTarget.class, BindMethodArg.class, BindMethodArgArray.class,
+            ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
                     BindMethodName.class);
     private static final ImmutableList<Class<? extends Annotation>> onBeforeBindAnnotationTypes =
-            ImmutableList.of(BindTarget.class, BindMethodArg.class, BindMethodArgArray.class,
+            ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
                     BindMethodName.class);
     private static final ImmutableList<Class<? extends Annotation>> onReturnBindAnnotationTypes =
-            ImmutableList.of(BindTarget.class, BindMethodArg.class, BindMethodArgArray.class,
+            ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
                     BindMethodName.class, BindReturn.class, BindOptionalReturn.class,
                     BindTraveler.class);
     private static final ImmutableList<Class<? extends Annotation>> onThrowBindAnnotationTypes =
-            ImmutableList.of(BindTarget.class, BindMethodArg.class, BindMethodArgArray.class,
+            ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
                     BindMethodName.class, BindThrowable.class, BindTraveler.class);
     private static final ImmutableList<Class<? extends Annotation>> onAfterBindAnnotationTypes =
-            ImmutableList.of(BindTarget.class, BindMethodArg.class, BindMethodArgArray.class,
+            ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
                     BindMethodName.class, BindTraveler.class);
 
     private static final ImmutableMap<Class<? extends Annotation>, ParameterKind> parameterKindMap =
             new ImmutableMap.Builder<Class<? extends Annotation>, ParameterKind>()
-                    .put(BindTarget.class, ParameterKind.TARGET)
+                    .put(BindReceiver.class, ParameterKind.RECEIVER)
                     .put(BindMethodArg.class, ParameterKind.METHOD_ARG)
                     .put(BindMethodArgArray.class, ParameterKind.METHOD_ARG_ARRAY)
                     .put(BindMethodName.class, ParameterKind.METHOD_NAME)
@@ -262,7 +262,7 @@ public class Advice {
 
     @Immutable
     enum ParameterKind {
-        TARGET, METHOD_ARG, METHOD_ARG_ARRAY, METHOD_NAME, RETURN, OPTIONAL_RETURN, THROWABLE,
+        RECEIVER, METHOD_ARG, METHOD_ARG_ARRAY, METHOD_NAME, RETURN, OPTIONAL_RETURN, THROWABLE,
         TRAVELER
     }
 

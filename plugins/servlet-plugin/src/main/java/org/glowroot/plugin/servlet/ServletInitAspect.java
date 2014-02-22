@@ -22,7 +22,7 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.weaving.BindTarget;
+import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -54,7 +54,7 @@ public class ServletInitAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget Object listener) {
+        public static Span onBefore(@BindReceiver Object listener) {
             String grouping = "servlet context initialized / " + listener.getClass().getName();
             return pluginServices.startBackgroundTrace(grouping,
                     MessageSupplier.from(listener.getClass().getName() + ".contextInitialized()"),
@@ -80,7 +80,7 @@ public class ServletInitAspect {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
         }
         @OnBefore
-        public static Span onBefore(@BindTarget Object servlet) {
+        public static Span onBefore(@BindReceiver Object servlet) {
             String grouping = "servlet init / " + servlet.getClass().getName();
             return pluginServices.startBackgroundTrace(grouping,
                     MessageSupplier.from(servlet.getClass().getName() + ".init()"), metricName);
@@ -105,7 +105,7 @@ public class ServletInitAspect {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
         }
         @OnBefore
-        public static Span onBefore(@BindTarget Object filter) {
+        public static Span onBefore(@BindReceiver Object filter) {
             String grouping = "filter init / " + filter.getClass().getName();
             return pluginServices.startBackgroundTrace(grouping,
                     MessageSupplier.from(filter.getClass().getName() + ".init()"), metricName);

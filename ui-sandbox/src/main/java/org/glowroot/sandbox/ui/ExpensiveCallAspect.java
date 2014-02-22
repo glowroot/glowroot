@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
 import org.glowroot.api.UnresolvedMethod;
-import org.glowroot.api.weaving.BindTarget;
+import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -65,7 +65,7 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindTarget Object expensive) {
+        public static Span onBefore(@BindReceiver Object expensive) {
             // not delegating to onBeforeInternal(), this span returns message supplier with detail
             return pluginServices.startSpan(getMessageSupplierWithDetail(expensive), metricName);
         }
@@ -92,7 +92,7 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget Object expensive) {
+        public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
@@ -118,7 +118,7 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget Object expensive) {
+        public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
@@ -144,7 +144,7 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget Object expensive) {
+        public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
@@ -170,7 +170,7 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget Object expensive) {
+        public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
@@ -196,7 +196,7 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget Object expensive) {
+        public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
@@ -222,7 +222,7 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget Object expensive) {
+        public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
@@ -248,7 +248,7 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget Object expensive) {
+        public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
@@ -274,7 +274,7 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget Object expensive) {
+        public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
@@ -300,7 +300,7 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindTarget Object expensive) {
+        public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter

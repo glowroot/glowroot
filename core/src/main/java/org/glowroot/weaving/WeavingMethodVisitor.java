@@ -519,7 +519,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         for (int i = startIndex; i < parameters.size(); i++) {
             AdviceParameter parameter = parameters.get(i);
             switch (parameter.getKind()) {
-                case TARGET:
+                case RECEIVER:
                     loadTarget();
                     break;
                 case METHOD_ARG:

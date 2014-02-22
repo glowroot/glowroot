@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import org.glowroot.api.MetricName;
 import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.weaving.BindTarget;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -52,10 +51,10 @@ public class ExternalJvmMainAspect {
         }
 
         @OnBefore
-        public static Span onBefore(@BindTarget Class<?> target) {
+        public static Span onBefore() {
             return pluginServices.startTrace("javaagent container main",
                     MessageSupplier.from("org.glowroot.container.javaagent.JavaagentContainer"
-                            + ".main()", target.getName()), metricName);
+                            + ".main()"), metricName);
         }
 
         @OnAfter
