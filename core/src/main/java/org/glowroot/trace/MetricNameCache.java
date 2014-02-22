@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ class MetricNameCache {
         if (pointcut == null) {
             logger.warn("advice has no @Pointcut: {}", adviceClass.getName());
             return getUnknownMetricName();
-        } else if (pointcut.metricName().equals("")) {
+        } else if (pointcut.metricName().isEmpty()) {
             logger.warn("advice @Pointcut has no metricName() attribute: {}",
                     adviceClass.getName());
             return getUnknownMetricName();

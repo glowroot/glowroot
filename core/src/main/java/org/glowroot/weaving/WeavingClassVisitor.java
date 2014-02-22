@@ -325,7 +325,7 @@ class WeavingClassVisitor extends ClassVisitor {
         String currMethodName = outerName;
         for (Advice advice : matchingAdvisors) {
             String metricName = advice.getPointcut().metricName();
-            if (metricName.length() == 0) {
+            if (metricName.isEmpty()) {
                 continue;
             }
             if (!metricNameCharMatcher.matchesAllOf(metricName)) {

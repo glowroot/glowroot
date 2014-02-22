@@ -152,17 +152,17 @@ public class PointcutConfig {
 
     @JsonIgnore
     public boolean isMetric() {
-        return metricName.length() > 0;
+        return !metricName.isEmpty();
     }
 
     @JsonIgnore
     public boolean isSpan() {
-        return spanText.length() > 0;
+        return !spanText.isEmpty();
     }
 
     @JsonIgnore
     public boolean isTrace() {
-        return traceGrouping.length() > 0;
+        return !traceGrouping.isEmpty();
     }
 
     @JsonCreator

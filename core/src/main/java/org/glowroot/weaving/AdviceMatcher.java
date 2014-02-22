@@ -149,7 +149,7 @@ class AdviceMatcher {
 
     private boolean isMethodReturnMatch(String returnTypeName) {
         String pointcutMethodReturn = advice.getPointcut().methodReturn();
-        return pointcutMethodReturn.equals("") || pointcutMethodReturn.equals(returnTypeName);
+        return pointcutMethodReturn.isEmpty() || pointcutMethodReturn.equals(returnTypeName);
     }
 
     private boolean isMethodModifiersMatch(int modifiers) {

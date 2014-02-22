@@ -107,7 +107,7 @@ class JavaagentHttpClient {
     private void extractSessionIdCookie(Response response) {
         for (Cookie cookie : response.getCookies()) {
             if (cookie.getName().equals("GLOWROOT_SESSION_ID")) {
-                if (cookie.getValue().equals("")) {
+                if (cookie.getValue().isEmpty()) {
                     sessionIdCookie = null;
                 } else {
                     sessionIdCookie = cookie;

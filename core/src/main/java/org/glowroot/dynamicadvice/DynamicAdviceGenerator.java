@@ -409,7 +409,7 @@ public class DynamicAdviceGenerator {
         String travelerType = spanOrTimer ? "Ljava/lang/Object;" : "Lorg/glowroot/api/Span;";
         MethodVisitor mv;
         int travelerParamIndex;
-        if (pointcutConfig.getMethodReturnTypeName().equals("")) {
+        if (pointcutConfig.getMethodReturnTypeName().isEmpty()) {
             mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
                     "(Lorg/glowroot/api/OptionalReturn;" + travelerType + ")V", null, null);
             castNonNull(mv);
@@ -450,7 +450,7 @@ public class DynamicAdviceGenerator {
             mv.visitLabel(label);
             mv.visitFrame(F_SAME, 0, null, 0, null);
         }
-        if (pointcutConfig.getMethodReturnTypeName().equals("")) {
+        if (pointcutConfig.getMethodReturnTypeName().isEmpty()) {
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 0);
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/OptionalReturn", "isVoid", "()Z");

@@ -60,7 +60,7 @@ public class LevelOneAspect {
         public static Span onBefore(@BindMethodArg final String arg1,
                 @BindMethodArg final String arg2) {
             String grouping = pluginServices.getStringProperty("alternateGrouping");
-            if (grouping.equals("")) {
+            if (grouping.isEmpty()) {
                 grouping = "Level One";
             }
             if (pluginServices.getBooleanProperty("starredGrouping")) {

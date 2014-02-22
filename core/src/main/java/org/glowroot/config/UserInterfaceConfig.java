@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ public class UserInterfaceConfig {
 
     @JsonView(UiView.class)
     public boolean isPasswordEnabled() {
-        return !passwordHash.equals("");
+        return !passwordHash.isEmpty();
     }
 
     @JsonView(FileView.class)
@@ -86,9 +86,9 @@ public class UserInterfaceConfig {
     }
 
     public boolean validatePassword(String password) throws GeneralSecurityException {
-        if (passwordHash.equals("")) {
+        if (passwordHash.isEmpty()) {
             // need special case for empty password
-            return password.equals("");
+            return password.isEmpty();
         } else {
             return PasswordHash.validatePassword(password, passwordHash);
         }
@@ -183,20 +183,20 @@ public class UserInterfaceConfig {
         private static String verifyAndGenerateNewPasswordHash(String currentPassword,
                 String newPassword, String originalPasswordHash) throws GeneralSecurityException,
                 CurrentPasswordIncorrectException {
-            if (currentPassword.equals("") && !newPassword.equals("")) {
+            if (currentPassword.isEmpty() && !newPassword.isEmpty()) {
                 // enabling password
-                if (!originalPasswordHash.equals("")) {
+                if (!originalPasswordHash.isEmpty()) {
                     // UI validation prevents this from happening
                     throw new IllegalStateException("Password is already enabled");
                 }
                 return PasswordHash.createHash(newPassword);
-            } else if (!currentPassword.equals("") && newPassword.equals("")) {
+            } else if (!currentPassword.isEmpty() && newPassword.isEmpty()) {
                 // disabling password
                 if (!PasswordHash.validatePassword(currentPassword, originalPasswordHash)) {
                     throw new CurrentPasswordIncorrectException();
                 }
                 return "";
-            } else if (currentPassword.equals("") && newPassword.equals("")) {
+            } else if (currentPassword.isEmpty() && newPassword.isEmpty()) {
                 // UI validation prevents this from happening
                 throw new IllegalStateException("Current and new password are both empty");
             } else {
