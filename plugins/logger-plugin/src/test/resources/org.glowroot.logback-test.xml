@@ -17,7 +17,7 @@
 <configuration>
   <appender name="STDOUT" class="org.glowroot.shaded.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
   <!-- don't clutter unit test output with info messages -->
