@@ -43,7 +43,7 @@ public class UiSandboxMain {
     private static final boolean rollOverQuickly = false;
 
     static {
-        System.setProperty("glowroot.internal.collector.aggregateInterval", "15");
+        System.setProperty("glowroot.internal.collector.aggregationInterval", "15");
     }
 
     private UiSandboxMain() {}

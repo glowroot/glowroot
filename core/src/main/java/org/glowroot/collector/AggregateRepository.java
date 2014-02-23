@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,5 +27,7 @@ public interface AggregateRepository {
 
     // implementations must be aware that Aggregate instances are not thread safe and cannot be
     // retained for later use
-    void store(long captureTime, Aggregate aggregate, Map<String, Aggregate> groupingAggregates);
+    void store(long captureTime, Aggregate overallAggregate,
+            Map<String, Aggregate> transactionAggregates, Aggregate bgOverallAggregate,
+            Map<String, Aggregate> bgTransactionAggregates);
 }

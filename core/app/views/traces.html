@@ -125,6 +125,117 @@
     </div>
   </div>
   <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterHeadline">
+      Headline
+    </label>
+    <div class="col-lg-9">
+      <div class="input-group">
+        <div gt-input-group-dropdown
+             gt-model="filter.headlineComparator"
+             gt-items="filterTextComparatorOptions">
+        </div>
+        <input type="text"
+               ng-model="filter.headline"
+               class="form-control refresh-data-on-enter-key"
+               id="filterHeadline"
+               style="max-width: 20em;">
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterTransactionName">
+      Transaction name
+    </label>
+    <div class="col-lg-9">
+      <div class="input-group">
+        <div gt-input-group-dropdown
+             gt-model="filter.transactionNameComparator"
+             gt-items="filterTextComparatorOptions">
+        </div>
+        <input type="text"
+               ng-model="filter.transactionName"
+               class="form-control refresh-data-on-enter-key"
+               id="filterTransactionName"
+               style="max-width: 20em;">
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterError">
+      Error
+    </label>
+    <div class="col-lg-9">
+      <div class="input-group">
+        <div gt-input-group-dropdown
+             gt-model="filter.errorComparator"
+             gt-items="filterTextComparatorOptions">
+        </div>
+        <input type="text"
+               ng-model="filter.error"
+               class="form-control refresh-data-on-enter-key"
+               id="filterError"
+               style="max-width: 20em;">
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterUser">
+      User
+    </label>
+    <div class="col-lg-9">
+      <div class="input-group">
+        <div gt-input-group-dropdown
+             gt-model="filter.userComparator"
+             gt-items="filterTextComparatorOptions">
+        </div>
+        <input type="text"
+               ng-model="filter.user"
+               class="form-control refresh-data-on-enter-key"
+               id="filterUser"
+               style="max-width: 20em;">
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterBackground">
+      Background
+    </label>
+    <div class="col-lg-9">
+      <select ng-model="filter.background"
+              class="form-control"
+              id="filterBackground"
+              style="max-width: 20em;">
+        <option value=""></option>
+        <option value="false">Exclude background traces</option>
+        <option value="true">Include only background traces</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterLimit">
+      Limit
+    </label>
+    <div class="col-lg-9">
+      <select ng-model="filter.limit"
+              class="form-control"
+              id="filterLimit"
+              style="max-width: 8em;">
+        <option value="100">100</option>
+        <option value="200">200</option>
+        <option value="500">500</option>
+        <option value="1000">1,000</option>
+        <option value="2000">2,000</option>
+        <option value="5000">5,000</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
     <div class="col-lg-offset-3 col-lg-9">
       <div class="checkbox"
            style="padding-bottom: 7px;">
@@ -146,109 +257,6 @@
           Display only traces with fine-grained profiling data
         </label>
       </div>
-    </div>
-  </div>
-  <!-- TODO animate expanding/collapsing of this section -->
-  <div ng-class="{hide: !moreFilters}">
-    <div class="form-group">
-      <label class="col-lg-3 control-label"
-             for="filterGrouping">
-        Grouping
-      </label>
-      <div class="col-lg-9">
-        <div class="input-group">
-          <div gt-input-group-dropdown
-               gt-model="filter.groupingComparator"
-               gt-items="filterTextComparatorOptions">
-          </div>
-          <input type="text"
-                 ng-model="filter.grouping"
-                 class="form-control refresh-data-on-enter-key"
-                 id="filterGrouping"
-                 style="max-width: 20em;">
-        </div>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="col-lg-3 control-label"
-             for="filterError">
-        Error
-      </label>
-      <div class="col-lg-9">
-        <div class="input-group">
-          <div gt-input-group-dropdown
-               gt-model="filter.errorComparator"
-               gt-items="filterTextComparatorOptions">
-          </div>
-          <input type="text"
-                 ng-model="filter.error"
-                 class="form-control refresh-data-on-enter-key"
-                 id="filterError"
-                 style="max-width: 20em;">
-        </div>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="col-lg-3 control-label"
-             for="filterUser">
-        User
-      </label>
-      <div class="col-lg-9">
-        <div class="input-group">
-          <div gt-input-group-dropdown
-               gt-model="filter.userComparator"
-               gt-items="filterTextComparatorOptions">
-          </div>
-          <input type="text"
-                 ng-model="filter.user"
-                 class="form-control refresh-data-on-enter-key"
-                 id="filterUser"
-                 style="max-width: 20em;">
-        </div>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="col-lg-3 control-label"
-             for="filterBackground">
-        Background
-      </label>
-      <div class="col-lg-9">
-        <select ng-model="filter.background"
-                class="form-control"
-                id="filterBackground"
-                style="max-width: 20em;">
-          <option value=""></option>
-          <option value="false">Exclude background traces</option>
-          <option value="true">Include only background traces</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="col-lg-3 control-label"
-             for="filterLimit">
-        Limit
-      </label>
-      <div class="col-lg-9">
-        <select ng-model="filter.limit"
-                class="form-control"
-                id="filterLimit"
-                style="max-width: 8em;">
-          <option value="100">100</option>
-          <option value="200">200</option>
-          <option value="500">500</option>
-          <option value="1000">1,000</option>
-          <option value="2000">2,000</option>
-          <option value="5000">5,000</option>
-        </select>
-      </div>
-    </div>
-  </div>
-  <div class="form-group">
-    <div class="col-lg-offset-3 col-lg-9">
-      <button ng-click="moreFilters = !moreFilters"
-              class="flat-btn flat-btn-big-pad1aligned glowroot-link-color">
-        {{moreFilters ? 'show less filters' : 'show more filters'}}
-      </button>
     </div>
   </div>
   <div class="form-group">

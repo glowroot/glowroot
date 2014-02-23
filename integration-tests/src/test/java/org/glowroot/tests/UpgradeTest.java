@@ -53,7 +53,8 @@ public class UpgradeTest {
         Trace trace = container.getTraceService().getLastTrace();
         // then
         try {
-            assertThat(trace.getGrouping()).isEqualTo("Level One");
+            assertThat(trace.getHeadline()).isEqualTo("Level One");
+            assertThat(trace.getTransactionName()).isEqualTo("Level One");
             assertThat(trace.getSpans()).hasSize(3);
             Span span1 = trace.getSpans().get(0);
             assertThat(span1.getMessage().getText()).isEqualTo("Level One");
@@ -70,7 +71,7 @@ public class UpgradeTest {
     }
 
     // create initial database for upgrade test
-    public static void main(String... args) throws Exception {
+    public static void mainx(String... args) throws Exception {
         File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
         Container container = LocalContainer.createWithFileDb(dataDir);
         StorageConfig storageConfig = container.getConfigService().getStorageConfig();
@@ -78,6 +79,26 @@ public class UpgradeTest {
         storageConfig.setSnapshotExpirationHours(-1);
         container.getConfigService().updateStorageConfig(storageConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
+        container.close();
+        Files.copy(new File(dataDir, "config.json"),
+                new File("src/test/resources/for-upgrade-test/config.json"));
+        Files.copy(new File(dataDir, "glowroot.h2.db"),
+                new File("src/test/resources/for-upgrade-test/glowroot.h2.db"));
+        Files.copy(new File(dataDir, "glowroot.rolling.db"),
+                new File("src/test/resources/for-upgrade-test/glowroot.rolling.db"));
+        TempDirs.deleteRecursively(dataDir);
+    }
+
+    // upgrade existing database for upgrade test
+    public static void main(String... args) throws Exception {
+        File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
+        Resources.asByteSource(Resources.getResource("for-upgrade-test/config.json"))
+                .copyTo(Files.asByteSink(new File(dataDir, "config.json")));
+        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.h2.db"))
+                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.h2.db")));
+        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.rolling.db"))
+                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.rolling.db")));
+        Container container = LocalContainer.createWithFileDb(dataDir);
         container.close();
         Files.copy(new File(dataDir, "config.json"),
                 new File("src/test/resources/for-upgrade-test/config.json"));

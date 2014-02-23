@@ -51,8 +51,8 @@ public class PointcutConfig {
     private Long spanStackTraceThresholdMillis;
     private boolean spanIgnoreSameNested;
     @Nullable
-    private String traceGrouping;
-    private boolean traceBackground;
+    private String transactionName;
+    private boolean background;
     @Nullable
     private String enabledProperty;
     @Nullable
@@ -154,20 +154,20 @@ public class PointcutConfig {
     }
 
     @Nullable
-    public String getTraceGrouping() {
-        return traceGrouping;
+    public String getTransactionName() {
+        return transactionName;
     }
 
-    public void setTraceGrouping(@Nullable String traceGrouping) {
-        this.traceGrouping = traceGrouping;
+    public void setTransactionName(@Nullable String transactionName) {
+        this.transactionName = transactionName;
     }
 
-    public boolean isTraceBackground() {
-        return traceBackground;
+    public boolean isBackground() {
+        return background;
     }
 
-    public void setTraceBackground(boolean traceBackground) {
-        this.traceBackground = traceBackground;
+    public void setBackground(boolean background) {
+        this.background = background;
     }
 
     @Nullable
@@ -213,8 +213,8 @@ public class PointcutConfig {
                     && Objects.equal(spanStackTraceThresholdMillis,
                             that.spanStackTraceThresholdMillis)
                     && Objects.equal(spanIgnoreSameNested, that.spanIgnoreSameNested)
-                    && Objects.equal(traceGrouping, that.traceGrouping)
-                    && Objects.equal(traceBackground, that.traceBackground)
+                    && Objects.equal(transactionName, that.transactionName)
+                    && Objects.equal(background, that.background)
                     && Objects.equal(enabledProperty, that.enabledProperty)
                     && Objects.equal(spanEnabledProperty, that.spanEnabledProperty);
         }
@@ -229,7 +229,7 @@ public class PointcutConfig {
         // server
         return Objects.hashCode(typeName, methodName, methodArgTypeNames, methodReturnTypeName,
                 methodModifiers, metricName, spanText, spanStackTraceThresholdMillis,
-                spanIgnoreSameNested, traceGrouping, traceBackground, enabledProperty,
+                spanIgnoreSameNested, transactionName, background, enabledProperty,
                 spanEnabledProperty);
     }
 
@@ -246,8 +246,8 @@ public class PointcutConfig {
                 .add("spanText", spanText)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("spanIgnoreSameNested", spanIgnoreSameNested)
-                .add("traceGrouping", traceGrouping)
-                .add("traceBackground", traceBackground)
+                .add("transactionName", transactionName)
+                .add("background", background)
                 .add("enabledProperty", enabledProperty)
                 .add("spanEnabledProperty", spanEnabledProperty)
                 .add("version", version)
@@ -265,8 +265,8 @@ public class PointcutConfig {
             @JsonProperty("spanText") @Nullable String spanText,
             @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
             @JsonProperty("spanIgnoreSameNested") @Nullable Boolean spanIgnoreSameNested,
-            @JsonProperty("traceGrouping") @Nullable String traceGrouping,
-            @JsonProperty("traceBackground") @Nullable Boolean traceBackground,
+            @JsonProperty("transactionName") @Nullable String transactionName,
+            @JsonProperty("background") @Nullable Boolean background,
             @JsonProperty("enabledProperty") @Nullable String enabledProperty,
             @JsonProperty("spanEnabledProperty") @Nullable String spanEnabledProperty,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
@@ -278,10 +278,10 @@ public class PointcutConfig {
         checkRequiredProperty(metricName, "metricName");
         checkRequiredProperty(spanText, "spanText");
         checkRequiredProperty(spanIgnoreSameNested, "spanIgnoreSameNested");
-        checkRequiredProperty(traceGrouping, "traceGrouping");
-        checkRequiredProperty(traceBackground, "traceBackground");
-        checkRequiredProperty(traceBackground, "enabledProperty");
-        checkRequiredProperty(traceBackground, "spanEnabledProperty");
+        checkRequiredProperty(transactionName, "transactionName");
+        checkRequiredProperty(background, "background");
+        checkRequiredProperty(enabledProperty, "enabledProperty");
+        checkRequiredProperty(spanEnabledProperty, "spanEnabledProperty");
         checkRequiredProperty(version, "version");
         PointcutConfig config = new PointcutConfig(version);
         config.setTypeName(typeName);
@@ -293,8 +293,8 @@ public class PointcutConfig {
         config.setSpanText(spanText);
         config.setSpanStackTraceThresholdMillis(spanStackTraceThresholdMillis);
         config.setSpanIgnoreSameNested(spanIgnoreSameNested);
-        config.setTraceGrouping(traceGrouping);
-        config.setTraceBackground(traceBackground);
+        config.setTransactionName(transactionName);
+        config.setBackground(background);
         config.setEnabledProperty(enabledProperty);
         config.setSpanEnabledProperty(spanEnabledProperty);
         return config;

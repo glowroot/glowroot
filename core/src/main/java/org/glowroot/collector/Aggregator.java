@@ -41,13 +41,13 @@ class Aggregator {
     private final AggregateRepository aggregateRepository;
     private final Clock clock;
 
-    private final long fixedAggregateIntervalMillis;
+    private final long fixedAggregationIntervalMillis;
 
     static Aggregator create(ScheduledExecutorService scheduledExecutor,
             AggregateRepository aggregateRepository, Clock clock,
-            long fixedAggregateIntervalSeconds) {
+            long fixedAggregationIntervalSeconds) {
         final Aggregator aggregator = new Aggregator(scheduledExecutor, aggregateRepository, clock,
-                fixedAggregateIntervalSeconds);
+                fixedAggregationIntervalSeconds);
         // this scheduled job ensures that an aggregate record is stored for each interval even if
         // no data, which is useful to differentiate between no user requests vs server down
         scheduledExecutor.scheduleAtFixedRate(new Runnable() {
@@ -61,15 +61,16 @@ class Aggregator {
 
     private Aggregator(ScheduledExecutorService scheduledExecutor,
             AggregateRepository aggregateRepository, Clock clock,
-            long fixedAggregateIntervalSeconds) {
+            long fixedAggregationIntervalSeconds) {
         this.scheduledExecutor = scheduledExecutor;
         this.aggregateRepository = aggregateRepository;
         this.clock = clock;
-        this.fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
+        this.fixedAggregationIntervalMillis = fixedAggregationIntervalSeconds * 1000;
         currentAggregates = new Aggregates(clock.currentTimeMillis());
     }
 
-    long add(String grouping, long duration) {
+    // TODO add CPU, errorCount, metrics, profile
+    long add(boolean background, String transactionName, long duration, boolean traceWillBeStored) {
         // this first synchronized block is to ensure atomicity between updates and flushes
         synchronized (lock) {
             long captureTime = clock.currentTimeMillis();
@@ -87,7 +88,7 @@ class Aggregator {
             // this second synchronized block is to ensure visibility of updates to this particular
             // currentAggregates
             synchronized (currentAggregates) {
-                currentAggregates.add(grouping, duration);
+                currentAggregates.add(background, transactionName, duration, traceWillBeStored);
             }
             return captureTime;
         }
@@ -112,30 +113,47 @@ class Aggregator {
         // this synchronized block is to ensure visibility of updates to this particular
         // currentAggregates
         synchronized (aggregates) {
-            aggregateRepository.store(aggregates.captureTime, aggregates.aggregate,
-                    aggregates.groupingAggregates);
+            aggregateRepository.store(aggregates.captureTime, aggregates.overallAggregate,
+                    aggregates.transactionAggregates, aggregates.bgOverallAggregate,
+                    aggregates.bgTransactionAggregates);
         }
     }
 
     private class Aggregates {
 
         private final long captureTime;
-        private final Aggregate aggregate = new Aggregate();
-        private final Map<String, Aggregate> groupingAggregates = Maps.newHashMap();
+        private final Aggregate overallAggregate = new Aggregate();
+        private final Aggregate bgOverallAggregate = new Aggregate();
+        private final Map<String, Aggregate> transactionAggregates = Maps.newHashMap();
+        private final Map<String, Aggregate> bgTransactionAggregates = Maps.newHashMap();
 
         private Aggregates(long currentTime) {
             this.captureTime = (long) Math.ceil(currentTime
-                    / (double) fixedAggregateIntervalMillis) * fixedAggregateIntervalMillis;
+                    / (double) fixedAggregationIntervalMillis) * fixedAggregationIntervalMillis;
         }
 
-        private void add(String grouping, long duration) {
-            aggregate.add(duration);
-            Aggregate groupingAggregate = groupingAggregates.get(grouping);
-            if (groupingAggregate == null) {
-                groupingAggregate = new Aggregate();
-                groupingAggregates.put(grouping, groupingAggregate);
+        private void add(boolean background, String transactionName, long duration,
+                boolean traceWillBeStored) {
+            Aggregate overallAggregate;
+            Map<String, Aggregate> transactionAggregates;
+            if (background) {
+                overallAggregate = this.bgOverallAggregate;
+                transactionAggregates = this.bgTransactionAggregates;
+            } else {
+                overallAggregate = this.overallAggregate;
+                transactionAggregates = this.transactionAggregates;
             }
-            groupingAggregate.add(duration);
+            overallAggregate.add(duration);
+            Aggregate transactionAggregate = transactionAggregates.get(transactionName);
+            if (transactionAggregate == null) {
+                transactionAggregate = new Aggregate();
+                transactionAggregates.put(transactionName, transactionAggregate);
+            }
+            transactionAggregate.add(duration);
+            if (traceWillBeStored) {
+                overallAggregate.addToStoredTraceCount();
+                transactionAggregate.addToStoredTraceCount();
+            }
         }
     }
 }

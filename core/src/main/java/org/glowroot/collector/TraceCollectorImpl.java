@@ -22,7 +22,6 @@ import java.util.concurrent.ExecutorService;
 
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
-import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.RateLimiter;
@@ -103,26 +102,32 @@ public class TraceCollectorImpl implements TraceCollector {
 
     @Override
     public void onCompletedTrace(final Trace trace) {
+        boolean store = shouldStore(trace);
+        if (store) {
+            if (pendingCompleteTraces.size() < PENDING_LIMIT) {
+                pendingCompleteTraces.add(trace);
+            } else {
+                logPendingLimitWarning();
+                store = false;
+            }
+        }
         // capture time is calculated by the aggregator because it depends on monotonically
         // increasing capture times so it can flush aggregates without concern for new data points
         // arriving with a prior capture time
         // this is a reasonable place to get the capture time since this code is still being
         // executed by the trace thread
-        String grouping = Objects.firstNonNull(trace.getGrouping(), "<no grouping provided>");
         final long captureTime;
         if (aggregator == null) {
             captureTime = clock.currentTimeMillis();
         } else {
-            captureTime = aggregator.add(grouping, trace.getDuration());
+            // there's a small window where something bad could happen and the snapshot is not
+            // stored, and aggregate stored_trace_count would be off by one
+            captureTime = aggregator.add(trace.isBackground(), trace.getTransactionName(),
+                    trace.getDuration(), store);
         }
-        if (shouldStore(trace)) {
+        if (store) {
             // onCompleteAndShouldStore must be called by the trace thread
             trace.onCompleteAndShouldStore();
-            if (pendingCompleteTraces.size() >= PENDING_LIMIT) {
-                logPendingLimitWarning();
-                return;
-            }
-            pendingCompleteTraces.add(trace);
             executorService.execute(new Runnable() {
                 @Override
                 public void run() {

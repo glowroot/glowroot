@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.collector.TraceCollectorImpl;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PointcutConfig;
+import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -52,6 +53,7 @@ class AdminJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
 
+    private final AggregateDao aggregateDao;
     private final SnapshotDao snapshotDao;
     private final ConfigService configService;
     private final PointcutConfigAdviceCache pointcutConfigAdviceCache;
@@ -62,10 +64,11 @@ class AdminJsonService {
     private final DataSource dataSource;
     private final TraceRegistry traceRegistry;
 
-    AdminJsonService(SnapshotDao snapshotDao, ConfigService configService,
-            PointcutConfigAdviceCache pointcutConfigAdviceCache, ParsedTypeCache parsedTypeCache,
-            @Nullable Instrumentation instrumentation, TraceCollectorImpl traceCollector,
-            DataSource dataSource, TraceRegistry traceRegistry) {
+    AdminJsonService(AggregateDao aggregateDao, SnapshotDao snapshotDao,
+            ConfigService configService, PointcutConfigAdviceCache pointcutConfigAdviceCache,
+            ParsedTypeCache parsedTypeCache, @Nullable Instrumentation instrumentation,
+            TraceCollectorImpl traceCollector, DataSource dataSource, TraceRegistry traceRegistry) {
+        this.aggregateDao = aggregateDao;
         this.snapshotDao = snapshotDao;
         this.configService = configService;
         this.pointcutConfigAdviceCache = pointcutConfigAdviceCache;
@@ -79,6 +82,7 @@ class AdminJsonService {
     @POST("/backend/admin/data/delete-all")
     void deleteAllData() {
         logger.debug("deleteAllData()");
+        aggregateDao.deleteAllAggregates();
         snapshotDao.deleteAllSnapshots();
     }
 

@@ -21,6 +21,22 @@ glowroot.config([
   '$stateProvider',
   '$urlRouterProvider',
   function ($provide, $stateProvider, $urlRouterProvider) {
+    var waitForLayout;
+    if (!window.layout) {
+      // some controllers need to wait for layout when running under grunt serve
+      waitForLayout = {
+        dummy: ['$q', '$rootScope', function ($q, $rootScope) {
+          var deferred = $q.defer();
+          var unregisterWatch = $rootScope.$watch('layout', function (value) {
+            if (value) {
+              deferred.resolve();
+              unregisterWatch();
+            }
+          });
+          return deferred.promise;
+        }]
+      };
+    }
     // overriding autoscroll=true behavior to scroll to the top of the page
     $provide.decorator('$uiViewScroll', [
       function () {
@@ -29,16 +45,17 @@ glowroot.config([
         };
       }
     ]);
-    $urlRouterProvider.otherwise('/traces');
+    $urlRouterProvider.otherwise('/home');
+    $stateProvider.state('home', {
+      url: '/home',
+      templateUrl: 'views/home.html',
+      controller: 'HomeCtrl',
+      resolve: waitForLayout
+    });
     $stateProvider.state('traces', {
       url: '/traces',
       templateUrl: 'views/traces.html',
       controller: 'TracesCtrl'
-    });
-    $stateProvider.state('aggregates', {
-      url: '/aggregates',
-      templateUrl: 'views/aggregates.html',
-      controller: 'AggregatesCtrl'
     });
     $stateProvider.state('jvm', {
       url: '/jvm',

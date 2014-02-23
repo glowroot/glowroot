@@ -212,23 +212,21 @@
           </div>
           <div ng-show="traceDefinition"
                style="margin-left: 3em;">
-            <div ng-class="{'has-error': showError('traceGrouping')}">
+            <div ng-class="{'has-error': showError('transactionName')}">
               <label class="control-label"
                      style="margin-top: 15px;">
-                Trace grouping
+                Transaction name
               </label>
               <textarea class="form-control"
-                        ng-model="config.traceGrouping"
+                        ng-model="config.transactionName"
                         ng-required="traceDefinition"
-                        name="traceGrouping"
-                        id="traceGrouping{{$id}}"
+                        name="transactionName"
+                        id="transactionName{{$id}}"
                         rows="2"
                         style="max-width: 37em; vertical-align: top;">
               </textarea>
               <div class="help-block">
-                The trace grouping is displayed at the top of a trace capture,
-                and traces can be filtered using the trace grouping field.
-                Also, with aggregation enabled, trace data is aggregated across traces in the same grouping.
+                The transaction name is used for aggregation.
               </div>
             </div>
             <div>
@@ -240,8 +238,8 @@
                    style="padding-top: 0;">
                 <label>
                   <input type="checkbox"
-                         ng-model="config.traceBackground">
-                  Mark as background trace
+                         ng-model="config.background">
+                  Mark as background transaction
                 </label>
               </div>
             </div>

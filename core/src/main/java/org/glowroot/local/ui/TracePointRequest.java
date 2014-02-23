@@ -37,9 +37,13 @@ class TracePointRequest {
     private boolean errorOnly;
     private boolean fineOnly;
     @Nullable
-    private String groupingComparator;
+    private String transactionNameComparator;
     @Nullable
-    private String grouping;
+    private String transactionName;
+    @Nullable
+    private String headlineComparator;
+    @Nullable
+    private String headline;
     @Nullable
     private String errorComparator;
     @Nullable
@@ -101,21 +105,39 @@ class TracePointRequest {
     }
 
     @Nullable
-    public String getGroupingComparator() {
-        return groupingComparator;
+    public String getTransactionNameComparator() {
+        return transactionNameComparator;
     }
 
-    public void setGroupingComparator(@Nullable String groupingComparator) {
-        this.groupingComparator = groupingComparator;
+    public void setTransactionNameComparator(@Nullable String transactionNameComparator) {
+        this.transactionNameComparator = transactionNameComparator;
     }
 
     @Nullable
-    public String getGrouping() {
-        return grouping;
+    public String getTransactionName() {
+        return transactionName;
     }
 
-    public void setGrouping(@Nullable String grouping) {
-        this.grouping = grouping;
+    public void setTransactionName(@Nullable String transactionName) {
+        this.transactionName = transactionName;
+    }
+
+    @Nullable
+    public String getHeadlineComparator() {
+        return headlineComparator;
+    }
+
+    public void setHeadlineComparator(@Nullable String headlineComparator) {
+        this.headlineComparator = headlineComparator;
+    }
+
+    @Nullable
+    public String getHeadline() {
+        return headline;
+    }
+
+    public void setHeadline(@Nullable String headline) {
+        this.headline = headline;
     }
 
     @Nullable
@@ -181,8 +203,8 @@ class TracePointRequest {
                 .add("high", high)
                 .add("errorOnly", errorOnly)
                 .add("fineOnly", fineOnly)
-                .add("groupingComparator", groupingComparator)
-                .add("grouping", grouping)
+                .add("headlineComparator", headlineComparator)
+                .add("headline", headline)
                 .add("userComparator", userComparator)
                 .add("user", user)
                 .add("background", background)

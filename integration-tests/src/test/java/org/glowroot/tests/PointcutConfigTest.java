@@ -97,13 +97,14 @@ public class PointcutConfigTest {
     }
 
     @Test
-    public void shouldRenderTraceGrouping() throws Exception {
+    public void shouldRenderTraceHeadline() throws Exception {
         // given
         // when
         container.executeAppUnderTest(ShouldExecuteWithArgs.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getGrouping()).isEqualTo("Misc / executeWithArgs");
+        assertThat(trace.getHeadline()).isEqualTo("executeWithArgs(): abc, 123");
+        assertThat(trace.getTransactionName()).isEqualTo("Misc / executeWithArgs");
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getMetricNames()).containsOnly("execute with args");
         assertThat(trace.getSpans().get(0).getMessage().getText())
@@ -155,7 +156,7 @@ public class PointcutConfigTest {
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setMetricName("execute with args");
         config.setSpanText("executeWithArgs(): {{0}}, {{1}}");
-        config.setTraceGrouping("Misc / {{methodName}}");
+        config.setTransactionName("Misc / {{methodName}}");
         container.getConfigService().addPointcutConfig(config);
     }
 

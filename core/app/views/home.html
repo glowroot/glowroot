@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013 the original author or authors.
+  Copyright 2013-2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -72,12 +72,33 @@
   </div>
 </div>
 <div style="clear: both; padding-top: 20px">
-  <div class="groupings-error" ng-show="refreshGroupingsError">
-    <strong>{{refreshGroupingsError}}</strong>
+  <div class="home-transaction-aggregates-error" ng-show="transactionAggregatesError">
+    <strong>{{transactionAggregatesError}}</strong>
   </div>
 </div>
-<div id="groupAggregates">
-</div>
+<table class="table">
+  <thead>
+  <tr>
+    <th>Transaction name</th>
+    <th>Average</th>
+    <th>Count</th>
+    <th>Stored traces</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr ng-repeat="transactionAggregate in transactionAggregates">
+    <td>{{transactionAggregate.transactionName}}</td>
+    <td>{{((transactionAggregate.totalMillis / transactionAggregate.count) / 1000000000).toFixed(2)}}</td>
+    <td>{{transactionAggregate.count}}</td>
+    <td>
+      <a ng-show="transactionAggregate.storedTraceCount"
+         ng-href="#/traces?{{tracesQueryString(transactionAggregate.transactionName)}}">
+        see {{transactionAggregate.storedTraceCount}} stored traces
+      </a>
+    </td>
+  </tr>
+  </tbody>
+</table>
 <div class="modal hide" id="modal">
   <button class="close" id="modalHide" style="position: fixed; right: 65px; top:30px;">
     &times;

@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.internal.ReadableErrorMessage;
+import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.PartiallyThreadSafe;
@@ -73,8 +74,8 @@ public class Trace {
 
     private final boolean background;
 
-    private volatile String grouping;
-    private volatile boolean explicitSetGrouping;
+    private volatile String transactionName;
+    private volatile boolean explicitSetTransactionName;
 
     // trace-level error, only used if root span doesn't have an ErrorMessage
     @Nullable
@@ -122,12 +123,12 @@ public class Trace {
     @Nullable
     private volatile ScheduledRunnable stuckScheduledRunnable;
 
-    public Trace(long startTime, boolean background, String grouping,
+    public Trace(long startTime, boolean background, String transactionName,
             MessageSupplier messageSupplier, MetricNameImpl metricName,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes, Ticker ticker) {
         this.startTime = startTime;
         this.background = background;
-        this.grouping = grouping;
+        this.transactionName = transactionName;
         id = new TraceUniqueId(startTime);
         long startTick = ticker.read();
         Metric metric = metricName.create();
@@ -176,8 +177,18 @@ public class Trace {
         return background;
     }
 
-    public String getGrouping() {
-        return grouping;
+    public String getHeadline() {
+        MessageSupplier messageSupplier = rootSpan.getRootSpan().getMessageSupplier();
+        if (messageSupplier == null) {
+            // this should be impossible since span.getMessageSupplier() is only null when the
+            // span was created using addErrorSpan()
+            throw new AssertionError("Somehow got hold of an error Span??");
+        }
+        return ((ReadableMessage) messageSupplier.get()).getText();
+    }
+
+    public String getTransactionName() {
+        return transactionName;
     }
 
     @Nullable
@@ -274,11 +285,11 @@ public class Trace {
         return stuck.getAndSet(true);
     }
 
-    public void setGrouping(String grouping) {
-        // use the first explicit call to setGrouping()
-        if (!explicitSetGrouping) {
-            this.grouping = grouping;
-            explicitSetGrouping = true;
+    public void setTransactionName(String transactionName) {
+        // use the first explicit, non-null call to setTransactionName()
+        if (!explicitSetTransactionName && transactionName != null) {
+            this.transactionName = transactionName;
+            explicitSetTransactionName = true;
         }
     }
 

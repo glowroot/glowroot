@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
@@ -162,22 +163,28 @@ class Schemas {
                 connection)) {
             return true;
         }
+        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
+        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
+        Map<String, Column> remaining = new TreeMap<String, Column>(String.CASE_INSENSITIVE_ORDER);
+        for (Column column : columns) {
+            remaining.put(column.getName(), column);
+        }
         ResultSet resultSet = connection.getMetaData().getColumns(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), null);
         try {
-            for (Column column : columns) {
-                if (!resultSet.next()
-                        || !column.getName().equalsIgnoreCase(resultSet.getString("COLUMN_NAME"))
-                        || column.getType() != resultSet.getInt("DATA_TYPE")) {
+            while (resultSet.next()) {
+                Column column = remaining.remove(resultSet.getString("COLUMN_NAME"));
+                if (column == null) {
+                    return true;
+                }
+                if (column.getType() != resultSet.getInt("DATA_TYPE")) {
                     return true;
                 }
             }
-            // don't check resultSet.next(), ok to have extra columns
-            // (e.g. for some kind of temporary debugging purpose)
-            return false;
         } finally {
             resultSet.close();
         }
+        return !remaining.isEmpty();
     }
 
     private static boolean primaryKeyNeedsUpgrade(String tableName,

@@ -14,24 +14,25 @@
  * limitations under the License.
  */
 
-/* global glowroot, Glowroot, $ */
+/* global glowroot, angular, Glowroot, $ */
 
-glowroot.controller('AggregatesCtrl', [
+glowroot.controller('HomeCtrl', [
   '$scope',
+  '$location',
   '$filter',
   '$http',
   '$q',
   'traceModal',
   'queryStrings',
-  function ($scope, $filter, $http, $q, traceModal, queryStrings) {
+  function ($scope, $location, $filter, $http, $q, traceModal, queryStrings) {
     // \u00b7 is &middot;
-    document.title = 'Aggregates \u00b7 Glowroot';
-    $scope.$parent.title = 'Aggregates';
-    $scope.$parent.activeNavbarItem = 'aggregates';
+    document.title = 'Home \u00b7 Glowroot';
+    $scope.$parent.title = 'Home';
+    $scope.$parent.activeNavbarItem = 'home';
 
     var plot;
 
-    var fixedAggregateIntervalMillis;
+    var fixedAggregationIntervalMillis = $scope.layout.fixedAggregationIntervalSeconds * 1000;
 
     var currentRefreshId = 0;
     var currentZoomId = 0;
@@ -52,15 +53,13 @@ glowroot.controller('AggregatesCtrl', [
         to: $scope.filter.to
       };
       var spinner = Glowroot.showSpinner('#chartSpinner');
-      $http.get('backend/aggregate/points?' + queryStrings.encodeObject(query))
+      $http.get('backend/home/points?' + queryStrings.encodeObject(query))
           .success(function (data) {
             if (refreshId !== currentRefreshId) {
               return;
             }
             spinner.stop();
             $scope.refreshChartError = false;
-            fixedAggregateIntervalMillis = data.fixedAggregateIntervalSeconds * 1000;
-            plot.getAxes().xaxis.options.borderGridLock = fixedAggregateIntervalMillis;
             if (deferred) {
               // user clicked on Refresh button, need to reset axes
               plot.getAxes().xaxis.options.min = query.from;
@@ -71,7 +70,16 @@ glowroot.controller('AggregatesCtrl', [
               ];
               plot.unhighlight();
             }
-            plot.setData([ data.points ]);
+            var points = [];
+            var lastPoint;
+            angular.forEach(data.points, function (currentPoint) {
+              if (lastPoint && (currentPoint[0] - lastPoint[0]) > fixedAggregationIntervalMillis * 1.5) {
+                points.push(undefined);
+              }
+              points.push(currentPoint);
+              lastPoint = currentPoint;
+            });
+            plot.setData([ points ]);
             plot.setupGrid();
             plot.draw();
             if (deferred) {
@@ -93,7 +101,7 @@ glowroot.controller('AggregatesCtrl', [
               deferred.reject($scope.refreshChartError);
             }
           });
-      updateGroupings();
+      updateTransactions();
     };
 
     $chart.bind('plotzoom', function (event, plot, args) {
@@ -118,7 +126,7 @@ glowroot.controller('AggregatesCtrl', [
         // increment currentRefreshId to cancel any refresh in action
         currentRefreshId++;
         $scope.$apply(function () {
-          updateGroupings();
+          updateTransactions();
         });
       }
     });
@@ -136,7 +144,7 @@ glowroot.controller('AggregatesCtrl', [
       // increment currentRefreshId to cancel any refresh in action
       currentRefreshId++;
       $scope.$apply(function () {
-        updateGroupings();
+        updateTransactions();
       });
     });
 
@@ -144,6 +152,7 @@ glowroot.controller('AggregatesCtrl', [
       $scope.$apply(function () {
         $scope.filter.from = plot.getAxes().xaxis.min;
         $scope.filter.to = plot.getAxes().xaxis.max;
+        updateLocation();
       });
     }
 
@@ -155,7 +164,8 @@ glowroot.controller('AggregatesCtrl', [
       var points = plot.getData()[0].data;
       for (i = 0; i < points.length; i++) {
         var point = points[i];
-        if (point[0] >= from && point[0] <= to) {
+        // !point handles undefined points which are used to represent no data collected in that period
+        if (!point || point[0] >= from && point[0] <= to) {
           data.push(point);
         }
       }
@@ -179,7 +189,7 @@ glowroot.controller('AggregatesCtrl', [
       var x = item.pageX;
       var y = item.pageY;
       var captureTime = item.datapoint[0];
-      var from = $filter('date')(captureTime - fixedAggregateIntervalMillis, 'mediumTime');
+      var from = $filter('date')(captureTime - fixedAggregationIntervalMillis, 'mediumTime');
       var to = $filter('date')(captureTime, 'mediumTime');
       var traceCount = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
       var average;
@@ -193,27 +203,30 @@ glowroot.controller('AggregatesCtrl', [
       } else {
         traceCount = traceCount + ' traces';
       }
-      var text = '<span class="aggregates-tooltip-label">From:</span>' + from + '<br>' +
-          '<span class="aggregates-tooltip-label">To:</span>' + to + '<br>' +
-          '<span class="aggregates-tooltip-label">Average:</span>' + average + ' seconds<br>' +
-          '<span class="aggregates-tooltip-label"></span>(' + traceCount + ')';
+      var text = '<span class="home-tooltip-label">From:</span>' + from + '<br>' +
+          '<span class="home-tooltip-label">To:</span>' + to + '<br>' +
+          '<span class="home-tooltip-label">Average:</span>' + average + ' seconds<br>' +
+          '<span class="home-tooltip-label"></span>(' + traceCount + ')';
+      var $chartContainer = $('.chart-container');
+      var chartOffset = $chartContainer.offset();
+      var target = [ x - chartOffset.left + 1, y - chartOffset.top ];
       $chart.qtip({
         content: {
           text: text
         },
         position: {
           my: 'bottom center',
-          target: [ x, y ],
+          target: target,
           adjust: {
-            y: -10
+            y: -5
           },
           viewport: $(window),
           // container is the dom node where qtip div is attached
           // this needs to be inside the angular template so that its lifecycle is tied to the angular template
-          container: $('.chart-container')
+          container: $chartContainer
         },
         style: {
-          classes: 'ui-tooltip-bootstrap qtip-override qtip-border-color-0'
+          classes: 'ui-tooltip-bootstrap qtip-override-home qtip-border-color-0'
         },
         hide: {
           event: false
@@ -247,29 +260,40 @@ glowroot.controller('AggregatesCtrl', [
       }
     });
 
-    function updateGroupings() {
+    function updateTransactions() {
       var query = {
         from: $scope.filter.from,
         to: $scope.filter.to,
-        limit: 10
+        limit: 40
       };
-      $http.get('backend/aggregate/groupings?' + queryStrings.encodeObject(query))
+      $http.get('backend/home/transaction-aggregates?' + queryStrings.encodeObject(query))
           .success(function (data) {
-            $scope.refreshGroupingsError = false;
-            $('#groupAggregates').html('');
-            $.each(data, function (i, grouping) {
-              var average = ((grouping.durationTotal / grouping.traceCount) / 1000000000).toFixed(2);
-              $('#groupAggregates').append('<div>' + grouping.grouping + ': ' + average + '</div>');
-            });
+            $scope.transactionAggregatesError = false;
+            $scope.transactionAggregates = data;
           })
           .error(function (data, status) {
             if (status === 0) {
-              $scope.refreshGroupingsError = 'Unable to connect to server';
+              $scope.transactionAggregatesError = 'Unable to connect to server';
             } else {
-              $scope.refreshGroupingsError = 'An error occurred';
+              $scope.transactionAggregatesError = 'An error occurred';
             }
           });
     }
+
+    function updateLocation() {
+      var query = {
+        from: $scope.filter.from - fixedAggregationIntervalMillis,
+        to: $scope.filter.to
+      };
+      $location.search(query).replace();
+    }
+
+    $scope.tracesQueryString = function (transactionName) {
+      // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
+      var adjustedFrom = $scope.filter.from - fixedAggregationIntervalMillis;
+      return 'from=' + adjustedFrom + '&to=' + $scope.filter.to + '&transactionName=' +
+          transactionName +  '&transactionNameComparator=equals&background=false';
+    };
 
     // TODO CONVERT TO ANGULARJS, global $http error handler?
     Glowroot.configureAjaxError();
@@ -279,21 +303,32 @@ glowroot.controller('AggregatesCtrl', [
     });
     $('#modalHide').click(traceModal.hideModal);
 
-    var now = new Date();
-    now.setSeconds(0);
-    var today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     $scope.filter = {};
-    $scope.filter.date = today;
-    // show 2 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today (e.g. if 'now' is 11:55pm)
-    $scope.filter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
-    $scope.filter.to = Math.min($scope.filter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
+    $scope.filter.from = Number($location.search().from);
+    $scope.filter.to = Number($location.search().to);
+    // both from and to must be supplied or neither will take effect
+    if ($scope.filter.from && $scope.filter.to) {
+      $scope.filter.from += fixedAggregationIntervalMillis;
+      $scope.filter.date = new Date($scope.filter.from);
+      $scope.filter.date.setHours(0, 0, 0, 0);
+    } else {
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      $scope.filter.date = today;
+      // show 2 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today
+      // (e.g. if 'now' is 11:55pm)
+      var now = new Date();
+      now.setSeconds(0);
+      $scope.filter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
+      $scope.filter.to = Math.min($scope.filter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
+    }
+    updateLocation();
 
     $scope.$watch('filter.date', function (date) {
       var midnight = new Date($scope.filter.from).setHours(0, 0, 0, 0);
       $scope.filter.from = date.getTime() + ($scope.filter.from - midnight);
       $scope.filter.to = date.getTime() + ($scope.filter.to - midnight);
+      updateLocation();
     });
 
     (function () {
@@ -341,13 +376,16 @@ glowroot.controller('AggregatesCtrl', [
         },
         series: {
           points: {
-            radius: 10,
-            lineWidth: 0
+            show: true
+          },
+          lines: {
+            show: true
           }
         }
       };
       // render chart with no data points
       plot = $.plot($chart, [], options);
+      plot.getAxes().xaxis.options.borderGridLock = fixedAggregationIntervalMillis;
     })();
 
     plot.getAxes().yaxis.options.max = undefined;

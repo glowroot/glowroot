@@ -65,7 +65,7 @@ public class ReweavePointcutConfigsTest extends PointcutConfigTest {
 
     @Override
     @Test
-    public void shouldRenderTraceGrouping() throws Exception {
-        super.shouldRenderTraceGrouping();
+    public void shouldRenderTraceHeadline() throws Exception {
+        super.shouldRenderTraceHeadline();
     }
 }

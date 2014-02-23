@@ -58,7 +58,8 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("background", Types.BOOLEAN),
             new Column("error", Types.BOOLEAN), // for searching only
             new Column("fine", Types.BOOLEAN), // for searching only
-            new Column("grouping", Types.VARCHAR),
+            new Column("transaction_name", Types.VARCHAR),
+            new Column("headline", Types.VARCHAR),
             new Column("error_message", Types.VARCHAR),
             new Column("user", Types.VARCHAR),
             new Column("attributes", Types.VARCHAR), // json data
@@ -104,16 +105,16 @@ public class SnapshotDao implements SnapshotRepository {
         }
         try {
             dataSource.update("merge into snapshot (id, stuck, start_time, capture_time, duration,"
-                    + " background, error, fine, grouping, error_message, user, attributes,"
-                    + " metrics, jvm_info, spans, coarse_merged_stack_tree,"
-                    + " fine_merged_stack_tree) values (?, ?, ?, ?, ?,"
-                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(),
-                    snapshot.isStuck(), snapshot.getStartTime(), snapshot.getCaptureTime(),
-                    snapshot.getDuration(), snapshot.isBackground(), snapshot.getError() != null,
-                    fineMergedStackTreeBlockId != null, snapshot.getGrouping(),
-                    snapshot.getError(), snapshot.getUser(), snapshot.getAttributes(),
-                    snapshot.getMetrics(), snapshot.getJvmInfo(), spansBlockId,
-                    coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
+                    + " background, error, fine, transaction_name, headline, error_message, user,"
+                    + " attributes, metrics, jvm_info, spans, coarse_merged_stack_tree,"
+                    + " fine_merged_stack_tree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
+                    + " ?, ?, ?, ?)", snapshot.getId(), snapshot.isStuck(),
+                    snapshot.getStartTime(), snapshot.getCaptureTime(), snapshot.getDuration(),
+                    snapshot.isBackground(), snapshot.getError() != null,
+                    fineMergedStackTreeBlockId != null, snapshot.getTransactionName(),
+                    snapshot.getHeadline(), snapshot.getError(), snapshot.getUser(),
+                    snapshot.getAttributes(), snapshot.getMetrics(), snapshot.getJvmInfo(),
+                    spansBlockId, coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -137,9 +138,10 @@ public class SnapshotDao implements SnapshotRepository {
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
             partiallyHydratedTraces = dataSource.query("select id, stuck, start_time,"
-                    + " capture_time, duration, background, grouping, error_message, user,"
-                    + " attributes, metrics, jvm_info, spans, coarse_merged_stack_tree,"
-                    + " fine_merged_stack_tree from snapshot where id = ?", ImmutableList.of(id),
+                    + " capture_time, duration, background, transaction_name, headline,"
+                    + " error_message, user, attributes, metrics, jvm_info, spans,"
+                    + " coarse_merged_stack_tree, fine_merged_stack_tree from snapshot"
+                    + " where id = ?", ImmutableList.of(id),
                     new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -160,8 +162,8 @@ public class SnapshotDao implements SnapshotRepository {
         List<Snapshot> snapshots;
         try {
             snapshots = dataSource.query("select id, stuck, start_time, capture_time, duration,"
-                    + " background, grouping, error_message, user, attributes, metrics,"
-                    + " jvm_info from snapshot where id = ?", ImmutableList.of(id),
+                    + " background, transaction_name, headline, error_message, user, attributes,"
+                    + " metrics, jvm_info from snapshot where id = ?", ImmutableList.of(id),
                     new SnapshotRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -231,24 +233,31 @@ public class SnapshotDao implements SnapshotRepository {
                 .captureTime(resultSet.getLong(4))
                 .duration(resultSet.getLong(5))
                 .background(resultSet.getBoolean(6))
-                .grouping(resultSet.getString(7))
-                .error(resultSet.getString(8))
-                .user(resultSet.getString(9))
-                .attributes(resultSet.getString(10))
-                .metrics(resultSet.getString(11))
-                .jvmInfo(resultSet.getString(12));
+                .transactionName(resultSet.getString(7))
+                .headline(resultSet.getString(8))
+                .error(resultSet.getString(9))
+                .user(resultSet.getString(10))
+                .attributes(resultSet.getString(11))
+                .metrics(resultSet.getString(12))
+                .jvmInfo(resultSet.getString(13));
     }
 
     private static void upgradeSnapshotTable(DataSource dataSource) throws SQLException {
         if (!dataSource.tableExists("snapshot")) {
             return;
         }
-        // 'headline' column renamed to 'grouping'
         for (Column column : dataSource.getColumns("snapshot")) {
-            if (column.getName().equals("headline")) {
-                dataSource.execute("alter table snapshot alter column headline rename to"
-                        + " grouping");
+            if (column.getName().equals("grouping")) {
+                dataSource.execute(
+                        "alter table snapshot alter column grouping rename to transaction_name");
+                dataSource.execute("alter table snapshot add column headline varchar");
+                dataSource.execute("update snapshot set headline = transaction_name");
                 break;
+            }
+            if (column.getName().equals("bucket")) {
+                // first grouping was renamed to bucket, then to transaction_name
+                dataSource.execute(
+                        "alter table snapshot alter column bucket rename to transaction_name");
             }
         }
     }
@@ -260,9 +269,9 @@ public class SnapshotDao implements SnapshotRepository {
         public PartiallyHydratedTrace mapRow(ResultSet resultSet) throws SQLException {
             Snapshot.Builder builder = createBuilder(resultSet);
             // wait and read from rolling file outside of the jdbc connection
-            String spansFileBlockId = resultSet.getString(13);
-            String coarseMergedStackTreeFileBlockId = resultSet.getString(14);
-            String fineMergedStackTreeFileBlockId = resultSet.getString(15);
+            String spansFileBlockId = resultSet.getString(14);
+            String coarseMergedStackTreeFileBlockId = resultSet.getString(15);
+            String fineMergedStackTreeFileBlockId = resultSet.getString(16);
             return new PartiallyHydratedTrace(builder, spansFileBlockId,
                     coarseMergedStackTreeFileBlockId, fineMergedStackTreeFileBlockId);
         }

@@ -59,14 +59,14 @@ public class LevelOneAspect {
         @OnBefore
         public static Span onBefore(@BindMethodArg final String arg1,
                 @BindMethodArg final String arg2) {
-            String grouping = pluginServices.getStringProperty("alternateGrouping");
-            if (grouping.isEmpty()) {
-                grouping = "Level One";
+            String headline = pluginServices.getStringProperty("alternateHeadline");
+            if (headline.isEmpty()) {
+                headline = "Level One";
             }
-            if (pluginServices.getBooleanProperty("starredGrouping")) {
-                grouping += "*";
+            if (pluginServices.getBooleanProperty("starredHeadline")) {
+                headline += "*";
             }
-            final String groupingFinal = grouping;
+            final String headlineFinal = headline;
             MessageSupplier messageSupplier = new MessageSupplier() {
                 @Override
                 public Message get() {
@@ -78,10 +78,11 @@ public class LevelOneAspect {
                                             "subnestedkey2", optionalArg2)),
                             "nested2", ImmutableMap.of("nestedkey21", arg1,
                                     "nestedkey22", optionalArg2));
-                    return Message.withDetail(groupingFinal, detail);
+                    return Message.withDetail(headlineFinal, detail);
                 }
             };
-            Span span = pluginServices.startTrace(grouping, messageSupplier, metricName);
+            Span span = pluginServices.startTrace("basic test",
+                    messageSupplier, metricName);
             // several trace attributes to test ordering
             pluginServices.setTraceAttribute(arg1, arg2);
             pluginServices.setTraceAttribute("z", "zz");

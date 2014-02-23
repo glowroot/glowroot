@@ -18,11 +18,12 @@
 
 glowroot.controller('TracesCtrl', [
   '$scope',
+  '$location',
   '$http',
   '$q',
   'traceModal',
   'queryStrings',
-  function ($scope, $http, $q, traceModal, queryStrings) {
+  function ($scope, $location, $http, $q, traceModal, queryStrings) {
     // \u00b7 is &middot;
     document.title = 'Traces \u00b7 Glowroot';
     $scope.$parent.title = 'Traces';
@@ -44,7 +45,7 @@ glowroot.controller('TracesCtrl', [
     });
 
     $scope.refreshChart = function (deferred) {
-      // grab some values in case they are  changed by user before response returns
+      // grab some values in case they are changed by user before response returns
       var date = $scope.filterDate;
       var from = $scope.filter.from;
       var to = $scope.filter.to;
@@ -364,23 +365,38 @@ glowroot.controller('TracesCtrl', [
       traceModal.hideModal();
     });
 
-    var now = new Date();
-    now.setSeconds(0);
-    var today = new Date(now);
-    today.setHours(0, 0, 0, 0);
-
     $scope.filter = {};
-    $scope.filterDate = today;
-    // show 2 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today (e.g. if 'now' is 11:55pm)
-    $scope.filter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
-    $scope.filter.to = Math.min($scope.filter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
+    $scope.filter.from = Number($location.search().from);
+    $scope.filter.to = Number($location.search().to);
+    // both from and to must be supplied or neither will take effect
+    if ($scope.filter.from && $scope.filter.to) {
+      $scope.filterDate = new Date($scope.filter.from);
+      $scope.filterDate.setHours(0, 0, 0, 0);
+    } else {
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      $scope.filterDate = today;
+      // show 2 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today
+      // (e.g. if 'now' is 11:55pm)
+      var now = new Date();
+      now.setSeconds(0);
+      $scope.filter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
+      $scope.filter.to = Math.min($scope.filter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
+    }
     $scope.filter.low = 0;
     $scope.filterHighText = '';
-    $scope.filter.groupingComparator = 'begins';
+    $scope.filter.headlineComparator = 'begins';
+    $scope.filter.transactionNameComparator = $location.search().transactionNameComparator;
+    if (!$scope.filter.transactionNameComparator) {
+      $scope.filter.transactionNameComparator = 'begins';
+    }
     $scope.filter.errorComparator = 'begins';
     $scope.filter.userComparator = 'begins';
     $scope.filter.limit = $('html').hasClass('lt-ie9') ? 100 : 500;
     $scope.filterDurationComparator = 'greater';
+
+    $scope.filter.transactionName = $location.search().transactionName;
+    $scope.filter.background = $location.search().background;
 
     $scope.filterDateComparatorOptions = [
       {
@@ -426,7 +442,7 @@ glowroot.controller('TracesCtrl', [
       $scope.filter.to = date.getTime() + ($scope.filter.to - midnight);
     });
 
-    $scope.$watch('filterDurationComparator', function(value) {
+    $scope.$watch('filterDurationComparator', function (value) {
       if (value === 'greater') {
         $scope.filter.high = undefined;
       } else if (value === 'less') {

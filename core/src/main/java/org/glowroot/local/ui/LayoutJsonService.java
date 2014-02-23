@@ -46,7 +46,6 @@ class LayoutJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final String version;
-    private final boolean aggregatesEnabled;
     private final ConfigService configService;
     private final PluginDescriptorCache pluginDescriptorCache;
 
@@ -55,26 +54,28 @@ class LayoutJsonService {
     @Nullable
     private final HotSpotDiagnostics hotSpotDiagnosticService;
 
-    LayoutJsonService(String version, boolean aggregatesEnabled, ConfigService configService,
+    private final long fixedAggregationIntervalSeconds;
+
+    LayoutJsonService(String version, ConfigService configService,
             PluginDescriptorCache pluginDescriptorCache, @Nullable HeapHistograms heapHistograms,
-            @Nullable HotSpotDiagnostics hotSpotDiagnosticService) {
+            @Nullable HotSpotDiagnostics hotSpotDiagnosticService,
+            long fixedAggregationIntervalSeconds) {
         this.version = version;
-        this.aggregatesEnabled = aggregatesEnabled;
         this.configService = configService;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.heapHistograms = heapHistograms;
         this.hotSpotDiagnosticService = hotSpotDiagnosticService;
+        this.fixedAggregationIntervalSeconds = fixedAggregationIntervalSeconds;
     }
 
-    // this is only used when running under 'grunt server' and is just to get get back layout data
-    // (or find out login is needed if required)
+    // this is only accessed from the url when running under 'grunt server' and is just to get back
+    // layout data (or find out login is needed if required)
     @GET("/backend/layout")
     String getLayout() throws IOException {
         logger.debug("getAuthenticatedLayout()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeBooleanField("aggregates", aggregatesEnabled);
         jg.writeBooleanField("jvmHeapHistogram", heapHistograms != null);
         jg.writeBooleanField("jvmHeapDump", hotSpotDiagnosticService != null);
         jg.writeBooleanField("jvmManageableFlags", hotSpotDiagnosticService != null);
@@ -95,6 +96,7 @@ class LayoutJsonService {
             jg.writeEndObject();
         }
         jg.writeEndArray();
+        jg.writeNumberField("fixedAggregationIntervalSeconds", fixedAggregationIntervalSeconds);
         jg.writeEndObject();
         jg.close();
         return sb.toString();

@@ -41,10 +41,12 @@
       "id" : "glowroot-integration-tests",
       "enabled" : true,
       "properties" : {
+        "levelFiveEnabled" : false,
+        "starredHeadline" : false,
+        "alternateHeadline" : "",
         "hasDefaultVal" : "one",
-        "captureSpanStackTraces" : false,
-        "alternateGrouping" : "",
-        "starredGrouping" : false
+        "levelFiveSpanEnabled" : false,
+        "captureSpanStackTraces" : false
       }
     },
     {

@@ -36,6 +36,7 @@ import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.jvm.JvmModule;
+import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.RollingFile;
 import org.glowroot.local.store.SnapshotDao;
@@ -78,26 +79,25 @@ public class LocalUiModule {
         ConfigService configService = configModule.getConfigService();
         PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();
 
+        AggregateDao aggregateDao = storageModule.getAggregateDao();
+        SnapshotDao snapshotDao = storageModule.getSnapshotDao();
         DataSource dataSource = storageModule.getDataSource();
         RollingFile rollingFile = storageModule.getRollingFile();
-        SnapshotDao snapshotDao = storageModule.getSnapshotDao();
         TraceCollectorImpl traceCollector = collectorModule.getTraceCollector();
         ParsedTypeCache parsedTypeCache = traceModule.getParsedTypeCache();
 
         TraceRegistry traceRegistry = traceModule.getTraceRegistry();
 
-        LayoutJsonService layoutJsonService = new LayoutJsonService(version,
-                collectorModule.getAggregatesEnabled(), configService, pluginDescriptorCache,
-                jvmModule.getHeapHistograms().getService(),
-                jvmModule.getHotSpotDiagnostics().getService());
+        LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
+                pluginDescriptorCache, jvmModule.getHeapHistograms().getService(),
+                jvmModule.getHotSpotDiagnostics().getService(),
+                collectorModule.getFixedAggregationIntervalSeconds());
         HttpSessionManager httpSessionManager = new HttpSessionManager(configService, clock,
                 layoutJsonService);
         String baseHref = getBaseHref(properties);
         IndexHtmlService indexHtmlService =
                 new IndexHtmlService(baseHref, httpSessionManager, layoutJsonService);
-        AggregateJsonService aggregateJsonService =
-                new AggregateJsonService(storageModule.getAggregateDao(),
-                        collectorModule.getFixedAggregateIntervalSeconds());
+        HomeJsonService homeJsonService = new HomeJsonService(storageModule.getAggregateDao());
         TraceCommonService traceCommonService =
                 new TraceCommonService(snapshotDao, traceRegistry, traceCollector, clock, ticker);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,
@@ -119,13 +119,13 @@ public class LocalUiModule {
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getThreadAllocatedBytes(),
                 jvmModule.getHeapHistograms(), jvmModule.getHotSpotDiagnostics(),
                 jvmModule.getHotSpotDiagnosticOptions());
-        AdminJsonService adminJsonService = new AdminJsonService(snapshotDao, configService,
-                traceModule.getPointcutConfigAdviceCache(), parsedTypeCache, instrumentation,
-                traceCollector, dataSource, traceRegistry);
+        AdminJsonService adminJsonService = new AdminJsonService(aggregateDao, snapshotDao,
+                configService, traceModule.getPointcutConfigAdviceCache(), parsedTypeCache,
+                instrumentation, traceCollector, dataSource, traceRegistry);
 
         ImmutableList.Builder<Object> jsonServices = ImmutableList.builder();
         jsonServices.add(layoutJsonService);
-        jsonServices.add(aggregateJsonService);
+        jsonServices.add(homeJsonService);
         jsonServices.add(tracePointJsonService);
         jsonServices.add(traceSummaryJsonService);
         jsonServices.add(jvmJsonService);
@@ -192,8 +192,8 @@ public class LocalUiModule {
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
         uriMappings.put(Pattern.compile("^/$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/home$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/traces$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/aggregates$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/jvm/.*$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/config/.*$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/plugin/.*$"), resourceBase + "/index.html");

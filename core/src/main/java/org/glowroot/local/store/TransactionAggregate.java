@@ -15,26 +15,30 @@
  */
 package org.glowroot.local.store;
 
+import org.glowroot.markers.UsedByJsonBinding;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class AggregatePoint {
+@UsedByJsonBinding
+public class TransactionAggregate {
 
-    private final long captureTime;
+    private final String transactionName;
     private final long totalMillis;
     private final long count;
     private final long storedTraceCount;
 
-    AggregatePoint(long captureTime, long totalMillis, long count, long storedTraceCount) {
-        this.captureTime = captureTime;
+    TransactionAggregate(String transactionName, long totalMillis, long count,
+            long storedTraceCount) {
+        this.transactionName = transactionName;
         this.totalMillis = totalMillis;
         this.count = count;
         this.storedTraceCount = storedTraceCount;
     }
 
-    public long getCaptureTime() {
-        return captureTime;
+    public String getTransactionName() {
+        return transactionName;
     }
 
     public long getTotalMillis() {

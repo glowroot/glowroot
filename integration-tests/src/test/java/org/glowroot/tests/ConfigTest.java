@@ -300,10 +300,10 @@ public class ConfigTest {
 
     private static void updateAllFields(PluginConfig config) {
         config.setEnabled(!config.isEnabled());
-        boolean starredGrouping = (Boolean) config.getProperty("starredGrouping");
-        config.setProperty("starredGrouping", !starredGrouping);
-        String alternateGrouping = (String) config.getProperty("alternateGrouping");
-        config.setProperty("alternateGrouping", alternateGrouping + "x");
+        boolean starredHeadline = (Boolean) config.getProperty("starredHeadline");
+        config.setProperty("starredHeadline", !starredHeadline);
+        String alternateHeadline = (String) config.getProperty("alternateHeadline");
+        config.setProperty("alternateHeadline", alternateHeadline + "x");
         String hasDefaultVal = (String) config.getProperty("hasDefaultVal");
         config.setProperty("hasDefaultVal", hasDefaultVal + "x");
         boolean captureSpanStackTraces = (Boolean) config.getProperty("captureSpanStackTraces");
@@ -320,7 +320,7 @@ public class ConfigTest {
                 .newArrayList(MethodModifier.PUBLIC, MethodModifier.STATIC));
         config.setMetricName("yako");
         config.setSpanText("yak(): {{0}}, {{1}} => {{?}}");
-        config.setTraceGrouping("");
+        config.setTransactionName("");
         config.setEnabledProperty("");
         config.setSpanEnabledProperty("");
         return config;
@@ -350,7 +350,7 @@ public class ConfigTest {
         } else {
             config.setSpanStackTraceThresholdMillis(spanStackTraceThresholdMillis + 1);
         }
-        config.setTraceGrouping(config.getTraceGrouping() + "g");
-        config.setTraceBackground(!config.isTraceBackground());
+        config.setTransactionName(config.getTransactionName() + "g");
+        config.setBackground(!config.isBackground());
     }
 }

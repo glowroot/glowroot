@@ -317,8 +317,8 @@ class LocalConfigService implements ConfigService {
         config.setSpanText(coreConfig.getSpanText());
         config.setSpanStackTraceThresholdMillis(coreConfig.getSpanStackTraceThresholdMillis());
         config.setSpanIgnoreSameNested(coreConfig.isSpanIgnoreSameNested());
-        config.setTraceGrouping(coreConfig.getTraceGrouping());
-        config.setTraceBackground(coreConfig.isTraceBackground());
+        config.setTransactionName(coreConfig.getTransactionName());
+        config.setBackground(coreConfig.isBackground());
         config.setEnabledProperty(coreConfig.getEnabledProperty());
         config.setSpanEnabledProperty(coreConfig.getSpanEnabledProperty());
         return config;
@@ -341,7 +341,7 @@ class LocalConfigService implements ConfigService {
                 config.getMethodArgTypeNames(), methodReturnTypeName, methodModifiers,
                 orEmpty(config.getMetricName()), orEmpty(config.getSpanText()),
                 config.getSpanStackTraceThresholdMillis(), config.isSpanIgnoreSameNested(),
-                orEmpty(config.getTraceGrouping()), config.isTraceBackground(),
+                orEmpty(config.getTransactionName()), config.isBackground(),
                 orEmpty(config.getEnabledProperty()), orEmpty(config.getSpanEnabledProperty()));
     }
 

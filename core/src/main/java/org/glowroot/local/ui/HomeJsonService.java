@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,41 +32,38 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregatePoint;
-import org.glowroot.local.store.GroupingAggregate;
+import org.glowroot.local.store.TransactionAggregate;
 import org.glowroot.markers.Singleton;
 
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
 /**
- * Json service to read aggregate data, bound to /backend/aggregate.
+ * Json service to read aggregate data, bound to /backend/home.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
 @JsonService
-class AggregateJsonService {
+class HomeJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(AggregateJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(HomeJsonService.class);
     @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final AggregateDao aggregateDao;
 
-    private final long fixedAggregateIntervalSeconds;
-
-    AggregateJsonService(AggregateDao aggregateDao, long fixedAggregateIntervalSeconds) {
+    HomeJsonService(AggregateDao aggregateDao) {
         this.aggregateDao = aggregateDao;
-        this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
     }
 
-    @GET("/backend/aggregate/points")
+    @GET("/backend/home/points")
     String getPoints(String content) throws IOException {
         logger.debug("getPoints(): content={}", content);
         PointsRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, PointsRequest.class);
         List<AggregatePoint> points =
-                aggregateDao.readAggregates(request.getFrom(), request.getTo());
+                aggregateDao.readPoints(request.getFrom(), request.getTo());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -75,31 +72,30 @@ class AggregateJsonService {
         for (AggregatePoint point : points) {
             jg.writeStartArray();
             jg.writeNumber(point.getCaptureTime());
-            long durationAverage;
-            if (point.getTraceCount() == 0) {
-                durationAverage = 0;
+            long average;
+            if (point.getCount() == 0) {
+                average = 0;
             } else {
-                durationAverage = point.getDurationTotal() / point.getTraceCount();
+                average = point.getTotalMillis() / point.getCount();
             }
-            jg.writeNumber(durationAverage / 1000000000.0);
-            jg.writeNumber(point.getTraceCount());
+            jg.writeNumber(average / 1000000000.0);
+            jg.writeNumber(point.getCount());
             jg.writeEndArray();
         }
         jg.writeEndArray();
-        jg.writeNumberField("fixedAggregateIntervalSeconds", fixedAggregateIntervalSeconds);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
-    @GET("/backend/aggregate/groupings")
-    String getGroupings(String content) throws IOException {
-        logger.debug("getGroupings(): content={}", content);
-        GroupingsRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, GroupingsRequest.class);
-        List<GroupingAggregate> groupings = aggregateDao.readGroupingAggregates(request.getFrom(),
-                request.getTo(), request.getLimit());
-        return mapper.writeValueAsString(groupings);
+    @GET("/backend/home/transaction-aggregates")
+    String getTransactionAggregates(String content) throws IOException {
+        logger.debug("getTransactionAggregates(): content={}", content);
+        TransactionsRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, TransactionsRequest.class);
+        List<TransactionAggregate> transactionAggregates = aggregateDao.readTransactionAggregates(
+                request.getFrom(), request.getTo(), request.getLimit());
+        return mapper.writeValueAsString(transactionAggregates);
     }
 
     private static class PointsRequest {
@@ -125,14 +121,14 @@ class AggregateJsonService {
         }
     }
 
-    private static class GroupingsRequest {
+    private static class TransactionsRequest {
 
         private final long from;
         private final long to;
         private final int limit;
 
         @JsonCreator
-        GroupingsRequest(@JsonProperty("from") @Nullable Long from,
+        TransactionsRequest(@JsonProperty("from") @Nullable Long from,
                 @JsonProperty("to") @Nullable Long to,
                 @JsonProperty("limit") @Nullable Integer limit) throws JsonMappingException {
             checkRequiredProperty(from, "from");

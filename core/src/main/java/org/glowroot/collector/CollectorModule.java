@@ -17,7 +17,6 @@ package org.glowroot.collector;
 
 import java.util.concurrent.ScheduledExecutorService;
 
-import checkers.nullness.quals.Nullable;
 import com.google.common.base.Ticker;
 
 import org.glowroot.common.Clock;
@@ -32,28 +31,25 @@ import org.glowroot.markers.ThreadSafe;
 @ThreadSafe
 public class CollectorModule {
 
-    private static final boolean aggregatesEnabled;
-    private static final long fixedAggregateIntervalSeconds;
+    private static final long fixedAggregationIntervalSeconds;
 
     static {
-        aggregatesEnabled = Boolean.getBoolean("glowroot.experimental.aggregates");
-        fixedAggregateIntervalSeconds =
-                Long.getLong("glowroot.internal.collector.aggregateInterval", 300);
+        fixedAggregationIntervalSeconds =
+                Long.getLong("glowroot.internal.collector.aggregationInterval", 300);
     }
 
-    @Nullable
-    private final Aggregator aggregator;
     private final TraceCollectorImpl traceCollector;
 
     public CollectorModule(Clock clock, Ticker ticker, ConfigModule configModule,
             SnapshotRepository snapshotRepository, AggregateRepository aggregateRepository,
-            ScheduledExecutorService scheduledExecutor) {
+            ScheduledExecutorService scheduledExecutor, boolean aggregatorDisabled) {
         ConfigService configService = configModule.getConfigService();
-        if (aggregatesEnabled) {
-            aggregator = Aggregator.create(scheduledExecutor, aggregateRepository, clock,
-                    fixedAggregateIntervalSeconds);
-        } else {
+        Aggregator aggregator;
+        if (aggregatorDisabled) {
             aggregator = null;
+        } else {
+            aggregator = Aggregator.create(scheduledExecutor, aggregateRepository, clock,
+                    fixedAggregationIntervalSeconds);
         }
         traceCollector = new TraceCollectorImpl(scheduledExecutor, configService,
                 snapshotRepository, aggregator, clock, ticker);
@@ -63,11 +59,7 @@ public class CollectorModule {
         return traceCollector;
     }
 
-    public long getFixedAggregateIntervalSeconds() {
-        return fixedAggregateIntervalSeconds;
-    }
-
-    public boolean getAggregatesEnabled() {
-        return aggregatesEnabled;
+    public long getFixedAggregationIntervalSeconds() {
+        return fixedAggregationIntervalSeconds;
     }
 }

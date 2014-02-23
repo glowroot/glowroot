@@ -4,13 +4,13 @@
   "version": "0.5-SNAPSHOT",
   "properties": [
     {
-      "prompt": "Starred grouping",
-      "name": "starredGrouping",
+      "prompt": "Starred headline",
+      "name": "starredHeadline",
       "type": "boolean"
     },
     {
-      "prompt": "Alternate grouping",
-      "name": "alternateGrouping",
+      "prompt": "Alternate headline",
+      "name": "alternateHeadline",
       "type": "string"
     },
     {
@@ -56,7 +56,9 @@
       "methodModifiers" : [ ],
       "metricName" : "level four",
       "spanText" : "Level Four: {{0}}, {{1}}",
-      "traceGrouping" : ""
+      "transactionName" : "",
+      "enabledProperty": "",
+      "spanEnabledProperty": ""
     },
     {
       "typeName" : "org.glowroot.tests.LevelFive",
@@ -69,7 +71,7 @@
       "methodModifiers" : [ ],
       "metricName" : "level five",
       "spanText" : "Level Five: {{0}}, {{1}}",
-      "traceGrouping" : "",
+      "transactionName" : "",
       "enabledProperty": "levelFiveEnabled",
       "spanEnabledProperty": "levelFiveSpanEnabled"
     }

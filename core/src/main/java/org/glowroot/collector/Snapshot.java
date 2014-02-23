@@ -39,7 +39,8 @@ public class Snapshot {
     private final long captureTime;
     private final long duration; // nanoseconds
     private final boolean background;
-    private final String grouping;
+    private final String headline;
+    private final String transactionName;
     @Nullable
     private final String error;
     @Nullable
@@ -60,9 +61,10 @@ public class Snapshot {
     private final CharSource fineMergedStackTree; // json data
 
     private Snapshot(String id, boolean active, boolean stuck, long startTime, long captureTime,
-            long duration, boolean background, String grouping, @Nullable String error,
-            @Nullable String user, @Nullable String attributes, @Nullable String metrics,
-            @Nullable String jvmInfo, @Immutable @Nullable CharSource spans,
+            long duration, boolean background, String headline, String transactionName,
+            @Nullable String error, @Nullable String user, @Nullable String attributes,
+            @Nullable String metrics, @Nullable String jvmInfo,
+            @Immutable @Nullable CharSource spans,
             @Immutable @Nullable CharSource coarseMergedStackTree,
             @Immutable @Nullable CharSource fineMergedStackTree) {
         this.id = id;
@@ -72,7 +74,8 @@ public class Snapshot {
         this.captureTime = captureTime;
         this.duration = duration;
         this.background = background;
-        this.grouping = grouping;
+        this.headline = headline;
+        this.transactionName = transactionName;
         this.error = error;
         this.user = user;
         this.attributes = attributes;
@@ -111,8 +114,12 @@ public class Snapshot {
         return background;
     }
 
-    public String getGrouping() {
-        return grouping;
+    public String getHeadline() {
+        return headline;
+    }
+
+    public String getTransactionName() {
+        return transactionName;
     }
 
     @Nullable
@@ -169,11 +176,13 @@ public class Snapshot {
                 .add("captureTime", captureTime)
                 .add("duration", duration)
                 .add("background", background)
-                .add("grouping", grouping)
+                .add("headline", headline)
+                .add("transactionName", transactionName)
                 .add("error", error)
                 .add("user", user)
                 .add("attributes", attributes)
                 .add("metrics", metrics)
+                .add("jvmInfo", jvmInfo)
                 .toString();
     }
 
@@ -192,7 +201,9 @@ public class Snapshot {
         private long duration;
         private boolean background;
         @MonotonicNonNull
-        private String grouping;
+        private String headline;
+        @MonotonicNonNull
+        private String transactionName;
         @Nullable
         private String error;
         @Nullable
@@ -250,8 +261,13 @@ public class Snapshot {
             return this;
         }
 
-        public Builder grouping(String grouping) {
-            this.grouping = grouping;
+        public Builder headline(String headline) {
+            this.headline = headline;
+            return this;
+        }
+
+        public Builder transactionName(String transactionName) {
+            this.transactionName = transactionName;
             return this;
         }
 
@@ -296,10 +312,10 @@ public class Snapshot {
             return this;
         }
 
-        @RequiresNonNull({"id", "grouping"})
+        @RequiresNonNull({"id", "transactionName", "headline"})
         public Snapshot build() {
             return new Snapshot(id, active, stuck, startTime, captureTime, duration, background,
-                    grouping, error, user, attributes, metrics, jvmInfo, spans,
+                    headline, transactionName, error, user, attributes, metrics, jvmInfo, spans,
                     coarseMergedStackTree, fineMergedStackTree);
         }
     }

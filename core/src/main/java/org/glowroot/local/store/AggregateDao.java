@@ -43,45 +43,110 @@ public class AggregateDao implements AggregateRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(AggregateDao.class);
 
-    private static final ImmutableList<Column> aggregateColumns = ImmutableList.of(
+    private static final ImmutableList<Column> overallAggregateColumns = ImmutableList.of(
             new Column("capture_time", Types.BIGINT), // capture time rounded up to nearest 5 min
-            new Column("duration_total", Types.BIGINT),
-            new Column("trace_count", Types.BIGINT));
+            new Column("total_millis", Types.BIGINT),
+            new Column("count", Types.BIGINT),
+            new Column("stored_trace_count", Types.BIGINT));
 
-    private static final ImmutableList<Column> groupingAggregateColumns = ImmutableList.of(
-            new Column("grouping", Types.VARCHAR),
+    private static final ImmutableList<Column> transactionAggregateColumns = ImmutableList.of(
+            new Column("transaction_name", Types.VARCHAR),
             new Column("capture_time", Types.BIGINT), // capture time rounded up to nearest 5 min
-            new Column("duration_total", Types.BIGINT),
-            new Column("trace_count", Types.BIGINT));
+            new Column("total_millis", Types.BIGINT),
+            new Column("count", Types.BIGINT),
+            new Column("stored_trace_count", Types.BIGINT));
 
     private final DataSource dataSource;
 
     AggregateDao(DataSource dataSource) throws SQLException {
         this.dataSource = dataSource;
-        dataSource.syncTable("aggregate", aggregateColumns);
-        dataSource.syncTable("grouping_aggregate", groupingAggregateColumns);
+        dataSource.syncTable("overall_aggregate", overallAggregateColumns);
+        dataSource.syncTable("transaction_aggregate", transactionAggregateColumns);
+        dataSource.syncTable("bg_overall_aggregate", overallAggregateColumns);
+        dataSource.syncTable("bg_transaction_aggregate", transactionAggregateColumns);
     }
 
     @Override
-    public void store(final long captureTime, Aggregate aggregate,
-            final Map<String, Aggregate> groupingAggregates) {
-        logger.debug("store(): captureTime={}, aggregate={}, groupingAggregates={}", captureTime,
-                aggregate, groupingAggregates);
+    public void store(long captureTime, Aggregate overallAggregate,
+            Map<String, Aggregate> transactionAggregates, Aggregate bgOverallAggregate,
+            Map<String, Aggregate> bgTransactionAggregates) {
+        logger.debug("store(): captureTime={}, overallAggregate={}, transactionAggregates={},"
+                + " bgOverallAggregate={}, bgTransactionAggregates={}", captureTime,
+                overallAggregate, transactionAggregates, bgOverallAggregate,
+                bgTransactionAggregates);
+        store(captureTime, overallAggregate, transactionAggregates, "");
+        store(captureTime, bgOverallAggregate, bgTransactionAggregates, "bg_");
+    }
+
+    public ImmutableList<AggregatePoint> readPoints(long captureTimeFrom, long captureTimeTo) {
+        logger.debug("readAggregates(): captureTimeFrom={}, captureTimeTo={}", captureTimeFrom,
+                captureTimeTo);
+        return readPoints(captureTimeFrom, captureTimeTo, "");
+    }
+
+    public ImmutableList<AggregatePoint> readBgPoints(long captureTimeFrom, long captureTimeTo) {
+        logger.debug("readBgAggregates(): captureTimeFrom={}, captureTimeTo={}", captureTimeFrom,
+                captureTimeTo);
+        return readPoints(captureTimeFrom, captureTimeTo, "bg_");
+    }
+
+    // returns list ordered and limited by average descending
+    public ImmutableList<TransactionAggregate> readTransactionAggregates(long captureTimeFrom,
+            long captureTimeTo, int limit) {
+        logger.debug("readTransactionAggregates(): captureTimeFrom={}, captureTimeTo={}, limit={}",
+                captureTimeFrom, captureTimeTo, limit);
+        return readTransactionAggregates(captureTimeFrom, captureTimeTo, limit, "");
+    }
+
+    // returns list ordered and limited by average descending
+    public ImmutableList<TransactionAggregate> readBgTransactionAggregate(long captureTimeFrom,
+            long captureTimeTo, int limit) {
+        logger.debug("readBgTransactionAggregate(): captureTimeFrom={}, captureTimeTo={},"
+                + " limit={}", captureTimeFrom, captureTimeTo, limit);
+        return readTransactionAggregates(captureTimeFrom, captureTimeTo, limit, "bg_");
+    }
+
+    public void deleteAllAggregates() {
+        logger.debug("deleteAllAggregates()");
         try {
-            dataSource.update("insert into aggregate (capture_time, duration_total, trace_count)"
-                    + " values (?, ?, ?)", captureTime, aggregate.getDurationTotal(),
-                    aggregate.getTraceCount());
-            dataSource.batchUpdate("insert into grouping_aggregate (grouping, capture_time,"
-                    + " duration_total, trace_count) values (?, ?, ?, ?)", new BatchAdder() {
+            dataSource.execute("truncate table overall_aggregate");
+            dataSource.execute("truncate table transaction_aggregate");
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    void deleteAggregatesBefore(long captureTime) {
+        logger.debug("deleteAggregatesBefore(): captureTime={}", captureTime);
+        try {
+            dataSource.update("delete from overall_aggregate where capture_time < ?", captureTime);
+            dataSource.update("delete from transaction_aggregate where capture_time < ?",
+                    captureTime);
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    private void store(final long captureTime, Aggregate overall,
+            final Map<String, Aggregate> transactionAggregates, String tablePrefix) {
+        try {
+            dataSource.update("insert into " + tablePrefix + "overall_aggregate (capture_time,"
+                    + " total_millis, count, stored_trace_count) values (?, ?, ?, ?)", captureTime,
+                    overall.getTotalMillis(), overall.getCount(),
+                    overall.getStoredTraceCount());
+            dataSource.batchUpdate("insert into " + tablePrefix + "transaction_aggregate"
+                    + " (transaction_name, capture_time, total_millis, count, stored_trace_count)"
+                    + " values (?, ?, ?, ?, ?)", new BatchAdder() {
                 @Override
                 public void addBatches(PreparedStatement preparedStatement)
                         throws SQLException {
-                    for (Entry<String, Aggregate> entry : groupingAggregates.entrySet()) {
+                    for (Entry<String, Aggregate> entry : transactionAggregates.entrySet()) {
                         preparedStatement.setString(1, entry.getKey());
                         preparedStatement.setLong(2, captureTime);
                         Aggregate aggregate = entry.getValue();
-                        preparedStatement.setLong(3, aggregate.getDurationTotal());
-                        preparedStatement.setLong(4, aggregate.getTraceCount());
+                        preparedStatement.setLong(3, aggregate.getTotalMillis());
+                        preparedStatement.setLong(4, aggregate.getCount());
+                        preparedStatement.setLong(5, aggregate.getStoredTraceCount());
                         preparedStatement.addBatch();
                     }
                 }
@@ -91,13 +156,12 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    public ImmutableList<AggregatePoint> readAggregates(long captureTimeFrom, long captureTimeTo) {
-        logger.debug("readAggregates(): captureTimeFrom={}, captureTimeTo={}", captureTimeFrom,
-                captureTimeTo);
+    private ImmutableList<AggregatePoint> readPoints(long captureTimeFrom, long captureTimeTo,
+            String tablePrefix) {
         try {
-            return dataSource.query("select capture_time, duration_total, trace_count from"
-                    + " aggregate where capture_time >= ? and capture_time <= ?",
-                    ImmutableList.of(captureTimeFrom, captureTimeTo),
+            return dataSource.query("select capture_time, total_millis, count, stored_trace_count"
+                    + " from " + tablePrefix + "overall_aggregate where capture_time >= ? and"
+                    + " capture_time <= ?", ImmutableList.of(captureTimeFrom, captureTimeTo),
                     new AggregateIntervalRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -105,17 +169,15 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    // returns list ordered and limited by average descending
-    public ImmutableList<GroupingAggregate> readGroupingAggregates(long captureTimeFrom,
-            long captureTimeTo, int limit) {
-        logger.debug("readAggregates(): captureTimeFrom={}, captureTimeTo={}, limit={}",
-                captureTimeFrom, captureTimeTo, limit);
+    private ImmutableList<TransactionAggregate> readTransactionAggregates(long captureTimeFrom,
+            long captureTimeTo, int limit, String tablePrefix) {
         try {
-            return dataSource.query("select grouping, sum(duration_total), sum(trace_count) from"
-                    + " grouping_aggregate where capture_time >= ? and capture_time <= ? group by"
-                    + " grouping order by sum(duration_total) / sum(trace_count) desc limit ?",
+            return dataSource.query("select transaction_name, sum(total_millis), sum(count),"
+                    + " sum(stored_trace_count) from " + tablePrefix + "transaction_aggregate"
+                    + " where capture_time >= ? and capture_time <= ? group by transaction_name"
+                    + " order by sum(total_millis) / sum(count) desc limit ?",
                     ImmutableList.of(captureTimeFrom, captureTimeTo, limit),
-                    new GroupingAggregateRowMapper());
+                    new TransactionAggregateRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
@@ -128,21 +190,23 @@ public class AggregateDao implements AggregateRepository {
         @Override
         public AggregatePoint mapRow(ResultSet resultSet) throws SQLException {
             long captureTime = resultSet.getLong(1);
-            long durationTotal = resultSet.getLong(2);
-            long traceCount = resultSet.getLong(3);
-            return new AggregatePoint(captureTime, durationTotal, traceCount);
+            long totalMillis = resultSet.getLong(2);
+            long count = resultSet.getLong(3);
+            long storedTraceCount = resultSet.getLong(4);
+            return new AggregatePoint(captureTime, totalMillis, count, storedTraceCount);
         }
     }
 
     @ThreadSafe
-    private static class GroupingAggregateRowMapper implements RowMapper<GroupingAggregate> {
+    private static class TransactionAggregateRowMapper implements RowMapper<TransactionAggregate> {
 
         @Override
-        public GroupingAggregate mapRow(ResultSet resultSet) throws SQLException {
-            String grouping = resultSet.getString(1);
-            long durationTotal = resultSet.getLong(2);
-            long traceCount = resultSet.getLong(3);
-            return new GroupingAggregate(grouping, durationTotal, traceCount);
+        public TransactionAggregate mapRow(ResultSet resultSet) throws SQLException {
+            String name = resultSet.getString(1);
+            long totalMillis = resultSet.getLong(2);
+            long count = resultSet.getLong(3);
+            long storedTraceCount = resultSet.getLong(4);
+            return new TransactionAggregate(name, totalMillis, count, storedTraceCount);
         }
     }
 }

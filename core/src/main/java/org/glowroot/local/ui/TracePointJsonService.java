@@ -93,7 +93,9 @@ class TracePointJsonService {
         private long low;
         private long high;
         @MonotonicNonNull
-        private StringComparator groupingComparator;
+        private StringComparator transactionNameComparator;
+        @MonotonicNonNull
+        private StringComparator headlineComparator;
         @MonotonicNonNull
         private StringComparator errorComparator;
         @MonotonicNonNull
@@ -111,10 +113,16 @@ class TracePointJsonService {
             low = (long) Math.ceil(request.getLow() * NANOSECONDS_PER_SECOND);
             high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request.getHigh()
                     * NANOSECONDS_PER_SECOND);
-            String groupingComparator = request.getGroupingComparator();
-            if (groupingComparator != null) {
-                this.groupingComparator =
-                        StringComparator.valueOf(groupingComparator.toUpperCase(Locale.ENGLISH));
+            String transactionNameComparator = request.getTransactionNameComparator();
+            if (transactionNameComparator != null) {
+                this.transactionNameComparator =
+                        StringComparator.valueOf(transactionNameComparator
+                                .toUpperCase(Locale.ENGLISH));
+            }
+            String headlineComparator = request.getHeadlineComparator();
+            if (headlineComparator != null) {
+                this.headlineComparator =
+                        StringComparator.valueOf(headlineComparator.toUpperCase(Locale.ENGLISH));
             }
             String errorComparator = request.getErrorComparator();
             if (errorComparator != null) {
@@ -170,8 +178,9 @@ class TracePointJsonService {
             }
             TracePointQuery query = new TracePointQuery(request.getFrom(), request.getTo(), low,
                     high, request.isBackground(), request.isErrorOnly(), request.isFineOnly(),
-                    groupingComparator, request.getGrouping(), errorComparator, request.getError(),
-                    userComparator, request.getUser(), request.getLimit() + 1);
+                    transactionNameComparator, request.getTransactionName(), headlineComparator,
+                    request.getHeadline(), errorComparator, request.getError(), userComparator,
+                    request.getUser(), request.getLimit() + 1);
             List<TracePoint> points = snapshotDao.readPoints(query);
             // create single merged and limited list of points
             List<TracePoint> orderedPoints = Lists.newArrayList(points);
@@ -188,7 +197,8 @@ class TracePointJsonService {
                         && matchesDuration(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
-                        && matchesGrouping(trace)
+                        && matchesTransactionName(trace)
+                        && matchesHeadline(trace)
                         && matchesUser(trace)
                         && matchesBackground(trace)) {
                     activeTraces.add(trace);
@@ -215,7 +225,8 @@ class TracePointJsonService {
                 if (matchesDuration(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
-                        && matchesGrouping(trace)
+                        && matchesTransactionName(trace)
+                        && matchesHeadline(trace)
                         && matchesUser(trace)
                         && matchesBackground(trace)) {
                     points.add(TracePoint.from(trace.getId(), clock.currentTimeMillis(),
@@ -238,62 +249,51 @@ class TracePointJsonService {
             return !request.isFineOnly() || trace.isFine();
         }
 
-        private boolean matchesGrouping(Trace trace) {
-            String grouping = request.getGrouping();
-            if (groupingComparator == null || grouping == null) {
-                return true;
-            }
-            String traceGrouping = trace.getGrouping();
-            switch (groupingComparator) {
-                case BEGINS:
-                    return traceGrouping.toUpperCase(Locale.ENGLISH)
-                            .startsWith(grouping.toUpperCase(Locale.ENGLISH));
-                case EQUALS:
-                    return traceGrouping.equalsIgnoreCase(grouping);
-                case ENDS:
-                    return traceGrouping.toUpperCase(Locale.ENGLISH)
-                            .endsWith(grouping.toUpperCase(Locale.ENGLISH));
-                case CONTAINS:
-                    return traceGrouping.toUpperCase(Locale.ENGLISH)
-                            .contains(grouping.toUpperCase(Locale.ENGLISH));
-                case NOT_CONTAINS:
-                    return !traceGrouping.toUpperCase(Locale.ENGLISH)
-                            .contains(grouping.toUpperCase(Locale.ENGLISH));
-                default:
-                    throw new AssertionError("Unknown StringComparator enum: "
-                            + groupingComparator);
-            }
+        private boolean matchesTransactionName(Trace trace) {
+            return matchesUsingStringComparator(transactionNameComparator,
+                    request.getTransactionName(),
+                    trace.getTransactionName());
+        }
+
+        private boolean matchesHeadline(Trace trace) {
+            return matchesUsingStringComparator(headlineComparator, request.getHeadline(),
+                    trace.getHeadline());
         }
 
         private boolean matchesUser(Trace trace) {
-            String user = request.getUser();
-            if (userComparator == null || user == null) {
-                return true;
-            }
-            String traceUser = trace.getUser();
-            if (traceUser == null) {
-                return false;
-            }
-            switch (userComparator) {
-                case BEGINS:
-                    return traceUser.toUpperCase(Locale.ENGLISH)
-                            .startsWith(user.toUpperCase(Locale.ENGLISH));
-                case EQUALS:
-                    return traceUser.equalsIgnoreCase(user);
-                case ENDS:
-                    return traceUser.toUpperCase(Locale.ENGLISH)
-                            .endsWith(user.toUpperCase(Locale.ENGLISH));
-                case CONTAINS:
-                    return traceUser.toUpperCase(Locale.ENGLISH)
-                            .contains(user.toUpperCase(Locale.ENGLISH));
-                default:
-                    throw new AssertionError("Unknown StringComparator enum: " + userComparator);
-            }
+            return matchesUsingStringComparator(userComparator, request.getUser(), trace.getUser());
         }
 
         private boolean matchesBackground(Trace trace) {
             Boolean background = request.isBackground();
             return background == null || background == trace.isBackground();
+        }
+
+        private boolean matchesUsingStringComparator(@Nullable StringComparator requestComparator,
+                @Nullable String requestText, @Nullable String traceText) throws AssertionError {
+            if (requestComparator == null || requestText == null) {
+                return true;
+            } else if (traceText == null) {
+                return false;
+            }
+            switch (requestComparator) {
+                case BEGINS:
+                    return traceText.toUpperCase(Locale.ENGLISH)
+                            .startsWith(requestText.toUpperCase(Locale.ENGLISH));
+                case EQUALS:
+                    return traceText.equalsIgnoreCase(requestText);
+                case ENDS:
+                    return traceText.toUpperCase(Locale.ENGLISH)
+                            .endsWith(requestText.toUpperCase(Locale.ENGLISH));
+                case CONTAINS:
+                    return traceText.toUpperCase(Locale.ENGLISH)
+                            .contains(requestText.toUpperCase(Locale.ENGLISH));
+                case NOT_CONTAINS:
+                    return !traceText.toUpperCase(Locale.ENGLISH)
+                            .contains(requestText.toUpperCase(Locale.ENGLISH));
+                default:
+                    throw new AssertionError("Unknown StringComparator enum: " + requestComparator);
+            }
         }
 
         private void insertIntoOrderedPoints(TracePoint pendingPoint,

@@ -342,10 +342,10 @@ public class JavaagentContainer implements Container {
         if (!useFileDb) {
             command.add("-Dglowroot.internal.h2.memdb=true");
         }
-        Integer aggregateInterval =
-                Integer.getInteger("glowroot.internal.collector.aggregateInterval");
-        if (aggregateInterval != null) {
-            command.add("-Dglowroot.internal.collector.aggregateInterval=" + aggregateInterval);
+        Integer aggregationInterval =
+                Integer.getInteger("glowroot.internal.collector.aggregationInterval");
+        if (aggregationInterval != null) {
+            command.add("-Dglowroot.internal.collector.aggregationInterval=" + aggregationInterval);
         }
         command.add(JavaagentContainer.class.getName());
         command.add(Integer.toString(containerPort));

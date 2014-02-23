@@ -82,7 +82,8 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getGrouping()).isEqualTo("/testservlet");
+        assertThat(trace.getHeadline()).isEqualTo("GET /testservlet");
+        assertThat(trace.getTransactionName()).isEqualTo("/testservlet");
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
         assertThat(span.getMessage().getText()).isEqualTo("GET /testservlet");
@@ -95,7 +96,8 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteFilter.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getGrouping()).isEqualTo("/testfilter");
+        assertThat(trace.getHeadline()).isEqualTo("GET /testfilter");
+        assertThat(trace.getTransactionName()).isEqualTo("/testfilter");
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
         assertThat(span.getMessage().getText()).isEqualTo("GET /testfilter");
@@ -108,7 +110,8 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getGrouping()).isEqualTo("/testfilter");
+        assertThat(trace.getHeadline()).isEqualTo("GET /testfilter");
+        assertThat(trace.getTransactionName()).isEqualTo("/testfilter");
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
         assertThat(span.getMessage().getText()).isEqualTo("GET /testfilter");
@@ -161,7 +164,8 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.getGrouping()).isEqualTo("/testservlet");
+        assertThat(trace.getHeadline()).isEqualTo("GET /testservlet");
+        assertThat(trace.getTransactionName()).isEqualTo("/testservlet");
         assertThat(trace.getSpans().get(0).getMessage().getDetail()
                 .get("session id (at beginning of this request)")).isEqualTo("1234");
         assertThat(trace.getSpans().get(0).getMessage().getDetail()
@@ -179,8 +183,8 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.getGrouping()).isEqualTo(
-                "servlet context initialized / " + TestServletContextListener.class.getName());
+        assertThat(trace.getHeadline()).isEqualTo(
+                TestServletContextListener.class.getName() + ".contextInitialized()");
     }
 
     @Test
@@ -192,7 +196,9 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        assertThat(trace.getGrouping()).isEqualTo(
+        assertThat(trace.getHeadline()).isEqualTo(
+                TestServletInit.class.getName() + ".init()");
+        assertThat(trace.getTransactionName()).isEqualTo(
                 "servlet init / " + TestServletInit.class.getName());
         assertThat(trace.getSpans().get(0).getMessage().getText())
                 .isEqualTo(TestServletInit.class.getName() + ".init()");
@@ -207,8 +213,9 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.getGrouping())
-                .isEqualTo("filter init / " + TestFilterInit.class.getName());
+        assertThat(trace.getHeadline()).isEqualTo(TestFilterInit.class.getName() + ".init()");
+        assertThat(trace.getTransactionName()).isEqualTo("filter init / "
+                + TestFilterInit.class.getName());
         assertThat(trace.getSpans().get(0).getMessage().getText())
                 .isEqualTo(TestFilterInit.class.getName() + ".init()");
     }

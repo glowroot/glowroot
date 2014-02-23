@@ -74,12 +74,12 @@ class PointcutConfigSection {
         return withWait(xpath(".//input[@ng-model='traceDefinition']"));
     }
 
-    WebElement getTraceGroupingTextField() {
-        return withWait(xpath(".//textarea[@ng-model='config.traceGrouping']"));
+    WebElement getTransactionNameTextField() {
+        return withWait(xpath(".//textarea[@ng-model='config.transactionName']"));
     }
 
-    WebElement getTraceBackgroundCheckbox() {
-        return withWait(xpath(".//input[@ng-model='config.traceBackground']"));
+    WebElement getBackgroundCheckbox() {
+        return withWait(xpath(".//input[@ng-model='config.background']"));
     }
 
     WebElement getAddButton() {

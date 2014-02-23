@@ -20,12 +20,15 @@
   </div>
 {{/if}}
 <div class="second-line-indent">
-  <strong>{{grouping}}</strong>
+  <strong>{{headline}}</strong>
   {{#if showExport}}
     <button class="flat-btn flat-btn-big glowroot-link-color download-trace" data-trace-id="{{id}}">
       export
     </button>
   {{/if}}
+</div>
+<div class="second-line-indent">
+  Transaction name: {{transactionName}}
 </div>
 <div>
   Start: {{date startTime}}

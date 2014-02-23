@@ -62,7 +62,8 @@ public class NullDetailMapValueTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getGrouping()).isEqualTo("Level One");
+        assertThat(trace.getHeadline()).isEqualTo("Level One");
+        assertThat(trace.getTransactionName()).isEqualTo("basic test");
         assertThat(trace.getSpans()).hasSize(4);
         Span span1 = trace.getSpans().get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");

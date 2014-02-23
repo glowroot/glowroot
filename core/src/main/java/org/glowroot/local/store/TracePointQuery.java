@@ -38,9 +38,13 @@ public class TracePointQuery {
     private final boolean errorOnly;
     private final boolean fineOnly;
     @Nullable
-    private final StringComparator groupingComparator;
+    private final StringComparator transactionNameComparator;
     @Nullable
-    private final String grouping;
+    private final String transactionName;
+    @Nullable
+    private final StringComparator headlineComparator;
+    @Nullable
+    private final String headline;
     @Nullable
     private final StringComparator errorComparator;
     @Nullable
@@ -53,7 +57,8 @@ public class TracePointQuery {
 
     public TracePointQuery(long captureTimeFrom, long captureTimeTo, long durationLow,
             long durationHigh, @Nullable Boolean background, boolean errorOnly, boolean fineOnly,
-            @Nullable StringComparator groupingComparator, @Nullable String grouping,
+            @Nullable StringComparator transactionNameComparator, @Nullable String transactionName,
+            @Nullable StringComparator headlineComparator, @Nullable String headline,
             @Nullable StringComparator errorComparator, @Nullable String error,
             @Nullable StringComparator userComparator, @Nullable String user, int limit) {
         this.captureTimeFrom = captureTimeFrom;
@@ -63,8 +68,10 @@ public class TracePointQuery {
         this.background = background;
         this.errorOnly = errorOnly;
         this.fineOnly = fineOnly;
-        this.groupingComparator = groupingComparator;
-        this.grouping = grouping;
+        this.transactionNameComparator = transactionNameComparator;
+        this.transactionName = transactionName;
+        this.headlineComparator = headlineComparator;
+        this.headline = headline;
         this.errorComparator = errorComparator;
         this.error = error;
         this.userComparator = userComparator;
@@ -75,8 +82,12 @@ public class TracePointQuery {
     ParameterizedSql getParameterizedSql() {
         // all of these columns should be in the same index so h2 can return result set directly
         // from the index without having to reference the table for each row
+        //
+        // capture time lower bound is non-inclusive so that aggregate data intervals can be mapped
+        // to their trace points (aggregate data intervals are non-inclusive on lower bound and
+        // inclusive on upper bound)
         String sql = "select id, capture_time, duration, error from snapshot where"
-                + " capture_time >= ? and capture_time <= ?";
+                + " capture_time > ? and capture_time <= ?";
         List<Object> args = Lists.newArrayList();
         args.add(captureTimeFrom);
         args.add(captureTimeTo);
@@ -100,9 +111,15 @@ public class TracePointQuery {
             sql += " and fine = ?";
             args.add(true);
         }
-        if (groupingComparator != null && grouping != null) {
-            sql += " and upper(grouping) " + groupingComparator.getComparator() + " ?";
-            args.add(groupingComparator.formatParameter(grouping.toUpperCase(Locale.ENGLISH)));
+        if (transactionNameComparator != null && transactionName != null) {
+            sql += " and upper(transaction_name) " + transactionNameComparator.getComparator()
+                    + " ?";
+            args.add(transactionNameComparator.formatParameter(transactionName
+                    .toUpperCase(Locale.ENGLISH)));
+        }
+        if (headlineComparator != null && headline != null) {
+            sql += " and upper(headline) " + headlineComparator.getComparator() + " ?";
+            args.add(headlineComparator.formatParameter(headline.toUpperCase(Locale.ENGLISH)));
         }
         if (errorComparator != null && error != null) {
             sql += " and upper(error_message) " + errorComparator.getComparator() + " ?";
@@ -128,8 +145,10 @@ public class TracePointQuery {
                 .add("background", background)
                 .add("errorOnly", errorOnly)
                 .add("fineOnly", fineOnly)
-                .add("groupingComparator", groupingComparator)
-                .add("grouping", grouping)
+                .add("transactionNameComparator", transactionNameComparator)
+                .add("transactionName", transactionName)
+                .add("headlineComparator", headlineComparator)
+                .add("headline", headline)
                 .add("errorComparator", errorComparator)
                 .add("error", error)
                 .add("userComparator", userComparator)

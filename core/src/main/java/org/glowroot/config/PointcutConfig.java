@@ -55,8 +55,8 @@ public class PointcutConfig {
     @Nullable
     private final Long spanStackTraceThresholdMillis;
     private final boolean spanIgnoreSameNested;
-    private final String traceGrouping;
-    private final boolean traceBackground;
+    private final String transactionName;
+    private final boolean background;
 
     // enabledProperty and spanEnabledProperty are for plugin authors
     private final String enabledProperty;
@@ -69,7 +69,7 @@ public class PointcutConfig {
             @ReadOnly List<String> methodArgTypeNames, String methodReturnTypeName,
             @ReadOnly List<MethodModifier> methodModifiers, String metricName, String spanText,
             @Nullable Long spanStackTraceThresholdMillis, boolean spanIgnoreSameNested,
-            String traceGrouping, boolean traceBackground, String enabledProperty,
+            String transactionName, boolean background, String enabledProperty,
             String spanEnabledProperty) {
         this.typeName = typeName;
         this.methodName = methodName;
@@ -80,14 +80,14 @@ public class PointcutConfig {
         this.spanText = spanText;
         this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
         this.spanIgnoreSameNested = spanIgnoreSameNested;
-        this.traceGrouping = traceGrouping;
-        this.traceBackground = traceBackground;
+        this.transactionName = transactionName;
+        this.background = background;
         this.enabledProperty = enabledProperty;
         this.spanEnabledProperty = spanEnabledProperty;
         version = VersionHashes.sha1(typeName, methodName, methodArgTypeNames,
                 methodReturnTypeName, methodModifiers, metricName, spanText,
-                spanStackTraceThresholdMillis, spanIgnoreSameNested, traceGrouping,
-                traceBackground, enabledProperty, spanEnabledProperty);
+                spanStackTraceThresholdMillis, spanIgnoreSameNested, transactionName, background,
+                enabledProperty, spanEnabledProperty);
     }
 
     public String getTypeName() {
@@ -129,12 +129,12 @@ public class PointcutConfig {
         return spanIgnoreSameNested;
     }
 
-    public String getTraceGrouping() {
-        return traceGrouping;
+    public String getTransactionName() {
+        return transactionName;
     }
 
-    public boolean isTraceBackground() {
-        return traceBackground;
+    public boolean isBackground() {
+        return background;
     }
 
     public String getEnabledProperty() {
@@ -162,7 +162,7 @@ public class PointcutConfig {
 
     @JsonIgnore
     public boolean isTrace() {
-        return !traceGrouping.isEmpty();
+        return !transactionName.isEmpty();
     }
 
     @JsonCreator
@@ -176,8 +176,8 @@ public class PointcutConfig {
             @JsonProperty("spanText") @Nullable String spanText,
             @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
             @JsonProperty("spanIgnoreSameNested") @Nullable Boolean spanIgnoreSameNested,
-            @JsonProperty("traceGrouping") @Nullable String traceGrouping,
-            @JsonProperty("traceBackground") @Nullable Boolean traceBackground,
+            @JsonProperty("transactionName") @Nullable String transactionName,
+            @JsonProperty("background") @Nullable Boolean background,
             @JsonProperty("enabledProperty") @Nullable String enabledProperty,
             @JsonProperty("spanEnabledProperty") @Nullable String spanEnabledProperty,
             // without including a parameter for version, jackson will use direct field access after
@@ -193,7 +193,7 @@ public class PointcutConfig {
         return new PointcutConfig(typeName, methodName, orEmpty(methodArgTypeNames),
                 methodReturnTypeName, orEmpty(methodModifiers), orEmpty(metricName),
                 orEmpty(spanText), spanStackTraceThresholdMillis, orFalse(spanIgnoreSameNested),
-                orEmpty(traceGrouping), orFalse(traceBackground), orEmpty(enabledProperty),
+                orEmpty(transactionName), orFalse(background), orEmpty(enabledProperty),
                 orEmpty(spanEnabledProperty));
     }
 
@@ -225,8 +225,8 @@ public class PointcutConfig {
                 .add("spanText", spanText)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("spanIgnoreSameNested", spanIgnoreSameNested)
-                .add("traceGrouping", traceGrouping)
-                .add("traceBackground", traceBackground)
+                .add("transactionName", transactionName)
+                .add("background", background)
                 .add("enabledProperty", enabledProperty)
                 .add("spanEnabledProperty", spanEnabledProperty)
                 .add("version", version)

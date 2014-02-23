@@ -61,7 +61,8 @@ public class BasicTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getGrouping()).isEqualTo("Level One");
+        assertThat(trace.getHeadline()).isEqualTo("Level One");
+        assertThat(trace.getTransactionName()).isEqualTo("basic test");
         assertThat(trace.getMetricNames()).containsOnly("level one", "level two", "level three",
                 "level four");
         assertThat(trace.getSpans()).hasSize(4);
@@ -92,7 +93,8 @@ public class BasicTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getGrouping()).isEqualTo("Level One");
+        assertThat(trace.getHeadline()).isEqualTo("Level One");
+        assertThat(trace.getTransactionName()).isEqualTo("basic test");
         assertThat(trace.getMetricNames()).containsOnly("level one", "level two", "level three",
                 "level four", "level five");
         assertThat(trace.getSpans()).hasSize(4);
@@ -125,7 +127,8 @@ public class BasicTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getGrouping()).isEqualTo("Level One");
+        assertThat(trace.getHeadline()).isEqualTo("Level One");
+        assertThat(trace.getTransactionName()).isEqualTo("basic test");
         assertThat(trace.getMetricNames()).containsOnly("level one", "level two", "level three",
                 "level four", "level five");
         assertThat(trace.getSpans()).hasSize(5);

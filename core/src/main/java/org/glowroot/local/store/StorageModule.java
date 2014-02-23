@@ -75,28 +75,28 @@ public class StorageModule {
         aggregateDao = new AggregateDao(dataSource);
     }
 
-    public DataSource getDataSource() {
-        return dataSource;
-    }
-
-    public RollingFile getRollingFile() {
-        return rollingFile;
-    }
-
-    public SnapshotDao getSnapshotDao() {
-        return snapshotDao;
+    public AggregateRepository getAggregateRepository() {
+        return aggregateDao;
     }
 
     public SnapshotRepository getSnapshotRepository() {
         return snapshotDao;
     }
 
-    public AggregateRepository getAggregateRepository() {
-        return aggregateDao;
+    public DataSource getDataSource() {
+        return dataSource;
     }
 
     public AggregateDao getAggregateDao() {
         return aggregateDao;
+    }
+
+    public SnapshotDao getSnapshotDao() {
+        return snapshotDao;
+    }
+
+    public RollingFile getRollingFile() {
+        return rollingFile;
     }
 
     @OnlyUsedByTests

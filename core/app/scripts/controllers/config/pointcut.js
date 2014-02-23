@@ -42,7 +42,7 @@ glowroot.controller('PointcutCtrl', [
         $scope.selectedSignature = signature;
         $scope.signatures = [ signature ];
         $scope.spanDefinition = Boolean(data.spanText);
-        $scope.traceDefinition = Boolean(data.traceGrouping);
+        $scope.traceDefinition = Boolean(data.transactionName);
         $scope.spanStackTraceThresholdMillis = data.spanStackTraceThresholdMillis;
       } else {
         $scope.heading = '<New pointcut>';
@@ -253,8 +253,8 @@ glowroot.controller('PointcutCtrl', [
         return;
       }
       if (!newValue) {
-        $scope.config.traceGrouping = '';
-        $scope.config.traceBackground = '';
+        $scope.config.transactionName = '';
+        $scope.config.background = '';
       }
     });
 

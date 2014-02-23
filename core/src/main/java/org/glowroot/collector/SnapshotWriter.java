@@ -61,8 +61,11 @@ public class SnapshotWriter {
         sb.append(snapshot.getDuration());
         sb.append(",\"background\":");
         sb.append(snapshot.isBackground());
-        sb.append(",\"grouping\":\"");
-        sb.append(JsonStringEncoder.getInstance().quoteAsString(snapshot.getGrouping()));
+        sb.append(",\"transactionName\":\"");
+        sb.append(JsonStringEncoder.getInstance().quoteAsString(snapshot.getTransactionName()));
+        sb.append("\"");
+        sb.append(",\"headline\":\"");
+        sb.append(JsonStringEncoder.getInstance().quoteAsString(snapshot.getHeadline()));
         sb.append("\"");
         writeErrorMessage(snapshot);
         writeAttributes(snapshot);

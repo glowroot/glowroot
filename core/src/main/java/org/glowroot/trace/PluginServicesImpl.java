@@ -198,18 +198,18 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public Span startTrace(String grouping, MessageSupplier messageSupplier,
+    public Span startTrace(String transactionName, MessageSupplier messageSupplier,
             MetricName metricName) {
-        return startTrace(grouping, messageSupplier, metricName, false);
+        return startTrace(transactionName, messageSupplier, metricName, false);
     }
 
     @Override
-    public Span startBackgroundTrace(String grouping, MessageSupplier messageSupplier,
+    public Span startBackgroundTrace(String transactionName, MessageSupplier messageSupplier,
             MetricName metricName) {
-        return startTrace(grouping, messageSupplier, metricName, true);
+        return startTrace(transactionName, messageSupplier, metricName, true);
     }
 
-    private Span startTrace(String grouping, MessageSupplier messageSupplier,
+    private Span startTrace(String transactionName, MessageSupplier messageSupplier,
             MetricName metricName, boolean background) {
         if (messageSupplier == null) {
             logger.error("startTrace(): argument 'messageSupplier' must be non-null");
@@ -221,8 +221,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
-            trace = new Trace(clock.currentTimeMillis(), background, grouping, messageSupplier,
-                    (MetricNameImpl) metricName, threadAllocatedBytes, ticker);
+            trace = new Trace(clock.currentTimeMillis(), background, transactionName,
+                    messageSupplier, (MetricNameImpl) metricName, threadAllocatedBytes, ticker);
             traceRegistry.addTrace(trace);
             fineProfileScheduler.maybeScheduleFineProfilingUsingPercentage(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
@@ -302,10 +302,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setTraceGrouping(String grouping) {
+    public void setTransactionName(String transactionName) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
-            trace.setGrouping(grouping);
+            trace.setTransactionName(transactionName);
         }
     }
 

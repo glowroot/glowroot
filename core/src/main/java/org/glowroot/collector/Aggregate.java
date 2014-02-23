@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,27 +26,36 @@ import org.glowroot.markers.OnlyUsedByTests;
 @NotThreadSafe
 public class Aggregate {
 
-    private long durationTotal;
-    private long traceCount;
+    private long totalMillis;
+    private long count;
+    private long storedTraceCount;
 
     Aggregate() {}
 
     @OnlyUsedByTests
-    public Aggregate(long durationTotal, long traceCount) {
-        this.durationTotal = durationTotal;
-        this.traceCount = traceCount;
+    public Aggregate(long totalMillis, long count) {
+        this.totalMillis = totalMillis;
+        this.count = count;
     }
 
-    public long getDurationTotal() {
-        return durationTotal;
+    public long getTotalMillis() {
+        return totalMillis;
     }
 
-    public long getTraceCount() {
-        return traceCount;
+    public long getCount() {
+        return count;
     }
 
-    void add(long duration) {
-        durationTotal += duration;
-        traceCount++;
+    public long getStoredTraceCount() {
+        return storedTraceCount;
+    }
+
+    void add(long millis) {
+        totalMillis += millis;
+        count++;
+    }
+
+    void addToStoredTraceCount() {
+        storedTraceCount++;
     }
 }

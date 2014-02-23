@@ -187,12 +187,12 @@ public abstract class PluginServices {
      * If there is already an active trace, this method acts the same as
      * {@link #startSpan(MessageSupplier, MetricName)}.
      * 
-     * @param grouping
+     * @param transactionName
      * @param messageSupplier
      * @param metric
      * @return
      */
-    public abstract Span startTrace(String grouping, MessageSupplier messageSupplier,
+    public abstract Span startTrace(String transactionName, MessageSupplier messageSupplier,
             MetricName metricName);
 
     /**
@@ -203,13 +203,13 @@ public abstract class PluginServices {
      * {@link #startSpan(MessageSupplier, MetricName)} (the background flag is not modified on the
      * existing trace).
      * 
-     * @param grouping
+     * @param transactionName
      * @param messageSupplier
      * @param metric
      * @return
      */
-    public abstract Span startBackgroundTrace(String grouping, MessageSupplier messageSupplier,
-            MetricName metricName);
+    public abstract Span startBackgroundTrace(String transactionName,
+            MessageSupplier messageSupplier, MetricName metricName);
 
     /**
      * Creates and starts a span with the given {@code messageSupplier}. A metric timer for the
@@ -268,7 +268,14 @@ public abstract class PluginServices {
      */
     public abstract CompletedSpan addErrorSpan(ErrorMessage errorMessage);
 
-    public abstract void setTraceGrouping(String grouping);
+    /**
+     * Set the transaction name that is used for aggregation.
+     * 
+     * If there is no current trace, this method does nothing.
+     * 
+     * @param transactionName
+     */
+    public abstract void setTransactionName(String transactionName);
 
     /**
      * Marks the trace as an error with the given message. Normally traces are only marked as an
@@ -403,12 +410,12 @@ public abstract class PluginServices {
         @Override
         public void registerConfigListener(ConfigListener listener) {}
         @Override
-        public Span startTrace(String grouping, MessageSupplier messageSupplier,
+        public Span startTrace(String transactionName, MessageSupplier messageSupplier,
                 MetricName metricName) {
             return NopSpan.INSTANCE;
         }
         @Override
-        public Span startBackgroundTrace(String grouping, MessageSupplier messageSupplier,
+        public Span startBackgroundTrace(String transactionName, MessageSupplier messageSupplier,
                 MetricName metricName) {
             return NopSpan.INSTANCE;
         }
@@ -429,7 +436,7 @@ public abstract class PluginServices {
             return NopCompletedSpan.INSTANCE;
         }
         @Override
-        public void setTraceGrouping(String grouping) {}
+        public void setTransactionName(String transactionName) {}
         @Override
         public void setTraceError(@Nullable String error) {}
         @Override

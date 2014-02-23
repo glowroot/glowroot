@@ -49,7 +49,8 @@ public class Trace {
     private final long captureTime;
     private final long duration;
     private final boolean background;
-    private final String grouping;
+    private final String headline;
+    private final String transactionName;
     @Nullable
     private final String error;
     @Nullable
@@ -69,9 +70,10 @@ public class Trace {
     private final boolean summary;
 
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
-            long duration, boolean background, String grouping, @Nullable String error,
-            @Nullable String user, @ReadOnly Map<String, /*@Nullable*/String> attributes,
-            @ReadOnly List<Metric> metrics, JvmInfo jvmInfo, @ReadOnly @Nullable List<Span> spans,
+            long duration, boolean background, String headline, String transactionName,
+            @Nullable String error, @Nullable String user,
+            @ReadOnly Map<String, /*@Nullable*/String> attributes, @ReadOnly List<Metric> metrics,
+            JvmInfo jvmInfo, @ReadOnly @Nullable List<Span> spans,
             @Nullable MergedStackTreeNode coarseMergedStackTree,
             @Nullable MergedStackTreeNode fineMergedStackTree, boolean summary) {
         this.id = id;
@@ -81,7 +83,8 @@ public class Trace {
         this.captureTime = captureTime;
         this.duration = duration;
         this.background = background;
-        this.grouping = grouping;
+        this.headline = headline;
+        this.transactionName = transactionName;
         this.error = error;
         this.user = user;
         this.attributes = attributes;
@@ -121,8 +124,12 @@ public class Trace {
         return background;
     }
 
-    public String getGrouping() {
-        return grouping;
+    public String getHeadline() {
+        return headline;
+    }
+
+    public String getTransactionName() {
+        return transactionName;
     }
 
     @Nullable
@@ -210,8 +217,9 @@ public class Trace {
                 .add("captureTime", captureTime)
                 .add("duration", duration)
                 .add("background", background)
-                .add("grouping", grouping)
-                .add("errorMessage", error)
+                .add("headline", headline)
+                .add("transactionName", transactionName)
+                .add("error", error)
                 .add("user", user)
                 .add("attributes", attributes)
                 .add("metrics", metrics)
@@ -232,7 +240,8 @@ public class Trace {
             @JsonProperty("captureTime") @Nullable Long captureTime,
             @JsonProperty("duration") @Nullable Long duration,
             @JsonProperty("background") @Nullable Boolean background,
-            @JsonProperty("grouping") @Nullable String grouping,
+            @JsonProperty("headline") @Nullable String headline,
+            @JsonProperty("transactionName") @Nullable String transactionName,
             @JsonProperty("error") @Nullable String error,
             @JsonProperty("user") @Nullable String user,
             @JsonProperty("attributes") @Nullable Map<String, /*@Nullable*/String> attributes,
@@ -250,11 +259,12 @@ public class Trace {
         checkRequiredProperty(captureTime, "captureTime");
         checkRequiredProperty(duration, "duration");
         checkRequiredProperty(background, "background");
-        checkRequiredProperty(grouping, "grouping");
+        checkRequiredProperty(headline, "headline");
+        checkRequiredProperty(transactionName, "transactionName");
         checkRequiredProperty(metrics, "metrics");
         checkRequiredProperty(jvmInfo, "jvmInfo");
-        return new Trace(id, active, stuck, startTime, captureTime, duration, background, grouping,
-                error, user, nullToEmpty(attributes), metrics, jvmInfo, spans,
+        return new Trace(id, active, stuck, startTime, captureTime, duration, background, headline,
+                transactionName, error, user, nullToEmpty(attributes), metrics, jvmInfo, spans,
                 coarseMergedStackTree, fineMergedStackTree, nullToFalse(summary));
     }
 }

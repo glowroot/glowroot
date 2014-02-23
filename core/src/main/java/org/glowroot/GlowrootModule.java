@@ -62,7 +62,7 @@ public class GlowrootModule {
     private final LocalUiModule uiModule;
 
     GlowrootModule(@ReadOnly Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, String version)
+            @Nullable Instrumentation instrumentation, String version, boolean aggregatorDisabled)
             throws StartupFailedException {
         Ticker ticker = Ticker.systemTicker();
         Clock clock = Clock.systemClock();
@@ -89,7 +89,7 @@ public class GlowrootModule {
         }
         collectorModule = new CollectorModule(clock, ticker, configModule,
                 storageModule.getSnapshotRepository(), storageModule.getAggregateRepository(),
-                scheduledExecutor);
+                scheduledExecutor, aggregatorDisabled);
         traceModule = new TraceModule(ticker, clock, configModule,
                 collectorModule.getTraceCollector(),
                 jvmModule.getThreadAllocatedBytes().getService(), instrumentation,

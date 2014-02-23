@@ -61,20 +61,23 @@ public class NestableCallAspect {
         @OnBefore
         public static Span onBefore() {
             int count = counter.getAndIncrement();
-            String grouping;
+            String headline;
+            String transactionName;
             if (random.nextBoolean()) {
-                grouping = "Nestable with a very long trace grouping to test wrapping"
+                headline = "Nestable with a very long trace headline to test wrapping"
                         + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz";
+                transactionName = "Nestable with a very long trace headline";
             } else {
-                grouping = Strings.repeat(String.valueOf((char) ('a' + random.nextInt(26))), 40);
+                headline = Strings.repeat(String.valueOf((char) ('a' + random.nextInt(26))), 40);
+                transactionName = headline;
             }
             Span span;
             if (count % 2 == 0) {
-                span = pluginServices.startTrace(grouping, getRootMessageSupplier(grouping),
+                span = pluginServices.startTrace(transactionName, getRootMessageSupplier(headline),
                         metricName);
             } else {
-                span = pluginServices.startBackgroundTrace(grouping,
-                        getRootMessageSupplier(grouping), metricName);
+                span = pluginServices.startBackgroundTrace(transactionName,
+                        getRootMessageSupplier(headline), metricName);
             }
             int index = count % (USERS.size() + 1);
             if (index < USERS.size()) {

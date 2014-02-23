@@ -18,6 +18,7 @@ package org.glowroot.local.store;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.junit.After;
 import org.junit.Before;
@@ -54,27 +55,63 @@ public class AggregateDaoTest {
     public void shouldReadAggregates() {
         // given
         Aggregate aggregate = new Aggregate(1000, 10);
-        Map<String, Aggregate> groupAggregates = Maps.newHashMap();
-        groupAggregates.put("one", new Aggregate(100, 1));
-        groupAggregates.put("two", new Aggregate(300, 2));
-        groupAggregates.put("seven", new Aggregate(1400, 7));
-        aggregateDao.store(10000, aggregate, groupAggregates);
-        aggregateDao.store(20000, aggregate, groupAggregates);
+        Aggregate bgAggregate = new Aggregate(0, 0);
+        Map<String, Aggregate> transactionAggregates = Maps.newHashMap();
+        transactionAggregates.put("one", new Aggregate(100, 1));
+        transactionAggregates.put("two", new Aggregate(300, 2));
+        transactionAggregates.put("seven", new Aggregate(1400, 7));
+        Map<String, Aggregate> bgTransactionAggregates = ImmutableMap.of();
+        aggregateDao.store(10000, aggregate, transactionAggregates, bgAggregate,
+                bgTransactionAggregates);
+        aggregateDao.store(20000, aggregate, transactionAggregates, bgAggregate,
+                bgTransactionAggregates);
         // when
-        List<AggregatePoint> aggregateIntervals = aggregateDao.readAggregates(0, 100000);
-        List<GroupingAggregate> groupingAggregates =
-                aggregateDao.readGroupingAggregates(0, 100000, 10);
+        List<AggregatePoint> aggregatePoints = aggregateDao.readPoints(0, 100000);
+        List<TransactionAggregate> storedTransactionAggregates =
+                aggregateDao.readTransactionAggregates(0, 100000, 10);
         // then
-        assertThat(aggregateIntervals).hasSize(2);
-        assertThat(groupingAggregates).hasSize(3);
-        assertThat(groupingAggregates.get(0).getGrouping()).isEqualTo("seven");
-        assertThat(groupingAggregates.get(0).getDurationTotal()).isEqualTo(2800);
-        assertThat(groupingAggregates.get(0).getTraceCount()).isEqualTo(14);
-        assertThat(groupingAggregates.get(1).getGrouping()).isEqualTo("two");
-        assertThat(groupingAggregates.get(1).getDurationTotal()).isEqualTo(600);
-        assertThat(groupingAggregates.get(1).getTraceCount()).isEqualTo(4);
-        assertThat(groupingAggregates.get(2).getGrouping()).isEqualTo("one");
-        assertThat(groupingAggregates.get(2).getDurationTotal()).isEqualTo(200);
-        assertThat(groupingAggregates.get(2).getTraceCount()).isEqualTo(2);
+        assertThat(aggregatePoints).hasSize(2);
+        assertThat(storedTransactionAggregates).hasSize(3);
+        assertThat(storedTransactionAggregates.get(0).getTransactionName()).isEqualTo("seven");
+        assertThat(storedTransactionAggregates.get(0).getTotalMillis()).isEqualTo(2800);
+        assertThat(storedTransactionAggregates.get(0).getCount()).isEqualTo(14);
+        assertThat(storedTransactionAggregates.get(1).getTransactionName()).isEqualTo("two");
+        assertThat(storedTransactionAggregates.get(1).getTotalMillis()).isEqualTo(600);
+        assertThat(storedTransactionAggregates.get(1).getCount()).isEqualTo(4);
+        assertThat(storedTransactionAggregates.get(2).getTransactionName()).isEqualTo("one");
+        assertThat(storedTransactionAggregates.get(2).getTotalMillis()).isEqualTo(200);
+        assertThat(storedTransactionAggregates.get(2).getCount()).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldReadBgAggregates() {
+        // given
+        Aggregate aggregate = new Aggregate(0, 0);
+        Aggregate bgAggregate = new Aggregate(1000, 10);
+        Map<String, Aggregate> transactionAggregates = ImmutableMap.of();
+        Map<String, Aggregate> bgTransactionAggregates = Maps.newHashMap();
+        bgTransactionAggregates.put("one", new Aggregate(100, 1));
+        bgTransactionAggregates.put("two", new Aggregate(300, 2));
+        bgTransactionAggregates.put("seven", new Aggregate(1400, 7));
+        aggregateDao.store(10000, aggregate, transactionAggregates, bgAggregate,
+                bgTransactionAggregates);
+        aggregateDao.store(20000, aggregate, transactionAggregates, bgAggregate,
+                bgTransactionAggregates);
+        // when
+        List<AggregatePoint> aggregatePoints = aggregateDao.readBgPoints(0, 100000);
+        List<TransactionAggregate> storedBgTransactionAggregates =
+                aggregateDao.readBgTransactionAggregate(0, 100000, 10);
+        // then
+        assertThat(aggregatePoints).hasSize(2);
+        assertThat(storedBgTransactionAggregates).hasSize(3);
+        assertThat(storedBgTransactionAggregates.get(0).getTransactionName()).isEqualTo("seven");
+        assertThat(storedBgTransactionAggregates.get(0).getTotalMillis()).isEqualTo(2800);
+        assertThat(storedBgTransactionAggregates.get(0).getCount()).isEqualTo(14);
+        assertThat(storedBgTransactionAggregates.get(1).getTransactionName()).isEqualTo("two");
+        assertThat(storedBgTransactionAggregates.get(1).getTotalMillis()).isEqualTo(600);
+        assertThat(storedBgTransactionAggregates.get(1).getCount()).isEqualTo(4);
+        assertThat(storedBgTransactionAggregates.get(2).getTransactionName()).isEqualTo("one");
+        assertThat(storedBgTransactionAggregates.get(2).getTotalMillis()).isEqualTo(200);
+        assertThat(storedBgTransactionAggregates.get(2).getCount()).isEqualTo(2);
     }
 }

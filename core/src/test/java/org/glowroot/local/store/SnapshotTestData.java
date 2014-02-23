@@ -35,11 +35,12 @@ class SnapshotTestData {
         return Snapshot.builder()
                 .id("abc" + counter.getAndIncrement())
                 .stuck(false)
-                .startTime(0)
-                .captureTime(0)
+                .startTime(1)
+                .captureTime(11)
                 .duration(MILLISECONDS.toNanos(10))
                 .background(false)
-                .grouping("test grouping")
+                .transactionName("test transaction name")
+                .headline("test headline")
                 .user("j")
                 .spans(CharSource.wrap("[{\"offset\":0,\"duration\":0,\"index\":0,"
                         + "\"level\":0,\"message\":{\"text\":\"Level One\","

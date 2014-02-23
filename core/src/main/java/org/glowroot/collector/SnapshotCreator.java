@@ -90,7 +90,8 @@ public class SnapshotCreator {
         builder.captureTime(captureTime);
         builder.duration(captureTick - trace.getStartTick());
         builder.background(trace.isBackground());
-        builder.grouping(trace.getGrouping());
+        builder.transactionName(trace.getTransactionName());
+        builder.headline(trace.getHeadline());
         builder.error(trace.getError());
         builder.user(trace.getUser());
         builder.attributes(writeAttributesAsString(trace.getAttributes()));

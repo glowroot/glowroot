@@ -211,9 +211,9 @@ public class ConfigTest {
         assertThat(pointcutConfigSection.getSpanStackTraceThresholdTextTextField()
                 .getAttribute("value")).isEqualTo("");
         assertThat(pointcutConfigSection.getTraceDefinitionCheckbox().isSelected()).isTrue();
-        assertThat(pointcutConfigSection.getTraceGroupingTextField().getAttribute("value"))
+        assertThat(pointcutConfigSection.getTransactionNameTextField().getAttribute("value"))
                 .isEqualTo("a trace");
-        assertThat(pointcutConfigSection.getTraceBackgroundCheckbox().isSelected()).isFalse();
+        assertThat(pointcutConfigSection.getBackgroundCheckbox().isSelected()).isFalse();
     }
 
     @Test
@@ -276,8 +276,8 @@ public class ConfigTest {
         assertThat(pointcutConfigSection.getSpanStackTraceThresholdTextTextField().isDisplayed())
                 .isFalse();
         assertThat(pointcutConfigSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
-        assertThat(pointcutConfigSection.getTraceGroupingTextField().isDisplayed()).isFalse();
-        assertThat(pointcutConfigSection.getTraceBackgroundCheckbox().isDisplayed()).isFalse();
+        assertThat(pointcutConfigSection.getTransactionNameTextField().isDisplayed()).isFalse();
+        assertThat(pointcutConfigSection.getBackgroundCheckbox().isDisplayed()).isFalse();
     }
 
     @Test
@@ -314,8 +314,8 @@ public class ConfigTest {
         assertThat(pointcutConfigSection.getSpanStackTraceThresholdTextTextField()
                 .getAttribute("value")).isEqualTo("");
         assertThat(pointcutConfigSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
-        assertThat(pointcutConfigSection.getTraceGroupingTextField().isDisplayed()).isFalse();
-        assertThat(pointcutConfigSection.getTraceBackgroundCheckbox().isDisplayed()).isFalse();
+        assertThat(pointcutConfigSection.getTransactionNameTextField().isDisplayed()).isFalse();
+        assertThat(pointcutConfigSection.getBackgroundCheckbox().isDisplayed()).isFalse();
     }
 
     private void createPointcutConfig(PointcutConfigListPage pointcutConfigListPage) {
@@ -331,8 +331,8 @@ public class ConfigTest {
         pointcutConfigSection.getSpanTextTextField().clear();
         pointcutConfigSection.getSpanTextTextField().sendKeys("a span");
         pointcutConfigSection.getTraceDefinitionCheckbox().click();
-        pointcutConfigSection.getTraceGroupingTextField().clear();
-        pointcutConfigSection.getTraceGroupingTextField().sendKeys("a trace");
+        pointcutConfigSection.getTransactionNameTextField().clear();
+        pointcutConfigSection.getTransactionNameTextField().sendKeys("a trace");
         pointcutConfigSection.getAddButton().click();
         // getSaveButton() waits for the Save button to become visible (after adding is successful)
         pointcutConfigSection.getSaveButton();
