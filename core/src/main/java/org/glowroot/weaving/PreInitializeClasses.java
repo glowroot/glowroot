@@ -342,10 +342,7 @@ class PreInitializeClasses {
         types.add("com.fasterxml.jackson.core.PrettyPrinter");
         types.add("com.fasterxml.jackson.core.SerializableString");
         types.add("com.fasterxml.jackson.core.TreeCodec");
-        // com.fasterxml.jackson.core.Versioned interface is stripped by proguard
-        if (exists("com.fasterxml.jackson.core.Versioned")) {
-            types.add("com.fasterxml.jackson.core.Versioned");
-        }
+        types.add("com.fasterxml.jackson.core.Versioned");
         types.add("com.fasterxml.jackson.core.io.SerializedString");
         types.add("com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer");
         types.add("com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer$Bucket");

@@ -32,9 +32,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class PreInitializeClassesTest {
 
+    // TODO this test should be run against glowroot after shading
     @Test
     public void shouldCheckHardcodedListAgainstReality() throws IOException {
-        // this test must be run against glowroot after shading/proguard
         GlobalCollector globalCollector = new GlobalCollector();
         // register WeavingMetricImpl since the WeavingClassFileTransformer constructor accepts the
         // WeavingMetricName interface and so WeavingMetricNameImpl would otherwise co unseen
