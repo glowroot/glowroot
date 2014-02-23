@@ -102,7 +102,7 @@ TraceRenderer = (function () {
 
   Handlebars.registerHelper('date', function (timestamp) {
     // TODO internationalize time format
-    return moment(timestamp).format('h:mm:ss.SSS a (Z)');
+    return moment(timestamp).format('YYYY-MM-DD h:mm:ss.SSS a (Z)');
   });
 
   Handlebars.registerHelper('nanosToMillis', function (nanos) {
