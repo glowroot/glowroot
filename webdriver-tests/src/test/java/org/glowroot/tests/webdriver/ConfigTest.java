@@ -163,6 +163,9 @@ public class ConfigTest {
         generalPage.getMaxSpansTextField().clear();
         generalPage.getMaxSpansTextField().sendKeys("4567");
         generalPage.getSaveButton().click();
+        // wait for save to complete
+        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
+                ExpectedConditions.elementToBeClickable(generalPage.getSaveButton())));
 
         // then
         app.openHomePage();
