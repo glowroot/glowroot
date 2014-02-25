@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@ glowroot.controller('ConfigStorageCtrl', [
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
-    $scope.$watch('page.snapshotExpirationDays', function (newValue) {
+    $scope.$watch('page.traceExpirationDays', function (newValue) {
       if ($scope.config) {
-        $scope.config.snapshotExpirationHours = newValue * 24;
+        $scope.config.traceExpirationHours = newValue * 24;
       }
     });
 
@@ -42,7 +42,7 @@ glowroot.controller('ConfigStorageCtrl', [
       $scope.originalConfig = angular.copy(data.config);
 
       $scope.dataDir = data.dataDir;
-      $scope.page.snapshotExpirationDays = data.config.snapshotExpirationHours / 24;
+      $scope.page.traceExpirationDays = data.config.traceExpirationHours / 24;
     }
 
     $scope.save = function (deferred) {

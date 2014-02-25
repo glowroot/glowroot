@@ -283,7 +283,7 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(StorageConfig config) {
-        config.setSnapshotExpirationHours(config.getSnapshotExpirationHours() + 1);
+        config.setTraceExpirationHours(config.getTraceExpirationHours() + 1);
         config.setRollingSizeMb(config.getRollingSizeMb() + 1);
     }
 

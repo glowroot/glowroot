@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
  */
 public class StorageConfig {
 
-    private int snapshotExpirationHours;
+    private int traceExpirationHours;
     private int rollingSizeMb;
 
     private final String version;
@@ -39,12 +39,12 @@ public class StorageConfig {
         this.version = version;
     }
 
-    public int getSnapshotExpirationHours() {
-        return snapshotExpirationHours;
+    public int getTraceExpirationHours() {
+        return traceExpirationHours;
     }
 
-    public void setSnapshotExpirationHours(int snapshotExpirationHours) {
-        this.snapshotExpirationHours = snapshotExpirationHours;
+    public void setTraceExpirationHours(int traceExpirationHours) {
+        this.traceExpirationHours = traceExpirationHours;
     }
 
     public int getRollingSizeMb() {
@@ -67,7 +67,7 @@ public class StorageConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(snapshotExpirationHours, that.snapshotExpirationHours)
+            return Objects.equal(traceExpirationHours, that.traceExpirationHours)
                     && Objects.equal(rollingSizeMb, that.rollingSizeMb);
         }
         return false;
@@ -79,14 +79,14 @@ public class StorageConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(snapshotExpirationHours, rollingSizeMb);
+        return Objects.hashCode(traceExpirationHours, rollingSizeMb);
     }
 
     @Override
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("snapshotExpirationHours", snapshotExpirationHours)
+                .add("traceExpirationHours", traceExpirationHours)
                 .add("rollingSizeMb", rollingSizeMb)
                 .add("version", version)
                 .toString();
@@ -94,14 +94,14 @@ public class StorageConfig {
 
     @JsonCreator
     static StorageConfig readValue(
-            @JsonProperty("snapshotExpirationHours") @Nullable Integer snapshotExpirationHours,
+            @JsonProperty("traceExpirationHours") @Nullable Integer traceExpirationHours,
             @JsonProperty("rollingSizeMb") @Nullable Integer rollingSizeMb,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(snapshotExpirationHours, "snapshotExpirationHours");
+        checkRequiredProperty(traceExpirationHours, "traceExpirationHours");
         checkRequiredProperty(rollingSizeMb, "rollingSizeMb");
         checkRequiredProperty(version, "version");
         StorageConfig config = new StorageConfig(version);
-        config.setSnapshotExpirationHours(snapshotExpirationHours);
+        config.setTraceExpirationHours(traceExpirationHours);
         config.setRollingSizeMb(rollingSizeMb);
         return config;
     }

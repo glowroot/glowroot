@@ -42,11 +42,11 @@ class ReaperScheduledRunnable extends ScheduledRunnable {
 
     @Override
     protected void runInternal() {
-        int snapshotExpirationHours = configService.getStorageConfig()
-                .getSnapshotExpirationHours();
-        if (snapshotExpirationHours != GeneralConfig.SNAPSHOT_EXPIRATION_DISABLED) {
+        int traceExpirationHours = configService.getStorageConfig()
+                .getTraceExpirationHours();
+        if (traceExpirationHours != GeneralConfig.SNAPSHOT_EXPIRATION_DISABLED) {
             snapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis()
-                    - HOURS.toMillis(snapshotExpirationHours));
+                    - HOURS.toMillis(traceExpirationHours));
         }
     }
 }

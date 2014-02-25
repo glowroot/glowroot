@@ -25,9 +25,9 @@
          gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl">
-      <div class="form-group" ng-class="{'has-error': formCtrl.snapshotExpirationDays.$invalid}">
-        <label class="col-lg-3 control-label" for="snapshotExpirationDays">
-          Keep trace snapshot for
+      <div class="form-group" ng-class="{'has-error': formCtrl.traceExpirationDays.$invalid}">
+        <label class="col-lg-3 control-label" for="traceExpirationDays">
+          Keep traces for
         </label>
         <div class="col-lg-9">
           <div class="row">
@@ -35,9 +35,9 @@
               <div class="input-group">
                 <input type="text"
                        class="form-control"
-                       ng-model="page.snapshotExpirationDays"
-                       name="snapshotExpirationDays"
-                       id="snapshotExpirationDays"
+                       ng-model="page.traceExpirationDays"
+                       name="traceExpirationDays"
+                       id="traceExpirationDays"
                        ng-pattern="pattern.integer"
                        ng-required="loaded"
                        style="width: 7em;">
@@ -48,14 +48,14 @@
               <div gt-button
                    gt-label="Delete All"
                    gt-click="deleteAll(deferred)"
-                   gt-btn-class="btn-config-delete-all-snapshot"
+                   gt-btn-class="btn-config-delete-all-traces"
                    gt-dont-validate-form="true">
               </div>
             </div>
           </div>
           <div class="help-block">
-            Defines how long the trace snapshots should be retained in the H2 data file.
-            <em>Delete All</em> will clear all trace snapshots from the H2 data file.
+            Defines how long the trace should be retained in the H2 data file.
+            <em>Delete All</em> will clear all traces from the H2 data file.
           </div>
         </div>
       </div>

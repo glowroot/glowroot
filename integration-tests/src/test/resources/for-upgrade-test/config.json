@@ -23,7 +23,7 @@
     "fineProfiling" : true
   },
   "storage" : {
-    "snapshotExpirationHours" : -1,
+    "traceExpirationHours" : -1,
     "rollingSizeMb" : 1000
   },
   "ui" : {

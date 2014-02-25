@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import org.glowroot.markers.UsedByJsonBinding;
 @Immutable
 public class StorageConfig {
 
-    private final int snapshotExpirationHours;
+    private final int traceExpirationHours;
     // size of fixed-length rolling database for storing trace details (spans and merged stack
     // traces)
     private final int rollingSizeMb;
@@ -43,9 +43,9 @@ public class StorageConfig {
     private final String version;
 
     static StorageConfig getDefault() {
-        final int snapshotExpirationHours = 24 * 7;
+        final int traceExpirationHours = 24 * 7;
         final int rollingSizeMb = 1000;
-        return new StorageConfig(snapshotExpirationHours, rollingSizeMb);
+        return new StorageConfig(traceExpirationHours, rollingSizeMb);
     }
 
     public static Overlay overlay(StorageConfig base) {
@@ -53,14 +53,14 @@ public class StorageConfig {
     }
 
     @VisibleForTesting
-    public StorageConfig(int snapshotExpirationHours, int rollingSizeMb) {
-        this.snapshotExpirationHours = snapshotExpirationHours;
+    public StorageConfig(int traceExpirationHours, int rollingSizeMb) {
+        this.traceExpirationHours = traceExpirationHours;
         this.rollingSizeMb = rollingSizeMb;
-        this.version = VersionHashes.sha1(snapshotExpirationHours, rollingSizeMb);
+        this.version = VersionHashes.sha1(traceExpirationHours, rollingSizeMb);
     }
 
-    public int getSnapshotExpirationHours() {
-        return snapshotExpirationHours;
+    public int getTraceExpirationHours() {
+        return traceExpirationHours;
     }
 
     public int getRollingSizeMb() {
@@ -76,7 +76,7 @@ public class StorageConfig {
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("snapshotExpirationHours", snapshotExpirationHours)
+                .add("traceExpirationHours", traceExpirationHours)
                 .add("rollingSizeMb", rollingSizeMb)
                 .add("version", version)
                 .toString();
@@ -86,21 +86,21 @@ public class StorageConfig {
     @UsedByJsonBinding
     public static class Overlay {
 
-        private int snapshotExpirationHours;
+        private int traceExpirationHours;
         private int rollingSizeMb;
 
         private Overlay(StorageConfig base) {
-            snapshotExpirationHours = base.snapshotExpirationHours;
+            traceExpirationHours = base.traceExpirationHours;
             rollingSizeMb = base.rollingSizeMb;
         }
-        public void setSnapshotExpirationHours(int snapshotExpirationHours) {
-            this.snapshotExpirationHours = snapshotExpirationHours;
+        public void setTraceExpirationHours(int traceExpirationHours) {
+            this.traceExpirationHours = traceExpirationHours;
         }
         public void setRollingSizeMb(int rollingSizeMb) {
             this.rollingSizeMb = rollingSizeMb;
         }
         public StorageConfig build() {
-            return new StorageConfig(snapshotExpirationHours, rollingSizeMb);
+            return new StorageConfig(traceExpirationHours, rollingSizeMb);
         }
     }
 }

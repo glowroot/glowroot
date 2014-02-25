@@ -154,7 +154,7 @@ class LocalConfigService implements ConfigService {
     public StorageConfig getStorageConfig() {
         org.glowroot.config.StorageConfig coreConfig = configService.getStorageConfig();
         StorageConfig config = new StorageConfig(coreConfig.getVersion());
-        config.setSnapshotExpirationHours(coreConfig.getSnapshotExpirationHours());
+        config.setTraceExpirationHours(coreConfig.getTraceExpirationHours());
         config.setRollingSizeMb(coreConfig.getRollingSizeMb());
         return config;
     }
@@ -162,7 +162,7 @@ class LocalConfigService implements ConfigService {
     @Override
     public void updateStorageConfig(StorageConfig config) throws Exception {
         org.glowroot.config.StorageConfig updatedConfig =
-                new org.glowroot.config.StorageConfig(config.getSnapshotExpirationHours(),
+                new org.glowroot.config.StorageConfig(config.getTraceExpirationHours(),
                         config.getRollingSizeMb());
         configService.updateStorageConfig(updatedConfig, config.getVersion());
     }
