@@ -344,6 +344,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
+    public boolean isInTrace() {
+        return traceRegistry.getCurrentTrace() != null;
+    }
+
+    @Override
     public void onChange() {
         GeneralConfig generalConfig = configService.getGeneralConfig();
         if (pluginId == null) {

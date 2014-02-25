@@ -231,6 +231,9 @@ public abstract class PluginServices {
      * span will be escalated to a real span. A hard cap ({@code maxSpans * 2}) on the total number
      * of (real) spans is applied when escalating dummy spans to real spans.
      * 
+     * If there is no current trace, this method does nothing, and returns a no-op instance of
+     * {@link Span}.
+     * 
      * @param messageSupplier
      * @param metric
      * @return
@@ -242,6 +245,9 @@ public abstract class PluginServices {
      * metric, it will keep an internal counter of the number of starts, and it will only end the
      * timer after the corresponding number of ends.
      * 
+     * If there is no current trace, this method does nothing, and returns a no-op instance of
+     * {@link MetricTimer}.
+     * 
      * @param metric
      * @return the timer for calling stop
      */
@@ -250,7 +256,11 @@ public abstract class PluginServices {
     /**
      * Adds a span with duration zero.
      * 
-     * Once a trace has accumulated {@code maxSpans} spans, this method does nothing.
+     * Once a trace has accumulated {@code maxSpans} spans, this method does nothing, and returns a
+     * no-op instance of {@link CompletedSpan}.
+     * 
+     * If there is no current trace, this method does nothing, and returns a no-op instance of
+     * {@link CompletedSpan}.
      * 
      * @param messageSupplier
      */
@@ -263,6 +273,9 @@ public abstract class PluginServices {
      * This method bypasses the regular {@code maxSpans} check so that errors after {@code maxSpans}
      * will still be included in the trace. A hard cap ({@code maxSpans * 2}) on the total number of
      * spans is still applied, after which this method does nothing.
+     * 
+     * If there is no current trace, this method does nothing, and returns a no-op instance of
+     * {@link CompletedSpan}.
      * 
      * @param errorMessage
      */
@@ -291,6 +304,8 @@ public abstract class PluginServices {
      * 
      * If this is called multiple times within a single trace, only the first call has any effect,
      * and subsequent calls are ignored.
+     * 
+     * If there is no current trace, this method does nothing.
      */
     public abstract void setTraceError(String error);
 
@@ -314,6 +329,8 @@ public abstract class PluginServices {
      * {@code user} matches) at the time that this method is called, so it is best to call this
      * method early in the trace.
      * 
+     * If there is no current trace, this method does nothing.
+     * 
      * @param user
      */
     public abstract void setTraceUser(@Nullable String user);
@@ -329,12 +346,24 @@ public abstract class PluginServices {
      * Subsequent calls to this method with the same {@code name} on the same trace (and from the
      * same plugin) will replace the previous {@code value}.
      * 
+     * If there is no current trace, this method does nothing.
+     * 
      * @param name
      *            name of the attribute
      * @param value
      *            value of the attribute
      */
     public abstract void setTraceAttribute(String name, @Nullable String value);
+
+    /**
+     * Returns whether a trace is already being captured.
+     * 
+     * This method has very limited use. It should only be used by top-level pointcuts that define a
+     * trace, and that do not want to create a span if they are already inside of an existing trace.
+     * 
+     * @return whether a trace is already being captured
+     */
+    public abstract boolean isInTrace();
 
     private static PluginServices getPluginServices(String pluginId) {
         try {
@@ -443,6 +472,10 @@ public abstract class PluginServices {
         public void setTraceUser(@Nullable String user) {}
         @Override
         public void setTraceAttribute(String name, @Nullable String value) {}
+        @Override
+        public boolean isInTrace() {
+            return false;
+        }
 
         private static class NopMetric implements MetricName {
             private static final NopMetric INSTANCE = new NopMetric();
