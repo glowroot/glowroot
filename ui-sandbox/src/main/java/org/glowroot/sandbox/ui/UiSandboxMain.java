@@ -77,7 +77,7 @@ public class UiSandboxMain {
         container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
         if (rollOverQuickly) {
             StorageConfig storageConfig = container.getConfigService().getStorageConfig();
-            storageConfig.setRollingSizeMb(10);
+            storageConfig.setCappedDatabaseSizeMb(10);
             container.getConfigService().updateStorageConfig(storageConfig);
         }
         container.executeAppUnderTest(GenerateTraces.class);

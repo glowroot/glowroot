@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ import org.glowroot.config.StorageConfig;
 import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.config.UserInterfaceConfig.CurrentPasswordIncorrectException;
 import org.glowroot.config.UserOverridesConfig;
-import org.glowroot.local.store.RollingFile;
+import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.markers.Singleton;
 import org.glowroot.trace.PointcutConfigAdviceCache;
@@ -73,7 +73,7 @@ class ConfigJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ConfigService configService;
-    private final RollingFile rollingFile;
+    private final CappedDatabase cappedDatabase;
     private final PluginDescriptorCache pluginDescriptorCache;
     private final File dataDir;
     private final PointcutConfigAdviceCache pointcutConfigAdviceCache;
@@ -83,12 +83,12 @@ class ConfigJsonService {
     @MonotonicNonNull
     private volatile HttpServer httpServer;
 
-    ConfigJsonService(ConfigService configService, RollingFile rollingFile,
+    ConfigJsonService(ConfigService configService, CappedDatabase cappedDatabase,
             PluginDescriptorCache pluginDescriptorCache, File dataDir,
             PointcutConfigAdviceCache pointcutConfigAdviceCache,
             HttpSessionManager httpSessionManager, TraceModule traceModule) {
         this.configService = configService;
-        this.rollingFile = rollingFile;
+        this.cappedDatabase = cappedDatabase;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.dataDir = dataDir;
         this.pointcutConfigAdviceCache = pointcutConfigAdviceCache;
@@ -324,7 +324,7 @@ class ConfigJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         // resize() doesn't do anything if the new and old value are the same
-        rollingFile.resize(configService.getStorageConfig().getRollingSizeMb() * 1024);
+        cappedDatabase.resize(configService.getStorageConfig().getCappedDatabaseSizeMb() * 1024);
         return getStorage();
     }
 

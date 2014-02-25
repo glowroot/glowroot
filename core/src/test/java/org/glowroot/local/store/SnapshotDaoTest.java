@@ -38,9 +38,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class SnapshotDaoTest {
 
     private DataSource dataSource;
-    private File rollingDbFile;
+    private File cappedFile;
     private ScheduledExecutorService scheduledExecutor;
-    private RollingFile rollingFile;
+    private CappedDatabase cappedDatabase;
     private SnapshotDao snapshotDao;
 
     @Before
@@ -49,19 +49,19 @@ public class SnapshotDaoTest {
         if (dataSource.tableExists("snapshot")) {
             dataSource.execute("drop table snapshot");
         }
-        rollingDbFile = new File("glowroot.rolling.db");
+        cappedFile = new File("glowroot.capped.db");
         scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        rollingFile = new RollingFile(rollingDbFile, 1000000, scheduledExecutor,
+        cappedDatabase = new CappedDatabase(cappedFile, 1000000, scheduledExecutor,
                 Ticker.systemTicker());
-        snapshotDao = new SnapshotDao(dataSource, rollingFile);
+        snapshotDao = new SnapshotDao(dataSource, cappedDatabase);
     }
 
     @After
     public void afterEachTest() throws Exception {
         scheduledExecutor.shutdownNow();
         dataSource.close();
-        rollingFile.close();
-        rollingDbFile.delete();
+        cappedDatabase.close();
+        cappedFile.delete();
     }
 
     @Test

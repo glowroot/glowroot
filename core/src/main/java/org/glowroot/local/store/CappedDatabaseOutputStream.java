@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,11 +40,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class RollingOutputStream extends OutputStream {
+class CappedDatabaseOutputStream extends OutputStream {
 
     static final int HEADER_SKIP_BYTES = 20;
 
-    private static final Logger logger = LoggerFactory.getLogger(RollingOutputStream.class);
+    private static final Logger logger = LoggerFactory.getLogger(CappedDatabaseOutputStream.class);
 
     private static final int FSYNC_INTERVAL_MILLIS = 2000;
     private static final int HEADER_CURR_INDEX_POS = 0;
@@ -53,17 +53,17 @@ class RollingOutputStream extends OutputStream {
     private final Ticker ticker;
     private RandomAccessFile out;
 
-    // currIndex is ever-increasing even over rolling boundary
+    // currIndex is ever-increasing even over capped boundary
     // (btw it would take writing 2.9g per second for 100 years for currIndex to hit Long.MAX_VALUE)
     private long currIndex;
     // lastResizeBaseIndex is the smallest currIndex saved during the last resize
     private long lastResizeBaseIndex;
     // currPosition is the current position in the file
     private long currPosition;
-    // rollingSizeKb is volatile so it can be read outside of the external synchronization around
+    // sizeKb is volatile so it can be read outside of the external synchronization around
     // startBlock()/write()/endBlock()
-    private volatile int rollingSizeKb;
-    private long rollingSizeBytes;
+    private volatile int sizeKb;
+    private long sizeBytes;
 
     private long blockStartIndex;
 
@@ -72,15 +72,16 @@ class RollingOutputStream extends OutputStream {
 
     private final FsyncScheduledRunnable fsyncScheduledRunnable;
 
-    static RollingOutputStream create(File file, int requestedRollingSizeKb,
+    static CappedDatabaseOutputStream create(File file, int requestedSizeKb,
             ScheduledExecutorService scheduledExecutor, Ticker ticker) throws IOException {
-        RollingOutputStream out = new RollingOutputStream(file, requestedRollingSizeKb, ticker);
+        CappedDatabaseOutputStream out =
+                new CappedDatabaseOutputStream(file, requestedSizeKb, ticker);
         out.fsyncScheduledRunnable.scheduleWithFixedDelay(scheduledExecutor, FSYNC_INTERVAL_MILLIS,
                 FSYNC_INTERVAL_MILLIS, MILLISECONDS);
         return out;
     }
 
-    private RollingOutputStream(File file, int requestedRollingSizeKb, Ticker ticker)
+    private CappedDatabaseOutputStream(File file, int requestedSizeKb, Ticker ticker)
             throws IOException {
         this.file = file;
         this.ticker = ticker;
@@ -88,20 +89,20 @@ class RollingOutputStream extends OutputStream {
         out = new RandomAccessFile(file, "rw");
         if (newFile) {
             currIndex = 0;
-            rollingSizeKb = requestedRollingSizeKb;
-            rollingSizeBytes = rollingSizeKb * 1024L;
+            sizeKb = requestedSizeKb;
+            sizeBytes = sizeKb * 1024L;
             lastResizeBaseIndex = 0;
             out.writeLong(currIndex);
-            out.writeInt(rollingSizeKb);
+            out.writeInt(sizeKb);
             out.writeLong(lastResizeBaseIndex);
         } else {
             currIndex = out.readLong();
             // have to ignore requested fixedLength for existing files, must explicitly call
             // resize() since this can be an expensive operation
-            rollingSizeKb = out.readInt();
-            rollingSizeBytes = rollingSizeKb * 1024L;
+            sizeKb = out.readInt();
+            sizeBytes = sizeKb * 1024L;
             lastResizeBaseIndex = out.readLong();
-            currPosition = (currIndex - lastResizeBaseIndex) % rollingSizeBytes;
+            currPosition = (currIndex - lastResizeBaseIndex) % sizeBytes;
             out.seek(HEADER_SKIP_BYTES + currPosition);
         }
         lastFsyncTick.set(ticker.read());
@@ -124,57 +125,57 @@ class RollingOutputStream extends OutputStream {
 
     boolean isRolledOver(FileBlock block) {
         // need to check lastResizeBaseIndex in case it was recently resized larger, in which case
-        // currIndex - rollingSizeBytes would be less than lastResizeBaseIndex
+        // currIndex - sizeBytes would be less than lastResizeBaseIndex
         return block.getStartIndex() < lastResizeBaseIndex
-                || block.getStartIndex() < currIndex - rollingSizeBytes;
+                || block.getStartIndex() < currIndex - sizeBytes;
     }
 
     // this is ok to read outside of external synchronization around startBlock()/write()/endBlock()
-    int getRollingSizeKb() {
-        return rollingSizeKb;
+    int getSizeKb() {
+        return sizeKb;
     }
 
     long convertToFilePosition(long index) {
-        return (index - lastResizeBaseIndex) % rollingSizeBytes;
+        return (index - lastResizeBaseIndex) % sizeBytes;
     }
 
     // perform resize in-place to avoid using extra disk space
-    void resize(int newRollingSizeKb) throws IOException {
-        if (newRollingSizeKb == rollingSizeKb) {
+    void resize(int newSizeKb) throws IOException {
+        if (newSizeKb == sizeKb) {
             return;
         }
-        long newRollingSizeBytes = newRollingSizeKb * 1024L;
-        if (newRollingSizeKb < rollingSizeKb
-                && currIndex - lastResizeBaseIndex < newRollingSizeBytes) {
+        long newSizeBytes = newSizeKb * 1024L;
+        if (newSizeKb < sizeKb
+                && currIndex - lastResizeBaseIndex < newSizeBytes) {
             // resizing smaller and on first "loop" after a resize and haven't written up to the
             // new smaller size yet
             out.seek(8);
-            out.writeInt(newRollingSizeKb);
-            rollingSizeKb = newRollingSizeKb;
-            rollingSizeBytes = newRollingSizeBytes;
+            out.writeInt(newSizeKb);
+            sizeKb = newSizeKb;
+            sizeBytes = newSizeBytes;
             return;
-        } else if (newRollingSizeKb > rollingSizeKb
-                && currIndex - lastResizeBaseIndex < rollingSizeBytes) {
+        } else if (newSizeKb > sizeKb
+                && currIndex - lastResizeBaseIndex < sizeBytes) {
             // resizing larger and on first "loop" after a resize
             out.seek(8);
-            out.writeInt(newRollingSizeKb);
-            rollingSizeKb = newRollingSizeKb;
-            rollingSizeBytes = newRollingSizeBytes;
+            out.writeInt(newSizeKb);
+            sizeKb = newSizeKb;
+            sizeBytes = newSizeBytes;
             return;
         }
-        // keep the min of the current and new rolling size
-        int numKeepKb = Math.min(rollingSizeKb, newRollingSizeKb);
+        // keep the min of the current and new capped size
+        int numKeepKb = Math.min(sizeKb, newSizeKb);
         long numKeepBytes = numKeepKb * 1024L;
         // at this point, because of the two shortcut conditionals above, currIndex must be >=
-        // either the current or new rolling size (numKeepBytes)
+        // either the current or new capped size (numKeepBytes)
         long startPosition = convertToFilePosition(currIndex - numKeepBytes);
         lastResizeBaseIndex = currIndex - numKeepBytes;
-        File tmpRollingFile = new File(file.getPath() + ".resizing.tmp");
-        RandomAccessFile tmpOut = new RandomAccessFile(tmpRollingFile, "rw");
+        File tmpCappedFile = new File(file.getPath() + ".resizing.tmp");
+        RandomAccessFile tmpOut = new RandomAccessFile(tmpCappedFile, "rw");
         tmpOut.writeLong(currIndex);
-        tmpOut.writeInt(newRollingSizeKb);
+        tmpOut.writeInt(newSizeKb);
         tmpOut.writeLong(lastResizeBaseIndex);
-        long remaining = rollingSizeBytes - startPosition;
+        long remaining = sizeBytes - startPosition;
         if (numKeepBytes > remaining) {
             out.seek(HEADER_SKIP_BYTES + startPosition);
             copy(out, tmpOut, remaining);
@@ -187,14 +188,14 @@ class RollingOutputStream extends OutputStream {
         out.close();
         tmpOut.close();
         if (!file.delete()) {
-            throw new IOException("Unable to delete existing rolling file during resize");
+            throw new IOException("Unable to delete existing capped database during resize");
         }
-        if (!tmpRollingFile.renameTo(file)) {
-            throw new IOException("Unable to rename new rolling file during resize");
+        if (!tmpCappedFile.renameTo(file)) {
+            throw new IOException("Unable to rename new capped database during resize");
         }
-        rollingSizeKb = newRollingSizeKb;
-        rollingSizeBytes = newRollingSizeBytes;
-        if (numKeepBytes == newRollingSizeBytes) {
+        sizeKb = newSizeKb;
+        sizeBytes = newSizeBytes;
+        if (numKeepBytes == newSizeBytes) {
             // shrunk and filled up file
             currPosition = 0;
         } else {
@@ -222,9 +223,9 @@ class RollingOutputStream extends OutputStream {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        if (currIndex + len - blockStartIndex > rollingSizeBytes) {
-            throw new IOException("A single block cannot have more bytes than size of the rolling"
-                    + " file");
+        if (currIndex + len - blockStartIndex > sizeBytes) {
+            throw new IOException("A single block cannot have more bytes than size of the capped"
+                    + " database");
         }
         // update header before writing data in case of abnormal shutdown during writing data
         currIndex += len;
@@ -232,7 +233,7 @@ class RollingOutputStream extends OutputStream {
         out.writeLong(currIndex);
         out.seek(HEADER_SKIP_BYTES + currPosition);
 
-        long remaining = rollingSizeBytes - currPosition;
+        long remaining = sizeBytes - currPosition;
         if (len >= remaining) {
             // intentionally handling == case here
             out.write(b, off, (int) remaining);

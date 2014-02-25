@@ -33,23 +33,23 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class RollingFileTest {
+public class CappedDatabaseTest {
 
     private File tempFile;
     private ScheduledExecutorService scheduledExecutor;
-    private RollingFile rollingFile;
+    private CappedDatabase cappedDatabase;
 
     @Before
     public void onBefore() throws IOException {
-        tempFile = File.createTempFile("glowroot-test-", ".rolling.db");
+        tempFile = File.createTempFile("glowroot-test-", ".capped.db");
         scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        rollingFile = new RollingFile(tempFile, 1, scheduledExecutor, Ticker.systemTicker());
+        cappedDatabase = new CappedDatabase(tempFile, 1, scheduledExecutor, Ticker.systemTicker());
     }
 
     @After
     public void onAfter() throws IOException {
         scheduledExecutor.shutdownNow();
-        rollingFile.close();
+        cappedDatabase.close();
         tempFile.delete();
     }
 
@@ -58,9 +58,9 @@ public class RollingFileTest {
         // given
         String text = "0123456789";
         // when
-        FileBlock block = rollingFile.write(CharSource.wrap(text));
+        FileBlock block = cappedDatabase.write(CharSource.wrap(text));
         // then
-        String text2 = rollingFile.read(block, "").read();
+        String text2 = cappedDatabase.read(block, "").read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -74,11 +74,11 @@ public class RollingFileTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        rollingFile.write(CharSource.wrap(text));
+        cappedDatabase.write(CharSource.wrap(text));
         // when
-        FileBlock block = rollingFile.write(CharSource.wrap(text));
+        FileBlock block = cappedDatabase.write(CharSource.wrap(text));
         // then
-        String text2 = rollingFile.read(block, "").read();
+        String text2 = cappedDatabase.read(block, "").read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -92,12 +92,12 @@ public class RollingFileTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        rollingFile.write(CharSource.wrap(text));
-        rollingFile.write(CharSource.wrap(text));
+        cappedDatabase.write(CharSource.wrap(text));
+        cappedDatabase.write(CharSource.wrap(text));
         // when
-        FileBlock block = rollingFile.write(CharSource.wrap(text));
+        FileBlock block = cappedDatabase.write(CharSource.wrap(text));
         // then
-        String text2 = rollingFile.read(block, "").read();
+        String text2 = cappedDatabase.read(block, "").read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -111,13 +111,13 @@ public class RollingFileTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        FileBlock block = rollingFile.write(CharSource.wrap(text));
-        rollingFile.write(CharSource.wrap(text));
+        FileBlock block = cappedDatabase.write(CharSource.wrap(text));
+        cappedDatabase.write(CharSource.wrap(text));
         // when
-        rollingFile.write(CharSource.wrap(text));
+        cappedDatabase.write(CharSource.wrap(text));
         // then
         // for now, overwritten blocks return empty byte array when read
-        String text2 = rollingFile.read(block, "").read();
+        String text2 = cappedDatabase.read(block, "").read();
         assertThat(text2).isEqualTo("");
     }
 }

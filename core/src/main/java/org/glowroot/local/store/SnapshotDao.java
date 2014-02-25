@@ -65,9 +65,9 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("attributes", Types.VARCHAR), // json data
             new Column("metrics", Types.VARCHAR), // json data
             new Column("jvm_info", Types.VARCHAR), // json data
-            new Column("spans", Types.VARCHAR), // rolling file block id
-            new Column("coarse_merged_stack_tree", Types.VARCHAR), // rolling file block id
-            new Column("fine_merged_stack_tree", Types.VARCHAR)); // rolling file block id
+            new Column("spans", Types.VARCHAR), // capped database block id
+            new Column("coarse_merged_stack_tree", Types.VARCHAR), // capped database block id
+            new Column("fine_merged_stack_tree", Types.VARCHAR)); // capped database block id
 
     // this index includes all of the columns needed for the trace points query so h2 can return
     // result set directly from the index without having to reference the table for each row
@@ -75,11 +75,11 @@ public class SnapshotDao implements SnapshotRepository {
             ImmutableList.of("capture_time", "duration", "id", "error")));
 
     private final DataSource dataSource;
-    private final RollingFile rollingFile;
+    private final CappedDatabase cappedDatabase;
 
-    SnapshotDao(DataSource dataSource, RollingFile rollingFile) throws SQLException {
+    SnapshotDao(DataSource dataSource, CappedDatabase cappedDatabase) throws SQLException {
         this.dataSource = dataSource;
-        this.rollingFile = rollingFile;
+        this.cappedDatabase = cappedDatabase;
         upgradeSnapshotTable(dataSource);
         dataSource.syncTable("snapshot", columns);
         dataSource.syncIndexes("snapshot", indexes);
@@ -91,17 +91,17 @@ public class SnapshotDao implements SnapshotRepository {
         String spansBlockId = null;
         CharSource spans = snapshot.getSpans();
         if (spans != null) {
-            spansBlockId = rollingFile.write(spans).getId();
+            spansBlockId = cappedDatabase.write(spans).getId();
         }
         String coarseMergedStackTreeBlockId = null;
         CharSource coarseMergedStackTree = snapshot.getCoarseMergedStackTree();
         if (coarseMergedStackTree != null) {
-            coarseMergedStackTreeBlockId = rollingFile.write(coarseMergedStackTree).getId();
+            coarseMergedStackTreeBlockId = cappedDatabase.write(coarseMergedStackTree).getId();
         }
         String fineMergedStackTreeBlockId = null;
         CharSource fineMergedStackTree = snapshot.getFineMergedStackTree();
         if (fineMergedStackTree != null) {
-            fineMergedStackTreeBlockId = rollingFile.write(fineMergedStackTree).getId();
+            fineMergedStackTreeBlockId = cappedDatabase.write(fineMergedStackTree).getId();
         }
         try {
             dataSource.update("merge into snapshot (id, stuck, start_time, capture_time, duration,"
@@ -152,7 +152,7 @@ public class SnapshotDao implements SnapshotRepository {
         } else if (partiallyHydratedTraces.size() > 1) {
             logger.error("multiple records returned for id: {}", id);
         }
-        // read from rolling file outside of jdbc connection
+        // read from the capped database outside of jdbc connection
         return partiallyHydratedTraces.get(0).fullyHydrate();
     }
 
@@ -268,7 +268,7 @@ public class SnapshotDao implements SnapshotRepository {
         @Override
         public PartiallyHydratedTrace mapRow(ResultSet resultSet) throws SQLException {
             Snapshot.Builder builder = createBuilder(resultSet);
-            // wait and read from rolling file outside of the jdbc connection
+            // wait and read from the capped database outside of the jdbc connection
             String spansFileBlockId = resultSet.getString(14);
             String coarseMergedStackTreeFileBlockId = resultSet.getString(15);
             String fineMergedStackTreeFileBlockId = resultSet.getString(16);
@@ -280,8 +280,8 @@ public class SnapshotDao implements SnapshotRepository {
     private class PartiallyHydratedTrace {
 
         private final Snapshot.Builder builder;
-        // file block ids are stored temporarily while reading the trace snapshot from the
-        // database so that reading from the rolling file can occur outside of the jdbc connection
+        // file block ids are stored temporarily while reading the trace snapshot from the database
+        // so that reading from the capped database can occur outside of the jdbc connection
         @Nullable
         private final String spansFileBlockId;
         @Nullable
@@ -305,7 +305,7 @@ public class SnapshotDao implements SnapshotRepository {
                 FileBlock block;
                 try {
                     block = FileBlock.from(spansFileBlockId);
-                    builder.spans(rollingFile.read(block, "{\"rolledOver\":true}"));
+                    builder.spans(cappedDatabase.read(block, "{\"rolledOver\":true}"));
                 } catch (InvalidBlockIdFormatException e) {
                     logger.warn(e.getMessage(), e);
                 }
@@ -314,7 +314,8 @@ public class SnapshotDao implements SnapshotRepository {
                 FileBlock block;
                 try {
                     block = FileBlock.from(coarseMergedStackTreeFileBlockId);
-                    builder.coarseMergedStackTree(rollingFile.read(block, "{\"rolledOver\":true}"));
+                    builder.coarseMergedStackTree(
+                            cappedDatabase.read(block, "{\"rolledOver\":true}"));
                 } catch (InvalidBlockIdFormatException e) {
                     logger.warn(e.getMessage(), e);
                 }
@@ -323,7 +324,8 @@ public class SnapshotDao implements SnapshotRepository {
                 FileBlock block;
                 try {
                     block = FileBlock.from(fineMergedStackTreeFileBlockId);
-                    builder.fineMergedStackTree(rollingFile.read(block, "{\"rolledOver\":true}"));
+                    builder.fineMergedStackTree(
+                            cappedDatabase.read(block, "{\"rolledOver\":true}"));
                 } catch (InvalidBlockIdFormatException e) {
                     logger.warn(e.getMessage(), e);
                 }

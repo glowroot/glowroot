@@ -68,10 +68,10 @@ public class SnapshotDaoDeletePerformanceMain {
     private static class GenerateTraces implements AppUnderTest {
         @Override
         public void executeApp() throws InterruptedException {
-            File rollingFile = new File("glowroot.rolling.db");
-            while (rollingFile.length() < 100 * 1024 * 1024) {
+            File cappedFile = new File("glowroot.capped.db");
+            while (cappedFile.length() < 100 * 1024 * 1024) {
                 new NestableCall(new NestableCall(10, 2, 5000), 20, 2, 5000).execute();
-                logger.info("rolling file: {} mb", rollingFile.length() / (1024 * 1024));
+                logger.info("capped file: {} mb", cappedFile.length() / (1024 * 1024));
             }
         }
     }

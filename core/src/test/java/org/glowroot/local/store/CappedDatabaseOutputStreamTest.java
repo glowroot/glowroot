@@ -34,18 +34,18 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class RollingOutputStreamTest {
+public class CappedDatabaseOutputStreamTest {
 
     private File tempFile;
     private ScheduledExecutorService scheduledExecutor;
-    private RollingOutputStream rollingOut;
+    private CappedDatabaseOutputStream cappedOut;
     private RandomAccessFile in;
 
     @Before
     public void onBefore() throws IOException {
-        tempFile = File.createTempFile("glowroot-test-", ".rolling.txt");
+        tempFile = File.createTempFile("glowroot-test-", ".capped.txt");
         scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        rollingOut = RollingOutputStream.create(tempFile, 1, scheduledExecutor,
+        cappedOut = CappedDatabaseOutputStream.create(tempFile, 1, scheduledExecutor,
                 Ticker.systemTicker());
         in = new RandomAccessFile(tempFile, "r");
     }
@@ -53,7 +53,7 @@ public class RollingOutputStreamTest {
     @After
     public void onAfter() throws IOException {
         scheduledExecutor.shutdownNow();
-        rollingOut.close();
+        cappedOut.close();
         in.close();
         tempFile.delete();
     }
@@ -61,21 +61,21 @@ public class RollingOutputStreamTest {
     @Test
     public void shouldWrite() throws IOException {
         // given
-        Writer out = new OutputStreamWriter(rollingOut);
+        Writer out = new OutputStreamWriter(cappedOut);
         String text = "0123456789";
         // when
-        rollingOut.startBlock();
+        cappedOut.startBlock();
         out.write(text);
         out.flush();
-        FileBlock block = rollingOut.endBlock();
-        rollingOut.sync();
+        FileBlock block = cappedOut.endBlock();
+        cappedOut.sync();
         // then
         assertThat(block.getStartIndex()).isEqualTo(0);
         long currIndex = in.readLong();
-        int rollingSizeKb = in.readInt();
+        int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
         assertThat(currIndex).isEqualTo(10);
-        assertThat(rollingSizeKb).isEqualTo(1);
+        assertThat(cappedDatabaseSizeKb).isEqualTo(1);
         assertThat(lastCompactionBaseIndex).isEqualTo(0);
         byte[] bytes = new byte[10];
         in.readFully(bytes, 0, bytes.length);
@@ -86,34 +86,34 @@ public class RollingOutputStreamTest {
     @Test
     public void shouldWrap() throws IOException {
         // given
-        Writer out = new OutputStreamWriter(rollingOut);
+        Writer out = new OutputStreamWriter(cappedOut);
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 60; i++) {
             sb.append("0123456789");
         }
         String text = sb.toString();
-        rollingOut.startBlock();
+        cappedOut.startBlock();
         out.write(text);
         out.flush();
-        rollingOut.endBlock();
+        cappedOut.endBlock();
         // when
-        out = new OutputStreamWriter(rollingOut);
-        rollingOut.startBlock();
+        out = new OutputStreamWriter(cappedOut);
+        cappedOut.startBlock();
         out.write(text);
         out.flush();
-        FileBlock block = rollingOut.endBlock();
+        FileBlock block = cappedOut.endBlock();
         // then
         assertThat(block.getStartIndex()).isEqualTo(600);
         long currIndex = in.readLong();
-        int rollingSizeKb = in.readInt();
+        int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
         assertThat(currIndex).isEqualTo(1200);
-        assertThat(rollingSizeKb).isEqualTo(1);
+        assertThat(cappedDatabaseSizeKb).isEqualTo(1);
         assertThat(lastCompactionBaseIndex).isEqualTo(0);
         byte[] bytes = new byte[600];
-        in.seek(RollingOutputStream.HEADER_SKIP_BYTES + 600);
+        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 600);
         in.readFully(bytes, 0, 424);
-        in.seek(RollingOutputStream.HEADER_SKIP_BYTES);
+        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES);
         in.readFully(bytes, 424, 176);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);
@@ -122,36 +122,36 @@ public class RollingOutputStreamTest {
     @Test
     public void shouldWrapAndKeepGoing() throws IOException {
         // given
-        Writer out = new OutputStreamWriter(rollingOut);
+        Writer out = new OutputStreamWriter(cappedOut);
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 60; i++) {
             sb.append("0123456789");
         }
         String text = sb.toString();
-        rollingOut.startBlock();
+        cappedOut.startBlock();
         out.write(text);
         out.flush();
-        rollingOut.endBlock();
-        rollingOut.startBlock();
+        cappedOut.endBlock();
+        cappedOut.startBlock();
         out.write(text);
         out.flush();
-        rollingOut.endBlock();
+        cappedOut.endBlock();
         // when
-        out = new OutputStreamWriter(rollingOut);
-        rollingOut.startBlock();
+        out = new OutputStreamWriter(cappedOut);
+        cappedOut.startBlock();
         out.write(text);
         out.flush();
-        FileBlock block = rollingOut.endBlock();
+        FileBlock block = cappedOut.endBlock();
         // then
         assertThat(block.getStartIndex()).isEqualTo(1200);
         long currIndex = in.readLong();
-        int rollingSizeKb = in.readInt();
+        int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
         assertThat(currIndex).isEqualTo(1800);
-        assertThat(rollingSizeKb).isEqualTo(1);
+        assertThat(cappedDatabaseSizeKb).isEqualTo(1);
         assertThat(lastCompactionBaseIndex).isEqualTo(0);
         byte[] bytes = new byte[600];
-        in.seek(RollingOutputStream.HEADER_SKIP_BYTES + 176);
+        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 176);
         in.readFully(bytes, 0, bytes.length);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);
@@ -160,35 +160,35 @@ public class RollingOutputStreamTest {
     @Test
     public void shouldWrapAndResize() throws IOException {
         // given
-        Writer out = new OutputStreamWriter(rollingOut);
+        Writer out = new OutputStreamWriter(cappedOut);
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 60; i++) {
             sb.append("0123456789");
         }
         String text = sb.toString();
-        rollingOut.startBlock();
+        cappedOut.startBlock();
         out.write(text);
         out.flush();
-        rollingOut.endBlock();
-        rollingOut.startBlock();
+        cappedOut.endBlock();
+        cappedOut.startBlock();
         out.write(text);
         out.flush();
-        FileBlock block = rollingOut.endBlock();
+        FileBlock block = cappedOut.endBlock();
         // when
         // have to close in before resizing
         in.close();
-        rollingOut.resize(2);
+        cappedOut.resize(2);
         in = new RandomAccessFile(tempFile, "r");
         // then
         assertThat(block.getStartIndex()).isEqualTo(600);
         long currIndex = in.readLong();
-        int rollingSizeKb = in.readInt();
+        int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
         assertThat(currIndex).isEqualTo(1200);
-        assertThat(rollingSizeKb).isEqualTo(2);
+        assertThat(cappedDatabaseSizeKb).isEqualTo(2);
         assertThat(lastCompactionBaseIndex).isEqualTo(176);
         byte[] bytes = new byte[600];
-        in.seek(RollingOutputStream.HEADER_SKIP_BYTES + 424);
+        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 424);
         in.readFully(bytes, 0, 600);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);

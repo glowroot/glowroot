@@ -48,7 +48,7 @@ public class StorageModule {
     private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 60;
 
     private final DataSource dataSource;
-    private final RollingFile rollingFile;
+    private final CappedDatabase cappedDatabase;
     private final SnapshotDao snapshotDao;
     private final ReaperScheduledRunnable reaperScheduledRunnable;
     private final AggregateDao aggregateDao;
@@ -64,10 +64,10 @@ public class StorageModule {
             dataSource = new DataSource(new File(dataDir, "glowroot.h2.db"));
         }
         ConfigService configService = configModule.getConfigService();
-        int rollingSizeMb = configService.getStorageConfig().getRollingSizeMb();
-        rollingFile = new RollingFile(new File(dataDir, "glowroot.rolling.db"),
-                rollingSizeMb * 1024, scheduledExecutor, ticker);
-        snapshotDao = new SnapshotDao(dataSource, rollingFile);
+        int cappedDatabaseSizeMb = configService.getStorageConfig().getCappedDatabaseSizeMb();
+        cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
+                cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
+        snapshotDao = new SnapshotDao(dataSource, cappedDatabase);
         reaperScheduledRunnable =
                 new ReaperScheduledRunnable(configService, snapshotDao, clock);
         reaperScheduledRunnable.scheduleAtFixedRate(scheduledExecutor, 0,
@@ -95,8 +95,8 @@ public class StorageModule {
         return snapshotDao;
     }
 
-    public RollingFile getRollingFile() {
-        return rollingFile;
+    public CappedDatabase getCappedDatabase() {
+        return cappedDatabase;
     }
 
     @OnlyUsedByTests
@@ -104,7 +104,7 @@ public class StorageModule {
         logger.debug("close()");
         reaperScheduledRunnable.cancel();
         try {
-            rollingFile.close();
+            cappedDatabase.close();
         } catch (IOException e) {
             // warning only since it occurs during shutdown anyways
             logger.warn(e.getMessage(), e);

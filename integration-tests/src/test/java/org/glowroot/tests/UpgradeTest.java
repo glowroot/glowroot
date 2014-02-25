@@ -46,8 +46,8 @@ public class UpgradeTest {
                 .copyTo(Files.asByteSink(new File(dataDir, "config.json")));
         Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.h2.db"))
                 .copyTo(Files.asByteSink(new File(dataDir, "glowroot.h2.db")));
-        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.rolling.db"))
-                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.rolling.db")));
+        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.capped.db"))
+                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.capped.db")));
         Container container = Containers.create(dataDir, true);
         // when
         Trace trace = container.getTraceService().getLastTrace();
@@ -84,8 +84,8 @@ public class UpgradeTest {
                 new File("src/test/resources/for-upgrade-test/config.json"));
         Files.copy(new File(dataDir, "glowroot.h2.db"),
                 new File("src/test/resources/for-upgrade-test/glowroot.h2.db"));
-        Files.copy(new File(dataDir, "glowroot.rolling.db"),
-                new File("src/test/resources/for-upgrade-test/glowroot.rolling.db"));
+        Files.copy(new File(dataDir, "glowroot.capped.db"),
+                new File("src/test/resources/for-upgrade-test/glowroot.capped.db"));
         TempDirs.deleteRecursively(dataDir);
     }
 
@@ -96,16 +96,16 @@ public class UpgradeTest {
                 .copyTo(Files.asByteSink(new File(dataDir, "config.json")));
         Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.h2.db"))
                 .copyTo(Files.asByteSink(new File(dataDir, "glowroot.h2.db")));
-        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.rolling.db"))
-                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.rolling.db")));
+        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.capped.db"))
+                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.capped.db")));
         Container container = LocalContainer.createWithFileDb(dataDir);
         container.close();
         Files.copy(new File(dataDir, "config.json"),
                 new File("src/test/resources/for-upgrade-test/config.json"));
         Files.copy(new File(dataDir, "glowroot.h2.db"),
                 new File("src/test/resources/for-upgrade-test/glowroot.h2.db"));
-        Files.copy(new File(dataDir, "glowroot.rolling.db"),
-                new File("src/test/resources/for-upgrade-test/glowroot.rolling.db"));
+        Files.copy(new File(dataDir, "glowroot.capped.db"),
+                new File("src/test/resources/for-upgrade-test/glowroot.capped.db"));
         TempDirs.deleteRecursively(dataDir);
     }
 

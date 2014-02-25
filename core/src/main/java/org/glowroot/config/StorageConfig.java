@@ -36,16 +36,15 @@ import org.glowroot.markers.UsedByJsonBinding;
 public class StorageConfig {
 
     private final int traceExpirationHours;
-    // size of fixed-length rolling database for storing trace details (spans and merged stack
-    // traces)
-    private final int rollingSizeMb;
+    // size of capped database for storing trace details (spans and merged stack traces)
+    private final int cappedDatabaseSizeMb;
 
     private final String version;
 
     static StorageConfig getDefault() {
         final int traceExpirationHours = 24 * 7;
-        final int rollingSizeMb = 1000;
-        return new StorageConfig(traceExpirationHours, rollingSizeMb);
+        final int cappedDatabaseSizeMb = 1000;
+        return new StorageConfig(traceExpirationHours, cappedDatabaseSizeMb);
     }
 
     public static Overlay overlay(StorageConfig base) {
@@ -53,18 +52,18 @@ public class StorageConfig {
     }
 
     @VisibleForTesting
-    public StorageConfig(int traceExpirationHours, int rollingSizeMb) {
+    public StorageConfig(int traceExpirationHours, int cappedDatabaseSizeMb) {
         this.traceExpirationHours = traceExpirationHours;
-        this.rollingSizeMb = rollingSizeMb;
-        this.version = VersionHashes.sha1(traceExpirationHours, rollingSizeMb);
+        this.cappedDatabaseSizeMb = cappedDatabaseSizeMb;
+        this.version = VersionHashes.sha1(traceExpirationHours, cappedDatabaseSizeMb);
     }
 
     public int getTraceExpirationHours() {
         return traceExpirationHours;
     }
 
-    public int getRollingSizeMb() {
-        return rollingSizeMb;
+    public int getCappedDatabaseSizeMb() {
+        return cappedDatabaseSizeMb;
     }
 
     @JsonView(UiView.class)
@@ -77,7 +76,7 @@ public class StorageConfig {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("traceExpirationHours", traceExpirationHours)
-                .add("rollingSizeMb", rollingSizeMb)
+                .add("cappedDatabaseSizeMb", cappedDatabaseSizeMb)
                 .add("version", version)
                 .toString();
     }
@@ -87,20 +86,20 @@ public class StorageConfig {
     public static class Overlay {
 
         private int traceExpirationHours;
-        private int rollingSizeMb;
+        private int cappedDatabaseSizeMb;
 
         private Overlay(StorageConfig base) {
             traceExpirationHours = base.traceExpirationHours;
-            rollingSizeMb = base.rollingSizeMb;
+            cappedDatabaseSizeMb = base.cappedDatabaseSizeMb;
         }
         public void setTraceExpirationHours(int traceExpirationHours) {
             this.traceExpirationHours = traceExpirationHours;
         }
-        public void setRollingSizeMb(int rollingSizeMb) {
-            this.rollingSizeMb = rollingSizeMb;
+        public void setCappedDatabaseSizeMb(int cappedDatabaseSizeMb) {
+            this.cappedDatabaseSizeMb = cappedDatabaseSizeMb;
         }
         public StorageConfig build() {
-            return new StorageConfig(traceExpirationHours, rollingSizeMb);
+            return new StorageConfig(traceExpirationHours, cappedDatabaseSizeMb);
         }
     }
 }

@@ -284,7 +284,7 @@ public class ConfigTest {
 
     private static void updateAllFields(StorageConfig config) {
         config.setTraceExpirationHours(config.getTraceExpirationHours() + 1);
-        config.setRollingSizeMb(config.getRollingSizeMb() + 1);
+        config.setCappedDatabaseSizeMb(config.getCappedDatabaseSizeMb() + 1);
     }
 
     private static void updateAllFields(UserInterfaceConfig config) {

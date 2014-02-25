@@ -47,14 +47,14 @@ import org.glowroot.markers.ThreadSafe;
  * @since 0.5
  */
 @ThreadSafe
-public class RollingFile {
+public class CappedDatabase {
 
-    private static final Logger logger = LoggerFactory.getLogger(RollingFile.class);
+    private static final Logger logger = LoggerFactory.getLogger(CappedDatabase.class);
 
     private final File file;
     private final Object lock = new Object();
     @GuardedBy("lock")
-    private final RollingOutputStream out;
+    private final CappedDatabaseOutputStream out;
     @GuardedBy("lock")
     private final Writer compressedWriter;
     private final Thread shutdownHookThread;
@@ -62,10 +62,10 @@ public class RollingFile {
     private RandomAccessFile inFile;
     private volatile boolean closing = false;
 
-    RollingFile(File file, int requestedRollingSizeKb, ScheduledExecutorService scheduledExecutor,
+    CappedDatabase(File file, int requestedSizeKb, ScheduledExecutorService scheduledExecutor,
             Ticker ticker) throws IOException {
         this.file = file;
-        out = RollingOutputStream.create(file, requestedRollingSizeKb, scheduledExecutor, ticker);
+        out = CappedDatabaseOutputStream.create(file, requestedSizeKb, scheduledExecutor, ticker);
         compressedWriter = new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
         inFile = new RandomAccessFile(file, "r");
         shutdownHookThread = new ShutdownHookThread();
@@ -94,13 +94,13 @@ public class RollingFile {
         return new FileBlockCharSource(block, rolledOverResponse);
     }
 
-    public void resize(int newRollingSizeKb) throws IOException {
+    public void resize(int newSizeKb) throws IOException {
         synchronized (lock) {
             if (closing) {
                 return;
             }
             inFile.close();
-            out.resize(newRollingSizeKb);
+            out.resize(newSizeKb);
             inFile = new RandomAccessFile(file, "r");
         }
     }
@@ -161,8 +161,8 @@ public class RollingFile {
                     throw new IOException("Block rolled over mid-read");
                 }
                 long filePosition = out.convertToFilePosition(block.getStartIndex() + blockIndex);
-                inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES + filePosition);
-                long fileRemaining = out.getRollingSizeKb() * 1024L - filePosition;
+                inFile.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + filePosition);
+                long fileRemaining = out.getSizeKb() * 1024L - filePosition;
                 int numToRead = (int) Longs.min(len, blockRemaining, fileRemaining);
                 inFile.readFully(bytes, off, numToRead);
                 blockIndex += numToRead;

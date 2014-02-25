@@ -38,7 +38,7 @@ import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.DataSource;
-import org.glowroot.local.store.RollingFile;
+import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
@@ -82,7 +82,7 @@ public class LocalUiModule {
         AggregateDao aggregateDao = storageModule.getAggregateDao();
         SnapshotDao snapshotDao = storageModule.getSnapshotDao();
         DataSource dataSource = storageModule.getDataSource();
-        RollingFile rollingFile = storageModule.getRollingFile();
+        CappedDatabase cappedDatabase = storageModule.getCappedDatabase();
         TraceCollectorImpl traceCollector = collectorModule.getTraceCollector();
         ParsedTypeCache parsedTypeCache = traceModule.getParsedTypeCache();
 
@@ -110,7 +110,7 @@ public class LocalUiModule {
         // port is just displayed on config page for its documentation value anyways, and more
         // useful to know it was set to 0 than to display its value (which is needed to view the
         // page anyways)
-        ConfigJsonService configJsonService = new ConfigJsonService(configService, rollingFile,
+        ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
                 pluginDescriptorCache, dataDir, traceModule.getPointcutConfigAdviceCache(),
                 httpSessionManager, traceModule);
         ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);

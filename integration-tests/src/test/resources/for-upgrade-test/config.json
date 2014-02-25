@@ -24,7 +24,7 @@
   },
   "storage" : {
     "traceExpirationHours" : -1,
-    "rollingSizeMb" : 1000
+    "cappedDatabaseSizeMb" : 1000
   },
   "ui" : {
     "port" : 0,

@@ -33,99 +33,97 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class RollingFileResizeTest {
+public class CappedDatabaseResizeTest {
 
     private File tempFile;
     private ScheduledExecutorService scheduledExecutor;
-    private RollingFile rollingFile;
+    private CappedDatabase cappedDatabase;
 
     @Before
     public void onBefore() throws IOException {
-        tempFile = File.createTempFile("glowroot-test-", ".rolling.db");
+        tempFile = File.createTempFile("glowroot-test-", ".capped.db");
         scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        rollingFile = new RollingFile(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
+        cappedDatabase = new CappedDatabase(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
     }
 
     @After
     public void onAfter() throws IOException {
         scheduledExecutor.shutdownNow();
-        rollingFile.close();
+        cappedDatabase.close();
         tempFile.delete();
     }
 
     @Test
     public void shouldWrapAndThenResizeSmaller() throws Exception {
-        shouldWrapAndResize(rollingFile, 1);
+        shouldWrapAndResize(cappedDatabase, 1);
     }
 
     @Test
     public void shouldWrapAndThenResizeSameSize() throws Exception {
-        shouldWrapAndResize(rollingFile, 2);
+        shouldWrapAndResize(cappedDatabase, 2);
     }
 
     @Test
     public void shouldWrapAndThenResizeLarger() throws Exception {
-        shouldWrapAndResize(rollingFile, 3);
+        shouldWrapAndResize(cappedDatabase, 3);
     }
 
     @Test
     public void shouldResizeSmallerAndThenWrap() throws Exception {
-        shouldResizeAndWrap(rollingFile, 1);
+        shouldResizeAndWrap(cappedDatabase, 1);
     }
 
     @Test
     public void shouldResizeSameSizeAndThenWrap() throws Exception {
-        shouldResizeAndWrap(rollingFile, 2);
+        shouldResizeAndWrap(cappedDatabase, 2);
     }
 
     @Test
     public void shouldResizeLargerAndThenWrap() throws Exception {
-        shouldResizeAndWrap(rollingFile, 3);
+        shouldResizeAndWrap(cappedDatabase, 3);
     }
 
-    private void shouldWrapAndResize(RollingFile rollingFile, int newRollingSizeKb)
+    private void shouldWrapAndResize(CappedDatabase cappedDatabase, int newSizeKb)
             throws Exception {
-
         // given
         // when
         // because of compression, use somewhat random text and loop until wrap occurs
         String text = createRandomText();
-        rollingFile.write(CharSource.wrap(text));
-        rollingFile.write(CharSource.wrap(text));
-        rollingFile.write(CharSource.wrap(text));
-        FileBlock block = rollingFile.write(CharSource.wrap(text));
-        rollingFile.resize(newRollingSizeKb);
+        cappedDatabase.write(CharSource.wrap(text));
+        cappedDatabase.write(CharSource.wrap(text));
+        cappedDatabase.write(CharSource.wrap(text));
+        FileBlock block = cappedDatabase.write(CharSource.wrap(text));
+        cappedDatabase.resize(newSizeKb);
         // then
-        String text2 = rollingFile.read(block, "").read();
+        String text2 = cappedDatabase.read(block, "").read();
         assertThat(text2).isEqualTo(text);
 
         // also test close and re-open
-        rollingFile.close();
-        rollingFile = new RollingFile(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
-        text2 = rollingFile.read(block, "").read();
+        cappedDatabase.close();
+        cappedDatabase = new CappedDatabase(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
+        text2 = cappedDatabase.read(block, "").read();
         assertThat(text2).isEqualTo(text);
     }
 
-    private void shouldResizeAndWrap(RollingFile rollingFile, int newRollingSizeKb)
+    private void shouldResizeAndWrap(CappedDatabase cappedDatabase, int newSizeKb)
             throws Exception {
-
         // given
         // when
-        rollingFile.resize(newRollingSizeKb);
+        cappedDatabase.resize(newSizeKb);
         // because of compression, use somewhat random text and loop until wrap occurs
         String text = createRandomText();
-        rollingFile.write(CharSource.wrap(text));
-        rollingFile.write(CharSource.wrap(text));
-        rollingFile.write(CharSource.wrap(text));
-        FileBlock block = rollingFile.write(CharSource.wrap(text));
+        cappedDatabase.write(CharSource.wrap(text));
+        cappedDatabase.write(CharSource.wrap(text));
+        cappedDatabase.write(CharSource.wrap(text));
+        FileBlock block = cappedDatabase.write(CharSource.wrap(text));
         // then
-        String text2 = rollingFile.read(block, "").read();
+        String text2 = cappedDatabase.read(block, "").read();
         assertThat(text2).isEqualTo(text);
 
         // also test close and re-open
-        rollingFile.close();
-        rollingFile = new RollingFile(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
-        text2 = rollingFile.read(block, "").read();
+        cappedDatabase.close();
+        cappedDatabase = new CappedDatabase(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
+        text2 = cappedDatabase.read(block, "").read();
         assertThat(text2).isEqualTo(text);
     }
 

@@ -387,13 +387,13 @@ class PreInitializeClasses {
         types.add("org.glowroot.common.Reflections$ReflectiveTargetException");
         types.add("org.glowroot.common.ScheduledRunnable");
         types.add("org.glowroot.common.ScheduledRunnable$TerminateSubsequentExecutionsException");
+        types.add("org.glowroot.local.store.CappedDatabase");
+        types.add("org.glowroot.local.store.CappedDatabase$ShutdownHookThread");
+        types.add("org.glowroot.local.store.CappedDatabaseOutputStream");
+        types.add("org.glowroot.local.store.CappedDatabaseOutputStream$FsyncScheduledRunnable");
         types.add("org.glowroot.local.store.DataSource");
         types.add("org.glowroot.local.store.DataSource$1");
         types.add("org.glowroot.local.store.DataSource$ShutdownHookThread");
-        types.add("org.glowroot.local.store.RollingFile");
-        types.add("org.glowroot.local.store.RollingFile$ShutdownHookThread");
-        types.add("org.glowroot.local.store.RollingOutputStream");
-        types.add("org.glowroot.local.store.RollingOutputStream$FsyncScheduledRunnable");
         types.add("org.glowroot.trace.MetricNameCache");
         types.add("org.glowroot.trace.MetricTimerServiceImpl");
         types.add("org.glowroot.trace.MetricTimerServiceImpl$NopMetricTimer");

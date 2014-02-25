@@ -44,9 +44,9 @@ public class SnapshotDaoPerformanceMain {
         SnapshotTestData snapshotTestData = new SnapshotTestData();
         DataSource dataSource = new DataSource();
         ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        RollingFile rollingFile = new RollingFile(new File("glowroot.rolling.db"), 1000000,
+        CappedDatabase cappedDatabase = new CappedDatabase(new File("glowroot.capped.db"), 1000000,
                 scheduledExecutor, Ticker.systemTicker());
-        SnapshotDao snapshotDao = new SnapshotDao(dataSource, rollingFile);
+        SnapshotDao snapshotDao = new SnapshotDao(dataSource, cappedDatabase);
 
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (int i = 0; i < 1000; i++) {
