@@ -305,7 +305,7 @@ public class SnapshotDao implements SnapshotRepository {
                 FileBlock block;
                 try {
                     block = FileBlock.from(spansFileBlockId);
-                    builder.spans(cappedDatabase.read(block, "{\"rolledOver\":true}"));
+                    builder.spans(cappedDatabase.read(block, "{\"overwritten\":true}"));
                 } catch (InvalidBlockIdFormatException e) {
                     logger.warn(e.getMessage(), e);
                 }
@@ -315,7 +315,7 @@ public class SnapshotDao implements SnapshotRepository {
                 try {
                     block = FileBlock.from(coarseMergedStackTreeFileBlockId);
                     builder.coarseMergedStackTree(
-                            cappedDatabase.read(block, "{\"rolledOver\":true}"));
+                            cappedDatabase.read(block, "{\"overwritten\":true}"));
                 } catch (InvalidBlockIdFormatException e) {
                     logger.warn(e.getMessage(), e);
                 }
@@ -325,7 +325,7 @@ public class SnapshotDao implements SnapshotRepository {
                 try {
                     block = FileBlock.from(fineMergedStackTreeFileBlockId);
                     builder.fineMergedStackTree(
-                            cappedDatabase.read(block, "{\"rolledOver\":true}"));
+                            cappedDatabase.read(block, "{\"overwritten\":true}"));
                 } catch (InvalidBlockIdFormatException e) {
                     logger.warn(e.getMessage(), e);
                 }

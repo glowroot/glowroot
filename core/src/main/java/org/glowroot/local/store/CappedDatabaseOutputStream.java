@@ -123,7 +123,7 @@ class CappedDatabaseOutputStream extends OutputStream {
         return FileBlock.from(blockStartIndex, currIndex - blockStartIndex);
     }
 
-    boolean isRolledOver(FileBlock block) {
+    boolean isOverwritten(FileBlock block) {
         // need to check lastResizeBaseIndex in case it was recently resized larger, in which case
         // currIndex - sizeBytes would be less than lastResizeBaseIndex
         return block.getStartIndex() < lastResizeBaseIndex

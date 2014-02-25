@@ -109,6 +109,15 @@ TraceRenderer = (function () {
     return (nanos / 1000000).toFixed(1);
   });
 
+  Handlebars.registerHelper('ifDetailOverwritten', function (trace, options) {
+    if (trace.spans && trace.spans.overwritten ||
+        trace.coarseMergedStackTree && trace.coarseMergedStackTree.overwritten ||
+        trace.fineMergedStackTree && trace.fineMergedStackTree.overwritten) {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
   Handlebars.registerHelper('numberOfSpans', function (spans) {
     var num = 0;
     $.each(spans, function (i, span) {

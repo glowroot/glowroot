@@ -1,7 +1,24 @@
-{{#if spans}}
-  {{#if spans.rolledOver}}
-    <div>Spans <strong>rolled over</strong></div>
-  {{^}}
+{{#ifDetailOverwritten .}}
+  <div>
+    <strong>
+      Spans
+      {{#if coarseMergedStackTree}}
+        {{#if fineMergedStackTree}}
+          and profiles
+        {{^}}
+          and coarse-grained profile
+        {{/if}}
+      {{^}}
+        {{#if fineMergedStackTree}}
+          and fine-grained profile
+        {{/if}}
+      {{/if}}
+      no longer exists for this trace
+    </strong>
+    <em>(see Glowroot > Configuration &gt; Storage &gt; Spans/profiles capped db)</em>
+  </div>
+{{^}}
+  {{#if spans}}
     <div>
       <button class="flat-btn flat-btn-big-pad1aligned sps-toggle">
         <span class="glowroot-link-color">Spans</span> ({{numberOfSpans spans}})
@@ -9,12 +26,8 @@
     </div>
     <div id="sps"></div>
   {{/if}}
-{{/if}}
-{{! TODO combine merged stack tree into template and share code between coarse and fine mst }}
-{{#if coarseMergedStackTree}}
-  {{#if coarseMergedStackTree.rolledOver}}
-    <div>Coarse-grained profile <strong>rolled over</strong></div>
-  {{^}}
+  {{! TODO combine merged stack tree into template and share code between coarse and fine mst }}
+  {{#if coarseMergedStackTree}}
     <div>
       <button class="flat-btn flat-btn-big-pad1aligned mst-coarse-toggle">
         <span class="glowroot-link-color">Coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})
@@ -33,11 +46,7 @@
       <div class="mst-interesting indent1"></div>
     </div>
   {{/if}}
-{{/if}}
-{{#if fineMergedStackTree}}
-  {{#if fineMergedStackTree.rolledOver}}
-    <div>Fine-grained profile <strong>rolled over</strong></div>
-  {{^}}
+  {{#if fineMergedStackTree}}
     <div>
       <button class="flat-btn flat-btn-big-pad1aligned mst-fine-toggle">
         <span class="glowroot-link-color">Fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})
@@ -56,4 +65,4 @@
       <div class="mst-interesting indent1"></div>
     </div>
   {{/if}}
-{{/if}}
+{{/ifDetailOverwritten}}

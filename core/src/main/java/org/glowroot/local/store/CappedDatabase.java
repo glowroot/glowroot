@@ -90,8 +90,8 @@ public class CappedDatabase {
     }
 
     @Immutable
-    CharSource read(FileBlock block, String rolledOverResponse) {
-        return new FileBlockCharSource(block, rolledOverResponse);
+    CharSource read(FileBlock block, String overwrittenResponse) {
+        return new FileBlockCharSource(block, overwrittenResponse);
     }
 
     public void resize(int newSizeKb) throws IOException {
@@ -120,17 +120,17 @@ public class CappedDatabase {
     private class FileBlockCharSource extends CharSource {
 
         private final FileBlock block;
-        private final String rolledOverResponse;
+        private final String overwrittenResponse;
 
-        private FileBlockCharSource(FileBlock block, String rolledOverResponse) {
+        private FileBlockCharSource(FileBlock block, String overwrittenResponse) {
             this.block = block;
-            this.rolledOverResponse = rolledOverResponse;
+            this.overwrittenResponse = overwrittenResponse;
         }
 
         @Override
         public Reader openStream() throws IOException {
-            if (out.isRolledOver(block)) {
-                return CharSource.wrap(rolledOverResponse).openStream();
+            if (out.isOverwritten(block)) {
+                return CharSource.wrap(overwrittenResponse).openStream();
             }
             // it's important to wrap FileBlockInputStream in a BufferedInputStream to prevent lots
             // of small reads from the underlying RandomAccessFile
@@ -157,7 +157,7 @@ public class CappedDatabase {
                 return -1;
             }
             synchronized (lock) {
-                if (out.isRolledOver(block)) {
+                if (out.isOverwritten(block)) {
                     throw new IOException("Block rolled over mid-read");
                 }
                 long filePosition = out.convertToFilePosition(block.getStartIndex() + blockIndex);
