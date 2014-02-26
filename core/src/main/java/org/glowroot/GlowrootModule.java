@@ -60,13 +60,13 @@ public class GlowrootModule {
     private final CollectorModule collectorModule;
     private final TraceModule traceModule;
     private final LocalUiModule uiModule;
+    private final File dataDir;
 
-    GlowrootModule(@ReadOnly Map<String, String> properties,
+    GlowrootModule(File dataDir, @ReadOnly Map<String, String> properties,
             @Nullable Instrumentation instrumentation, String version, boolean aggregatorDisabled)
             throws StartupFailedException {
         Ticker ticker = Ticker.systemTicker();
         Clock clock = Clock.systemClock();
-        File dataDir = DataDir.getDataDir(properties);
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
                 .setNameFormat("Glowroot-Background-%d").build();
@@ -96,6 +96,7 @@ public class GlowrootModule {
                 scheduledExecutor);
         uiModule = new LocalUiModule(ticker, clock, dataDir, jvmModule, configModule,
                 storageModule, collectorModule, traceModule, instrumentation, properties, version);
+        this.dataDir = dataDir;
     }
 
     PluginServices getPluginServices(@Nullable String pluginId) {
@@ -125,6 +126,11 @@ public class GlowrootModule {
     @OnlyUsedByTests
     public LocalUiModule getUiModule() {
         return uiModule;
+    }
+
+    @OnlyUsedByTests
+    public File getDataDir() {
+        return dataDir;
     }
 
     @OnlyUsedByTests

@@ -53,7 +53,7 @@ public class JarFileShadingIT {
             Assume.assumeNotNull(glowrootCoreJarFile);
         }
         List<String> acceptableEntries = Lists.newArrayList();
-        acceptableEntries.add("org.glowroot\\..*");
+        acceptableEntries.add("glowroot\\..*");
         acceptableEntries.add("org/");
         acceptableEntries.add("org/glowroot/.*");
         acceptableEntries.add("META-INF/");

@@ -15,12 +15,27 @@
   limitations under the License.
 -->
 <configuration>
-  <appender name="STDOUT" class="org.glowroot.shaded.qos.logback.core.ConsoleAppender">
+  <appender name="CONSOLE" class="org.glowroot.shaded.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <appender name="FILE" class="org.glowroot.shaded.qos.logback.core.rolling.RollingFileAppender">
+    <file>${glowroot.data.dir}/glowroot.log</file>
+    <rollingPolicy class="org.glowroot.shaded.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>glowroot.%i.log</fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>1</maxIndex>
+    </rollingPolicy>
+    <triggeringPolicy class="org.glowroot.shaded.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>5MB</maxFileSize>
+    </triggeringPolicy>
     <encoder>
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
   <root level="info">
-    <appender-ref ref="STDOUT" />
+    <appender-ref ref="CONSOLE" />
+    <appender-ref ref="FILE" />
   </root>
 </configuration>

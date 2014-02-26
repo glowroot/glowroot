@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,32 +63,23 @@ class DataDir {
 
     private DataDir() {}
 
-    static File getDataDirWithNoWarning(@ReadOnly Map<String, String> properties) {
-        return getDataDir(properties, true);
-    }
-
-    static File getDataDir(@ReadOnly Map<String, String> properties) {
-        return getDataDir(properties, false);
-    }
-
-    private static File getDataDir(@ReadOnly Map<String, String> properties,
-            boolean disableWarnings) {
+    public static File getDataDir(@ReadOnly Map<String, String> properties) {
         String dataDirPath = properties.get("data.dir");
         if (dataDirPath == null) {
-            return getBaseDir(disableWarnings);
+            return getBaseDir();
         }
         File dataDir = new File(dataDirPath);
         File baseDir = null;
         if (!dataDir.isAbsolute()) {
             // resolve path relative to base dir instead of process current dir
-            baseDir = getBaseDir(disableWarnings);
+            baseDir = getBaseDir();
             dataDir = new File(baseDir, dataDirPath);
         }
         try {
             Files.createParentDirs(dataDir);
         } catch (IOException e) {
             if (baseDir == null) {
-                baseDir = getBaseDir(disableWarnings);
+                baseDir = getBaseDir();
             }
             logger.warn("error creating data directory: {} (using directory {} instead)",
                     dataDir.getAbsolutePath(), baseDir.getAbsolutePath(), e);
@@ -96,14 +87,12 @@ class DataDir {
         return dataDir;
     }
 
-    private static File getBaseDir(boolean disableWarnings) {
+    private static File getBaseDir() {
         if (BASE_DIR == null) {
-            if (!disableWarnings) {
-                // warning is logged lazily (instead of in static initializer) so that unit tests
-                // have a chance to pass in absolute data dir path and bypass this warning
-                logger.warn("could not determine location of glowroot.jar, using process current"
-                        + " directory as the data directory");
-            }
+            // warning is logged lazily (instead of in static initializer) so that unit tests
+            // have a chance to pass in absolute data dir path and bypass this warning
+            logger.warn("could not determine location of glowroot.jar, using process current"
+                    + " directory as the data directory");
             return new File(".");
         }
         return BASE_DIR;

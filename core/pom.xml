@@ -433,7 +433,7 @@
                       -->
                       <rawString>true</rawString>
                       <pattern>^logback.configurationFile$</pattern>
-                      <shadedPattern>org.glowroot.logback.configurationFile</shadedPattern>
+                      <shadedPattern>glowroot.logback.configurationFile</shadedPattern>
                     </relocation>
                     <relocation>
                       <!--
@@ -441,7 +441,7 @@
                       -->
                       <rawString>true</rawString>
                       <pattern>^logback.groovy$</pattern>
-                      <shadedPattern>org.glowroot.logback.groovy</shadedPattern>
+                      <shadedPattern>glowroot.logback.groovy</shadedPattern>
                     </relocation>
                     <relocation>
                       <!--
@@ -450,7 +450,7 @@
                       -->
                       <rawString>true</rawString>
                       <pattern>^logback(-test)?.xml$</pattern>
-                      <shadedPattern>org.glowroot.logback$1.xml</shadedPattern>
+                      <shadedPattern>glowroot.logback$1.xml</shadedPattern>
                     </relocation>
                     <relocation>
                       <!--
@@ -458,7 +458,7 @@
                       -->
                       <rawString>true</rawString>
                       <pattern>^logback.ContextSelector$</pattern>
-                      <shadedPattern>org.glowroot.logback.ContextSelector</shadedPattern>
+                      <shadedPattern>glowroot.logback.ContextSelector</shadedPattern>
                     </relocation>
                     <relocation>
                       <!--
@@ -468,7 +468,7 @@
                       <rawString>true</rawString>
                       <pattern>^java:comp/env/logback/configuration-resource$</pattern>
                       <shadedPattern>
-                        java:comp/env/org.glowroot.logback/configuration-resource
+                        java:comp/env/glowroot.logback/configuration-resource
                       </shadedPattern>
                     </relocation>
                     <relocation>
@@ -478,7 +478,7 @@
                       -->
                       <rawString>true</rawString>
                       <pattern>^java:comp/env/logback/context-name$</pattern>
-                      <shadedPattern>java:comp/env/org.glowroot.logback/context-name</shadedPattern>
+                      <shadedPattern>java:comp/env/glowroot.logback/context-name</shadedPattern>
                     </relocation>
                   </relocations>
                 </configuration>

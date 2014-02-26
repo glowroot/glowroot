@@ -179,7 +179,7 @@ public class Threads {
 
     private static boolean isShaded() {
         try {
-            Class.forName("org.glowroot.shaded.h2.Driver");
+            Class.forName("org.glowroot.shaded.slf4j.Logger");
             return true;
         } catch (ClassNotFoundException e) {
             return false;

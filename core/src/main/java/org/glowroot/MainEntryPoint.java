@@ -23,6 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.core.joran.spi.JoranException;
+import ch.qos.logback.core.util.StatusPrinter;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.EnsuresNonNull;
 import checkers.nullness.quals.MonotonicNonNull;
@@ -32,6 +36,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.io.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +76,10 @@ public class MainEntryPoint {
             Instrumentation instrumentation) {
         ImmutableMap<String, String> properties = getGlowrootProperties();
         // ...WithNoWarning since warning is displayed during start so no need for it twice
-        File dataDir = DataDir.getDataDirWithNoWarning(properties);
+        File dataDir = DataDir.getDataDir(properties);
+        if (isShaded()) {
+            reconfigureLogging(dataDir);
+        }
         try {
             DataSource.tryUnlockDatabase(new File(dataDir, "glowroot.lock.db"));
         } catch (SQLException e) {
@@ -95,7 +103,7 @@ public class MainEntryPoint {
             return;
         }
         try {
-            start(properties, instrumentation);
+            start(dataDir, properties, instrumentation);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
@@ -112,8 +120,7 @@ public class MainEntryPoint {
 
     static void runViewer() throws StartupFailedException, InterruptedException {
         ImmutableMap<String, String> properties = getGlowrootProperties();
-        // ...WithNoWarning since warning is displayed during start so no need for it twice
-        File dataDir = DataDir.getDataDirWithNoWarning(properties);
+        File dataDir = DataDir.getDataDir(properties);
         try {
             DataSource.tryUnlockDatabase(new File(dataDir, "glowroot.lock.db"));
         } catch (SQLException e) {
@@ -124,7 +131,7 @@ public class MainEntryPoint {
             return;
         }
         String version = Version.getVersion();
-        glowrootModule = new GlowrootModule(properties, null, version, true);
+        glowrootModule = new GlowrootModule(dataDir, properties, null, version, true);
         startupLogger.info("Viewer started (version {})", version);
         startupLogger.info("Viewer listening at http://localhost:{}",
                 glowrootModule.getUiModule().getPort());
@@ -134,12 +141,12 @@ public class MainEntryPoint {
     }
 
     @EnsuresNonNull("glowrootModule")
-    private static void start(@ReadOnly Map<String, String> properties,
+    private static void start(File dataDir, @ReadOnly Map<String, String> properties,
             @Nullable Instrumentation instrumentation) throws StartupFailedException {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
-        glowrootModule = new GlowrootModule(properties, instrumentation, version, false);
+        glowrootModule = new GlowrootModule(dataDir, properties, instrumentation, version, false);
         startupLogger.info("Glowroot started (version {})", version);
         startupLogger.info("Glowroot listening at http://localhost:{}",
                 glowrootModule.getUiModule().getPort());
@@ -166,6 +173,38 @@ public class MainEntryPoint {
         return builder.build();
     }
 
+    private static void reconfigureLogging(File dataDir) {
+        if (ClassLoader.getSystemResource("glowroot.logback-test.xml") != null) {
+            // don't override glowroot.logback-test.xml
+            return;
+        }
+        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        try {
+            JoranConfigurator configurator = new JoranConfigurator();
+            configurator.setContext(context);
+            context.reset();
+            context.putProperty("glowroot.data.dir", dataDir.getPath());
+            File logbackXmlFile = new File(dataDir, "glowroot.logback.xml");
+            if (logbackXmlFile.exists()) {
+                configurator.doConfigure(logbackXmlFile);
+            } else {
+                configurator.doConfigure(Resources.getResource("glowroot.logback-override.xml"));
+            }
+        } catch (JoranException je) {
+            // any errors are printed below by StatusPrinter
+        }
+        StatusPrinter.printInCaseOfErrorsOrWarnings(context);
+    }
+
+    private static boolean isShaded() {
+        try {
+            Class.forName("org.glowroot.shaded.slf4j.Logger");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
     private static boolean isTomcatStop() {
         return Objects.equal(System.getProperty("sun.java.command"),
                 "org.apache.catalina.startup.Bootstrap stop");
@@ -175,7 +214,8 @@ public class MainEntryPoint {
     @EnsuresNonNull("glowrootModule")
     public static void start(@ReadOnly Map<String, String> properties)
             throws StartupFailedException {
-        start(properties, null);
+        File dataDir = DataDir.getDataDir(properties);
+        start(dataDir, properties, null);
     }
 
     @OnlyUsedByTests
@@ -186,5 +226,8 @@ public class MainEntryPoint {
 
     public static void setGlowrootModule(GlowrootModule glowrootModule) {
         MainEntryPoint.glowrootModule = glowrootModule;
+        if (isShaded()) {
+            reconfigureLogging(glowrootModule.getDataDir());
+        }
     }
 }
