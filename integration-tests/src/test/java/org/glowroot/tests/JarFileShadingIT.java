@@ -58,7 +58,7 @@ public class JarFileShadingIT {
         acceptableEntries.add("org/glowroot/.*");
         acceptableEntries.add("META-INF/");
         acceptableEntries.add("META-INF/maven/.*");
-        acceptableEntries.add("META-INF/org.glowroot\\..*");
+        acceptableEntries.add("META-INF/glowroot\\..*");
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
         acceptableEntries.add("META-INF/LICENSE");
         acceptableEntries.add("META-INF/NOTICE");

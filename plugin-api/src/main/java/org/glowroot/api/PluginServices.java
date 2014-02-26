@@ -141,7 +141,7 @@ public abstract class PluginServices {
      * specified {@code name} then the empty string {@code ""} is returned.
      * 
      * Plugin properties are scoped per plugin. The are defined in the plugin's
-     * META-INF/org.glowroot.plugin.json file, and can be modified (assuming they are not marked as
+     * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
      * hidden) on the configuration page under the plugin's configuration section.
      * 
      * @param name
@@ -156,7 +156,7 @@ public abstract class PluginServices {
      * returned.
      * 
      * Plugin properties are scoped per plugin. The are defined in the plugin's
-     * META-INF/org.glowroot.plugin.json file, and can be modified (assuming they are not marked as
+     * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
      * hidden) on the configuration page under the plugin's configuration section.
      * 
      * @param name
@@ -171,7 +171,7 @@ public abstract class PluginServices {
      * returned.
      * 
      * Plugin properties are scoped per plugin. The are defined in the plugin's
-     * META-INF/org.glowroot.plugin.json file, and can be modified (assuming they are not marked as
+     * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
      * hidden) on the configuration page under the plugin's configuration section.
      * 
      * @param name

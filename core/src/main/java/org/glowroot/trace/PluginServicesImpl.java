@@ -52,7 +52,7 @@ import org.glowroot.trace.model.Trace;
  * Implementation of PluginServices from the Plugin API. Each plugin gets its own instance so that
  * isEnabled(), getStringProperty(), etc can be scoped to the given plugin. The pluginId should be
  * "groupId:artifactId", using the groupId and artifactId specified in the plugin's
- * org.glowroot.plugin.json file.
+ * glowroot.plugin.json file.
  * 
  * @author Trask Stalnaker
  * @since 0.5

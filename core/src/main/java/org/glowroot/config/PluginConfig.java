@@ -62,7 +62,7 @@ public class PluginConfig {
 
     private final boolean enabled;
 
-    // all defined properties (as defined in each plugin's org.glowroot.plugin.json file) are
+    // all defined properties (as defined in each plugin's glowroot.plugin.json file) are
     // included in the property map, even those properties with null value, so that an appropriate
     // error can be logged if a plugin tries to access a property value that it hasn't defined in
     // its plugin.json file
@@ -284,7 +284,7 @@ public class PluginConfig {
             if (propertyDescriptor.isHidden()) {
                 if (!ignoreWarnings) {
                     logger.warn("cannot set hidden property {} with value: {} (hidden properties"
-                            + " can only be set by via org.glowroot.plugin.json)", name, value);
+                            + " can only be set by via glowroot.plugin.json)", name, value);
                 }
                 return this;
             }

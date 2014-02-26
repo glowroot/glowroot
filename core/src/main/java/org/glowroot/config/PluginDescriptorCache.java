@@ -129,7 +129,7 @@ public class PluginDescriptorCache {
     private static ImmutableList<PluginDescriptor> readClasspathPluginDescriptors()
             throws IOException {
         ImmutableList.Builder<PluginDescriptor> pluginDescriptors = ImmutableList.builder();
-        List<URL> urls = getResources("META-INF/org.glowroot.plugin.json");
+        List<URL> urls = getResources("META-INF/glowroot.plugin.json");
         for (URL url : urls) {
             try {
                 String content = Resources.toString(url, Charsets.UTF_8);

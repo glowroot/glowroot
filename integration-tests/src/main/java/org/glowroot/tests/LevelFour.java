@@ -21,7 +21,7 @@ package org.glowroot.tests;
  */
 class LevelFour {
 
-    // this method corresponds to pointcut defined in org.glowroot.plugin.json
+    // this method corresponds to pointcut defined in glowroot.plugin.json
     void call(String arg1, String arg2) {
         new LevelFive().call(arg1, arg2);
     }

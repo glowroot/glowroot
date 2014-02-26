@@ -21,6 +21,6 @@ package org.glowroot.tests;
  */
 class LevelFive {
 
-    // this method corresponds to pointcut defined in org.glowroot.plugin.json
+    // this method corresponds to pointcut defined in glowroot.plugin.json
     void call(@SuppressWarnings("unused") String arg1, @SuppressWarnings("unused") String arg2) {}
 }
