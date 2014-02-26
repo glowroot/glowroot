@@ -214,9 +214,6 @@ public class ProfilingTest {
         coarseProfilingConfig.setInitialDelayMillis(60);
         coarseProfilingConfig.setIntervalMillis(10);
         container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
-        FineProfilingConfig fineProfilingConfig = container.getConfigService()
-                .getFineProfilingConfig();
-        container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
         // then
