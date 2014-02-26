@@ -41,6 +41,8 @@ class HttpServletRequest {
             UnresolvedMethod.from("javax.servlet.http.HttpServletRequest", "getRequestURI");
     private static final UnresolvedMethod getParameterMapMethod =
             UnresolvedMethod.from("javax.servlet.ServletRequest", "getParameterMap");
+    private static final UnresolvedMethod getHeaderMethod = UnresolvedMethod.from(
+            "javax.servlet.http.HttpServletRequest", "getHeader", String.class);
 
     private final Object realRequest;
 
@@ -84,5 +86,10 @@ class HttpServletRequest {
         } else {
             return parameterMap;
         }
+    }
+
+    @Nullable
+    String getHeader(String name) {
+        return (String) getHeaderMethod.invoke(realRequest, name, null);
     }
 }
