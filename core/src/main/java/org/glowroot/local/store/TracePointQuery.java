@@ -20,6 +20,7 @@ import java.util.Locale;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import dataflow.quals.Pure;
 
@@ -111,21 +112,21 @@ public class TracePointQuery {
             sql += " and fine = ?";
             args.add(true);
         }
-        if (transactionNameComparator != null && transactionName != null) {
+        if (transactionNameComparator != null && !Strings.isNullOrEmpty(transactionName)) {
             sql += " and upper(transaction_name) " + transactionNameComparator.getComparator()
                     + " ?";
             args.add(transactionNameComparator.formatParameter(transactionName
                     .toUpperCase(Locale.ENGLISH)));
         }
-        if (headlineComparator != null && headline != null) {
+        if (headlineComparator != null && !Strings.isNullOrEmpty(headline)) {
             sql += " and upper(headline) " + headlineComparator.getComparator() + " ?";
             args.add(headlineComparator.formatParameter(headline.toUpperCase(Locale.ENGLISH)));
         }
-        if (errorComparator != null && error != null) {
+        if (errorComparator != null && !Strings.isNullOrEmpty(error)) {
             sql += " and upper(error_message) " + errorComparator.getComparator() + " ?";
             args.add(errorComparator.formatParameter(error.toUpperCase(Locale.ENGLISH)));
         }
-        if (userComparator != null && user != null) {
+        if (userComparator != null && !Strings.isNullOrEmpty(user)) {
             sql += " and upper(user) " + userComparator.getComparator() + " ?";
             args.add(userComparator.formatParameter(user.toUpperCase(Locale.ENGLISH)));
         }
