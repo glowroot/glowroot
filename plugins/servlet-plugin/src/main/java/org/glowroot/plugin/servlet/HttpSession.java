@@ -91,6 +91,10 @@ class HttpSession {
             if (capturePath.equals("*")) {
                 for (Enumeration<?> e = getAttributeNames(); e.hasMoreElements();) {
                     String attributeName = (String) e.nextElement();
+                    if (attributeName == null) {
+                        // null check to be safe in case this is a very strange servlet container
+                        continue;
+                    }
                     Object value = getAttribute(attributeName);
                     // value shouldn't be null, but its (remotely) possible that a concurrent
                     // request for the same session just removed the attribute

@@ -117,7 +117,7 @@ public class NestableCallAspect {
             public Message get() {
                 Map<String, ?> detail = ImmutableMap.of("attr1", getLongDetailValue(false),
                         "attr2", "value2", "attr3", ImmutableMap.of("attr31",
-                                ImmutableMap.of("attr311", "value311", "attr312", "value312"),
+                                ImmutableMap.of("attr311", ImmutableList.of("v311a", "v311b")),
                                 "attr32", getLongDetailValue(true),
                                 "attr33", getLongDetailValue(false)));
                 return Message.withDetail(spanText, detail);

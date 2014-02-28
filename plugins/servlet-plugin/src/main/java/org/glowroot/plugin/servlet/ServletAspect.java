@@ -83,10 +83,12 @@ public class ServletAspect {
             String requestUri = Strings.nullToEmpty(request.getRequestURI());
             String requestMethod = Strings.nullToEmpty(request.getMethod());
             if (session == null) {
-                messageSupplier = new ServletMessageSupplier(requestMethod, requestUri, null, null);
+                messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
+                        DetailCapture.captureRequestHeaders(request), null, null);
             } else {
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
-                        session.getId(), session.getSessionAttributes());
+                        DetailCapture.captureRequestHeaders(request), session.getId(),
+                        session.getSessionAttributes());
             }
             topLevel.set(messageSupplier);
             Span span = pluginServices.startTrace(requestUri, messageSupplier, metricName);

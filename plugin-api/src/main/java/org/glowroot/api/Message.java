@@ -28,9 +28,14 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.api.internal.ReadableMessage;
 
 /**
- * The detail map can contain only {@link String}, {@link Double}, {@link Boolean} and null value
- * types. It can also contain nested maps (which have the same restrictions on value types,
- * including additional levels of nested maps). The detail map cannot have null keys.
+ * The detail map can contain only {@link String}, {@link Double}, {@link Boolean} and null values.
+ * It can also contain nested lists of {@link String}, {@link Double}, {@link Boolean} and null
+ * values (in particular, lists elements cannot be other lists or maps). And it can contain any
+ * level of nested maps whose keys are {@link String} and whose values are one of the above types
+ * (including lists). The detail map cannot have null keys.
+ * 
+ * Lists are supported to simulate multimaps, e.g. for http request parameters and http headers,
+ * both of which can have multiple values for the same key.
  * 
  * As an extra bonus, detail map can also contain org.glowroot.api.Optional values which is useful
  * for Maps that do not accept null values, e.g.

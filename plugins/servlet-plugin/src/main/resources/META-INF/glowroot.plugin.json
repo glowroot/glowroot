@@ -70,11 +70,34 @@
         "Comma-separated list of sensitive request parameters to mask, e.g. passwords.",
         " The wildcard '*' is supported anywhere in the parameter."
       ]
+    },
+    {
+      "prompt": "Capture request headers",
+      "name": "captureRequestHeaders",
+      "type": "string",
+      "default": "",
+      "description": [
+        "Comma-separated list of request headers to capture in the servlet span's context map.",
+        " These captured headers are viewable under the servlet span for any captured trace.",
+        " The wildcard '*' is supported anywhere in the parameter."
+      ]
+    },
+    {
+      "prompt": "Capture response headers",
+      "name": "captureResponseHeaders",
+      "type": "string",
+      "default": "",
+      "description": [
+        "Comma-separated list of response headers to capture in the servlet span's context map.",
+        " These captured headers are viewable under the servlet span for any captured trace.",
+        " The wildcard '*' is supported anywhere in the parameter."
+      ]
     }
   ],
   "aspects": [
     "org.glowroot.plugin.servlet.ServletAspect",
     "org.glowroot.plugin.servlet.RequestParameterAspect",
+    "org.glowroot.plugin.servlet.ResponseHeaderAspect",
     "org.glowroot.plugin.servlet.SessionAspect",
     "org.glowroot.plugin.servlet.ServletInitAspect"
   ]

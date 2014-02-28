@@ -33,6 +33,8 @@ class ServletPluginProperties {
 
     private static final String CAPTURE_REQUEST_PARAMS_PROPERTY_NAME = "captureRequestParameters";
     private static final String MASK_REQUEST_PARAMS_PROPERTY_NAME = "maskRequestParameters";
+    private static final String CAPTURE_REQUEST_HEADER_PROPERTY_NAME = "captureRequestHeaders";
+    private static final String CAPTURE_RESPONSE_HEADER_PROPERTY_NAME = "captureResponseHeaders";
     private static final String SESSION_USER_ATTRIBUTE_PROPERTY_NAME = "sessionUserAttribute";
     private static final String CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME =
             "captureSessionAttributes";
@@ -45,6 +47,8 @@ class ServletPluginProperties {
 
     private static volatile ImmutableList<Pattern> captureRequestParameters = ImmutableList.of();
     private static volatile ImmutableList<Pattern> maskRequestParameters = ImmutableList.of();
+    private static volatile ImmutableList<Pattern> captureRequestHeaders = ImmutableList.of();
+    private static volatile ImmutableList<Pattern> captureResponseHeaders = ImmutableList.of();
 
     private static volatile String sessionUserAttributePath = "";
     private static volatile ImmutableSet<String> captureSessionAttributePaths = ImmutableSet.of();
@@ -72,6 +76,14 @@ class ServletPluginProperties {
         return maskRequestParameters;
     }
 
+    static ImmutableList<Pattern> captureRequestHeaders() {
+        return captureRequestHeaders;
+    }
+
+    static ImmutableList<Pattern> captureResponseHeaders() {
+        return captureResponseHeaders;
+    }
+
     static String sessionUserAttributePath() {
         return sessionUserAttributePath;
     }
@@ -95,24 +107,10 @@ class ServletPluginProperties {
     }
 
     private static void updateCache() {
-        String captureRequestParametersText =
-                pluginServices.getStringProperty(CAPTURE_REQUEST_PARAMS_PROPERTY_NAME);
-        ImmutableList.Builder<Pattern> captureParameters = ImmutableList.builder();
-        for (String parameter : splitter.split(captureRequestParametersText)) {
-            // converted to lower case for case-insensitive matching
-            captureParameters.add(buildRegexPattern(parameter.toLowerCase(Locale.ENGLISH)));
-        }
-        captureRequestParameters = captureParameters.build();
-
-        String maskRequestParametersText =
-                pluginServices.getStringProperty(MASK_REQUEST_PARAMS_PROPERTY_NAME);
-        ImmutableList.Builder<Pattern> maskParameters = ImmutableList.builder();
-        for (String parameter : splitter.split(maskRequestParametersText)) {
-            // converted to lower case for case-insensitive matching
-            maskParameters.add(buildRegexPattern(parameter.toLowerCase(Locale.ENGLISH)));
-        }
-        maskRequestParameters = maskParameters.build();
-
+        captureRequestParameters = buildPatternList(CAPTURE_REQUEST_PARAMS_PROPERTY_NAME);
+        maskRequestParameters = buildPatternList(MASK_REQUEST_PARAMS_PROPERTY_NAME);
+        captureRequestHeaders = buildPatternList(CAPTURE_REQUEST_HEADER_PROPERTY_NAME);
+        captureResponseHeaders = buildPatternList(CAPTURE_RESPONSE_HEADER_PROPERTY_NAME);
         sessionUserAttributePath =
                 pluginServices.getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME);
         String captureSessionAttributesText =
@@ -122,6 +120,16 @@ class ServletPluginProperties {
         captureSessionAttributeNames = buildCaptureSessionAttributeNames();
         captureSessionId = pluginServices.getBooleanProperty(CAPTURE_SESSION_ID_PROPERTY_NAME);
         captureStartup = pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
+    }
+
+    private static ImmutableList<Pattern> buildPatternList(String propertyName) {
+        String captureRequestParametersText = pluginServices.getStringProperty(propertyName);
+        ImmutableList.Builder<Pattern> captureParameters = ImmutableList.builder();
+        for (String parameter : splitter.split(captureRequestParametersText)) {
+            // converted to lower case for case-insensitive matching
+            captureParameters.add(buildRegexPattern(parameter.toLowerCase(Locale.ENGLISH)));
+        }
+        return captureParameters.build();
     }
 
     private static ImmutableSet<String> buildCaptureSessionAttributeNames() {

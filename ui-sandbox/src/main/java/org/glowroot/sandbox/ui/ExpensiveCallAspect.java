@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Random;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.api.ErrorMessage;
@@ -372,7 +373,7 @@ public class ExpensiveCallAspect {
             public Message get() {
                 Map<String, ?> detail = ImmutableMap.of("attr1", "value1", "attr2", "value2",
                         "attr3", ImmutableMap.of("attr31",
-                                ImmutableMap.of("attr311", "value311", "attr312", "value312"),
+                                ImmutableMap.of("attr311", ImmutableList.of("v311aa", "v311bb")),
                                 "attr32", "value32", "attr33", "value33"));
                 String spanText = (String) getSpanText.invoke(expensive,
                         "<error calling ExpensiveCall.getSpanText()>");

@@ -21,7 +21,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
-import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -61,7 +60,11 @@ class ServletMessageSupplier extends MessageSupplier {
     private final String requestUri;
 
     @MonotonicNonNull
-    private volatile ImmutableMap<String, String[]> requestParameterMap;
+    private volatile ImmutableMap<String, Object> requestParameters;
+
+    private final ImmutableMap<String, Object> requestHeaders;
+
+    private final ResponseHeaders responseHeaders = new ResponseHeaders();
 
     // the initial value is the sessionId as it was present at the beginning of the request
     @Nullable
@@ -81,10 +84,12 @@ class ServletMessageSupplier extends MessageSupplier {
     @MonotonicNonNull
     private volatile ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
-    ServletMessageSupplier(String requestMethod, String requestUri, @Nullable String sessionId,
+    ServletMessageSupplier(String requestMethod, String requestUri,
+            ImmutableMap<String, Object> requestHeaders, @Nullable String sessionId,
             @Nullable ImmutableMap<String, String> sessionAttributeMap) {
         this.requestMethod = requestMethod;
         this.requestUri = requestUri;
+        this.requestHeaders = requestHeaders;
         this.sessionIdInitialValue = sessionId;
         if (sessionAttributeMap == null || sessionAttributeMap.isEmpty()) {
             this.sessionAttributeInitialValueMap = null;
@@ -96,17 +101,67 @@ class ServletMessageSupplier extends MessageSupplier {
     @Override
     public Message get() {
         Map<String, Object> detail = Maps.newHashMap();
-        addRequestParameterDetail(detail);
+        if (requestParameters != null && !requestParameters.isEmpty()) {
+            detail.put("request parameters", requestParameters);
+        }
+        if (!requestHeaders.isEmpty()) {
+            detail.put("request headers", requestHeaders);
+        }
+        Map<String, Object> responseHeaderStrings = responseHeaders.getMapOfStrings();
+        if (!responseHeaderStrings.isEmpty()) {
+            detail.put("response headers", responseHeaderStrings);
+        }
         addSessionAttributeDetail(detail);
         return Message.withDetail(requestMethod + ' ' + requestUri, detail);
     }
 
-    boolean isRequestParameterMapCaptured() {
-        return requestParameterMap != null;
+    boolean isRequestParametersCaptured() {
+        return requestParameters != null;
     }
 
-    void captureRequestParameterMap(ImmutableMap<String, String[]> requestParameterMap) {
-        this.requestParameterMap = requestParameterMap;
+    void setCaptureRequestParameters(ImmutableMap<String, Object> requestParameters) {
+        this.requestParameters = requestParameters;
+    }
+
+    void setResponseHeader(String name, @Nullable String value) {
+        if (name.equalsIgnoreCase("Content-Type")) {
+            // TODO SERVLET 2.4
+        }
+        if (value == null) {
+            responseHeaders.setHeader(name, "");
+        } else {
+            responseHeaders.setHeader(name, value);
+        }
+    }
+
+    void setResponseDateHeader(String name, long date) {
+        responseHeaders.setHeader(name, date);
+    }
+
+    void setResponseIntHeader(String name, int value) {
+        responseHeaders.setHeader(name, value);
+    }
+
+    void addResponseHeader(String name, @Nullable String value) {
+        if (value == null) {
+            responseHeaders.addHeader(name, "");
+        } else {
+            responseHeaders.addHeader(name, value);
+        }
+    }
+
+    void addResponseDateHeader(String name, long date) {
+        responseHeaders.addHeader(name, date);
+    }
+
+    void addResponseIntHeader(String name, int value) {
+        responseHeaders.addHeader(name, value);
+    }
+
+    void updateResponseContentType() {
+        // this requires at least Servlet 2.4 (e.g. Tomcat 5.5.x)
+
+        responseHeaders.setHeader("Content-Type", "");
     }
 
     void setSessionIdUpdatedValue(String sessionId) {
@@ -128,23 +183,6 @@ class ServletMessageSupplier extends MessageSupplier {
     @Nullable
     String getSessionIdUpdatedValue() {
         return sessionIdUpdatedValue;
-    }
-
-    private void addRequestParameterDetail(Map<String, Object> detail) {
-        if (requestParameterMap != null && !requestParameterMap.isEmpty()) {
-            Map<String, Object> nestedDetail = Maps.newHashMap();
-            for (String parameterName : requestParameterMap.keySet()) {
-                String[] values = requestParameterMap.get(parameterName);
-                if (values.length == 0) {
-                    nestedDetail.put(parameterName, "");
-                } else if (values.length == 1) {
-                    nestedDetail.put(parameterName, values[0]);
-                } else {
-                    nestedDetail.put(parameterName, Joiner.on(", ").join(values));
-                }
-            }
-            detail.put("request parameters", nestedDetail);
-        }
     }
 
     private void addSessionAttributeDetail(Map<String, Object> detail) {

@@ -37,7 +37,7 @@ class TestServlet extends HttpServlet implements AppUnderTest {
     @Override
     public void executeApp() throws Exception {
         MockHttpServletRequest request = new MockCatalinaHttpServletRequest("GET", "/testservlet");
-        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockHttpServletResponse response = new PatchedMockHttpServletResponse();
         before(request, response);
         service(request, response);
     }
@@ -53,4 +53,12 @@ class TestServlet extends HttpServlet implements AppUnderTest {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {}
+
+    private static class PatchedMockHttpServletResponse extends MockHttpServletResponse {
+
+        @Override
+        public String getContentType() {
+            return getHeader("Content-Type");
+        }
+    }
 }

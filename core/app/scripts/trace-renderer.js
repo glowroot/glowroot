@@ -14,10 +14,16 @@
  * limitations under the License.
  */
 
+// IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
+// that would require adding angular to export.js
+// and that would significantly increase the size of the exported trace files
+
 /* global $, Handlebars, JST, moment */
 
-// not using angular so that this can be embedded into export.html
-// without needing to embed large angular.js as well
+// IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
+// that would require adding angular to export.js
+// and that would significantly increase the size of the exported trace files
+
 var TraceRenderer;
 
 TraceRenderer = (function () {
@@ -132,8 +138,13 @@ TraceRenderer = (function () {
     var messageDetailHtml = function (detail) {
       var ret = '';
       $.each(detail, function (propName, propVal) {
-        // need to check not null since typeof null == 'object'
-        if (propVal !== null && typeof propVal === 'object') {
+        if ($.isArray(propVal)) {
+          // array values are supported to simulate multimaps, e.g. for http request parameters and http headers, both
+          // of which can have multiple values for the same key
+          $.each(propVal, function (i, propVal) {
+            ret += '<div class="break-word second-line-indent">' + propName + ': ' + propVal + '</div>';
+          });
+        } else if (typeof propVal === 'object' && propVal !== null) {
           ret += propName + ':<br><div class="indent1">' + messageDetailHtml(propVal) + '</div>';
         } else {
           ret += '<div class="break-word second-line-indent">' + propName + ': ' + propVal + '</div>';

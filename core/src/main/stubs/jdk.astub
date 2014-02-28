@@ -35,7 +35,6 @@ public class Thread {
 @Immutable
 public class Thread$State {}
 
-
 /* ========================================================================== */
 package java.lang.annotation;
 
@@ -138,6 +137,10 @@ package java.util;
 
 public interface Map<K, V> {
     void putAll(@Nullable @ReadOnly Map<? extends K, ? extends V> m);
+}
+
+public interface Enumeration {
+    @Nullable String nextElement();
 }
 
 /* ========================================================================== */

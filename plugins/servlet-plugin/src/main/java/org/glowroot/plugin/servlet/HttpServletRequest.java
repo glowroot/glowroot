@@ -15,6 +15,7 @@
  */
 package org.glowroot.plugin.servlet;
 
+import java.util.Enumeration;
 import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
@@ -43,6 +44,10 @@ class HttpServletRequest {
             UnresolvedMethod.from("javax.servlet.ServletRequest", "getParameterMap");
     private static final UnresolvedMethod getHeaderMethod = UnresolvedMethod.from(
             "javax.servlet.http.HttpServletRequest", "getHeader", String.class);
+    private static final UnresolvedMethod getHeadersMethod = UnresolvedMethod.from(
+            "javax.servlet.http.HttpServletRequest", "getHeaders", String.class);
+    private static final UnresolvedMethod getHeaderNamesMethod = UnresolvedMethod.from(
+            "javax.servlet.http.HttpServletRequest", "getHeaderNames");
 
     private final Object realRequest;
 
@@ -78,9 +83,9 @@ class HttpServletRequest {
     }
 
     @ReadOnly
-    Map<?, ?> getParameterMap() {
-        Map<?, ?> parameterMap = (Map<?, ?>) getParameterMapMethod.invoke(
-                realRequest, ImmutableMap.of());
+    Map<?, ?> getParameterMaps() {
+        Map<?, ?> parameterMap =
+                (Map<?, ?>) getParameterMapMethod.invoke(realRequest, ImmutableMap.of());
         if (parameterMap == null) {
             return ImmutableMap.of();
         } else {
@@ -91,5 +96,35 @@ class HttpServletRequest {
     @Nullable
     String getHeader(String name) {
         return (String) getHeaderMethod.invoke(realRequest, name, null);
+    }
+
+    @Nullable
+    @SuppressWarnings("unchecked")
+    Enumeration<String> getHeaders(String name) {
+        return (Enumeration<String>) getHeadersMethod.invoke(realRequest, name,
+                EmptyStringEnumeration.INSTANCE);
+    }
+
+    @Nullable
+    @SuppressWarnings("unchecked")
+    Enumeration<String> getHeaderNames() {
+        return (Enumeration<String>) getHeaderNamesMethod.invoke(realRequest,
+                EmptyStringEnumeration.INSTANCE);
+    }
+
+    private static class EmptyStringEnumeration implements Enumeration<String> {
+
+        private static final Enumeration<String> INSTANCE = new EmptyStringEnumeration();
+
+        @Override
+        public boolean hasMoreElements() {
+            return false;
+        }
+
+        @Override
+        @Nullable
+        public String nextElement() {
+            return null;
+        }
     }
 }

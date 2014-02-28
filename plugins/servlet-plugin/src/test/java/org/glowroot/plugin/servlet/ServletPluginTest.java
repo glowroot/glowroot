@@ -16,6 +16,7 @@
 package org.glowroot.plugin.servlet;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.Filter;
@@ -127,10 +128,13 @@ public class ServletPluginTest {
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
         @SuppressWarnings("unchecked")
-        Map<String, String> requestParameters =
-                (Map<String, String>) span.getMessage().getDetail().get("request parameters");
+        Map<String, Object> requestParameters =
+                (Map<String, Object>) span.getMessage().getDetail().get("request parameters");
         assertThat(requestParameters.get("xYz")).isEqualTo("aBc");
         assertThat(requestParameters.get("jpassword1")).isEqualTo("****");
+        @SuppressWarnings("unchecked")
+        List<String> multi = (List<String>) requestParameters.get("multi");
+        assertThat(multi).containsExactly("m1", "m2");
     }
 
     @Test
@@ -312,6 +316,7 @@ public class ServletPluginTest {
         protected void before(HttpServletRequest request, HttpServletResponse response) {
             ((MockHttpServletRequest) request).setParameter("xYz", "aBc");
             ((MockHttpServletRequest) request).setParameter("jpassword1", "mask me");
+            ((MockHttpServletRequest) request).setParameter("multi", new String[] {"m1", "m2"});
         }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
