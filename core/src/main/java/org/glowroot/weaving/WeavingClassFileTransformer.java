@@ -137,6 +137,13 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                 || className.startsWith("org/glowroot/weaving/")) {
             return null;
         }
+        if (className.startsWith("sun/reflect/Generated")) {
+            // optimization, no need to try to weave the many classes generated for reflection:
+            // sun/reflect/GeneratedSerializationConstructorAccessor..
+            // sun/reflect/GeneratedConstructorAccessor..
+            // sun/reflect/GeneratedMethodAccessor..
+            return null;
+        }
         Weaver weaver = getWeaver(loader);
         if (weaver == null) {
             // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
