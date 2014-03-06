@@ -411,19 +411,30 @@ class WeavingClassVisitor extends ClassVisitor {
                 if (Modifier.isAbstract(inheritedMethod.getModifiers())) {
                     continue;
                 }
+                if (Modifier.isStatic(inheritedMethod.getModifiers())) {
+                    continue;
+                }
                 if (inheritedMethod.isFinal()) {
                     continue;
                 }
                 for (ParsedType newSuperType : newSuperTypes) {
                     List<Advice> advisors = getMatchingAdvisors(inheritedMethod.getModifiers(),
                             inheritedMethod, newSuperType.getName());
-                    if (!advisors.isEmpty()) {
+                    List<Advice> nonMethodWildcardAdvisors = Lists.newArrayList();
+                    for (Advice advice : advisors) {
+                        // pure wildcard * should not match inherited methods, otherwise it always
+                        // picks up all java.lang.Object methods, which seems not typically desired
+                        if (!advice.getPointcut().methodName().equals("*")) {
+                            nonMethodWildcardAdvisors.add(advice);
+                        }
+                    }
+                    if (!nonMethodWildcardAdvisors.isEmpty()) {
                         Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(inheritedMethod);
                         if (matchingAdvisorSet == null) {
                             matchingAdvisorSet = Sets.newHashSet();
                             matchingAdvisorSets.put(inheritedMethod, matchingAdvisorSet);
                         }
-                        matchingAdvisorSet.addAll(advisors);
+                        matchingAdvisorSet.addAll(nonMethodWildcardAdvisors);
                     }
                 }
             }
