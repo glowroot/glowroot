@@ -24,7 +24,6 @@ import java.util.Set;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,14 +101,27 @@ class AdminJsonService {
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
             typeNames.add(pointcutConfig.getTypeName());
         }
-        List<Class<?>> classes = Lists.newArrayList();
-        classes.addAll(parsedTypeCache.getClassesWithReweavableAdvice());
-        classes.addAll(parsedTypeCache.getExistingSubClasses(typeNames));
+        Set<Class<?>> classes = Sets.newHashSet();
+        List<Class<?>> existingReweavableClasses = parsedTypeCache.getClassesWithReweavableAdvice();
+        List<Class<?>> possibleNewReweavableClasses =
+                parsedTypeCache.getExistingSubClasses(typeNames);
+        classes.addAll(existingReweavableClasses);
+        classes.addAll(possibleNewReweavableClasses);
         if (classes.isEmpty()) {
             return "{\"classes\":0}";
         }
         instrumentation.retransformClasses(Iterables.toArray(classes, Class.class));
-        return "{\"classes\":" + classes.size() + "}";
+        List<Class<?>> updatedReweavableClasses = parsedTypeCache.getClassesWithReweavableAdvice();
+        // all existing reweavable classes were woven
+        int count = existingReweavableClasses.size();
+        // now add newly reweavable classes
+        for (Class<?> possibleNewReweavableClass : possibleNewReweavableClasses) {
+            if (updatedReweavableClasses.contains(possibleNewReweavableClass)
+                    && !existingReweavableClasses.contains(possibleNewReweavableClass)) {
+                count++;
+            }
+        }
+        return "{\"classes\":" + count + "}";
     }
 
     @POST("/backend/admin/data/compact")

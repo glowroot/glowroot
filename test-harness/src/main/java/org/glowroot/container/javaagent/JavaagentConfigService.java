@@ -190,8 +190,11 @@ class JavaagentConfigService implements ConfigService {
     }
 
     @Override
-    public void reweavePointcutConfigs() throws Exception {
-        httpClient.post("/backend/admin/pointcuts/reweave", "");
+    public int reweavePointcutConfigs() throws Exception {
+        String response = httpClient.post("/backend/admin/pointcuts/reweave", "");
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        JsonNode classesNode = ObjectMappers.getRequiredChildNode(rootNode, "classes");
+        return classesNode.asInt();
     }
 
     @Override

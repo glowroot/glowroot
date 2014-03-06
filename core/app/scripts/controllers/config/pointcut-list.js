@@ -61,7 +61,8 @@ glowroot.controller('PointcutListCtrl', [
           .success(function (data) {
             $scope.page.dirty = false;
             if (data.classes) {
-              deferred.resolve('Success (re-transformed ' + data.classes + ' classes)');
+              deferred.resolve('Success (re-transformed ' + data.classes + ' class' + (data.classes > 1 ? 'es' : '') +
+                  ')');
             } else {
               deferred.resolve('Success (no classes needed re-transforming)');
             }

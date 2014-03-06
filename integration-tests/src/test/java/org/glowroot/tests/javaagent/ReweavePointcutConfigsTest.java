@@ -42,6 +42,9 @@ public class ReweavePointcutConfigsTest extends PointcutConfigTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
+        // afterEachTest() will remove the pointcut configs, but still need to reweave here
+        // in order to get back to square one
+        container.getConfigService().reweavePointcutConfigs();
         container.close();
     }
 

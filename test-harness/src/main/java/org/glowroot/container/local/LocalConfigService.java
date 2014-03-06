@@ -278,7 +278,7 @@ class LocalConfigService implements ConfigService {
     }
 
     @Override
-    public void reweavePointcutConfigs() throws Exception {
+    public int reweavePointcutConfigs() throws Exception {
         throw new UnsupportedOperationException("Retransforming classes only works inside"
                 + " javaagent container");
     }
