@@ -121,6 +121,32 @@ public class SomeAspect {
         }
     }
 
+    @Pointcut(typeName = "java.lang.Exception", methodName = "toString",
+            metricName = "etostring")
+    public static class ExceptionToStringAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            enabledCount.increment();
+            return enabled.get();
+        }
+        @OnBefore
+        public static void onBefore() {
+            onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            onAfterCount.increment();
+        }
+    }
+
     // note: constructor pointcuts do not currently support @OnBefore
     @Pointcut(typeName = "org.glowroot.weaving.BasicMisc", methodName = "<init>")
     public static class BasicMiscConstructorAdvice {

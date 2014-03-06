@@ -16,6 +16,7 @@
 package org.glowroot.weaving;
 
 import com.google.common.collect.ImmutableList;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.glowroot.api.MetricName;
@@ -47,6 +48,7 @@ import org.glowroot.weaving.SomeAspect.BindTravelerAdvice;
 import org.glowroot.weaving.SomeAspect.BrokenAdvice;
 import org.glowroot.weaving.SomeAspect.ChangeReturnAdvice;
 import org.glowroot.weaving.SomeAspect.CircularClassDependencyAdvice;
+import org.glowroot.weaving.SomeAspect.ExceptionToStringAdvice;
 import org.glowroot.weaving.SomeAspect.HasString;
 import org.glowroot.weaving.SomeAspect.HasStringClassMixin;
 import org.glowroot.weaving.SomeAspect.HasStringInterfaceMixin;
@@ -849,6 +851,41 @@ public class WeaverTest {
         Misc test = newWovenObject(ExtendsPackagePrivateMisc.class, Misc.class, BasicAdvice.class);
         // when
         test.execute1();
+        // then
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldHandleSubInheritedMethod() throws Exception {
+        // given
+        SomeAspect.resetThreadLocals();
+        Misc test = newWovenObject(SubBasicMisc.class, Misc.class, HashCodeAdvice.class);
+        // when
+        test.hashCode();
+        // then
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
+    }
+
+    // this is harder
+    // Exception doesn't define toString() method, instead just inheriting Throwable.toString()
+    // so normally a pointcut on Exception toString would add toString method to the Exception class
+    // but since Exception is in bootstrap classloader, it is not woven
+    // TODO ideally SubException toString would still be woven
+    @Ignore
+    @Test
+    public void shouldHandleSubInheritedFromClassInBootstrapClassLoader() throws Exception {
+        // given
+        SomeAspect.resetThreadLocals();
+        Exception test =
+                newWovenObject(SubException.class, Exception.class, ExceptionToStringAdvice.class);
+        // when
+        test.toString();
         // then
         assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
         assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
