@@ -87,8 +87,7 @@ public class WeaverTest {
     @Test
     public void shouldExecuteEnabledAdvice() throws Exception {
         // given
-        BasicAdvice.resetThreadLocals();
-        BasicAdvice.enable();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, BasicAdvice.class);
         // when
         test.execute1();
@@ -102,8 +101,7 @@ public class WeaverTest {
     @Test
     public void shouldExecuteEnabledAdviceOnThrow() throws Exception {
         // given
-        BasicAdvice.resetThreadLocals();
-        BasicAdvice.enable();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(ThrowingMisc.class, Misc.class, BasicAdvice.class);
         // when
         try {
@@ -120,7 +118,7 @@ public class WeaverTest {
     @Test
     public void shouldNotExecuteDisabledAdvice() throws Exception {
         // given
-        BasicAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         BasicAdvice.disable();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, BasicAdvice.class);
         // when
@@ -135,7 +133,7 @@ public class WeaverTest {
     @Test
     public void shouldNotExecuteDisabledAdviceOnThrow() throws Exception {
         // given
-        BasicAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         BasicAdvice.disable();
         Misc test = newWovenObject(ThrowingMisc.class, Misc.class, BasicAdvice.class);
         // when
@@ -446,7 +444,7 @@ public class WeaverTest {
     @Test
     public void shouldNotWeaveIfDoesNotOverrideMatch() throws Exception {
         // given
-        BasicAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc2 test = newWovenObject(BasicMisc.class, Misc2.class, BasicAdvice.class);
         // when
         test.execute2();
@@ -542,7 +540,7 @@ public class WeaverTest {
     @Test
     public void shouldNotNestPointcuts() throws Exception {
         // given
-        NotNestingAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(NestingMisc.class, Misc.class, NotNestingAdvice.class);
         // when
         test.execute1();
@@ -557,7 +555,7 @@ public class WeaverTest {
     @Test
     public void shouldNotNestPointcuts2() throws Exception {
         // given
-        NotNestingAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(NestingMisc.class, Misc.class, NotNestingAdvice.class);
         // when
         test.execute1();
@@ -573,7 +571,7 @@ public class WeaverTest {
     @Test
     public void shouldNotNestPointcuts3() throws Exception {
         // given
-        NotNestingAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(NestingAnotherMisc.class, Misc.class, NotNestingAdvice.class);
         // when
         test.execute1();
@@ -588,7 +586,7 @@ public class WeaverTest {
     @Test
     public void shouldNestPointcuts() throws Exception {
         // given
-        BasicAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(NestingMisc.class, Misc.class, BasicAdvice.class);
         // when
         test.execute1();
@@ -602,7 +600,7 @@ public class WeaverTest {
     @Test
     public void shouldNotNestPointcutsEvenWithNoIsEnabled() throws Exception {
         // given
-        NotNestingAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(NestingMisc.class, Misc.class,
                 NotNestingWithNoIsEnabledAdvice.class);
         // when
@@ -634,8 +632,7 @@ public class WeaverTest {
     @Test
     public void shouldWeaveStaticMethod() throws Exception {
         // given
-        StaticAdvice.resetThreadLocals();
-        StaticAdvice.enable();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(StaticMisc.class, Misc.class, StaticAdvice.class);
         // when
         test.execute1();
@@ -651,8 +648,7 @@ public class WeaverTest {
     @Test
     public void shouldWeaveMethodWithPrimitiveArgs() throws Exception {
         // given
-        PrimitiveAdvice.resetThreadLocals();
-        PrimitiveAdvice.enable();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(PrimitiveMisc.class, Misc.class, PrimitiveAdvice.class);
         // when
         test.execute1();
@@ -681,7 +677,7 @@ public class WeaverTest {
     @Test
     public void shouldNotBombWithWithWildcardArg() throws Exception {
         // given
-        WildMethodAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, WildMethodAdvice.class);
         // when
         test.execute1();
@@ -695,7 +691,7 @@ public class WeaverTest {
     @Test
     public void shouldWeaveTypeWithNamePattern() throws Exception {
         // given
-        TypeNamePatternAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(PrimitiveMisc.class, Misc.class, TypeNamePatternAdvice.class);
         // when
         test.execute1();
@@ -723,7 +719,7 @@ public class WeaverTest {
     @Test
     public void shouldMatchMethodReturningVoid() throws Exception {
         // given
-        MethodReturnVoidAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, MethodReturnVoidAdvice.class);
         // when
         test.execute1();
@@ -735,7 +731,7 @@ public class WeaverTest {
     @Test
     public void shouldMatchMethodReturningCharSequence() throws Exception {
         // given
-        MethodReturnStringAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test =
                 newWovenObject(BasicMisc.class, Misc.class, MethodReturnCharSequenceAdvice.class);
         // when
@@ -748,7 +744,7 @@ public class WeaverTest {
     @Test
     public void shouldNotMatchMethodReturningString() throws Exception {
         // given
-        MethodReturnStringAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, MethodReturnStringAdvice.class);
         // when
         test.executeWithReturn();
@@ -760,7 +756,7 @@ public class WeaverTest {
     @Test
     public void shouldNotMatchMethodBasedOnReturnType() throws Exception {
         // given
-        NonMatchingMethodReturnAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class,
                 NonMatchingMethodReturnAdvice.class);
         // when
@@ -773,7 +769,7 @@ public class WeaverTest {
     @Test
     public void shouldNotMatchMethodBasedOnReturnType2() throws Exception {
         // given
-        NonMatchingMethodReturnAdvice2.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class,
                 NonMatchingMethodReturnAdvice2.class);
         // when
@@ -791,7 +787,7 @@ public class WeaverTest {
         // given
         Misc test = newWovenObject(BasicMisc.class, Misc.class, BasicMiscConstructorAdvice.class);
         // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
-        BasicMiscConstructorAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         // when
         test.execute1();
         // then
@@ -808,7 +804,7 @@ public class WeaverTest {
         Misc test = newWovenObject(BasicMisc.class, Misc.class,
                 BasicMiscConstructorOnInterfaceImplAdvice.class);
         // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
-        BasicMiscConstructorOnInterfaceImplAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         // when
         test.execute1();
         // then
@@ -821,8 +817,7 @@ public class WeaverTest {
     @Test
     public void shouldHandleInheritedMethodFulfillingAnInterface() throws Exception {
         // given
-        BasicAdvice.resetThreadLocals();
-        BasicAdvice.enable();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(ExtendsAbstractNotMisc.class, Misc.class, BasicAdvice.class);
         // when
         test.execute1();
@@ -836,8 +831,7 @@ public class WeaverTest {
     @Test
     public void shouldHandleInheritedMethod() throws Exception {
         // given
-        BasicAdvice.resetThreadLocals();
-        BasicAdvice.enable();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, HashCodeAdvice.class);
         // when
         test.hashCode();
@@ -851,8 +845,7 @@ public class WeaverTest {
     @Test
     public void shouldHandleInheritedPublicMethodFromPackagePrivateClass() throws Exception {
         // given
-        BasicAdvice.resetThreadLocals();
-        BasicAdvice.enable();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(ExtendsPackagePrivateMisc.class, Misc.class, BasicAdvice.class);
         // when
         test.execute1();
@@ -866,7 +859,7 @@ public class WeaverTest {
     @Test
     public void shouldHandleInnerClassArg() throws Exception {
         // given
-        BasicWithInnerClassArgAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, BasicWithInnerClassArgAdvice.class);
         // when
         test.execute1();
@@ -881,7 +874,7 @@ public class WeaverTest {
     @Test
     public void shouldHandleInnerClass() throws Exception {
         // given
-        BasicWithInnerClassAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.InnerMisc.class, Misc.class,
                 BasicWithInnerClassAdvice.class);
         // when
@@ -897,7 +890,7 @@ public class WeaverTest {
     @Test
     public void shouldHandlePointcutWithMultipleMethods() throws Exception {
         // given
-        MultipleMethodsAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, MultipleMethodsAdvice.class);
         // when
         test.execute1();
@@ -940,7 +933,7 @@ public class WeaverTest {
     @Test
     public void shouldPayAttentionToStaticKeyword() throws Exception {
         // given
-        NonMatchingStaticAdvice.resetThreadLocals();
+        SomeAspect.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, NonMatchingStaticAdvice.class);
         // when
         test.execute1();

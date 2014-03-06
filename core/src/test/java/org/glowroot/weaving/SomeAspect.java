@@ -42,21 +42,30 @@ import org.glowroot.api.weaving.Pointcut;
  */
 public class SomeAspect {
 
+    public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
+        @Override
+        protected Boolean initialValue() {
+            return true;
+        }
+    };
     public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
     public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
     public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
     public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
     public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
 
+    public static void resetThreadLocals() {
+        enabled.set(true);
+        enabledCount.set(0);
+        onBeforeCount.set(0);
+        onReturnCount.set(0);
+        onThrowCount.set(0);
+        onAfterCount.set(0);
+    }
+
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "execute1|execute2",
             metricName = "xyz")
     public static class BasicAdvice {
-        public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
-            @Override
-            protected Boolean initialValue() {
-                return true;
-            }
-        };
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -77,14 +86,6 @@ public class SomeAspect {
         @OnAfter
         public static void onAfter() {
             onAfterCount.increment();
-        }
-        public static void resetThreadLocals() {
-            enabled.set(true);
-            enabledCount.set(0);
-            onBeforeCount.set(0);
-            onReturnCount.set(0);
-            onThrowCount.set(0);
-            onAfterCount.set(0);
         }
         public static void enable() {
             enabled.set(true);
@@ -94,15 +95,9 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "hashCode",
+    @Pointcut(typeName = "org.glowroot.weaving.BasicMisc", methodName = "hashCode",
             metricName = "hashcode")
     public static class HashCodeAdvice {
-        public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
-            @Override
-            protected Boolean initialValue() {
-                return true;
-            }
-        };
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -123,32 +118,12 @@ public class SomeAspect {
         @OnAfter
         public static void onAfter() {
             onAfterCount.increment();
-        }
-        public static void resetThreadLocals() {
-            enabled.set(true);
-            enabledCount.set(0);
-            onBeforeCount.set(0);
-            onReturnCount.set(0);
-            onThrowCount.set(0);
-            onAfterCount.set(0);
-        }
-        public static void enable() {
-            enabled.set(true);
-        }
-        public static void disable() {
-            enabled.set(false);
         }
     }
 
     // note: constructor pointcuts do not currently support @OnBefore
     @Pointcut(typeName = "org.glowroot.weaving.BasicMisc", methodName = "<init>")
     public static class BasicMiscConstructorAdvice {
-        public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
-            @Override
-            protected Boolean initialValue() {
-                return true;
-            }
-        };
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -165,31 +140,12 @@ public class SomeAspect {
         @OnAfter
         public static void onAfter() {
             onAfterCount.increment();
-        }
-        public static void resetThreadLocals() {
-            enabled.set(true);
-            enabledCount.set(0);
-            onReturnCount.set(0);
-            onThrowCount.set(0);
-            onAfterCount.set(0);
-        }
-        public static void enable() {
-            enabled.set(true);
-        }
-        public static void disable() {
-            enabled.set(false);
         }
     }
 
     // note: constructor pointcuts do not currently support @OnBefore
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "<init>")
     public static class BasicMiscConstructorOnInterfaceImplAdvice {
-        public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
-            @Override
-            protected Boolean initialValue() {
-                return true;
-            }
-        };
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -206,31 +162,12 @@ public class SomeAspect {
         @OnAfter
         public static void onAfter() {
             onAfterCount.increment();
-        }
-        public static void resetThreadLocals() {
-            enabled.set(true);
-            enabledCount.set(0);
-            onReturnCount.set(0);
-            onThrowCount.set(0);
-            onAfterCount.set(0);
-        }
-        public static void enable() {
-            enabled.set(true);
-        }
-        public static void disable() {
-            enabled.set(false);
         }
     }
 
     @Pointcut(typeName = "org.glowroot.weaving.BasicMisc", methodName = "withInnerArg",
             methodArgs = {"org.glowroot.weaving.BasicMisc$Inner"})
     public static class BasicWithInnerClassArgAdvice {
-        public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
-            @Override
-            protected Boolean initialValue() {
-                return true;
-            }
-        };
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -251,31 +188,11 @@ public class SomeAspect {
         @OnAfter
         public static void onAfter() {
             onAfterCount.increment();
-        }
-        public static void resetThreadLocals() {
-            enabled.set(true);
-            enabledCount.set(0);
-            onBeforeCount.set(0);
-            onReturnCount.set(0);
-            onThrowCount.set(0);
-            onAfterCount.set(0);
-        }
-        public static void enable() {
-            enabled.set(true);
-        }
-        public static void disable() {
-            enabled.set(false);
         }
     }
 
     @Pointcut(typeName = "org.glowroot.weaving.BasicMisc$InnerMisc", methodName = "execute1")
     public static class BasicWithInnerClassAdvice {
-        public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
-            @Override
-            protected Boolean initialValue() {
-                return true;
-            }
-        };
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -296,20 +213,6 @@ public class SomeAspect {
         @OnAfter
         public static void onAfter() {
             onAfterCount.increment();
-        }
-        public static void resetThreadLocals() {
-            enabled.set(true);
-            enabledCount.set(0);
-            onBeforeCount.set(0);
-            onReturnCount.set(0);
-            onThrowCount.set(0);
-            onAfterCount.set(0);
-        }
-        public static void enable() {
-            enabled.set(true);
-        }
-        public static void disable() {
-            enabled.set(false);
         }
     }
 
