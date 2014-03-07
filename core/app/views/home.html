@@ -87,6 +87,27 @@
     </td>
   </tr>
   </tbody>
+  <tfoot>
+  <tr>
+    <td colspan="4" style="vertical-align: middle; padding-top: 30px;">
+      Show
+      <select ng-model="filter.limit"
+              ng-change="updateFilterLimit()"
+              class="form-control inline-block"
+              style="width: 8em; margin-left: 10px;">
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="200">200</option>
+        <option value="500">500</option>
+      </select>
+      <div gt-spinner
+           gt-spinner-inline="true"
+           gt-show="updatingFilterLimit"
+           class="inline-spinner">
+      </div>
+    </td>
+  </tr>
+  </tfoot>
 </table>
 <div class="modal hide" id="modal">
   <button class="close" id="modalHide" style="position: fixed; right: 65px; top:30px;">

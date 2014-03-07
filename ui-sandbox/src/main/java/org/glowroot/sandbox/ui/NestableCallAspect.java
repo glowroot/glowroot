@@ -71,13 +71,17 @@ public class NestableCallAspect {
                 headline = Strings.repeat(String.valueOf((char) ('a' + random.nextInt(26))), 40);
                 transactionName = headline;
             }
+            if (random.nextInt(10) == 0) {
+                // create a long-tail of transaction names to simulate long-tail of urls
+                transactionName += random.nextInt(1000);
+            }
             Span span;
-            if (count % 2 == 0) {
-                span = pluginServices.startTrace(transactionName, getRootMessageSupplier(headline),
-                        metricName);
-            } else {
+            if (count % 10 == 0) {
                 span = pluginServices.startBackgroundTrace(transactionName,
                         getRootMessageSupplier(headline), metricName);
+            } else {
+                span = pluginServices.startTrace(transactionName, getRootMessageSupplier(headline),
+                        metricName);
             }
             int index = count % (USERS.size() + 1);
             if (index < USERS.size()) {

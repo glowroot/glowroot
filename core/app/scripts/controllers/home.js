@@ -260,22 +260,28 @@ glowroot.controller('HomeCtrl', [
       }
     });
 
-    function updateTransactions() {
+    function updateTransactions(deferred) {
       var query = {
         from: $scope.filter.from,
         to: $scope.filter.to,
-        limit: 40
+        limit: $scope.filter.limit
       };
       $http.get('backend/home/transaction-aggregates?' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.transactionAggregatesError = false;
             $scope.transactionAggregates = data;
+            if (deferred) {
+              deferred.resolve();
+            }
           })
           .error(function (data, status) {
             if (status === 0) {
               $scope.transactionAggregatesError = 'Unable to connect to server';
             } else {
               $scope.transactionAggregatesError = 'An error occurred';
+            }
+            if (deferred) {
+              deferred.reject($scope.transactionAggregatesError);
             }
           });
     }
@@ -292,7 +298,19 @@ glowroot.controller('HomeCtrl', [
       // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
       var adjustedFrom = $scope.filter.from - fixedAggregationIntervalMillis;
       return 'from=' + adjustedFrom + '&to=' + $scope.filter.to + '&transactionName=' +
-          transactionName +  '&transactionNameComparator=equals&background=false';
+          transactionName + '&transactionNameComparator=equals&background=false';
+    };
+
+    $scope.updateFilterLimit = function() {
+      $scope.updatingFilterLimit = true;
+      var deferred = $q.defer();
+      deferred.promise.then(function() {
+        $scope.updatingFilterLimit = false;
+      }, function(error) {
+        // TODO handle error
+        $scope.updatingFilterLimit = false;
+      });
+      updateTransactions(deferred);
     };
 
     // TODO CONVERT TO ANGULARJS, global $http error handler?
@@ -322,6 +340,7 @@ glowroot.controller('HomeCtrl', [
       $scope.filter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
       $scope.filter.to = Math.min($scope.filter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
+    $scope.filter.limit = 50;
     updateLocation();
 
     $scope.$watch('filter.date', function (date) {
