@@ -114,6 +114,10 @@ public class Trace {
 
     private final long threadId;
 
+    // overrides general store threshold
+    // -1 means don't override the general store threshold
+    private volatile int storeThresholdMillisOverride = -1;
+
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
     @Nullable
@@ -265,6 +269,10 @@ public class Trace {
         return fineMergedStackTree;
     }
 
+    public int getStoreThresholdMillisOverride() {
+        return storeThresholdMillisOverride;
+    }
+
     @Nullable
     public ScheduledRunnable getCoarseProfilerScheduledRunnable() {
         return coarseProfilerScheduledRunnable;
@@ -317,6 +325,17 @@ public class Trace {
         // use the first non-null error
         if (this.error == null && error != null) {
             this.error = error;
+        }
+    }
+
+    public void setStoreThresholdMillisOverride(int storeThresholdMillisOverride) {
+        if (this.storeThresholdMillisOverride == -1) {
+            // first call to this method for this trace, this is normal case
+            this.storeThresholdMillisOverride = storeThresholdMillisOverride;
+        } else {
+            // use the minimum threshold passed to this method
+            this.storeThresholdMillisOverride =
+                    Math.min(this.storeThresholdMillisOverride, storeThresholdMillisOverride);
         }
     }
 

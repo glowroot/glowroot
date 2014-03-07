@@ -23,6 +23,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Ints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -330,9 +331,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public void setTraceAttribute(String name, @Nullable String value) {
-        if (pluginId == null) {
-            return;
-        }
         if (name == null) {
             logger.error("setTraceAttribute(): argument 'name' must be non-null");
             return;
@@ -340,6 +338,19 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setAttribute(name, value);
+        }
+    }
+
+    @Override
+    public void setTraceStoreThreshold(long threshold, TimeUnit unit) {
+        if (threshold < 0) {
+            logger.error("setTraceStoreThreshold(): argument 'threshold' must be non-negative");
+            return;
+        }
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace != null) {
+            int thresholdMillis = Ints.saturatedCast(unit.toMillis(threshold));
+            trace.setStoreThresholdMillisOverride(thresholdMillis);
         }
     }
 
@@ -414,6 +425,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         @Override
         public CompletedSpan endWithStackTrace(long threshold, TimeUnit unit) {
+            if (threshold < 0) {
+                logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
+                return end();
+            }
             long endTick = ticker.read();
             if (endTick - span.getStartTick() >= unit.toNanos(threshold)) {
                 span.setStackTrace(captureSpanStackTrace());

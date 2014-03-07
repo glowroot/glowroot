@@ -356,6 +356,18 @@ public abstract class PluginServices {
     public abstract void setTraceAttribute(String name, @Nullable String value);
 
     /**
+     * Overrides the general store threshold (Configuration &gt; General &gt; Store threshold). This
+     * can be used to store particular traces at a lower or higher threshold than the general
+     * threshold.
+     * 
+     * If this is called multiple times, the minimum {@code threshold} will be used.
+     * 
+     * @param threshold
+     * @param unit
+     */
+    public abstract void setTraceStoreThreshold(long threshold, TimeUnit unit);
+
+    /**
      * Returns whether a trace is already being captured.
      * 
      * This method has very limited use. It should only be used by top-level pointcuts that define a
@@ -472,6 +484,8 @@ public abstract class PluginServices {
         public void setTraceUser(@Nullable String user) {}
         @Override
         public void setTraceAttribute(String name, @Nullable String value) {}
+        @Override
+        public void setTraceStoreThreshold(long threshold, TimeUnit unit) {}
         @Override
         public boolean isInTrace() {
             return false;

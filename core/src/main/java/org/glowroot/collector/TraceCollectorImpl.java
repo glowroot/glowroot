@@ -90,7 +90,11 @@ public class TraceCollectorImpl implements TraceCollector {
             return trace.getDuration() >= MILLISECONDS.toNanos(fineStoreThresholdMillis);
         }
         // fall back to general store threshold
-        return shouldStoreBasedOnGeneralStoreThreshold(trace);
+        long storeThresholdMillis = trace.getStoreThresholdMillisOverride();
+        if (storeThresholdMillis == -1) {
+            storeThresholdMillis = configService.getGeneralConfig().getStoreThresholdMillis();
+        }
+        return trace.getDuration() >= MILLISECONDS.toNanos(storeThresholdMillis);
     }
 
     public Collection<Trace> getPendingCompleteTraces() {
@@ -169,10 +173,5 @@ public class TraceCollectorImpl implements TraceCollector {
                 countSinceLastWarning++;
             }
         }
-    }
-
-    private boolean shouldStoreBasedOnGeneralStoreThreshold(Trace trace) {
-        int storeThresholdMillis = configService.getGeneralConfig().getStoreThresholdMillis();
-        return trace.getDuration() >= MILLISECONDS.toNanos(storeThresholdMillis);
     }
 }
