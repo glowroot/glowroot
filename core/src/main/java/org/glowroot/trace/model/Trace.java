@@ -27,6 +27,7 @@ import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
@@ -469,7 +470,8 @@ public class Trace {
         private final String name;
         @Nullable
         private final String value;
-        private TraceAttribute(String name, @Nullable String value) {
+        @VisibleForTesting
+        public TraceAttribute(String name, @Nullable String value) {
             this.name = name;
             this.value = value;
         }

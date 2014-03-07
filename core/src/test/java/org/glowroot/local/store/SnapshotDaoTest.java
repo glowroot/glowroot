@@ -28,6 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.collector.Snapshot;
+import org.glowroot.local.store.TracePointQuery.StringComparator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -70,7 +71,7 @@ public class SnapshotDaoTest {
         Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
-                null, null, null, null, null, null, null, null, 1);
+                null, null, null, null, null, null, null, null, null, null, null, 1);
         // when
         List<TracePoint> points = snapshotDao.readPoints(query);
         Snapshot snapshot2 = snapshotDao.readSnapshot(points.get(0).getId());
@@ -91,7 +92,7 @@ public class SnapshotDaoTest {
         snapshotDao.store(snapshot);
         TracePointQuery query = new TracePointQuery(0, 100, snapshot.getDuration(),
                 snapshot.getDuration(), false, false, false, null, null, null, null, null, null,
-                null, null, 1);
+                null, null, null, null, null, 1);
         // when
         List<TracePoint> points = snapshotDao.readPoints(query);
         // then
@@ -105,7 +106,7 @@ public class SnapshotDaoTest {
         snapshotDao.store(snapshot);
         TracePointQuery query = new TracePointQuery(0, 0, snapshot.getDuration() + 1,
                 snapshot.getDuration() + 2, false, false, false, null, null, null, null, null,
-                null, null, null, 1);
+                null, null, null, null, null, null, 1);
         // when
         List<TracePoint> points = snapshotDao.readPoints(query);
         // then
@@ -119,7 +120,76 @@ public class SnapshotDaoTest {
         snapshotDao.store(snapshot);
         TracePointQuery query = new TracePointQuery(0, 0, snapshot.getDuration() - 2,
                 snapshot.getDuration() - 1, false, false, false, null, null, null, null, null,
-                null, null, null, 1);
+                null, null, null, null, null, null, 1);
+        // when
+        List<TracePoint> points = snapshotDao.readPoints(query);
+        // then
+        assertThat(points).isEmpty();
+    }
+
+    @Test
+    public void shouldReadSnapshotWithAttributeQualifier() {
+        // given
+        Snapshot snapshot = new SnapshotTestData().createSnapshot();
+        snapshotDao.store(snapshot);
+        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
+                null, null, null, null, null, null, null, null, "abc", StringComparator.EQUALS,
+                "xyz", 1);
+        // when
+        List<TracePoint> points = snapshotDao.readPoints(query);
+        // then
+        assertThat(points).hasSize(1);
+    }
+
+    @Test
+    public void shouldReadSnapshotWithAttributeQualifier2() {
+        // given
+        Snapshot snapshot = new SnapshotTestData().createSnapshot();
+        snapshotDao.store(snapshot);
+        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
+                null, null, null, null, null, null, null, null, "abc", null, null, 1);
+        // when
+        List<TracePoint> points = snapshotDao.readPoints(query);
+        // then
+        assertThat(points).hasSize(1);
+    }
+
+    @Test
+    public void shouldReadSnapshotWithAttributeQualifier3() {
+        // given
+        Snapshot snapshot = new SnapshotTestData().createSnapshot();
+        snapshotDao.store(snapshot);
+        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
+                null, null, null, null, null, null, null, null, null, StringComparator.EQUALS,
+                "xyz", 1);
+        // when
+        List<TracePoint> points = snapshotDao.readPoints(query);
+        // then
+        assertThat(points).hasSize(1);
+    }
+
+    @Test
+    public void shouldNotReadSnapshotWithNonMatchingAttributeQualifier() {
+        // given
+        Snapshot snapshot = new SnapshotTestData().createSnapshot();
+        snapshotDao.store(snapshot);
+        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
+                null, null, null, null, null, null, null, null, "abc", StringComparator.EQUALS,
+                "abc", 1);
+        // when
+        List<TracePoint> points = snapshotDao.readPoints(query);
+        // then
+        assertThat(points).isEmpty();
+    }
+
+    @Test
+    public void shouldNotReadSnapshotWithNonMatchingAttributeQualifier2() {
+        // given
+        Snapshot snapshot = new SnapshotTestData().createSnapshot();
+        snapshotDao.store(snapshot);
+        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
+                null, null, null, null, null, null, null, null, null, StringComparator.EQUALS,
+                "xyz1", 1);
         // when
         List<TracePoint> points = snapshotDao.readPoints(query);
         // then

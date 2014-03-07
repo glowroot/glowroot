@@ -20,8 +20,11 @@ import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
 import checkers.nullness.quals.RequiresNonNull;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharSource;
 import dataflow.quals.Pure;
+
+import org.glowroot.trace.model.Trace.TraceAttribute;
 
 /**
  * Structure used as part of the response to "/backend/trace/detail".
@@ -59,6 +62,8 @@ public class Snapshot {
     private final CharSource coarseMergedStackTree; // json data
     @Nullable
     private final CharSource fineMergedStackTree; // json data
+    @Nullable
+    private final ImmutableList<TraceAttribute> attributesForIndexing;
 
     private Snapshot(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, boolean background, String headline, String transactionName,
@@ -66,7 +71,8 @@ public class Snapshot {
             @Nullable String metrics, @Nullable String jvmInfo,
             @Immutable @Nullable CharSource spans,
             @Immutable @Nullable CharSource coarseMergedStackTree,
-            @Immutable @Nullable CharSource fineMergedStackTree) {
+            @Immutable @Nullable CharSource fineMergedStackTree,
+            @Nullable ImmutableList<TraceAttribute> attributesForIndexing) {
         this.id = id;
         this.active = active;
         this.stuck = stuck;
@@ -84,6 +90,7 @@ public class Snapshot {
         this.spans = spans;
         this.coarseMergedStackTree = coarseMergedStackTree;
         this.fineMergedStackTree = fineMergedStackTree;
+        this.attributesForIndexing = attributesForIndexing;
     }
 
     public String getId() {
@@ -165,6 +172,11 @@ public class Snapshot {
         return fineMergedStackTree;
     }
 
+    @Nullable
+    public ImmutableList<TraceAttribute> getAttributesForIndexing() {
+        return attributesForIndexing;
+    }
+
     @Override
     @Pure
     public String toString() {
@@ -223,6 +235,8 @@ public class Snapshot {
         @Immutable
         @Nullable
         private CharSource fineMergedStackTree;
+        @Nullable
+        private ImmutableList<TraceAttribute> attributesForIndexing;
 
         private Builder() {}
 
@@ -312,11 +326,16 @@ public class Snapshot {
             return this;
         }
 
+        public Builder attributesForIndexing(ImmutableList<TraceAttribute> attributesForIndexing) {
+            this.attributesForIndexing = attributesForIndexing;
+            return this;
+        }
+
         @RequiresNonNull({"id", "transactionName", "headline"})
         public Snapshot build() {
             return new Snapshot(id, active, stuck, startTime, captureTime, duration, background,
                     headline, transactionName, error, user, attributes, metrics, jvmInfo, spans,
-                    coarseMergedStackTree, fineMergedStackTree);
+                    coarseMergedStackTree, fineMergedStackTree, attributesForIndexing);
         }
     }
 }

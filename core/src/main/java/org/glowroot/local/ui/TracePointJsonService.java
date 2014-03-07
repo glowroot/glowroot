@@ -27,6 +27,7 @@ import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
+import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -45,6 +46,7 @@ import org.glowroot.local.store.TracePointQuery.StringComparator;
 import org.glowroot.markers.Singleton;
 import org.glowroot.trace.TraceRegistry;
 import org.glowroot.trace.model.Trace;
+import org.glowroot.trace.model.Trace.TraceAttribute;
 
 import static org.glowroot.common.Nullness.castNonNull;
 
@@ -100,6 +102,8 @@ class TracePointJsonService {
         private StringComparator errorComparator;
         @MonotonicNonNull
         private StringComparator userComparator;
+        @MonotonicNonNull
+        private StringComparator attributeValueComparator;
 
         public Handler(TracePointRequest request) {
             this.request = request;
@@ -133,6 +137,11 @@ class TracePointJsonService {
             if (userComparator != null) {
                 this.userComparator =
                         StringComparator.valueOf(userComparator.toUpperCase(Locale.ENGLISH));
+            }
+            String attributeValueComparator = request.getAttributeValueComparator();
+            if (attributeValueComparator != null) {
+                this.attributeValueComparator = StringComparator.valueOf(
+                        attributeValueComparator.toUpperCase(Locale.ENGLISH));
             }
             boolean captureActiveTraces = shouldCaptureActiveTraces();
             List<Trace> activeTraces = Lists.newArrayList();
@@ -180,7 +189,8 @@ class TracePointJsonService {
                     high, request.isBackground(), request.isErrorOnly(), request.isFineOnly(),
                     transactionNameComparator, request.getTransactionName(), headlineComparator,
                     request.getHeadline(), errorComparator, request.getError(), userComparator,
-                    request.getUser(), request.getLimit() + 1);
+                    request.getUser(), request.getAttributeName(), attributeValueComparator,
+                    request.getAttributeValue(), request.getLimit() + 1);
             List<TracePoint> points = snapshotDao.readPoints(query);
             // create single merged and limited list of points
             List<TracePoint> orderedPoints = Lists.newArrayList(points);
@@ -195,12 +205,13 @@ class TracePointJsonService {
             for (Trace trace : traceRegistry.getTraces()) {
                 if (traceCollector.shouldStore(trace)
                         && matchesDuration(trace)
+                        && matchesBackground(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
                         && matchesTransactionName(trace)
                         && matchesHeadline(trace)
                         && matchesUser(trace)
-                        && matchesBackground(trace)) {
+                        && matchesAttribute(trace)) {
                     activeTraces.add(trace);
                 }
             }
@@ -223,12 +234,13 @@ class TracePointJsonService {
             List<TracePoint> points = Lists.newArrayList();
             for (Trace trace : traceCollector.getPendingCompleteTraces()) {
                 if (matchesDuration(trace)
+                        && matchesBackground(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
                         && matchesTransactionName(trace)
                         && matchesHeadline(trace)
                         && matchesUser(trace)
-                        && matchesBackground(trace)) {
+                        && matchesAttribute(trace)) {
                     points.add(TracePoint.from(trace.getId(), clock.currentTimeMillis(),
                             trace.getDuration(), trace.getError() != null));
                 }
@@ -241,6 +253,11 @@ class TracePointJsonService {
             return duration >= low && duration <= high;
         }
 
+        private boolean matchesBackground(Trace trace) {
+            Boolean background = request.isBackground();
+            return background == null || background == trace.isBackground();
+        }
+
         private boolean matchesErrorOnly(Trace trace) {
             return !request.isErrorOnly() || trace.getError() != null;
         }
@@ -251,8 +268,7 @@ class TracePointJsonService {
 
         private boolean matchesTransactionName(Trace trace) {
             return matchesUsingStringComparator(transactionNameComparator,
-                    request.getTransactionName(),
-                    trace.getTransactionName());
+                    request.getTransactionName(), trace.getTransactionName());
         }
 
         private boolean matchesHeadline(Trace trace) {
@@ -264,16 +280,30 @@ class TracePointJsonService {
             return matchesUsingStringComparator(userComparator, request.getUser(), trace.getUser());
         }
 
-        private boolean matchesBackground(Trace trace) {
-            Boolean background = request.isBackground();
-            return background == null || background == trace.isBackground();
+        private boolean matchesAttribute(Trace trace) {
+            if (Strings.isNullOrEmpty(request.getAttributeName())
+                    && (attributeValueComparator == null
+                    || Strings.isNullOrEmpty(request.getAttributeValue()))) {
+                // no attribute filter
+                return true;
+            }
+            for (TraceAttribute attribute : trace.getAttributes()) {
+                boolean matchesName = matchesUsingStringComparator(StringComparator.EQUALS,
+                        request.getAttributeName(), attribute.getName());
+                boolean matchesValue = matchesUsingStringComparator(attributeValueComparator,
+                        request.getAttributeValue(), attribute.getValue());
+                if (matchesName && matchesValue) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private boolean matchesUsingStringComparator(@Nullable StringComparator requestComparator,
                 @Nullable String requestText, @Nullable String traceText) throws AssertionError {
-            if (requestComparator == null || requestText == null) {
+            if (requestComparator == null || Strings.isNullOrEmpty(requestText)) {
                 return true;
-            } else if (traceText == null) {
+            } else if (Strings.isNullOrEmpty(traceText)) {
                 return false;
             }
             switch (requestComparator) {

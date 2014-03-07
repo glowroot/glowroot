@@ -84,11 +84,10 @@ public class LevelOneAspect {
             Span span = pluginServices.startTrace("basic test",
                     messageSupplier, metricName);
             // several trace attributes to test ordering
-            pluginServices.setTraceAttribute(arg1, arg2);
-            pluginServices.setTraceAttribute("z", "zz");
-            pluginServices.setTraceAttribute("y", "yy");
-            pluginServices.setTraceAttribute("x", "xx");
-            pluginServices.setTraceAttribute("w", "ww");
+            pluginServices.setTraceAttribute("Zee One", arg2);
+            pluginServices.setTraceAttribute("Yee Two", "yy");
+            pluginServices.setTraceAttribute("Xee Three", "xx");
+            pluginServices.setTraceAttribute("Wee Four", "ww");
             return span;
         }
 

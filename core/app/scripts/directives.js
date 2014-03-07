@@ -318,9 +318,7 @@ glowroot.directive('gtFormWithPrimaryButton', function () {
     iElement.on('keypress', 'input', function (e) {
       if (e.which === 13) {
         // NOTE: iElement.find('.btn-primary').click() bypasses the disabled check on the button
-        iElement.find('.btn-primary').each(function (index, element) {
-          element.click();
-        });
+        iElement.find('.btn-primary').first().click();
       }
     });
   };

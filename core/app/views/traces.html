@@ -67,6 +67,14 @@
      class="col-xs-12 col-sm-8 form-horizontal"
      style="float: left; margin: 20px auto 0 auto;">
   <div class="form-group">
+    <div class="col-lg-offset-3 col-lg-9">
+      <div gt-button
+           gt-label="Refresh"
+           gt-click="refreshChart(deferred)">
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
     <label class="col-lg-3 control-label"
            for="filterDate">
       Date
@@ -74,18 +82,8 @@
     <div class="col-lg-9">
       <div gt-datepicker
            gt-model="filterDate"
-           gt-class="refresh-data-on-enter-key"
            gt-id="filterDate">
       </div>
-    </div>
-  </div>
-  <div class="form-group">
-    <label class="col-lg-3 control-label">Time</label>
-    <div class="col-lg-9">
-      <p class="form-control-static"
-         style="padding-bottom: 7px;">
-        {{filter.from | date:'mediumTime'}} to {{filter.to | date:'mediumTime'}}
-      </p>
     </div>
   </div>
   <div class="form-group">
@@ -96,7 +94,8 @@
     <div class="col-lg-9">
       <!-- input-group needs to be in a sub-div so it doesn't try to fill the entire width,
            which would push the addon "seconds" label flush right -->
-      <div class="input-group">
+      <div class="input-group"
+           style="width: {{filterDurationComparator === 'between' ? 30 : 25}}em;">
         <div gt-input-group-dropdown
              gt-model="filterDurationComparator"
              gt-items="filterDateComparatorOptions"
@@ -105,9 +104,8 @@
         <input type="text"
                ng-model="filter.low"
                ng-show="filterDurationComparator !== 'less'"
-               class="form-control refresh-data-on-enter-key"
-               id="filterLow"
-               style="max-width: {{filterDurationComparator === 'between' ? 7 : 10}}em;">
+               class="form-control"
+               id="filterLow">
         <span ng-show="filterDurationComparator === 'between'"
               class="input-group-addon">
           and
@@ -115,88 +113,11 @@
         <input type="text"
                ng-model="filter.high"
                ng-show="filterDurationComparator !== 'greater'"
-               class="form-control refresh-data-on-enter-key"
-               id="filterHigh"
-               style="max-width: {{filterDurationComparator === 'between' ? 7 : 10}}em;">
+               class="form-control"
+               id="filterHigh">
         <span class="input-group-addon">
           seconds
         </span>
-      </div>
-    </div>
-  </div>
-  <div class="form-group">
-    <label class="col-lg-3 control-label"
-           for="filterHeadline">
-      Headline
-    </label>
-    <div class="col-lg-9">
-      <div class="input-group">
-        <div gt-input-group-dropdown
-             gt-model="filter.headlineComparator"
-             gt-items="filterTextComparatorOptions">
-        </div>
-        <input type="text"
-               ng-model="filter.headline"
-               class="form-control refresh-data-on-enter-key"
-               id="filterHeadline"
-               style="max-width: 20em;">
-      </div>
-    </div>
-  </div>
-  <div class="form-group">
-    <label class="col-lg-3 control-label"
-           for="filterTransactionName">
-      Transaction name
-    </label>
-    <div class="col-lg-9">
-      <div class="input-group">
-        <div gt-input-group-dropdown
-             gt-model="filter.transactionNameComparator"
-             gt-items="filterTextComparatorOptions">
-        </div>
-        <input type="text"
-               ng-model="filter.transactionName"
-               class="form-control refresh-data-on-enter-key"
-               id="filterTransactionName"
-               style="max-width: 20em;">
-      </div>
-    </div>
-  </div>
-  <div class="form-group">
-    <label class="col-lg-3 control-label"
-           for="filterError">
-      Error
-    </label>
-    <div class="col-lg-9">
-      <div class="input-group">
-        <div gt-input-group-dropdown
-             gt-model="filter.errorComparator"
-             gt-items="filterTextComparatorOptions">
-        </div>
-        <input type="text"
-               ng-model="filter.error"
-               class="form-control refresh-data-on-enter-key"
-               id="filterError"
-               style="max-width: 20em;">
-      </div>
-    </div>
-  </div>
-  <div class="form-group">
-    <label class="col-lg-3 control-label"
-           for="filterUser">
-      User
-    </label>
-    <div class="col-lg-9">
-      <div class="input-group">
-        <div gt-input-group-dropdown
-             gt-model="filter.userComparator"
-             gt-items="filterTextComparatorOptions">
-        </div>
-        <input type="text"
-               ng-model="filter.user"
-               class="form-control refresh-data-on-enter-key"
-               id="filterUser"
-               style="max-width: 20em;">
       </div>
     </div>
   </div>
@@ -209,11 +130,124 @@
       <select ng-model="filter.background"
               class="form-control"
               id="filterBackground"
-              style="max-width: 20em;">
+              style="width: 25em;">
         <option value=""></option>
         <option value="false">Exclude background traces</option>
         <option value="true">Include only background traces</option>
       </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterHeadline">
+      Headline
+    </label>
+    <div class="col-lg-9">
+      <div class="input-group"
+           style="width: 25em;">
+        <div gt-input-group-dropdown
+             gt-model="filter.headlineComparator"
+             gt-items="filterTextComparatorOptions">
+        </div>
+        <input type="text"
+               ng-model="filter.headline"
+               class="form-control"
+               id="filterHeadline">
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterTransactionName">
+      Transaction name
+    </label>
+    <div class="col-lg-9">
+      <div class="input-group"
+           style="width: 25em;">
+        <div gt-input-group-dropdown
+             gt-model="filter.transactionNameComparator"
+             gt-items="filterTextComparatorOptions">
+        </div>
+        <input type="text"
+               ng-model="filter.transactionName"
+               class="form-control"
+               id="filterTransactionName">
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterError">
+      Error
+    </label>
+    <div class="col-lg-9">
+      <div class="input-group"
+           style="width: 25em;">
+        <div gt-input-group-dropdown
+             gt-model="filter.errorComparator"
+             gt-items="filterTextComparatorOptions">
+        </div>
+        <input type="text"
+               ng-model="filter.error"
+               class="form-control"
+               id="filterError">
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterUser">
+      User
+    </label>
+    <div class="col-lg-9">
+      <div class="input-group"
+           style="width: 25em;">
+        <div gt-input-group-dropdown
+             gt-model="filter.userComparator"
+             gt-items="filterTextComparatorOptions">
+        </div>
+        <input type="text"
+               ng-model="filter.user"
+               class="form-control"
+               id="filterUser">
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterAttributeName">
+      Custom attribute name
+    </label>
+    <div class="col-lg-9">
+      <select ng-model="filter.attributeName"
+              class="form-control"
+              id="filterAttributeName"
+              style="width: 25em;">
+        <option value=""></option>
+        <option ng-repeat="attributeName in layout.traceAttributes"
+                value="{{attributeName}}">
+          {{attributeName}}
+        </option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterAttributeValue">
+      Custom attribute value
+    </label>
+    <div class="col-lg-9">
+      <div class="input-group"
+           style="width: 25em;">
+        <div gt-input-group-dropdown
+             gt-model="filter.attributeValueComparator"
+             gt-items="filterTextComparatorOptions">
+        </div>
+        <input type="text"
+               ng-model="filter.attributeValue"
+               class="form-control"
+               id="filterAttributeValue">
+      </div>
     </div>
   </div>
   <div class="form-group">
@@ -225,7 +259,7 @@
       <select ng-model="filter.limit"
               class="form-control"
               id="filterLimit"
-              style="max-width: 8em;">
+              style="width: 8em;">
         <option value="100">100</option>
         <option value="200">200</option>
         <option value="500">500</option>
@@ -256,15 +290,6 @@
                  ng-model="filter.fineOnly">
           Display only traces with fine-grained profiling data
         </label>
-      </div>
-    </div>
-  </div>
-  <div class="form-group">
-    <div class="col-lg-offset-3 col-lg-9">
-      <div gt-button
-           gt-label="Refresh"
-           gt-click="refreshChart(deferred)"
-           class="form-submit">
       </div>
     </div>
   </div>

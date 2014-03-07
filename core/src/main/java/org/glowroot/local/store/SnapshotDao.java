@@ -15,6 +15,7 @@
  */
 package org.glowroot.local.store;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Snapshot;
 import org.glowroot.collector.SnapshotRepository;
+import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.RowMapper;
 import org.glowroot.local.store.FileBlock.InvalidBlockIdFormatException;
 import org.glowroot.local.store.Schemas.Column;
@@ -37,6 +39,9 @@ import org.glowroot.local.store.TracePointQuery.ParameterizedSql;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
 import org.glowroot.markers.ThreadSafe;
+import org.glowroot.trace.model.Trace.TraceAttribute;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Data access object for storing and reading trace snapshot data from the embedded H2 database.
@@ -49,7 +54,7 @@ public class SnapshotDao implements SnapshotRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(SnapshotDao.class);
 
-    private static final ImmutableList<Column> columns = ImmutableList.of(
+    private static final ImmutableList<Column> snapshotColumns = ImmutableList.of(
             new PrimaryKeyColumn("id", Types.VARCHAR),
             new Column("stuck", Types.BIGINT),
             new Column("start_time", Types.BIGINT),
@@ -69,10 +74,17 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("coarse_merged_stack_tree", Types.VARCHAR), // capped database block id
             new Column("fine_merged_stack_tree", Types.VARCHAR)); // capped database block id
 
+    // capture_time column is used for expiring records without using FK with on delete cascade
+    private static final ImmutableList<Column> snapshotAttributeColumns = ImmutableList.of(
+            new Column("snapshot_id", Types.VARCHAR),
+            new Column("name", Types.VARCHAR),
+            new Column("value", Types.VARCHAR),
+            new Column("capture_time", Types.BIGINT));
+
     // this index includes all of the columns needed for the trace points query so h2 can return
     // result set directly from the index without having to reference the table for each row
-    private static final ImmutableList<Index> indexes = ImmutableList.of(new Index("snapshot_idx",
-            ImmutableList.of("capture_time", "duration", "id", "error")));
+    private static final ImmutableList<Index> snapshotIndexes = ImmutableList.of(
+            new Index("snapshot_idx", ImmutableList.of("capture_time", "duration", "id", "error")));
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
@@ -81,12 +93,13 @@ public class SnapshotDao implements SnapshotRepository {
         this.dataSource = dataSource;
         this.cappedDatabase = cappedDatabase;
         upgradeSnapshotTable(dataSource);
-        dataSource.syncTable("snapshot", columns);
-        dataSource.syncIndexes("snapshot", indexes);
+        dataSource.syncTable("snapshot", snapshotColumns);
+        dataSource.syncIndexes("snapshot", snapshotIndexes);
+        dataSource.syncTable("snapshot_attribute", snapshotAttributeColumns);
     }
 
     @Override
-    public void store(Snapshot snapshot) {
+    public void store(final Snapshot snapshot) {
         logger.debug("store(): snapshot={}", snapshot);
         String spansBlockId = null;
         CharSource spans = snapshot.getSpans();
@@ -115,6 +128,28 @@ public class SnapshotDao implements SnapshotRepository {
                     snapshot.getHeadline(), snapshot.getError(), snapshot.getUser(),
                     snapshot.getAttributes(), snapshot.getMetrics(), snapshot.getJvmInfo(),
                     spansBlockId, coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
+            final ImmutableList<TraceAttribute> attributesForIndexing =
+                    snapshot.getAttributesForIndexing();
+            if (attributesForIndexing == null) {
+                logger.warn("snapshot attributesForIndex was not provided");
+            } else if (!attributesForIndexing.isEmpty()) {
+                dataSource.batchUpdate("insert into snapshot_attribute (snapshot_id, name, value,"
+                        + " capture_time) values (?, ?, ?, ?)", new BatchAdder() {
+                    @Override
+                    public void addBatches(PreparedStatement preparedStatement)
+                            throws SQLException {
+                        // attributesForIndexing is final and null check already performed above
+                        checkNotNull(attributesForIndexing);
+                        for (TraceAttribute attribute : attributesForIndexing) {
+                            preparedStatement.setString(1, snapshot.getId());
+                            preparedStatement.setString(2, attribute.getName());
+                            preparedStatement.setString(3, attribute.getValue());
+                            preparedStatement.setLong(4, snapshot.getCaptureTime());
+                            preparedStatement.addBatch();
+                        }
+                    }
+                });
+            }
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -180,6 +215,7 @@ public class SnapshotDao implements SnapshotRepository {
     public void deleteAllSnapshots() {
         logger.debug("deleteAllSnapshots()");
         try {
+            dataSource.execute("truncate table snapshot_attribute");
             dataSource.execute("truncate table snapshot");
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -189,6 +225,7 @@ public class SnapshotDao implements SnapshotRepository {
     void deleteSnapshotsBefore(long captureTime) {
         logger.debug("deleteSnapshotsBefore(): captureTime={}", captureTime);
         try {
+            dataSource.update("delete from snapshot_attribute where capture_time < ?", captureTime);
             dataSource.update("delete from snapshot where capture_time < ?", captureTime);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);

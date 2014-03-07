@@ -47,6 +47,7 @@ public class PluginDescriptor {
     private final String name;
     private final String id;
     private final String version;
+    private final ImmutableList<String> traceAttributes;
     private final ImmutableList<PropertyDescriptor> properties;
     private final ImmutableList<String> aspects;
     private final ImmutableList<PointcutConfig> pointcuts;
@@ -56,11 +57,12 @@ public class PluginDescriptor {
     }
 
     private PluginDescriptor(String name, String id, String version,
-            @ReadOnly List<PropertyDescriptor> properties, @ReadOnly List<String> aspects,
-            @ReadOnly List<PointcutConfig> pointcuts) {
+            @ReadOnly List<String> traceAttributes, @ReadOnly List<PropertyDescriptor> properties,
+            @ReadOnly List<String> aspects, @ReadOnly List<PointcutConfig> pointcuts) {
         this.name = name;
         this.id = id;
         this.version = version;
+        this.traceAttributes = ImmutableList.copyOf(traceAttributes);
         this.properties = ImmutableList.copyOf(properties);
         this.aspects = ImmutableList.copyOf(aspects);
         this.pointcuts = ImmutableList.copyOf(pointcuts);
@@ -76,6 +78,10 @@ public class PluginDescriptor {
 
     public String getVersion() {
         return version;
+    }
+
+    public ImmutableList<String> getTraceAttributes() {
+        return traceAttributes;
     }
 
     public ImmutableList<PropertyDescriptor> getProperties() {
@@ -97,8 +103,10 @@ public class PluginDescriptor {
                 .add("name", name)
                 .add("id", id)
                 .add("version", version)
+                .add("traceAttributes", traceAttributes)
                 .add("properties", properties)
                 .add("aspects", aspects)
+                .add("pointcuts", pointcuts)
                 .toString();
     }
 
@@ -106,6 +114,7 @@ public class PluginDescriptor {
     static PluginDescriptor readValue(@JsonProperty("name") @Nullable String name,
             @JsonProperty("id") @Nullable String id,
             @JsonProperty("version") @Nullable String version,
+            @JsonProperty("traceAttributes") @Nullable List<String> traceAttributes,
             @JsonProperty("properties") @Nullable List<PropertyDescriptor> properties,
             @JsonProperty("aspects") @Nullable List<String> aspects,
             @JsonProperty("pointcuts") @Nullable List<PointcutConfig> pointcuts)
@@ -113,8 +122,8 @@ public class PluginDescriptor {
         checkRequiredProperty(name, "name");
         checkRequiredProperty(id, "id");
         checkRequiredProperty(version, "version");
-        return new PluginDescriptor(name, id, version, orEmpty(properties), orEmpty(aspects),
-                orEmpty(pointcuts));
+        return new PluginDescriptor(name, id, version, orEmpty(traceAttributes),
+                orEmpty(properties), orEmpty(aspects), orEmpty(pointcuts));
     }
 
     @ReadOnly
@@ -137,6 +146,8 @@ public class PluginDescriptor {
         private final String id;
         private final String version;
         @ReadOnly
+        private List<String> traceAttributes = ImmutableList.of();
+        @ReadOnly
         private List<PropertyDescriptor> properties = ImmutableList.of();
         @ReadOnly
         private List<String> aspects = ImmutableList.of();
@@ -147,6 +158,7 @@ public class PluginDescriptor {
             name = base.name;
             id = base.id;
             version = base.version;
+            traceAttributes = base.traceAttributes;
             properties = base.properties;
             aspects = base.aspects;
             pointcuts = base.pointcuts;
@@ -158,7 +170,8 @@ public class PluginDescriptor {
         }
 
         public PluginDescriptor build() {
-            return new PluginDescriptor(name, id, version, properties, aspects, pointcuts);
+            return new PluginDescriptor(name, id, version, traceAttributes, properties, aspects,
+                    pointcuts);
         }
     }
 }

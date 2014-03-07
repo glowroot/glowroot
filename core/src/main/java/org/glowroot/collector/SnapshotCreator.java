@@ -95,6 +95,7 @@ public class SnapshotCreator {
         builder.error(trace.getError());
         builder.user(trace.getUser());
         builder.attributes(writeAttributesAsString(trace.getAttributes()));
+        builder.attributesForIndexing(trace.getAttributes());
         builder.metrics(writeMetricsAsString(trace.getMetrics()));
         builder.jvmInfo(trace.getJvmInfoJson());
         if (!summary) {

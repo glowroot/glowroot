@@ -47,26 +47,15 @@
     <div class="col-lg-8">
       <div gt-datepicker
            gt-model="filter.date"
-           gt-class="refresh-data-on-enter-key"
            gt-id="filterDate">
       </div>
-    </div>
-  </div>
-  <div class="form-group">
-    <label class="col-lg-4 control-label">Time</label>
-    <div class="col-lg-8">
-      <!-- maybe bootstrap issue that padding-top is required for vertical alignment? -->
-      <p class="form-control-static">
-        {{filter.from | date:'mediumTime'}} to {{filter.to | date:'mediumTime'}}
-      </p>
     </div>
   </div>
   <div class="form-group">
     <div class="col-lg-offset-4 col-lg-8">
       <div gt-button
            gt-label="Refresh"
-           gt-click="refreshChart(deferred)"
-           class="form-submit">
+           gt-click="refreshChart(deferred)">
       </div>
     </div>
   </div>

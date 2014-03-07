@@ -2,6 +2,12 @@
   "name": "Ui Sandbox Plugin",
   "id": "glowroot-ui-sandbox",
   "version": "0.5-SNAPSHOT",
+  "traceAttributes": [
+    "My First Attribute",
+    "Second",
+    "A Very Long Attribute Value",
+    "Another"
+  ],
   "properties": [
     {
       "prompt": "Do something",

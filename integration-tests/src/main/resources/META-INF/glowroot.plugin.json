@@ -2,6 +2,13 @@
   "name": "Integration Tests Plugin",
   "id": "glowroot-integration-tests",
   "version": "0.5-SNAPSHOT",
+  "traceAttributes": [
+    "Zee One",
+    "Yee Two",
+    "Xee Three",
+    "Wee Four",
+    "Mock driver loaded"
+  ],
   "properties": [
     {
       "prompt": "Starred headline",

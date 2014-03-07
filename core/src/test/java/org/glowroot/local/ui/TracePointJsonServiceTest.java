@@ -35,6 +35,7 @@ import org.glowroot.local.store.TracePoint;
 import org.glowroot.local.store.TracePointQuery;
 import org.glowroot.trace.TraceRegistry;
 import org.glowroot.trace.model.Trace;
+import org.glowroot.trace.model.Trace.TraceAttribute;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -207,6 +208,7 @@ public class TracePointJsonServiceTest {
         when(trace.getId()).thenReturn(id);
         when(trace.getStartTick()).thenReturn(
                 DEFAULT_CURRENT_TICK - MILLISECONDS.toNanos(durationMillis));
+        when(trace.getAttributes()).thenReturn(ImmutableList.<TraceAttribute>of());
         return trace;
     }
 
@@ -215,6 +217,7 @@ public class TracePointJsonServiceTest {
         when(trace.getId()).thenReturn(id);
         when(trace.getDuration()).thenReturn(MILLISECONDS.toNanos(durationMillis));
         when(trace.isCompleted()).thenReturn(true);
+        when(trace.getAttributes()).thenReturn(ImmutableList.<TraceAttribute>of());
         return trace;
     }
 

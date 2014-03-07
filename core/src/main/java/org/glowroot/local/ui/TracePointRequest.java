@@ -34,6 +34,8 @@ class TracePointRequest {
     private long to;
     private double low; // seconds, with millisecond precision
     private double high; // seconds, with millisecond precision
+    @Nullable
+    private Boolean background;
     private boolean errorOnly;
     private boolean fineOnly;
     @Nullable
@@ -53,7 +55,11 @@ class TracePointRequest {
     @Nullable
     private String user;
     @Nullable
-    private Boolean background;
+    private String attributeName;
+    @Nullable
+    private String attributeValueComparator;
+    @Nullable
+    private String attributeValue;
     private int limit;
 
     public long getFrom() {
@@ -86,6 +92,15 @@ class TracePointRequest {
 
     public void setHigh(double high) {
         this.high = high;
+    }
+
+    @Nullable
+    public Boolean isBackground() {
+        return background;
+    }
+
+    public void setBackground(@Nullable Boolean background) {
+        this.background = background;
     }
 
     public boolean isErrorOnly() {
@@ -177,12 +192,30 @@ class TracePointRequest {
     }
 
     @Nullable
-    public Boolean isBackground() {
-        return background;
+    public String getAttributeName() {
+        return attributeName;
     }
 
-    public void setBackground(@Nullable Boolean background) {
-        this.background = background;
+    public void setAttributeName(@Nullable String attributeName) {
+        this.attributeName = attributeName;
+    }
+
+    @Nullable
+    public String getAttributeValueComparator() {
+        return attributeValueComparator;
+    }
+
+    public void setAttributeValueComparator(@Nullable String attributeValueComparator) {
+        this.attributeValueComparator = attributeValueComparator;
+    }
+
+    @Nullable
+    public String getAttributeValue() {
+        return attributeValue;
+    }
+
+    public void setAttributeValue(@Nullable String attributeValue) {
+        this.attributeValue = attributeValue;
     }
 
     public int getLimit() {
@@ -201,13 +234,16 @@ class TracePointRequest {
                 .add("to", to)
                 .add("low", low)
                 .add("high", high)
+                .add("background", background)
                 .add("errorOnly", errorOnly)
                 .add("fineOnly", fineOnly)
                 .add("headlineComparator", headlineComparator)
                 .add("headline", headline)
                 .add("userComparator", userComparator)
                 .add("user", user)
-                .add("background", background)
+                .add("attributeName", attributeName)
+                .add("attributeValueComparator", attributeValueComparator)
+                .add("attributeValue", attributeValue)
                 .add("limit", limit)
                 .toString();
     }

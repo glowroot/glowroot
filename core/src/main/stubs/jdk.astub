@@ -121,6 +121,7 @@ public interface DatabaseMetaData {
 }
 
 public interface PreparedStatement {
+    void setString(int parameterIndex, @Nullable String x);
     void setObject(int parameterIndex, @Nullable Object x);
 }
 

@@ -85,12 +85,21 @@ public class NestableCallAspect {
             } else {
                 pluginServices.setTraceUser(null);
             }
-            pluginServices.setTraceAttribute("my first attribute", "hello world");
-            pluginServices.setTraceAttribute("and second", "val");
-            pluginServices.setTraceAttribute("and a very long attribute value", "abcdefghijkl"
-                    + "mnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
-            pluginServices.setTraceAttribute("and another", "a b c d e f g h i j k l m n o p q"
-                    + " r s t u v w x y z a b c d e f g h i j k l m n o p q r s t u v w x y z");
+            if (random.nextBoolean()) {
+                pluginServices.setTraceAttribute("My First Attribute",
+                        "hello world " + random.nextInt(10));
+            }
+            if (random.nextBoolean()) {
+                pluginServices.setTraceAttribute("Second", "val " + random.nextInt(10));
+            }
+            if (random.nextBoolean()) {
+                pluginServices.setTraceAttribute("A Very Long Attribute Value", "abcdefghijkl"
+                        + "mnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
+            }
+            if (random.nextBoolean()) {
+                pluginServices.setTraceAttribute("Another", "a b c d e f g h i j k l m n o p q"
+                        + " r s t u v w x y z a b c d e f g h i j k l m n o p q r s t u v w x y z");
+            }
             return span;
         }
         @OnAfter

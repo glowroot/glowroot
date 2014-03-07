@@ -96,6 +96,14 @@ class LayoutJsonService {
             jg.writeEndObject();
         }
         jg.writeEndArray();
+        jg.writeFieldName("traceAttributes");
+        jg.writeStartArray();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
+            for (String traceAttribute : pluginDescriptor.getTraceAttributes()) {
+                jg.writeString(traceAttribute);
+            }
+        }
+        jg.writeEndArray();
         jg.writeNumberField("fixedAggregationIntervalSeconds", fixedAggregationIntervalSeconds);
         jg.writeEndObject();
         jg.close();

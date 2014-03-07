@@ -62,19 +62,16 @@ public class TraceAttributesTest {
         Trace trace = container.getTraceService().getLastTrace();
         Iterator<Entry<String, String>> i = trace.getAttributes().entrySet().iterator();
         Entry<String, String> entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("ax");
+        assertThat(entry.getKey()).isEqualTo("Zee One");
         assertThat(entry.getValue()).isEqualTo("bx");
         entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("z");
-        assertThat(entry.getValue()).isEqualTo("zz");
-        entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("y");
+        assertThat(entry.getKey()).isEqualTo("Yee Two");
         assertThat(entry.getValue()).isEqualTo("yy");
         entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("x");
+        assertThat(entry.getKey()).isEqualTo("Xee Three");
         assertThat(entry.getValue()).isEqualTo("xx");
         entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("w");
+        assertThat(entry.getKey()).isEqualTo("Wee Four");
         assertThat(entry.getValue()).isEqualTo("ww");
     }
 
