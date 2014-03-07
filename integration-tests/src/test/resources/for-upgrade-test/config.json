@@ -23,7 +23,7 @@
     "fineProfiling" : true
   },
   "storage" : {
-    "traceExpirationHours" : -1,
+    "traceExpirationHours" : 2147483647,
     "cappedDatabaseSizeMb" : 1000
   },
   "ui" : {

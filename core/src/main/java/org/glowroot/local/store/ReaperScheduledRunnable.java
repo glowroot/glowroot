@@ -18,7 +18,6 @@ package org.glowroot.local.store;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.GeneralConfig;
 import org.glowroot.markers.Singleton;
 
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -42,11 +41,9 @@ class ReaperScheduledRunnable extends ScheduledRunnable {
 
     @Override
     protected void runInternal() {
-        int traceExpirationHours = configService.getStorageConfig()
-                .getTraceExpirationHours();
-        if (traceExpirationHours != GeneralConfig.SNAPSHOT_EXPIRATION_DISABLED) {
-            snapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis()
-                    - HOURS.toMillis(traceExpirationHours));
-        }
+        int traceExpirationHours =
+                configService.getStorageConfig().getTraceExpirationHours();
+        snapshotDao.deleteSnapshotsBefore(
+                clock.currentTimeMillis() - HOURS.toMillis(traceExpirationHours));
     }
 }

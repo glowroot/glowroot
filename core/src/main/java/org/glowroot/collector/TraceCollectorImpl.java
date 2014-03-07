@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.GeneralConfig;
 import org.glowroot.markers.Singleton;
 import org.glowroot.trace.TraceCollector;
 import org.glowroot.trace.model.Trace;
@@ -86,11 +85,9 @@ public class TraceCollectorImpl implements TraceCollector {
         }
         // check if should store for fine profiling
         if (trace.isFine()) {
-            int fineStoreThresholdMillis = configService.getFineProfilingConfig()
-                    .getStoreThresholdMillis();
-            if (fineStoreThresholdMillis != GeneralConfig.STORE_THRESHOLD_DISABLED) {
-                return trace.getDuration() >= MILLISECONDS.toNanos(fineStoreThresholdMillis);
-            }
+            int fineStoreThresholdMillis =
+                    configService.getFineProfilingConfig().getStoreThresholdMillis();
+            return trace.getDuration() >= MILLISECONDS.toNanos(fineStoreThresholdMillis);
         }
         // fall back to general store threshold
         return shouldStoreBasedOnGeneralStoreThreshold(trace);
@@ -176,7 +173,6 @@ public class TraceCollectorImpl implements TraceCollector {
 
     private boolean shouldStoreBasedOnGeneralStoreThreshold(Trace trace) {
         int storeThresholdMillis = configService.getGeneralConfig().getStoreThresholdMillis();
-        return storeThresholdMillis != GeneralConfig.STORE_THRESHOLD_DISABLED
-                && trace.getDuration() >= MILLISECONDS.toNanos(storeThresholdMillis);
+        return trace.getDuration() >= MILLISECONDS.toNanos(storeThresholdMillis);
     }
 }

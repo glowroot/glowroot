@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,6 @@ import org.glowroot.markers.UsedByJsonBinding;
 @Immutable
 public class GeneralConfig {
 
-    // don't store anything, essentially store threshold is infinite
-    public static final int STORE_THRESHOLD_DISABLED = -1;
-    // don't expire anything, essentially snapshot expiration is infinite
-    public static final int SNAPSHOT_EXPIRATION_DISABLED = -1;
     // if tracing is disabled mid-trace there should be no issue
     // active traces will not accumulate additional spans
     // but they will be logged / emailed if they exceed the defined thresholds

@@ -76,7 +76,7 @@ public class UpgradeTest {
         Container container = LocalContainer.createWithFileDb(dataDir);
         StorageConfig storageConfig = container.getConfigService().getStorageConfig();
         // disable trace snapshot expiration so the test data won't expire
-        storageConfig.setTraceExpirationHours(-1);
+        storageConfig.setTraceExpirationHours(Integer.MAX_VALUE);
         container.getConfigService().updateStorageConfig(storageConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         container.close();
