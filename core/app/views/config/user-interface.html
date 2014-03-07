@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013 the original author or authors.
+  Copyright 2013-2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -46,10 +46,8 @@
            gt-model="config.passwordEnabled"
            gt-type="checkbox"
            class="gt-form-group-without-help-block">
-        <div id="enablePasswordDetail"
-             class="collapse"
-             class="collapse" style="margin-top: 25px;">
-          <div class="well" style="margin-bottom: 0;">
+        <div collapse="originalConfig.passwordEnabled || !config.passwordEnabled">
+          <div class="well" style="margin-bottom: 0; margin-top: 25px;">
             <label class="control-label" style="padding-top: 0;">Initial password</label>
             <input type="password"
                    class="form-control"
@@ -62,9 +60,8 @@
                    style="max-width: 20em;">
           </div>
         </div>
-        <div id="disablePasswordDetail"
-             class="collapse" style="margin-top: 25px;">
-          <div class="well" style="margin-bottom: 0;">
+        <div collapse="!originalConfig.passwordEnabled || config.passwordEnabled">
+          <div class="well" style="margin-bottom: 0; margin-top: 25px;">
             <label class="control-label" style="padding-top: 0;">Verify current password</label>
             <input type="password"
                    class="form-control"

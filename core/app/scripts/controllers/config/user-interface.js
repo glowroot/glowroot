@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, $ */
+/* global glowroot, angular */
 
 glowroot.controller('ConfigUserInterfaceCtrl', [
   '$scope',
@@ -28,18 +28,6 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
     // set up objects for data binding
     $scope.page = {};
     $scope.passwordForm = {};
-
-    $scope.$watch('config.passwordEnabled', function (newValue, oldValue) {
-      if (oldValue === undefined) {
-        // initial value is being set after $http response
-        return;
-      }
-      if ($scope.originalConfig.passwordEnabled) {
-        $('#disablePasswordDetail').collapse('toggle');
-      } else {
-        $('#enablePasswordDetail').collapse('toggle');
-      }
-    });
 
     $scope.hasChanges = function () {
       if (!$scope.originalConfig) {
@@ -107,12 +95,6 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
               deferred.reject('Current password is incorrect');
             } else {
               onNewData(data);
-              if ($('#enablePasswordDetail').is(':visible')) {
-                $('#enablePasswordDetail').collapse('hide');
-              }
-              if ($('#disablePasswordDetail').is(':visible')) {
-                $('#disablePasswordDetail').collapse('hide');
-              }
               if (enablingPassword) {
                 $rootScope.showSignOutButton = true;
               } else if (disablingPassword) {

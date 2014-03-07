@@ -21,7 +21,8 @@ var glowroot = angular.module('glowroot', [
   'ui.bootstrap.dropdownToggle',
   'ui.bootstrap.typeahead',
   'ui.bootstrap.bindHtml',
-  'ui.bootstrap.modal'
+  'ui.bootstrap.modal',
+  'ui.bootstrap.collapse'
 ]);
 
 var Glowroot;
