@@ -208,8 +208,9 @@ class TracePointJsonService {
                         && matchesBackground(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
-                        && matchesTransactionName(trace)
                         && matchesHeadline(trace)
+                        && matchesTransactionName(trace)
+                        && matchesError(trace)
                         && matchesUser(trace)
                         && matchesAttribute(trace)) {
                     activeTraces.add(trace);
@@ -237,8 +238,9 @@ class TracePointJsonService {
                         && matchesBackground(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
-                        && matchesTransactionName(trace)
                         && matchesHeadline(trace)
+                        && matchesTransactionName(trace)
+                        && matchesError(trace)
                         && matchesUser(trace)
                         && matchesAttribute(trace)) {
                     points.add(TracePoint.from(trace.getId(), clock.currentTimeMillis(),
@@ -266,14 +268,19 @@ class TracePointJsonService {
             return !request.isFineOnly() || trace.isFine();
         }
 
+        private boolean matchesHeadline(Trace trace) {
+            return matchesUsingStringComparator(headlineComparator, request.getHeadline(),
+                    trace.getHeadline());
+        }
+
         private boolean matchesTransactionName(Trace trace) {
             return matchesUsingStringComparator(transactionNameComparator,
                     request.getTransactionName(), trace.getTransactionName());
         }
 
-        private boolean matchesHeadline(Trace trace) {
-            return matchesUsingStringComparator(headlineComparator, request.getHeadline(),
-                    trace.getHeadline());
+        private boolean matchesError(Trace trace) {
+            return matchesUsingStringComparator(errorComparator, request.getError(),
+                    trace.getError());
         }
 
         private boolean matchesUser(Trace trace) {
