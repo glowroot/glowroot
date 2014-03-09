@@ -295,10 +295,14 @@ glowroot.controller('HomeCtrl', [
     }
 
     $scope.tracesQueryString = function (transactionName) {
-      // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
-      var adjustedFrom = $scope.filter.from - fixedAggregationIntervalMillis;
-      return 'from=' + adjustedFrom + '&to=' + $scope.filter.to + '&transactionName=' +
-          transactionName + '&transactionNameComparator=equals&background=false';
+      return queryStrings.encodeObject({
+        // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
+        from: $scope.filter.from - fixedAggregationIntervalMillis,
+        to: $scope.filter.to,
+        transactionName: transactionName,
+        transactionNameComparator: 'equals',
+        background: 'false'
+      });
     };
 
     $scope.updateFilterLimit = function() {
