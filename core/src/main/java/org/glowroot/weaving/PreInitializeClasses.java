@@ -34,7 +34,7 @@ import org.glowroot.markers.Static;
  * In particular (at least prior to parallel class loading in JDK 7) initializing other classes
  * inside of a ClassFileTransformer.transform() method occasionally leads to deadlocks. To avoid
  * initializing other classes inside of the transform() method, all classes referenced from
- * GlowrootClassFileTransformer are pre-initialized (and all classes referenced from those classes,
+ * WeavingClassFileTransformer are pre-initialized (and all classes referenced from those classes,
  * etc).
  * 
  * Class loading is also a bad idea inside of JVM shutdown hooks, see

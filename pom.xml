@@ -44,6 +44,7 @@
     <module>plugins/servlet-plugin</module>
     <module>plugins/jdbc-plugin</module>
     <module>plugins/logger-plugin</module>
+    <module>plugins/logger-plugin-tests</module>
     <module>distribution</module>
   </modules>
 

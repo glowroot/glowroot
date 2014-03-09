@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,21 @@ public class Containers {
         return container;
     }
 
+    public static Container getSharedLocalContainer() throws Exception {
+        if (!SharedContainerRunListener.useSharedContainer()) {
+            return create(false);
+        }
+        LocalContainer container =
+                (LocalContainer) SharedContainerRunListener.getSharedLocalContainer();
+        if (container == null) {
+            container = new LocalContainer(null, false, true);
+            SharedContainerRunListener.setSharedLocalContainer(container);
+        } else {
+            container.reopen();
+        }
+        return container;
+    }
+
     public static Container createWithFileDb() throws Exception {
         return create(null, true, false);
     }
@@ -94,21 +109,6 @@ public class Containers {
     // since dataDir is passed to the container, the container will not delete dataDir on close
     public static Container create(File dataDir, boolean useFileDb) throws Exception {
         return create(dataDir, useFileDb, false);
-    }
-
-    private static Container getSharedLocalContainer() throws Exception {
-        if (!SharedContainerRunListener.useSharedContainer()) {
-            return create(false);
-        }
-        LocalContainer container =
-                (LocalContainer) SharedContainerRunListener.getSharedLocalContainer();
-        if (container == null) {
-            container = new LocalContainer(null, false, true);
-            SharedContainerRunListener.setSharedLocalContainer(container);
-        } else {
-            container.reopen();
-        }
-        return container;
     }
 
     private static Container create(@Nullable File dataDir, boolean useFileDb, boolean shared)

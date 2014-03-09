@@ -25,6 +25,8 @@
     }
   ],
   "aspects": [
+    "org.glowroot.plugin.logger.Slf4jAspect",
+    "org.glowroot.plugin.logger.Slf4jMarkerAspect",
     "org.glowroot.plugin.logger.Log4jAspect"
   ]
 }
