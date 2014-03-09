@@ -491,7 +491,8 @@ glowroot.controller('TracesCtrl', [
           borderGridLock: 0.001,
           min: 0,
           // 10 second yaxis max just for initial empty chart rendering
-          max: 10
+          max: 10,
+          label: 'seconds'
         },
         zoom: {
           interactive: true,

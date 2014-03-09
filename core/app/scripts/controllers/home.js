@@ -384,7 +384,8 @@ glowroot.controller('HomeCtrl', [
           zoomRange: false,
           min: 0,
           // 10 second yaxis max just for initial empty chart rendering
-          max: 10
+          max: 10,
+          label: 'seconds'
         },
         zoom: {
           interactive: true,
