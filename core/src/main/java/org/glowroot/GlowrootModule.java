@@ -63,7 +63,8 @@ public class GlowrootModule {
     private final File dataDir;
 
     GlowrootModule(File dataDir, @ReadOnly Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, String version, boolean aggregatorDisabled)
+            @Nullable Instrumentation instrumentation, String version,
+            boolean snapshotReaperDisabled, boolean aggregatorDisabled)
             throws StartupFailedException {
         Ticker ticker = Ticker.systemTicker();
         Clock clock = Clock.systemClock();
@@ -81,7 +82,7 @@ public class GlowrootModule {
         }
         try {
             storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
-                    scheduledExecutor);
+                    scheduledExecutor, snapshotReaperDisabled);
         } catch (SQLException e) {
             throw new StartupFailedException(e);
         } catch (IOException e) {

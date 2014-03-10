@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,12 +51,13 @@ public class StorageModule {
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
     private final SnapshotDao snapshotDao;
+    @Nullable
     private final ReaperScheduledRunnable reaperScheduledRunnable;
     private final AggregateDao aggregateDao;
 
     public StorageModule(File dataDir, @ReadOnly Map<String, String> properties, Ticker ticker,
-            Clock clock, ConfigModule configModule, ScheduledExecutorService scheduledExecutor)
-            throws SQLException, IOException {
+            Clock clock, ConfigModule configModule, ScheduledExecutorService scheduledExecutor,
+            boolean snapshotReaperDisabled) throws SQLException, IOException {
         // mem db is only used for testing (by glowroot-test-container)
         String h2MemDb = properties.get("internal.h2.memdb");
         if (Boolean.parseBoolean(h2MemDb)) {
@@ -68,10 +70,14 @@ public class StorageModule {
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
         snapshotDao = new SnapshotDao(dataSource, cappedDatabase);
-        reaperScheduledRunnable =
-                new ReaperScheduledRunnable(configService, snapshotDao, clock);
-        reaperScheduledRunnable.scheduleAtFixedRate(scheduledExecutor, 0,
-                SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
+        if (snapshotReaperDisabled) {
+            reaperScheduledRunnable = null;
+        } else {
+            reaperScheduledRunnable =
+                    new ReaperScheduledRunnable(configService, snapshotDao, clock);
+            reaperScheduledRunnable.scheduleAtFixedRate(scheduledExecutor, 0,
+                    SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
+        }
         aggregateDao = new AggregateDao(dataSource);
     }
 
@@ -102,7 +108,9 @@ public class StorageModule {
     @OnlyUsedByTests
     public void close() {
         logger.debug("close()");
-        reaperScheduledRunnable.cancel();
+        if (reaperScheduledRunnable != null) {
+            reaperScheduledRunnable.cancel();
+        }
         try {
             cappedDatabase.close();
         } catch (IOException e) {
