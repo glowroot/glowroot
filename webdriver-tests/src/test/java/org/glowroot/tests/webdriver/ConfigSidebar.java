@@ -38,7 +38,7 @@ class ConfigSidebar {
     }
 
     WebElement getPointcutsLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Pointcuts"));
+        return Utils.withWait(driver, getSidebar(), linkText("Adhoc pointcuts"));
     }
 
     private WebElement getSidebar() {
