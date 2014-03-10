@@ -176,6 +176,26 @@ public class DataSource {
         }
     }
 
+    @Nullable
+    <T> T query(String sql, @ReadOnly List<?> args, ResultSetExtractor<T> rse) throws SQLException {
+        synchronized (lock) {
+            if (closing) {
+                return null;
+            }
+            PreparedStatement preparedStatement = prepareStatement(sql);
+            for (int i = 0; i < args.size(); i++) {
+                preparedStatement.setObject(i + 1, args.get(i));
+            }
+            ResultSet resultSet = preparedStatement.executeQuery();
+            try {
+                return rse.extractData(resultSet);
+            } finally {
+                resultSet.close();
+            }
+            // don't need to close statement since they are all cached and used under lock
+        }
+    }
+
     int update(String sql, @Nullable Object... args) throws SQLException {
         if (closing) {
             // this can get called a lot inserting trace snapshots, and these can get backlogged
@@ -329,7 +349,7 @@ public class DataSource {
         T mapRow(ResultSet resultSet) throws SQLException;
     }
 
-    private interface ResultSetExtractor<T> {
+    interface ResultSetExtractor<T> {
         T extractData(ResultSet resultSet) throws SQLException;
     }
 

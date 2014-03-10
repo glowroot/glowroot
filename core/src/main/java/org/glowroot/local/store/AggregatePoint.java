@@ -22,11 +22,11 @@ package org.glowroot.local.store;
 public class AggregatePoint {
 
     private final long captureTime;
-    private final long totalMillis;
+    private final double totalMillis;
     private final long count;
     private final long storedTraceCount;
 
-    AggregatePoint(long captureTime, long totalMillis, long count, long storedTraceCount) {
+    AggregatePoint(long captureTime, double totalMillis, long count, long storedTraceCount) {
         this.captureTime = captureTime;
         this.totalMillis = totalMillis;
         this.count = count;
@@ -37,7 +37,7 @@ public class AggregatePoint {
         return captureTime;
     }
 
-    public long getTotalMillis() {
+    public double getTotalMillis() {
         return totalMillis;
     }
 

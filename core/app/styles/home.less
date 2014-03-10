@@ -15,6 +15,8 @@
  */
 
 @import "variables";
+@import "../bower_components/bootstrap/less/close";
+@import "../bower_components/bootstrap/less/mixins";
 
 .home-tooltip-label {
   display: inline-block;
@@ -28,4 +30,19 @@
   background-color: @glowroot-light-red-background;
   margin-bottom: 6px;
   border-radius: 6px;
+}
+
+/* override some bootstrap .close attributes */
+.home-display-filter-close {
+  .close;
+  float: none !important;
+  vertical-align: -2px;
+  margin-left: 5px;
+  // without reducing line-height, it expands the container vertically a bit and doesn't match with All Transactions
+  line-height: 0.5;
+  .opacity(.3);
+}
+
+.font-weight-normal {
+  font-weight: normal;
 }

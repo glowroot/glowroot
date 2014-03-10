@@ -54,12 +54,12 @@ public class AggregateDaoTest {
     @Test
     public void shouldReadAggregates() {
         // given
-        Aggregate aggregate = new Aggregate(1000, 10);
+        Aggregate aggregate = new Aggregate(1000000000, 10);
         Aggregate bgAggregate = new Aggregate(0, 0);
         Map<String, Aggregate> transactionAggregates = Maps.newHashMap();
-        transactionAggregates.put("one", new Aggregate(100, 1));
-        transactionAggregates.put("two", new Aggregate(300, 2));
-        transactionAggregates.put("seven", new Aggregate(1400, 7));
+        transactionAggregates.put("one", new Aggregate(100000000, 1));
+        transactionAggregates.put("two", new Aggregate(300000000, 2));
+        transactionAggregates.put("seven", new Aggregate(1400000000, 7));
         Map<String, Aggregate> bgTransactionAggregates = ImmutableMap.of();
         aggregateDao.store(10000, aggregate, transactionAggregates, bgAggregate,
                 bgTransactionAggregates);
@@ -87,12 +87,12 @@ public class AggregateDaoTest {
     public void shouldReadBgAggregates() {
         // given
         Aggregate aggregate = new Aggregate(0, 0);
-        Aggregate bgAggregate = new Aggregate(1000, 10);
+        Aggregate bgAggregate = new Aggregate(1000000000, 10);
         Map<String, Aggregate> transactionAggregates = ImmutableMap.of();
         Map<String, Aggregate> bgTransactionAggregates = Maps.newHashMap();
-        bgTransactionAggregates.put("one", new Aggregate(100, 1));
-        bgTransactionAggregates.put("two", new Aggregate(300, 2));
-        bgTransactionAggregates.put("seven", new Aggregate(1400, 7));
+        bgTransactionAggregates.put("one", new Aggregate(100000000, 1));
+        bgTransactionAggregates.put("two", new Aggregate(300000000, 2));
+        bgTransactionAggregates.put("seven", new Aggregate(1400000000, 7));
         aggregateDao.store(10000, aggregate, transactionAggregates, bgAggregate,
                 bgTransactionAggregates);
         aggregateDao.store(20000, aggregate, transactionAggregates, bgAggregate,

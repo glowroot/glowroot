@@ -14,6 +14,7 @@
     "jquery-color": "2.1.2",
     "moment": "2.5.1",
     "qtip2": "2.2.0",
+    "rcolor": "sterlingwes/RandomColor#83308d7627ba4a50c4cd571543871bd5052a1322",
     "respond": "1.4.2",
     "spinjs": "1.3.3"
   }

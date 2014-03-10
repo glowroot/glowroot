@@ -26,20 +26,20 @@ import org.glowroot.markers.OnlyUsedByTests;
 @NotThreadSafe
 public class Aggregate {
 
-    private long totalMillis;
+    private long totalDuration; // nanoseconds
     private long count;
     private long storedTraceCount;
 
     Aggregate() {}
 
     @OnlyUsedByTests
-    public Aggregate(long totalMillis, long count) {
-        this.totalMillis = totalMillis;
+    public Aggregate(long totalDuration, long count) {
+        this.totalDuration = totalDuration;
         this.count = count;
     }
 
-    public long getTotalMillis() {
-        return totalMillis;
+    public double getTotalDuration() {
+        return totalDuration;
     }
 
     public long getCount() {
@@ -50,8 +50,8 @@ public class Aggregate {
         return storedTraceCount;
     }
 
-    void add(long millis) {
-        totalMillis += millis;
+    void add(long duration) {
+        totalDuration += duration;
         count++;
     }
 

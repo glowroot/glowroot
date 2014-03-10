@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, Glowroot, $ */
+/* global glowroot, angular, Glowroot, $, RColor */
 
 glowroot.controller('HomeCtrl', [
   '$scope',
@@ -31,6 +31,12 @@ glowroot.controller('HomeCtrl', [
     $scope.$parent.activeNavbarItem = 'home';
 
     var plot;
+    var plotColors;
+    // plotTransactionNames is only updated when the plot is updated, and it is only used by the tooltip to identify
+    // which transaction name to use based on the plot series index
+    var plotTransactionNames;
+
+    var plotColor0 = $('#offscreenNormalColor').css('border-top-color');
 
     var fixedAggregationIntervalMillis = $scope.layout.fixedAggregationIntervalSeconds * 1000;
 
@@ -39,19 +45,41 @@ glowroot.controller('HomeCtrl', [
 
     var $chart = $('#chart');
 
+    var rcolor = new RColor();
+    // RColor evenly distributes colors, but largely separated calls can have similar colors
+    // so availableColors is used to store returned colors to keep down the number of calls to RColor
+    // and to keep the used colors well distributed
+    var availableColors = [];
+
+    // top 25 is a nice number, screen is not too large
+    var transactionAggregatesLimit = 25;
+
+    function nextRColor() {
+      return rcolor.get(true, 0.5, 0.5);
+    }
+
     $scope.$watchCollection('[containerWidth, windowHeight]', function () {
       plot.resize();
       plot.setupGrid();
       plot.draw();
     });
 
-    $scope.refreshChart = function (deferred) {
+    $scope.refreshChart = function (deferred, skipUpdateTransactions) {
       var refreshId = ++currentRefreshId;
       var date = $scope.filter.date;
+      var transactionNames = [];
+      angular.forEach($scope.checkedTransactionColors, function (color, transactionName) {
+        transactionNames.push(transactionName);
+      });
+      var midnight = new Date($scope.filter.from).setHours(0, 0, 0, 0);
+      $scope.filter.from = date.getTime() + ($scope.filter.from - midnight);
+      $scope.filter.to = date.getTime() + ($scope.filter.to - midnight);
       var query = {
         from: $scope.filter.from,
-        to: $scope.filter.to
+        to: $scope.filter.to,
+        transactionNames: transactionNames
       };
+      updateLocation();
       var spinner = Glowroot.showSpinner('#chartSpinner');
       $http.get('backend/home/points?' + queryStrings.encodeObject(query))
           .success(function (data) {
@@ -70,18 +98,17 @@ glowroot.controller('HomeCtrl', [
               ];
               plot.unhighlight();
             }
-            var points = [];
-            var lastPoint;
-            angular.forEach(data.points, function (currentPoint) {
-              if (lastPoint && (currentPoint[0] - lastPoint[0]) > fixedAggregationIntervalMillis * 1.5) {
-                points.push(undefined);
-              }
-              points.push(currentPoint);
-              lastPoint = currentPoint;
+            var plotData = [ data.points ];
+            angular.forEach(data.transactionPoints, function (points, transactionName) {
+              plotData.push(points);
             });
-            plot.setData([ points ]);
-            plot.setupGrid();
-            plot.draw();
+            plotColors = [];
+            plotColors.push(plotColor0);
+            angular.forEach(query.transactionNames, function (transactionName) {
+              plotColors.push($scope.checkedTransactionColors[transactionName]);
+            });
+            plotTransactionNames = query.transactionNames;
+            updatePlotData(plotData);
             if (deferred) {
               deferred.resolve('Success');
             }
@@ -101,14 +128,38 @@ glowroot.controller('HomeCtrl', [
               deferred.reject($scope.refreshChartError);
             }
           });
-      updateTransactions();
+      if (!skipUpdateTransactions) {
+        updateAggregates();
+      }
     };
+
+    function updatePlotData(data) {
+      var plotData = [
+        {
+          data: data[0],
+          lines: {
+            lineWidth: 3
+          },
+          color: plotColors[0]
+        }
+      ];
+      for (var i = 1; i < data.length; i++) {
+        plotData.push({
+          data: data[i],
+          lines: {
+            lineWidth: 1
+          },
+          color: plotColors[i]
+        });
+      }
+      plot.setData(plotData);
+      plot.setupGrid();
+      plot.draw();
+    }
 
     $chart.bind('plotzoom', function (event, plot, args) {
       var zoomingOut = args.amount && args.amount < 1;
-      plot.setData(getFilteredData());
-      plot.setupGrid();
-      plot.draw();
+      updatePlotData(getFilteredData());
       afterZoom();
       if (zoomingOut) {
         var zoomId = ++currentZoomId;
@@ -126,7 +177,7 @@ glowroot.controller('HomeCtrl', [
         // increment currentRefreshId to cancel any refresh in action
         currentRefreshId++;
         $scope.$apply(function () {
-          updateTransactions();
+          updateAggregates();
         });
       }
     });
@@ -136,15 +187,13 @@ glowroot.controller('HomeCtrl', [
       // perform the zoom
       plot.getAxes().xaxis.options.min = ranges.xaxis.from;
       plot.getAxes().xaxis.options.max = ranges.xaxis.to;
-      plot.setData(getFilteredData());
-      plot.setupGrid();
-      plot.draw();
+      updatePlotData(getFilteredData());
       afterZoom();
       // no need to fetch new data
       // increment currentRefreshId to cancel any refresh in action
       currentRefreshId++;
       $scope.$apply(function () {
-        updateTransactions();
+        updateAggregates();
       });
     });
 
@@ -159,17 +208,22 @@ glowroot.controller('HomeCtrl', [
     function getFilteredData() {
       var from = plot.getAxes().xaxis.options.min;
       var to = plot.getAxes().xaxis.options.max;
-      var data = [];
-      var i;
-      var points = plot.getData()[0].data;
-      for (i = 0; i < points.length; i++) {
-        var point = points[i];
-        // !point handles undefined points which are used to represent no data collected in that period
-        if (!point || point[0] >= from && point[0] <= to) {
-          data.push(point);
+      var i, j;
+      var filteredData = [];
+      var data = plot.getData();
+      for (i = 0; i < data.length; i++) {
+        var filteredPoints = [];
+        var points = data[i].data;
+        for (j = 0; j < points.length; j++) {
+          var point = points[j];
+          // !point handles undefined points which are used to represent no data collected in that period
+          if (!point || point[0] >= from && point[0] <= to) {
+            filteredPoints.push(point);
+          }
         }
+        filteredData.push(filteredPoints);
       }
-      return [ data ];
+      return filteredData;
     }
 
     var showingItemId;
@@ -203,7 +257,13 @@ glowroot.controller('HomeCtrl', [
       } else {
         traceCount = traceCount + ' traces';
       }
-      var text = '<span class="home-tooltip-label">From:</span>' + from + '<br>' +
+      var text = '';
+      if (item.seriesIndex === 0) {
+        text += '<strong>All Transactions</strong><br>';
+      } else {
+        text += '<strong>' + plotTransactionNames[item.seriesIndex - 1] + '</strong><br>';
+      }
+      text += '<span class="home-tooltip-label">From:</span>' + from + '<br>' +
           '<span class="home-tooltip-label">To:</span>' + to + '<br>' +
           '<span class="home-tooltip-label">Average:</span>' + average + ' seconds<br>' +
           '<span class="home-tooltip-label"></span>(' + traceCount + ')';
@@ -260,61 +320,137 @@ glowroot.controller('HomeCtrl', [
       }
     });
 
-    function updateTransactions(deferred) {
+    function updateAggregates(deferred) {
       var query = {
         from: $scope.filter.from,
         to: $scope.filter.to,
-        limit: $scope.filter.limit
+        // +1 just to find out if there are more and to show "Show more" button, the +1 will not be displayed
+        transactionAggregatesLimit: transactionAggregatesLimit + 1
       };
-      $http.get('backend/home/transaction-aggregates?' + queryStrings.encodeObject(query))
+      $http.get('backend/home/aggregates?' + queryStrings.encodeObject(query))
           .success(function (data) {
-            $scope.transactionAggregatesError = false;
-            $scope.transactionAggregates = data;
+            $scope.aggregatesError = false;
+            $scope.overallAggregate = data.overallAggregate;
+            if (data.transactionAggregates.length === transactionAggregatesLimit + 1) {
+              data.transactionAggregates.pop();
+              $scope.hasMoreAggregates = true;
+            } else {
+              $scope.hasMoreAggregates = false;
+            }
+            $scope.transactionAggregates = data.transactionAggregates;
             if (deferred) {
               deferred.resolve();
             }
           })
           .error(function (data, status) {
             if (status === 0) {
-              $scope.transactionAggregatesError = 'Unable to connect to server';
+              $scope.aggregatesError = 'Unable to connect to server';
             } else {
-              $scope.transactionAggregatesError = 'An error occurred';
+              $scope.aggregatesError = 'An error occurred';
             }
             if (deferred) {
-              deferred.reject($scope.transactionAggregatesError);
+              deferred.reject($scope.aggregatesError);
             }
           });
     }
 
     function updateLocation() {
+      var transactionNames = [];
+      angular.forEach($scope.checkedTransactionColors, function(color, transactionName) {
+        transactionNames.push(transactionName);
+      });
       var query = {
         from: $scope.filter.from - fixedAggregationIntervalMillis,
-        to: $scope.filter.to
+        to: $scope.filter.to,
+        'transaction-name': transactionNames
       };
       $location.search(query).replace();
     }
 
     $scope.tracesQueryString = function (transactionName) {
-      return queryStrings.encodeObject({
-        // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
-        from: $scope.filter.from - fixedAggregationIntervalMillis,
-        to: $scope.filter.to,
-        transactionName: transactionName,
-        transactionNameComparator: 'equals',
-        background: 'false'
-      });
+      if (transactionName) {
+        return queryStrings.encodeObject({
+          // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
+          from: $scope.filter.from - fixedAggregationIntervalMillis,
+          to: $scope.filter.to,
+          transactionName: transactionName,
+          transactionNameComparator: 'equals',
+          background: 'false'
+        });
+      } else {
+        return queryStrings.encodeObject({
+          // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
+          from: $scope.filter.from - fixedAggregationIntervalMillis,
+          to: $scope.filter.to,
+          background: 'false'
+        });
+      }
     };
 
-    $scope.updateFilterLimit = function() {
+    $scope.showMoreAggregates = function(deferred) {
+      // double each time
+      transactionAggregatesLimit *= 2;
+      updateAggregates(deferred);
+    };
+
+    $scope.updateFilterLimit = function (limit) {
       $scope.updatingFilterLimit = true;
       var deferred = $q.defer();
-      deferred.promise.then(function() {
+      deferred.promise.then(function () {
         $scope.updatingFilterLimit = false;
-      }, function(error) {
+      }, function (error) {
         // TODO handle error
         $scope.updatingFilterLimit = false;
       });
-      updateTransactions(deferred);
+    };
+
+    $scope.transactionRowStyle = function (transactionName) {
+      var color = $scope.checkedTransactionColors[transactionName];
+      if (color) {
+        return {
+          color: color,
+          'font-weight': 'bold'
+        };
+      } else {
+        return {};
+      }
+    };
+
+    $scope.displayFilterRowStyle = function (transactionName) {
+      var color = transactionName ? $scope.checkedTransactionColors[transactionName] : plotColor0;
+      return {
+        'background-color': color,
+        color: 'white',
+        padding: '5px 10px',
+        // for some reason there is already a gap when running under grunt serve, and margin-right makes it too big
+        // but this is correct when not running under grunt serve
+        'margin-right': '5px',
+        'border-radius': '3px',
+        'margin-bottom': '5px'
+      };
+    };
+
+    $scope.clickTransactionName = function (transactionName) {
+      var color = $scope.checkedTransactionColors[transactionName];
+      if (color) {
+        // uncheck it
+        availableColors.push(color);
+        delete $scope.checkedTransactionColors[transactionName];
+      } else {
+        // check it
+        color = availableColors.length ? availableColors.pop() : nextRColor();
+        $scope.checkedTransactionColors[transactionName] = color;
+      }
+      updateLocation();
+      $scope.refreshChart(undefined, true);
+    };
+
+    $scope.removeDisplayedTransaction = function (transactionName) {
+      var color = $scope.checkedTransactionColors[transactionName];
+      availableColors.push(color);
+      delete $scope.checkedTransactionColors[transactionName];
+      updateLocation();
+      $scope.refreshChart(undefined, true);
     };
 
     // TODO CONVERT TO ANGULARJS, global $http error handler?
@@ -344,15 +480,16 @@ glowroot.controller('HomeCtrl', [
       $scope.filter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
       $scope.filter.to = Math.min($scope.filter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
-    $scope.filter.limit = 50;
-    updateLocation();
 
-    $scope.$watch('filter.date', function (date) {
-      var midnight = new Date($scope.filter.from).setHours(0, 0, 0, 0);
-      $scope.filter.from = date.getTime() + ($scope.filter.from - midnight);
-      $scope.filter.to = date.getTime() + ($scope.filter.to - midnight);
-      updateLocation();
-    });
+    $scope.checkedTransactionColors = {};
+    var transactionNames = $location.search()['transaction-name'];
+    if (angular.isArray(transactionNames)) {
+      angular.forEach(transactionNames, function(transactionName) {
+        $scope.checkedTransactionColors[transactionName] = nextRColor();
+      });
+    } else if (transactionNames) {
+      $scope.checkedTransactionColors[transactionNames] = nextRColor();
+    }
 
     (function () {
       var options = {
@@ -392,9 +529,6 @@ glowroot.controller('HomeCtrl', [
           amount: 2,
           skipDraw: true
         },
-        colors: [
-          $('#offscreenNormalColor').css('border-top-color')
-        ],
         selection: {
           mode: 'x'
         },

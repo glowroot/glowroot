@@ -37,8 +37,8 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.AggregateDao;
-import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.CappedDatabase;
+import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
@@ -97,7 +97,8 @@ public class LocalUiModule {
         String baseHref = getBaseHref(properties);
         IndexHtmlService indexHtmlService =
                 new IndexHtmlService(baseHref, httpSessionManager, layoutJsonService);
-        HomeJsonService homeJsonService = new HomeJsonService(storageModule.getAggregateDao());
+        HomeJsonService homeJsonService = new HomeJsonService(storageModule.getAggregateDao(),
+                collectorModule.getFixedAggregationIntervalSeconds());
         TraceCommonService traceCommonService =
                 new TraceCommonService(snapshotDao, traceRegistry, traceCollector, clock, ticker);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,

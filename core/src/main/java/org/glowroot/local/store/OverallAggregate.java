@@ -22,26 +22,19 @@ import org.glowroot.markers.UsedByJsonBinding;
  * @since 0.5
  */
 @UsedByJsonBinding
-public class TransactionAggregate {
+public class OverallAggregate {
 
-    private final String transactionName;
     private final double totalMillis;
     private final long count;
     private final double averageMillis;
 
     private final long storedTraceCount;
 
-    TransactionAggregate(String transactionName, double totalMillis, long count,
-            double averageMillis, long storedTraceCount) {
-        this.transactionName = transactionName;
+    OverallAggregate(double totalMillis, long count, double averageMillis, long storedTraceCount) {
         this.totalMillis = totalMillis;
         this.count = count;
         this.averageMillis = averageMillis;
         this.storedTraceCount = storedTraceCount;
-    }
-
-    public String getTransactionName() {
-        return transactionName;
     }
 
     public double getTotalMillis() {

@@ -22,11 +22,20 @@ glowroot.factory('queryStrings', [
       var queryString = '';
       angular.forEach(object, function (value, key) {
         if (value !== undefined) {
-          if (queryString) {
-            queryString += '&';
-          }
           key = key.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
-          queryString += encodeURIComponent(key) + '=' + encodeURIComponent(value);
+          if (angular.isArray(value)) {
+            angular.forEach(value, function(val) {
+              if (queryString) {
+                queryString += '&';
+              }
+              queryString += encodeURIComponent(key) + '=' + encodeURIComponent(val);
+            });
+          } else {
+            if (queryString) {
+              queryString += '&';
+            }
+            queryString += encodeURIComponent(key) + '=' + encodeURIComponent(value);
+          }
         }
       });
       return queryString;
