@@ -40,6 +40,8 @@ class HttpServletRequest {
             UnresolvedMethod.from("javax.servlet.http.HttpServletRequest", "getMethod");
     private static final UnresolvedMethod getRequestURIMethod =
             UnresolvedMethod.from("javax.servlet.http.HttpServletRequest", "getRequestURI");
+    private static final UnresolvedMethod getQueryStringMethod =
+            UnresolvedMethod.from("javax.servlet.http.HttpServletRequest", "getQueryString");
     private static final UnresolvedMethod getParameterMapMethod =
             UnresolvedMethod.from("javax.servlet.ServletRequest", "getParameterMap");
     private static final UnresolvedMethod getHeaderMethod = UnresolvedMethod.from(
@@ -80,6 +82,12 @@ class HttpServletRequest {
     String getRequestURI() {
         return (String) getRequestURIMethod.invoke(realRequest,
                 "<error calling HttpServletRequest.getRequestURI()>");
+    }
+
+    @Nullable
+    String getQueryString() {
+        return (String) getQueryStringMethod.invoke(realRequest,
+                "<error calling HttpServletRequest.getQueryString()>");
     }
 
     @ReadOnly

@@ -81,14 +81,18 @@ public class ServletAspect {
             // passing "false" so it won't create a session if the request doesn't already have one
             HttpSession session = request.getSession(false);
             String requestUri = Strings.nullToEmpty(request.getRequestURI());
+            // don't convert null to empty, since null means no query string, while empty means
+            // url ended with ? but nothing after that
+            String requestQueryString = request.getQueryString();
             String requestMethod = Strings.nullToEmpty(request.getMethod());
             if (session == null) {
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
-                        DetailCapture.captureRequestHeaders(request), null, null);
+                        requestQueryString, DetailCapture.captureRequestHeaders(request), null,
+                        null);
             } else {
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
-                        DetailCapture.captureRequestHeaders(request), session.getId(),
-                        session.getSessionAttributes());
+                        requestQueryString, DetailCapture.captureRequestHeaders(request),
+                        session.getId(), session.getSessionAttributes());
             }
             topLevel.set(messageSupplier);
             Span span = pluginServices.startTrace(requestUri, messageSupplier, metricName);

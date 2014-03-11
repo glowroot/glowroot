@@ -58,6 +58,8 @@ class ServletMessageSupplier extends MessageSupplier {
 
     private final String requestMethod;
     private final String requestUri;
+    @Nullable
+    private final String requestQueryString;
 
     @MonotonicNonNull
     private volatile ImmutableMap<String, Object> requestParameters;
@@ -85,10 +87,12 @@ class ServletMessageSupplier extends MessageSupplier {
     private volatile ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
     ServletMessageSupplier(String requestMethod, String requestUri,
-            ImmutableMap<String, Object> requestHeaders, @Nullable String sessionId,
+            @Nullable String requestQueryString, ImmutableMap<String, Object> requestHeaders,
+            @Nullable String sessionId,
             @Nullable ImmutableMap<String, String> sessionAttributeMap) {
         this.requestMethod = requestMethod;
         this.requestUri = requestUri;
+        this.requestQueryString = requestQueryString;
         this.requestHeaders = requestHeaders;
         this.sessionIdInitialValue = sessionId;
         if (sessionAttributeMap == null || sessionAttributeMap.isEmpty()) {
@@ -101,6 +105,10 @@ class ServletMessageSupplier extends MessageSupplier {
     @Override
     public Message get() {
         Map<String, Object> detail = Maps.newHashMap();
+        if (requestQueryString != null) {
+            // including empty query string since that means request ended with ?
+            detail.put("query string", requestQueryString);
+        }
         if (requestParameters != null && !requestParameters.isEmpty()) {
             detail.put("request parameters", requestParameters);
         }

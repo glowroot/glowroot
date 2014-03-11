@@ -119,6 +119,45 @@ public class ServletPluginTest {
     }
 
     @Test
+    public void testNoQueryString() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(TestNoQueryString.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(1);
+        Span span = trace.getSpans().get(0);
+        String queryString = (String) span.getMessage().getDetail().get("query string");
+        assertThat(queryString).isNull();
+    }
+
+    @Test
+    public void testEmptyQueryString() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(TestEmptyQueryString.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(1);
+        Span span = trace.getSpans().get(0);
+        String queryString = (String) span.getMessage().getDetail().get("query string");
+        assertThat(queryString).isEqualTo("");
+    }
+
+    @Test
+    public void testNonEmptyQueryString() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(TestNonEmptyQueryString.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(1);
+        Span span = trace.getSpans().get(0);
+        String queryString = (String) span.getMessage().getDetail().get("query string");
+        assertThat(queryString).isEqualTo("a=b&c=d");
+    }
+
+    @Test
     public void testRequestParameters() throws Exception {
         // given
         // when
@@ -308,6 +347,30 @@ public class ServletPluginTest {
                 throws IOException, ServletException {}
         @Override
         public void destroy() {}
+    }
+
+    @SuppressWarnings("serial")
+    public static class TestNoQueryString extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request).setQueryString(null);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class TestEmptyQueryString extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request).setQueryString("");
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class TestNonEmptyQueryString extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request).setQueryString("a=b&c=d");
+        }
     }
 
     @SuppressWarnings("serial")
