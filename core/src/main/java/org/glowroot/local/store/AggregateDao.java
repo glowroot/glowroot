@@ -139,6 +139,8 @@ public class AggregateDao implements AggregateRepository {
         try {
             dataSource.execute("truncate table overall_aggregate");
             dataSource.execute("truncate table transaction_aggregate");
+            dataSource.execute("truncate table bg_overall_aggregate");
+            dataSource.execute("truncate table bg_transaction_aggregate");
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -149,6 +151,10 @@ public class AggregateDao implements AggregateRepository {
         try {
             dataSource.update("delete from overall_aggregate where capture_time < ?", captureTime);
             dataSource.update("delete from transaction_aggregate where capture_time < ?",
+                    captureTime);
+            dataSource.update("delete from bg_overall_aggregate where capture_time < ?",
+                    captureTime);
+            dataSource.update("delete from bg_transaction_aggregate where capture_time < ?",
                     captureTime);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
