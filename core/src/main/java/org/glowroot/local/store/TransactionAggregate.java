@@ -27,16 +27,15 @@ public class TransactionAggregate {
     private final String transactionName;
     private final double totalMillis;
     private final long count;
-    private final double averageMillis;
-
+    private final long errorCount;
     private final long storedTraceCount;
 
     TransactionAggregate(String transactionName, double totalMillis, long count,
-            double averageMillis, long storedTraceCount) {
+            long errorCount, long storedTraceCount) {
         this.transactionName = transactionName;
         this.totalMillis = totalMillis;
         this.count = count;
-        this.averageMillis = averageMillis;
+        this.errorCount = errorCount;
         this.storedTraceCount = storedTraceCount;
     }
 
@@ -52,8 +51,8 @@ public class TransactionAggregate {
         return count;
     }
 
-    public double getAverageMillis() {
-        return averageMillis;
+    public long getErrorCount() {
+        return errorCount;
     }
 
     public long getStoredTraceCount() {

@@ -26,14 +26,14 @@ public class OverallAggregate {
 
     private final double totalMillis;
     private final long count;
-    private final double averageMillis;
-
+    private final long errorCount;
     private final long storedTraceCount;
 
-    OverallAggregate(double totalMillis, long count, double averageMillis, long storedTraceCount) {
+    OverallAggregate(double totalMillis, long count, long errorCount,
+            long storedTraceCount) {
         this.totalMillis = totalMillis;
         this.count = count;
-        this.averageMillis = averageMillis;
+        this.errorCount = errorCount;
         this.storedTraceCount = storedTraceCount;
     }
 
@@ -45,8 +45,8 @@ public class OverallAggregate {
         return count;
     }
 
-    public double getAverageMillis() {
-        return averageMillis;
+    public long getErrorCount() {
+        return errorCount;
     }
 
     public long getStoredTraceCount() {

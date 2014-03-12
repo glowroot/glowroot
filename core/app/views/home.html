@@ -94,6 +94,7 @@
     <th>Transaction name</th>
     <th>Average</th>
     <th>Count</th>
+    <th>Errors</th>
     <th>Stored traces</th>
   </tr>
   </thead>
@@ -105,8 +106,9 @@
              disabled>
     </td>
     <td>All Transactions</td>
-    <td>{{(overallAggregate.averageMillis / 1000).toFixed(2)}}</td>
+    <td>{{((overallAggregate.totalMillis / overallAggregate.count) / 1000).toFixed(2)}}</td>
     <td>{{overallAggregate.count}}</td>
+    <td>{{overallAggregate.errorCount}}</td>
     <td>
       <a ng-show="overallAggregate.storedTraceCount"
          ng-href="#/traces?{{tracesQueryString(null)}}">
@@ -128,8 +130,9 @@
         {{transactionAggregate.transactionName}}
       </label>
     </td>
-    <td>{{(transactionAggregate.averageMillis / 1000).toFixed(2)}}</td>
+    <td>{{((transactionAggregate.totalMillis / transactionAggregate.count) / 1000).toFixed(2)}}</td>
     <td>{{transactionAggregate.count}}</td>
+    <td>{{transactionAggregate.errorCount}}</td>
     <td>
       <a ng-show="transactionAggregate.storedTraceCount"
          ng-href="#/traces?{{tracesQueryString(transactionAggregate.transactionName)}}"
@@ -142,7 +145,7 @@
   <tfoot ng-show="hasMoreAggregates">
   <tr>
     <td></td>
-    <td colspan="4" style="vertical-align: middle; padding-top: 30px;">
+    <td colspan="5" style="vertical-align: middle; padding-top: 30px;">
       <div gt-button
            gt-btn-class="btn-default"
            gt-label="Show more"

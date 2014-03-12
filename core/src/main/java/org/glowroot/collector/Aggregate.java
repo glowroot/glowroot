@@ -28,6 +28,7 @@ public class Aggregate {
 
     private long totalDuration; // nanoseconds
     private long count;
+    private long errorCount;
     private long storedTraceCount;
 
     Aggregate() {}
@@ -38,12 +39,16 @@ public class Aggregate {
         this.count = count;
     }
 
-    public double getTotalDuration() {
+    public long getTotalDuration() {
         return totalDuration;
     }
 
     public long getCount() {
         return count;
+    }
+
+    public long getErrorCount() {
+        return errorCount;
     }
 
     public long getStoredTraceCount() {
@@ -53,6 +58,10 @@ public class Aggregate {
     void add(long duration) {
         totalDuration += duration;
         count++;
+    }
+
+    void addToErrorCount() {
+        errorCount++;
     }
 
     void addToStoredTraceCount() {

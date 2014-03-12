@@ -24,12 +24,15 @@ public class AggregatePoint {
     private final long captureTime;
     private final double totalMillis;
     private final long count;
+    private final long errorCount;
     private final long storedTraceCount;
 
-    AggregatePoint(long captureTime, double totalMillis, long count, long storedTraceCount) {
+    AggregatePoint(long captureTime, double totalMillis, long count, long errorCount,
+            long storedTraceCount) {
         this.captureTime = captureTime;
         this.totalMillis = totalMillis;
         this.count = count;
+        this.errorCount = errorCount;
         this.storedTraceCount = storedTraceCount;
     }
 
@@ -43,6 +46,10 @@ public class AggregatePoint {
 
     public long getCount() {
         return count;
+    }
+
+    public long getErrorCount() {
+        return errorCount;
     }
 
     public long getStoredTraceCount() {

@@ -54,6 +54,7 @@ public class AggregateDao implements AggregateRepository {
             new Column("capture_time", Types.BIGINT), // capture time rounded up to nearest 5 min
             new Column("total_duration", Types.BIGINT), // nanoseconds
             new Column("count", Types.BIGINT),
+            new Column("error_count", Types.BIGINT),
             new Column("stored_trace_count", Types.BIGINT));
 
     private static final ImmutableList<Column> transactionAggregateColumns = ImmutableList.of(
@@ -61,6 +62,7 @@ public class AggregateDao implements AggregateRepository {
             new Column("capture_time", Types.BIGINT), // capture time rounded up to nearest 5 min
             new Column("total_duration", Types.BIGINT), // nanoseconds
             new Column("count", Types.BIGINT),
+            new Column("error_count", Types.BIGINT),
             new Column("stored_trace_count", Types.BIGINT));
 
     private final DataSource dataSource;
@@ -165,12 +167,12 @@ public class AggregateDao implements AggregateRepository {
             final Map<String, Aggregate> transactionAggregates, String tablePrefix) {
         try {
             dataSource.update("insert into " + tablePrefix + "overall_aggregate (capture_time,"
-                    + " total_duration, count, stored_trace_count) values (?, ?, ?, ?)",
-                    captureTime, overall.getTotalDuration(), overall.getCount(),
-                    overall.getStoredTraceCount());
+                    + " total_duration, count, error_count, stored_trace_count) values"
+                    + " (?, ?, ?, ?, ?)", captureTime, overall.getTotalDuration(),
+                    overall.getCount(), overall.getErrorCount(), overall.getStoredTraceCount());
             dataSource.batchUpdate("insert into " + tablePrefix + "transaction_aggregate"
-                    + " (transaction_name, capture_time, total_duration, count,"
-                    + " stored_trace_count) values (?, ?, ?, ?, ?)", new BatchAdder() {
+                    + " (transaction_name, capture_time, total_duration, count, error_count,"
+                    + " stored_trace_count) values (?, ?, ?, ?, ?, ?)", new BatchAdder() {
                 @Override
                 public void addBatches(PreparedStatement preparedStatement)
                         throws SQLException {
@@ -180,7 +182,8 @@ public class AggregateDao implements AggregateRepository {
                         Aggregate aggregate = entry.getValue();
                         preparedStatement.setDouble(3, aggregate.getTotalDuration());
                         preparedStatement.setLong(4, aggregate.getCount());
-                        preparedStatement.setLong(5, aggregate.getStoredTraceCount());
+                        preparedStatement.setLong(5, aggregate.getErrorCount());
+                        preparedStatement.setLong(6, aggregate.getStoredTraceCount());
                         preparedStatement.addBatch();
                     }
                 }
@@ -193,7 +196,7 @@ public class AggregateDao implements AggregateRepository {
     private ImmutableList<AggregatePoint> readPoints(long captureTimeFrom, long captureTimeTo,
             String tablePrefix) {
         try {
-            return dataSource.query("select capture_time, total_duration, count,"
+            return dataSource.query("select capture_time, total_duration, count, error_count,"
                     + " stored_trace_count from " + tablePrefix + "overall_aggregate where"
                     + " capture_time >= ? and capture_time <= ? order by capture_time",
                     ImmutableList.of(captureTimeFrom, captureTimeTo),
@@ -211,7 +214,7 @@ public class AggregateDao implements AggregateRepository {
             return ImmutableMap.of();
         }
         StringBuilder sql = new StringBuilder();
-        sql.append("select transaction_name, capture_time, total_duration, count,");
+        sql.append("select transaction_name, capture_time, total_duration, count, error_count,");
         sql.append(" stored_trace_count from ");
         sql.append(tablePrefix);
         sql.append("transaction_aggregate where capture_time >= ? and capture_time <= ? and");
@@ -243,11 +246,17 @@ public class AggregateDao implements AggregateRepository {
     private OverallAggregate readOverallAggregate(long captureTimeFrom, long captureTimeTo,
             String tablePrefix) {
         try {
-            return dataSource.query("select sum(total_duration), sum(count),"
-                    + " sum(stored_trace_count) from " + tablePrefix + "overall_aggregate where"
-                    + " capture_time >= ? and capture_time <= ?",
+            OverallAggregate result = dataSource.query("select sum(total_duration), sum(count),"
+                    + " sum(error_count), sum(stored_trace_count) from " + tablePrefix
+                    + "overall_aggregate where capture_time >= ? and capture_time <= ?",
                     ImmutableList.of(captureTimeFrom, captureTimeTo),
                     new OverallAggregateResultSetExtractor());
+            if (result == null) {
+                // this can happen if datasource is in the middle of closing
+                return new OverallAggregate(0, 0, 0, 0);
+            } else {
+                return result;
+            }
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return new OverallAggregate(0, 0, 0, 0);
@@ -258,9 +267,10 @@ public class AggregateDao implements AggregateRepository {
             long captureTimeTo, int limit, String tablePrefix) {
         try {
             return dataSource.query("select transaction_name, sum(total_duration), sum(count),"
-                    + " sum(stored_trace_count) from " + tablePrefix + "transaction_aggregate"
-                    + " where capture_time >= ? and capture_time <= ? group by transaction_name"
-                    + " order by sum(total_duration) / sum(count) desc limit ?",
+                    + " sum(error_count), sum(stored_trace_count) from " + tablePrefix
+                    + "transaction_aggregate where capture_time >= ? and capture_time <= ?"
+                    + " group by transaction_name order by sum(total_duration) / sum(count)"
+                    + " desc limit ?",
                     ImmutableList.of(captureTimeFrom, captureTimeTo, limit),
                     new TransactionAggregateRowMapper());
         } catch (SQLException e) {
@@ -277,8 +287,10 @@ public class AggregateDao implements AggregateRepository {
             long captureTime = resultSet.getLong(1);
             double totalMillis = resultSet.getLong(2) / 1000000.0;
             long count = resultSet.getLong(3);
-            long storedTraceCount = resultSet.getLong(4);
-            return new AggregatePoint(captureTime, totalMillis, count, storedTraceCount);
+            long errorCount = resultSet.getLong(4);
+            long storedTraceCount = resultSet.getLong(5);
+            return new AggregatePoint(captureTime, totalMillis, count, errorCount,
+                    storedTraceCount);
         }
     }
 
@@ -305,9 +317,10 @@ public class AggregateDao implements AggregateRepository {
                 long captureTime = resultSet.getLong(2);
                 double totalMillis = resultSet.getLong(3) / 1000000.0;
                 long count = resultSet.getLong(4);
-                long storedTraceCount = resultSet.getLong(5);
-                AggregatePoint point =
-                        new AggregatePoint(captureTime, totalMillis, count, storedTraceCount);
+                long errorCount = resultSet.getLong(5);
+                long storedTraceCount = resultSet.getLong(6);
+                AggregatePoint point = new AggregatePoint(captureTime, totalMillis, count,
+                        errorCount, storedTraceCount);
                 Map<Long, AggregatePoint> points = pointsMap.get(transactionName);
                 if (points == null) {
                     points = Maps.newHashMap();
@@ -332,9 +345,9 @@ public class AggregateDao implements AggregateRepository {
             }
             double totalMillis = resultSet.getLong(1) / 1000000.0;
             long count = resultSet.getLong(2);
-            long storedTraceCount = resultSet.getLong(3);
-            double averageMillis = totalMillis / count;
-            return new OverallAggregate(totalMillis, count, averageMillis, storedTraceCount);
+            long errorCount = resultSet.getLong(3);
+            long storedTraceCount = resultSet.getLong(4);
+            return new OverallAggregate(totalMillis, count, errorCount, storedTraceCount);
         }
     }
 
@@ -346,10 +359,9 @@ public class AggregateDao implements AggregateRepository {
             String name = resultSet.getString(1);
             double totalMillis = resultSet.getLong(2) / 1000000.0;
             long count = resultSet.getLong(3);
-            long storedTraceCount = resultSet.getLong(4);
-            double averageMillis = totalMillis / count;
-            return new TransactionAggregate(name, totalMillis, count, averageMillis,
-                    storedTraceCount);
+            long errorCount = resultSet.getLong(4);
+            long storedTraceCount = resultSet.getLong(5);
+            return new TransactionAggregate(name, totalMillis, count, errorCount, storedTraceCount);
         }
     }
 }

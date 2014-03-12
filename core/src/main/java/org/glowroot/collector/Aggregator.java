@@ -70,7 +70,8 @@ class Aggregator {
     }
 
     // TODO add CPU, errorCount, metrics, profile
-    long add(boolean background, String transactionName, long duration, boolean traceWillBeStored) {
+    long add(boolean background, String transactionName, long duration, boolean error,
+            boolean traceWillBeStored) {
         // this first synchronized block is to ensure atomicity between updates and flushes
         synchronized (lock) {
             long captureTime = clock.currentTimeMillis();
@@ -88,7 +89,8 @@ class Aggregator {
             // this second synchronized block is to ensure visibility of updates to this particular
             // currentAggregates
             synchronized (currentAggregates) {
-                currentAggregates.add(background, transactionName, duration, traceWillBeStored);
+                currentAggregates.add(background, transactionName, duration, error,
+                        traceWillBeStored);
             }
             return captureTime;
         }
@@ -132,7 +134,7 @@ class Aggregator {
                     / (double) fixedAggregationIntervalMillis) * fixedAggregationIntervalMillis;
         }
 
-        private void add(boolean background, String transactionName, long duration,
+        private void add(boolean background, String transactionName, long duration, boolean error,
                 boolean traceWillBeStored) {
             Aggregate overallAggregate;
             Map<String, Aggregate> transactionAggregates;
@@ -150,6 +152,10 @@ class Aggregator {
                 transactionAggregates.put(transactionName, transactionAggregate);
             }
             transactionAggregate.add(duration);
+            if (error) {
+                overallAggregate.addToErrorCount();
+                transactionAggregate.addToErrorCount();
+            }
             if (traceWillBeStored) {
                 overallAggregate.addToStoredTraceCount();
                 transactionAggregate.addToStoredTraceCount();

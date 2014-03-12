@@ -124,7 +124,7 @@ public class TraceCollectorImpl implements TraceCollector {
             // there's a small window where something bad could happen and the snapshot is not
             // stored, and aggregate stored_trace_count would be off by one
             captureTime = aggregator.add(trace.isBackground(), trace.getTransactionName(),
-                    trace.getDuration(), store);
+                    trace.getDuration(), trace.getError() != null, store);
         }
         if (store) {
             // onCompleteAndShouldStore must be called by the trace thread
