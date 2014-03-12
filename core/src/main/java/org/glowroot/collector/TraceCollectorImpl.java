@@ -78,7 +78,7 @@ public class TraceCollectorImpl implements TraceCollector {
         long duration = trace.getDuration();
         // check if should store for user tracing
         String user = trace.getUser();
-        if (user != null && user.equals(configService.getUserOverridesConfig().getUser())
+        if (user != null && user.equalsIgnoreCase(configService.getUserOverridesConfig().getUser())
                 && duration >= MILLISECONDS.toNanos(configService.getUserOverridesConfig()
                         .getStoreThresholdMillis())) {
             return true;

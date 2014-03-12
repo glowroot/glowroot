@@ -56,7 +56,7 @@ class FineProfileScheduler {
     void maybeScheduleFineProfilingUsingUser(Trace trace, String user) {
         UserOverridesConfig userOverridesConfig = configService.getUserOverridesConfig();
         String overrideUser = userOverridesConfig.getUser();
-        if (user.equals(overrideUser) && userOverridesConfig.isFineProfiling()) {
+        if (user.equalsIgnoreCase(overrideUser) && userOverridesConfig.isFineProfiling()) {
             scheduleProfiling(trace);
         }
     }
