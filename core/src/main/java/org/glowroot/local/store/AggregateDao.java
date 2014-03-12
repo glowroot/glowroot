@@ -122,18 +122,24 @@ public class AggregateDao implements AggregateRepository {
 
     // returns list ordered and limited by average descending
     public ImmutableList<TransactionAggregate> readTransactionAggregates(long captureTimeFrom,
-            long captureTimeTo, int limit) {
-        logger.debug("readTransactionAggregates(): captureTimeFrom={}, captureTimeTo={}, limit={}",
-                captureTimeFrom, captureTimeTo, limit);
-        return readTransactionAggregates(captureTimeFrom, captureTimeTo, limit, "");
+            long captureTimeTo, TransactionAggregateSortColumn sortColumn,
+            SortDirection sortDirection, int limit) {
+        logger.debug("readTransactionAggregate(): captureTimeFrom={}, captureTimeTo={},"
+                + " sortColumn={}, sortDirection={}, limit={}", captureTimeFrom, captureTimeTo,
+                sortColumn, sortDirection, limit);
+        return readTransactionAggregates(captureTimeFrom, captureTimeTo, sortColumn,
+                sortDirection, limit, "");
     }
 
     // returns list ordered and limited by average descending
     public ImmutableList<TransactionAggregate> readBgTransactionAggregate(long captureTimeFrom,
-            long captureTimeTo, int limit) {
+            long captureTimeTo, TransactionAggregateSortColumn sortColumn,
+            SortDirection sortDirection, int limit) {
         logger.debug("readBgTransactionAggregate(): captureTimeFrom={}, captureTimeTo={},"
-                + " limit={}", captureTimeFrom, captureTimeTo, limit);
-        return readTransactionAggregates(captureTimeFrom, captureTimeTo, limit, "bg_");
+                + " sortColumn={}, sortDirection={}, limit={}", captureTimeFrom, captureTimeTo,
+                sortColumn, sortDirection, limit);
+        return readTransactionAggregates(captureTimeFrom, captureTimeTo, sortColumn,
+                sortDirection, limit, "bg_");
     }
 
     public void deleteAllAggregates() {
@@ -264,19 +270,53 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private ImmutableList<TransactionAggregate> readTransactionAggregates(long captureTimeFrom,
-            long captureTimeTo, int limit, String tablePrefix) {
+            long captureTimeTo, TransactionAggregateSortColumn sortColumn,
+            SortDirection sortDirection, int limit, String tablePrefix) {
         try {
             return dataSource.query("select transaction_name, sum(total_duration), sum(count),"
                     + " sum(error_count), sum(stored_trace_count) from " + tablePrefix
                     + "transaction_aggregate where capture_time >= ? and capture_time <= ?"
-                    + " group by transaction_name order by sum(total_duration) / sum(count)"
-                    + " desc limit ?",
-                    ImmutableList.of(captureTimeFrom, captureTimeTo, limit),
+                    + " group by transaction_name " + getOrderByClause(sortColumn, sortDirection)
+                    + " limit ?", ImmutableList.of(captureTimeFrom, captureTimeTo, limit),
                     new TransactionAggregateRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
         }
+    }
+
+    private static String getOrderByClause(TransactionAggregateSortColumn column,
+            SortDirection direction) {
+        switch (direction) {
+            case ASC:
+                return "order by " + column.getColumn();
+            case DESC:
+                return "order by " + column.getColumn() + " desc";
+            default:
+                throw new IllegalStateException("Unexpected sort direction: " + direction);
+        }
+    }
+
+    public static enum TransactionAggregateSortColumn {
+        TOTAL("sum(total_duration)"),
+        AVERAGE("sum(total_duration) / sum(count)"),
+        COUNT("sum(count)"),
+        ERROR_COUNT("sum(error_count)"),
+        STORED_TRACE_COUNT("sum(stored_trace_count)");
+
+        private final String column;
+
+        private TransactionAggregateSortColumn(String column) {
+            this.column = column;
+        }
+
+        private String getColumn() {
+            return column;
+        }
+    }
+
+    public static enum SortDirection {
+        ASC, DESC
     }
 
     @ThreadSafe

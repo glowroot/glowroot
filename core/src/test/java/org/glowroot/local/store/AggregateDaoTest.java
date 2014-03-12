@@ -25,6 +25,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.collector.Aggregate;
+import org.glowroot.local.store.AggregateDao.SortDirection;
+import org.glowroot.local.store.AggregateDao.TransactionAggregateSortColumn;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,7 +70,8 @@ public class AggregateDaoTest {
         // when
         List<AggregatePoint> aggregatePoints = aggregateDao.readPoints(0, 100000);
         List<TransactionAggregate> storedTransactionAggregates =
-                aggregateDao.readTransactionAggregates(0, 100000, 10);
+                aggregateDao.readTransactionAggregates(0, 100000,
+                        TransactionAggregateSortColumn.AVERAGE, SortDirection.DESC, 10);
         // then
         assertThat(aggregatePoints).hasSize(2);
         assertThat(storedTransactionAggregates).hasSize(3);
@@ -100,7 +103,8 @@ public class AggregateDaoTest {
         // when
         List<AggregatePoint> aggregatePoints = aggregateDao.readBgPoints(0, 100000);
         List<TransactionAggregate> storedBgTransactionAggregates =
-                aggregateDao.readBgTransactionAggregate(0, 100000, 10);
+                aggregateDao.readBgTransactionAggregate(0, 100000,
+                        TransactionAggregateSortColumn.AVERAGE, SortDirection.DESC, 10);
         // then
         assertThat(aggregatePoints).hasSize(2);
         assertThat(storedBgTransactionAggregates).hasSize(3);

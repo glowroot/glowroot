@@ -28,6 +28,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
@@ -36,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
+import org.glowroot.local.store.AggregateDao.SortDirection;
+import org.glowroot.local.store.AggregateDao.TransactionAggregateSortColumn;
 import org.glowroot.local.store.AggregatePoint;
 import org.glowroot.local.store.OverallAggregate;
 import org.glowroot.local.store.TransactionAggregate;
@@ -154,8 +157,13 @@ class HomeJsonService {
                 ObjectMappers.readRequiredValue(mapper, content, AggregatesRequest.class);
         OverallAggregate overallAggregate =
                 aggregateDao.readOverallAggregate(request.getFrom(), request.getTo());
+        String sortAttribute =
+                CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, request.getSortAttribute());
+        TransactionAggregateSortColumn sortColumn =
+                TransactionAggregateSortColumn.valueOf(sortAttribute);
         List<TransactionAggregate> transactionAggregates = aggregateDao.readTransactionAggregates(
-                request.getFrom(), request.getTo(), request.getTransactionAggregatesLimit());
+                request.getFrom(), request.getTo(), sortColumn, request.getSortDirection(),
+                request.getTransactionAggregatesLimit());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -211,19 +219,27 @@ class HomeJsonService {
 
         private final long from;
         private final long to;
+        private final String sortAttribute;
+        private final SortDirection sortDirection;
         private final int transactionAggregatesLimit;
 
         @JsonCreator
         AggregatesRequest(
                 @JsonProperty("from") @Nullable Long from,
                 @JsonProperty("to") @Nullable Long to,
+                @JsonProperty("sortAttribute") @Nullable String sortAttribute,
+                @JsonProperty("sortDirection") @Nullable SortDirection sortDirection,
                 @JsonProperty("transactionAggregatesLimit") @Nullable Integer transactionAggregatesLimit)
                 throws JsonMappingException {
             checkRequiredProperty(from, "from");
             checkRequiredProperty(to, "to");
-            checkRequiredProperty(transactionAggregatesLimit, "limit");
+            checkRequiredProperty(sortAttribute, "sortAttribute");
+            checkRequiredProperty(sortDirection, "sortDirection");
+            checkRequiredProperty(transactionAggregatesLimit, "transactionAggregatesLimit");
             this.from = from;
             this.to = to;
+            this.sortAttribute = sortAttribute;
+            this.sortDirection = sortDirection;
             this.transactionAggregatesLimit = transactionAggregatesLimit;
         }
 
@@ -235,7 +251,15 @@ class HomeJsonService {
             return to;
         }
 
-        public int getTransactionAggregatesLimit() {
+        private String getSortAttribute() {
+            return sortAttribute;
+        }
+
+        private SortDirection getSortDirection() {
+            return sortDirection;
+        }
+
+        private int getTransactionAggregatesLimit() {
             return transactionAggregatesLimit;
         }
     }

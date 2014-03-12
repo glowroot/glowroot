@@ -54,6 +54,9 @@ glowroot.controller('HomeCtrl', [
     // top 25 is a nice number, screen is not too large
     var transactionAggregatesLimit = 25;
 
+    // this is used to calculate bar width under transaction name representing the proportion of total time
+    var maxTransactionAggregateTotalMillis;
+
     function nextRColor() {
       return rcolor.get(true, 0.5, 0.5);
     }
@@ -324,6 +327,8 @@ glowroot.controller('HomeCtrl', [
       var query = {
         from: $scope.filter.from,
         to: $scope.filter.to,
+        sortAttribute: $scope.tableSortAttribute,
+        sortDirection: $scope.tableSortDirection,
         // +1 just to find out if there are more and to show "Show more" button, the +1 will not be displayed
         transactionAggregatesLimit: transactionAggregatesLimit + 1
       };
@@ -338,6 +343,11 @@ glowroot.controller('HomeCtrl', [
               $scope.hasMoreAggregates = false;
             }
             $scope.transactionAggregates = data.transactionAggregates;
+            maxTransactionAggregateTotalMillis = 0;
+            angular.forEach($scope.transactionAggregates, function(transactionAggregate) {
+              maxTransactionAggregateTotalMillis =
+                  Math.max(maxTransactionAggregateTotalMillis, transactionAggregate.totalMillis);
+            });
             if (deferred) {
               deferred.resolve();
             }
@@ -356,16 +366,45 @@ glowroot.controller('HomeCtrl', [
 
     function updateLocation() {
       var transactionNames = [];
-      angular.forEach($scope.checkedTransactionColors, function(color, transactionName) {
+      angular.forEach($scope.checkedTransactionColors, function (color, transactionName) {
         transactionNames.push(transactionName);
       });
       var query = {
         from: $scope.filter.from - fixedAggregationIntervalMillis,
         to: $scope.filter.to,
+        'table-sort-attribute': $scope.tableSortAttribute,
+        'table-sort-direction': $scope.tableSortDirection,
         'transaction-name': transactionNames
       };
       $location.search(query).replace();
     }
+
+    $scope.sortTable = function (attributeName) {
+      if ($scope.tableSortAttribute === attributeName) {
+        // switch direction
+        if ($scope.tableSortDirection === 'desc') {
+          $scope.tableSortDirection = 'asc';
+        } else {
+          $scope.tableSortDirection = 'desc';
+        }
+      } else {
+        $scope.tableSortAttribute = attributeName;
+        $scope.tableSortDirection = 'desc';
+      }
+      updateLocation();
+      updateAggregates();
+    };
+
+    $scope.sortIconClass = function(attributeName) {
+      if ($scope.tableSortAttribute !== attributeName) {
+        return '';
+      }
+      if ($scope.tableSortDirection === 'desc') {
+        return 'caret';
+      } else {
+        return 'caret home-caret-reversed';
+      }
+    };
 
     $scope.tracesQueryString = function (transactionName) {
       if (transactionName) {
@@ -387,7 +426,7 @@ glowroot.controller('HomeCtrl', [
       }
     };
 
-    $scope.showMoreAggregates = function(deferred) {
+    $scope.showMoreAggregates = function (deferred) {
       // double each time
       transactionAggregatesLimit *= 2;
       updateAggregates(deferred);
@@ -453,6 +492,10 @@ glowroot.controller('HomeCtrl', [
       $scope.refreshChart(undefined, true);
     };
 
+    $scope.transactionBarWidth = function(totalMillis) {
+      return (totalMillis / maxTransactionAggregateTotalMillis) * 100 + '%';
+    };
+
     // TODO CONVERT TO ANGULARJS, global $http error handler?
     Glowroot.configureAjaxError();
 
@@ -480,11 +523,13 @@ glowroot.controller('HomeCtrl', [
       $scope.filter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
       $scope.filter.to = Math.min($scope.filter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
+    $scope.tableSortAttribute = $location.search()['table-sort-attribute'] || 'total';
+    $scope.tableSortDirection = $location.search()['table-sort-direction'] || 'desc';
 
     $scope.checkedTransactionColors = {};
     var transactionNames = $location.search()['transaction-name'];
     if (angular.isArray(transactionNames)) {
-      angular.forEach(transactionNames, function(transactionName) {
+      angular.forEach(transactionNames, function (transactionName) {
         $scope.checkedTransactionColors[transactionName] = nextRColor();
       });
     } else if (transactionNames) {

@@ -91,11 +91,46 @@
   <thead>
   <tr>
     <th align="right" width="1%"></th>
-    <th>Transaction name</th>
-    <th>Average</th>
-    <th>Count</th>
-    <th>Errors</th>
-    <th>Stored traces</th>
+    <th width="49%">
+      <a href="" ng-click="sortTable('total')" class="home-table-header">
+        Transaction name
+        <span ng-class="sortIconClass('total')"
+              ng-show="tableSortAttribute === 'total'">
+        </span>
+      </a>
+    </th>
+    <th width="10%">
+      <a href="" ng-click="sortTable('average')" class="home-table-header">
+        Average
+        <span ng-class="sortIconClass('average')"
+              ng-show="tableSortAttribute === 'average'">
+        </span>
+      </a>
+    </th>
+    <th width="10%">
+      <a href="" ng-click="sortTable('count')" class="home-table-header">
+        Count
+        <span ng-class="sortIconClass('count')"
+              ng-show="tableSortAttribute === 'count'">
+        </span>
+      </a>
+    </th>
+    <th width="10%">
+      <a href="" ng-click="sortTable('errorCount')" class="home-table-header">
+        Errors
+        <span ng-class="sortIconClass('errorCount')"
+              ng-show="tableSortAttribute === 'errorCount'">
+        </span>
+      </a>
+    </th>
+    <th width="20%">
+      <a href="" ng-click="sortTable('storedTraceCount')" class="home-table-header">
+        Stored traces
+        <span ng-class="sortIconClass('storedTraceCount')"
+              ng-show="tableSortAttribute === 'storedTraceCount'">
+        </span>
+      </a>
+    </th>
   </tr>
   </thead>
   <tbody>
@@ -123,10 +158,13 @@
              ng-click="clickTransactionName(transactionAggregate.transactionName)"
              id="{{transactionAggregate.transactionName}}">
     </td>
-    <td>
+    <td style="position: relative; padding: 0;">
+      <div style="position: absolute; height: 100%; background-color: #eee;"
+           ng-style="{width: transactionBarWidth(transactionAggregate.totalMillis)}">
+      </div>
       <label for="{{transactionAggregate.transactionName}}"
              ng-class="{'font-weight-normal': !checkedTransactionColors[transactionAggregate.transactionName]}"
-             style="cursor: pointer;">
+             style="position: relative; padding: 8px; cursor: pointer;">
         {{transactionAggregate.transactionName}}
       </label>
     </td>
