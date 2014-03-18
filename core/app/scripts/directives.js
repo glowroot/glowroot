@@ -232,7 +232,8 @@ glowroot.directive('gtInputGroupDropdown', function () {
 
 glowroot.directive('gtNavbarItem', [
   '$location',
-  function ($location) {
+  '$state',
+  function ($location, $state) {
     return {
       scope: {
         gtDisplay: '@',
@@ -247,11 +248,17 @@ glowroot.directive('gtNavbarItem', [
         scope.ngShow = function () {
           return iAttrs.gtShow ? scope.gtShow() : true;
         };
-        scope.collapseNavbar = function () {
+        scope.ngClick = function (event) {
           // need to collapse the navbar in mobile view
           var $navbarCollapse = $('.navbar-collapse');
           $navbarCollapse.removeClass('in');
           $navbarCollapse.addClass('collapse');
+          if (scope.$parent.activeNavbarItem === scope.gtItemName && !event.ctrlKey) {
+            $state.go($state.$current, null, { reload: true });
+            // suppress normal link
+            event.preventDefault();
+            return false;
+          }
         };
       }
     };

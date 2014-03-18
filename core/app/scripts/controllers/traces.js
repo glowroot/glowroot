@@ -380,6 +380,7 @@ glowroot.controller('TracesCtrl', [
       // (e.g. if 'now' is 11:55pm)
       var now = new Date();
       now.setSeconds(0);
+      now.setMilliseconds(0);
       $scope.filter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
       $scope.filter.to = Math.min($scope.filter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
