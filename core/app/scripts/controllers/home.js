@@ -520,6 +520,13 @@ glowroot.controller('HomeCtrl', [
       // (e.g. if 'now' is 11:55pm)
       var now = new Date();
       now.setSeconds(0);
+      var fixedAggregationIntervalMinutes = fixedAggregationIntervalMillis / (60 * 1000);
+      if (fixedAggregationIntervalMinutes > 1) {
+        // this is the normal case since default aggregation interval is 5 min
+        var minutesRoundedDownToNearestAggregationInterval =
+            fixedAggregationIntervalMinutes * Math.floor(now.getMinutes() / fixedAggregationIntervalMinutes);
+        now.setMinutes(minutesRoundedDownToNearestAggregationInterval);
+      }
       $scope.filter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
       $scope.filter.to = Math.min($scope.filter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
