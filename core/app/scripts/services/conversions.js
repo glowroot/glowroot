@@ -31,6 +31,7 @@ glowroot.factory('conversions', [
       }
       return float;
     }
+
     return {
       toNumber: toNumber
     };

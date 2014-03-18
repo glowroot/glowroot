@@ -344,7 +344,7 @@ glowroot.controller('HomeCtrl', [
             }
             $scope.transactionAggregates = data.transactionAggregates;
             maxTransactionAggregateTotalMillis = 0;
-            angular.forEach($scope.transactionAggregates, function(transactionAggregate) {
+            angular.forEach($scope.transactionAggregates, function (transactionAggregate) {
               maxTransactionAggregateTotalMillis =
                   Math.max(maxTransactionAggregateTotalMillis, transactionAggregate.totalMillis);
             });
@@ -395,7 +395,7 @@ glowroot.controller('HomeCtrl', [
       updateAggregates();
     };
 
-    $scope.sortIconClass = function(attributeName) {
+    $scope.sortIconClass = function (attributeName) {
       if ($scope.tableSortAttribute !== attributeName) {
         return '';
       }
@@ -492,7 +492,7 @@ glowroot.controller('HomeCtrl', [
       $scope.refreshChart(undefined, true);
     };
 
-    $scope.transactionBarWidth = function(totalMillis) {
+    $scope.transactionBarWidth = function (totalMillis) {
       return (totalMillis / maxTransactionAggregateTotalMillis) * 100 + '%';
     };
 

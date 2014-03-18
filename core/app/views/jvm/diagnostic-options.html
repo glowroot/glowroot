@@ -34,12 +34,12 @@
                      ng-model="option.value"
                      name="{{option.name}}"
                      id="{{option.name}}">
-            <span class="jvm-diagnostic-option-name">
-              {{option.name}}
-              <span ng-show="option.origin !== 'DEFAULT'">
-                ({{option.origin}})
+              <span class="jvm-diagnostic-option-name">
+                {{option.name}}
+                <span ng-show="option.origin !== 'DEFAULT'">
+                  ({{option.origin}})
+                </span>
               </span>
-            </span>
             </label>
           </div>
         </div>

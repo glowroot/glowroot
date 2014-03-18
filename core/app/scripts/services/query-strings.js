@@ -24,7 +24,7 @@ glowroot.factory('queryStrings', [
         if (value !== undefined) {
           key = key.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
           if (angular.isArray(value)) {
-            angular.forEach(value, function(val) {
+            angular.forEach(value, function (val) {
               if (queryString) {
                 queryString += '&';
               }
