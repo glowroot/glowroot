@@ -83,6 +83,11 @@
                  gt-url="#/traces">
             </div>
             <div gt-navbar-item
+                 gt-display="Errors"
+                 gt-item-name="errors"
+                 gt-url="#/errors">
+            </div>
+            <div gt-navbar-item
                  gt-display="JVM"
                  gt-item-name="jvm"
                  gt-url="#/jvm/general">
@@ -180,6 +185,16 @@
   <script src="scripts/services/conversions.js"></script>
   <script src="scripts/controllers/home.js"></script>
   <script src="scripts/controllers/traces.js"></script>
+  <script src="scripts/controllers/errors.js"></script>
+  <script src="scripts/controllers/jvm.js"></script>
+  <script src="scripts/controllers/jvm/general.js"></script>
+  <script src="scripts/controllers/jvm/system-properties.js"></script>
+  <script src="scripts/controllers/jvm/thread-dump.js"></script>
+  <script src="scripts/controllers/jvm/memory-overview.js"></script>
+  <script src="scripts/controllers/jvm/heap-histogram.js"></script>
+  <script src="scripts/controllers/jvm/heap-dump.js"></script>
+  <script src="scripts/controllers/jvm/diagnostic-options.js"></script>
+  <script src="scripts/controllers/jvm/capabilities.js"></script>
   <script src="scripts/controllers/config.js"></script>
   <script src="scripts/controllers/config/general.js"></script>
   <script src="scripts/controllers/config/coarse-profiling.js"></script>
@@ -190,15 +205,6 @@
   <script src="scripts/controllers/config/advanced.js"></script>
   <script src="scripts/controllers/config/pointcut-list.js"></script>
   <script src="scripts/controllers/config/pointcut.js"></script>
-  <script src="scripts/controllers/jvm.js"></script>
-  <script src="scripts/controllers/jvm/general.js"></script>
-  <script src="scripts/controllers/jvm/system-properties.js"></script>
-  <script src="scripts/controllers/jvm/thread-dump.js"></script>
-  <script src="scripts/controllers/jvm/memory-overview.js"></script>
-  <script src="scripts/controllers/jvm/heap-histogram.js"></script>
-  <script src="scripts/controllers/jvm/heap-dump.js"></script>
-  <script src="scripts/controllers/jvm/diagnostic-options.js"></script>
-  <script src="scripts/controllers/jvm/capabilities.js"></script>
   <script src="scripts/controllers/plugin.js"></script>
   <script src="scripts/controllers/plugin-x.js"></script>
   <script src="scripts/controllers/login.js"></script>

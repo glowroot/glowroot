@@ -107,15 +107,16 @@ public class LocalUiModule {
                 new TraceSummaryJsonService(traceCommonService);
         SnapshotHttpService snapshotHttpService = new SnapshotHttpService(traceCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
+        ErrorJsonService errorJsonService = new ErrorJsonService(snapshotDao);
+        JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getThreadAllocatedBytes(),
+                jvmModule.getHeapHistograms(), jvmModule.getHotSpotDiagnostics(),
+                jvmModule.getHotSpotDiagnosticOptions());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
                 pluginDescriptorCache, dataDir, traceModule.getPointcutConfigAdviceCache(),
                 httpSessionManager, traceModule);
         ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
         PointcutConfigJsonService pointcutConfigJsonService =
                 new PointcutConfigJsonService(parsedTypeCache, classpathCache);
-        JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getThreadAllocatedBytes(),
-                jvmModule.getHeapHistograms(), jvmModule.getHotSpotDiagnostics(),
-                jvmModule.getHotSpotDiagnosticOptions());
         AdminJsonService adminJsonService = new AdminJsonService(aggregateDao, snapshotDao,
                 configService, traceModule.getPointcutConfigAdviceCache(), parsedTypeCache,
                 instrumentation, traceCollector, dataSource, traceRegistry);
@@ -125,6 +126,7 @@ public class LocalUiModule {
         jsonServices.add(homeJsonService);
         jsonServices.add(tracePointJsonService);
         jsonServices.add(traceSummaryJsonService);
+        jsonServices.add(errorJsonService);
         jsonServices.add(jvmJsonService);
         jsonServices.add(configJsonService);
         jsonServices.add(pointcutConfigJsonService);
@@ -191,6 +193,7 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/home$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/traces$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/errors$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/jvm/.*$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/config/.*$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/plugin/.*$"), resourceBase + "/index.html");

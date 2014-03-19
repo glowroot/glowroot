@@ -73,6 +73,7 @@ module.exports = function (grunt) {
       rules: [
         { from: '^/home(\\?.*)?$', to: '/index.html' },
         { from: '^/traces(\\?.*)?$', to: '/index.html' },
+        { from: '^/errors(\\?.*)?$', to: '/index.html' },
         { from: '^/jvm/.*$', to: '/index.html' },
         { from: '^/config/.*$', to: '/index.html' },
         { from: '^/plugin/.*$', to: '/index.html' },

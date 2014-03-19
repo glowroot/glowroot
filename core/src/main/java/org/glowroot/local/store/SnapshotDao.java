@@ -20,9 +20,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
+import java.util.Locale;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +39,7 @@ import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.local.store.Schemas.PrimaryKeyColumn;
 import org.glowroot.local.store.TracePointQuery.ParameterizedSql;
+import org.glowroot.local.store.TracePointQuery.StringComparator;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
 import org.glowroot.markers.ThreadSafe;
@@ -212,6 +216,28 @@ public class SnapshotDao implements SnapshotRepository {
         return snapshots.get(0);
     }
 
+    public List<ErrorAggregate> readErrorAggregates(long captureTimeFrom, long captureTimeTo,
+            @Nullable StringComparator errorComparator, @Nullable String error, int limit) {
+        String sql = "select transaction_name, error_message, count(*) from snapshot where"
+                + " error = ? and capture_time >= ? and capture_time <= ?";
+        List<Object> args = Lists.newArrayList();
+        args.add(true);
+        args.add(captureTimeFrom);
+        args.add(captureTimeTo);
+        if (errorComparator != null && !Strings.isNullOrEmpty(error)) {
+            sql += " and upper(error_message) " + errorComparator.getComparator() + " ?";
+            args.add(errorComparator.formatParameter(error.toUpperCase(Locale.ENGLISH)));
+        }
+        sql += " group by transaction_name, error_message order by count(*) desc limit ?";
+        args.add(limit);
+        try {
+            return dataSource.query(sql, args, new ErrorAggregateRowMapper());
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return ImmutableList.of();
+        }
+    }
+
     public void deleteAllSnapshots() {
         logger.debug("deleteAllSnapshots()");
         try {
@@ -311,6 +337,18 @@ public class SnapshotDao implements SnapshotRepository {
             String fineMergedStackTreeFileBlockId = resultSet.getString(16);
             return new PartiallyHydratedTrace(builder, spansFileBlockId,
                     coarseMergedStackTreeFileBlockId, fineMergedStackTreeFileBlockId);
+        }
+    }
+
+    @ThreadSafe
+    private class ErrorAggregateRowMapper implements RowMapper<ErrorAggregate> {
+
+        @Override
+        public ErrorAggregate mapRow(ResultSet resultSet) throws SQLException {
+            String transactionName = resultSet.getString(1);
+            String error = resultSet.getString(2);
+            long count = resultSet.getLong(3);
+            return new ErrorAggregate(transactionName, error, count);
         }
     }
 

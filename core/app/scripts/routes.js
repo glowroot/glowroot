@@ -52,6 +52,11 @@ glowroot.config([
       controller: 'HomeCtrl',
       resolve: waitForLayout
     });
+    $stateProvider.state('errors', {
+      url: '/errors',
+      templateUrl: 'views/errors.html',
+      controller: 'ErrorsCtrl'
+    });
     $stateProvider.state('traces', {
       url: '/traces',
       templateUrl: 'views/traces.html',

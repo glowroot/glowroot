@@ -390,13 +390,17 @@ glowroot.controller('TracesCtrl', [
     if (!$scope.filter.transactionNameComparator) {
       $scope.filter.transactionNameComparator = 'begins';
     }
-    $scope.filter.errorComparator = 'begins';
+    $scope.filter.errorComparator = $location.search()['error-comparator'];
+    if (!$scope.filter.errorComparator) {
+      $scope.filter.errorComparator = 'begins';
+    }
     $scope.filter.userComparator = 'begins';
     $scope.filter.attributeValueComparator = 'begins';
     $scope.filter.limit = $('html').hasClass('lt-ie9') ? 100 : 500;
     $scope.filterDurationComparator = 'greater';
 
     $scope.filter.transactionName = $location.search()['transaction-name'];
+    $scope.filter.error = $location.search().error;
     $scope.filter.background = $location.search().background;
 
     $scope.filterDateComparatorOptions = [
