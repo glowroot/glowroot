@@ -173,15 +173,19 @@
                ng-click="clickTransactionName(transactionAggregate.transactionName)"
                id="{{transactionAggregate.transactionName}}">
       </td>
-      <td style="position: relative; padding: 0;">
-        <div style="position: absolute; height: 100%; background-color: #eee;"
-             ng-style="{width: transactionBarWidth(transactionAggregate.totalMillis)}">
+      <td style="padding: 0;">
+        <!-- cannot apply relative positioning to td elements in firefox
+         see https://bugzilla.mozilla.org/show_bug.cgi?id=35168 -->
+        <div style="position: relative;">
+          <div style="position: absolute; height: 100%; background-color: #eee;"
+               ng-style="{width: transactionBarWidth(transactionAggregate.totalMillis)}">
+          </div>
+          <label for="{{transactionAggregate.transactionName}}"
+                 ng-class="{'font-weight-normal': !checkedTransactionColors[transactionAggregate.transactionName]}"
+                 style="position: relative; padding: 8px; cursor: pointer; word-break: break-all;">
+            {{transactionAggregate.transactionName}}
+          </label>
         </div>
-        <label for="{{transactionAggregate.transactionName}}"
-               ng-class="{'font-weight-normal': !checkedTransactionColors[transactionAggregate.transactionName]}"
-               style="position: relative; padding: 8px; cursor: pointer; word-break: break-all">
-          {{transactionAggregate.transactionName}}
-        </label>
       </td>
       <td>{{((transactionAggregate.totalMillis / transactionAggregate.count) / 1000).toFixed(2)}}</td>
       <td>{{transactionAggregate.count}}</td>
