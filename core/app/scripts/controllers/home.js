@@ -22,9 +22,10 @@ glowroot.controller('HomeCtrl', [
   '$filter',
   '$http',
   '$q',
+  '$timeout',
   'traceModal',
   'queryStrings',
-  function ($scope, $location, $filter, $http, $q, traceModal, queryStrings) {
+  function ($scope, $location, $filter, $http, $q, $timeout, traceModal, queryStrings) {
     // \u00b7 is &middot;
     document.title = 'Home \u00b7 Glowroot';
     $scope.$parent.title = 'Home';
@@ -67,7 +68,9 @@ glowroot.controller('HomeCtrl', [
       plot.draw();
     });
 
-    $scope.refreshChart = function (deferred, skipUpdateTransactions) {
+    $scope.showChartSpinner = 0;
+
+    $scope.refreshChart = function (refreshButtonDeferred, skipUpdateTransactions) {
       var refreshId = ++currentRefreshId;
       var date = $scope.filter.date;
       var transactionNames = [];
@@ -83,15 +86,23 @@ glowroot.controller('HomeCtrl', [
         transactionNames: transactionNames
       };
       updateLocation();
-      var spinner = Glowroot.showSpinner('#chartSpinner');
+      var pointsDeferred;
+      if (refreshButtonDeferred && !skipUpdateTransactions) {
+        pointsDeferred = $q.defer();
+      } else {
+        // TODO this conditional won't be needed once the home page displays metric stacked chart and
+        // skipUpdateTransactions is not needed
+        pointsDeferred = refreshButtonDeferred;
+      }
+      $scope.showChartSpinner++;
       $http.get('backend/home/points?' + queryStrings.encodeObject(query))
           .success(function (data) {
+            $scope.showChartSpinner--;
             if (refreshId !== currentRefreshId) {
               return;
             }
-            spinner.stop();
             $scope.refreshChartError = false;
-            if (deferred) {
+            if (refreshButtonDeferred) {
               // user clicked on Refresh button, need to reset axes
               plot.getAxes().xaxis.options.min = query.from;
               plot.getAxes().xaxis.options.max = query.to;
@@ -112,27 +123,44 @@ glowroot.controller('HomeCtrl', [
             });
             plotTransactionNames = query.transactionNames;
             updatePlotData(plotData);
-            if (deferred) {
-              deferred.resolve('Success');
+            if (pointsDeferred) {
+              pointsDeferred.resolve('Success');
             }
           })
           .error(function (data, status) {
+            $scope.showChartSpinner--;
             if (refreshId !== currentRefreshId) {
               return;
             }
-            spinner.stop();
             $scope.chartLimitExceeded = false;
             if (status === 0) {
               $scope.refreshChartError = 'Unable to connect to server';
             } else {
               $scope.refreshChartError = 'An error occurred';
             }
-            if (deferred) {
-              deferred.reject($scope.refreshChartError);
+            if (pointsDeferred) {
+              pointsDeferred.reject($scope.refreshChartError);
             }
           });
       if (!skipUpdateTransactions) {
-        updateAggregates();
+        // TODO this conditional will be always true once the home page displays metric stacked chart and
+        // skipUpdateTransactions is not needed
+        var aggregatesDeferred;
+        if (refreshButtonDeferred) {
+          aggregatesDeferred = $q.defer();
+          $q.all([pointsDeferred.promise, aggregatesDeferred.promise])
+              .then(function () {
+                refreshButtonDeferred.resolve('Success');
+              }, function (data) {
+                refreshButtonDeferred.resolve(data);
+              });
+        }
+        // give the points request above a small head start since otherwise the aggregate query could get handled first,
+        // which isn't that bad, but the aggregate query is much slower and the glowroot http handler is throttled to
+        // one thread currently
+        $timeout(function () {
+          updateAggregates(aggregatesDeferred);
+        }, 5);
       }
     };
 
@@ -172,7 +200,7 @@ glowroot.controller('HomeCtrl', [
             return;
           }
           $scope.$apply(function () {
-            $scope.refreshChart(undefined);
+            $scope.refreshChart();
           });
         }, 100);
       } else {
@@ -323,7 +351,10 @@ glowroot.controller('HomeCtrl', [
       }
     });
 
-    function updateAggregates(deferred) {
+    $scope.showTableOverlay = 0;
+    $scope.showTableSpinner = 0;
+
+    function updateAggregates(buttonDeferred) {
       var query = {
         from: $scope.filter.from,
         to: $scope.filter.to,
@@ -332,8 +363,17 @@ glowroot.controller('HomeCtrl', [
         // +1 just to find out if there are more and to show "Show more" button, the +1 will not be displayed
         transactionAggregatesLimit: transactionAggregatesLimit + 1
       };
+      $scope.showTableOverlay++;
+      if (!buttonDeferred) {
+        // show table spinner if not triggered from refresh button or show more button
+        $scope.showTableSpinner++;
+      }
       $http.get('backend/home/aggregates?' + queryStrings.encodeObject(query))
           .success(function (data) {
+            $scope.showTableOverlay--;
+            if (!buttonDeferred) {
+              $scope.showTableSpinner--;
+            }
             $scope.aggregatesError = false;
             $scope.overallAggregate = data.overallAggregate;
             if (data.transactionAggregates.length === transactionAggregatesLimit + 1) {
@@ -348,18 +388,22 @@ glowroot.controller('HomeCtrl', [
               maxTransactionAggregateTotalMillis =
                   Math.max(maxTransactionAggregateTotalMillis, transactionAggregate.totalMillis);
             });
-            if (deferred) {
-              deferred.resolve();
+            if (buttonDeferred) {
+              buttonDeferred.resolve();
             }
           })
           .error(function (data, status) {
+            $scope.showTableOverlay--;
+            if (!buttonDeferred) {
+              $scope.showTableSpinner--;
+            }
             if (status === 0) {
               $scope.aggregatesError = 'Unable to connect to server';
             } else {
               $scope.aggregatesError = 'An error occurred';
             }
-            if (deferred) {
-              deferred.reject($scope.aggregatesError);
+            if (buttonDeferred) {
+              buttonDeferred.reject($scope.aggregatesError);
             }
           });
     }

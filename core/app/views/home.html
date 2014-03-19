@@ -13,9 +13,15 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="chart-container">
+<div class="chart-container"
+     style="position: relative;">
+  <div gt-spinner
+       gt-show="showChartSpinner"
+       class="spinner"
+       id="chartSpinner"
+       style="position: absolute; width: 100%; height: 100%;">
+  </div>
   <div class="chart-dimensions" id="chart"></div>
-  <div class="chart-spinner hide" id="chartSpinner"></div>
   <div class="chart-error" ng-show="refreshChartError">
     <strong>{{refreshChartError}}</strong>
   </div>
@@ -87,112 +93,118 @@
     <strong>{{aggregatesError}}</strong>
   </div>
 </div>
-<table class="table">
-  <thead>
-  <tr>
-    <th align="right" width="1%"></th>
-    <th width="49%">
-      <a href="" ng-click="sortTable('total')" class="home-table-header">
-        Transaction name
-        <span ng-class="sortIconClass('total')"
-              ng-show="tableSortAttribute === 'total'">
-        </span>
-      </a>
-    </th>
-    <th width="10%">
-      <a href="" ng-click="sortTable('average')" class="home-table-header">
-        Average
-        <span ng-class="sortIconClass('average')"
-              ng-show="tableSortAttribute === 'average'">
-        </span>
-      </a>
-    </th>
-    <th width="10%">
-      <a href="" ng-click="sortTable('count')" class="home-table-header">
-        Count
-        <span ng-class="sortIconClass('count')"
-              ng-show="tableSortAttribute === 'count'">
-        </span>
-      </a>
-    </th>
-    <th width="10%">
-      <a href="" ng-click="sortTable('errorCount')" class="home-table-header">
-        Errors
-        <span ng-class="sortIconClass('errorCount')"
-              ng-show="tableSortAttribute === 'errorCount'">
-        </span>
-      </a>
-    </th>
-    <th width="20%">
-      <a href="" ng-click="sortTable('storedTraceCount')" class="home-table-header">
-        Stored traces
-        <span ng-class="sortIconClass('storedTraceCount')"
-              ng-show="tableSortAttribute === 'storedTraceCount'">
-        </span>
-      </a>
-    </th>
-  </tr>
-  </thead>
-  <tbody>
-  <tr class="qtip-color-0" style="font-weight: bold;">
-    <td align="right">
-      <input type="checkbox"
-             ng-checked="true"
-             disabled>
-    </td>
-    <td>All Transactions</td>
-    <td>{{((overallAggregate.totalMillis / overallAggregate.count) / 1000).toFixed(2)}}</td>
-    <td>{{overallAggregate.count}}</td>
-    <td>{{overallAggregate.errorCount}}</td>
-    <td>
-      <a ng-show="overallAggregate.storedTraceCount"
-         ng-href="#/traces?{{tracesQueryString(null)}}">
-        see {{overallAggregate.storedTraceCount}} stored traces
-      </a>
-    </td>
-  </tr>
-  <tr ng-repeat="transactionAggregate in transactionAggregates"
-      ng-style="transactionRowStyle(transactionAggregate.transactionName)">
-    <td align="right">
-      <input type="checkbox" ng-checked="checkedTransactionColors[transactionAggregate.transactionName]"
-             ng-click="clickTransactionName(transactionAggregate.transactionName)"
-             id="{{transactionAggregate.transactionName}}">
-    </td>
-    <td style="position: relative; padding: 0;">
-      <div style="position: absolute; height: 100%; background-color: #eee;"
-           ng-style="{width: transactionBarWidth(transactionAggregate.totalMillis)}">
-      </div>
-      <label for="{{transactionAggregate.transactionName}}"
-             ng-class="{'font-weight-normal': !checkedTransactionColors[transactionAggregate.transactionName]}"
-             style="position: relative; padding: 8px; cursor: pointer; word-break: break-all">
-        {{transactionAggregate.transactionName}}
-      </label>
-    </td>
-    <td>{{((transactionAggregate.totalMillis / transactionAggregate.count) / 1000).toFixed(2)}}</td>
-    <td>{{transactionAggregate.count}}</td>
-    <td>{{transactionAggregate.errorCount}}</td>
-    <td>
-      <a ng-show="transactionAggregate.storedTraceCount"
-         ng-href="#/traces?{{tracesQueryString(transactionAggregate.transactionName)}}"
-         ng-style="transactionRowStyle(transactionAggregate.transactionName)">
-        see {{transactionAggregate.storedTraceCount}} stored traces
-      </a>
-    </td>
-  </tr>
-  </tbody>
-  <tfoot ng-show="hasMoreAggregates">
-  <tr>
-    <td></td>
-    <td colspan="5" style="vertical-align: middle; padding-top: 30px;">
-      <div gt-button
-           gt-btn-class="btn-default"
-           gt-label="Show more"
-           gt-click="showMoreAggregates(deferred)">
-      </div>
-    </td>
-  </tr>
-  </tfoot>
-</table>
+<div style="clear: both; position: relative;">
+  <div class="panel-overlay" ng-show="showTableOverlay">
+    <!-- don't show spinner on refresh button since that has its own spinner -->
+    <div gt-spinner
+         gt-show="showTableSpinner"
+         class="spinner"
+         style="margin-top: 40px; width: 100%;">
+    </div>
+  </div>
+  <table class="table">
+    <thead>
+    <tr>
+      <th align="right" width="1%"></th>
+      <th width="49%">
+        <a href="" ng-click="sortTable('total')" class="home-table-header">
+          Transaction name
+          <span ng-class="sortIconClass('total')"
+                ng-show="tableSortAttribute === 'total'">
+          </span>
+        </a>
+      </th>
+      <th width="10%">
+        <a href="" ng-click="sortTable('average')" class="home-table-header">
+          Average
+          <span ng-class="sortIconClass('average')"
+                ng-show="tableSortAttribute === 'average'">
+          </span>
+        </a>
+      </th>
+      <th width="10%">
+        <a href="" ng-click="sortTable('count')" class="home-table-header">
+          Count
+          <span ng-class="sortIconClass('count')"
+                ng-show="tableSortAttribute === 'count'">
+          </span>
+        </a>
+      </th>
+      <th width="10%">
+        <a href="" ng-click="sortTable('errorCount')" class="home-table-header">
+          Errors
+          <span ng-class="sortIconClass('errorCount')"
+                ng-show="tableSortAttribute === 'errorCount'">
+          </span>
+        </a>
+      </th>
+      <th width="20%">
+        <a href="" ng-click="sortTable('storedTraceCount')" class="home-table-header">
+          Stored traces
+          <span ng-class="sortIconClass('storedTraceCount')"
+                ng-show="tableSortAttribute === 'storedTraceCount'">
+          </span>
+        </a>
+      </th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr class="qtip-color-0" style="font-weight: bold;">
+      <td align="right">
+        <input type="checkbox"
+               ng-checked="true"
+               disabled>
+      </td>
+      <td>All Transactions</td>
+      <td>{{((overallAggregate.totalMillis / overallAggregate.count) / 1000).toFixed(2)}}</td>
+      <td>{{overallAggregate.count}}</td>
+      <td>{{overallAggregate.errorCount}}</td>
+      <td>
+        <a ng-show="overallAggregate.storedTraceCount"
+           ng-href="#/traces?{{tracesQueryString(null)}}">
+          see {{overallAggregate.storedTraceCount}} stored traces
+        </a>
+      </td>
+    </tr>
+    <tr ng-repeat="transactionAggregate in transactionAggregates"
+        ng-style="transactionRowStyle(transactionAggregate.transactionName)">
+      <td align="right">
+        <input type="checkbox" ng-checked="checkedTransactionColors[transactionAggregate.transactionName]"
+               ng-click="clickTransactionName(transactionAggregate.transactionName)"
+               id="{{transactionAggregate.transactionName}}">
+      </td>
+      <td style="position: relative; padding: 0;">
+        <div style="position: absolute; height: 100%; background-color: #eee;"
+             ng-style="{width: transactionBarWidth(transactionAggregate.totalMillis)}">
+        </div>
+        <label for="{{transactionAggregate.transactionName}}"
+               ng-class="{'font-weight-normal': !checkedTransactionColors[transactionAggregate.transactionName]}"
+               style="position: relative; padding: 8px; cursor: pointer; word-break: break-all">
+          {{transactionAggregate.transactionName}}
+        </label>
+      </td>
+      <td>{{((transactionAggregate.totalMillis / transactionAggregate.count) / 1000).toFixed(2)}}</td>
+      <td>{{transactionAggregate.count}}</td>
+      <td>{{transactionAggregate.errorCount}}</td>
+      <td>
+        <a ng-show="transactionAggregate.storedTraceCount"
+           ng-href="#/traces?{{tracesQueryString(transactionAggregate.transactionName)}}"
+           ng-style="transactionRowStyle(transactionAggregate.transactionName)">
+          see {{transactionAggregate.storedTraceCount}} stored traces
+        </a>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+<div ng-show="hasMoreAggregates"
+     style="vertical-align: middle; padding: 20px 0 0 30px;">
+  <div gt-button
+       gt-btn-class="btn-default"
+       gt-label="Show more"
+       gt-click="showMoreAggregates(deferred)">
+  </div>
+</div>
 <div class="modal hide" id="modal">
   <button class="close" id="modalHide" style="position: fixed; right: 65px; top:30px;">
     &times;

@@ -45,6 +45,7 @@ glowroot.controller('ErrorsCtrl', [
     $scope.filter.error = $location.search().error || '';
     $scope.filter.limit = 25;
 
+    $scope.showTableSpinner = 0;
 
     $scope.updateAggregates = function (deferred) {
       $scope.filter.from = $scope.filterDate.getTime();
@@ -53,11 +54,11 @@ glowroot.controller('ErrorsCtrl', [
       // +1 just to find out if there are more and to show "Show more" button, the extra (+1th) will not be displayed
       query.limit++;
       updateLocation();
-      $scope.showTableSpinner = true;
+      $scope.showTableSpinner++;
       $http.get('backend/error/aggregates?' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.loaded = true;
-            $scope.showTableSpinner = false;
+            $scope.showTableSpinner--;
             $scope.error = false;
             if (data.length === query.limit) {
               data.pop();
@@ -72,7 +73,7 @@ glowroot.controller('ErrorsCtrl', [
           })
           .error(function (data, status) {
             $scope.loaded = true;
-            $scope.showTableSpinner = false;
+            $scope.showTableSpinner--;
             if (status === 0) {
               $scope.error = 'Unable to connect to server';
             } else {

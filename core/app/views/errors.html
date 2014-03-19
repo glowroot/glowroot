@@ -97,16 +97,13 @@
       </td>
     </tr>
     </tbody>
-    <tfoot ng-show="hasMoreAggregates">
-    <tr>
-      <td colspan="4" style="vertical-align: middle; padding-top: 30px;">
-        <div gt-button
-             gt-btn-class="btn-default"
-             gt-label="Show more"
-             gt-click="showMoreAggregates(deferred)">
-        </div>
-      </td>
-    </tr>
-    </tfoot>
   </table>
+</div>
+<div ng-show="hasMoreAggregates"
+     style="vertical-align: middle; padding: 20px 0 0 30px;">
+  <div gt-button
+       gt-btn-class="btn-default"
+       gt-label="Show more"
+       gt-click="showMoreAggregates(deferred)">
+  </div>
 </div>
