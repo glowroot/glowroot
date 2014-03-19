@@ -193,6 +193,22 @@ public class ServletAspect {
         }
     }
 
+    @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "setStatus",
+            methodArgs = {"int", ".."}, ignoreSameNested = true)
+    public static class SetStatusAdvice {
+        @OnAfter
+        public static void onAfter(@BindMethodArg Integer statusCode) {
+            // only capture 5xx server errors
+            if (statusCode >= 500 && topLevel.get() != null) {
+                ErrorMessage errorMessage = ErrorMessage.from("setStatus, HTTP status code "
+                        + statusCode);
+                CompletedSpan span = pluginServices.addErrorSpan(errorMessage);
+                span.captureSpanStackTrace();
+                sendError.set(errorMessage);
+            }
+        }
+    }
+
     @Nullable
     static ServletMessageSupplier getServletMessageSupplier() {
         return topLevel.get();

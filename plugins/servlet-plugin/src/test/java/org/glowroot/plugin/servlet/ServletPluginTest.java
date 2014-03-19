@@ -276,7 +276,7 @@ public class ServletPluginTest {
     }
 
     @Test
-    public void testSend404Error() throws Exception {
+    public void testSend500Error() throws Exception {
         // given
         // when
         container.executeAppUnderTest(Send500Error.class);
@@ -295,6 +295,28 @@ public class ServletPluginTest {
         assertThat(trace.getSpans().get(1).getError().getException()).isNull();
         assertThat(trace.getSpans().get(1).getStackTrace()).isNotNull();
         assertThat(trace.getSpans().get(1).getStackTrace().get(0)).contains(".sendError(");
+    }
+
+    @Test
+    public void testSetStatus500Error() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(SetStatus500Error.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        assertThat(trace.getError()).isEqualTo("setStatus, HTTP status code 500");
+        assertThat(trace.getSpans().get(0).getError()).isNotNull();
+        assertThat(trace.getSpans().get(0).getError().getText()).isEqualTo(
+                "setStatus, HTTP status code 500");
+        assertThat(trace.getSpans().get(0).getError().getException()).isNull();
+        assertThat(trace.getSpans().get(0).getStackTrace()).isNull();
+        assertThat(trace.getSpans().get(1).getError()).isNotNull();
+        assertThat(trace.getSpans().get(1).getError().getText()).isEqualTo(
+                "setStatus, HTTP status code 500");
+        assertThat(trace.getSpans().get(1).getError().getException()).isNull();
+        assertThat(trace.getSpans().get(1).getStackTrace()).isNotNull();
+        assertThat(trace.getSpans().get(1).getStackTrace().get(0)).contains(".setStatus(");
     }
 
     @SuppressWarnings("serial")
@@ -437,6 +459,15 @@ public class ServletPluginTest {
         protected void doGet(HttpServletRequest request, HttpServletResponse response)
                 throws IOException {
             response.sendError(500);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class SetStatus500Error extends TestServlet {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws IOException {
+            response.setStatus(500);
         }
     }
 
