@@ -70,22 +70,18 @@ glowroot.controller('HomeCtrl', [
 
     $scope.showChartSpinner = 0;
 
-    $scope.refreshChart = function (refreshButtonDeferred, skipUpdateTransactions) {
+    function refreshChart(refreshButtonDeferred, skipUpdateTransactions) {
+      var date = $scope.filterDate;
       var refreshId = ++currentRefreshId;
-      var date = $scope.filter.date;
       var transactionNames = [];
       angular.forEach($scope.checkedTransactionColors, function (color, transactionName) {
         transactionNames.push(transactionName);
       });
-      var midnight = new Date($scope.filter.from).setHours(0, 0, 0, 0);
-      $scope.filter.from = date.getTime() + ($scope.filter.from - midnight);
-      $scope.filter.to = date.getTime() + ($scope.filter.to - midnight);
       var query = {
-        from: $scope.filter.from,
-        to: $scope.filter.to,
+        from: $scope.chartFrom,
+        to: $scope.chartTo,
         transactionNames: transactionNames
       };
-      updateLocation();
       var pointsDeferred;
       if (refreshButtonDeferred && !skipUpdateTransactions) {
         pointsDeferred = $q.defer();
@@ -102,16 +98,13 @@ glowroot.controller('HomeCtrl', [
               return;
             }
             $scope.refreshChartError = false;
-            if (refreshButtonDeferred) {
-              // user clicked on Refresh button, need to reset axes
-              plot.getAxes().xaxis.options.min = query.from;
-              plot.getAxes().xaxis.options.max = query.to;
-              plot.getAxes().xaxis.options.zoomRange = [
-                date.getTime(),
-                date.getTime() + 24 * 60 * 60 * 1000
-              ];
-              plot.unhighlight();
-            }
+            // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
+            plot.getAxes().xaxis.options.min = query.from;
+            plot.getAxes().xaxis.options.max = query.to;
+            plot.getAxes().xaxis.options.zoomRange = [
+              date.getTime(),
+              date.getTime() + 24 * 60 * 60 * 1000
+            ];
             var plotData = [ data.points ];
             angular.forEach(data.transactionPoints, function (points, transactionName) {
               plotData.push(points);
@@ -162,6 +155,18 @@ glowroot.controller('HomeCtrl', [
           updateAggregates(aggregatesDeferred);
         }, 5);
       }
+    }
+
+    $scope.refreshButtonClick = function (deferred) {
+      var midnight = new Date($scope.chartFrom).setHours(0, 0, 0, 0);
+      if (midnight !== $scope.filterDate.getTime()) {
+        // filterDate has changed
+        chartFromToDefault = false;
+        $scope.chartFrom = $scope.filterDate.getTime() + ($scope.chartFrom - midnight);
+        $scope.chartTo = $scope.filterDate.getTime() + ($scope.chartTo - midnight);
+      }
+      updateLocation();
+      refreshChart(deferred);
     };
 
     function updatePlotData(data) {
@@ -191,7 +196,12 @@ glowroot.controller('HomeCtrl', [
     $chart.bind('plotzoom', function (event, plot, args) {
       var zoomingOut = args.amount && args.amount < 1;
       updatePlotData(getFilteredData());
-      afterZoom();
+      $scope.$apply(function () {
+        $scope.chartFrom = plot.getAxes().xaxis.min;
+        $scope.chartTo = plot.getAxes().xaxis.max;
+        chartFromToDefault = false;
+        updateLocation();
+      });
       if (zoomingOut) {
         var zoomId = ++currentZoomId;
         // use 100 millisecond delay to handle rapid zooming
@@ -200,7 +210,7 @@ glowroot.controller('HomeCtrl', [
             return;
           }
           $scope.$apply(function () {
-            $scope.refreshChart();
+            refreshChart();
           });
         }, 100);
       } else {
@@ -219,7 +229,12 @@ glowroot.controller('HomeCtrl', [
       plot.getAxes().xaxis.options.min = ranges.xaxis.from;
       plot.getAxes().xaxis.options.max = ranges.xaxis.to;
       updatePlotData(getFilteredData());
-      afterZoom();
+      $scope.$apply(function () {
+        $scope.chartFrom = plot.getAxes().xaxis.min;
+        $scope.chartTo = plot.getAxes().xaxis.max;
+        chartFromToDefault = false;
+        updateLocation();
+      });
       // no need to fetch new data
       // increment currentRefreshId to cancel any refresh in action
       currentRefreshId++;
@@ -227,14 +242,6 @@ glowroot.controller('HomeCtrl', [
         updateAggregates();
       });
     });
-
-    function afterZoom() {
-      $scope.$apply(function () {
-        $scope.filter.from = plot.getAxes().xaxis.min;
-        $scope.filter.to = plot.getAxes().xaxis.max;
-        updateLocation();
-      });
-    }
 
     function getFilteredData() {
       var from = plot.getAxes().xaxis.options.min;
@@ -356,8 +363,8 @@ glowroot.controller('HomeCtrl', [
 
     function updateAggregates(buttonDeferred) {
       var query = {
-        from: $scope.filter.from,
-        to: $scope.filter.to,
+        from: $scope.chartFrom,
+        to: $scope.chartTo,
         sortAttribute: $scope.tableSortAttribute,
         sortDirection: $scope.tableSortDirection,
         // +1 just to find out if there are more and to show "Show more" button, the +1 will not be displayed
@@ -408,21 +415,6 @@ glowroot.controller('HomeCtrl', [
           });
     }
 
-    function updateLocation() {
-      var transactionNames = [];
-      angular.forEach($scope.checkedTransactionColors, function (color, transactionName) {
-        transactionNames.push(transactionName);
-      });
-      var query = {
-        from: $scope.filter.from - fixedAggregationIntervalMillis,
-        to: $scope.filter.to,
-        'table-sort-attribute': $scope.tableSortAttribute,
-        'table-sort-direction': $scope.tableSortDirection,
-        'transaction-name': transactionNames
-      };
-      $location.search(query).replace();
-    }
-
     $scope.sortTable = function (attributeName) {
       if ($scope.tableSortAttribute === attributeName) {
         // switch direction
@@ -454,8 +446,8 @@ glowroot.controller('HomeCtrl', [
       if (transactionName) {
         return queryStrings.encodeObject({
           // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
-          from: $scope.filter.from - fixedAggregationIntervalMillis,
-          to: $scope.filter.to,
+          from: $scope.chartFrom - fixedAggregationIntervalMillis,
+          to: $scope.chartTo,
           transactionName: transactionName,
           transactionNameComparator: 'equals',
           background: 'false'
@@ -463,8 +455,8 @@ glowroot.controller('HomeCtrl', [
       } else {
         return queryStrings.encodeObject({
           // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
-          from: $scope.filter.from - fixedAggregationIntervalMillis,
-          to: $scope.filter.to,
+          from: $scope.chartFrom - fixedAggregationIntervalMillis,
+          to: $scope.chartTo,
           background: 'false'
         });
       }
@@ -524,16 +516,14 @@ glowroot.controller('HomeCtrl', [
         color = availableColors.length ? availableColors.pop() : nextRColor();
         $scope.checkedTransactionColors[transactionName] = color;
       }
-      updateLocation();
-      $scope.refreshChart(undefined, true);
+      refreshChart(undefined, true);
     };
 
     $scope.removeDisplayedTransaction = function (transactionName) {
       var color = $scope.checkedTransactionColors[transactionName];
       availableColors.push(color);
       delete $scope.checkedTransactionColors[transactionName];
-      updateLocation();
-      $scope.refreshChart(undefined, true);
+      refreshChart(undefined, true);
     };
 
     $scope.transactionBarWidth = function (totalMillis) {
@@ -548,23 +538,25 @@ glowroot.controller('HomeCtrl', [
     });
     $('#modalHide').click(traceModal.hideModal);
 
+    var chartFromToDefault;
+
     $scope.filter = {};
-    $scope.filter.from = Number($location.search().from);
-    $scope.filter.to = Number($location.search().to);
+    $scope.chartFrom = Number($location.search().from);
+    $scope.chartTo = Number($location.search().to);
     // both from and to must be supplied or neither will take effect
-    if ($scope.filter.from && $scope.filter.to) {
-      $scope.filter.from += fixedAggregationIntervalMillis;
-      $scope.filter.date = new Date($scope.filter.from);
-      $scope.filter.date.setHours(0, 0, 0, 0);
+    if ($scope.chartFrom && $scope.chartTo) {
+      $scope.chartFrom += fixedAggregationIntervalMillis;
+      $scope.filterDate = new Date($scope.chartFrom);
+      $scope.filterDate.setHours(0, 0, 0, 0);
     } else {
+      chartFromToDefault = true;
       var today = new Date();
       today.setHours(0, 0, 0, 0);
-      $scope.filter.date = today;
+      $scope.filterDate = today;
       // show 2 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today
       // (e.g. if 'now' is 11:55pm)
       var now = new Date();
-      now.setSeconds(0);
-      now.setMilliseconds(0);
+      now.setSeconds(0, 0);
       var fixedAggregationIntervalMinutes = fixedAggregationIntervalMillis / (60 * 1000);
       if (fixedAggregationIntervalMinutes > 1) {
         // this is the normal case since default aggregation interval is 5 min
@@ -572,8 +564,8 @@ glowroot.controller('HomeCtrl', [
             fixedAggregationIntervalMinutes * Math.floor(now.getMinutes() / fixedAggregationIntervalMinutes);
         now.setMinutes(minutesRoundedDownToNearestAggregationInterval);
       }
-      $scope.filter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
-      $scope.filter.to = Math.min($scope.filter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
+      $scope.chartFrom = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
+      $scope.chartTo = Math.min($scope.chartFrom + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
     $scope.tableSortAttribute = $location.search()['table-sort-attribute'] || 'total';
     $scope.tableSortDirection = $location.search()['table-sort-direction'] || 'desc';
@@ -586,6 +578,28 @@ glowroot.controller('HomeCtrl', [
       });
     } else if (transactionNames) {
       $scope.checkedTransactionColors[transactionNames] = nextRColor();
+    }
+
+    function updateLocation() {
+      var transactionNames = [];
+      angular.forEach($scope.checkedTransactionColors, function (color, transactionName) {
+        transactionNames.push(transactionName);
+      });
+      var query = {};
+      if (!chartFromToDefault) {
+        query.from = $scope.chartFrom - fixedAggregationIntervalMillis;
+        query.to = $scope.chartTo;
+      }
+      if (transactionNames) {
+        query['transaction-name'] = transactionNames;
+      }
+      if ($scope.tableSortAttribute !== 'total' || $scope.tableSortDirection !== 'desc') {
+        query['table-sort-attribute'] = $scope.tableSortAttribute;
+        if ($scope.tableSortDirection !== 'desc') {
+          query['table-sort-direction'] = $scope.tableSortDirection;
+        }
+      }
+      $location.search(query).replace();
     }
 
     (function () {
@@ -605,12 +619,12 @@ glowroot.controller('HomeCtrl', [
           timezone: 'browser',
           twelveHourClock: true,
           ticks: 5,
-          min: $scope.filter.from,
-          max: $scope.filter.to,
+          min: $scope.chartFrom,
+          max: $scope.chartTo,
           absoluteZoomRange: true,
           zoomRange: [
-            $scope.filter.date.getTime(),
-            $scope.filter.date.getTime() + 24 * 60 * 60 * 1000
+            $scope.filterDate.getTime(),
+            $scope.filterDate.getTime() + 24 * 60 * 60 * 1000
           ]
         },
         yaxis: {
@@ -644,6 +658,6 @@ glowroot.controller('HomeCtrl', [
     })();
 
     plot.getAxes().yaxis.options.max = undefined;
-    $scope.refreshChart();
+    refreshChart();
   }
 ]);

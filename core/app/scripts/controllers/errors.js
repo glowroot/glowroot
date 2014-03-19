@@ -27,33 +27,12 @@ glowroot.controller('ErrorsCtrl', [
     $scope.$parent.title = 'Captured errors';
     $scope.$parent.activeNavbarItem = 'errors';
 
-    $scope.filter = {};
-    $scope.filter.from = Number($location.search().from);
-    $scope.filter.to = Number($location.search().to);
-    // both from and to must be supplied or neither will take effect
-    if ($scope.filter.from && $scope.filter.to) {
-      $scope.filterDate = new Date($scope.filter.from);
-      $scope.filterDate.setHours(0, 0, 0, 0);
-    } else {
-      var today = new Date();
-      today.setHours(0, 0, 0, 0);
-      $scope.filterDate = today;
-      $scope.filter.from = $scope.filterDate.getTime();
-      $scope.filter.to = $scope.filter.from + 24 * 60 * 60 * 1000;
-    }
-    $scope.filter.errorComparator = $location.search()['error-comparator'] || 'contains';
-    $scope.filter.error = $location.search().error || '';
-    $scope.filter.limit = 25;
-
     $scope.showTableSpinner = 0;
 
-    $scope.updateAggregates = function (deferred) {
-      $scope.filter.from = $scope.filterDate.getTime();
-      $scope.filter.to = $scope.filter.from + 24 * 60 * 60 * 1000;
+    function updateAggregates(deferred) {
       var query = angular.copy($scope.filter);
       // +1 just to find out if there are more and to show "Show more" button, the extra (+1th) will not be displayed
       query.limit++;
-      updateLocation();
       $scope.showTableSpinner++;
       $http.get('backend/error/aggregates?' + queryStrings.encodeObject(query))
           .success(function (data) {
@@ -83,6 +62,18 @@ glowroot.controller('ErrorsCtrl', [
               deferred.reject($scope.error);
             }
           });
+    }
+
+    $scope.refreshButtonClick = function (deferred) {
+      var midnight = new Date($scope.filter.from).setHours(0, 0, 0, 0);
+      if (midnight !== $scope.filterDate.getTime()) {
+        // filterDate has changed
+        filterFromToDefault = false;
+        $scope.filter.from = $scope.filterDate.getTime() + ($scope.filter.from - midnight);
+        $scope.filter.to = $scope.filterDate.getTime() + ($scope.filter.to - midnight);
+      }
+      updateLocation();
+      updateAggregates(deferred);
     };
 
     $scope.tracesQueryString = function (aggregate) {
@@ -124,19 +115,55 @@ glowroot.controller('ErrorsCtrl', [
     $scope.showMoreAggregates = function (deferred) {
       // double each time
       $scope.filter.limit *= 2;
-      $scope.updateAggregates(deferred);
+      updateAggregates(deferred);
     };
 
+    var filterFromToDefault;
+
+    $scope.filter = {};
+    $scope.filter.from = Number($location.search().from);
+    $scope.filter.to = Number($location.search().to);
+    // both from and to must be supplied or neither will take effect
+    if ($scope.filter.from && $scope.filter.to) {
+      $scope.filterDate = new Date($scope.filter.from);
+      $scope.filterDate.setHours(0, 0, 0, 0);
+    } else {
+      filterFromToDefault = true;
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      $scope.filterDate = today;
+      $scope.filter.from = $scope.filterDate.getTime();
+      $scope.filter.to = $scope.filter.from + 24 * 60 * 60 * 1000;
+    }
+    $scope.filter.errorComparator = $location.search()['error-comparator'] || 'contains';
+    $scope.filter.error = $location.search().error || '';
+    $scope.filter.limit = 25;
+
+    $scope.$watch('filter.from', function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        filterFromToDefault = false;
+      }
+    });
+
+    $scope.$watch('filter.to', function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        filterFromToDefault = false;
+      }
+    });
+
     function updateLocation() {
-      var query = {
-        from: $scope.filter.from,
-        to: $scope.filter.to,
-        'error-comparator': $scope.filter.errorComparator,
-        error: $scope.filter.error
-      };
+      var query = {};
+      if (!filterFromToDefault) {
+        query.from = $scope.filter.from;
+        query.to = $scope.filter.to;
+      }
+      if ($scope.filter.error) {
+        query['error-comparator'] = $scope.filter.errorComparator;
+        query.error = $scope.filter.error;
+      }
       $location.search(query).replace();
     }
 
-    $scope.updateAggregates();
+    updateAggregates();
   }
 ]);

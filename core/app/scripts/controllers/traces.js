@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, Glowroot, TraceRenderer, $, Spinner, alert */
+/* global glowroot, angular, Glowroot, TraceRenderer, $, Spinner, alert */
 
 glowroot.controller('TracesCtrl', [
   '$scope',
@@ -38,23 +38,23 @@ glowroot.controller('TracesCtrl', [
 
     var $chart = $('#chart');
 
+    var appliedFilter;
+
     $scope.$watchCollection('[containerWidth, windowHeight]', function () {
       plot.resize();
       plot.setupGrid();
       plot.draw();
     });
 
-    $scope.refreshChart = function (deferred) {
-      // grab some values in case they are changed by user before response returns
-      var date = $scope.filterDate;
-      var from = $scope.filter.from;
-      var to = $scope.filter.to;
-      var limit = $scope.filter.limit;
-      var low = $scope.filter.low;
-      var high = $scope.filter.high;
+    function refreshChart(deferred) {
+      var from = appliedFilter.from;
+      var to = appliedFilter.to;
+      var limit = appliedFilter.limit;
+      var low = appliedFilter.low;
+      var high = appliedFilter.high;
       var refreshId = ++currentRefreshId;
       var spinner = Glowroot.showSpinner('#chartSpinner');
-      $http.get('backend/trace/points?' + queryStrings.encodeObject($scope.filter))
+      $http.get('backend/trace/points?' + queryStrings.encodeObject(appliedFilter))
           .success(function (data) {
             if (refreshId !== currentRefreshId) {
               return;
@@ -69,9 +69,10 @@ glowroot.controller('TracesCtrl', [
               plot.getAxes().xaxis.options.max = to;
               plot.getAxes().yaxis.options.min = low;
               plot.getAxes().yaxis.options.realMax = high;
+              var midnight = new Date(from).setHours(0, 0, 0, 0);
               plot.getAxes().xaxis.options.zoomRange = [
-                date.getTime(),
-                date.getTime() + 24 * 60 * 60 * 1000
+                midnight,
+                midnight + 24 * 60 * 60 * 1000
               ];
               plot.unhighlight();
             }
@@ -98,6 +99,19 @@ glowroot.controller('TracesCtrl', [
               deferred.reject($scope.refreshChartError);
             }
           });
+    }
+
+    $scope.clickRefreshButton = function (deferred) {
+      var midnight = new Date(appliedFilter.from).setHours(0, 0, 0, 0);
+      if (midnight !== $scope.filterDate.getTime()) {
+        // filterDate has changed
+        filterFromToDefault = false;
+        appliedFilter.from = $scope.filterDate.getTime() + (appliedFilter.from - midnight);
+        appliedFilter.to = $scope.filterDate.getTime() + (appliedFilter.to - midnight);
+      }
+      angular.extend(appliedFilter, $scope.filter);
+      updateLocation();
+      refreshChart(deferred);
     };
 
     $chart.bind('plotzoom', function (event, plot, args) {
@@ -109,7 +123,11 @@ glowroot.controller('TracesCtrl', [
       plot.setData(getFilteredData());
       plot.setupGrid();
       plot.draw();
-      afterZoom(zoomingOut);
+      $scope.$apply(function () {
+        afterZoom(zoomingOut);
+        filterFromToDefault = false;
+        updateLocation();
+      });
       if (zoomingOut || $scope.chartLimitExceeded) {
         var zoomId = ++currentZoomId;
         // use 100 millisecond delay to handle rapid zooming
@@ -118,7 +136,7 @@ glowroot.controller('TracesCtrl', [
             return;
           }
           $scope.$apply(function () {
-            $scope.refreshChart(undefined);
+            refreshChart(undefined);
           });
         }, 100);
       } else {
@@ -129,6 +147,7 @@ glowroot.controller('TracesCtrl', [
     });
 
     $chart.bind('plotselected', function (event, ranges) {
+      filterFromToDefault = false;
       plot.clearSelection();
       // perform the zoom
       plot.getAxes().xaxis.options.min = ranges.xaxis.from;
@@ -138,10 +157,14 @@ glowroot.controller('TracesCtrl', [
       plot.setData(getFilteredData());
       plot.setupGrid();
       plot.draw();
-      afterZoom();
+      $scope.$apply(function () {
+        afterZoom();
+        filterFromToDefault = false;
+        updateLocation();
+      });
       if ($scope.chartLimitExceeded) {
         $scope.$apply(function () {
-          $scope.refreshChart();
+          refreshChart();
         });
       } else {
         // no need to fetch new data
@@ -156,27 +179,26 @@ glowroot.controller('TracesCtrl', [
       var to = plot.getAxes().xaxis.max;
       var low = plot.getAxes().yaxis.min;
       var high = plot.getAxes().yaxis.options.realMax;
-      var midnight = new Date(from).setHours(0, 0, 0, 0);
-      $scope.$apply(function () {
-        $scope.filter.from = $scope.filterDate.getTime() + (from - midnight);
-        $scope.filter.to = $scope.filterDate.getTime() + (to - midnight);
-        if (zoomingOut) {
-          // scroll zooming out, reset duration limits
-          $scope.filterDurationComparator = 'greater';
-          $scope.filter.low = 0;
-          $scope.filter.high = undefined;
+      appliedFilter.from = from;
+      appliedFilter.to = to;
+      if (zoomingOut) {
+        // scroll zooming out, reset duration limits
+        $scope.filterDurationComparator = 'greater';
+        // set both appliedFilter and $scope.filter low/high
+        appliedFilter.low = $scope.filter.low = 0;
+        appliedFilter.high = $scope.filter.high = undefined;
+      } else {
+        // set both appliedFilter and $scope.filter low/high
+        appliedFilter.low = $scope.filter.low = low;
+        appliedFilter.high = $scope.filter.high = high;
+        if (high && low !== 0) {
+          $scope.filterDurationComparator = 'between';
+        } else if (high) {
+          $scope.filterDurationComparator = 'less';
         } else {
-          $scope.filter.low = low;
-          $scope.filter.high = high;
-          if (high && low !== 0) {
-            $scope.filterDurationComparator = 'between';
-          } else if (high) {
-            $scope.filterDurationComparator = 'less';
-          } else {
-            $scope.filterDurationComparator = 'greater';
-          }
+          $scope.filterDurationComparator = 'greater';
         }
-      });
+      }
     }
 
     function getFilteredData() {
@@ -365,46 +387,7 @@ glowroot.controller('TracesCtrl', [
       traceModal.hideModal();
     });
 
-    $scope.filter = {};
-    $scope.filter.from = Number($location.search().from);
-    $scope.filter.to = Number($location.search().to);
-    // both from and to must be supplied or neither will take effect
-    if ($scope.filter.from && $scope.filter.to) {
-      $scope.filterDate = new Date($scope.filter.from);
-      $scope.filterDate.setHours(0, 0, 0, 0);
-    } else {
-      var today = new Date();
-      today.setHours(0, 0, 0, 0);
-      $scope.filterDate = today;
-      // show 2 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today
-      // (e.g. if 'now' is 11:55pm)
-      var now = new Date();
-      now.setSeconds(0);
-      now.setMilliseconds(0);
-      $scope.filter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
-      $scope.filter.to = Math.min($scope.filter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
-    }
-    $scope.filter.low = 0;
-    $scope.filterHighText = '';
-    $scope.filter.headlineComparator = 'begins';
-    $scope.filter.transactionNameComparator = $location.search()['transaction-name-comparator'];
-    if (!$scope.filter.transactionNameComparator) {
-      $scope.filter.transactionNameComparator = 'begins';
-    }
-    $scope.filter.errorComparator = $location.search()['error-comparator'];
-    if (!$scope.filter.errorComparator) {
-      $scope.filter.errorComparator = 'begins';
-    }
-    $scope.filter.userComparator = 'begins';
-    $scope.filter.attributeValueComparator = 'begins';
-    $scope.filter.limit = $('html').hasClass('lt-ie9') ? 100 : 500;
-    $scope.filterDurationComparator = 'greater';
-
-    $scope.filter.transactionName = $location.search()['transaction-name'];
-    $scope.filter.error = $location.search().error;
-    $scope.filter.background = $location.search().background;
-
-    $scope.filterDateComparatorOptions = [
+    $scope.filterDurationComparatorOptions = [
       {
         display: 'Greater than',
         value: 'greater'
@@ -442,11 +425,62 @@ glowroot.controller('TracesCtrl', [
       }
     ];
 
-    $scope.$watch('filterDate', function (date) {
-      var midnight = new Date($scope.filter.from).setHours(0, 0, 0, 0);
-      $scope.filter.from = date.getTime() + ($scope.filter.from - midnight);
-      $scope.filter.to = date.getTime() + ($scope.filter.to - midnight);
-    });
+    var filterFromToDefault;
+    var filterLimitDefault;
+
+    appliedFilter = {};
+    appliedFilter.from = Number($location.search().from);
+    appliedFilter.to = Number($location.search().to);
+    // both from and to must be supplied or neither will take effect
+    if (appliedFilter.from && appliedFilter.to) {
+      $scope.filterDate = new Date(appliedFilter.from);
+      $scope.filterDate.setHours(0, 0, 0, 0);
+    } else {
+      filterFromToDefault = true;
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      $scope.filterDate = today;
+      // show 2 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today
+      // (e.g. if 'now' is 11:55pm)
+      var now = new Date();
+      now.setSeconds(0, 0);
+      appliedFilter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
+      appliedFilter.to = Math.min(appliedFilter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
+    }
+    appliedFilter.low = Number($location.search().low) || 0;
+    appliedFilter.high = Number($location.search().high) || undefined;
+    appliedFilter.background = $location.search().background || '';
+    appliedFilter.headlineComparator = $location.search()['headline-comparator'] || 'begins';
+    appliedFilter.headline = $location.search().headline || '';
+    appliedFilter.transactionNameComparator = $location.search()['transaction-name-comparator'] || 'begins';
+    appliedFilter.transactionName = $location.search()['transaction-name'] || '';
+    appliedFilter.errorComparator = $location.search()['error-comparator'] || 'begins';
+    appliedFilter.error = $location.search().error || '';
+    appliedFilter.userComparator = $location.search()['user-comparator'] || 'begins';
+    appliedFilter.user = $location.search().user || '';
+    appliedFilter.attributeName = $location.search()['attribute-name'] || '';
+    appliedFilter.attributeValueComparator = $location.search()['attribute-value-comparator'] || 'begins';
+    appliedFilter.attributeValue = $location.search()['attribute-value'] || '';
+    appliedFilter.limit = Number($location.search().limit);
+    if (!appliedFilter.limit) {
+      filterLimitDefault = true;
+      appliedFilter.limit = $('html').hasClass('lt-ie9') ? 100 : 500;
+    }
+    appliedFilter.errorOnly = $location.search()['error-only'] === 'true';
+    appliedFilter.fineOnly = $location.search()['fine-only'] === 'true';
+
+    $scope.filter = angular.copy(appliedFilter);
+    // need to remove from and to so they aren't copied back during angular.extend(appliedFilter, $scope.filter)
+    delete $scope.filter.from;
+    delete $scope.filter.to;
+
+    if (appliedFilter.low !== 0 && appliedFilter.high) {
+      $scope.filterDurationComparator = 'between';
+    } else if (appliedFilter.high) {
+      $scope.filterDurationComparator = 'less';
+    } else {
+      $scope.filterDurationComparator = 'greater';
+    }
 
     $scope.$watch('filterDurationComparator', function (value) {
       if (value === 'greater') {
@@ -456,7 +490,64 @@ glowroot.controller('TracesCtrl', [
       }
     });
 
+    $scope.$watch('filter.limit', function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        filterLimitDefault = false;
+      }
+    });
+
+    function updateLocation() {
+      var query = {};
+      if (!filterFromToDefault) {
+        query.from = appliedFilter.from;
+        query.to = appliedFilter.to;
+      }
+      if (Number(appliedFilter.low)) {
+        query.low = appliedFilter.low;
+      }
+      if (Number(appliedFilter.high)) {
+        query.high = appliedFilter.high;
+      }
+      if (appliedFilter.background === 'true' || appliedFilter.background === 'false') {
+        query.background = appliedFilter.background;
+      }
+      if (appliedFilter.headline) {
+        query['headline-comparator'] = appliedFilter.headlineComparator;
+        query.headline = appliedFilter.headline;
+      }
+      if (appliedFilter.transactionName) {
+        query['transaction-name-comparator'] = appliedFilter.transactionNameComparator;
+        query['transaction-name'] = appliedFilter.transactionName;
+      }
+      if (appliedFilter.error) {
+        query['error-comparator'] = appliedFilter.errorComparator;
+        query.error = appliedFilter.error;
+      }
+      if (appliedFilter.user) {
+        query['user-comparator'] = appliedFilter.userComparator;
+        query.user = appliedFilter.user;
+      }
+      if (appliedFilter.attributeName) {
+        query['attribute-name'] = appliedFilter.attributeName;
+      }
+      if (appliedFilter.attributeValue) {
+        query['attribute-value-comparator'] = appliedFilter.attributeValueComparator;
+        query['attribute-value'] = appliedFilter.attributeValue;
+      }
+      if (appliedFilter.errorOnly) {
+        query['error-only'] = 'true';
+      }
+      if (appliedFilter.fineOnly) {
+        query['fine-only'] = 'true';
+      }
+      if (!filterLimitDefault) {
+        query.limit = appliedFilter.limit;
+      }
+      $location.search(query).replace();
+    }
+
     (function () {
+      var fromMidnight = new Date(appliedFilter.from).setHours(0, 0, 0, 0);
       var options = {
         legend: {
           show: false
@@ -482,12 +573,12 @@ glowroot.controller('TracesCtrl', [
           ticks: 5,
           // xaxis is in milliseconds, so grid lock to 1 second
           borderGridLock: 1000,
-          min: $scope.filter.from,
-          max: $scope.filter.to,
+          min: appliedFilter.from,
+          max: appliedFilter.to,
           absoluteZoomRange: true,
           zoomRange: [
-            $scope.filterDate.getTime(),
-            $scope.filterDate.getTime() + 24 * 60 * 60 * 1000
+            fromMidnight,
+            fromMidnight + 24 * 60 * 60 * 1000
           ]
         },
         yaxis: {
@@ -518,6 +609,6 @@ glowroot.controller('TracesCtrl', [
     })();
 
     plot.getAxes().yaxis.options.max = undefined;
-    $scope.refreshChart();
+    refreshChart();
   }
 ]);
