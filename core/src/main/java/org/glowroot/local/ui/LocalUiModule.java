@@ -107,10 +107,6 @@ public class LocalUiModule {
                 new TraceSummaryJsonService(traceCommonService);
         SnapshotHttpService snapshotHttpService = new SnapshotHttpService(traceCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
-        // when port is 0, intentionally passing it as 0 instead of its resolved value since the
-        // port is just displayed on config page for its documentation value anyways, and more
-        // useful to know it was set to 0 than to display its value (which is needed to view the
-        // page anyways)
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
                 pluginDescriptorCache, dataDir, traceModule.getPointcutConfigAdviceCache(),
                 httpSessionManager, traceModule);
