@@ -198,11 +198,16 @@ public class Trace {
 
     @Nullable
     public String getError() {
-        ReadableErrorMessage message = rootSpan.getRootSpan().getErrorMessage();
-        if (message != null) {
-            return message.getText();
+        // don't prefer the root span error message since it is likely a more generic error message,
+        // e.g. servlet response sendError(500)
+        if (error != null) {
+            return error;
         }
-        return error;
+        ReadableErrorMessage message = rootSpan.getRootSpan().getErrorMessage();
+        if (message == null) {
+            return null;
+        }
+        return message.getText();
     }
 
     @Nullable
