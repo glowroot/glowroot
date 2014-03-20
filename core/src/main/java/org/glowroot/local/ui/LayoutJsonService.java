@@ -29,7 +29,8 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.jvm.HeapHistograms;
-import org.glowroot.jvm.HotSpotDiagnostics;
+import org.glowroot.jvm.DiagnosticOptions;
+import org.glowroot.jvm.HeapDumps;
 import org.glowroot.markers.Singleton;
 
 /**
@@ -52,19 +53,23 @@ class LayoutJsonService {
     @Nullable
     private final HeapHistograms heapHistograms;
     @Nullable
-    private final HotSpotDiagnostics hotSpotDiagnosticService;
+    private final HeapDumps heapDumps;
+    @Nullable
+    private final DiagnosticOptions diagnosticOptions;
 
     private final long fixedAggregationIntervalSeconds;
 
     LayoutJsonService(String version, ConfigService configService,
             PluginDescriptorCache pluginDescriptorCache, @Nullable HeapHistograms heapHistograms,
-            @Nullable HotSpotDiagnostics hotSpotDiagnosticService,
+            @Nullable HeapDumps heapDumps,
+            @Nullable DiagnosticOptions diagnosticOptions,
             long fixedAggregationIntervalSeconds) {
         this.version = version;
         this.configService = configService;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.heapHistograms = heapHistograms;
-        this.hotSpotDiagnosticService = hotSpotDiagnosticService;
+        this.heapDumps = heapDumps;
+        this.diagnosticOptions = diagnosticOptions;
         this.fixedAggregationIntervalSeconds = fixedAggregationIntervalSeconds;
     }
 
@@ -77,8 +82,8 @@ class LayoutJsonService {
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeBooleanField("jvmHeapHistogram", heapHistograms != null);
-        jg.writeBooleanField("jvmHeapDump", hotSpotDiagnosticService != null);
-        jg.writeBooleanField("jvmManageableFlags", hotSpotDiagnosticService != null);
+        jg.writeBooleanField("jvmHeapDump", heapDumps != null);
+        jg.writeBooleanField("jvmDiagnosticOptions", diagnosticOptions != null);
         jg.writeStringField("footerMessage", "version " + version);
         jg.writeBooleanField("passwordEnabled",
                 configService.getUserInterfaceConfig().isPasswordEnabled());

@@ -90,7 +90,8 @@ public class LocalUiModule {
 
         LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
                 pluginDescriptorCache, jvmModule.getHeapHistograms().getService(),
-                jvmModule.getHotSpotDiagnostics().getService(),
+                jvmModule.getHeapDumps().getService(),
+                jvmModule.getDiagnosticOptions().getService(),
                 collectorModule.getFixedAggregationIntervalSeconds());
         HttpSessionManager httpSessionManager = new HttpSessionManager(configService, clock,
                 layoutJsonService);
@@ -109,8 +110,8 @@ public class LocalUiModule {
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
         ErrorJsonService errorJsonService = new ErrorJsonService(snapshotDao);
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getThreadAllocatedBytes(),
-                jvmModule.getHeapHistograms(), jvmModule.getHotSpotDiagnostics(),
-                jvmModule.getHotSpotDiagnosticOptions());
+                jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),
+                jvmModule.getDiagnosticOptions());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
                 pluginDescriptorCache, dataDir, traceModule.getPointcutConfigAdviceCache(),
                 httpSessionManager, traceModule);

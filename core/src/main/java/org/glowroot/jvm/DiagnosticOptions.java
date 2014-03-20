@@ -38,15 +38,15 @@ import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
  * @since 0.5
  */
 @Immutable
-public class HotSpotDiagnosticOptions {
+public class DiagnosticOptions {
 
     private static final String MBEAN_NAME = "com.sun.management:type=HotSpotDiagnostic";
 
-    private static final Logger logger = LoggerFactory.getLogger(HotSpotDiagnostics.class);
+    private static final Logger logger = LoggerFactory.getLogger(DiagnosticOptions.class);
 
     private final ObjectName objectName;
 
-    private HotSpotDiagnosticOptions(ObjectName objectName) {
+    private DiagnosticOptions(ObjectName objectName) {
         this.objectName = objectName;
     }
 
@@ -105,9 +105,9 @@ public class HotSpotDiagnosticOptions {
         }
     }
 
-    static class Factory implements OptionalServiceFactory<HotSpotDiagnosticOptions> {
+    static class Factory implements OptionalServiceFactory<DiagnosticOptions> {
         @Override
-        public HotSpotDiagnosticOptions create() throws OptionalServiceFactoryException {
+        public DiagnosticOptions create() throws OptionalServiceFactoryException {
             ObjectName objectName;
             try {
                 objectName = ObjectName.getInstance(MBEAN_NAME);
@@ -135,7 +135,7 @@ public class HotSpotDiagnosticOptions {
             } catch (JMException e) {
                 throw new OptionalServiceFactoryException(e);
             }
-            return new HotSpotDiagnosticOptions(objectName);
+            return new DiagnosticOptions(objectName);
         }
     }
 }

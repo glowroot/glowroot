@@ -34,15 +34,15 @@ import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
  * @since 0.5
  */
 @Immutable
-public class HotSpotDiagnostics {
+public class HeapDumps {
 
     private static final String MBEAN_NAME = "com.sun.management:type=HotSpotDiagnostic";
 
-    private static final Logger logger = LoggerFactory.getLogger(HotSpotDiagnostics.class);
+    private static final Logger logger = LoggerFactory.getLogger(HeapDumps.class);
 
     private final ObjectName objectName;
 
-    private HotSpotDiagnostics(ObjectName objectName) {
+    private HeapDumps(ObjectName objectName) {
         this.objectName = objectName;
     }
 
@@ -51,9 +51,9 @@ public class HotSpotDiagnostics {
                 new Object[] {path, false}, new String[] {"java.lang.String", "boolean"});
     }
 
-    static class Factory implements OptionalServiceFactory<HotSpotDiagnostics> {
+    static class Factory implements OptionalServiceFactory<HeapDumps> {
         @Override
-        public HotSpotDiagnostics create() throws OptionalServiceFactoryException {
+        public HeapDumps create() throws OptionalServiceFactoryException {
             ObjectName objectName;
             try {
                 objectName = ObjectName.getInstance(MBEAN_NAME);
@@ -69,7 +69,7 @@ public class HotSpotDiagnostics {
                 throw new OptionalServiceFactoryException("No such MBean " + MBEAN_NAME
                         + " (introduced in Oracle Java SE 6)");
             }
-            return new HotSpotDiagnostics(objectName);
+            return new HeapDumps(objectName);
         }
     }
 }

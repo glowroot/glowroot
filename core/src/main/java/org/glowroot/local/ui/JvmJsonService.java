@@ -56,11 +56,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.jvm.DiagnosticOptions;
+import org.glowroot.jvm.DiagnosticOptions.VMOption;
+import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.HeapHistograms;
 import org.glowroot.jvm.HeapHistograms.HeapHistogramException;
-import org.glowroot.jvm.HotSpotDiagnosticOptions;
-import org.glowroot.jvm.HotSpotDiagnosticOptions.VMOption;
-import org.glowroot.jvm.HotSpotDiagnostics;
 import org.glowroot.jvm.OptionalService;
 import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.ProcessId;
@@ -91,17 +91,16 @@ class JvmJsonService {
 
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapHistograms> heapHistograms;
-    private final OptionalService<HotSpotDiagnostics> hotSpotDiagnostics;
-    private final OptionalService<HotSpotDiagnosticOptions> hotSpotDiagnosticOptions;
+    private final OptionalService<HeapDumps> heapDumps;
+    private final OptionalService<DiagnosticOptions> diagnosticOptions;
 
     JvmJsonService(OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
-            OptionalService<HeapHistograms> heapHistograms,
-            OptionalService<HotSpotDiagnostics> hotSpotDiagnosticService,
-            OptionalService<HotSpotDiagnosticOptions> hotSpotDiagnosticOptions) {
+            OptionalService<HeapHistograms> heapHistograms, OptionalService<HeapDumps> heapDumps,
+            OptionalService<DiagnosticOptions> diagnosticOptions) {
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.heapHistograms = heapHistograms;
-        this.hotSpotDiagnostics = hotSpotDiagnosticService;
-        this.hotSpotDiagnosticOptions = hotSpotDiagnosticOptions;
+        this.heapDumps = heapDumps;
+        this.diagnosticOptions = diagnosticOptions;
     }
 
     @GET("/backend/jvm/general")
@@ -293,7 +292,7 @@ class JvmJsonService {
     String getHeapDumpDefaults() throws IOException, JMException {
         logger.debug("getHeapDumpDefaults()");
         String heapDumpPath = null;
-        HotSpotDiagnosticOptions service = hotSpotDiagnosticOptions.getService();
+        DiagnosticOptions service = diagnosticOptions.getService();
         if (service != null) {
             // use HeapDumpPath for default heap dump location if available
             heapDumpPath = service.getVMOption("HeapDumpPath").getValue();
@@ -332,7 +331,7 @@ class JvmJsonService {
     @POST("/backend/jvm/dump-heap")
     String dumpHeap(String content) throws IOException, JMException {
         logger.debug("dumpHeap(): content={}", content);
-        HotSpotDiagnostics service = OptionalJsonServices.validateAvailability(hotSpotDiagnostics);
+        HeapDumps service = OptionalJsonServices.validateAvailability(heapDumps);
         RequestWithDirectory request =
                 ObjectMappers.readRequiredValue(mapper, content, RequestWithDirectory.class);
         File dir = new File(request.getDirectory());
@@ -365,8 +364,8 @@ class JvmJsonService {
     @GET("/backend/jvm/diagnostic-options")
     String getDiagnosticOptions() throws IOException, JMException {
         logger.debug("getDiagnosticOptions()");
-        HotSpotDiagnosticOptions service =
-                OptionalJsonServices.validateAvailability(hotSpotDiagnosticOptions);
+        DiagnosticOptions service =
+                OptionalJsonServices.validateAvailability(diagnosticOptions);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartArray();
@@ -394,8 +393,8 @@ class JvmJsonService {
     @POST("/backend/jvm/update-diagnostic-options")
     String updateDiagnosticOptions(String content) throws IOException, JMException {
         logger.debug("updateDiagnosticOptions(): content={}", content);
-        HotSpotDiagnosticOptions service =
-                OptionalJsonServices.validateAvailability(hotSpotDiagnosticOptions);
+        DiagnosticOptions service =
+                OptionalJsonServices.validateAvailability(diagnosticOptions);
         Map<String, Object> values =
                 mapper.readValue(content, new TypeReference<Map<String, Object>>() {});
         for (Entry<String, Object> value : values.entrySet()) {
@@ -419,9 +418,9 @@ class JvmJsonService {
         jg.writeFieldName("heapHistogram");
         mapper.writeValue(jg, heapHistograms.getAvailability());
         jg.writeFieldName("heapDump");
-        mapper.writeValue(jg, hotSpotDiagnostics.getAvailability());
+        mapper.writeValue(jg, heapDumps.getAvailability());
         jg.writeFieldName("diagnosticOptions");
-        mapper.writeValue(jg, hotSpotDiagnosticOptions.getAvailability());
+        mapper.writeValue(jg, diagnosticOptions.getAvailability());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
