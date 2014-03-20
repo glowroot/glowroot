@@ -26,6 +26,13 @@ glowroot.controller('JvmHeapHistogramCtrl', [
     var sortAttribute = 'bytes';
     var sortDesc = true;
 
+    // this is used to calculate bar width under class name representing the proportion of total bytes
+    var maxBytes;
+
+    $scope.classNameBarWidth = function (bytes) {
+      return (bytes / maxBytes) * 100 + '%';
+    };
+
     function sort() {
       if (sortAttribute === 'className') {
         // text sort
@@ -114,14 +121,20 @@ glowroot.controller('JvmHeapHistogramCtrl', [
         $scope.limitApplied = ($scope.histogram.items.length > $scope.filterLimit);
         $scope.filteredTotalBytes = $scope.histogram.totalBytes;
         $scope.filteredTotalCount = $scope.histogram.totalCount;
+        maxBytes = 0;
+        angular.forEach($scope.displayedItems, function (item) {
+          maxBytes = Math.max(maxBytes, item.bytes);
+        });
         return;
       }
       var items = $scope.histogram.items;
+      maxBytes = 0;
       for (var i = 0; i < items.length; i++) {
         var item = items[i];
         if (matchesFilter(item.className)) {
           if ($scope.displayedItems.length < $scope.filterLimit) {
             $scope.displayedItems.push(item);
+            maxBytes = Math.max(maxBytes, item.bytes);
           } else {
             $scope.limitApplied = true;
           }

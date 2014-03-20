@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013 the original author or authors.
+  Copyright 2013-2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -100,7 +100,18 @@
       </tfoot>
       <tbody>
       <tr ng-repeat="item in displayedItems track by item.className">
-        <td style="word-wrap: break-word;">{{item.className}}</td>
+        <td style="padding: 0;">
+          <!-- cannot apply relative positioning to td elements in firefox
+           see https://bugzilla.mozilla.org/show_bug.cgi?id=35168 -->
+          <div style="position: relative;">
+            <div style="position: absolute; height: 100%; background-color: #eee;"
+                 ng-style="{width: classNameBarWidth(item.bytes)}">
+            </div>
+            <div style="position: relative; padding: 8px; cursor: pointer; word-break: break-all;">
+              {{item.className}}
+            </div>
+          </div>
+        </td>
         <td>{{item.bytes}}</td>
         <td>{{item.count}}</td>
       </tr>
