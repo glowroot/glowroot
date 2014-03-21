@@ -20,9 +20,11 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.Thread.State;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
@@ -30,6 +32,7 @@ import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
@@ -48,7 +51,6 @@ import org.glowroot.trace.model.MergedStackTreeNode;
 import org.glowroot.trace.model.Metric;
 import org.glowroot.trace.model.Span;
 import org.glowroot.trace.model.Trace;
-import org.glowroot.trace.model.Trace.TraceAttribute;
 
 /**
  * @author Trask Stalnaker
@@ -134,7 +136,7 @@ public class SnapshotCreator {
     }
 
     @Nullable
-    private static String writeAttributesAsString(@ReadOnly List<TraceAttribute> attributes)
+    private static String writeAttributesAsString(ImmutableSetMultimap<String, String> attributes)
             throws IOException {
         if (attributes.isEmpty()) {
             return null;
@@ -142,8 +144,12 @@ public class SnapshotCreator {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        for (TraceAttribute attribute : attributes) {
-            jg.writeStringField(attribute.getName(), attribute.getValue());
+        for (Entry<String, Collection<String>> entry : attributes.asMap().entrySet()) {
+            jg.writeArrayFieldStart(entry.getKey());
+            for (String value : entry.getValue()) {
+                jg.writeString(value);
+            }
+            jg.writeEndArray();
         }
         jg.writeEndObject();
         jg.close();

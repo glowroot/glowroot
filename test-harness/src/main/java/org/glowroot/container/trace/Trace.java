@@ -18,6 +18,7 @@ package org.glowroot.container.trace;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
@@ -28,11 +29,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 import static org.glowroot.container.common.ObjectMappers.nullToFalse;
 
 /**
@@ -55,9 +56,7 @@ public class Trace {
     private final String error;
     @Nullable
     private final String user;
-    // can't use ImmutableMap since attributes can have null values
-    @Immutable
-    private final Map<String, /*@Nullable*/String> attributes;
+    private final ImmutableSetMultimap<String, String> attributes;
     private final ImmutableList<Metric> metrics;
     private final JvmInfo jvmInfo;
     @Nullable
@@ -72,7 +71,7 @@ public class Trace {
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, boolean background, String headline, String transactionName,
             @Nullable String error, @Nullable String user,
-            @ReadOnly Map<String, /*@Nullable*/String> attributes, @ReadOnly List<Metric> metrics,
+            ImmutableSetMultimap<String, String> attributes, @ReadOnly List<Metric> metrics,
             JvmInfo jvmInfo, @ReadOnly @Nullable List<Span> spans,
             @Nullable MergedStackTreeNode coarseMergedStackTree,
             @Nullable MergedStackTreeNode fineMergedStackTree, boolean summary) {
@@ -142,9 +141,7 @@ public class Trace {
         return user;
     }
 
-    // can't use ImmutableMap since attributes can have null values
-    @Immutable
-    public Map<String, /*@Nullable*/String> getAttributes() {
+    public ImmutableSetMultimap<String, String> getAttributes() {
         return attributes;
     }
 
@@ -244,7 +241,7 @@ public class Trace {
             @JsonProperty("transactionName") @Nullable String transactionName,
             @JsonProperty("error") @Nullable String error,
             @JsonProperty("user") @Nullable String user,
-            @JsonProperty("attributes") @Nullable Map<String, /*@Nullable*/String> attributes,
+            @JsonProperty("attributes") @Nullable Map<String, List<String>> attributes,
             @JsonProperty("metrics") @Nullable List<Metric> metrics,
             @JsonProperty("jvmInfo") @Nullable JvmInfo jvmInfo,
             @JsonProperty("spans") @Nullable List<Span> spans,
@@ -263,8 +260,14 @@ public class Trace {
         checkRequiredProperty(transactionName, "transactionName");
         checkRequiredProperty(metrics, "metrics");
         checkRequiredProperty(jvmInfo, "jvmInfo");
+        ImmutableSetMultimap.Builder<String, String> theAttributes = ImmutableSetMultimap.builder();
+        if (attributes != null) {
+            for (Entry<String, List<String>> entry : attributes.entrySet()) {
+                theAttributes.putAll(entry.getKey(), entry.getValue());
+            }
+        }
         return new Trace(id, active, stuck, startTime, captureTime, duration, background, headline,
-                transactionName, error, user, nullToEmpty(attributes), metrics, jvmInfo, spans,
+                transactionName, error, user, theAttributes.build(), metrics, jvmInfo, spans,
                 coarseMergedStackTree, fineMergedStackTree, nullToFalse(summary));
     }
 }

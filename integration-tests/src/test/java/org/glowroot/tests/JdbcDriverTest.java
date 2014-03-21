@@ -59,7 +59,7 @@ public class JdbcDriverTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         String mockDriverLoaded = container.getTraceService().getLastTrace().getAttributes()
-                .get("Mock driver loaded");
+                .get("Mock driver loaded").iterator().next();
         assertThat(mockDriverLoaded).isEqualTo("false");
     }
 
@@ -72,7 +72,7 @@ public class JdbcDriverTest {
         public void traceMarker() throws Exception {
             PluginServices pluginServices =
                     PluginServices.get("glowroot-integration-tests");
-            pluginServices.setTraceAttribute("Mock driver loaded",
+            pluginServices.addTraceAttribute("Mock driver loaded",
                     Boolean.toString(MockDriverState.isLoaded()));
         }
     }

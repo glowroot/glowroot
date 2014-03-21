@@ -339,21 +339,18 @@ public abstract class PluginServices {
      * Adds an attribute on the current trace with the specified {@code name} and {@code value}. A
      * trace's attributes are displayed when viewing a trace summary on the trace explorer page.
      * 
-     * Trace attributes are scoped per plugin, so two plugins can use the same attribute name,
-     * although the trace explorer page only displays trace attribute by name, so it could be
-     * confusing for a user to see the same attribute name twice with different values.
-     * 
-     * Subsequent calls to this method with the same {@code name} on the same trace (and from the
-     * same plugin) will replace the previous {@code value}.
+     * Subsequent calls to this method with the same {@code name} on the same trace will add an
+     * additional attribute if there is not already an attribute with the same {@code name} and
+     * {@code value}.
      * 
      * If there is no current trace, this method does nothing.
      * 
      * @param name
      *            name of the attribute
      * @param value
-     *            value of the attribute
+     *            value of the attribute, null values will be normalized to the empty string
      */
-    public abstract void setTraceAttribute(String name, @Nullable String value);
+    public abstract void addTraceAttribute(String name, @Nullable String value);
 
     /**
      * Overrides the general store threshold (Configuration &gt; General &gt; Store threshold). This
@@ -483,7 +480,7 @@ public abstract class PluginServices {
         @Override
         public void setTraceUser(@Nullable String user) {}
         @Override
-        public void setTraceAttribute(String name, @Nullable String value) {}
+        public void addTraceAttribute(String name, @Nullable String value) {}
         @Override
         public void setTraceStoreThreshold(long threshold, TimeUnit unit) {}
         @Override

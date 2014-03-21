@@ -17,11 +17,10 @@ package org.glowroot.local.store;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharSource;
 
 import org.glowroot.collector.Snapshot;
-import org.glowroot.trace.model.Trace.TraceAttribute;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -34,8 +33,6 @@ class SnapshotTestData {
     private static final AtomicInteger counter = new AtomicInteger();
 
     Snapshot createSnapshot() {
-        TraceAttribute attr1 = new TraceAttribute("abc", "xyz");
-        TraceAttribute attr2 = new TraceAttribute("xyz", "abc");
         return Snapshot.builder()
                 .id("abc" + counter.getAndIncrement())
                 .stuck(false)
@@ -47,7 +44,7 @@ class SnapshotTestData {
                 .transactionName("test transaction name")
                 .user("j")
                 .attributes("{\"abc\":\"xyz\", \"xyz\":\"abc\"}")
-                .attributesForIndexing(ImmutableList.of(attr1, attr2))
+                .attributesForIndexing(ImmutableSetMultimap.of("abc", "xyz", "xyz", "abc"))
                 .spans(CharSource.wrap("[{\"offset\":0,\"duration\":0,\"index\":0,"
                         + "\"level\":0,\"message\":{\"text\":\"Level One\","
                         + "\"detail\":{\"arg1\":\"a\",\"arg2\":\"b\","

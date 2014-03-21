@@ -330,14 +330,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setTraceAttribute(String name, @Nullable String value) {
+    public void addTraceAttribute(String name, @Nullable String value) {
         if (name == null) {
-            logger.error("setTraceAttribute(): argument 'name' must be non-null");
+            logger.error("addTraceAttribute(): argument 'name' must be non-null");
             return;
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
-            trace.setAttribute(name, value);
+            trace.addAttribute(name, value);
         }
     }
 

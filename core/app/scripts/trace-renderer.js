@@ -33,8 +33,10 @@ TraceRenderer = (function () {
   Handlebars.registerHelper('eachKeyValuePair', function (map, options) {
     var buffer = '';
     if (map) {
-      $.each(map, function (key, value) {
-        buffer += options.fn({ key: key, value: value });
+      $.each(map, function (key, values) {
+        $.each(values, function (index, value) {
+          buffer += options.fn({ key: key, value: value });
+        });
       });
     }
     return buffer;

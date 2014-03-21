@@ -21,10 +21,12 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map.Entry;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import org.slf4j.Logger;
@@ -43,7 +45,6 @@ import org.glowroot.local.store.TracePointQuery.StringComparator;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
 import org.glowroot.markers.ThreadSafe;
-import org.glowroot.trace.model.Trace.TraceAttribute;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -132,7 +133,7 @@ public class SnapshotDao implements SnapshotRepository {
                     snapshot.getHeadline(), snapshot.getError(), snapshot.getUser(),
                     snapshot.getAttributes(), snapshot.getMetrics(), snapshot.getJvmInfo(),
                     spansBlockId, coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
-            final ImmutableList<TraceAttribute> attributesForIndexing =
+            final ImmutableSetMultimap<String, String> attributesForIndexing =
                     snapshot.getAttributesForIndexing();
             if (attributesForIndexing == null) {
                 logger.warn("snapshot attributesForIndex was not provided");
@@ -144,10 +145,10 @@ public class SnapshotDao implements SnapshotRepository {
                             throws SQLException {
                         // attributesForIndexing is final and null check already performed above
                         checkNotNull(attributesForIndexing);
-                        for (TraceAttribute attribute : attributesForIndexing) {
+                        for (Entry<String, String> entry : attributesForIndexing.entries()) {
                             preparedStatement.setString(1, snapshot.getId());
-                            preparedStatement.setString(2, attribute.getName());
-                            preparedStatement.setString(3, attribute.getValue());
+                            preparedStatement.setString(2, entry.getKey());
+                            preparedStatement.setString(3, entry.getValue());
                             preparedStatement.setLong(4, snapshot.getCaptureTime());
                             preparedStatement.addBatch();
                         }

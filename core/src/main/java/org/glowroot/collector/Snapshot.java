@@ -20,11 +20,9 @@ import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
 import checkers.nullness.quals.RequiresNonNull;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharSource;
 import dataflow.quals.Pure;
-
-import org.glowroot.trace.model.Trace.TraceAttribute;
 
 /**
  * Structure used as part of the response to "/backend/trace/detail".
@@ -63,7 +61,7 @@ public class Snapshot {
     @Nullable
     private final CharSource fineMergedStackTree; // json data
     @Nullable
-    private final ImmutableList<TraceAttribute> attributesForIndexing;
+    private final ImmutableSetMultimap<String, String> attributesForIndexing;
 
     private Snapshot(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, boolean background, String headline, String transactionName,
@@ -72,7 +70,7 @@ public class Snapshot {
             @Immutable @Nullable CharSource spans,
             @Immutable @Nullable CharSource coarseMergedStackTree,
             @Immutable @Nullable CharSource fineMergedStackTree,
-            @Nullable ImmutableList<TraceAttribute> attributesForIndexing) {
+            @Nullable ImmutableSetMultimap<String, String> attributesForIndexing) {
         this.id = id;
         this.active = active;
         this.stuck = stuck;
@@ -173,7 +171,7 @@ public class Snapshot {
     }
 
     @Nullable
-    public ImmutableList<TraceAttribute> getAttributesForIndexing() {
+    public ImmutableSetMultimap<String, String> getAttributesForIndexing() {
         return attributesForIndexing;
     }
 
@@ -236,7 +234,7 @@ public class Snapshot {
         @Nullable
         private CharSource fineMergedStackTree;
         @Nullable
-        private ImmutableList<TraceAttribute> attributesForIndexing;
+        private ImmutableSetMultimap<String, String> attributesForIndexing;
 
         private Builder() {}
 
@@ -326,7 +324,8 @@ public class Snapshot {
             return this;
         }
 
-        public Builder attributesForIndexing(ImmutableList<TraceAttribute> attributesForIndexing) {
+        public Builder attributesForIndexing(
+                ImmutableSetMultimap<String, String> attributesForIndexing) {
             this.attributesForIndexing = attributesForIndexing;
             return this;
         }

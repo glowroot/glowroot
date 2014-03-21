@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import org.junit.Test;
@@ -35,7 +36,6 @@ import org.glowroot.local.store.TracePoint;
 import org.glowroot.local.store.TracePointQuery;
 import org.glowroot.trace.TraceRegistry;
 import org.glowroot.trace.model.Trace;
-import org.glowroot.trace.model.Trace.TraceAttribute;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -208,7 +208,7 @@ public class TracePointJsonServiceTest {
         when(trace.getId()).thenReturn(id);
         when(trace.getStartTick()).thenReturn(
                 DEFAULT_CURRENT_TICK - MILLISECONDS.toNanos(durationMillis));
-        when(trace.getAttributes()).thenReturn(ImmutableList.<TraceAttribute>of());
+        when(trace.getAttributes()).thenReturn(ImmutableSetMultimap.<String, String>of());
         return trace;
     }
 
@@ -217,7 +217,7 @@ public class TracePointJsonServiceTest {
         when(trace.getId()).thenReturn(id);
         when(trace.getDuration()).thenReturn(MILLISECONDS.toNanos(durationMillis));
         when(trace.isCompleted()).thenReturn(true);
-        when(trace.getAttributes()).thenReturn(ImmutableList.<TraceAttribute>of());
+        when(trace.getAttributes()).thenReturn(ImmutableSetMultimap.<String, String>of());
         return trace;
     }
 

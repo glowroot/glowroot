@@ -19,20 +19,21 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.MonotonicNonNull;
 import checkers.nullness.quals.Nullable;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
+import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import com.google.common.collect.SetMultimap;
+import com.google.common.collect.TreeMultimap;
 import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +62,7 @@ public class Trace {
     private static final Logger logger = LoggerFactory.getLogger(Trace.class);
 
     // initial capacity is very important, see ThreadSafeCollectionOfTenBenchmark
-    private static final int ATTRIBUTES_LIST_INITIAL_CAPACITY = 16;
+    private static final int ATTRIBUTE_KEYS_INITIAL_CAPACITY = 16;
     private static final int METRICS_LIST_INITIAL_CAPACITY = 32;
 
     // a unique identifier
@@ -88,7 +89,7 @@ public class Trace {
     // lazy loaded to reduce memory when attributes are not used
     @GuardedBy("attributes")
     @MonotonicNonNull
-    private volatile List<TraceAttribute> attributes;
+    private volatile SetMultimap<String, String> attributes;
 
     // see performance comparison of synchronized ArrayList vs ConcurrentLinkedQueue in
     // ThreadSafeCollectionOfTenBenchmark
@@ -215,23 +216,16 @@ public class Trace {
         return user;
     }
 
-    public ImmutableList<TraceAttribute> getAttributes() {
+    public ImmutableSetMultimap<String, String> getAttributes() {
         if (attributes == null) {
-            return ImmutableList.of();
+            return ImmutableSetMultimap.of();
         }
-        List<TraceAttribute> theAttributes;
-        synchronized (this.attributes) {
-            theAttributes = ImmutableList.copyOf(this.attributes);
+        SetMultimap<String, String> orderedAttributes =
+                TreeMultimap.create(String.CASE_INSENSITIVE_ORDER, String.CASE_INSENSITIVE_ORDER);
+        synchronized (attributes) {
+            orderedAttributes.putAll(attributes);
         }
-        ImmutableList.Builder<TraceAttribute> orderedAttributes = ImmutableList.builder();
-        // filter out duplicate attributes by name (first one wins)
-        Set<String> attributeNames = Sets.newHashSet();
-        for (TraceAttribute attribute : theAttributes) {
-            if (attributeNames.add(attribute.getName())) {
-                orderedAttributes.add(attribute);
-            }
-        }
-        return orderedAttributes.build();
+        return ImmutableSetMultimap.copyOf(orderedAttributes);
     }
 
     // this is called from a non-trace thread
@@ -314,16 +308,14 @@ public class Trace {
         }
     }
 
-    public void setAttribute(String name, @Nullable String value) {
+    public void addAttribute(String name, @Nullable String value) {
         if (attributes == null) {
-            // no race condition here since only trace thread calls setAttribute()
-            //
-            // see performance comparison of synchronized ArrayList vs ConcurrentLinkedQueue in
-            // ThreadSafeCollectionOfTenBenchmark
-            attributes = Lists.newArrayListWithCapacity(ATTRIBUTES_LIST_INITIAL_CAPACITY);
+            // no race condition here since only trace thread calls addAttribute()
+            attributes = HashMultimap.create(ATTRIBUTE_KEYS_INITIAL_CAPACITY, 1);
         }
+        String val = Strings.nullToEmpty(value);
         synchronized (attributes) {
-            attributes.add(new TraceAttribute(name, value));
+            attributes.put(name, val);
         }
     }
 
@@ -468,24 +460,5 @@ public class Trace {
                 .add("fineProfilingScheduledRunnable", fineProfilerScheduledRunnable)
                 .add("stuckScheduledRunnable", stuckScheduledRunnable)
                 .toString();
-    }
-
-    @Immutable
-    public static class TraceAttribute {
-        private final String name;
-        @Nullable
-        private final String value;
-        @VisibleForTesting
-        public TraceAttribute(String name, @Nullable String value) {
-            this.name = name;
-            this.value = value;
-        }
-        public String getName() {
-            return name;
-        }
-        @Nullable
-        public String getValue() {
-            return value;
-        }
     }
 }

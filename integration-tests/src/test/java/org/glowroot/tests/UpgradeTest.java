@@ -54,14 +54,16 @@ public class UpgradeTest {
         // then
         try {
             assertThat(trace.getHeadline()).isEqualTo("Level One");
-            assertThat(trace.getTransactionName()).isEqualTo("Level One");
-            assertThat(trace.getSpans()).hasSize(3);
+            assertThat(trace.getTransactionName()).isEqualTo("basic test");
+            assertThat(trace.getSpans()).hasSize(4);
             Span span1 = trace.getSpans().get(0);
             assertThat(span1.getMessage().getText()).isEqualTo("Level One");
             Span span2 = trace.getSpans().get(1);
             assertThat(span2.getMessage().getText()).isEqualTo("Level Two");
             Span span3 = trace.getSpans().get(2);
             assertThat(span3.getMessage().getText()).isEqualTo("Level Three");
+            Span span4 = trace.getSpans().get(3);
+            assertThat(span4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
         } finally {
             // cleanup
             container.checkAndReset();

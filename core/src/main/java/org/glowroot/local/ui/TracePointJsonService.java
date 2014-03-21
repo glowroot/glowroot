@@ -16,10 +16,12 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map.Entry;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.MonotonicNonNull;
@@ -46,7 +48,6 @@ import org.glowroot.local.store.TracePointQuery.StringComparator;
 import org.glowroot.markers.Singleton;
 import org.glowroot.trace.TraceRegistry;
 import org.glowroot.trace.model.Trace;
-import org.glowroot.trace.model.Trace.TraceAttribute;
 
 import static org.glowroot.common.Nullness.castNonNull;
 
@@ -294,13 +295,20 @@ class TracePointJsonService {
                 // no attribute filter
                 return true;
             }
-            for (TraceAttribute attribute : trace.getAttributes()) {
-                boolean matchesName = matchesUsingStringComparator(StringComparator.EQUALS,
-                        request.getAttributeName(), attribute.getName());
-                boolean matchesValue = matchesUsingStringComparator(attributeValueComparator,
-                        request.getAttributeValue(), attribute.getValue());
-                if (matchesName && matchesValue) {
-                    return true;
+            for (Entry<String, Collection<String>> entry : trace.getAttributes().asMap()
+                    .entrySet()) {
+                String attributeName = entry.getKey();
+                if (!matchesUsingStringComparator(StringComparator.EQUALS,
+                        request.getAttributeName(), attributeName)) {
+                    // name doesn't match, no need to test values
+                    continue;
+                }
+                for (String attributeValue : entry.getValue()) {
+                    if (matchesUsingStringComparator(attributeValueComparator,
+                            request.getAttributeValue(), attributeValue)) {
+                        // found matching name and value
+                        return true;
+                    }
                 }
             }
             return false;

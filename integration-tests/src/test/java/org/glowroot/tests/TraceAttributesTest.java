@@ -54,25 +54,31 @@ public class TraceAttributesTest {
     }
 
     @Test
-    public void shouldReadTraceAttributesInOrder() throws Exception {
+    public void shouldReadTraceAttributesInAlphaOrder() throws Exception {
         // given
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        Iterator<Entry<String, String>> i = trace.getAttributes().entrySet().iterator();
+        Iterator<Entry<String, String>> i = trace.getAttributes().entries().iterator();
         Entry<String, String> entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("Zee One");
-        assertThat(entry.getValue()).isEqualTo("bx");
-        entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("Yee Two");
-        assertThat(entry.getValue()).isEqualTo("yy");
+        assertThat(entry.getKey()).isEqualTo("Wee Four");
+        assertThat(entry.getValue()).isEqualTo("ww");
         entry = i.next();
         assertThat(entry.getKey()).isEqualTo("Xee Three");
         assertThat(entry.getValue()).isEqualTo("xx");
         entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("Wee Four");
-        assertThat(entry.getValue()).isEqualTo("ww");
+        assertThat(entry.getKey()).isEqualTo("Yee Two");
+        assertThat(entry.getValue()).isEqualTo("yy");
+        entry = i.next();
+        assertThat(entry.getKey()).isEqualTo("Yee Two");
+        assertThat(entry.getValue()).isEqualTo("Yy2");
+        entry = i.next();
+        assertThat(entry.getKey()).isEqualTo("Yee Two");
+        assertThat(entry.getValue()).isEqualTo("yy3");
+        entry = i.next();
+        assertThat(entry.getKey()).isEqualTo("Zee One");
+        assertThat(entry.getValue()).isEqualTo("bx");
     }
 
     public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {

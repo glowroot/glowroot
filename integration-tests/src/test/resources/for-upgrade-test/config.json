@@ -14,7 +14,7 @@
   "fine-profiling" : {
     "tracePercentage" : 0.0,
     "intervalMillis" : 50,
-    "totalSeconds" : 10,
+    "totalSeconds" : 30,
     "storeThresholdMillis" : -1
   },
   "user" : {

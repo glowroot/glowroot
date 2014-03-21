@@ -271,6 +271,7 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.Lists$ReverseList$1");
         types.add("com.google.common.collect.Maps");
         types.add("com.google.common.collect.Maps$1");
+        types.add("com.google.common.collect.Multimap");
         types.add("com.google.common.collect.NaturalOrdering");
         types.add("com.google.common.collect.ObjectArrays");
         types.add("com.google.common.collect.Ordering");
@@ -284,6 +285,7 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.RegularImmutableMap$NonTerminalMapEntry");
         types.add("com.google.common.collect.ReverseNaturalOrdering");
         types.add("com.google.common.collect.ReverseOrdering");
+        types.add("com.google.common.collect.SetMultimap");
         types.add("com.google.common.collect.Sets");
         types.add("com.google.common.collect.SingletonImmutableBiMap");
         types.add("com.google.common.collect.SingletonImmutableList");
