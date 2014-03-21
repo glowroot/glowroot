@@ -20,14 +20,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map.Entry;
 
 import checkers.nullness.quals.Nullable;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +37,6 @@ import org.glowroot.local.store.FileBlock.InvalidBlockIdFormatException;
 import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.local.store.Schemas.PrimaryKeyColumn;
-import org.glowroot.local.store.TracePointQuery.ParameterizedSql;
-import org.glowroot.local.store.TracePointQuery.StringComparator;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
 import org.glowroot.markers.ThreadSafe;
@@ -86,6 +81,9 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("value", Types.VARCHAR),
             new Column("capture_time", Types.BIGINT));
 
+    // TODO all of the columns needed for the trace points query are no longer in the same index
+    // (number of columns has grown), either update the index or the comment
+    //
     // this index includes all of the columns needed for the trace points query so h2 can return
     // result set directly from the index without having to reference the table for each row
     private static final ImmutableList<Index> snapshotIndexes = ImmutableList.of(
@@ -217,22 +215,12 @@ public class SnapshotDao implements SnapshotRepository {
         return snapshots.get(0);
     }
 
-    public List<ErrorAggregate> readErrorAggregates(long captureTimeFrom, long captureTimeTo,
-            @Nullable StringComparator errorComparator, @Nullable String error, int limit) {
-        String sql = "select transaction_name, error_message, count(*) from snapshot where"
-                + " error = ? and capture_time >= ? and capture_time <= ?";
-        List<Object> args = Lists.newArrayList();
-        args.add(true);
-        args.add(captureTimeFrom);
-        args.add(captureTimeTo);
-        if (errorComparator != null && !Strings.isNullOrEmpty(error)) {
-            sql += " and upper(error_message) " + errorComparator.getComparator() + " ?";
-            args.add(errorComparator.formatParameter(error.toUpperCase(Locale.ENGLISH)));
-        }
-        sql += " group by transaction_name, error_message order by count(*) desc limit ?";
-        args.add(limit);
+    public List<ErrorAggregate> readErrorAggregates(ErrorAggregateQuery query) {
+        logger.debug("readPoints(): query={}", query);
         try {
-            return dataSource.query(sql, args, new ErrorAggregateRowMapper());
+            ParameterizedSql parameterizedSql = query.getParameterizedSql();
+            return dataSource.query(parameterizedSql.getSql(), parameterizedSql.getArgs(),
+                    new ErrorAggregateRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();

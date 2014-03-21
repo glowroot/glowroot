@@ -92,6 +92,9 @@ public class TracePointQuery {
     }
 
     ParameterizedSql getParameterizedSql() {
+        // TODO all of these columns are no longer in the same index (number of columns has grown)
+        // either update index or comment
+        //
         // all of these columns should be in the same index so h2 can return result set directly
         // from the index without having to reference the table for each row
         //
@@ -228,25 +231,6 @@ public class TracePointQuery {
 
         String getComparator() {
             return comparator;
-        }
-    }
-
-    static class ParameterizedSql {
-
-        private final String sql;
-        private final List<Object> args;
-
-        private ParameterizedSql(String sql, List<Object> args) {
-            this.sql = sql;
-            this.args = args;
-        }
-
-        String getSql() {
-            return sql;
-        }
-
-        List<Object> getArgs() {
-            return args;
         }
     }
 }

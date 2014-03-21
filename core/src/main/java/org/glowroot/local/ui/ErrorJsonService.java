@@ -17,21 +17,21 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Locale;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ObjectMappers;
-import org.glowroot.local.store.ErrorAggregate;
+import org.glowroot.local.store.ErrorAggregateQuery;
 import org.glowroot.local.store.SnapshotDao;
-import org.glowroot.local.store.TracePointQuery.StringComparator;
 import org.glowroot.markers.Singleton;
 
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
@@ -47,8 +47,6 @@ import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 class ErrorJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(ErrorJsonService.class);
-    @ReadOnly
-    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final SnapshotDao snapshotDao;
 
@@ -59,34 +57,29 @@ class ErrorJsonService {
     @GET("/backend/error/aggregates")
     String getAggregates(String content) throws IOException {
         logger.debug("getAggregates(): content={}", content);
-        AggregatesRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, AggregatesRequest.class);
-        StringComparator comparator = null;
-        String errorComparator = request.getErrorComparator();
-        if (errorComparator != null) {
-            comparator = StringComparator.valueOf(errorComparator.toUpperCase(Locale.ENGLISH));
-        }
-        List<ErrorAggregate> errorAggregates = snapshotDao.readErrorAggregates(request.getFrom(),
-                request.getTo(), comparator, request.getError(), request.getLimit());
-        return mapper.writeValueAsString(errorAggregates);
+        ObjectMapper mapper = ObjectMappers.create();
+        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        ErrorAggregatesRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, ErrorAggregatesRequest.class);
+        ErrorAggregateQuery query = new ErrorAggregateQuery(request.getFrom(), request.getTo(),
+                request.getIncludes(), request.getExcludes(), request.getLimit());
+        return mapper.writeValueAsString(snapshotDao.readErrorAggregates(query));
     }
 
-    private static class AggregatesRequest {
+    private static class ErrorAggregatesRequest {
 
         private final long from;
         private final long to;
-        @Nullable
-        private final String errorComparator;
-        @Nullable
-        private final String error;
+        private final List<String> includes;
+        private final List<String> excludes;
         private final int limit;
 
         @JsonCreator
-        AggregatesRequest(
+        ErrorAggregatesRequest(
                 @JsonProperty("from") @Nullable Long from,
                 @JsonProperty("to") @Nullable Long to,
-                @JsonProperty("errorComparator") @Nullable String errorComparator,
-                @JsonProperty("error") @Nullable String error,
+                @JsonProperty("includes") @Nullable List<String> includes,
+                @JsonProperty("excludes") @Nullable List<String> excludes,
                 @JsonProperty("limit") @Nullable Integer limit)
                 throws JsonMappingException {
             checkRequiredProperty(from, "from");
@@ -94,8 +87,8 @@ class ErrorJsonService {
             checkRequiredProperty(limit, "limit");
             this.from = from;
             this.to = to;
-            this.errorComparator = errorComparator;
-            this.error = error;
+            this.includes = orEmpty(includes);
+            this.excludes = orEmpty(excludes);
             this.limit = limit;
         }
 
@@ -107,18 +100,25 @@ class ErrorJsonService {
             return to;
         }
 
-        @Nullable
-        private String getErrorComparator() {
-            return errorComparator;
+        private List<String> getIncludes() {
+            return includes;
         }
 
-        @Nullable
-        private String getError() {
-            return error;
+        private List<String> getExcludes() {
+            return excludes;
         }
 
         private int getLimit() {
             return limit;
+        }
+
+        @ReadOnly
+        private static <T extends /*@NonNull*/Object> List<T> orEmpty(
+                @ReadOnly @Nullable List<T> list) {
+            if (list == null) {
+                return ImmutableList.of();
+            }
+            return list;
         }
     }
 }

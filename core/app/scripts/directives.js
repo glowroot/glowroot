@@ -38,7 +38,9 @@ glowroot.factory('gtButtonGroupControllerFactory', [
             var deferred = $q.defer();
             deferred.promise.then(function (success) {
               spinner.stop();
-              $buttonMessage.text(success);
+              // if success is undefined (e.g. no explicit success message), need to pass empty string,
+              // otherwise it won't overwrite old error message in $buttonMessage if there is one
+              $buttonMessage.text(success || '');
               $buttonMessage.removeClass('button-message-error');
               $buttonMessage.addClass('button-message-success');
               Glowroot.showAndFadeSuccessMessage($buttonMessage);

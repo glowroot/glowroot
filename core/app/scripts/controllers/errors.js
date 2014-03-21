@@ -29,8 +29,11 @@ glowroot.controller('ErrorsCtrl', [
 
     $scope.showTableSpinner = 0;
 
+    var appliedFilter;
+
     function updateAggregates(deferred) {
-      var query = angular.copy($scope.filter);
+      var query = angular.copy(appliedFilter);
+      delete query.error;
       // +1 just to find out if there are more and to show "Show more" button, the extra (+1th) will not be displayed
       query.limit++;
       $scope.showTableSpinner++;
@@ -64,14 +67,78 @@ glowroot.controller('ErrorsCtrl', [
           });
     }
 
+    function parseQuery(text) {
+      var includes = [];
+      var excludes = [];
+      var i;
+      var c;
+      var currTerm;
+      var inQuote;
+      var inExclude;
+      for (i = 0; i < text.length; i++) {
+        c = text.charAt(i);
+        if (currTerm !== undefined) {
+          // inside quoted or non-quoted term
+          if (c === inQuote || !inQuote && c === ' ') {
+            // end of term (quoted or non-quoted)
+            if (inExclude) {
+              excludes.push(currTerm);
+            } else {
+              includes.push(currTerm);
+            }
+            currTerm = undefined;
+            inQuote = undefined;
+            inExclude = false;
+          } else {
+            currTerm += c;
+          }
+        } else if (c === '\'' || c === '"') {
+          // start of quoted term
+          currTerm = '';
+          inQuote = c;
+        } else if (c === '-') {
+          // validate there is an immediate next term
+          if (i === text.length - 1 || text.charAt(i + 1) === ' ') {
+            $scope.parsingError = 'Invalid location for minus';
+          }
+          // next term is an exclude
+          inExclude = true;
+        } else if (c !== ' ') {
+          // start of non-quoted term
+          currTerm = c;
+        }
+      }
+      if (inQuote) {
+        $scope.parsingError = 'Mismatched quote';
+        return;
+      }
+      if (currTerm) {
+        // end the last non-quoted term
+        if (inExclude) {
+          excludes.push(currTerm);
+        } else {
+          includes.push(currTerm);
+        }
+      }
+      appliedFilter.includes = includes;
+      appliedFilter.excludes = excludes;
+    }
+
     $scope.refreshButtonClick = function (deferred) {
-      var midnight = new Date($scope.filter.from).setHours(0, 0, 0, 0);
+      $scope.parsingError = undefined;
+      parseQuery($scope.filter.error);
+      if ($scope.parsingError) {
+        deferred.reject($scope.parsingError);
+        return;
+      }
+      var midnight = new Date(appliedFilter.from).setHours(0, 0, 0, 0);
       if (midnight !== $scope.filterDate.getTime()) {
         // filterDate has changed
         filterFromToDefault = false;
-        $scope.filter.from = $scope.filterDate.getTime() + ($scope.filter.from - midnight);
-        $scope.filter.to = $scope.filterDate.getTime() + ($scope.filter.to - midnight);
+        appliedFilter.from = $scope.filterDate.getTime() + (appliedFilter.from - midnight);
+        appliedFilter.to = $scope.filterDate.getTime() + (appliedFilter.to - midnight);
       }
+      angular.extend(appliedFilter, $scope.filter);
       updateLocation();
       updateAggregates(deferred);
     };
@@ -79,8 +146,8 @@ glowroot.controller('ErrorsCtrl', [
     $scope.tracesQueryString = function (aggregate) {
       return queryStrings.encodeObject({
         // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
-        from: $scope.filter.from,
-        to: $scope.filter.to,
+        from: appliedFilter.from,
+        to: appliedFilter.to,
         transactionName: aggregate.transactionName,
         transactionNameComparator: 'equals',
         error: aggregate.error,
@@ -88,56 +155,36 @@ glowroot.controller('ErrorsCtrl', [
       });
     };
 
-    // TODO consolidate with same list in traces.js
-    $scope.filterTextComparatorOptions = [
-      {
-        display: 'Begins with',
-        value: 'begins'
-      },
-      {
-        display: 'Equals',
-        value: 'equals'
-      },
-      {
-        display: 'Ends with',
-        value: 'ends'
-      },
-      {
-        display: 'Contains',
-        value: 'contains'
-      },
-      {
-        display: 'Does not contain',
-        value: 'not_contains'
-      }
-    ];
-
     $scope.showMoreAggregates = function (deferred) {
-      // double each time
-      $scope.filter.limit *= 2;
+      // double each time, but don't double $scope.filter.limit so that normal limit will be used on next search
+      appliedFilter.limit *= 2;
       updateAggregates(deferred);
     };
 
     var filterFromToDefault;
 
-    $scope.filter = {};
-    $scope.filter.from = Number($location.search().from);
-    $scope.filter.to = Number($location.search().to);
+    appliedFilter = {};
+    appliedFilter.from = Number($location.search().from);
+    appliedFilter.to = Number($location.search().to);
     // both from and to must be supplied or neither will take effect
-    if ($scope.filter.from && $scope.filter.to) {
-      $scope.filterDate = new Date($scope.filter.from);
+    if (appliedFilter.from && appliedFilter.to) {
+      $scope.filterDate = new Date(appliedFilter.from);
       $scope.filterDate.setHours(0, 0, 0, 0);
     } else {
       filterFromToDefault = true;
       var today = new Date();
       today.setHours(0, 0, 0, 0);
       $scope.filterDate = today;
-      $scope.filter.from = $scope.filterDate.getTime();
-      $scope.filter.to = $scope.filter.from + 24 * 60 * 60 * 1000;
+      appliedFilter.from = $scope.filterDate.getTime();
+      appliedFilter.to = appliedFilter.from + 24 * 60 * 60 * 1000;
     }
-    $scope.filter.errorComparator = $location.search()['error-comparator'] || 'contains';
-    $scope.filter.error = $location.search().error || '';
-    $scope.filter.limit = 25;
+    appliedFilter.error = $location.search().error || '';
+    appliedFilter.limit = 25;
+
+    $scope.filter = angular.copy(appliedFilter);
+    // need to remove from and to so they aren't copied back during angular.extend(appliedFilter, $scope.filter)
+    delete $scope.filter.from;
+    delete $scope.filter.to;
 
     $scope.$watch('filter.from', function (newValue, oldValue) {
       if (newValue !== oldValue) {
@@ -154,16 +201,18 @@ glowroot.controller('ErrorsCtrl', [
     function updateLocation() {
       var query = {};
       if (!filterFromToDefault) {
-        query.from = $scope.filter.from;
-        query.to = $scope.filter.to;
+        query.from = appliedFilter.from;
+        query.to = appliedFilter.to;
       }
-      if ($scope.filter.error) {
-        query['error-comparator'] = $scope.filter.errorComparator;
-        query.error = $scope.filter.error;
+      if (appliedFilter.error) {
+        query.error = appliedFilter.error;
       }
       $location.search(query).replace();
     }
 
-    updateAggregates();
+    parseQuery(appliedFilter.error);
+    if (!$scope.parsingError) {
+      updateAggregates();
+    }
   }
 ]);
