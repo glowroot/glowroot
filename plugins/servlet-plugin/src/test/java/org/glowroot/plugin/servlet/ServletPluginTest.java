@@ -83,11 +83,12 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("GET /testservlet");
+        assertThat(trace.getHeadline()).isEqualTo("/testservlet");
         assertThat(trace.getTransactionName()).isEqualTo("/testservlet");
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getMessage().getText()).isEqualTo("GET /testservlet");
+        assertThat(span.getMessage().getText()).isEqualTo("/testservlet");
+        assertThat(span.getMessage().getDetail().get("Request http method")).isEqualTo("GET");
     }
 
     @Test
@@ -97,11 +98,12 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteFilter.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("GET /testfilter");
+        assertThat(trace.getHeadline()).isEqualTo("/testfilter");
         assertThat(trace.getTransactionName()).isEqualTo("/testfilter");
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getMessage().getText()).isEqualTo("GET /testfilter");
+        assertThat(span.getMessage().getText()).isEqualTo("/testfilter");
+        assertThat(span.getMessage().getDetail().get("Request http method")).isEqualTo("GET");
     }
 
     @Test
@@ -111,11 +113,12 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("GET /testfilter");
+        assertThat(trace.getHeadline()).isEqualTo("/testfilter");
         assertThat(trace.getTransactionName()).isEqualTo("/testfilter");
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getMessage().getText()).isEqualTo("GET /testfilter");
+        assertThat(span.getMessage().getText()).isEqualTo("/testfilter");
+        assertThat(span.getMessage().getDetail().get("Request http method")).isEqualTo("GET");
     }
 
     @Test
@@ -127,7 +130,7 @@ public class ServletPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        String queryString = (String) span.getMessage().getDetail().get("query string");
+        String queryString = (String) span.getMessage().getDetail().get("Request query string");
         assertThat(queryString).isNull();
     }
 
@@ -140,7 +143,7 @@ public class ServletPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        String queryString = (String) span.getMessage().getDetail().get("query string");
+        String queryString = (String) span.getMessage().getDetail().get("Request query string");
         assertThat(queryString).isEqualTo("");
     }
 
@@ -153,7 +156,7 @@ public class ServletPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        String queryString = (String) span.getMessage().getDetail().get("query string");
+        String queryString = (String) span.getMessage().getDetail().get("Request query string");
         assertThat(queryString).isEqualTo("a=b&c=d");
     }
 
@@ -168,7 +171,7 @@ public class ServletPluginTest {
         Span span = trace.getSpans().get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> requestParameters =
-                (Map<String, Object>) span.getMessage().getDetail().get("request parameters");
+                (Map<String, Object>) span.getMessage().getDetail().get("Request parameters");
         assertThat(requestParameters.get("xYz")).isEqualTo("aBc");
         assertThat(requestParameters.get("jpassword1")).isEqualTo("****");
         @SuppressWarnings("unchecked")
@@ -186,7 +189,8 @@ public class ServletPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getMessage().getDetail()).isEmpty();
+        assertThat(span.getMessage().getDetail()).hasSize(1);
+        assertThat(span.getMessage().getDetail()).containsKey("Request http method");
     }
 
     @Test
@@ -207,14 +211,15 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.getHeadline()).isEqualTo("GET /testservlet");
+        assertThat(trace.getHeadline()).isEqualTo("/testservlet");
         assertThat(trace.getTransactionName()).isEqualTo("/testservlet");
         assertThat(trace.getSpans().get(0).getMessage().getDetail()
-                .get("session id (at beginning of this request)")).isEqualTo("1234");
+                .get("Session ID (at beginning of this request)")).isEqualTo("1234");
         assertThat(trace.getSpans().get(0).getMessage().getDetail()
-                .get("session id (updated during this request)")).isEqualTo("");
+                .get("Session ID (updated during this request)")).isEqualTo("");
         Span span = trace.getSpans().get(0);
-        assertThat(span.getMessage().getText()).isEqualTo("GET /testservlet");
+        assertThat(span.getMessage().getText()).isEqualTo("/testservlet");
+        assertThat(span.getMessage().getDetail().get("Request http method")).isEqualTo("GET");
     }
 
     @Test

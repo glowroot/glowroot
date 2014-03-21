@@ -74,7 +74,7 @@ public class RequestHeaderTest {
         Span span = trace.getSpans().get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) span.getMessage().getDetail().get("request headers");
+                (Map<String, Object>) span.getMessage().getDetail().get("Request headers");
         assertThat(requestHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(requestHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(requestHeaders.get("Extra")).isNull();
@@ -93,7 +93,7 @@ public class RequestHeaderTest {
         Span span = trace.getSpans().get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) span.getMessage().getDetail().get("request headers");
+                (Map<String, Object>) span.getMessage().getDetail().get("Request headers");
         assertThat(requestHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(requestHeaders.get("content-length")).isEqualTo("1");
         assertThat(requestHeaders.get("extra")).isNull();
@@ -112,7 +112,7 @@ public class RequestHeaderTest {
         Span span = trace.getSpans().get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) span.getMessage().getDetail().get("request headers");
+                (Map<String, Object>) span.getMessage().getDetail().get("Request headers");
         @SuppressWarnings("unchecked")
         List<String> one = (List<String>) requestHeaders.get("One");
         assertThat(one).containsExactly("ab", "xy");

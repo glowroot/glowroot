@@ -105,22 +105,23 @@ class ServletMessageSupplier extends MessageSupplier {
     @Override
     public Message get() {
         Map<String, Object> detail = Maps.newHashMap();
+        detail.put("Request http method", requestMethod);
         if (requestQueryString != null) {
             // including empty query string since that means request ended with ?
-            detail.put("query string", requestQueryString);
+            detail.put("Request query string", requestQueryString);
         }
         if (requestParameters != null && !requestParameters.isEmpty()) {
-            detail.put("request parameters", requestParameters);
+            detail.put("Request parameters", requestParameters);
         }
         if (!requestHeaders.isEmpty()) {
-            detail.put("request headers", requestHeaders);
+            detail.put("Request headers", requestHeaders);
         }
         Map<String, Object> responseHeaderStrings = responseHeaders.getMapOfStrings();
         if (!responseHeaderStrings.isEmpty()) {
-            detail.put("response headers", responseHeaderStrings);
+            detail.put("Response headers", responseHeaderStrings);
         }
         addSessionAttributeDetail(detail);
-        return Message.withDetail(requestMethod + ' ' + requestUri, detail);
+        return Message.withDetail(requestUri, detail);
     }
 
     boolean isRequestParametersCaptured() {
@@ -196,18 +197,18 @@ class ServletMessageSupplier extends MessageSupplier {
     private void addSessionAttributeDetail(Map<String, Object> detail) {
         if (ServletPluginProperties.captureSessionId()) {
             if (sessionIdUpdatedValue != null) {
-                detail.put("session id (at beginning of this request)",
+                detail.put("Session ID (at beginning of this request)",
                         Strings.nullToEmpty(sessionIdInitialValue));
-                detail.put("session id (updated during this request)", sessionIdUpdatedValue);
+                detail.put("Session ID (updated during this request)", sessionIdUpdatedValue);
             } else if (sessionIdInitialValue != null) {
-                detail.put("session id", sessionIdInitialValue);
+                detail.put("Session ID", sessionIdInitialValue);
             }
         }
         if (sessionAttributeInitialValueMap != null) {
             if (sessionAttributeUpdatedValueMap == null) {
                 // session attributes were captured at the beginning of the request, and no session
                 // attributes were updated mid-request
-                detail.put("session attributes", sessionAttributeInitialValueMap);
+                detail.put("Session attributes", sessionAttributeInitialValueMap);
             } else {
                 // session attributes were updated mid-request
                 Map<String, /*@Nullable*/Object> sessionAttributeInitialValuePlusMap =
@@ -221,15 +222,15 @@ class ServletMessageSupplier extends MessageSupplier {
                         sessionAttributeInitialValuePlusMap.put(entry.getKey(), null);
                     }
                 }
-                detail.put("session attributes (at beginning of this request)",
+                detail.put("Session attributes (at beginning of this request)",
                         sessionAttributeInitialValuePlusMap);
-                detail.put("session attributes (updated during this request)",
+                detail.put("Session attributes (updated during this request)",
                         sessionAttributeUpdatedValueMap);
             }
         } else if (sessionAttributeUpdatedValueMap != null) {
             // no session attributes were available at the beginning of the request, and session
             // attributes were updated mid-request
-            detail.put("session attributes (updated during this request)",
+            detail.put("Session attributes (updated during this request)",
                     sessionAttributeUpdatedValueMap);
         } else {
             // both initial and updated value maps are null so there is nothing to add to the

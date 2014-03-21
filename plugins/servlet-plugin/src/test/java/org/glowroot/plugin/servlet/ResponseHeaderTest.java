@@ -73,7 +73,7 @@ public class ResponseHeaderTest {
         Span span = trace.getSpans().get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
-                (Map<String, Object>) span.getMessage().getDetail().get("response headers");
+                (Map<String, Object>) span.getMessage().getDetail().get("Response headers");
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(responseHeaders.get("Extra")).isNull();
@@ -92,7 +92,7 @@ public class ResponseHeaderTest {
         Span span = trace.getSpans().get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
-                (Map<String, Object>) span.getMessage().getDetail().get("response headers");
+                (Map<String, Object>) span.getMessage().getDetail().get("Response headers");
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(responseHeaders.get("Extra")).isNull();
@@ -111,7 +111,7 @@ public class ResponseHeaderTest {
         Span span = trace.getSpans().get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
-                (Map<String, Object>) span.getMessage().getDetail().get("response headers");
+                (Map<String, Object>) span.getMessage().getDetail().get("Response headers");
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(responseHeaders.get("Extra")).isNull();
@@ -130,7 +130,7 @@ public class ResponseHeaderTest {
         Span span = trace.getSpans().get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
-                (Map<String, Object>) span.getMessage().getDetail().get("response headers");
+                (Map<String, Object>) span.getMessage().getDetail().get("Response headers");
         assertThat(responseHeaders.get("content-type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("content-length")).isEqualTo("1");
         assertThat(responseHeaders.get("extra")).isNull();
@@ -149,7 +149,7 @@ public class ResponseHeaderTest {
         Span span = trace.getSpans().get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
-                (Map<String, Object>) span.getMessage().getDetail().get("response headers");
+                (Map<String, Object>) span.getMessage().getDetail().get("Response headers");
         @SuppressWarnings("unchecked")
         List<String> one = (List<String>) responseHeaders.get("One");
         @SuppressWarnings("unchecked")

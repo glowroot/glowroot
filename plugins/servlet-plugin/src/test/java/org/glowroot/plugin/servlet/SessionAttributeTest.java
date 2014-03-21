@@ -327,7 +327,7 @@ public class SessionAttributeTest {
         if (detail == null) {
             return null;
         } else {
-            return (Map<String, String>) detail.get("session attributes");
+            return (Map<String, String>) detail.get("Session attributes");
         }
     }
 
@@ -339,7 +339,7 @@ public class SessionAttributeTest {
             return null;
         } else {
             return (Map<String, String>) detail
-                    .get("session attributes (updated during this request)");
+                    .get("Session attributes (updated during this request)");
         }
     }
 
