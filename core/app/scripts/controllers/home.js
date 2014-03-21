@@ -415,6 +415,17 @@ glowroot.controller('HomeCtrl', [
           });
     }
 
+    $scope.overallAggregateAverage = function () {
+      if (!$scope.overallAggregate) {
+        // overallAggregate hasn't loaded yet
+        return '';
+      } else if ($scope.overallAggregate.count) {
+        return (($scope.overallAggregate.totalMillis / $scope.overallAggregate.count) / 1000).toFixed(2);
+      } else {
+        return '-';
+      }
+    };
+
     $scope.sortTable = function (attributeName) {
       if ($scope.tableSortAttribute === attributeName) {
         // switch direction
