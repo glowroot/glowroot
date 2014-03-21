@@ -612,7 +612,9 @@ glowroot.controller('HomeCtrl', [
           mouseActiveRadius: 10,
           // min border margin should match aggregate chart so they are positioned the same from the top of page
           // without specifying min border margin, the point radius is used
-          minBorderMargin: 10
+          minBorderMargin: 10,
+          borderColor: '#7d7358',
+          borderWidth: 1
         },
         xaxis: {
           mode: 'time',
