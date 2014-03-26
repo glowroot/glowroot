@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,8 +44,7 @@ public class LogCauseAspect {
             methodArgs = {"java.lang.String"}, metricName = "log error")
     public static class LogCauseAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogCauseAdvice.class);
+        private static final MetricName metricName = MetricName.get(LogCauseAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {

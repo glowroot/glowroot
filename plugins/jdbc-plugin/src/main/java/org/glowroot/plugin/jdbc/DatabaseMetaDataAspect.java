@@ -54,8 +54,7 @@ public class DatabaseMetaDataAspect {
     @Pointcut(typeName = "java.sql.DatabaseMetaData", methodName = "*", methodArgs = {".."},
             ignoreSameNested = true, metricName = "jdbc metadata")
     public static class AllMethodAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(AllMethodAdvice.class);
+        private static final MetricName metricName = MetricName.get(AllMethodAdvice.class);
         // plugin configuration property captureDatabaseMetaDataSpans is cached to limit map lookups
         private static volatile boolean pluginEnabled;
         private static volatile boolean spanEnabled;

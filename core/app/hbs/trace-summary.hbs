@@ -56,24 +56,28 @@
 </div>
 <table class="metrics-table indent2" style="border-spacing: 0;">
   <thead>
-    <tr>
-      <td></td>
-      <td>total</td>
-      <td>min</td>
-      <td>max</td>
-      <td>count</td>
-    </tr>
+  <tr>
+    <td></td>
+    <td>total</td>
+    <td>min</td>
+    <td>max</td>
+    <td>count</td>
+  </tr>
   </thead>
   <tbody>
-    {{#eachMetricOrdered .}}
-      <tr class="align-top">
-        <td style="text-align: left;"><div class="second-line-indent">{{name}}</div></td>
-        <td>{{nanosToMillis total}}{{#if active}}..{{/if}}</td>
-        <td>{{nanosToMillis min}}{{#if minActive}}..{{/if}}</td>
-        <td>{{nanosToMillis max}}{{#if maxActive}}..{{/if}}</td>
-        <td>{{count}}</td>
-      </tr>
-    {{/eachMetricOrdered}}
+  {{#eachMetricOrdered .}}
+    <tr class="align-top">
+      <td style="text-align: left;">
+        <div style="margin-left: {{metricIndent .}}em;">
+          <div class="second-line-indent">{{name}}</div>
+        </div>
+      </td>
+      <td>{{nanosToMillis total}}{{#if active}}..{{/if}}</td>
+      <td>{{nanosToMillis min}}{{#if minActive}}..{{/if}}</td>
+      <td>{{nanosToMillis max}}{{#if maxActive}}..{{/if}}</td>
+      <td>{{count}}</td>
+    </tr>
+  {{/eachMetricOrdered}}
   </tbody>
 </table>
 {{#ifThreadInfo jvmInfo}}

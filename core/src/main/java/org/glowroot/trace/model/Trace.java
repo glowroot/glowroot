@@ -18,7 +18,6 @@ package org.glowroot.trace.model;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import checkers.igj.quals.ReadOnly;
@@ -29,9 +28,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
 import dataflow.quals.Pure;
@@ -40,11 +37,13 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.PartiallyThreadSafe;
+import org.glowroot.trace.model.MetricTimerExtended.NopMetricTimerExtended;
 
 /**
  * Contains all data that has been captured for a given trace (e.g. a servlet request).
@@ -61,9 +60,10 @@ public class Trace {
 
     private static final Logger logger = LoggerFactory.getLogger(Trace.class);
 
+    private static final long START_TICK_READ_TICKER = -1;
+
     // initial capacity is very important, see ThreadSafeCollectionOfTenBenchmark
     private static final int ATTRIBUTE_KEYS_INITIAL_CAPACITY = 16;
-    private static final int METRICS_LIST_INITIAL_CAPACITY = 32;
 
     // a unique identifier
     private final TraceUniqueId id;
@@ -91,16 +91,13 @@ public class Trace {
     @MonotonicNonNull
     private volatile SetMultimap<String, String> attributes;
 
-    // see performance comparison of synchronized ArrayList vs ConcurrentLinkedQueue in
-    // ThreadSafeCollectionOfTenBenchmark
-    @GuardedBy("metrics")
-    private final List<Metric> metrics;
+    private final Metric rootMetric;
 
-    // the MetricNames are tracked since they contain thread locals that need to be cleared at the
-    // end of the trace
-    //
     // this doesn't need to be thread safe as it is only accessed by the trace thread
-    private final List<MetricNameImpl> metricNames = Lists.newArrayList();
+    //
+    // only nullable when trace is complete
+    @Nullable
+    private Metric activeMetric;
 
     private final JvmInfo jvmInfo;
 
@@ -129,24 +126,27 @@ public class Trace {
     @Nullable
     private volatile ScheduledRunnable stuckScheduledRunnable;
 
+    private final Ticker ticker;
+
+    // suppress initialization is for checker framework, passing uninitialized 'this' to Metric
+    // constructor below, which is ok since the Trace reference does not escape from there and is
+    // unused until after it is fully initialized
+    @SuppressWarnings("initialization")
     public Trace(long startTime, boolean background, String transactionName,
-            MessageSupplier messageSupplier, MetricNameImpl metricName,
+            MessageSupplier messageSupplier, MetricName metricName,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes, Ticker ticker) {
         this.startTime = startTime;
         this.background = background;
         this.transactionName = transactionName;
         id = new TraceUniqueId(startTime);
         long startTick = ticker.read();
-        Metric metric = metricName.create();
-        metric.start(startTick);
-        rootSpan = new RootSpan(messageSupplier, metric, startTick, ticker);
-        List<Metric> theMetrics = Lists.newArrayListWithCapacity(METRICS_LIST_INITIAL_CAPACITY);
-        theMetrics.add(metric);
-        // safe publish of metrics to avoid synchronization
-        this.metrics = theMetrics;
-        metricNames.add(metricName);
+        rootMetric = new Metric(metricName, this, null, ticker);
+        rootMetric.start(startTick);
+        activeMetric = rootMetric;
+        rootSpan = new RootSpan(messageSupplier, rootMetric, startTick, ticker);
         threadId = Thread.currentThread().getId();
         jvmInfo = new JvmInfo(threadAllocatedBytes);
+        this.ticker = ticker;
     }
 
     public long getStartTime() {
@@ -229,12 +229,8 @@ public class Trace {
     }
 
     // this is called from a non-trace thread
-    public ImmutableList<Metric> getMetrics() {
-        // metrics is a non-thread safe list, but it is guarded by itself, so ok to make a copy
-        // inside of synchronized block
-        synchronized (metrics) {
-            return ImmutableList.copyOf(metrics);
-        }
+    public Metric getRootMetric() {
+        return rootMetric;
     }
 
     // can be called from a non-trace thread
@@ -360,13 +356,47 @@ public class Trace {
         this.stuckScheduledRunnable = scheduledRunnable;
     }
 
-    public Span pushSpan(MetricNameImpl metricName, long startTick,
-            MessageSupplier messageSupplier) {
-        Metric metric = metricName.get();
-        if (metric == null) {
-            metric = addMetric(metricName);
+    // prefer this method when startTick is not already available, since it avoids a ticker.read()
+    // for nested metrics
+    public MetricTimerExtended startMetric(MetricName metricName) {
+        return startMetric(metricName, START_TICK_READ_TICKER);
+    }
+
+    // this is only used for "glowroot weaving" metric since it can crop up during the trace
+    // completion process while
+    //
+    // the only difference is that it doesn't log a warning when activeMetric is null
+    public MetricTimerExtended tryStartMetric(MetricName metricName) {
+        if (activeMetric == null) {
+            return NopMetricTimerExtended.INSTANCE;
         }
-        metric.start(startTick);
+        return startMetric(metricName, START_TICK_READ_TICKER);
+    }
+
+    public MetricTimerExtended startMetric(MetricName metricName, long startTick) {
+        if (activeMetric == null) {
+            // this should only happen when trace is complete
+            logger.warn("startMetric() called with null activeMetric");
+            return NopMetricTimerExtended.INSTANCE;
+        }
+        // metric names are guaranteed one instance per name so fast pointer equality can be used
+        if (activeMetric.getMetricName() == metricName) {
+            activeMetric.incrementSelfNestingLevel();
+            return activeMetric;
+        }
+        Metric metric = activeMetric.getNestedMetric(metricName, this);
+        if (startTick == START_TICK_READ_TICKER) {
+            metric.start(ticker.read());
+        } else {
+            metric.start(startTick);
+        }
+        activeMetric = metric;
+        return metric;
+    }
+
+    public Span pushSpan(MetricName metricName, long startTick,
+            MessageSupplier messageSupplier) {
+        MetricTimerExtended metric = startMetric(metricName, startTick);
         return rootSpan.pushSpan(startTick, messageSupplier, metric);
     }
 
@@ -384,25 +414,9 @@ public class Trace {
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
     public void popSpan(Span span, long endTick, @Nullable ErrorMessage errorMessage) {
         rootSpan.popSpan(span, endTick, errorMessage);
-        Metric metric = span.getMetric();
+        MetricTimerExtended metric = span.getMetric();
         if (metric != null) {
             metric.end(endTick);
-        }
-    }
-
-    public Metric addMetric(MetricNameImpl metricName) {
-        Metric metric = metricName.create();
-        synchronized (metrics) {
-            metrics.add(metric);
-        }
-        metricNames.add(metricName);
-        return metric;
-    }
-
-    public void clearThreadLocalMetrics() {
-        // reset metric thread locals to clear their state for next time
-        for (MetricNameImpl metricName : metricNames) {
-            metricName.clear();
         }
     }
 
@@ -440,6 +454,10 @@ public class Trace {
         jvmInfo.onTraceComplete();
     }
 
+    void setActiveMetric(@Nullable Metric activeMetric) {
+        this.activeMetric = activeMetric;
+    }
+
     @Override
     @Pure
     public String toString() {
@@ -451,7 +469,8 @@ public class Trace {
                 .add("error", error)
                 .add("user", user)
                 .add("attributes", attributes)
-                .add("metrics", metrics)
+                .add("rootMetric", rootMetric)
+                .add("activeMetric", activeMetric)
                 .add("jvmInfo", jvmInfo)
                 .add("rootSpan", rootSpan)
                 .add("coarseMergedStackTree", coarseMergedStackTree)

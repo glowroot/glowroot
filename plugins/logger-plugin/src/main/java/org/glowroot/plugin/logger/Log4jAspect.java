@@ -50,8 +50,7 @@ public class Log4jAspect {
     @Pointcut(typeName = "org.apache.log4j.Category", methodName = "warn|error|fatal",
             methodArgs = {"java.lang.Object"}, metricName = METRIC_NAME)
     public static class LogAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogAdvice.class);
+        private static final MetricName metricName = MetricName.get(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -77,8 +76,7 @@ public class Log4jAspect {
     @Pointcut(typeName = "org.apache.log4j.Category", methodName = "warn|error|fatal",
             methodArgs = {"java.lang.Object", "java.lang.Throwable"}, metricName = METRIC_NAME)
     public static class LogWithThrowableAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogWithThrowableAdvice.class);
+        private static final MetricName metricName = MetricName.get(LogWithThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -110,8 +108,7 @@ public class Log4jAspect {
             methodArgs = {"org.apache.log4j.Priority", "java.lang.Object"},
             metricName = METRIC_NAME)
     public static class LogWithPriorityAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogWithPriorityAdvice.class);
+        private static final MetricName metricName = MetricName.get(LogWithPriorityAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindMethodArg Object priority) {
             if (!pluginServices.isEnabled() || LoggerPlugin.inAdvice.get()) {
@@ -142,7 +139,7 @@ public class Log4jAspect {
             metricName = METRIC_NAME)
     public static class LogWithPriorityAndThrowableAdvice {
         private static final MetricName metricName =
-                pluginServices.getMetricName(LogWithPriorityAndThrowableAdvice.class);
+                MetricName.get(LogWithPriorityAndThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindMethodArg Object priority) {
             if (!pluginServices.isEnabled() || LoggerPlugin.inAdvice.get()) {
@@ -179,8 +176,7 @@ public class Log4jAspect {
             methodArgs = {"org.apache.log4j.Priority", "java.lang.String", "java.lang.Throwable"},
             metricName = METRIC_NAME)
     public static class LocalizedLogAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LocalizedLogAdvice.class);
+        private static final MetricName metricName = MetricName.get(LocalizedLogAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindMethodArg Object priority) {
             if (!pluginServices.isEnabled() || LoggerPlugin.inAdvice.get()) {
@@ -217,7 +213,7 @@ public class Log4jAspect {
                     "java.lang.Throwable"}, metricName = METRIC_NAME)
     public static class LocalizedLogWithParametersAdvice {
         private static final MetricName metricName =
-                pluginServices.getMetricName(LocalizedLogWithParametersAdvice.class);
+                MetricName.get(LocalizedLogWithParametersAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindMethodArg Object priority) {
             if (!pluginServices.isEnabled() || LoggerPlugin.inAdvice.get()) {

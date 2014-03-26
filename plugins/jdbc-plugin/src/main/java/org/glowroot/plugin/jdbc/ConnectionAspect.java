@@ -62,8 +62,7 @@ public class ConnectionAspect {
     @Pointcut(typeName = "java.sql.Connection", methodName = "commit", ignoreSameNested = true,
             metricName = "jdbc commit")
     public static class CommitAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(CommitAdvice.class);
+        private static final MetricName metricName = MetricName.get(CommitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -85,8 +84,7 @@ public class ConnectionAspect {
     @Pointcut(typeName = "java.sql.Connection", methodName = "rollback", ignoreSameNested = true,
             metricName = "jdbc rollback")
     public static class RollbackAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(RollbackAdvice.class);
+        private static final MetricName metricName = MetricName.get(RollbackAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -108,8 +106,7 @@ public class ConnectionAspect {
     @Pointcut(typeName = "java.sql.Connection", methodName = "close", ignoreSameNested = true,
             metricName = "jdbc connection close")
     public static class CloseAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(CloseAdvice.class);
+        private static final MetricName metricName = MetricName.get(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -145,8 +142,7 @@ public class ConnectionAspect {
     @Pointcut(typeName = "java.sql.Connection", methodName = "setAutoCommit",
             methodArgs = {"boolean"}, ignoreSameNested = true, metricName = "jdbc set autocommit")
     public static class SetAutoCommitAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(CloseAdvice.class);
+        private static final MetricName metricName = MetricName.get(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && captureSetAutoCommitSpans;

@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 
 import org.glowroot.common.Clock;
 import org.glowroot.markers.Singleton;
+import org.glowroot.trace.model.Metric;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -71,7 +72,7 @@ class Aggregator {
 
     // TODO add CPU, errorCount, metrics, profile
     long add(boolean background, String transactionName, long duration, boolean error,
-            boolean traceWillBeStored) {
+            boolean traceWillBeStored, Metric rootMetric) {
         // this first synchronized block is to ensure atomicity between updates and flushes
         synchronized (lock) {
             long captureTime = clock.currentTimeMillis();
@@ -90,7 +91,7 @@ class Aggregator {
             // currentAggregates
             synchronized (currentAggregates) {
                 currentAggregates.add(background, transactionName, duration, error,
-                        traceWillBeStored);
+                        traceWillBeStored, rootMetric);
             }
             return captureTime;
         }
@@ -124,10 +125,10 @@ class Aggregator {
     private class Aggregates {
 
         private final long captureTime;
-        private final Aggregate overallAggregate = new Aggregate();
-        private final Aggregate bgOverallAggregate = new Aggregate();
-        private final Map<String, Aggregate> transactionAggregates = Maps.newHashMap();
-        private final Map<String, Aggregate> bgTransactionAggregates = Maps.newHashMap();
+        private final AggregateBuilder overallAggregate = new AggregateBuilder();
+        private final AggregateBuilder bgOverallAggregate = new AggregateBuilder();
+        private final Map<String, AggregateBuilder> transactionAggregates = Maps.newHashMap();
+        private final Map<String, AggregateBuilder> bgTransactionAggregates = Maps.newHashMap();
 
         private Aggregates(long currentTime) {
             this.captureTime = (long) Math.ceil(currentTime
@@ -135,9 +136,9 @@ class Aggregator {
         }
 
         private void add(boolean background, String transactionName, long duration, boolean error,
-                boolean traceWillBeStored) {
-            Aggregate overallAggregate;
-            Map<String, Aggregate> transactionAggregates;
+                boolean traceWillBeStored, Metric rootMetric) {
+            AggregateBuilder overallAggregate;
+            Map<String, AggregateBuilder> transactionAggregates;
             if (background) {
                 overallAggregate = this.bgOverallAggregate;
                 transactionAggregates = this.bgTransactionAggregates;
@@ -146,9 +147,9 @@ class Aggregator {
                 transactionAggregates = this.transactionAggregates;
             }
             overallAggregate.add(duration);
-            Aggregate transactionAggregate = transactionAggregates.get(transactionName);
+            AggregateBuilder transactionAggregate = transactionAggregates.get(transactionName);
             if (transactionAggregate == null) {
-                transactionAggregate = new Aggregate();
+                transactionAggregate = new AggregateBuilder();
                 transactionAggregates.put(transactionName, transactionAggregate);
             }
             transactionAggregate.add(duration);
@@ -160,6 +161,8 @@ class Aggregator {
                 overallAggregate.addToStoredTraceCount();
                 transactionAggregate.addToStoredTraceCount();
             }
+            overallAggregate.addToMetrics(rootMetric);
+            transactionAggregate.addToMetrics(rootMetric);
         }
     }
 }

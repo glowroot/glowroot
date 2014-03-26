@@ -73,8 +73,7 @@ public class Slf4jMarkerAspect {
     @Pointcut(typeName = "org.slf4j.Logger", methodName = "warn|error",
             methodArgs = {"org.slf4j.Marker", "java.lang.String"}, metricName = METRIC_NAME)
     public static class LogNoArgAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogNoArgAdvice.class);
+        private static final MetricName metricName = MetricName.get(LogNoArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -103,8 +102,7 @@ public class Slf4jMarkerAspect {
             methodArgs = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object"},
             metricName = METRIC_NAME)
     public static class LogOneArgAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogOneArgAdvice.class);
+        private static final MetricName metricName = MetricName.get(LogOneArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -129,8 +127,7 @@ public class Slf4jMarkerAspect {
             methodArgs = {"org.slf4j.Marker", "java.lang.String", "java.lang.Throwable"},
             metricName = METRIC_NAME)
     public static class LogOneArgThrowableAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogOneArgThrowableAdvice.class);
+        private static final MetricName metricName = MetricName.get(LogOneArgThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -155,8 +152,7 @@ public class Slf4jMarkerAspect {
             methodArgs = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object",
                     "java.lang.Object"}, metricName = METRIC_NAME)
     public static class LogTwoArgsAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogTwoArgsAdvice.class);
+        private static final MetricName metricName = MetricName.get(LogTwoArgsAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -181,8 +177,7 @@ public class Slf4jMarkerAspect {
             methodArgs = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object[]"},
             metricName = METRIC_NAME)
     public static class LogAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogAdvice.class);
+        private static final MetricName metricName = MetricName.get(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();

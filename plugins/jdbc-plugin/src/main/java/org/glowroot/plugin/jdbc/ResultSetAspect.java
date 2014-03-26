@@ -27,8 +27,8 @@ import org.glowroot.api.MetricName;
 import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
-import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindReceiver;
+import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -51,8 +51,7 @@ public class ResultSetAspect {
             methodName = "next|previous|relative|absolute|first|last", methodArgs = "..",
             ignoreSameNested = true, metricName = "jdbc resultset navigate")
     public static class NavigateAdvice {
-        private static final MetricName metricName = pluginServices
-                .getMetricName(NavigateAdvice.class);
+        private static final MetricName metricName = MetricName.get(NavigateAdvice.class);
         private static volatile boolean pluginEnabled;
         // plugin configuration property captureResultSetNext is cached to limit map lookups
         private static volatile boolean metricEnabled;
@@ -119,8 +118,7 @@ public class ResultSetAspect {
     @Pointcut(typeName = "java.sql.ResultSet", methodName = "get*", methodArgs = {"int", ".."},
             metricName = "jdbc resultset value")
     public static class ValueAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ValueAdvice.class);
+        private static final MetricName metricName = MetricName.get(ValueAdvice.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
         private static volatile boolean metricEnabled;
         static {
@@ -152,8 +150,7 @@ public class ResultSetAspect {
     @Pointcut(typeName = "java.sql.ResultSet", methodName = "get*",
             methodArgs = {"java.lang.String", ".."}, metricName = "jdbc resultset value")
     public static class ValueAdvice2 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ValueAdvice2.class);
+        private static final MetricName metricName = MetricName.get(ValueAdvice2.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
         private static volatile boolean metricEnabled;
         static {

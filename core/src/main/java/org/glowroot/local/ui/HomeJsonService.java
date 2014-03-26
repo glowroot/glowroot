@@ -25,21 +25,24 @@ import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.CaseFormat;
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
+import com.google.common.util.concurrent.AtomicLongMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.local.store.Aggregate;
+import org.glowroot.local.store.Aggregate.AggregateMetric;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.SortDirection;
 import org.glowroot.local.store.AggregateDao.TransactionAggregateSortColumn;
-import org.glowroot.local.store.AggregatePoint;
 import org.glowroot.local.store.OverallAggregate;
 import org.glowroot.local.store.TransactionAggregate;
 import org.glowroot.markers.Singleton;
@@ -61,93 +64,71 @@ class HomeJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final AggregateDao aggregateDao;
+    private final Clock clock;
     private final long fixedAggregationIntervalMillis;
 
-    HomeJsonService(AggregateDao aggregateDao, long fixedAggregationIntervalSeconds) {
+    HomeJsonService(AggregateDao aggregateDao, Clock clock, long fixedAggregationIntervalSeconds) {
         this.aggregateDao = aggregateDao;
+        this.clock = clock;
         fixedAggregationIntervalMillis = fixedAggregationIntervalSeconds * 1000;
     }
 
-    @GET("/backend/home/points")
-    String getPoints(String content) throws IOException {
-        logger.debug("getPoints(): content={}", content);
-        ObjectMapper mapper = ObjectMappers.create();
-        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-        PointsRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, PointsRequest.class);
-        List<AggregatePoint> points =
-                aggregateDao.readPoints(request.getFrom(), request.getTo());
-        Map<String, Map<Long, AggregatePoint>> transactionPoints =
-                aggregateDao.readTransactionPoints(request.getFrom(), request.getTo(),
-                        request.getTransactionNames());
-
-        List</*@Nullable*/Long> captureTimes = Lists.newArrayList();
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeArrayFieldStart("points");
-        AggregatePoint lastPoint = null;
-        for (AggregatePoint point : points) {
-            writePoint(jg, point);
-            captureTimes.add(point.getCaptureTime());
-            if (lastPoint == null) {
-                continue;
-            }
-            long millisecondsSinceLastPoint = point.getCaptureTime() - lastPoint.getCaptureTime();
-            if (millisecondsSinceLastPoint > fixedAggregationIntervalMillis * 1.5) {
-                // add gap when missing collection points (probably jvm was down)
-                writeNullPoint(jg);
-                captureTimes.add(null);
-            }
-        }
-        jg.writeEndArray();
-        jg.writeObjectFieldStart("transactionPoints");
-        for (Entry<String, Map<Long, AggregatePoint>> entry : transactionPoints.entrySet()) {
-            jg.writeArrayFieldStart(entry.getKey());
-            for (Long captureTime : captureTimes) {
-                if (captureTime == null) {
-                    writeNullPoint(jg);
-                    continue;
-                }
-                AggregatePoint point = entry.getValue().get(captureTime);
-                if (point == null) {
-                    writeZeroPoint(jg, captureTime);
-                    continue;
-                }
-                writePoint(jg, point);
-            }
-            jg.writeEndArray();
-        }
-        jg.writeEndObject();
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
-    }
-
-    private static void writePoint(JsonGenerator jg, AggregatePoint point) throws IOException {
-        jg.writeStartArray();
-        jg.writeNumber(point.getCaptureTime());
-        double average;
-        if (point.getCount() == 0) {
-            average = 0;
+    @GET("/backend/home/stacked")
+    String getStacked(String content) throws IOException {
+        logger.debug("getStacked(): content={}", content);
+        StackedRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, StackedRequest.class);
+        List<Aggregate> aggregates;
+        String transactionName = request.getTransactionName();
+        if (transactionName == null) {
+            aggregates = aggregateDao.readAggregates(request.getFrom(), request.getTo());
         } else {
-            average = point.getTotalMillis() / point.getCount();
+            aggregates = aggregateDao.readTransactionAggregates(request.getFrom(),
+                    request.getTo(), transactionName);
         }
-        jg.writeNumber(average / 1000.0);
-        jg.writeNumber(point.getCount());
-        jg.writeEndArray();
-    }
-
-    private static void writeNullPoint(JsonGenerator jg) throws IOException {
-        jg.writeNull();
-    }
-
-    private static void writeZeroPoint(JsonGenerator jg, long captureTime) throws IOException {
-        jg.writeStartArray();
-        jg.writeNumber(captureTime);
-        jg.writeNumber(0);
-        jg.writeNumber(0);
-        jg.writeEndArray();
+        List<StackedAggregate> stackedAggregates = Lists.newArrayList();
+        for (Aggregate aggregate : aggregates) {
+            stackedAggregates.add(StackedAggregate.create(aggregate));
+        }
+        List<String> metricNames = getTopMetricNames(stackedAggregates);
+        List<DataSeries> dataSeriesList = Lists.newArrayList();
+        for (String metricName : metricNames) {
+            dataSeriesList.add(new DataSeries(metricName));
+        }
+        DataSeries otherDataSeries = new DataSeries(null);
+        Aggregate lastAggregate = null;
+        for (StackedAggregate stackedAggregate : stackedAggregates) {
+            Aggregate aggregate = stackedAggregate.getAggregate();
+            if (lastAggregate == null) {
+                // first aggregate
+                addInitialUpslope(request.getFrom(), aggregate, dataSeriesList, otherDataSeries);
+            } else {
+                addGap(lastAggregate, aggregate, dataSeriesList, otherDataSeries);
+            }
+            lastAggregate = aggregate;
+            Map<String, Long> stackedMetrics = stackedAggregate.getStackedMetrics();
+            long totalOtherMicros = aggregate.getTotalMicros();
+            for (DataSeries dataSeries : dataSeriesList) {
+                Long totalMicros = stackedMetrics.get(dataSeries.getName());
+                if (totalMicros == null) {
+                    dataSeries.add(aggregate.getCaptureTime(), 0);
+                } else {
+                    dataSeries.add(aggregate.getCaptureTime(), totalMicros / aggregate.getCount());
+                    totalOtherMicros -= totalMicros;
+                }
+            }
+            if (aggregate.getCount() == 0) {
+                otherDataSeries.add(aggregate.getCaptureTime(), 0);
+            } else {
+                otherDataSeries.add(aggregate.getCaptureTime(),
+                        totalOtherMicros / aggregate.getCount());
+            }
+        }
+        if (lastAggregate != null) {
+            addFinalDownslope(request, dataSeriesList, otherDataSeries, lastAggregate);
+        }
+        dataSeriesList.add(otherDataSeries);
+        return mapper.writeValueAsString(dataSeriesList);
     }
 
     @GET("/backend/home/aggregates")
@@ -164,7 +145,6 @@ class HomeJsonService {
         List<TransactionAggregate> transactionAggregates = aggregateDao.readTransactionAggregates(
                 request.getFrom(), request.getTo(), sortColumn, request.getSortDirection(),
                 request.getTransactionAggregatesLimit());
-
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
@@ -175,31 +155,99 @@ class HomeJsonService {
         return sb.toString();
     }
 
-    @ReadOnly
-    private static <T extends /*@NonNull*/Object> List<T> orEmpty(
-            @ReadOnly @Nullable List<T> list) {
-        if (list == null) {
-            return ImmutableList.of();
+    // calculate top 5 metrics
+    private List<String> getTopMetricNames(List<StackedAggregate> stackedAggregates) {
+        AtomicLongMap<String> totalMicros = AtomicLongMap.create();
+        for (StackedAggregate stackedAggregate : stackedAggregates) {
+            totalMicros.putAll(stackedAggregate.getStackedMetrics());
         }
-        return list;
+        Ordering<Entry<String, Long>> valueOrdering = Ordering.natural().onResultOf(
+                new Function<Entry<String, Long>, Long>() {
+                    @Override
+                    public Long apply(Entry<String, Long> entry) {
+                        return entry.getValue();
+                    }
+                });
+        final int topX = 5;
+        List<String> metricNames = Lists.newArrayList();
+        for (Entry<String, Long> entry : valueOrdering
+                .greatestOf(totalMicros.asMap().entrySet(), topX)) {
+            metricNames.add(entry.getKey());
+        }
+        return metricNames;
     }
 
-    private static class PointsRequest {
+    private void addInitialUpslope(long requestFrom, Aggregate aggregate,
+            List<DataSeries> dataSeriesList, DataSeries otherDataSeries) {
+        long millisecondsFromEdge = aggregate.getCaptureTime() - requestFrom;
+        if (millisecondsFromEdge < fixedAggregationIntervalMillis / 2) {
+            return;
+        }
+        // bring up from zero
+        for (DataSeries dataSeries : dataSeriesList) {
+            dataSeries.add(aggregate.getCaptureTime() - fixedAggregationIntervalMillis / 2, 0);
+        }
+        otherDataSeries.add(aggregate.getCaptureTime() - fixedAggregationIntervalMillis / 2, 0);
+    }
+
+    private void addGap(Aggregate lastAggregate, Aggregate aggregate,
+            List<DataSeries> dataSeriesList, DataSeries otherDataSeries) {
+        long millisecondsSinceLastAggregate =
+                aggregate.getCaptureTime() - lastAggregate.getCaptureTime();
+        if (millisecondsSinceLastAggregate < fixedAggregationIntervalMillis * 1.5) {
+            return;
+        }
+        // gap between points, bring down to zero and then back up from zero to show gap
+        for (DataSeries dataSeries : dataSeriesList) {
+            addGap(dataSeries, lastAggregate, aggregate);
+        }
+        addGap(otherDataSeries, lastAggregate, aggregate);
+    }
+
+    private void addGap(DataSeries dataSeries, Aggregate lastAggregate, Aggregate aggregate) {
+        dataSeries.add(lastAggregate.getCaptureTime()
+                + fixedAggregationIntervalMillis / 2, 0);
+        dataSeries.addNull();
+        dataSeries.add(aggregate.getCaptureTime()
+                - fixedAggregationIntervalMillis / 2, 0);
+    }
+
+    private void addFinalDownslope(StackedRequest request, List<DataSeries> dataSeriesList,
+            DataSeries otherDataSeries, Aggregate lastAggregate) {
+        long millisecondsAgoFromNow = clock.currentTimeMillis() - lastAggregate.getCaptureTime();
+        if (millisecondsAgoFromNow < fixedAggregationIntervalMillis * 1.5) {
+            return;
+        }
+        long millisecondsFromEdge = request.getTo() - lastAggregate.getCaptureTime();
+        if (millisecondsFromEdge < fixedAggregationIntervalMillis / 2) {
+            return;
+        }
+        // bring down to zero
+        for (DataSeries dataSeries : dataSeriesList) {
+            dataSeries.add(lastAggregate.getCaptureTime()
+                    + fixedAggregationIntervalMillis / 2, 0);
+        }
+        otherDataSeries.add(lastAggregate.getCaptureTime()
+                + fixedAggregationIntervalMillis / 2, 0);
+    }
+
+    private static class StackedRequest {
 
         private final long from;
         private final long to;
-        private final List<String> transactionNames;
+        @Nullable
+        private final String transactionName;
 
         @JsonCreator
-        PointsRequest(@JsonProperty("from") @Nullable Long from,
+        StackedRequest(@JsonProperty("from") @Nullable Long from,
                 @JsonProperty("to") @Nullable Long to,
-                @JsonProperty("transactionNames") @Nullable List<String> transactionNames)
+                @JsonProperty("transactionName") @Nullable String transactionName)
                 throws JsonMappingException {
             checkRequiredProperty(from, "from");
             checkRequiredProperty(to, "to");
             this.from = from;
             this.to = to;
-            this.transactionNames = orEmpty(transactionNames);
+            this.transactionName = transactionName;
         }
 
         private long getFrom() {
@@ -210,8 +258,38 @@ class HomeJsonService {
             return to;
         }
 
-        private List<String> getTransactionNames() {
-            return transactionNames;
+        @Nullable
+        private String getTransactionName() {
+            return transactionName;
+        }
+    }
+
+    // this is used for stacked response
+    private static class DataSeries {
+
+        // null is used for 'Other' data series
+        @JsonProperty
+        @Nullable
+        private final String name;
+        @JsonProperty
+        private final List<Number/*@Nullable*/[]> data = Lists.newArrayList();
+
+        private DataSeries(@Nullable String name) {
+            this.name = name;
+        }
+
+        @Nullable
+        private String getName() {
+            return name;
+        }
+
+        private void add(long captureTime, double averageMicros) {
+            // convert microseconds to seconds
+            data.add(new Number[] {captureTime, averageMicros / 1000000});
+        }
+
+        private void addNull() {
+            data.add(null);
         }
     }
 
@@ -261,6 +339,48 @@ class HomeJsonService {
 
         private int getTransactionAggregatesLimit() {
             return transactionAggregatesLimit;
+        }
+    }
+
+    private static class StackedAggregate {
+
+        private final Aggregate aggregate;
+        // flattened metric values only include time spent as a leaf node in the metric tree
+        private final Map<String, Long> stackedMetrics;
+
+        private static StackedAggregate create(Aggregate aggregate) {
+            AtomicLongMap<String> stackedMetrics = AtomicLongMap.create();
+            // skip synthetic root metric
+            for (AggregateMetric rootMetric : aggregate.getSyntheticRootAggregateMetric()
+                    .getNestedMetrics()) {
+                // skip root metrics
+                for (AggregateMetric topLevelMetric : rootMetric.getNestedMetrics()) {
+                    // traverse tree starting at top-level (under root) metrics
+                    for (AggregateMetric metric : AggregateMetric.TRAVERSER
+                            .preOrderTraversal(topLevelMetric)) {
+                        long totalNestedMicros = 0;
+                        for (AggregateMetric nestedMetric : metric.getNestedMetrics()) {
+                            totalNestedMicros += nestedMetric.getTotalMicros();
+                        }
+                        stackedMetrics.addAndGet(metric.getName(),
+                                metric.getTotalMicros() - totalNestedMicros);
+                    }
+                }
+            }
+            return new StackedAggregate(aggregate, stackedMetrics.asMap());
+        }
+
+        private StackedAggregate(Aggregate aggregate, Map<String, Long> stackedMetrics) {
+            this.aggregate = aggregate;
+            this.stackedMetrics = stackedMetrics;
+        }
+
+        private Aggregate getAggregate() {
+            return aggregate;
+        }
+
+        private Map<String, Long> getStackedMetrics() {
+            return stackedMetrics;
         }
     }
 }

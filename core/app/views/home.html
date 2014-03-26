@@ -57,28 +57,6 @@
       </div>
     </div>
   </div>
-  <!-- margin-bottom: 10px overrides default 15px to adjust for 5px margin-bottom on displayed transaction boxes -->
-  <div class="form-group" style="margin-bottom: 10px;">
-    <label class="col-lg-4 control-label">Chart</label>
-    <div class="col-lg-8">
-      <div style="">
-        <div class="inline-block"
-             ng-style="displayFilterRowStyle(null)">
-          All Transactions
-        </div>
-        <div ng-repeat="(transactionName, color) in checkedTransactionColors"
-             class="inline-block"
-             ng-style="displayFilterRowStyle(transactionName)">
-          {{transactionName}}
-          <button type="button"
-                  class="home-display-filter-close"
-                  ng-click="removeDisplayedTransaction(transactionName)">
-            &times;
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
   <div class="form-group">
     <div class="col-lg-offset-4 col-lg-8">
       <div gt-button
@@ -105,8 +83,7 @@
   <table class="table">
     <thead>
     <tr>
-      <th align="right" width="1%"></th>
-      <th width="49%">
+      <th width="50%">
         <a href="" ng-click="sortTable('total')" class="home-table-header">
           Transaction name
           <span ng-class="sortIconClass('total')"
@@ -149,13 +126,8 @@
     </tr>
     </thead>
     <tbody>
-    <tr class="qtip-color-0" style="font-weight: bold;">
-      <td align="right">
-        <input type="checkbox"
-               ng-checked="true"
-               disabled>
-      </td>
-      <td>All Transactions</td>
+    <tr ng-class="{'home-transaction-row-selected': !selectedTransactionName}">
+      <td style="cursor: pointer;" ng-click="clickTransactionName(null)">All Transactions</td>
       <td>{{overallAggregateAverage()}}</td>
       <td>{{overallAggregate.count}}</td>
       <td>{{overallAggregate.errorCount}}</td>
@@ -167,27 +139,21 @@
       </td>
     </tr>
     <tr ng-repeat="transactionAggregate in transactionAggregates"
-        ng-style="transactionRowStyle(transactionAggregate.transactionName)">
-      <td align="right">
-        <input type="checkbox" ng-checked="checkedTransactionColors[transactionAggregate.transactionName]"
-               ng-click="clickTransactionName(transactionAggregate.transactionName)"
-               id="{{transactionAggregate.transactionName}}">
-      </td>
+        ng-class="{'home-transaction-row-selected': transactionAggregate.transactionName === selectedTransactionName}">
       <td style="padding: 0;">
         <!-- cannot apply relative positioning to td elements in firefox
          see https://bugzilla.mozilla.org/show_bug.cgi?id=35168 -->
         <div style="position: relative;">
           <div style="position: absolute; height: 100%; background-color: #eee;"
-               ng-style="{width: transactionBarWidth(transactionAggregate.totalMillis)}">
+               ng-style="{width: transactionBarWidth(transactionAggregate.totalMicros)}">
           </div>
-          <label for="{{transactionAggregate.transactionName}}"
-                 ng-class="{'font-weight-normal': !checkedTransactionColors[transactionAggregate.transactionName]}"
-                 style="position: relative; padding: 8px; cursor: pointer; word-break: break-all;">
+          <div style="position: relative; padding: 8px; cursor: pointer; word-break: break-all;"
+               ng-click="clickTransactionName(transactionAggregate.transactionName)">
             {{transactionAggregate.transactionName}}
-          </label>
+          </div>
         </div>
       </td>
-      <td>{{((transactionAggregate.totalMillis / transactionAggregate.count) / 1000).toFixed(2)}}</td>
+      <td>{{((transactionAggregate.totalMicros / transactionAggregate.count) / 1000000).toFixed(2)}}</td>
       <td>{{transactionAggregate.count}}</td>
       <td>{{transactionAggregate.errorCount}}</td>
       <td>

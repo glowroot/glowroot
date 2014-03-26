@@ -43,16 +43,25 @@ TraceRenderer = (function () {
     return buffer;
   });
 
+
   Handlebars.registerHelper('eachMetricOrdered', function (trace, options) {
-    // make local copy of metrics
-    var metrics = trace.metrics.slice();
-    metrics.sort(function (a, b) {
-      return b.total - a.total;
-    });
     var buffer = '';
-    $.each(metrics, function (index, metric) {
+
+    function traverse(metric, nestingLevel) {
+      metric.nestingLevel = nestingLevel;
       buffer += options.fn(metric);
-    });
+      if (metric.nestedMetrics) {
+        metric.nestedMetrics.sort(function (a, b) {
+          return b.total - a.total;
+        });
+        $.each(metric.nestedMetrics, function (index, metric) {
+          traverse(metric, nestingLevel + 1);
+        });
+      }
+    }
+
+    // add the root node
+    traverse(trace.metrics, 0);
     return buffer;
   });
 
@@ -167,6 +176,10 @@ TraceRenderer = (function () {
 
   Handlebars.registerHelper('spanIndent', function (span) {
     return indent1 * (1 + span.nestingLevel);
+  });
+
+  Handlebars.registerHelper('metricIndent', function (metric) {
+    return indent1 * metric.nestingLevel;
   });
 
   Handlebars.registerHelper('firstPart', function (message) {

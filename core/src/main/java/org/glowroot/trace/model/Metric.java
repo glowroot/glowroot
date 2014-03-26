@@ -16,13 +16,19 @@
 package org.glowroot.trace.model;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
+import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import dataflow.quals.Pure;
 
-import org.glowroot.api.MetricTimer;
+import org.glowroot.api.MetricName;
 import org.glowroot.markers.PartiallyThreadSafe;
 
 /**
@@ -31,10 +37,10 @@ import org.glowroot.markers.PartiallyThreadSafe;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@PartiallyThreadSafe("getState() can be called from any thread")
-public class Metric implements MetricTimer {
+@PartiallyThreadSafe("writeValue() can be called from any thread")
+public class Metric implements MetricTimerExtended {
 
-    private final String name;
+    private final MetricName metricName;
     // nanosecond rollover (292 years) isn't a concern for total time on a single trace
     private long total;
     private long min = Long.MAX_VALUE;
@@ -47,17 +53,38 @@ public class Metric implements MetricTimer {
     // the non-volatile fields visible to the reading thread
     private volatile int selfNestingLevel;
 
+    // nestedMetrics is only accessed by trace thread so no need for volatile or synchronized access
+    // during metric capture which is important
+    //
+    // lazy initialize to save memory in common case where this is a leaf metric
+    @Nullable
+    private Map<String, Metric> nestedMetrics;
+
+    // separate list for thread safe access by other threads (e.g. stuck trace capture and active
+    // trace viewer)
+    //
+    // lazy initialize to save memory in common case where this is a leaf metric
+    @Nullable
+    private volatile List<Metric> threadSafeNestedMetrics;
+
+    // trace and parent don't need to be thread safe as they are only accessed by the trace thread
+    private final Trace trace;
+    @Nullable
+    private final Metric parent;
+
     private final Ticker ticker;
 
-    Metric(String name, Ticker ticker) {
-        this.name = name;
+    Metric(MetricName metricName, Trace trace, @Nullable Metric parent, Ticker ticker) {
+        this.metricName = metricName;
+        this.trace = trace;
+        this.parent = parent;
         this.ticker = ticker;
     }
 
     // safe to be called from another thread
     public void writeValue(JsonGenerator jg) throws IOException {
         jg.writeStartObject();
-        jg.writeStringField("name", name);
+        jg.writeStringField("name", metricName.getName());
 
         // selfNestingLevel is read first since it is used as a memory barrier so that the
         // non-volatile fields below will be visible to this thread
@@ -109,6 +136,17 @@ public class Metric implements MetricTimer {
             jg.writeBooleanField("minActive", false);
             jg.writeBooleanField("maxActive", false);
         }
+        if (threadSafeNestedMetrics != null) {
+            ImmutableList<Metric> copyOfNestedMetrics;
+            synchronized (threadSafeNestedMetrics) {
+                copyOfNestedMetrics = ImmutableList.copyOf(threadSafeNestedMetrics);
+            }
+            jg.writeArrayFieldStart("nestedMetrics");
+            for (Metric nestedMetric : copyOfNestedMetrics) {
+                nestedMetric.writeValue(jg);
+            }
+            jg.writeEndArray();
+        }
         jg.writeEndObject();
     }
 
@@ -117,33 +155,70 @@ public class Metric implements MetricTimer {
         end(ticker.read());
     }
 
-    // prefer this method when startTick is not already available, since it avoids a ticker.read()
-    // for nested metrics
-    public void start() {
-        if (selfNestingLevel == 0) {
-            this.startTick = ticker.read();
-        }
-        // selfNestingLevel is incremented after updating startTick since selfNestingLevel is used
-        // as a memory barrier so startTick will be visible to other threads in copyOf()
-        selfNestingLevel++;
-    }
-
     public void start(long startTick) {
-        if (selfNestingLevel == 0) {
-            this.startTick = startTick;
-        }
+        this.startTick = startTick;
         // selfNestingLevel is incremented after updating startTick since selfNestingLevel is used
         // as a memory barrier so startTick will be visible to other threads in copyOf()
         selfNestingLevel++;
     }
 
+    @Override
     public void end(long endTick) {
         if (selfNestingLevel == 1) {
             recordData(endTick - startTick);
+            trace.setActiveMetric(parent);
         }
         // selfNestingLevel is decremented after recording data since it is volatile and creates a
         // memory barrier so that all updated fields will be visible to other threads in copyOf()
         selfNestingLevel--;
+    }
+
+    public MetricName getMetricName() {
+        return metricName;
+    }
+
+    // only called by trace thread
+    public long getTotal() {
+        return total;
+    }
+
+    // only called by trace thread
+    public long getCount() {
+        return count;
+    }
+
+    // only called by trace thread at trace completion
+    public List<Metric> getNestedMetrics() {
+        if (threadSafeNestedMetrics == null) {
+            return ImmutableList.of();
+        } else {
+            return threadSafeNestedMetrics;
+        }
+    }
+
+    void incrementSelfNestingLevel() {
+        selfNestingLevel++;
+    }
+
+    // only called by trace thread
+    Metric getNestedMetric(MetricName metricName, Trace trace) {
+        String name = metricName.getName();
+        if (nestedMetrics == null) {
+            nestedMetrics = Maps.newHashMap();
+        }
+        Metric nestedMetric = nestedMetrics.get(name);
+        if (nestedMetric != null) {
+            return nestedMetric;
+        }
+        nestedMetric = new Metric(metricName, trace, this, ticker);
+        nestedMetrics.put(name, nestedMetric);
+        if (threadSafeNestedMetrics == null) {
+            threadSafeNestedMetrics = Lists.newArrayList();
+        }
+        synchronized (threadSafeNestedMetrics) {
+            threadSafeNestedMetrics.add(nestedMetric);
+        }
+        return nestedMetric;
     }
 
     private void recordData(long time) {
@@ -160,14 +235,21 @@ public class Metric implements MetricTimer {
     @Override
     @Pure
     public String toString() {
+        ImmutableList<Metric> copyOfNestedMetrics = null;
+        if (threadSafeNestedMetrics != null) {
+            synchronized (threadSafeNestedMetrics) {
+                copyOfNestedMetrics = ImmutableList.copyOf(threadSafeNestedMetrics);
+            }
+        }
         return Objects.toStringHelper(this)
-                .add("name", name)
+                .add("name", metricName.getName())
                 .add("total", total)
                 .add("min", min)
                 .add("max", max)
                 .add("count", count)
                 .add("startTick", startTick)
                 .add("selfNestingLevel", selfNestingLevel)
+                .add("nestedMetrics", copyOfNestedMetrics)
                 .toString();
     }
 }

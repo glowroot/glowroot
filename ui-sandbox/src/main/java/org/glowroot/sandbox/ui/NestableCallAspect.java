@@ -51,8 +51,7 @@ public class NestableCallAspect {
     @Pointcut(typeName = "org.glowroot.sandbox.ui.NestableCall", methodName = "execute",
             metricName = "nestable", ignoreSameNested = true)
     public static class NestableCallAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(NestableCallAdvice.class);
+        private static final MetricName metricName = MetricName.get(NestableCallAdvice.class);
         private static final Random random = new Random();
         @IsEnabled
         public static boolean isEnabled() {

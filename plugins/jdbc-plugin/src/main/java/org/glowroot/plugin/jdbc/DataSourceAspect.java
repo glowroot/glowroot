@@ -73,8 +73,7 @@ public class DataSourceAspect {
     @Pointcut(typeName = "javax.sql.DataSource", methodName = "getConnection",
             methodArgs = {".."}, ignoreSameNested = true, metricName = "jdbc get connection")
     public static class CommitAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(CommitAdvice.class);
+        private static final MetricName metricName = MetricName.get(CommitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();

@@ -24,21 +24,22 @@ import org.glowroot.markers.UsedByJsonBinding;
 @UsedByJsonBinding
 public class OverallAggregate {
 
-    private final double totalMillis;
+    // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
+    private final long totalMicros;
     private final long count;
     private final long errorCount;
     private final long storedTraceCount;
 
-    OverallAggregate(double totalMillis, long count, long errorCount,
+    OverallAggregate(long totalMicros, long count, long errorCount,
             long storedTraceCount) {
-        this.totalMillis = totalMillis;
+        this.totalMicros = totalMicros;
         this.count = count;
         this.errorCount = errorCount;
         this.storedTraceCount = storedTraceCount;
     }
 
-    public double getTotalMillis() {
-        return totalMillis;
+    public long getTotalMicros() {
+        return totalMicros;
     }
 
     public long getCount() {

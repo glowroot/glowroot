@@ -42,8 +42,7 @@ public class ExternalJvmMainAspect {
             metricName = "external jvm main")
     public static class MainAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(MainAdvice.class);
+        private static final MetricName metricName = MetricName.get(MainAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -67,8 +66,7 @@ public class ExternalJvmMainAspect {
             methodName = "metricOne", metricName = "metric one")
     public static class MetricOneAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(MetricOneAdvice.class);
+        private static final MetricName metricName = MetricName.get(MetricOneAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -90,8 +88,7 @@ public class ExternalJvmMainAspect {
             methodName = "metricTwo", metricName = "metric two")
     public static class MetricTwoAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(MetricTwoAdvice.class);
+        private static final MetricName metricName = MetricName.get(MetricTwoAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {

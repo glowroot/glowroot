@@ -367,6 +367,7 @@ class PreInitializeClasses {
         types.add("org.glowroot.api.Message");
         types.add("org.glowroot.api.MessageSupplier");
         types.add("org.glowroot.api.MetricName");
+        types.add("org.glowroot.api.MetricName$1");
         types.add("org.glowroot.api.MetricTimer");
         types.add("org.glowroot.api.weaving.BindMethodArg");
         types.add("org.glowroot.api.weaving.BindMethodArgArray");
@@ -396,14 +397,14 @@ class PreInitializeClasses {
         types.add("org.glowroot.local.store.DataSource");
         types.add("org.glowroot.local.store.DataSource$1");
         types.add("org.glowroot.local.store.DataSource$ShutdownHookThread");
-        types.add("org.glowroot.trace.MetricNameCache");
         types.add("org.glowroot.trace.MetricTimerServiceImpl");
         types.add("org.glowroot.trace.MetricTimerServiceImpl$NopMetricTimer");
         types.add("org.glowroot.trace.TraceRegistry");
         types.add("org.glowroot.trace.model.JvmInfo");
         types.add("org.glowroot.trace.model.MergedStackTree");
         types.add("org.glowroot.trace.model.Metric");
-        types.add("org.glowroot.trace.model.MetricNameImpl");
+        types.add("org.glowroot.trace.model.MetricTimerExtended");
+        types.add("org.glowroot.trace.model.MetricTimerExtended$NopMetricTimerExtended");
         types.add("org.glowroot.trace.model.RootSpan");
         types.add("org.glowroot.trace.model.Span");
         types.add("org.glowroot.trace.model.Trace");
@@ -430,6 +431,7 @@ class PreInitializeClasses {
         types.add("org.glowroot.weaving.Weaver");
         types.add("org.glowroot.weaving.Weaver$ComputeFramesClassWriter");
         types.add("org.glowroot.weaving.Weaver$JSRInlinerClassVisitor");
+        types.add("org.glowroot.weaving.Weaver$OnlyForThePointcutMetricName");
         types.add("org.glowroot.weaving.WeavingClassFileTransformer");
         types.add("org.glowroot.weaving.WeavingClassFileTransformer$1");
         types.add("org.glowroot.weaving.WeavingClassVisitor");

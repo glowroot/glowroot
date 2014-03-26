@@ -142,17 +142,9 @@ public class WeaverErrorHandlingTest {
     private static class NopMetricTimerService implements MetricTimerService {
         private static final NopMetricTimerService INSTANCE = new NopMetricTimerService();
         @Override
-        public MetricName getMetricName(String name) {
-            return NopMetricName.INSTANCE;
-        }
-        @Override
         public MetricTimer startMetricTimer(MetricName metricName) {
             return NopMetricTimer.INSTANCE;
         }
-    }
-
-    private static class NopMetricName implements MetricName {
-        private static final NopMetricName INSTANCE = new NopMetricName();
     }
 
     private static class NopMetricTimer implements MetricTimer {

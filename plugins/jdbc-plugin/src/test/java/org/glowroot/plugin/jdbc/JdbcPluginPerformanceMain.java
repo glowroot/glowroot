@@ -81,7 +81,9 @@ public class JdbcPluginPerformanceMain {
         Container container = setUpContainer();
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
         Trace trace = container.getTraceService().getLastTrace();
-        for (Metric metric : trace.getMetrics()) {
+        System.out.format("%s %d %d%n", trace.getRootMetric().getName(),
+                trace.getRootMetric().getTotal(), trace.getRootMetric().getCount());
+        for (Metric metric : trace.getRootMetric().getNestedMetrics()) {
             System.out.format("%s %d %d%n", metric.getName(), metric.getTotal(), metric.getCount());
         }
         container.close();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,12 +54,12 @@ public class Span {
 
     // associated metric, stored here so it can be accessed in PluginServices.endSpan(Span)
     @Nullable
-    private final Metric metric;
+    private final MetricTimerExtended metric;
     @Nullable
     private volatile ImmutableList<StackTraceElement> stackTrace;
 
     Span(@Nullable MessageSupplier messageSupplier, long traceStartTick, long startTick,
-            int nesting, @Nullable Metric metric) {
+            int nesting, @Nullable MetricTimerExtended metric) {
         this.messageSupplier = messageSupplier;
         this.traceStartTick = traceStartTick;
         this.startTick = startTick;
@@ -108,7 +108,7 @@ public class Span {
     }
 
     @Nullable
-    Metric getMetric() {
+    MetricTimerExtended getMetric() {
         return metric;
     }
 

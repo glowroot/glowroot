@@ -55,7 +55,6 @@ public class TraceModule {
     private final TraceCollector traceCollector;
     private final ParsedTypeCache parsedTypeCache;
     private final TraceRegistry traceRegistry;
-    private final MetricNameCache metricNameCache;
     private final PointcutConfigAdviceCache pointcutConfigAdviceCache;
     private final MetricTimerService metricTimerService;
     @Nullable
@@ -96,10 +95,9 @@ public class TraceModule {
         ConfigService configService = configModule.getConfigService();
         parsedTypeCache = new ParsedTypeCache();
         traceRegistry = new TraceRegistry();
-        metricNameCache = new MetricNameCache(ticker);
         pointcutConfigAdviceCache =
                 new PointcutConfigAdviceCache(configService.getPointcutConfigs());
-        metricTimerService = new MetricTimerServiceImpl(metricNameCache, traceRegistry);
+        metricTimerService = new MetricTimerServiceImpl(traceRegistry);
         fineProfileScheduler =
                 new FineProfileScheduler(scheduledExecutor, configService, ticker, new Random());
         stuckTraceWatcher = new StuckTraceWatcher(scheduledExecutor, traceRegistry,
@@ -171,9 +169,8 @@ public class TraceModule {
 
     private PluginServices create(@Nullable String pluginId) {
         return PluginServicesImpl.create(traceRegistry, traceCollector,
-                configModule.getConfigService(), metricNameCache, threadAllocatedBytes,
-                fineProfileScheduler, ticker, clock, configModule.getPluginDescriptorCache(),
-                pluginId);
+                configModule.getConfigService(), threadAllocatedBytes, fineProfileScheduler,
+                ticker, clock, configModule.getPluginDescriptorCache(), pluginId);
     }
 
     @OnlyUsedByTests

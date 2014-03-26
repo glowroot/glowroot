@@ -306,9 +306,7 @@ public class DataSource {
             // it should not really be possible to get here since the only checked exception that
             // preparedStatementCache's CacheLoader throws is SQLException
             logger.error(e.getMessage(), e);
-            SQLException f = new SQLException(e.getMessage());
-            f.initCause(e);
-            throw f;
+            throw new SQLException(e);
         }
     }
 

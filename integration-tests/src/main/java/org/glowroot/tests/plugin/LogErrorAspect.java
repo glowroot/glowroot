@@ -40,8 +40,7 @@ public class LogErrorAspect {
             methodArgs = {"java.lang.String"}, metricName = "log error")
     public static class LogErrorAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogErrorAdvice.class);
+        private static final MetricName metricName = MetricName.get(LogErrorAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -65,8 +64,7 @@ public class LogErrorAspect {
             metricName = "add nested error span")
     public static class AddErrorSpanAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(AddErrorSpanAdvice.class);
+        private static final MetricName metricName = MetricName.get(AddErrorSpanAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {

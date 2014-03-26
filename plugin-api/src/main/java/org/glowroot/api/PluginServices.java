@@ -23,8 +23,6 @@ import checkers.nullness.quals.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.weaving.Pointcut;
-
 /**
  * This is the primary service exposed to plugins. Plugins acquire a {@code PluginServices} instance
  * from {@link #get(String)}, and they can (and should) cache the {@code PluginServices} instance
@@ -90,27 +88,6 @@ public abstract class PluginServices {
     }
 
     protected PluginServices() {}
-
-    /**
-     * Returns the {@code Metric} instance for the specified {@code adviceClass}.
-     * 
-     * {@code adviceClass} must be a {@code Class} with a {@link Pointcut} annotation that has a
-     * non-empty {@link Pointcut#metricName()}. This is how the {@code Metric} is named.
-     * 
-     * The same {@code Metric} is always returned for a given {@code adviceClass}.
-     * 
-     * This {@code Metric} instance is needed for several of the {@code PluginServices} methods. It
-     * is primarily an optimization to pass this {@code Metric} instance instead of a metric name,
-     * so that {@code PluginServices} doesn't have to look up its internal metric object on each
-     * call.
-     * 
-     * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
-     * looking it up every time it is needed (which is often).
-     * 
-     * @param adviceClass
-     * @return the {@code Metric} instance for the specified {@code adviceClass}
-     */
-    public abstract MetricName getMetricName(Class<?> adviceClass);
 
     /**
      * Registers a listener that will receive a callback when the plugin's property values are
@@ -425,10 +402,6 @@ public abstract class PluginServices {
     private static class PluginServicesNop extends PluginServices {
         private static final PluginServicesNop INSTANCE = new PluginServicesNop();
         @Override
-        public MetricName getMetricName(Class<?> adviceClass) {
-            return NopMetric.INSTANCE;
-        }
-        @Override
         public boolean isEnabled() {
             return false;
         }
@@ -486,11 +459,6 @@ public abstract class PluginServices {
         @Override
         public boolean isInTrace() {
             return false;
-        }
-
-        private static class NopMetric implements MetricName {
-            private static final NopMetric INSTANCE = new NopMetric();
-            private NopMetric() {}
         }
 
         private static class NopSpan implements Span {

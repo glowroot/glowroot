@@ -80,8 +80,10 @@ public class PointcutConfigTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(spans).hasSize(2);
-        assertThat(trace.getMetricNames()).containsOnly("mock trace marker", "execute one",
-                "execute one metric only");
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getNestedMetricNames()).containsOnly("execute one");
+        assertThat(trace.getRootMetric().getNestedMetrics().get(0).getNestedMetricNames())
+                .containsOnly("execute one metric only");
         assertThat(spans.get(1).getMessage().getText()).isEqualTo("execute1() => void");
         assertThat(spans.get(1).getStackTrace()).isNotNull();
     }
@@ -95,9 +97,10 @@ public class PointcutConfigTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(spans).hasSize(2);
-        assertThat(trace.getMetricNames()).containsOnly("mock trace marker", "execute with return");
-        assertThat(spans.get(1).getMessage().getText())
-                .isEqualTo("executeWithReturn() => xyz");
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getNestedMetricNames())
+                .containsOnly("execute with return");
+        assertThat(spans.get(1).getMessage().getText()).isEqualTo("executeWithReturn() => xyz");
     }
 
     @Test
@@ -111,9 +114,9 @@ public class PointcutConfigTest {
         assertThat(trace.getHeadline()).isEqualTo("executeWithArgs(): abc, 123");
         assertThat(trace.getTransactionName()).isEqualTo("Misc / executeWithArgs");
         assertThat(spans).hasSize(1);
-        assertThat(trace.getMetricNames()).containsOnly("execute with args");
-        assertThat(spans.get(0).getMessage().getText())
-                .isEqualTo("executeWithArgs(): abc, 123");
+        assertThat(trace.getRootMetric().getName()).isEqualTo("execute with args");
+        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
+        assertThat(spans.get(0).getMessage().getText()).isEqualTo("executeWithArgs(): abc, 123");
     }
 
     protected static void addPointcutConfigForExecute1() throws Exception {

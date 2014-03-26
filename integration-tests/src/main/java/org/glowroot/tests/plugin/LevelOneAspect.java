@@ -48,8 +48,7 @@ public class LevelOneAspect {
             methodArgs = {"java.lang.String", "java.lang.String"}, metricName = "level one")
     public static class LevelOneAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LevelOneAdvice.class);
+        private static final MetricName metricName = MetricName.get(LevelOneAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {

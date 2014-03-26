@@ -39,8 +39,7 @@ public class TraceMarkerAspect {
             metricName = "mock trace marker", ignoreSameNested = true)
     public static class TraceMarkerAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(TraceMarkerAdvice.class);
+        private static final MetricName metricName = MetricName.get(TraceMarkerAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {

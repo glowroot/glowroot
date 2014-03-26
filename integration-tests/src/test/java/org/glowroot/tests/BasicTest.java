@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
+import org.glowroot.container.trace.Metric;
 import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 
@@ -65,8 +66,12 @@ public class BasicTest {
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(trace.getMetricNames()).containsOnly("level one", "level two", "level three",
-                "level four");
+        assertThat(trace.getRootMetric().getName()).isEqualTo("level one");
+        assertThat(trace.getRootMetric().getNestedMetricNames()).containsOnly("level two");
+        Metric levelTwoMetric = trace.getRootMetric().getNestedMetrics().get(0);
+        assertThat(levelTwoMetric.getNestedMetricNames()).containsOnly("level three");
+        Metric levelThreeMetric = levelTwoMetric.getNestedMetrics().get(0);
+        assertThat(levelThreeMetric.getNestedMetricNames()).containsOnly("level four");
         assertThat(spans).hasSize(4);
         Span span1 = spans.get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");
@@ -98,8 +103,14 @@ public class BasicTest {
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(trace.getMetricNames()).containsOnly("level one", "level two", "level three",
-                "level four", "level five");
+        assertThat(trace.getRootMetric().getName()).isEqualTo("level one");
+        assertThat(trace.getRootMetric().getNestedMetricNames()).containsOnly("level two");
+        Metric levelTwoMetric = trace.getRootMetric().getNestedMetrics().get(0);
+        assertThat(levelTwoMetric.getNestedMetricNames()).containsOnly("level three");
+        Metric levelThreeMetric = levelTwoMetric.getNestedMetrics().get(0);
+        assertThat(levelThreeMetric.getNestedMetricNames()).containsOnly("level four");
+        Metric levelFourMetric = levelThreeMetric.getNestedMetrics().get(0);
+        assertThat(levelFourMetric.getNestedMetricNames()).containsOnly("level five");
         assertThat(spans).hasSize(4);
         Span span1 = spans.get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");
@@ -133,8 +144,14 @@ public class BasicTest {
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(trace.getMetricNames()).containsOnly("level one", "level two", "level three",
-                "level four", "level five");
+        assertThat(trace.getRootMetric().getName()).isEqualTo("level one");
+        assertThat(trace.getRootMetric().getNestedMetricNames()).containsOnly("level two");
+        Metric levelTwoMetric = trace.getRootMetric().getNestedMetrics().get(0);
+        assertThat(levelTwoMetric.getNestedMetricNames()).containsOnly("level three");
+        Metric levelThreeMetric = levelTwoMetric.getNestedMetrics().get(0);
+        assertThat(levelThreeMetric.getNestedMetricNames()).containsOnly("level four");
+        Metric levelFourMetric = levelThreeMetric.getNestedMetrics().get(0);
+        assertThat(levelFourMetric.getNestedMetricNames()).containsOnly("level five");
         assertThat(spans).hasSize(5);
         Span span1 = spans.get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");

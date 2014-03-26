@@ -213,7 +213,7 @@ public class DynamicAdviceGenerator {
         mv.visitFieldInsn(GETSTATIC, adviceTypeName, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;");
         mv.visitLdcInsn(Type.getType("L" + adviceTypeName + ";"));
-        mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", "getMetricName",
+        mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/api/MetricName", "get",
                 "(Ljava/lang/Class;)Lorg/glowroot/api/MetricName;", false);
         mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "metric", "Lorg/glowroot/api/MetricName;");
         if (pointcutConfig.isSpan()) {

@@ -104,7 +104,7 @@ public class LocalUiModule {
         IndexHtmlService indexHtmlService =
                 new IndexHtmlService(baseHref, httpSessionManager, layoutJsonService);
         HomeJsonService homeJsonService = new HomeJsonService(storageModule.getAggregateDao(),
-                collectorModule.getFixedAggregationIntervalSeconds());
+                clock, collectorModule.getFixedAggregationIntervalSeconds());
         traceCommonService = new TraceCommonService(snapshotDao, traceRegistry, traceCollector,
                 clock, ticker);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,

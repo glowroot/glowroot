@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, Glowroot, $, RColor */
+/* global glowroot, angular, Glowroot, $ */
 
 glowroot.controller('HomeCtrl', [
   '$scope',
@@ -32,12 +32,8 @@ glowroot.controller('HomeCtrl', [
     $scope.$parent.activeNavbarItem = 'home';
 
     var plot;
-    var plotColors;
-    // plotTransactionNames is only updated when the plot is updated, and it is only used by the tooltip to identify
-    // which transaction name to use based on the plot series index
-    var plotTransactionNames;
-
-    var plotColor0 = $('#offscreenNormalColor').css('border-top-color');
+    // plotTransactionName is only updated when the plot is updated
+    var plotTransactionName;
 
     var fixedAggregationIntervalMillis = $scope.layout.fixedAggregationIntervalSeconds * 1000;
 
@@ -46,21 +42,11 @@ glowroot.controller('HomeCtrl', [
 
     var $chart = $('#chart');
 
-    var rcolor = new RColor();
-    // RColor evenly distributes colors, but largely separated calls can have similar colors
-    // so availableColors is used to store returned colors to keep down the number of calls to RColor
-    // and to keep the used colors well distributed
-    var availableColors = [];
-
     // top 25 is a nice number, screen is not too large
     var transactionAggregatesLimit = 25;
 
     // this is used to calculate bar width under transaction name representing the proportion of total time
-    var maxTransactionAggregateTotalMillis;
-
-    function nextRColor() {
-      return rcolor.get(true, 0.5, 0.5);
-    }
+    var maxTransactionAggregateTotalMicros;
 
     $scope.$watchCollection('[containerWidth, windowHeight]', function () {
       plot.resize();
@@ -73,15 +59,13 @@ glowroot.controller('HomeCtrl', [
     function refreshChart(refreshButtonDeferred, skipUpdateTransactions) {
       var date = $scope.filterDate;
       var refreshId = ++currentRefreshId;
-      var transactionNames = [];
-      angular.forEach($scope.checkedTransactionColors, function (color, transactionName) {
-        transactionNames.push(transactionName);
-      });
       var query = {
         from: $scope.chartFrom,
-        to: $scope.chartTo,
-        transactionNames: transactionNames
+        to: $scope.chartTo
       };
+      if ($scope.selectedTransactionName) {
+        query.transactionName = $scope.selectedTransactionName;
+      }
       var pointsDeferred;
       if (refreshButtonDeferred && !skipUpdateTransactions) {
         pointsDeferred = $q.defer();
@@ -91,7 +75,7 @@ glowroot.controller('HomeCtrl', [
         pointsDeferred = refreshButtonDeferred;
       }
       $scope.showChartSpinner++;
-      $http.get('backend/home/points?' + queryStrings.encodeObject(query))
+      $http.get('backend/home/stacked?' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showChartSpinner--;
             if (refreshId !== currentRefreshId) {
@@ -103,19 +87,22 @@ glowroot.controller('HomeCtrl', [
             plot.getAxes().xaxis.options.max = query.to;
             plot.getAxes().xaxis.options.zoomRange = [
               date.getTime(),
-              date.getTime() + 24 * 60 * 60 * 1000
+                  date.getTime() + 24 * 60 * 60 * 1000
             ];
-            var plotData = [ data.points ];
-            angular.forEach(data.transactionPoints, function (points, transactionName) {
-              plotData.push(points);
+            plotTransactionName = query.transactionName;
+            // build stacked plot data from metrics
+            // take top 5 metrics by total + 1 'Other' bucket
+            // do this on server
+            var plotData = [];
+            angular.forEach(data, function (metricSeries) {
+              plotData.push({
+                data: metricSeries.data,
+                label: metricSeries.name ? metricSeries.name : 'Other'
+              });
             });
-            plotColors = [];
-            plotColors.push(plotColor0);
-            angular.forEach(query.transactionNames, function (transactionName) {
-              plotColors.push($scope.checkedTransactionColors[transactionName]);
-            });
-            plotTransactionNames = query.transactionNames;
-            updatePlotData(plotData);
+            plot.setData(plotData);
+            plot.setupGrid();
+            plot.draw();
             if (pointsDeferred) {
               pointsDeferred.resolve('Success');
             }
@@ -169,58 +156,26 @@ glowroot.controller('HomeCtrl', [
       refreshChart(deferred);
     };
 
-    function updatePlotData(data) {
-      var plotData = [
-        {
-          data: data[0],
-          lines: {
-            lineWidth: 3
-          },
-          color: plotColors[0]
-        }
-      ];
-      for (var i = 1; i < data.length; i++) {
-        plotData.push({
-          data: data[i],
-          lines: {
-            lineWidth: 1
-          },
-          color: plotColors[i]
-        });
-      }
-      plot.setData(plotData);
-      plot.setupGrid();
-      plot.draw();
-    }
-
     $chart.bind('plotzoom', function (event, plot, args) {
-      var zoomingOut = args.amount && args.amount < 1;
-      updatePlotData(getFilteredData());
+      plot.setupGrid();
+      // TODO add spinner
+      plot.draw();
       $scope.$apply(function () {
         $scope.chartFrom = plot.getAxes().xaxis.min;
         $scope.chartTo = plot.getAxes().xaxis.max;
         chartFromToDefault = false;
         updateLocation();
       });
-      if (zoomingOut) {
-        var zoomId = ++currentZoomId;
-        // use 100 millisecond delay to handle rapid zooming
-        setTimeout(function () {
-          if (zoomId !== currentZoomId) {
-            return;
-          }
-          $scope.$apply(function () {
-            refreshChart();
-          });
-        }, 100);
-      } else {
-        // no need to fetch new data
-        // increment currentRefreshId to cancel any refresh in action
-        currentRefreshId++;
+      var zoomId = ++currentZoomId;
+      // use 100 millisecond delay to handle rapid zooming
+      setTimeout(function () {
+        if (zoomId !== currentZoomId) {
+          return;
+        }
         $scope.$apply(function () {
-          updateAggregates();
+          refreshChart();
         });
-      }
+      }, 100);
     });
 
     $chart.bind('plotselected', function (event, ranges) {
@@ -228,41 +183,19 @@ glowroot.controller('HomeCtrl', [
       // perform the zoom
       plot.getAxes().xaxis.options.min = ranges.xaxis.from;
       plot.getAxes().xaxis.options.max = ranges.xaxis.to;
-      updatePlotData(getFilteredData());
+      plot.setupGrid();
+      plot.draw();
       $scope.$apply(function () {
         $scope.chartFrom = plot.getAxes().xaxis.min;
         $scope.chartTo = plot.getAxes().xaxis.max;
         chartFromToDefault = false;
         updateLocation();
       });
-      // no need to fetch new data
-      // increment currentRefreshId to cancel any refresh in action
       currentRefreshId++;
       $scope.$apply(function () {
-        updateAggregates();
+        refreshChart();
       });
     });
-
-    function getFilteredData() {
-      var from = plot.getAxes().xaxis.options.min;
-      var to = plot.getAxes().xaxis.options.max;
-      var i, j;
-      var filteredData = [];
-      var data = plot.getData();
-      for (i = 0; i < data.length; i++) {
-        var filteredPoints = [];
-        var points = data[i].data;
-        for (j = 0; j < points.length; j++) {
-          var point = points[j];
-          // !point handles undefined points which are used to represent no data collected in that period
-          if (!point || point[0] >= from && point[0] <= to) {
-            filteredPoints.push(point);
-          }
-        }
-        filteredData.push(filteredPoints);
-      }
-      return filteredData;
-    }
 
     var showingItemId;
     $chart.bind('plothover', function (event, pos, item) {
@@ -296,10 +229,10 @@ glowroot.controller('HomeCtrl', [
         traceCount = traceCount + ' traces';
       }
       var text = '';
-      if (item.seriesIndex === 0) {
-        text += '<strong>All Transactions</strong><br>';
+      if (plotTransactionName) {
+        text += '<strong>' + plotTransactionName + '</strong><br>';
       } else {
-        text += '<strong>' + plotTransactionNames[item.seriesIndex - 1] + '</strong><br>';
+        text += '<strong>All Transactions</strong><br>';
       }
       text += '<span class="home-tooltip-label">From:</span>' + from + '<br>' +
           '<span class="home-tooltip-label">To:</span>' + to + '<br>' +
@@ -390,10 +323,10 @@ glowroot.controller('HomeCtrl', [
               $scope.hasMoreAggregates = false;
             }
             $scope.transactionAggregates = data.transactionAggregates;
-            maxTransactionAggregateTotalMillis = 0;
+            maxTransactionAggregateTotalMicros = 0;
             angular.forEach($scope.transactionAggregates, function (transactionAggregate) {
-              maxTransactionAggregateTotalMillis =
-                  Math.max(maxTransactionAggregateTotalMillis, transactionAggregate.totalMillis);
+              maxTransactionAggregateTotalMicros =
+                  Math.max(maxTransactionAggregateTotalMicros, transactionAggregate.totalMicros);
             });
             if (buttonDeferred) {
               buttonDeferred.resolve();
@@ -420,7 +353,7 @@ glowroot.controller('HomeCtrl', [
         // overallAggregate hasn't loaded yet
         return '';
       } else if ($scope.overallAggregate.count) {
-        return (($scope.overallAggregate.totalMillis / $scope.overallAggregate.count) / 1000).toFixed(2);
+        return (($scope.overallAggregate.totalMicros / $scope.overallAggregate.count) / 1000000).toFixed(2);
       } else {
         return '-';
       }
@@ -490,55 +423,14 @@ glowroot.controller('HomeCtrl', [
       });
     };
 
-    $scope.transactionRowStyle = function (transactionName) {
-      var color = $scope.checkedTransactionColors[transactionName];
-      if (color) {
-        return {
-          color: color,
-          'font-weight': 'bold'
-        };
-      } else {
-        return {};
-      }
-    };
-
-    $scope.displayFilterRowStyle = function (transactionName) {
-      var color = transactionName ? $scope.checkedTransactionColors[transactionName] : plotColor0;
-      return {
-        'background-color': color,
-        color: 'white',
-        padding: '5px 10px',
-        // for some reason there is already a gap when running under grunt serve, and margin-right makes it too big
-        // but this is correct when not running under grunt serve
-        'margin-right': '5px',
-        'border-radius': '3px',
-        'margin-bottom': '5px'
-      };
-    };
-
     $scope.clickTransactionName = function (transactionName) {
-      var color = $scope.checkedTransactionColors[transactionName];
-      if (color) {
-        // uncheck it
-        availableColors.push(color);
-        delete $scope.checkedTransactionColors[transactionName];
-      } else {
-        // check it
-        color = availableColors.length ? availableColors.pop() : nextRColor();
-        $scope.checkedTransactionColors[transactionName] = color;
-      }
+      $scope.selectedTransactionName = transactionName;
+      updateLocation();
       refreshChart(undefined, true);
     };
 
-    $scope.removeDisplayedTransaction = function (transactionName) {
-      var color = $scope.checkedTransactionColors[transactionName];
-      availableColors.push(color);
-      delete $scope.checkedTransactionColors[transactionName];
-      refreshChart(undefined, true);
-    };
-
-    $scope.transactionBarWidth = function (totalMillis) {
-      return (totalMillis / maxTransactionAggregateTotalMillis) * 100 + '%';
+    $scope.transactionBarWidth = function (totalMicros) {
+      return (totalMicros / maxTransactionAggregateTotalMicros) * 100 + '%';
     };
 
     // TODO CONVERT TO ANGULARJS, global $http error handler?
@@ -581,28 +473,16 @@ glowroot.controller('HomeCtrl', [
     $scope.tableSortAttribute = $location.search()['table-sort-attribute'] || 'total';
     $scope.tableSortDirection = $location.search()['table-sort-direction'] || 'desc';
 
-    $scope.checkedTransactionColors = {};
-    var transactionNames = $location.search()['transaction-name'];
-    if (angular.isArray(transactionNames)) {
-      angular.forEach(transactionNames, function (transactionName) {
-        $scope.checkedTransactionColors[transactionName] = nextRColor();
-      });
-    } else if (transactionNames) {
-      $scope.checkedTransactionColors[transactionNames] = nextRColor();
-    }
+    $scope.selectedTransactionName = $location.search()['transaction-name'];
 
     function updateLocation() {
-      var transactionNames = [];
-      angular.forEach($scope.checkedTransactionColors, function (color, transactionName) {
-        transactionNames.push(transactionName);
-      });
       var query = {};
       if (!chartFromToDefault) {
         query.from = $scope.chartFrom - fixedAggregationIntervalMillis;
         query.to = $scope.chartTo;
       }
-      if (transactionNames) {
-        query['transaction-name'] = transactionNames;
+      if ($scope.selectedTransactionName) {
+        query['transaction-name'] = $scope.selectedTransactionName;
       }
       if ($scope.tableSortAttribute !== 'total' || $scope.tableSortDirection !== 'desc') {
         query['table-sort-attribute'] = $scope.tableSortAttribute;
@@ -615,9 +495,6 @@ glowroot.controller('HomeCtrl', [
 
     (function () {
       var options = {
-        legend: {
-          show: false
-        },
         grid: {
           hoverable: true,
           mouseActiveRadius: 10,
@@ -637,7 +514,7 @@ glowroot.controller('HomeCtrl', [
           absoluteZoomRange: true,
           zoomRange: [
             $scope.filterDate.getTime(),
-            $scope.filterDate.getTime() + 24 * 60 * 60 * 1000
+                $scope.filterDate.getTime() + 24 * 60 * 60 * 1000
           ]
         },
         yaxis: {
@@ -657,11 +534,10 @@ glowroot.controller('HomeCtrl', [
           mode: 'x'
         },
         series: {
-          points: {
-            show: true
-          },
+          stack: true,
           lines: {
-            show: true
+            show: true,
+            fill: true
           }
         }
       };

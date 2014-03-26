@@ -24,7 +24,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.collector.Aggregate;
+import org.glowroot.collector.AggregateBuilder;
 import org.glowroot.local.store.AggregateDao.SortDirection;
 import org.glowroot.local.store.AggregateDao.TransactionAggregateSortColumn;
 
@@ -56,19 +56,19 @@ public class AggregateDaoTest {
     @Test
     public void shouldReadAggregates() {
         // given
-        Aggregate aggregate = new Aggregate(1000000000, 10);
-        Aggregate bgAggregate = new Aggregate(0, 0);
-        Map<String, Aggregate> transactionAggregates = Maps.newHashMap();
-        transactionAggregates.put("one", new Aggregate(100000000, 1));
-        transactionAggregates.put("two", new Aggregate(300000000, 2));
-        transactionAggregates.put("seven", new Aggregate(1400000000, 7));
-        Map<String, Aggregate> bgTransactionAggregates = ImmutableMap.of();
+        AggregateBuilder aggregate = new AggregateBuilder(1000000, 10);
+        AggregateBuilder bgAggregate = new AggregateBuilder(0, 0);
+        Map<String, AggregateBuilder> transactionAggregates = Maps.newHashMap();
+        transactionAggregates.put("one", new AggregateBuilder(100000, 1));
+        transactionAggregates.put("two", new AggregateBuilder(300000, 2));
+        transactionAggregates.put("seven", new AggregateBuilder(1400000, 7));
+        Map<String, AggregateBuilder> bgTransactionAggregates = ImmutableMap.of();
         aggregateDao.store(10000, aggregate, transactionAggregates, bgAggregate,
                 bgTransactionAggregates);
         aggregateDao.store(20000, aggregate, transactionAggregates, bgAggregate,
                 bgTransactionAggregates);
         // when
-        List<AggregatePoint> aggregatePoints = aggregateDao.readPoints(0, 100000);
+        List<Aggregate> aggregatePoints = aggregateDao.readAggregates(0, 100000);
         List<TransactionAggregate> storedTransactionAggregates =
                 aggregateDao.readTransactionAggregates(0, 100000,
                         TransactionAggregateSortColumn.AVERAGE, SortDirection.DESC, 10);
@@ -76,32 +76,32 @@ public class AggregateDaoTest {
         assertThat(aggregatePoints).hasSize(2);
         assertThat(storedTransactionAggregates).hasSize(3);
         assertThat(storedTransactionAggregates.get(0).getTransactionName()).isEqualTo("seven");
-        assertThat(storedTransactionAggregates.get(0).getTotalMillis()).isEqualTo(2800);
+        assertThat(storedTransactionAggregates.get(0).getTotalMicros()).isEqualTo(2800000);
         assertThat(storedTransactionAggregates.get(0).getCount()).isEqualTo(14);
         assertThat(storedTransactionAggregates.get(1).getTransactionName()).isEqualTo("two");
-        assertThat(storedTransactionAggregates.get(1).getTotalMillis()).isEqualTo(600);
+        assertThat(storedTransactionAggregates.get(1).getTotalMicros()).isEqualTo(600000);
         assertThat(storedTransactionAggregates.get(1).getCount()).isEqualTo(4);
         assertThat(storedTransactionAggregates.get(2).getTransactionName()).isEqualTo("one");
-        assertThat(storedTransactionAggregates.get(2).getTotalMillis()).isEqualTo(200);
+        assertThat(storedTransactionAggregates.get(2).getTotalMicros()).isEqualTo(200000);
         assertThat(storedTransactionAggregates.get(2).getCount()).isEqualTo(2);
     }
 
     @Test
     public void shouldReadBgAggregates() {
         // given
-        Aggregate aggregate = new Aggregate(0, 0);
-        Aggregate bgAggregate = new Aggregate(1000000000, 10);
-        Map<String, Aggregate> transactionAggregates = ImmutableMap.of();
-        Map<String, Aggregate> bgTransactionAggregates = Maps.newHashMap();
-        bgTransactionAggregates.put("one", new Aggregate(100000000, 1));
-        bgTransactionAggregates.put("two", new Aggregate(300000000, 2));
-        bgTransactionAggregates.put("seven", new Aggregate(1400000000, 7));
+        AggregateBuilder aggregate = new AggregateBuilder(0, 0);
+        AggregateBuilder bgAggregate = new AggregateBuilder(1000000, 10);
+        Map<String, AggregateBuilder> transactionAggregates = ImmutableMap.of();
+        Map<String, AggregateBuilder> bgTransactionAggregates = Maps.newHashMap();
+        bgTransactionAggregates.put("one", new AggregateBuilder(100000, 1));
+        bgTransactionAggregates.put("two", new AggregateBuilder(300000, 2));
+        bgTransactionAggregates.put("seven", new AggregateBuilder(1400000, 7));
         aggregateDao.store(10000, aggregate, transactionAggregates, bgAggregate,
                 bgTransactionAggregates);
         aggregateDao.store(20000, aggregate, transactionAggregates, bgAggregate,
                 bgTransactionAggregates);
         // when
-        List<AggregatePoint> aggregatePoints = aggregateDao.readBgPoints(0, 100000);
+        List<Aggregate> aggregatePoints = aggregateDao.readBgAggregates(0, 100000);
         List<TransactionAggregate> storedBgTransactionAggregates =
                 aggregateDao.readBgTransactionAggregate(0, 100000,
                         TransactionAggregateSortColumn.AVERAGE, SortDirection.DESC, 10);
@@ -109,13 +109,13 @@ public class AggregateDaoTest {
         assertThat(aggregatePoints).hasSize(2);
         assertThat(storedBgTransactionAggregates).hasSize(3);
         assertThat(storedBgTransactionAggregates.get(0).getTransactionName()).isEqualTo("seven");
-        assertThat(storedBgTransactionAggregates.get(0).getTotalMillis()).isEqualTo(2800);
+        assertThat(storedBgTransactionAggregates.get(0).getTotalMicros()).isEqualTo(2800000);
         assertThat(storedBgTransactionAggregates.get(0).getCount()).isEqualTo(14);
         assertThat(storedBgTransactionAggregates.get(1).getTransactionName()).isEqualTo("two");
-        assertThat(storedBgTransactionAggregates.get(1).getTotalMillis()).isEqualTo(600);
+        assertThat(storedBgTransactionAggregates.get(1).getTotalMicros()).isEqualTo(600000);
         assertThat(storedBgTransactionAggregates.get(1).getCount()).isEqualTo(4);
         assertThat(storedBgTransactionAggregates.get(2).getTransactionName()).isEqualTo("one");
-        assertThat(storedBgTransactionAggregates.get(2).getTotalMillis()).isEqualTo(200);
+        assertThat(storedBgTransactionAggregates.get(2).getTotalMicros()).isEqualTo(200000);
         assertThat(storedBgTransactionAggregates.get(2).getCount()).isEqualTo(2);
     }
 }

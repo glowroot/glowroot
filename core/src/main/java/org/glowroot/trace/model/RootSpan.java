@@ -99,7 +99,7 @@ class RootSpan {
         return endTick != 0;
     }
 
-    Span pushSpan(long startTick, MessageSupplier messageSupplier, Metric metric) {
+    Span pushSpan(long startTick, MessageSupplier messageSupplier, MetricTimerExtended metric) {
         Span span = createSpan(startTick, messageSupplier, null, metric, false);
         spanStack.add(span);
         spans.add(span);
@@ -141,7 +141,8 @@ class RootSpan {
     }
 
     private Span createSpan(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage, @Nullable Metric metric, boolean limitBypassed) {
+            @Nullable ErrorMessage errorMessage, @Nullable MetricTimerExtended metric,
+            boolean limitBypassed) {
         if (spanLimitExceeded && !limitBypassed) {
             // just in case the spanLimit property is changed in the middle of a trace this resets
             // the flag so that it can be triggered again (and possibly then a second limit marker)

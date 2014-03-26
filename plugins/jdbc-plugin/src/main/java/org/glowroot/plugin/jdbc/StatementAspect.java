@@ -32,8 +32,8 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
 import org.glowroot.api.weaving.BindMethodArg;
-import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindReceiver;
+import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -107,8 +107,7 @@ public class StatementAspect {
             methodArgs = {"java.lang.String", ".."}, ignoreSameNested = true,
             metricName = "jdbc prepare")
     public static class PrepareAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(PrepareAdvice.class);
+        private static final MetricName metricName = MetricName.get(PrepareAdvice.class);
         @OnBefore
         @Nullable
         public static MetricTimer onBefore() {
@@ -209,8 +208,7 @@ public class StatementAspect {
             methodArgs = {"java.lang.String", ".."}, ignoreSameNested = true,
             metricName = "jdbc execute")
     public static class StatementExecuteAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(StatementExecuteAdvice.class);
+        private static final MetricName metricName = MetricName.get(StatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -254,7 +252,7 @@ public class StatementAspect {
             metricName = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
         private static final MetricName metricName =
-                pluginServices.getMetricName(PreparedStatementExecuteAdvice.class);
+                MetricName.get(PreparedStatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -300,7 +298,7 @@ public class StatementAspect {
             metricName = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
         private static final MetricName metricName =
-                pluginServices.getMetricName(StatementExecuteBatchAdvice.class);
+                MetricName.get(StatementExecuteBatchAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -364,8 +362,7 @@ public class StatementAspect {
     @Pointcut(typeName = "java.sql.Statement", methodName = "close", ignoreSameNested = true,
             metricName = "jdbc statement close")
     public static class CloseAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(CloseAdvice.class);
+        private static final MetricName metricName = MetricName.get(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method

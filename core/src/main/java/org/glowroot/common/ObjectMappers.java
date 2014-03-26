@@ -17,6 +17,7 @@ package org.glowroot.common;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Locale;
 
 import checkers.igj.quals.ReadOnly;
@@ -37,6 +38,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,6 +95,14 @@ public class ObjectMappers {
             String fieldName) throws JsonMappingException {
         if (reference == null) {
             throw new JsonMappingException("Null value not allowed for field: " + fieldName);
+        }
+    }
+
+    public static <T> List<T> orEmpty(@Nullable List<T> list) {
+        if (list == null) {
+            return Lists.newArrayList();
+        } else {
+            return list;
         }
     }
 

@@ -25,15 +25,16 @@ import org.glowroot.markers.UsedByJsonBinding;
 public class TransactionAggregate {
 
     private final String transactionName;
-    private final double totalMillis;
+    // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
+    private final long totalMicros;
     private final long count;
     private final long errorCount;
     private final long storedTraceCount;
 
-    TransactionAggregate(String transactionName, double totalMillis, long count,
+    TransactionAggregate(String transactionName, long totalMicros, long count,
             long errorCount, long storedTraceCount) {
         this.transactionName = transactionName;
-        this.totalMillis = totalMillis;
+        this.totalMicros = totalMicros;
         this.count = count;
         this.errorCount = errorCount;
         this.storedTraceCount = storedTraceCount;
@@ -43,8 +44,8 @@ public class TransactionAggregate {
         return transactionName;
     }
 
-    public double getTotalMillis() {
-        return totalMillis;
+    public long getTotalMicros() {
+        return totalMicros;
     }
 
     public long getCount() {

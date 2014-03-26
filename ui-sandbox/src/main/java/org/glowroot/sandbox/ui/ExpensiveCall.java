@@ -75,6 +75,7 @@ public class ExpensiveCall {
 
     private void execute0() {
         expensive();
+        execute1();
     }
 
     private void execute1() {
@@ -83,6 +84,7 @@ public class ExpensiveCall {
 
     private void execute2() {
         expensive();
+        execute3();
     }
 
     private void execute3() {
@@ -91,6 +93,7 @@ public class ExpensiveCall {
 
     private void execute4() {
         expensive();
+        execute5();
     }
 
     private void execute5() {
@@ -99,6 +102,7 @@ public class ExpensiveCall {
 
     private void execute6() {
         expensive();
+        execute7();
     }
 
     private void execute7() {
@@ -107,6 +111,7 @@ public class ExpensiveCall {
 
     private void execute8() {
         expensive();
+        execute9();
     }
 
     private void execute9() {

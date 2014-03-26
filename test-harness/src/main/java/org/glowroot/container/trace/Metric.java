@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,19 @@
  */
 package org.glowroot.container.trace;
 
+import java.util.Iterator;
+import java.util.List;
+
 import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
 import dataflow.quals.Pure;
@@ -50,8 +57,10 @@ public class Metric {
     private final boolean minActive;
     private final boolean maxActive;
 
+    private final ImmutableList<Metric> nestedMetrics;
+
     private Metric(String name, long total, long min, long max, long count, boolean active,
-            boolean minActive, boolean maxActive) {
+            boolean minActive, boolean maxActive, @ReadOnly List<Metric> nestedMetrics) {
         this.name = name;
         this.total = total;
         this.min = min;
@@ -60,6 +69,7 @@ public class Metric {
         this.active = active;
         this.minActive = minActive;
         this.maxActive = maxActive;
+        this.nestedMetrics = ImmutableList.copyOf(nestedMetrics);
     }
 
     public String getName() {
@@ -94,6 +104,33 @@ public class Metric {
         return maxActive;
     }
 
+    public ImmutableList<Metric> getNestedMetrics() {
+        return getStableAndOrderedMetrics();
+    }
+
+    // the glowroot weaving metric is a bit unpredictable since tests are often run inside the
+    // same GlowrootContainer for test speed, so test order affects whether any classes are
+    // woven during the test or not
+    // it's easiest to just ignore this metric completely
+    private ImmutableList<Metric> getStableAndOrderedMetrics() {
+        List<Metric> stableMetrics = Lists.newArrayList(nestedMetrics);
+        for (Iterator<Metric> i = stableMetrics.iterator(); i.hasNext();) {
+            if ("glowroot weaving".equals(i.next().getName())) {
+                i.remove();
+            }
+        }
+        return ImmutableList.copyOf(Metric.orderingByTotal.reverse().sortedCopy(stableMetrics));
+    }
+
+    @JsonIgnore
+    public ImmutableList<String> getNestedMetricNames() {
+        ImmutableList.Builder<String> stableMetricNames = ImmutableList.builder();
+        for (Metric stableMetric : getStableAndOrderedMetrics()) {
+            stableMetricNames.add(stableMetric.getName());
+        }
+        return stableMetricNames.build();
+    }
+
     @Override
     @Pure
     public String toString() {
@@ -106,6 +143,7 @@ public class Metric {
                 .add("active", active)
                 .add("minActive", minActive)
                 .add("maxActive", maxActive)
+                .add("nestedMetrics", nestedMetrics)
                 .toString();
     }
 
@@ -118,7 +156,8 @@ public class Metric {
             @JsonProperty("count") @Nullable Long count,
             @JsonProperty("active") @Nullable Boolean active,
             @JsonProperty("minActive") @Nullable Boolean minActive,
-            @JsonProperty("maxActive") @Nullable Boolean maxActive)
+            @JsonProperty("maxActive") @Nullable Boolean maxActive,
+            @JsonProperty("nestedMetrics") @Nullable List<Metric> nestedMetrics)
             throws JsonMappingException {
         checkRequiredProperty(name, "name");
         checkRequiredProperty(total, "total");
@@ -128,6 +167,16 @@ public class Metric {
         checkRequiredProperty(active, "active");
         checkRequiredProperty(minActive, "minActive");
         checkRequiredProperty(maxActive, "maxActive");
-        return new Metric(name, total, min, max, count, active, minActive, maxActive);
+        return new Metric(name, total, min, max, count, active, minActive, maxActive,
+                orEmpty(nestedMetrics));
+    }
+
+    @ReadOnly
+    private static <T extends /*@NonNull*/Object> List<T> orEmpty(
+            @ReadOnly @Nullable List<T> list) {
+        if (list == null) {
+            return ImmutableList.of();
+        }
+        return list;
     }
 }

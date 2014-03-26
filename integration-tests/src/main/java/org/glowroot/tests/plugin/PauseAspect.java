@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +41,7 @@ public class PauseAspect {
             methodArgs = {}, metricName = "pause")
     public static class PauseAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogErrorAdvice.class);
+        private static final MetricName metricName = MetricName.get(LogErrorAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {

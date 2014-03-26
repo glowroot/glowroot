@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.MetricName;
 import org.glowroot.api.MetricTimer;
+import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.ParsedTypeCache.ParseContext;
 
@@ -75,7 +76,7 @@ class Weaver {
         this.parsedTypeCache = parsedTypeCache;
         this.metricTimerService = metricTimerService;
         this.metricWrapperMethods = metricWrapperMethods;
-        weavingMetricName = metricTimerService.getMetricName("glowroot weaving");
+        weavingMetricName = MetricName.get(OnlyForThePointcutMetricName.class);
     }
 
     byte/*@Nullable*/[] weave(byte[] classBytes, String className,
@@ -305,4 +306,7 @@ class Weaver {
             }
         }
     }
+
+    @Pointcut(typeName = "", methodName = "", metricName = "glowroot weaving")
+    private static class OnlyForThePointcutMetricName {}
 }

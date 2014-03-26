@@ -18,8 +18,6 @@ package org.glowroot.trace;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.MetricTimer;
 import org.glowroot.markers.ThreadSafe;
-import org.glowroot.trace.model.Metric;
-import org.glowroot.trace.model.MetricNameImpl;
 import org.glowroot.trace.model.Trace;
 import org.glowroot.weaving.MetricTimerService;
 
@@ -29,33 +27,19 @@ import org.glowroot.weaving.MetricTimerService;
  */
 class MetricTimerServiceImpl implements MetricTimerService {
 
-    private final MetricNameCache metricNameCache;
     private final TraceRegistry traceRegistry;
 
-    MetricTimerServiceImpl(MetricNameCache metricNameCache, TraceRegistry traceRegistry) {
-        this.metricNameCache = metricNameCache;
+    MetricTimerServiceImpl(TraceRegistry traceRegistry) {
         this.traceRegistry = traceRegistry;
     }
 
     @Override
-    public MetricName getMetricName(String name) {
-        return metricNameCache.getMetricName(name);
-    }
-
-    @Override
     public MetricTimer startMetricTimer(MetricName metricName) {
-        // don't call MetricImpl.start() in case this method returns NopTimer.INSTANCE below
-        Metric metric = ((MetricNameImpl) metricName).get();
-        if (metric == null) {
-            // don't access trace thread local unless necessary
-            Trace trace = traceRegistry.getCurrentTrace();
-            if (trace == null) {
-                return NopMetricTimer.INSTANCE;
-            }
-            metric = trace.addMetric((MetricNameImpl) metricName);
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace == null) {
+            return NopMetricTimer.INSTANCE;
         }
-        metric.start();
-        return metric;
+        return trace.tryStartMetric(metricName);
     }
 
     @ThreadSafe

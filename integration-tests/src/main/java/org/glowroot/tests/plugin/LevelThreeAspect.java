@@ -42,8 +42,7 @@ public class LevelThreeAspect {
             methodArgs = {"java.lang.String", "java.lang.String"}, metricName = "level three")
     public static class LevelThreeAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LevelThreeAdvice.class);
+        private static final MetricName metricName = MetricName.get(LevelThreeAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {

@@ -15,22 +15,17 @@
  */
 package org.glowroot.container.trace;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Lists;
 import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
@@ -56,7 +51,7 @@ public class Trace {
     @Nullable
     private final String user;
     private final ImmutableSetMultimap<String, String> attributes;
-    private final ImmutableList<Metric> metrics;
+    private final Metric rootMetric;
     private final JvmInfo jvmInfo;
     private final Existence spansExistence;
     private final Existence coarseProfileExistence;
@@ -65,8 +60,8 @@ public class Trace {
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, boolean background, String headline, String transactionName,
             @Nullable String error, @Nullable String user,
-            ImmutableSetMultimap<String, String> attributes, @ReadOnly List<Metric> metrics,
-            JvmInfo jvmInfo, Existence spansExistence, Existence coarseProfileExistence,
+            ImmutableSetMultimap<String, String> attributes, Metric rootMetric, JvmInfo jvmInfo,
+            Existence spansExistence, Existence coarseProfileExistence,
             Existence fineProfileExistence) {
         this.id = id;
         this.active = active;
@@ -80,7 +75,7 @@ public class Trace {
         this.error = error;
         this.user = user;
         this.attributes = attributes;
-        this.metrics = ImmutableList.copyOf(metrics);
+        this.rootMetric = rootMetric;
         this.jvmInfo = jvmInfo;
         this.spansExistence = spansExistence;
         this.coarseProfileExistence = coarseProfileExistence;
@@ -137,17 +132,8 @@ public class Trace {
         return attributes;
     }
 
-    public ImmutableList<Metric> getMetrics() {
-        return getStableAndOrderedMetrics();
-    }
-
-    @JsonIgnore
-    public ImmutableList<String> getMetricNames() {
-        ImmutableList.Builder<String> stableMetricNames = ImmutableList.builder();
-        for (Metric stableMetric : getStableAndOrderedMetrics()) {
-            stableMetricNames.add(stableMetric.getName());
-        }
-        return stableMetricNames.build();
+    public Metric getRootMetric() {
+        return rootMetric;
     }
 
     public JvmInfo getJvmInfo() {
@@ -166,20 +152,6 @@ public class Trace {
         return fineProfileExistence;
     }
 
-    // the glowroot weaving metric is a bit unpredictable since tests are often run inside the
-    // same GlowrootContainer for test speed, so test order affects whether any classes are
-    // woven during the test or not
-    // it's easiest to just ignore this metric completely
-    private ImmutableList<Metric> getStableAndOrderedMetrics() {
-        List<Metric> stableMetrics = Lists.newArrayList(metrics);
-        for (Iterator<Metric> i = stableMetrics.iterator(); i.hasNext();) {
-            if ("glowroot weaving".equals(i.next().getName())) {
-                i.remove();
-            }
-        }
-        return ImmutableList.copyOf(Metric.orderingByTotal.reverse().sortedCopy(stableMetrics));
-    }
-
     @Override
     @Pure
     public String toString() {
@@ -196,7 +168,7 @@ public class Trace {
                 .add("error", error)
                 .add("user", user)
                 .add("attributes", attributes)
-                .add("metrics", metrics)
+                .add("rootMetric", rootMetric)
                 .add("jvmInfo", jvmInfo)
                 .add("spansExistence", spansExistence)
                 .add("coarseProfileExistence", coarseProfileExistence)
@@ -218,7 +190,7 @@ public class Trace {
             @JsonProperty("error") @Nullable String error,
             @JsonProperty("user") @Nullable String user,
             @JsonProperty("attributes") @Nullable Map<String, List<String>> attributes,
-            @JsonProperty("metrics") @Nullable List<Metric> metrics,
+            @JsonProperty("metrics") @Nullable Metric rootMetric,
             @JsonProperty("jvmInfo") @Nullable JvmInfo jvmInfo,
             @JsonProperty("spansExistence") @Nullable Existence spansExistence,
             @JsonProperty("coarseProfileExistence") @Nullable Existence coarseProfileExistence,
@@ -233,7 +205,7 @@ public class Trace {
         checkRequiredProperty(background, "background");
         checkRequiredProperty(headline, "headline");
         checkRequiredProperty(transactionName, "transactionName");
-        checkRequiredProperty(metrics, "metrics");
+        checkRequiredProperty(rootMetric, "rootMetric");
         checkRequiredProperty(jvmInfo, "jvmInfo");
         checkRequiredProperty(spansExistence, "spansExistence");
         checkRequiredProperty(coarseProfileExistence, "coarseProfileExistence");
@@ -245,7 +217,7 @@ public class Trace {
             }
         }
         return new Trace(id, active, stuck, startTime, captureTime, duration, background, headline,
-                transactionName, error, user, theAttributes.build(), metrics, jvmInfo,
+                transactionName, error, user, theAttributes.build(), rootMetric, jvmInfo,
                 spansExistence, coarseProfileExistence, fineProfileExistence);
     }
 

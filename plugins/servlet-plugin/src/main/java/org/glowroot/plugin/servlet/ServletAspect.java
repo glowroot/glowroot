@@ -65,8 +65,7 @@ public class ServletAspect {
             methodArgs = {"javax.servlet.ServletRequest", "javax.servlet.ServletResponse"},
             metricName = "http request")
     public static class ServiceAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ServiceAdvice.class);
+        private static final MetricName metricName = MetricName.get(ServiceAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // only enabled if it is not contained in another servlet or filter span

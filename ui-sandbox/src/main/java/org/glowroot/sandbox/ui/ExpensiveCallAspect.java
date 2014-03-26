@@ -59,8 +59,7 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute0",
             metricName = "expensive 0")
     public static class ExpensiveCallAdvice0 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice0.class);
+        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice0.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -85,8 +84,7 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute1",
             metricName = "expensive 1")
     public static class ExpensiveCallAdvice1 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice1.class);
+        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice1.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -111,8 +109,7 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute2",
             metricName = "expensive 2")
     public static class ExpensiveCallAdvice2 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice2.class);
+        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice2.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -137,8 +134,7 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute3",
             metricName = "expensive 3")
     public static class ExpensiveCallAdvice3 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice3.class);
+        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice3.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -163,8 +159,7 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute4",
             metricName = "expensive 4")
     public static class ExpensiveCallAdvice4 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice4.class);
+        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice4.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -189,8 +184,7 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute5",
             metricName = "expensive 5")
     public static class ExpensiveCallAdvice5 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice5.class);
+        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice5.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -215,8 +209,7 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute6",
             metricName = "expensive 6")
     public static class ExpensiveCallAdvice6 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice6.class);
+        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice6.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -241,8 +234,7 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute7",
             metricName = "expensive 7")
     public static class ExpensiveCallAdvice7 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice7.class);
+        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice7.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -267,8 +259,7 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute8",
             metricName = "expensive 8")
     public static class ExpensiveCallAdvice8 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice8.class);
+        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice8.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -293,8 +284,7 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute9",
             metricName = "expensive 9 really long to test wrapping")
     public static class ExpensiveCallAdvice9 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice9.class);
+        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice9.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();

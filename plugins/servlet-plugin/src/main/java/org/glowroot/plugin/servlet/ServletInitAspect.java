@@ -46,8 +46,7 @@ public class ServletInitAspect {
     @Pointcut(typeName = "javax.servlet.ServletContextListener", methodName = "contextInitialized",
             methodArgs = {"javax.servlet.ServletContextEvent"}, metricName = "servlet startup")
     public static class ContextInitializedAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ContextInitializedAdvice.class);
+        private static final MetricName metricName = MetricName.get(ContextInitializedAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
@@ -74,8 +73,7 @@ public class ServletInitAspect {
     @Pointcut(typeName = "javax.servlet.Servlet", methodName = "init",
             methodArgs = {"javax.servlet.ServletConfig"}, metricName = "servlet startup")
     public static class ServletInitAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ServletInitAdvice.class);
+        private static final MetricName metricName = MetricName.get(ServletInitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
@@ -99,8 +97,7 @@ public class ServletInitAspect {
     @Pointcut(typeName = "javax.servlet.Filter", methodName = "init",
             methodArgs = {"javax.servlet.FilterConfig"}, metricName = "servlet startup")
     public static class FilterInitAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(FilterInitAdvice.class);
+        private static final MetricName metricName = MetricName.get(FilterInitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();

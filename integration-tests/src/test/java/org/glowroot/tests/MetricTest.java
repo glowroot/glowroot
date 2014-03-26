@@ -65,8 +65,8 @@ public class MetricTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithMetrics.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getMetrics().size()).isEqualTo(1);
-        assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
     }
 
     @Test
@@ -76,9 +76,9 @@ public class MetricTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSameNestedMetric.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getMetrics().size()).isEqualTo(1);
-        assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getMetrics().get(0).getCount()).isEqualTo(1);
+        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getCount()).isEqualTo(1);
     }
 
     @Test
@@ -97,12 +97,12 @@ public class MetricTest {
         // then
         Trace trace = container.getTraceService().getActiveTrace(5, SECONDS);
         assertThat(trace).isNotNull();
-        assertThat(trace.getMetrics().size()).isEqualTo(1);
-        assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getMetrics().get(0).getCount()).isEqualTo(1);
-        assertThat(trace.getMetrics().get(0).isActive()).isTrue();
-        assertThat(trace.getMetrics().get(0).isMinActive()).isTrue();
-        assertThat(trace.getMetrics().get(0).isMaxActive()).isTrue();
+        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getCount()).isEqualTo(1);
+        assertThat(trace.getRootMetric().isActive()).isTrue();
+        assertThat(trace.getRootMetric().isMinActive()).isTrue();
+        assertThat(trace.getRootMetric().isMaxActive()).isTrue();
         // cleanup
         future.get();
         executorService.shutdown();

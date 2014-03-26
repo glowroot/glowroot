@@ -78,7 +78,7 @@ public class SnapshotCreator {
         builder.user(trace.getUser());
         builder.attributes(writeAttributesAsString(trace.getAttributes()));
         builder.attributesForIndexing(trace.getAttributes());
-        builder.metrics(writeMetricsAsString(trace.getMetrics()));
+        builder.metrics(writeMetricsAsString(trace.getRootMetric()));
         builder.jvmInfo(trace.getJvmInfoJson());
         builder.spansExistence(Existence.YES);
         if (trace.getCoarseMergedStackTree() == null) {
@@ -130,14 +130,10 @@ public class SnapshotCreator {
     }
 
     @Nullable
-    private static String writeMetricsAsString(@ReadOnly List<Metric> metrics) throws IOException {
+    private static String writeMetricsAsString(Metric rootMetric) throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartArray();
-        for (Metric metric : metrics) {
-            metric.writeValue(jg);
-        }
-        jg.writeEndArray();
+        rootMetric.writeValue(jg);
         jg.close();
         return sb.toString();
     }

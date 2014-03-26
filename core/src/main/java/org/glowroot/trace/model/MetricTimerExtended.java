@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.collector;
+package org.glowroot.trace.model;
 
-import java.util.Map;
+import org.glowroot.api.MetricTimer;
+import org.glowroot.markers.ThreadSafe;
 
 /**
- * Interface for storing aggregates.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface AggregateRepository {
+public interface MetricTimerExtended extends MetricTimer {
 
-    // implementations must be aware that Aggregate instances are not thread safe and cannot be
-    // retained for later use
-    void store(long captureTime, AggregateBuilder overallAggregate,
-            Map<String, AggregateBuilder> transactionAggregates,
-            AggregateBuilder bgOverallAggregate,
-            Map<String, AggregateBuilder> bgTransactionAggregates);
+    void end(long endTick);
+
+    @ThreadSafe
+    static class NopMetricTimerExtended implements MetricTimerExtended {
+        public static final NopMetricTimerExtended INSTANCE = new NopMetricTimerExtended();
+        @Override
+        public void stop() {}
+        @Override
+        public void end(long endTick) {}
+    }
 }
