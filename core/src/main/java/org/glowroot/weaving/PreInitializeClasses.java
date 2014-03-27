@@ -592,6 +592,8 @@ class PreInitializeClasses {
         types.add("org.objectweb.asm.MethodWriter");
         types.add("org.objectweb.asm.Opcodes");
         types.add("org.objectweb.asm.Type");
+        types.add("org.objectweb.asm.TypePath");
+        types.add("org.objectweb.asm.TypeReference");
         types.add("org.objectweb.asm.commons.AdviceAdapter");
         types.add("org.objectweb.asm.commons.GeneratorAdapter");
         types.add("org.objectweb.asm.commons.JSRInlinerAdapter");
@@ -622,14 +624,17 @@ class PreInitializeClasses {
         types.add("org.objectweb.asm.tree.LabelNode");
         types.add("org.objectweb.asm.tree.LdcInsnNode");
         types.add("org.objectweb.asm.tree.LineNumberNode");
+        types.add("org.objectweb.asm.tree.LocalVariableAnnotationNode");
         types.add("org.objectweb.asm.tree.LocalVariableNode");
         types.add("org.objectweb.asm.tree.LookupSwitchInsnNode");
         types.add("org.objectweb.asm.tree.MethodInsnNode");
         types.add("org.objectweb.asm.tree.MethodNode");
         types.add("org.objectweb.asm.tree.MethodNode$1");
         types.add("org.objectweb.asm.tree.MultiANewArrayInsnNode");
+        types.add("org.objectweb.asm.tree.ParameterNode");
         types.add("org.objectweb.asm.tree.TableSwitchInsnNode");
         types.add("org.objectweb.asm.tree.TryCatchBlockNode");
+        types.add("org.objectweb.asm.tree.TypeAnnotationNode");
         types.add("org.objectweb.asm.tree.TypeInsnNode");
         types.add("org.objectweb.asm.tree.VarInsnNode");
         types.add("org.objectweb.asm.tree.analysis.Analyzer");

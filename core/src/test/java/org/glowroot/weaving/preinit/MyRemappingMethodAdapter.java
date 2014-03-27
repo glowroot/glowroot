@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 
-import static org.objectweb.asm.Opcodes.ASM4;
+import static org.objectweb.asm.Opcodes.ASM5;
 
 /**
  * @author Trask Stalnaker
@@ -33,7 +33,7 @@ class MyRemappingMethodAdapter extends LocalVariablesSorter {
     private final MethodCollector remapper;
 
     MyRemappingMethodAdapter(int access, String desc, MethodCollector remapper) {
-        super(ASM4, access, desc, new MethodVisitor(ASM4) {});
+        super(ASM5, access, desc, new MethodVisitor(ASM5) {});
         this.remapper = remapper;
     }
 
@@ -60,7 +60,7 @@ class MyRemappingMethodAdapter extends LocalVariablesSorter {
     }
 
     @Override
-    public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+    public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
         remapper.mapType(owner);
         remapper.mapMethodName(owner, name, desc);
         remapper.mapMethodDesc(desc);

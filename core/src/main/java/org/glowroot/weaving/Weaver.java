@@ -40,7 +40,7 @@ import org.glowroot.api.MetricTimer;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.ParsedTypeCache.ParseContext;
 
-import static org.objectweb.asm.Opcodes.ASM4;
+import static org.objectweb.asm.Opcodes.ASM5;
 
 /**
  * @author Trask Stalnaker
@@ -168,7 +168,7 @@ class Weaver {
     private static class JSRInlinerClassVisitor extends ClassVisitor {
 
         private JSRInlinerClassVisitor(ClassVisitor cv) {
-            super(ASM4, cv);
+            super(ASM5, cv);
         }
 
         @Override

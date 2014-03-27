@@ -62,7 +62,7 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
-import static org.objectweb.asm.Opcodes.ASM4;
+import static org.objectweb.asm.Opcodes.ASM5;
 
 /**
  * @author Trask Stalnaker
@@ -109,7 +109,7 @@ class WeavingClassVisitor extends ClassVisitor {
             @ReadOnly Iterable<Advice> advisors, @Nullable ClassLoader loader,
             ParsedTypeCache parsedTypeCache, @Nullable CodeSource codeSource,
             boolean metricWrapperMethods) {
-        super(ASM4, cv);
+        super(ASM5, cv);
         this.cv = cv;
         this.mixinTypes = mixinTypes;
         this.advisors = advisors;
@@ -504,17 +504,18 @@ class WeavingClassVisitor extends ClassVisitor {
 
         InitMixins(MethodVisitor mv, int access, String name, String desc,
                 @ReadOnly List<MixinType> matchedMixinTypes, Type type) {
-            super(ASM4, mv, access, name, desc);
+            super(ASM5, mv, access, name, desc);
             this.matchedMixinTypes = matchedMixinTypes;
             this.type = type;
         }
 
         @Override
-        public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+        public void visitMethodInsn(int opcode, String owner, String name, String desc,
+                boolean itf) {
             if (name.equals("<init>") && owner.equals(type.getInternalName())) {
                 cascadingConstructor = true;
             }
-            super.visitMethodInsn(opcode, owner, name, desc);
+            super.visitMethodInsn(opcode, owner, name, desc, itf);
         }
 
         @Override

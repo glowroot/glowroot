@@ -86,7 +86,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
             @ReadOnly Iterable<Advice> advisors) {
-        super(ASM4, mv, access, name, desc);
+        super(ASM5, mv, access, name, desc);
         this.access = access;
         this.name = name;
         this.owner = owner;
@@ -405,11 +405,11 @@ class WeavingMethodVisitor extends AdviceAdapter {
         if (opcode == RETURN) {
             // void
             mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/VoidReturn",
-                    "getInstance", "()Lorg/glowroot/api/OptionalReturn;");
+                    "getInstance", "()Lorg/glowroot/api/OptionalReturn;", false);
         } else {
             loadReturnValue(opcode, true);
             mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/NonVoidReturn",
-                    "create", "(Ljava/lang/Object;)Lorg/glowroot/api/OptionalReturn;");
+                    "create", "(Ljava/lang/Object;)Lorg/glowroot/api/OptionalReturn;", false);
         }
     }
 
@@ -553,7 +553,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             // that were compiled to jdk 1.4
             push(owner.getClassName());
             mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
-                    "(Ljava/lang/String;)Ljava/lang/Class;");
+                    "(Ljava/lang/String;)Ljava/lang/Class;", false);
         }
     }
 

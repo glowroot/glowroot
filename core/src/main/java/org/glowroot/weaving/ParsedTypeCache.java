@@ -58,7 +58,7 @@ import org.glowroot.markers.Singleton;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
-import static org.objectweb.asm.Opcodes.ASM4;
+import static org.objectweb.asm.Opcodes.ASM5;
 
 /**
  * @author Trask Stalnaker
@@ -502,7 +502,7 @@ public class ParsedTypeCache {
         private ParsedType./*@MonotonicNonNull*/Builder parsedTypeBuilder;
 
         public ParsedTypeClassVisitor() {
-            super(ASM4);
+            super(ASM5);
         }
 
         @Override

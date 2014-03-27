@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableList;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
-import static org.objectweb.asm.Opcodes.ASM4;
+import static org.objectweb.asm.Opcodes.ASM5;
 
 /**
  * @author Trask Stalnaker
@@ -34,7 +34,7 @@ class MyRemappingClassAdapter extends ClassVisitor {
     private String typeName;
 
     MyRemappingClassAdapter(TypeCollector remapper) {
-        super(ASM4);
+        super(ASM5);
         this.typeCollector = remapper;
     }
 
