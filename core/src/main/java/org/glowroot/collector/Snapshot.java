@@ -21,7 +21,6 @@ import checkers.nullness.quals.Nullable;
 import checkers.nullness.quals.RequiresNonNull;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.io.CharSource;
 import dataflow.quals.Pure;
 
 /**
@@ -52,24 +51,17 @@ public class Snapshot {
     private final String metrics; // json data
     @Nullable
     private final String jvmInfo; // json data
-    // using CharSource so these potentially very large strings can be streamed without consuming
-    // large amounts of memory
-    @Nullable
-    private final CharSource spans; // json data
-    @Nullable
-    private final CharSource coarseMergedStackTree; // json data
-    @Nullable
-    private final CharSource fineMergedStackTree; // json data
+    private final Existence spansExistence;
+    private final Existence coarseProfileExistence;
+    private final Existence fineProfileExistence;
     @Nullable
     private final ImmutableSetMultimap<String, String> attributesForIndexing;
 
     private Snapshot(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, boolean background, String headline, String transactionName,
             @Nullable String error, @Nullable String user, @Nullable String attributes,
-            @Nullable String metrics, @Nullable String jvmInfo,
-            @Immutable @Nullable CharSource spans,
-            @Immutable @Nullable CharSource coarseMergedStackTree,
-            @Immutable @Nullable CharSource fineMergedStackTree,
+            @Nullable String metrics, @Nullable String jvmInfo, Existence spansExistence,
+            Existence coarseProfileExistence, Existence fineProfileExistence,
             @Nullable ImmutableSetMultimap<String, String> attributesForIndexing) {
         this.id = id;
         this.active = active;
@@ -85,9 +77,9 @@ public class Snapshot {
         this.attributes = attributes;
         this.metrics = metrics;
         this.jvmInfo = jvmInfo;
-        this.spans = spans;
-        this.coarseMergedStackTree = coarseMergedStackTree;
-        this.fineMergedStackTree = fineMergedStackTree;
+        this.spansExistence = spansExistence;
+        this.coarseProfileExistence = coarseProfileExistence;
+        this.fineProfileExistence = fineProfileExistence;
         this.attributesForIndexing = attributesForIndexing;
     }
 
@@ -152,22 +144,16 @@ public class Snapshot {
         return jvmInfo;
     }
 
-    @Immutable
-    @Nullable
-    public CharSource getSpans() {
-        return spans;
+    public Existence getSpansExistence() {
+        return spansExistence;
     }
 
-    @Immutable
-    @Nullable
-    public CharSource getCoarseMergedStackTree() {
-        return coarseMergedStackTree;
+    public Existence getCoarseProfileExistence() {
+        return coarseProfileExistence;
     }
 
-    @Immutable
-    @Nullable
-    public CharSource getFineMergedStackTree() {
-        return fineMergedStackTree;
+    public Existence getFineProfileExistence() {
+        return fineProfileExistence;
     }
 
     @Nullable
@@ -193,11 +179,18 @@ public class Snapshot {
                 .add("attributes", attributes)
                 .add("metrics", metrics)
                 .add("jvmInfo", jvmInfo)
+                .add("spansExistence", spansExistence)
+                .add("coarseProfileExistence", coarseProfileExistence)
+                .add("fineProfileExistence", fineProfileExistence)
                 .toString();
     }
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public enum Existence {
+        YES, NO, EXPIRED;
     }
 
     public static class Builder {
@@ -224,15 +217,12 @@ public class Snapshot {
         private String metrics;
         @Nullable
         private String jvmInfo;
-        @Immutable
         @Nullable
-        private CharSource spans;
-        @Immutable
+        private Existence spansExistence;
         @Nullable
-        private CharSource coarseMergedStackTree;
-        @Immutable
+        private Existence coarseProfileExistence;
         @Nullable
-        private CharSource fineMergedStackTree;
+        private Existence fineProfileExistence;
         @Nullable
         private ImmutableSetMultimap<String, String> attributesForIndexing;
 
@@ -308,19 +298,18 @@ public class Snapshot {
             return this;
         }
 
-        public Builder spans(@Immutable @Nullable CharSource spans) {
-            this.spans = spans;
+        public Builder spansExistence(Existence spansExistence) {
+            this.spansExistence = spansExistence;
             return this;
         }
 
-        public Builder coarseMergedStackTree(
-                @Immutable @Nullable CharSource coarseMergedStackTree) {
-            this.coarseMergedStackTree = coarseMergedStackTree;
+        public Builder coarseProfileExistence(Existence coarseProfileExistence) {
+            this.coarseProfileExistence = coarseProfileExistence;
             return this;
         }
 
-        public Builder fineMergedStackTree(@Immutable @Nullable CharSource fineMergedStackTree) {
-            this.fineMergedStackTree = fineMergedStackTree;
+        public Builder fineProfileExistence(Existence fineProfileExistence) {
+            this.fineProfileExistence = fineProfileExistence;
             return this;
         }
 
@@ -330,11 +319,13 @@ public class Snapshot {
             return this;
         }
 
-        @RequiresNonNull({"id", "transactionName", "headline"})
+        @RequiresNonNull({"id", "transactionName", "headline", "spansExistence",
+                "coarseProfileExistence", "fineProfileExistence"})
         public Snapshot build() {
             return new Snapshot(id, active, stuck, startTime, captureTime, duration, background,
-                    headline, transactionName, error, user, attributes, metrics, jvmInfo, spans,
-                    coarseMergedStackTree, fineMergedStackTree, attributesForIndexing);
+                    headline, transactionName, error, user, attributes, metrics, jvmInfo,
+                    spansExistence, coarseProfileExistence, fineProfileExistence,
+                    attributesForIndexing);
         }
     }
 }

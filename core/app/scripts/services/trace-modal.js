@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,32 +24,28 @@ glowroot.factory('traceModal', [
     var $body = $('body');
     var $chart = $('#chart');
 
-    function displayModal(summaryTrace, initialFixedOffset, initialWidth, initialHeight, modalVanishPoint) {
+    function displayModal(traceId, modalVanishPoint) {
 
-      var savedShowExport = summaryTrace.showExport;
-      summaryTrace.truncateMetrics = false;
-      summaryTrace.showExport = true;
-      var summaryHtml = TraceRenderer.renderSummary(summaryTrace) +
-          '<br><div class="indent2"><span class="button-spinner inline-block hide"' +
-          ' id="detailSpinner" style="margin-left: 0px; margin-top: 30px;"></span></div>';
-      summaryTrace.showExport = savedShowExport;
-
+      var loaded;
+      var spinner;
       var $modalContent = $('#modalContent');
       $modalContent.data('vanishPoint', modalVanishPoint);
+
+      var tracePromise = $http.get('backend/trace/summary/' + traceId);
+
       var $modal = $('#modal');
-      $modalContent.html(summaryHtml);
       // need to focus on something inside the modal, otherwise keyboard events won't be captured,
       // in particular, page up / page down won't scroll the modal
       $modalContent.focus();
       $modal.css('position', 'fixed');
-      $modal.css('top', initialFixedOffset.top);
-      $modal.css('left', initialFixedOffset.left);
-      $modal.width(initialWidth);
-      $modal.height(initialHeight);
+      $modal.css('left', modalVanishPoint[0]);
+      $modal.css('top', modalVanishPoint[1]);
+      $modal.width(0);
+      $modal.height(0);
       $modal.css('margin', 0);
-      $modal.css('background-color', '#eee');
-      $modal.css('font-size', '12px');
-      $modal.css('line-height', '16px');
+      $modal.css('background-color', '#fff');
+      $modal.css('font-size', '14px');
+      $modal.css('line-height', '20px');
       // this is needed to prevent the background from scrolling
       $body.css('overflow', 'hidden');
       // .modal-open-full-screen compensates for the missing scrollbar
@@ -59,20 +55,34 @@ glowroot.factory('traceModal', [
       // +15 is to account for scrollbar
       var width = $(window).width() - 50;
       var height = $(window).height() - 50;
-      var detailLoaded = false;
-      var spinner;
       $modal.animate({
         left: '25px',
         top: '25px',
         width: width + 'px',
-        height: height + 'px',
-        backgroundColor: '#fff',
-        fontSize: '14px',
-        lineHeight: '20px'
-      }, 400, function () {
-        if (!detailLoaded) {
-          spinner = Glowroot.showSpinner('#detailSpinner');
+        height: height + 'px'
+      }, 200, function () {
+        tracePromise.then(function (result) {
+          if (spinner) {
+            spinner.stop();
+          }
+          loaded = true;
+          if (result.data.expired) {
+            $modalContent.html('expired');
+          } else {
+            result.data.showExport = true;
+            TraceRenderer.render(result.data, $modalContent);
+          }
+        }, function () {
+          // TODO handle this better
+          alert('Error occurred');
+        });
+        if (!loaded) {
+          // padding is same as for trace once it loads
+          $modalContent.html('<div style="position: relative; display: inline-block;' +
+              ' padding-left: 40px; padding-top: 60px;"></div>');
+          spinner = Glowroot.showSpinner($modalContent.children().first());
         }
+
         // hiding the flot chart is needed to prevent a strange issue in chrome that occurs when
         // expanding a section of the details to trigger vertical scrollbar to be active, then
         // scroll a little bit down, leaving the section header visible, then click the section
@@ -89,26 +99,7 @@ glowroot.factory('traceModal', [
       $modalBackdrop.css('opacity', 0);
       $modalBackdrop.animate({
         'opacity': 0.8
-      }, 400);
-      $rootScope.$apply(function () {
-        $http.get('backend/trace/detail/' + summaryTrace.id)
-            .success(function (data) {
-              detailLoaded = true;
-              if (spinner) {
-                spinner.stop();
-              }
-              if (data.expired) {
-                $('#modalContent').html('expired');
-              } else {
-                data.showExport = true;
-                TraceRenderer.renderDetail(data, '#modalContent');
-              }
-            })
-            .error(function () {
-              // TODO handle this better
-              alert('Error occurred');
-            });
-      });
+      }, 200);
     }
 
     function hideModal() {

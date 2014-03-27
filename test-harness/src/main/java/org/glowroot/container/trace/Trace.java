@@ -34,7 +34,6 @@ import com.google.common.collect.Lists;
 import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.container.common.ObjectMappers.nullToFalse;
 
 /**
  * @author Trask Stalnaker
@@ -59,22 +58,16 @@ public class Trace {
     private final ImmutableSetMultimap<String, String> attributes;
     private final ImmutableList<Metric> metrics;
     private final JvmInfo jvmInfo;
-    @Nullable
-    private final ImmutableList<Span> spans;
-    @Nullable
-    private final MergedStackTreeNode coarseMergedStackTree;
-    @Nullable
-    private final MergedStackTreeNode fineMergedStackTree;
-
-    private final boolean summary;
+    private final Existence spansExistence;
+    private final Existence coarseProfileExistence;
+    private final Existence fineProfileExistence;
 
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, boolean background, String headline, String transactionName,
             @Nullable String error, @Nullable String user,
             ImmutableSetMultimap<String, String> attributes, @ReadOnly List<Metric> metrics,
-            JvmInfo jvmInfo, @ReadOnly @Nullable List<Span> spans,
-            @Nullable MergedStackTreeNode coarseMergedStackTree,
-            @Nullable MergedStackTreeNode fineMergedStackTree, boolean summary) {
+            JvmInfo jvmInfo, Existence spansExistence, Existence coarseProfileExistence,
+            Existence fineProfileExistence) {
         this.id = id;
         this.active = active;
         this.stuck = stuck;
@@ -89,10 +82,9 @@ public class Trace {
         this.attributes = attributes;
         this.metrics = ImmutableList.copyOf(metrics);
         this.jvmInfo = jvmInfo;
-        this.spans = spans == null ? null : ImmutableList.copyOf(spans);
-        this.coarseMergedStackTree = coarseMergedStackTree;
-        this.fineMergedStackTree = fineMergedStackTree;
-        this.summary = summary;
+        this.spansExistence = spansExistence;
+        this.coarseProfileExistence = coarseProfileExistence;
+        this.fineProfileExistence = fineProfileExistence;
     }
 
     public String getId() {
@@ -162,31 +154,16 @@ public class Trace {
         return jvmInfo;
     }
 
-    @Nullable
-    public ImmutableList<Span> getSpans() {
-        if (summary) {
-            throw new IllegalStateException("Use Glowroot.getLastTrace() instead of"
-                    + " Glowroot.getLastTraceSummary() to retrieve spans");
-        }
-        return spans;
+    public Existence getSpansExistence() {
+        return spansExistence;
     }
 
-    @Nullable
-    public MergedStackTreeNode getCoarseMergedStackTree() {
-        if (summary) {
-            throw new IllegalStateException("Use Glowroot.getLastTrace() instead of"
-                    + " Glowroot.getLastTraceSummary() to retrieve mergedStackTree");
-        }
-        return coarseMergedStackTree;
+    public Existence getCoarseProfileExistence() {
+        return coarseProfileExistence;
     }
 
-    @Nullable
-    public MergedStackTreeNode getFineMergedStackTree() {
-        if (summary) {
-            throw new IllegalStateException("Use Glowroot.getLastTrace() instead of"
-                    + " Glowroot.getLastTraceSummary() to retrieve mergedStackTree");
-        }
-        return fineMergedStackTree;
+    public Existence getFineProfileExistence() {
+        return fineProfileExistence;
     }
 
     // the glowroot weaving metric is a bit unpredictable since tests are often run inside the
@@ -221,10 +198,9 @@ public class Trace {
                 .add("attributes", attributes)
                 .add("metrics", metrics)
                 .add("jvmInfo", jvmInfo)
-                .add("spans", spans)
-                .add("coarseMergedStackTree", coarseMergedStackTree)
-                .add("fineMergedStackTree", fineMergedStackTree)
-                .add("summary", summary)
+                .add("spansExistence", spansExistence)
+                .add("coarseProfileExistence", coarseProfileExistence)
+                .add("fineProfileExistence", fineProfileExistence)
                 .toString();
     }
 
@@ -244,10 +220,9 @@ public class Trace {
             @JsonProperty("attributes") @Nullable Map<String, List<String>> attributes,
             @JsonProperty("metrics") @Nullable List<Metric> metrics,
             @JsonProperty("jvmInfo") @Nullable JvmInfo jvmInfo,
-            @JsonProperty("spans") @Nullable List<Span> spans,
-            @JsonProperty("coarseMergedStackTree") @Nullable MergedStackTreeNode coarseMergedStackTree,
-            @JsonProperty("fineMergedStackTree") @Nullable MergedStackTreeNode fineMergedStackTree,
-            @JsonProperty("summary") @Nullable Boolean summary)
+            @JsonProperty("spansExistence") @Nullable Existence spansExistence,
+            @JsonProperty("coarseProfileExistence") @Nullable Existence coarseProfileExistence,
+            @JsonProperty("fineProfileExistence") @Nullable Existence fineProfileExistence)
             throws JsonMappingException {
         checkRequiredProperty(id, "id");
         checkRequiredProperty(active, "active");
@@ -260,6 +235,9 @@ public class Trace {
         checkRequiredProperty(transactionName, "transactionName");
         checkRequiredProperty(metrics, "metrics");
         checkRequiredProperty(jvmInfo, "jvmInfo");
+        checkRequiredProperty(spansExistence, "spansExistence");
+        checkRequiredProperty(coarseProfileExistence, "coarseProfileExistence");
+        checkRequiredProperty(fineProfileExistence, "fineProfileExistence");
         ImmutableSetMultimap.Builder<String, String> theAttributes = ImmutableSetMultimap.builder();
         if (attributes != null) {
             for (Entry<String, List<String>> entry : attributes.entrySet()) {
@@ -267,7 +245,11 @@ public class Trace {
             }
         }
         return new Trace(id, active, stuck, startTime, captureTime, duration, background, headline,
-                transactionName, error, user, theAttributes.build(), metrics, jvmInfo, spans,
-                coarseMergedStackTree, fineMergedStackTree, nullToFalse(summary));
+                transactionName, error, user, theAttributes.build(), metrics, jvmInfo,
+                spansExistence, coarseProfileExistence, fineProfileExistence);
+    }
+
+    public enum Existence {
+        YES, NO, EXPIRED;
     }
 }

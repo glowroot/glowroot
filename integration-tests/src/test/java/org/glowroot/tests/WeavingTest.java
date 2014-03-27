@@ -15,6 +15,8 @@
  */
 package org.glowroot.tests;
 
+import java.util.List;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -58,8 +60,9 @@ public class WeavingTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        Span span1 = trace.getSpans().get(0);
-        Span span2 = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        Span span1 = spans.get(0);
+        Span span2 = spans.get(1);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");
         assertThat(span2.getMessage().getText()).isEqualTo("Level Two");
     }

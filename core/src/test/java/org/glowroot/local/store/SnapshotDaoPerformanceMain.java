@@ -21,9 +21,11 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
+import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.collector.Snapshot;
 import org.glowroot.markers.Static;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -41,7 +43,6 @@ public class SnapshotDaoPerformanceMain {
     private SnapshotDaoPerformanceMain() {}
 
     public static void main(String... args) throws Exception {
-        SnapshotTestData snapshotTestData = new SnapshotTestData();
         DataSource dataSource = new DataSource();
         ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         CappedDatabase cappedDatabase = new CappedDatabase(new File("glowroot.capped.db"), 1000000,
@@ -50,7 +51,9 @@ public class SnapshotDaoPerformanceMain {
 
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (int i = 0; i < 1000; i++) {
-            snapshotDao.store(snapshotTestData.createSnapshot());
+            Snapshot snapshot = SnapshotTestData.createSnapshot();
+            CharSource spans = SnapshotTestData.createSpans();
+            snapshotDao.store(snapshot, spans, null, null);
         }
         logger.info("elapsed time: {}", stopwatch.elapsed(MILLISECONDS));
         logger.info("num traces: {}", snapshotDao.count());

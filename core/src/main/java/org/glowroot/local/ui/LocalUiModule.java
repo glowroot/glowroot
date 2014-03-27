@@ -66,10 +66,14 @@ public class LocalUiModule {
         port = Integer.getInteger("glowroot.internal.ui.port");
     }
 
-    private final TraceExportHttpService traceExportHttpService;
     // httpServer is only null if it could not even bind to port 0 (any available port)
     @Nullable
     private final HttpServer httpServer;
+
+    // only stored/exposed for tests
+    private final TraceCommonService traceCommonService;
+    // only stored/exposed for tests
+    private final TraceExportHttpService traceExportHttpService;
 
     public LocalUiModule(Ticker ticker, Clock clock, File dataDir, JvmModule jvmModule,
             ConfigModule configModule, StorageModule storageModule,
@@ -101,13 +105,14 @@ public class LocalUiModule {
                 new IndexHtmlService(baseHref, httpSessionManager, layoutJsonService);
         HomeJsonService homeJsonService = new HomeJsonService(storageModule.getAggregateDao(),
                 collectorModule.getFixedAggregationIntervalSeconds());
-        TraceCommonService traceCommonService =
-                new TraceCommonService(snapshotDao, traceRegistry, traceCollector, clock, ticker);
+        traceCommonService = new TraceCommonService(snapshotDao, traceRegistry, traceCollector,
+                clock, ticker);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,
                 traceRegistry, traceCollector, ticker, clock);
         TraceSummaryJsonService traceSummaryJsonService =
                 new TraceSummaryJsonService(traceCommonService);
-        SnapshotHttpService snapshotHttpService = new SnapshotHttpService(traceCommonService);
+        TraceDetailHttpService traceDetailHttpService =
+                new TraceDetailHttpService(traceCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
         ErrorJsonService errorJsonService = new ErrorJsonService(snapshotDao);
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getThreadAllocatedBytes(),
@@ -144,7 +149,7 @@ public class LocalUiModule {
         }
         String bindAddress = getBindAddress(properties);
         httpServer = buildHttpServer(bindAddress, port, numWorkerThreads, httpSessionManager,
-                indexHtmlService, snapshotHttpService, traceExportHttpService,
+                indexHtmlService, traceDetailHttpService, traceExportHttpService,
                 jsonServices.build());
         if (httpServer != null) {
             configJsonService.setHttpServer(httpServer);
@@ -165,6 +170,11 @@ public class LocalUiModule {
         if (httpServer != null) {
             httpServer.close();
         }
+    }
+
+    @OnlyUsedByTests
+    public TraceCommonService getTraceCommonService() {
+        return traceCommonService;
     }
 
     @OnlyUsedByTests
@@ -202,7 +212,8 @@ public class LocalUiModule {
     @Nullable
     private static HttpServer buildHttpServer(String bindAddress, int port, int numWorkerThreads,
             HttpSessionManager httpSessionManager, IndexHtmlService indexHtmlService,
-            SnapshotHttpService snapshotHttpService, TraceExportHttpService traceExportHttpService,
+            TraceDetailHttpService snapshotHttpService,
+            TraceExportHttpService traceExportHttpService,
             ImmutableList<Object> jsonServices) {
 
         String resourceBase = "org/glowroot/local/ui/app-dist";
@@ -228,7 +239,9 @@ public class LocalUiModule {
         // export service is not bound under /backend since the export url is visible to users as
         // the download url for the export file
         uriMappings.put(Pattern.compile("^/export/.*$"), traceExportHttpService);
-        uriMappings.put(Pattern.compile("^/backend/trace/detail/.*$"), snapshotHttpService);
+        uriMappings.put(Pattern.compile("^/backend/trace/spans$"), snapshotHttpService);
+        uriMappings.put(Pattern.compile("^/backend/trace/coarse-profile$"), snapshotHttpService);
+        uriMappings.put(Pattern.compile("^/backend/trace/fine-profile$"), snapshotHttpService);
         try {
             return new HttpServer(bindAddress, port, numWorkerThreads, indexHtmlService,
                     uriMappings.build(), httpSessionManager, jsonServices);

@@ -18,7 +18,8 @@
 // that would require adding angular to export.js
 // and that would significantly increase the size of the exported trace files
 
-/* global $, Handlebars, JST, moment */
+// Glowroot dependency is used for spinner, but is not used in export file
+/* global $, Handlebars, JST, moment, Glowroot, alert */
 
 // IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
 // that would require adding angular to export.js
@@ -42,30 +43,17 @@ TraceRenderer = (function () {
     return buffer;
   });
 
-  // the number of metrics displayed on the summary popup is limited to prevent vertical scrolling
-  var traceSummaryMetricLimit = 10;
-
   Handlebars.registerHelper('eachMetricOrdered', function (trace, options) {
     // make local copy of metrics
     var metrics = trace.metrics.slice();
     metrics.sort(function (a, b) {
       return b.total - a.total;
     });
-    if (trace.truncateMetrics && metrics.length > traceSummaryMetricLimit) {
-      metrics.length = traceSummaryMetricLimit;
-    }
     var buffer = '';
     $.each(metrics, function (index, metric) {
       buffer += options.fn(metric);
     });
     return buffer;
-  });
-
-  Handlebars.registerHelper('ifMetricsTruncated', function (trace, options) {
-    if (trace.truncateMetrics && trace.metrics.length > traceSummaryMetricLimit) {
-      return options.fn(this);
-    }
-    return options.inverse(this);
   });
 
   Handlebars.registerHelper('ifThreadInfo', function (jvmInfo, options) {
@@ -117,23 +105,18 @@ TraceRenderer = (function () {
     return (nanos / 1000000).toFixed(1);
   });
 
-  Handlebars.registerHelper('ifDetailOverwritten', function (trace, options) {
-    if (trace.spans && trace.spans.overwritten ||
-        trace.coarseMergedStackTree && trace.coarseMergedStackTree.overwritten ||
-        trace.fineMergedStackTree && trace.fineMergedStackTree.overwritten) {
+  Handlebars.registerHelper('ifExistenceExpired', function (existence, options) {
+    if (existence === 'expired') {
       return options.fn(this);
     }
     return options.inverse(this);
   });
 
-  Handlebars.registerHelper('numberOfSpans', function (spans) {
-    var num = 0;
-    $.each(spans, function (i, span) {
-      if (!span.limitExceededMarker && !span.limitExtendedMarker) {
-        num++;
-      }
-    });
-    return num;
+  Handlebars.registerHelper('ifExistenceYes', function (existence, options) {
+    if (existence === 'yes') {
+      return options.fn(this);
+    }
+    return options.inverse(this);
   });
 
   Handlebars.registerHelper('messageDetailHtml', function (detail) {
@@ -236,17 +219,117 @@ TraceRenderer = (function () {
     smartToggle($(this).parent(), e, keyboard);
   });
   $(document).on('click', '.sps-toggle', function () {
-    var detailTrace = $(this).parents('.trace-parent').data('trace');
-    toggleSpans(detailTrace);
+    var $selector = $('#sps');
+    if ($selector.data('loading')) {
+      // handles rapid clicking when loading from url
+      return;
+    }
+    if (!$selector.data('loaded')) {
+      var $traceParent = $(this).parents('.trace-parent');
+      var spans = $traceParent.data('spans');
+      if (spans) {
+        // this is an export file
+        $selector.data('loaded', true);
+        // un-hide before building in case there are lots of spans, at least can see first few quickly
+        $selector.removeClass('hide');
+        renderNext(spans, 0);
+      } else {
+        // this is not an export file
+        var traceId = $traceParent.data('traceId');
+        $selector.data('loading', true);
+        var loaded;
+        var spinner;
+        var $button = $(this);
+        setTimeout(function () {
+          if (!loaded) {
+            spinner = Glowroot.showSpinner($button.parent().find('.trace-detail-spinner'));
+          }
+        }, 100);
+        $.get('backend/trace/spans?traceId=' + traceId)
+            .done(function (data) {
+              // first time opening
+              initSpanLineLength();
+              // un-hide before building in case there are lots of spans, at least can see first few quickly
+              $selector.removeClass('hide');
+              renderNext(data, 0);
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+              // TODO handle this better
+              alert('Error occurred: ' + textStatus);
+            })
+            .always(function () {
+              loaded = true;
+              if (spinner) {
+                spinner.stop();
+              }
+              $selector.data('loading', false);
+              $selector.data('loaded', true);
+            });
+      }
+    } else if ($selector.hasClass('hide')) {
+      $selector.removeClass('hide');
+    } else {
+      $selector.addClass('hide');
+    }
   });
   $(document).on('click', '.mst-coarse-toggle', function () {
-    var detailTrace = $(this).parents('.trace-parent').data('trace');
-    toggleMergedStackTree(detailTrace.coarseMergedStackTree, $('#mstCoarseOuter'));
+    var $traceParent = $(this).parents('.trace-parent');
+    var $button = $(this);
+    profileToggle($button, $traceParent, '#mstCoarseOuter', 'coarseProfile', 'backend/trace/coarse-profile');
   });
   $(document).on('click', '.mst-fine-toggle', function () {
-    var detailTrace = $(this).parents('.trace-parent').data('trace');
-    toggleMergedStackTree(detailTrace.fineMergedStackTree, $('#mstFineOuter'));
+    var $traceParent = $(this).parents('.trace-parent');
+    var $button = $(this);
+    profileToggle($button, $traceParent, '#mstFineOuter', 'fineProfile', 'backend/trace/fine-profile');
   });
+
+  function profileToggle($button, $traceParent, selector, traceParentDataAttribute, url) {
+    var $selector = $(selector);
+    if ($selector.data('loading')) {
+      // handles rapid clicking when loading from url
+      return;
+    }
+    if (!$selector.data('loaded')) {
+      var profile = $traceParent.data(traceParentDataAttribute);
+      if (profile) {
+        // this is an export file
+        buildMergedStackTree(profile, $selector);
+        $selector.removeClass('hide');
+        $selector.data('loaded', true);
+      } else {
+        var traceId = $traceParent.data('traceId');
+        $selector.data('loading', true);
+        var loaded;
+        var spinner;
+        setTimeout(function () {
+          if (!loaded) {
+            spinner = Glowroot.showSpinner($button.parent().find('.trace-detail-spinner'));
+          }
+        }, 100);
+        $.get(url + '?traceId=' + traceId)
+            .done(function (data) {
+              buildMergedStackTree(data, $selector);
+              $selector.removeClass('hide');
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+              // TODO handle this better
+              alert('Error occurred: ' + textStatus);
+            })
+            .always(function () {
+              loaded = true;
+              if (spinner) {
+                spinner.stop();
+              }
+              $selector.data('loading', false);
+              $selector.data('loaded', true);
+            });
+      }
+    } else if ($selector.hasClass('hide')) {
+      $selector.removeClass('hide');
+    } else {
+      $selector.addClass('hide');
+    }
+  }
 
   var spanLineLength;
 
@@ -258,18 +341,6 @@ TraceRenderer = (function () {
     spanLineLength = ($('#sps').width() - 100) / charWidth;
     // min value of 80, otherwise not enough context provided by the elipsed line
     spanLineLength = Math.max(spanLineLength, 80);
-  }
-
-  function toggleSpans(detailTrace) {
-    var $sps = $('#sps');
-    if (!$sps.html()) {
-      // first time opening
-      initSpanLineLength();
-      $sps.removeClass('hide');
-      renderNext(detailTrace.spans, 0);
-    } else {
-      $sps.toggleClass('hide');
-    }
   }
 
   function renderNext(spans, start) {
@@ -323,7 +394,7 @@ TraceRenderer = (function () {
     parent.find('.unexpanded-content').toggleClass('hide');
   }
 
-  function toggleMergedStackTree(rootNode, selector) {
+  function buildMergedStackTree(rootNode, selector) {
     function escapeHtml(html) {
       return html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
@@ -378,99 +449,92 @@ TraceRenderer = (function () {
     }
 
     var $selector = $(selector);
-    if (!$selector.hasClass('hide')) {
-      $selector.addClass('hide');
-    } else {
-      if (!$selector.find('.mst-interesting').html()) {
-        // first time only, process merged stack tree and populate dropdown
-        var interestingRootNode = rootNode;
-        var uninterestingHtml = '';
-        while (true) {
-          if (interestingRootNode.childNodes.length > 1) {
-            break;
-          }
-          var childNode = interestingRootNode.childNodes[0];
-          if (childNode.leafThreadState) {
-            interestingRootNode = rootNode;
-            uninterestingHtml = '';
-            break;
-          }
-          // the space after the % is actually important when highlighting a block of stack trace
-          // elements in the ui and copy pasting into the eclipse java stack trace console, because
-          // the space gives separation between the percentage and the stack trace element and so
-          // eclipse is still able to understand the stack trace
-          uninterestingHtml += '<span class="inline-block" style="width: 4em;">100.0% </span>' +
-              interestingRootNode.stackTraceElement + '<br>';
-          interestingRootNode = childNode;
-        }
-        // build initial merged stack tree
-        var interestingHtml = curr(interestingRootNode, 0);
-        if (uninterestingHtml) {
-          $selector.find('.mst-common .expanded-content').html(uninterestingHtml);
-          $selector.find('.mst-common').removeClass('hide');
-        }
-        $selector.find('.mst-interesting').html(interestingHtml);
-
-        var mergedCounts = calculateMetricNameCounts(rootNode);
-        if (!$.isEmptyObject(mergedCounts)) {
-          // build tree
-          var tree = { name: '', childNodes: {} };
-          $.each(rootNode.metricNameCounts, function (metricName) {
-            // only really need to look at leafs (' / other') to hit all nodes
-            if (metricName.match(/ \/ other$/)) {
-              var parts = metricName.split(' / ');
-              var node = tree;
-              var partialName = '';
-              $.each(parts, function (i, part) {
-                if (i > 0) {
-                  partialName += ' / ';
-                }
-                partialName += part;
-                if (!node.childNodes[part]) {
-                  node.childNodes[part] = { name: partialName, childNodes: {} };
-                }
-                node = node.childNodes[part];
-              });
-            }
-          });
-          var nodesDepthFirst = function (node) {
-            var all = [ node ];
-            // order by count desc
-            var childNodes = [];
-            $.each(node.childNodes, function (name, childNode) {
-              childNodes.push(childNode);
-            });
-            childNodes.sort(function (a, b) {
-              return rootNode.metricNameCounts[b.name] - rootNode.metricNameCounts[a.name];
-            });
-            if (childNodes.length === 1 && childNodes[0].name.match(/ \/ other$/)) {
-              // skip if single 'other' node (in which case it will be represented by current node)
-              return all;
-            }
-            $.each(childNodes, function (i, childNode) {
-              all = all.concat(nodesDepthFirst(childNode));
-            });
-            return all;
-          };
-
-          var orderedNodes = nodesDepthFirst(tree);
-          // remove the root '' since all nodes are already under the single root span metric
-          orderedNodes.splice(0, 1);
-          // build filter dropdown
-          var $mstFilter = $selector.find('.mst-filter');
-          $mstFilter.removeClass('hide');
-          $.each(orderedNodes, function (i, node) {
-            $mstFilter.append($('<option />').val(node.name)
-                .text(node.name + ' (' + rootNode.metricNameCounts[node.name] + ')'));
-          });
-          $mstFilter.change(function () {
-            // update merged stack tree based on filter
-            var interestingHtml = curr(interestingRootNode, 0, $(this).val());
-            $selector.find('.mst-interesting').html(interestingHtml);
-          });
-        }
+    // first time only, process merged stack tree and populate dropdown
+    var interestingRootNode = rootNode;
+    var uninterestingHtml = '';
+    while (true) {
+      if (interestingRootNode.childNodes.length > 1) {
+        break;
       }
-      $selector.removeClass('hide');
+      var childNode = interestingRootNode.childNodes[0];
+      if (childNode.leafThreadState) {
+        interestingRootNode = rootNode;
+        uninterestingHtml = '';
+        break;
+      }
+      // the space after the % is actually important when highlighting a block of stack trace
+      // elements in the ui and copy pasting into the eclipse java stack trace console, because
+      // the space gives separation between the percentage and the stack trace element and so
+      // eclipse is still able to understand the stack trace
+      uninterestingHtml += '<span class="inline-block" style="width: 4em;">100.0% </span>' +
+          interestingRootNode.stackTraceElement + '<br>';
+      interestingRootNode = childNode;
+    }
+    // build initial merged stack tree
+    var interestingHtml = curr(interestingRootNode, 0);
+    if (uninterestingHtml) {
+      $selector.find('.mst-common .expanded-content').html(uninterestingHtml);
+      $selector.find('.mst-common').removeClass('hide');
+    }
+    $selector.find('.mst-interesting').html(interestingHtml);
+
+    var mergedCounts = calculateMetricNameCounts(rootNode);
+    if (!$.isEmptyObject(mergedCounts)) {
+      // build tree
+      var tree = { name: '', childNodes: {} };
+      $.each(rootNode.metricNameCounts, function (metricName) {
+        // only really need to look at leafs (' / other') to hit all nodes
+        if (metricName.match(/ \/ other$/)) {
+          var parts = metricName.split(' / ');
+          var node = tree;
+          var partialName = '';
+          $.each(parts, function (i, part) {
+            if (i > 0) {
+              partialName += ' / ';
+            }
+            partialName += part;
+            if (!node.childNodes[part]) {
+              node.childNodes[part] = { name: partialName, childNodes: {} };
+            }
+            node = node.childNodes[part];
+          });
+        }
+      });
+      var nodesDepthFirst = function (node) {
+        var all = [ node ];
+        // order by count desc
+        var childNodes = [];
+        $.each(node.childNodes, function (name, childNode) {
+          childNodes.push(childNode);
+        });
+        childNodes.sort(function (a, b) {
+          return rootNode.metricNameCounts[b.name] - rootNode.metricNameCounts[a.name];
+        });
+        if (childNodes.length === 1 && childNodes[0].name.match(/ \/ other$/)) {
+          // skip if single 'other' node (in which case it will be represented by current node)
+          return all;
+        }
+        $.each(childNodes, function (i, childNode) {
+          all = all.concat(nodesDepthFirst(childNode));
+        });
+        return all;
+      };
+
+      var orderedNodes = nodesDepthFirst(tree);
+      // remove the root '' since all nodes are already under the single root span metric
+      orderedNodes.splice(0, 1);
+      // build filter dropdown
+      var $mstFilter = $selector.find('.mst-filter');
+      $mstFilter.removeClass('hide');
+      $.each(orderedNodes, function (i, node) {
+        $mstFilter.append($('<option />').val(node.name)
+            .text(node.name + ' (' + rootNode.metricNameCounts[node.name] + ')'));
+      });
+      $mstFilter.change(function () {
+        // update merged stack tree based on filter
+        var interestingHtml = curr(interestingRootNode, 0, $(this).val());
+        $selector.find('.mst-interesting').html(interestingHtml);
+      });
     }
   }
 
@@ -507,15 +571,18 @@ TraceRenderer = (function () {
   }
 
   return {
-    renderSummary: function (summaryTrace) {
-      return JST['trace-summary'](summaryTrace);
-    },
-    renderDetail: function (detailTrace, selector) {
-      var $selector = $(selector);
-      var html = JST['trace-summary'](detailTrace) + '<br>' + JST['trace-detail'](detailTrace);
+    render: function (trace, $selector) {
+      var newVar = JST['trace-detail'](trace);
+      var html = JST['trace-summary'](trace) + '<br>' + newVar;
       $selector.html(html);
       $selector.addClass('trace-parent');
-      $selector.data('trace', detailTrace);
+      $selector.data('traceId', trace.id);
+    },
+    renderFromExport: function (trace, $selector, spans, coarseProfile, fineProfile) {
+      $selector.data('spans', spans);
+      $selector.data('coarseProfile', coarseProfile);
+      $selector.data('fineProfile', fineProfile);
+      this.render(trace, $selector);
     }
   };
 })();

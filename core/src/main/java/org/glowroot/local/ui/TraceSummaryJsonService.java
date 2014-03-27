@@ -17,7 +17,6 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 
-import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,14 +45,12 @@ class TraceSummaryJsonService {
     @GET("/backend/trace/summary/(.+)")
     String getSummary(String id) throws IOException {
         logger.debug("getSummary(): id={}", id);
-        Snapshot snapshot = traceCommonService.getSnapshot(id, true);
+        Snapshot snapshot = traceCommonService.getSnapshot(id);
         if (snapshot == null) {
             logger.debug("no trace found for id: {}", id);
             return "{\"expired\":true}";
         } else {
-            CharSource charSource = SnapshotWriter.toCharSource(snapshot, true);
-            // summary is small and doesn't need to be streamed
-            return charSource.read();
+            return SnapshotWriter.toString(snapshot);
         }
     }
 }

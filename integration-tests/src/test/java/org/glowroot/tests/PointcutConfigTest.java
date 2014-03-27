@@ -16,6 +16,7 @@
 package org.glowroot.tests;
 
 import java.io.File;
+import java.util.List;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.collect.ImmutableList;
@@ -32,6 +33,7 @@ import org.glowroot.container.TempDirs;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.PointcutConfig;
 import org.glowroot.container.config.PointcutConfig.MethodModifier;
+import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,11 +78,12 @@ public class PointcutConfigTest {
         container.executeAppUnderTest(ShouldExecute1.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
         assertThat(trace.getMetricNames()).containsOnly("mock trace marker", "execute one",
                 "execute one metric only");
-        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("execute1() => void");
-        assertThat(trace.getSpans().get(1).getStackTrace()).isNotNull();
+        assertThat(spans.get(1).getMessage().getText()).isEqualTo("execute1() => void");
+        assertThat(spans.get(1).getStackTrace()).isNotNull();
     }
 
     @Test
@@ -90,9 +93,10 @@ public class PointcutConfigTest {
         container.executeAppUnderTest(ShouldExecuteWithReturn.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
         assertThat(trace.getMetricNames()).containsOnly("mock trace marker", "execute with return");
-        assertThat(trace.getSpans().get(1).getMessage().getText())
+        assertThat(spans.get(1).getMessage().getText())
                 .isEqualTo("executeWithReturn() => xyz");
     }
 
@@ -103,11 +107,12 @@ public class PointcutConfigTest {
         container.executeAppUnderTest(ShouldExecuteWithArgs.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("executeWithArgs(): abc, 123");
         assertThat(trace.getTransactionName()).isEqualTo("Misc / executeWithArgs");
-        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(spans).hasSize(1);
         assertThat(trace.getMetricNames()).containsOnly("execute with args");
-        assertThat(trace.getSpans().get(0).getMessage().getText())
+        assertThat(spans.get(0).getMessage().getText())
                 .isEqualTo("executeWithArgs(): abc, 123");
     }
 

@@ -21,6 +21,7 @@ import java.util.List;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
@@ -33,9 +34,12 @@ import org.glowroot.collector.SnapshotCreator;
 import org.glowroot.collector.SnapshotWriter;
 import org.glowroot.collector.TraceCollectorImpl;
 import org.glowroot.container.common.ObjectMappers;
+import org.glowroot.container.trace.MergedStackTreeNode;
+import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceService;
 import org.glowroot.local.store.SnapshotDao;
+import org.glowroot.local.ui.TraceCommonService;
 import org.glowroot.local.ui.TraceExportHttpService;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.TraceRegistry;
@@ -55,6 +59,7 @@ class LocalTraceService extends TraceService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final SnapshotDao snapshotDao;
+    private final TraceCommonService traceCommonService;
     private final TraceExportHttpService traceExportHttpService;
     private final TraceCollectorImpl traceCollector;
     private final TraceRegistry traceRegistry;
@@ -62,6 +67,7 @@ class LocalTraceService extends TraceService {
 
     LocalTraceService(GlowrootModule glowrootModule) {
         snapshotDao = glowrootModule.getStorageModule().getSnapshotDao();
+        traceCommonService = glowrootModule.getUiModule().getTraceCommonService();
         traceExportHttpService = glowrootModule.getUiModule().getTraceExportHttpService();
         traceCollector = glowrootModule.getCollectorModule().getTraceCollector();
         traceRegistry = glowrootModule.getTraceModule().getTraceRegistry();
@@ -84,6 +90,63 @@ class LocalTraceService extends TraceService {
         return new ByteArrayInputStream(traceExportHttpService.getExportBytes(id));
     }
 
+    @Override
+    @Nullable
+    public Trace getLastTrace() throws Exception {
+        Snapshot snapshot = snapshotDao.getLastSnapshot();
+        if (snapshot == null) {
+            return null;
+        }
+        return ObjectMappers.readRequiredValue(mapper, SnapshotWriter.toString(snapshot),
+                Trace.class);
+    }
+
+    @Override
+    @Nullable
+    public List<Span> getSpans(String traceId) throws Exception {
+        String spans = traceCommonService.getSpansString(traceId);
+        if (spans == null) {
+            return null;
+        }
+        return mapper.readValue(spans, new TypeReference<List<Span>>() {});
+    }
+
+    @Override
+    @Nullable
+    public MergedStackTreeNode getCoarseProfile(String traceId) throws Exception {
+        String profile = traceCommonService.getCoarseProfileString(traceId);
+        if (profile == null) {
+            return null;
+        }
+        return mapper.readValue(profile, MergedStackTreeNode.class);
+    }
+
+    @Override
+    @Nullable
+    public MergedStackTreeNode getFineProfile(String traceId) throws Exception {
+        String profile = traceCommonService.getFineProfileString(traceId);
+        if (profile == null) {
+            return null;
+        }
+        return mapper.readValue(profile, MergedStackTreeNode.class);
+    }
+
+    @Override
+    @Nullable
+    protected Trace getActiveTrace() throws Exception {
+        List<org.glowroot.trace.model.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
+        if (traces.isEmpty()) {
+            return null;
+        } else if (traces.size() > 1) {
+            throw new IllegalStateException("Unexpected number of active traces");
+        } else {
+            Snapshot snapshot = SnapshotCreator.createActiveSnapshot(traces.get(0),
+                    traces.get(0).getEndTick(), ticker.read());
+            return ObjectMappers.readRequiredValue(mapper, SnapshotWriter.toString(snapshot),
+                    Trace.class);
+        }
+    }
+
     void assertNoActiveTraces() throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
         // if interruptAppUnderTest() was used to terminate an active trace, it may take a few
@@ -99,32 +162,5 @@ class LocalTraceService extends TraceService {
 
     void deleteAllSnapshots() {
         snapshotDao.deleteAllSnapshots();
-    }
-
-    @Override
-    @Nullable
-    protected Trace getLastTrace(boolean summary) throws Exception {
-        Snapshot snapshot = snapshotDao.getLastSnapshot(summary);
-        if (snapshot == null) {
-            return null;
-        }
-        return ObjectMappers.readRequiredValue(mapper,
-                SnapshotWriter.toString(snapshot, summary), Trace.class);
-    }
-
-    @Override
-    @Nullable
-    protected Trace getActiveTrace(boolean summary) throws Exception {
-        List<org.glowroot.trace.model.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
-        if (traces.isEmpty()) {
-            return null;
-        } else if (traces.size() > 1) {
-            throw new IllegalStateException("Unexpected number of active traces");
-        } else {
-            Snapshot snapshot = SnapshotCreator.createActiveSnapshot(traces.get(0),
-                    traces.get(0).getEndTick(), ticker.read(), summary);
-            return ObjectMappers.readRequiredValue(mapper,
-                    SnapshotWriter.toString(snapshot, summary), Trace.class);
-        }
     }
 }

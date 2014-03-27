@@ -41,7 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Snapshot;
-import org.glowroot.collector.SnapshotWriter;
+import org.glowroot.local.ui.TraceCommonService.TraceExport;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
 
@@ -75,16 +75,16 @@ public class TraceExportHttpService implements HttpService {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
-        Snapshot snapshot = traceCommonService.getSnapshot(id, false);
-        if (snapshot == null) {
+        TraceExport export = traceCommonService.getExport(id);
+        if (export == null) {
             logger.warn("no trace found for id: {}", id);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
-        ChunkedInput in = getExportChunkedInput(snapshot);
+        ChunkedInput in = getExportChunkedInput(export);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.headers().set(CONTENT_TYPE, MediaType.ZIP.toString());
         response.headers().set("Content-Disposition",
-                "attachment; filename=" + getFilename(snapshot) + ".zip");
+                "attachment; filename=" + getFilename(export.getSnapshot()) + ".zip");
         HttpServices.preventCaching(response);
         response.setChunked(true);
         channel.write(response);
@@ -93,21 +93,20 @@ public class TraceExportHttpService implements HttpService {
         return null;
     }
 
-    private ChunkedInput getExportChunkedInput(Snapshot snapshot) throws IOException {
-        CharSource traceCharSource = SnapshotWriter.toCharSource(snapshot, false);
-        CharSource charSource = render(traceCharSource);
+    private ChunkedInput getExportChunkedInput(TraceExport export) throws IOException {
+        CharSource charSource = render(export);
         return ChunkedInputs.fromReaderToZipFileDownload(charSource.openStream(),
-                getFilename(snapshot));
+                getFilename(export.getSnapshot()));
     }
 
     // this method exists because tests cannot use (sometimes) shaded netty ChunkedInput
     @OnlyUsedByTests
     public byte[] getExportBytes(String id) throws Exception {
-        Snapshot snapshot = traceCommonService.getSnapshot(id, false);
-        if (snapshot == null) {
+        TraceExport export = traceCommonService.getExport(id);
+        if (export == null) {
             throw new IllegalStateException("No trace found for id '" + id + "'");
         }
-        ChunkedInput chunkedInput = getExportChunkedInput(snapshot);
+        ChunkedInput chunkedInput = getExportChunkedInput(export);
         ByteArrayOutputStream baos = new ByteArrayOutputStream(65536);
         while (chunkedInput.hasNextChunk()) {
             DefaultHttpChunk chunk = (DefaultHttpChunk) chunkedInput.nextChunk();
@@ -127,16 +126,24 @@ public class TraceExportHttpService implements HttpService {
         return "trace-" + timestamp;
     }
 
-    private static CharSource render(CharSource traceCharSource) throws IOException {
-        final String exportCss =
+    private static CharSource render(TraceExport traceExport) throws IOException {
+        final String exportCssPlaceholder =
                 "<link rel=\"stylesheet\" type=\"text/css\" href=\"styles/export.css\">";
-        final String exportComponentsJs = "<script src=\"scripts/export.components.js\"></script>";
-        final String exportJs = "<script src=\"scripts/export.js\"></script>";
-        final String detailTrace = "<script type=\"text/json\" id=\"detailTraceJson\"></script>";
+        final String exportComponentsJsPlaceholder =
+                "<script src=\"scripts/export.components.js\"></script>";
+        final String exportJsPlaceholder = "<script src=\"scripts/export.js\"></script>";
+        final String tracePlaceholder = "<script type=\"text/json\" id=\"traceJson\"></script>";
+        final String spansPlaceholder = "<script type=\"text/json\" id=\"spansJson\"></script>";
+        final String coarseProfilePlaceholder =
+                "<script type=\"text/json\" id=\"coarseProfileJson\"></script>";
+        final String fineProfilePlaceholder =
+                "<script type=\"text/json\" id=\"fineProfileJson\"></script>";
 
         String templateContent = asCharSource("export.html").read();
-        Pattern pattern = Pattern.compile("(" + exportCss + "|" + exportComponentsJs + "|"
-                + exportJs + "|" + detailTrace + ")");
+        Pattern pattern = Pattern.compile("(" + exportCssPlaceholder + "|"
+                + exportComponentsJsPlaceholder + "|" + exportJsPlaceholder + "|"
+                + tracePlaceholder + "|" + spansPlaceholder + "|" + coarseProfilePlaceholder + "|"
+                + fineProfilePlaceholder + ")");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
         List<CharSource> charSources = Lists.newArrayList();
@@ -145,22 +152,46 @@ public class TraceExportHttpService implements HttpService {
                     templateContent.substring(curr, matcher.start())));
             curr = matcher.end();
             String match = matcher.group();
-            if (match.equals(exportCss)) {
+            if (match.equals(exportCssPlaceholder)) {
                 charSources.add(CharSource.wrap("<style>"));
                 charSources.add(asCharSource("styles/export.css"));
                 charSources.add(CharSource.wrap("</style>"));
-            } else if (match.equals(exportComponentsJs)) {
+            } else if (match.equals(exportComponentsJsPlaceholder)) {
                 charSources.add(CharSource.wrap("<script>"));
                 charSources.add(asCharSource("scripts/export.components.js"));
                 charSources.add(CharSource.wrap("</script>"));
-            } else if (match.equals(exportJs)) {
+            } else if (match.equals(exportJsPlaceholder)) {
                 charSources.add(CharSource.wrap("<script>"));
                 charSources.add(asCharSource("scripts/export.js"));
                 charSources.add(CharSource.wrap("</script>"));
-            } else if (match.equals(detailTrace)) {
+            } else if (match.equals(tracePlaceholder)) {
                 charSources.add(CharSource.wrap(
-                        "<script type=\"text/json\" id=\"detailTraceJson\">"));
-                charSources.add(traceCharSource);
+                        "<script type=\"text/json\" id=\"traceJson\">"));
+                charSources.add(CharSource.wrap(traceExport.getSnapshotJson()));
+                charSources.add(CharSource.wrap("</script>"));
+            } else if (match.equals(spansPlaceholder)) {
+                charSources.add(CharSource.wrap(
+                        "<script type=\"text/json\" id=\"spansJson\">"));
+                CharSource spans = traceExport.getSpans();
+                if (spans != null) {
+                    charSources.add(spans);
+                }
+                charSources.add(CharSource.wrap("</script>"));
+            } else if (match.equals(coarseProfilePlaceholder)) {
+                charSources.add(CharSource.wrap(
+                        "<script type=\"text/json\" id=\"coarseProfileJson\">"));
+                CharSource coarseProfile = traceExport.getCoarseProfile();
+                if (coarseProfile != null) {
+                    charSources.add(coarseProfile);
+                }
+                charSources.add(CharSource.wrap("</script>"));
+            } else if (match.equals(fineProfilePlaceholder)) {
+                charSources.add(CharSource.wrap(
+                        "<script type=\"text/json\" id=\"fineProfileJson\">"));
+                CharSource fineProfile = traceExport.getFineProfile();
+                if (fineProfile != null) {
+                    charSources.add(fineProfile);
+                }
                 charSources.add(CharSource.wrap("</script>"));
             } else {
                 logger.error("unexpected match: {}", match);

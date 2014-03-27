@@ -119,7 +119,7 @@ public class PluginConfigTest {
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
-        Trace trace = container.getTraceService().getLastTraceSummary();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getHeadline()).isEqualTo("Level 1");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
     }
@@ -134,7 +134,7 @@ public class PluginConfigTest {
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
-        Trace trace = container.getTraceService().getLastTraceSummary();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getHeadline()).isEqualTo("Level One*");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
     }

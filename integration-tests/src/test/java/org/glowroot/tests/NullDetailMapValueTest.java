@@ -15,6 +15,7 @@
  */
 package org.glowroot.tests;
 
+import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
@@ -62,10 +63,11 @@ public class NullDetailMapValueTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(trace.getSpans()).hasSize(4);
-        Span span1 = trace.getSpans().get(0);
+        assertThat(spans).hasSize(4);
+        Span span1 = spans.get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");
         assertThat(span1.getMessage().getDetail()).isEqualTo(mapOf("arg1", "a", "arg2", null,
                 "nested1", mapOf("nestedkey11", "a", "nestedkey12", null,

@@ -53,7 +53,7 @@ public class SnapshotCreatorTest {
                 State.RUNNABLE);
         // when
         CharSource mergedStackTreeCharSource =
-                SnapshotCreator.createCharSource(trace.getCoarseMergedStackTree());
+                ProfileCharSourceCreator.createProfileCharSource(trace.getCoarseMergedStackTree());
         assertThat(mergedStackTreeCharSource).isNotNull();
         // then don't blow up with StackOverflowError
         // (and an extra verification just to make sure the test was valid)

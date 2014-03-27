@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.List;
 
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.tomcat.jdbc.pool.DataSource;
@@ -77,8 +78,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
     }
@@ -90,8 +92,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementAndUsePrevious.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
     }
@@ -103,8 +106,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementAndUseRelativeForward.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
     }
@@ -116,8 +120,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementAndUseRelativeBackward.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
     }
@@ -129,8 +134,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementAndUseAbsolute.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 2 rows");
     }
@@ -142,8 +148,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementAndUseFirst.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 1 row");
     }
@@ -155,8 +162,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementAndUseLast.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
     }
@@ -168,8 +176,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee"
                         + " where name like ? ['john%'] => 1 row");
@@ -183,8 +192,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? => 1 row");
     }
@@ -197,8 +207,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecutePreparedStatementWithSetNull.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: insert into employee values (?, ?) [NULL, NULL]");
     }
@@ -211,8 +222,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecutePreparedStatementWithBinary.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: insert into employee values (?, ?) ['jane',"
                         + " 0x00010203040506070809]");
@@ -226,8 +238,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteCallableStatement.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: insert into employee values (?, ?) ['jane', NULL]");
     }
@@ -239,11 +252,12 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteJdbcCommit.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(3);
-        Span jdbcInsertSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(3);
+        Span jdbcInsertSpan = spans.get(1);
         assertThat(jdbcInsertSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: insert into employee (name) values ('john doe')");
-        Span jdbcCommitSpan = trace.getSpans().get(2);
+        Span jdbcCommitSpan = spans.get(2);
         assertThat(jdbcCommitSpan.getMessage().getText()).isEqualTo("jdbc commit");
         assertThat(trace.getMetrics()).hasSize(4);
         // ordering is by total desc, so not fixed (though root span will be first since it
@@ -260,11 +274,12 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteJdbcRollback.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(3);
-        Span jdbcInsertSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(3);
+        Span jdbcInsertSpan = spans.get(1);
         assertThat(jdbcInsertSpan.getMessage().getText()).isEqualTo(
                 "jdbc execution: insert into employee (name) values ('john doe')");
-        Span jdbcCommitSpan = trace.getSpans().get(2);
+        Span jdbcCommitSpan = spans.get(2);
         assertThat(jdbcCommitSpan.getMessage().getText()).isEqualTo("jdbc rollback");
         assertThat(trace.getMetrics()).hasSize(4);
         // ordering is by total desc, so not fixed (though root span will be first since it
@@ -301,7 +316,8 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(AccessMetaData.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
         assertThat(trace.getMetrics().size()).isEqualTo(2);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
         assertThat(trace.getMetrics().get(1).getName()).isEqualTo("jdbc metadata");
@@ -316,8 +332,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(AccessMetaData.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("jdbc metadata:"
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        assertThat(spans.get(1).getMessage().getText()).isEqualTo("jdbc metadata:"
                 + " DatabaseMetaData.getTables()");
         assertThat(trace.getMetrics().size()).isEqualTo(2);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
@@ -332,10 +349,11 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(3);
-        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(3);
+        assertThat(spans.get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
                 + " insert into employee (name) values (?) ['huckle'] ['sally']");
-        assertThat(trace.getSpans().get(2).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+        assertThat(spans.get(2).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
                 + " insert into employee (name) values (?) ['lowly'] ['pig will']");
     }
 
@@ -347,10 +365,11 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteBatchPreparedStatementWithoutClear.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(3);
-        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(3);
+        assertThat(spans.get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
                 + " insert into employee (name) values (?) ['huckle'] ['sally']");
-        assertThat(trace.getSpans().get(2).getMessage().getText()).isEqualTo("jdbc execution: 4 x"
+        assertThat(spans.get(2).getMessage().getText()).isEqualTo("jdbc execution: 4 x"
                 + " insert into employee (name) values (?) ['huckle'] ['sally'] ['lowly']"
                 + " ['pig will']");
     }
@@ -363,11 +382,12 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteBatchStatement.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(3);
-        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("jdbc execution:"
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(3);
+        assertThat(spans.get(1).getMessage().getText()).isEqualTo("jdbc execution:"
                 + " insert into employee (name) values ('huckle'),"
                 + " insert into employee (name) values ('sally')");
-        assertThat(trace.getSpans().get(2).getMessage().getText()).isEqualTo("jdbc execution:"
+        assertThat(spans.get(2).getMessage().getText()).isEqualTo("jdbc execution:"
                 + " insert into employee (name) values ('lowly'),"
                 + " insert into employee (name) values ('pig will')");
     }
@@ -380,11 +400,12 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteBatchStatementWithoutClear.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(3);
-        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("jdbc execution:"
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(3);
+        assertThat(spans.get(1).getMessage().getText()).isEqualTo("jdbc execution:"
                 + " insert into employee (name) values ('huckle'),"
                 + " insert into employee (name) values ('sally')");
-        assertThat(trace.getSpans().get(2).getMessage().getText()).isEqualTo("jdbc execution:"
+        assertThat(spans.get(2).getMessage().getText()).isEqualTo("jdbc execution:"
                 + " insert into employee (name) values ('huckle'),"
                 + " insert into employee (name) values ('sally'),"
                 + " insert into employee (name) values ('lowly'),"
@@ -401,8 +422,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementDisableReEnableMidIterating.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo(
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        assertThat(spans.get(1).getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['nomatch%'] => 0 rows");
     }
 
@@ -415,8 +437,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo("jdbc get connection");
     }
 
@@ -429,8 +452,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span jdbcSpan = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span jdbcSpan = spans.get(1);
         assertThat(jdbcSpan.getMessage().getText()).isEqualTo("jdbc connection close");
     }
 
@@ -445,10 +469,11 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(3);
-        Span span1 = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(3);
+        Span span1 = spans.get(1);
         assertThat(span1.getMessage().getText()).isEqualTo("jdbc get connection");
-        Span span2 = trace.getSpans().get(2);
+        Span span2 = spans.get(2);
         assertThat(span2.getMessage().getText()).isEqualTo("jdbc connection close");
     }
 
@@ -461,10 +486,11 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteSetAutoCommit.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(3);
-        Span span1 = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(3);
+        Span span1 = spans.get(1);
         assertThat(span1.getMessage().getText()).isEqualTo("jdbc set autocommit: false");
-        Span span2 = trace.getSpans().get(2);
+        Span span2 = spans.get(2);
         assertThat(span2.getMessage().getText()).isEqualTo("jdbc set autocommit: true");
     }
 
@@ -479,8 +505,9 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        Span span1 = trace.getSpans().get(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        Span span1 = spans.get(1);
         assertThat(span1.getMessage().getText())
                 .isEqualTo("jdbc get connection (autocommit: true)");
     }

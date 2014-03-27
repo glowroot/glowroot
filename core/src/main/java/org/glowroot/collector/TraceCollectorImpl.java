@@ -24,6 +24,7 @@ import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
+import com.google.common.io.CharSource;
 import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,7 +136,7 @@ public class TraceCollectorImpl implements TraceCollector {
                     try {
                         Snapshot snapshot =
                                 SnapshotCreator.createCompletedSnapshot(trace, captureTime);
-                        snapshotRepository.store(snapshot);
+                        store(snapshot, trace);
                         pendingCompleteTraces.remove(trace);
                     } catch (Throwable t) {
                         // log and terminate successfully
@@ -152,9 +153,9 @@ public class TraceCollectorImpl implements TraceCollector {
     public void onStuckTrace(Trace trace) {
         try {
             Snapshot snaphsot = SnapshotCreator.createActiveSnapshot(trace,
-                    clock.currentTimeMillis(), ticker.read(), false);
+                    clock.currentTimeMillis(), ticker.read());
             if (!trace.isCompleted()) {
-                snapshotRepository.store(snaphsot);
+                store(snaphsot, trace);
             }
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
@@ -173,5 +174,15 @@ public class TraceCollectorImpl implements TraceCollector {
                 countSinceLastWarning++;
             }
         }
+    }
+
+    private void store(Snapshot snapshot, Trace trace) throws IOException {
+        CharSource spans = SpansCharSourceCreator
+                .createSpansCharSource(trace.getSpans(), trace.getEndTick());
+        CharSource coarseProfile = ProfileCharSourceCreator
+                .createProfileCharSource(trace.getCoarseMergedStackTree());
+        CharSource fineProfile = ProfileCharSourceCreator
+                .createProfileCharSource(trace.getFineMergedStackTree());
+        snapshotRepository.store(snapshot, spans, coarseProfile, fineProfile);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 package org.glowroot.collector;
 
+import checkers.nullness.quals.Nullable;
+import com.google.common.io.CharSource;
+
 /**
  * Interface for storing trace snapshots.
  * 
@@ -23,5 +26,6 @@ package org.glowroot.collector;
  */
 public interface SnapshotRepository {
 
-    void store(Snapshot snapshot);
+    void store(Snapshot snapshot, CharSource spans, @Nullable CharSource coarseProfile,
+            @Nullable CharSource fineProfile);
 }

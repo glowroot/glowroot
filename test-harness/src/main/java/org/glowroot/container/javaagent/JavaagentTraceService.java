@@ -20,12 +20,15 @@ import java.util.List;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.javaagent.TracePointResponse.RawPoint;
+import org.glowroot.container.trace.MergedStackTreeNode;
+import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceService;
 import org.glowroot.markers.ThreadSafe;
@@ -68,6 +71,64 @@ class JavaagentTraceService extends TraceService {
         return httpClient.getAsStream("/export/" + traceId);
     }
 
+    @Override
+    @Nullable
+    public Trace getLastTrace() throws Exception {
+        String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
+                + "&low=0&high=" + Long.MAX_VALUE + "&limit=1000");
+        TracePointResponse response =
+                ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
+        List<RawPoint> points = Lists.newArrayList();
+        points.addAll(response.getNormalPoints());
+        points.addAll(response.getErrorPoints());
+        if (points.isEmpty()) {
+            return null;
+        }
+        RawPoint mostRecentCapturedPoint = RawPoint.orderingByCaptureTime.max(points);
+        String traceContent = httpClient.get("/backend/trace/summary/"
+                + mostRecentCapturedPoint.getId());
+        return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
+    }
+
+    @Override
+    @Nullable
+    public Trace getActiveTrace() throws Exception {
+        String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
+                + "&low=0&high=" + Long.MAX_VALUE + "&limit=1000");
+        TracePointResponse response =
+                ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
+        if (response.getActivePoints().isEmpty()) {
+            return null;
+        } else if (response.getActivePoints().size() > 1) {
+            throw new IllegalStateException("Unexpected number of active traces");
+        } else {
+            RawPoint point = response.getActivePoints().get(0);
+            String traceContent = httpClient.get("/backend/trace/summary/" + point.getId());
+            return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
+        }
+    }
+
+    @Override
+    @Nullable
+    public List<Span> getSpans(String traceId) throws Exception {
+        String content = httpClient.get("/backend/trace/spans?traceId=" + traceId);
+        return mapper.readValue(content, new TypeReference<List<Span>>() {});
+    }
+
+    @Override
+    @Nullable
+    public MergedStackTreeNode getCoarseProfile(String traceId) throws Exception {
+        String content = httpClient.get("/backend/trace/coarse-profile?traceId=" + traceId);
+        return mapper.readValue(content, MergedStackTreeNode.class);
+    }
+
+    @Override
+    @Nullable
+    public MergedStackTreeNode getFineProfile(String traceId) throws Exception {
+        String content = httpClient.get("/backend/trace/fine-profile?traceId=" + traceId);
+        return mapper.readValue(content, MergedStackTreeNode.class);
+    }
+
     void assertNoActiveTraces() throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
         // if interruptAppUnderTest() was used to terminate an active trace, it may take a few
@@ -84,43 +145,5 @@ class JavaagentTraceService extends TraceService {
 
     void deleteAllSnapshots() throws Exception {
         httpClient.post("/backend/admin/data/delete-all", "");
-    }
-
-    @Override
-    @Nullable
-    protected Trace getLastTrace(boolean summary) throws Exception {
-        String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
-                + "&low=0&high=" + Long.MAX_VALUE + "&limit=1000");
-        TracePointResponse response =
-                ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
-        List<RawPoint> points = Lists.newArrayList();
-        points.addAll(response.getNormalPoints());
-        points.addAll(response.getErrorPoints());
-        if (points.isEmpty()) {
-            return null;
-        }
-        RawPoint mostRecentCapturedPoint = RawPoint.orderingByCaptureTime.max(points);
-        String path = summary ? "/backend/trace/summary/" : "/backend/trace/detail/";
-        String traceContent = httpClient.get(path + mostRecentCapturedPoint.getId());
-        return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
-    }
-
-    @Override
-    @Nullable
-    protected Trace getActiveTrace(boolean summary) throws Exception {
-        String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
-                + "&low=0&high=" + Long.MAX_VALUE + "&limit=1000");
-        TracePointResponse response =
-                ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
-        if (response.getActivePoints().isEmpty()) {
-            return null;
-        } else if (response.getActivePoints().size() > 1) {
-            throw new IllegalStateException("Unexpected number of active traces");
-        } else {
-            RawPoint point = response.getActivePoints().get(0);
-            String path = summary ? "/backend/trace/summary/" : "/backend/trace/detail/";
-            String traceContent = httpClient.get(path + point.getId());
-            return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
-        }
     }
 }

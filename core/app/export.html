@@ -37,8 +37,11 @@
 <script src="scripts/generated/handlebars-templates.js"></script>
 <!-- endbuild -->
 
-<!-- placeholder that is dynamically replaced at runtime -->
-<script type="text/json" id="detailTraceJson"></script>
+<!-- placeholders that are dynamically replaced at runtime -->
+<script type="text/json" id="traceJson"></script>
+<script type="text/json" id="spansJson"></script>
+<script type="text/json" id="coarseProfileJson"></script>
+<script type="text/json" id="fineProfileJson"></script>
 
 </head>
 <!-- export body needs explicit horizontal padding since it does not use the boostrap container
@@ -49,6 +52,6 @@
       Trace export
     </div>
   </div>
-  <div id="detailTrace"></div>
+  <div id="tracePlaceholder"></div>
 </body>
 </html>

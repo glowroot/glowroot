@@ -28,6 +28,7 @@ import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.PluginConfig;
+import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,8 +69,9 @@ public class SpanStackTraceTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithSpanStackTrace.class);
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        List<String> stackTrace = trace.getSpans().get(1).getStackTrace();
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
+        List<String> stackTrace = spans.get(1).getStackTrace();
         assertThat(stackTrace).isNotEmpty();
         assertThat(stackTrace.get(0)).startsWith(Pause.class.getName()
                 + ".pauseOneMillisecond(" + Pause.class.getSimpleName() + ".java:");

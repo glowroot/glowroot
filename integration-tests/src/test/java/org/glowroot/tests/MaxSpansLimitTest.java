@@ -15,6 +15,7 @@
  */
 package org.glowroot.tests;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,6 +32,7 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -82,15 +84,21 @@ public class MaxSpansLimitTest {
         // test harness needs to kick off test, so may need to wait a little
         Stopwatch stopwatch = Stopwatch.createStarted();
         Trace trace = null;
+        List<Span> spans = null;
         while (stopwatch.elapsed(SECONDS) < 2) {
             trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
-            if (trace != null && trace.getSpans().size() == 101) {
+            if (trace == null) {
+                continue;
+            }
+            spans = container.getTraceService().getSpans(trace.getId());
+            if (spans.size() == 101) {
                 break;
             }
+            // otherwise continue
         }
         assertThat(trace).isNotNull();
-        assertThat(trace.getSpans()).hasSize(101);
-        assertThat(trace.getSpans().get(100).isLimitExceededMarker()).isTrue();
+        assertThat(spans).hasSize(101);
+        assertThat(spans.get(100).isLimitExceededMarker()).isTrue();
 
         // part 2 of this test
         generalConfig = container.getConfigService().getGeneralConfig();
@@ -99,16 +107,21 @@ public class MaxSpansLimitTest {
         stopwatch.stop().reset().start();
         while (stopwatch.elapsed(SECONDS) < 2) {
             trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
-            if (trace != null && trace.getSpans().size() == 201) {
+            if (trace == null) {
+                continue;
+            }
+            spans = container.getTraceService().getSpans(trace.getId());
+            if (spans.size() == 201) {
                 break;
             }
+            // otherwise continue
         }
         container.interruptAppUnderTest();
         assertThat(trace).isNotNull();
-        assertThat(trace.getSpans()).hasSize(201);
-        assertThat(trace.getSpans().get(100).isLimitExceededMarker()).isTrue();
-        assertThat(trace.getSpans().get(101).isLimitExtendedMarker()).isTrue();
-        assertThat(trace.getSpans().get(200).isLimitExceededMarker()).isTrue();
+        assertThat(spans).hasSize(201);
+        assertThat(spans.get(100).isLimitExceededMarker()).isTrue();
+        assertThat(spans.get(101).isLimitExtendedMarker()).isTrue();
+        assertThat(spans.get(200).isLimitExceededMarker()).isTrue();
         // cleanup
         executorService.shutdown();
     }

@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
+import com.google.common.io.CharSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,8 +69,9 @@ public class SnapshotDaoTest {
     @Test
     public void shouldReadSnapshot() {
         // given
-        Snapshot snapshot = new SnapshotTestData().createSnapshot();
-        snapshotDao.store(snapshot);
+        Snapshot snapshot = SnapshotTestData.createSnapshot();
+        CharSource spans = SnapshotTestData.createSpans();
+        snapshotDao.store(snapshot, spans, null, null);
         TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
                 null, null, null, null, null, null, null, null, null, null, null, 1);
         // when
@@ -88,8 +90,9 @@ public class SnapshotDaoTest {
     @Test
     public void shouldReadSnapshotWithDurationQualifier() {
         // given
-        Snapshot snapshot = new SnapshotTestData().createSnapshot();
-        snapshotDao.store(snapshot);
+        Snapshot snapshot = SnapshotTestData.createSnapshot();
+        CharSource spans = SnapshotTestData.createSpans();
+        snapshotDao.store(snapshot, spans, null, null);
         TracePointQuery query = new TracePointQuery(0, 100, snapshot.getDuration(),
                 snapshot.getDuration(), false, false, false, null, null, null, null, null, null,
                 null, null, null, null, null, 1);
@@ -102,8 +105,9 @@ public class SnapshotDaoTest {
     @Test
     public void shouldNotReadSnapshotWithHighDurationQualifier() {
         // given
-        Snapshot snapshot = new SnapshotTestData().createSnapshot();
-        snapshotDao.store(snapshot);
+        Snapshot snapshot = SnapshotTestData.createSnapshot();
+        CharSource spans = SnapshotTestData.createSpans();
+        snapshotDao.store(snapshot, spans, null, null);
         TracePointQuery query = new TracePointQuery(0, 0, snapshot.getDuration() + 1,
                 snapshot.getDuration() + 2, false, false, false, null, null, null, null, null,
                 null, null, null, null, null, null, 1);
@@ -116,8 +120,9 @@ public class SnapshotDaoTest {
     @Test
     public void shouldNotReadSnapshotWithLowDurationQualifier() {
         // given
-        Snapshot snapshot = new SnapshotTestData().createSnapshot();
-        snapshotDao.store(snapshot);
+        Snapshot snapshot = SnapshotTestData.createSnapshot();
+        CharSource spans = SnapshotTestData.createSpans();
+        snapshotDao.store(snapshot, spans, null, null);
         TracePointQuery query = new TracePointQuery(0, 0, snapshot.getDuration() - 2,
                 snapshot.getDuration() - 1, false, false, false, null, null, null, null, null,
                 null, null, null, null, null, null, 1);
@@ -130,8 +135,9 @@ public class SnapshotDaoTest {
     @Test
     public void shouldReadSnapshotWithAttributeQualifier() {
         // given
-        Snapshot snapshot = new SnapshotTestData().createSnapshot();
-        snapshotDao.store(snapshot);
+        Snapshot snapshot = SnapshotTestData.createSnapshot();
+        CharSource spans = SnapshotTestData.createSpans();
+        snapshotDao.store(snapshot, spans, null, null);
         TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
                 null, null, null, null, null, null, null, null, "abc", StringComparator.EQUALS,
                 "xyz", 1);
@@ -144,8 +150,9 @@ public class SnapshotDaoTest {
     @Test
     public void shouldReadSnapshotWithAttributeQualifier2() {
         // given
-        Snapshot snapshot = new SnapshotTestData().createSnapshot();
-        snapshotDao.store(snapshot);
+        Snapshot snapshot = SnapshotTestData.createSnapshot();
+        CharSource spans = SnapshotTestData.createSpans();
+        snapshotDao.store(snapshot, spans, null, null);
         TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
                 null, null, null, null, null, null, null, null, "abc", null, null, 1);
         // when
@@ -157,8 +164,9 @@ public class SnapshotDaoTest {
     @Test
     public void shouldReadSnapshotWithAttributeQualifier3() {
         // given
-        Snapshot snapshot = new SnapshotTestData().createSnapshot();
-        snapshotDao.store(snapshot);
+        Snapshot snapshot = SnapshotTestData.createSnapshot();
+        CharSource spans = SnapshotTestData.createSpans();
+        snapshotDao.store(snapshot, spans, null, null);
         TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
                 null, null, null, null, null, null, null, null, null, StringComparator.EQUALS,
                 "xyz", 1);
@@ -171,8 +179,9 @@ public class SnapshotDaoTest {
     @Test
     public void shouldNotReadSnapshotWithNonMatchingAttributeQualifier() {
         // given
-        Snapshot snapshot = new SnapshotTestData().createSnapshot();
-        snapshotDao.store(snapshot);
+        Snapshot snapshot = SnapshotTestData.createSnapshot();
+        CharSource spans = SnapshotTestData.createSpans();
+        snapshotDao.store(snapshot, spans, null, null);
         TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
                 null, null, null, null, null, null, null, null, "abc", StringComparator.EQUALS,
                 "abc", 1);
@@ -185,8 +194,9 @@ public class SnapshotDaoTest {
     @Test
     public void shouldNotReadSnapshotWithNonMatchingAttributeQualifier2() {
         // given
-        Snapshot snapshot = new SnapshotTestData().createSnapshot();
-        snapshotDao.store(snapshot);
+        Snapshot snapshot = SnapshotTestData.createSnapshot();
+        CharSource spans = SnapshotTestData.createSpans();
+        snapshotDao.store(snapshot, spans, null, null);
         TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
                 null, null, null, null, null, null, null, null, null, StringComparator.EQUALS,
                 "xyz1", 1);
@@ -199,7 +209,9 @@ public class SnapshotDaoTest {
     @Test
     public void shouldDeletedTrace() {
         // given
-        snapshotDao.store(new SnapshotTestData().createSnapshot());
+        Snapshot snapshot = SnapshotTestData.createSnapshot();
+        CharSource spans = SnapshotTestData.createSpans();
+        snapshotDao.store(snapshot, spans, null, null);
         // when
         snapshotDao.deleteSnapshotsBefore(100);
         // then

@@ -16,6 +16,7 @@
 package org.glowroot.container.trace;
 
 import java.io.InputStream;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import checkers.nullness.quals.Nullable;
@@ -27,30 +28,6 @@ import com.google.common.base.Stopwatch;
  */
 public abstract class TraceService {
 
-    @Nullable
-    public Trace getLastTrace() throws Exception {
-        return getLastTrace(false);
-    }
-
-    @Nullable
-    public Trace getLastTraceSummary() throws Exception {
-        return getLastTrace(true);
-    }
-
-    // this method blocks for an active trace to be available because
-    // sometimes need to give container enough time to start up and for the trace to get stuck
-    @Nullable
-    public Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception {
-        return getActiveTrace(timeout, unit, false);
-    }
-
-    // this method blocks for an active trace to be available because
-    // sometimes need to give container enough time to start up and for the trace to get stuck
-    @Nullable
-    public Trace getActiveTraceSummary(int timeout, TimeUnit unit) throws Exception {
-        return getActiveTrace(timeout, unit, true);
-    }
-
     public abstract int getNumPendingCompleteTraces() throws Exception;
 
     public abstract long getNumStoredSnapshots() throws Exception;
@@ -58,19 +35,21 @@ public abstract class TraceService {
     public abstract InputStream getTraceExport(String string) throws Exception;
 
     @Nullable
-    protected abstract Trace getLastTrace(boolean summary) throws Exception;
+    public abstract Trace getLastTrace() throws Exception;
 
     @Nullable
-    protected abstract Trace getActiveTrace(boolean summary) throws Exception;
+    protected abstract Trace getActiveTrace() throws Exception;
 
+    // this method blocks for an active trace to be available because
+    // sometimes need to give container enough time to start up and for the trace to get stuck
     @Nullable
-    private Trace getActiveTrace(int timeout, TimeUnit unit, boolean summary) throws Exception {
+    public Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
         Trace trace = null;
         // try at least once (e.g. in case timeoutMillis == 0)
         boolean first = true;
         while (first || stopwatch.elapsed(unit) < timeout) {
-            trace = getActiveTrace(summary);
+            trace = getActiveTrace();
             if (trace != null) {
                 break;
             }
@@ -79,4 +58,13 @@ public abstract class TraceService {
         }
         return trace;
     }
+
+    @Nullable
+    public abstract List<Span> getSpans(String traceId) throws Exception;
+
+    @Nullable
+    public abstract MergedStackTreeNode getCoarseProfile(String traceId) throws Exception;
+
+    @Nullable
+    public abstract MergedStackTreeNode getFineProfile(String traceId) throws Exception;
 }

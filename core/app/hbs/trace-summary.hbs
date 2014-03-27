@@ -74,15 +74,6 @@
         <td>{{count}}</td>
       </tr>
     {{/eachMetricOrdered}}
-    {{#ifMetricsTruncated .}}
-      <tr class="align-top">
-        <td style="text-align: left;"><div class="second-line-indent">...</div></td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
-      </tr>
-    {{/ifMetricsTruncated}}
   </tbody>
 </table>
 {{#ifThreadInfo jvmInfo}}

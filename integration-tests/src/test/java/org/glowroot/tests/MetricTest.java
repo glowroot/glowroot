@@ -64,7 +64,7 @@ public class MetricTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMetrics.class);
         // then
-        Trace trace = container.getTraceService().getLastTraceSummary();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getMetrics().size()).isEqualTo(1);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
     }
@@ -75,7 +75,7 @@ public class MetricTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSameNestedMetric.class);
         // then
-        Trace trace = container.getTraceService().getLastTraceSummary();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getMetrics().size()).isEqualTo(1);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
         assertThat(trace.getMetrics().get(0).getCount()).isEqualTo(1);
@@ -95,7 +95,7 @@ public class MetricTest {
             }
         });
         // then
-        Trace trace = container.getTraceService().getActiveTraceSummary(5, SECONDS);
+        Trace trace = container.getTraceService().getActiveTrace(5, SECONDS);
         assertThat(trace).isNotNull();
         assertThat(trace.getMetrics().size()).isEqualTo(1);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");

@@ -16,6 +16,7 @@
 package org.glowroot.tests;
 
 import java.io.File;
+import java.util.List;
 
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
@@ -51,18 +52,19 @@ public class UpgradeTest {
         Container container = Containers.create(dataDir, true);
         // when
         Trace trace = container.getTraceService().getLastTrace();
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
         // then
         try {
             assertThat(trace.getHeadline()).isEqualTo("Level One");
             assertThat(trace.getTransactionName()).isEqualTo("basic test");
-            assertThat(trace.getSpans()).hasSize(4);
-            Span span1 = trace.getSpans().get(0);
+            assertThat(spans).hasSize(4);
+            Span span1 = spans.get(0);
             assertThat(span1.getMessage().getText()).isEqualTo("Level One");
-            Span span2 = trace.getSpans().get(1);
+            Span span2 = spans.get(1);
             assertThat(span2.getMessage().getText()).isEqualTo("Level Two");
-            Span span3 = trace.getSpans().get(2);
+            Span span3 = spans.get(2);
             assertThat(span3.getMessage().getText()).isEqualTo("Level Three");
-            Span span4 = trace.getSpans().get(3);
+            Span span4 = spans.get(3);
             assertThat(span4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
         } finally {
             // cleanup
@@ -73,7 +75,7 @@ public class UpgradeTest {
     }
 
     // create initial database for upgrade test
-    public static void mainx(String... args) throws Exception {
+    public static void main(String... args) throws Exception {
         File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
         Container container = LocalContainer.createWithFileDb(dataDir);
         StorageConfig storageConfig = container.getConfigService().getStorageConfig();
@@ -92,7 +94,7 @@ public class UpgradeTest {
     }
 
     // upgrade existing database for upgrade test
-    public static void main(String... args) throws Exception {
+    public static void mainx(String... args) throws Exception {
         File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
         Resources.asByteSource(Resources.getResource("for-upgrade-test/config.json"))
                 .copyTo(Files.asByteSink(new File(dataDir, "config.json")));

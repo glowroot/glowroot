@@ -93,6 +93,10 @@ public class CappedDatabase {
         return new FileBlockCharSource(block, overwrittenResponse);
     }
 
+    boolean isExpired(FileBlock block) {
+        return out.isOverwritten(block);
+    }
+
     public void resize(int newSizeKb) throws IOException {
         synchronized (lock) {
             if (closing) {

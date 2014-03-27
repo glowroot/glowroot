@@ -69,8 +69,9 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetStandardResponseHeaders.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
                 (Map<String, Object>) span.getMessage().getDetail().get("Response headers");
@@ -88,8 +89,9 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetStandardResponseHeadersUsingSetHeader.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
                 (Map<String, Object>) span.getMessage().getDetail().get("Response headers");
@@ -107,8 +109,9 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetStandardResponseHeadersUsingAddHeader.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
                 (Map<String, Object>) span.getMessage().getDetail().get("Response headers");
@@ -126,8 +129,9 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetStandardResponseHeadersLowercase.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
                 (Map<String, Object>) span.getMessage().getDetail().get("Response headers");
@@ -145,8 +149,9 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetLotsOfResponseHeaders.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
                 (Map<String, Object>) span.getMessage().getDetail().get("Response headers");

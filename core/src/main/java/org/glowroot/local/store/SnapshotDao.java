@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharSource;
@@ -30,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Snapshot;
+import org.glowroot.collector.Snapshot.Existence;
 import org.glowroot.collector.SnapshotRepository;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.RowMapper;
@@ -39,7 +41,6 @@ import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.local.store.Schemas.PrimaryKeyColumn;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
-import org.glowroot.markers.ThreadSafe;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -70,9 +71,9 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("attributes", Types.VARCHAR), // json data
             new Column("metrics", Types.VARCHAR), // json data
             new Column("jvm_info", Types.VARCHAR), // json data
-            new Column("spans", Types.VARCHAR), // capped database block id
-            new Column("coarse_merged_stack_tree", Types.VARCHAR), // capped database block id
-            new Column("fine_merged_stack_tree", Types.VARCHAR)); // capped database block id
+            new Column("spans_id", Types.VARCHAR), // capped database id
+            new Column("coarse_profile_id", Types.VARCHAR), // capped database id
+            new Column("fine_profile_id", Types.VARCHAR)); // capped database id
 
     // capture_time column is used for expiring records without using FK with on delete cascade
     private static final ImmutableList<Column> snapshotAttributeColumns = ImmutableList.of(
@@ -102,35 +103,29 @@ public class SnapshotDao implements SnapshotRepository {
     }
 
     @Override
-    public void store(final Snapshot snapshot) {
+    public void store(final Snapshot snapshot, CharSource spans,
+            @Nullable CharSource coarseProfile, @Nullable CharSource fineProfile) {
         logger.debug("store(): snapshot={}", snapshot);
-        String spansBlockId = null;
-        CharSource spans = snapshot.getSpans();
-        if (spans != null) {
-            spansBlockId = cappedDatabase.write(spans).getId();
+        String spansId = cappedDatabase.write(spans).getId();
+        String coarseProfileId = null;
+        if (coarseProfile != null) {
+            coarseProfileId = cappedDatabase.write(coarseProfile).getId();
         }
-        String coarseMergedStackTreeBlockId = null;
-        CharSource coarseMergedStackTree = snapshot.getCoarseMergedStackTree();
-        if (coarseMergedStackTree != null) {
-            coarseMergedStackTreeBlockId = cappedDatabase.write(coarseMergedStackTree).getId();
-        }
-        String fineMergedStackTreeBlockId = null;
-        CharSource fineMergedStackTree = snapshot.getFineMergedStackTree();
-        if (fineMergedStackTree != null) {
-            fineMergedStackTreeBlockId = cappedDatabase.write(fineMergedStackTree).getId();
+        String fineProfileId = null;
+        if (fineProfile != null) {
+            fineProfileId = cappedDatabase.write(fineProfile).getId();
         }
         try {
             dataSource.update("merge into snapshot (id, stuck, start_time, capture_time, duration,"
                     + " background, error, fine, transaction_name, headline, error_message, user,"
-                    + " attributes, metrics, jvm_info, spans, coarse_merged_stack_tree,"
-                    + " fine_merged_stack_tree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
-                    + " ?, ?, ?, ?)", snapshot.getId(), snapshot.isStuck(),
-                    snapshot.getStartTime(), snapshot.getCaptureTime(), snapshot.getDuration(),
-                    snapshot.isBackground(), snapshot.getError() != null,
-                    fineMergedStackTreeBlockId != null, snapshot.getTransactionName(),
-                    snapshot.getHeadline(), snapshot.getError(), snapshot.getUser(),
-                    snapshot.getAttributes(), snapshot.getMetrics(), snapshot.getJvmInfo(),
-                    spansBlockId, coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
+                    + " attributes, metrics, jvm_info, spans_id, coarse_profile_id,"
+                    + " fine_profile_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
+                    + " ?, ?)", snapshot.getId(), snapshot.isStuck(), snapshot.getStartTime(),
+                    snapshot.getCaptureTime(), snapshot.getDuration(), snapshot.isBackground(),
+                    snapshot.getError() != null, fineProfileId != null,
+                    snapshot.getTransactionName(), snapshot.getHeadline(), snapshot.getError(),
+                    snapshot.getUser(), snapshot.getAttributes(), snapshot.getMetrics(),
+                    snapshot.getJvmInfo(), spansId, coarseProfileId, fineProfileId);
             final ImmutableSetMultimap<String, String> attributesForIndexing =
                     snapshot.getAttributesForIndexing();
             if (attributesForIndexing == null) {
@@ -171,48 +166,40 @@ public class SnapshotDao implements SnapshotRepository {
     }
 
     @Nullable
-    public Snapshot readSnapshot(String id) {
-        logger.debug("readSnapshot(): id={}", id);
-        List<PartiallyHydratedTrace> partiallyHydratedTraces;
-        try {
-            partiallyHydratedTraces = dataSource.query("select id, stuck, start_time,"
-                    + " capture_time, duration, background, transaction_name, headline,"
-                    + " error_message, user, attributes, metrics, jvm_info, spans,"
-                    + " coarse_merged_stack_tree, fine_merged_stack_tree from snapshot"
-                    + " where id = ?", ImmutableList.of(id),
-                    new TraceRowMapper());
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return null;
-        }
-        if (partiallyHydratedTraces.isEmpty()) {
-            return null;
-        } else if (partiallyHydratedTraces.size() > 1) {
-            logger.error("multiple records returned for id: {}", id);
-        }
-        // read from the capped database outside of jdbc connection
-        return partiallyHydratedTraces.get(0).fullyHydrate();
-    }
-
-    @Nullable
-    public Snapshot readSnapshotWithoutDetail(String id) {
-        logger.debug("readSnapshot(): id={}", id);
+    public Snapshot readSnapshot(String traceId) {
+        logger.debug("readSnapshot(): id={}", traceId);
         List<Snapshot> snapshots;
         try {
             snapshots = dataSource.query("select id, stuck, start_time, capture_time, duration,"
                     + " background, transaction_name, headline, error_message, user, attributes,"
-                    + " metrics, jvm_info from snapshot where id = ?", ImmutableList.of(id),
-                    new SnapshotRowMapper());
+                    + " metrics, jvm_info, spans_id, coarse_profile_id, fine_profile_id from "
+                    + " snapshot where id = ?", ImmutableList.of(traceId), new SnapshotRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
         }
         if (snapshots.isEmpty()) {
             return null;
-        } else if (snapshots.size() > 1) {
-            logger.error("multiple records returned for id: {}", id);
+        }
+        if (snapshots.size() > 1) {
+            logger.error("multiple records returned for trace id: {}", traceId);
         }
         return snapshots.get(0);
+    }
+
+    @Nullable
+    public CharSource readSpans(String traceId) throws SQLException {
+        return readFromCappedDatabase("spans_id", traceId);
+    }
+
+    @Nullable
+    public CharSource readCoarseProfile(String traceId) throws SQLException {
+        return readFromCappedDatabase("coarse_profile_id", traceId);
+    }
+
+    @Nullable
+    public CharSource readFineProfile(String traceId) throws SQLException {
+        return readFromCappedDatabase("fine_profile_id", traceId);
     }
 
     public List<ErrorAggregate> readErrorAggregates(ErrorAggregateQuery query) {
@@ -247,9 +234,35 @@ public class SnapshotDao implements SnapshotRepository {
         }
     }
 
+    @Nullable
+    private CharSource readFromCappedDatabase(String columnName, String traceId)
+            throws SQLException {
+        List<String> ids = dataSource.query("select " + columnName + " from snapshot where id = ?",
+                ImmutableList.of(traceId), new SingleStringRowMapper());
+        if (ids.isEmpty()) {
+            // trace must have just expired while user was viewing it
+            logger.debug("no trace found for id: {}", traceId);
+            return CharSource.wrap("{\"expired\":true}");
+        }
+        if (ids.size() > 1) {
+            throw new SQLException("Multiple records returned for trace id: " + traceId);
+        }
+        String id = ids.get(0);
+        if (id.equals("")) {
+            return null;
+        }
+        FileBlock fileBlock;
+        try {
+            fileBlock = FileBlock.from(id);
+        } catch (InvalidBlockIdFormatException e) {
+            throw new SQLException(e);
+        }
+        return cappedDatabase.read(fileBlock, "{\"overwritten\":true}");
+    }
+
     @OnlyUsedByTests
     @Nullable
-    public Snapshot getLastSnapshot(boolean summary) throws SQLException {
+    public Snapshot getLastSnapshot() throws SQLException {
         List<String> ids = dataSource.query("select id from snapshot order by capture_time desc"
                 + " limit 1", ImmutableList.of(), new RowMapper<String>() {
             @Override
@@ -260,11 +273,7 @@ public class SnapshotDao implements SnapshotRepository {
         if (ids.isEmpty()) {
             return null;
         }
-        if (summary) {
-            return readSnapshotWithoutDetail(ids.get(0));
-        } else {
-            return readSnapshot(ids.get(0));
-        }
+        return readSnapshot(ids.get(0));
     }
 
     @OnlyUsedByTests
@@ -275,23 +284,6 @@ public class SnapshotDao implements SnapshotRepository {
             logger.error(e.getMessage(), e);
             return 0;
         }
-    }
-
-    private static Snapshot.Builder createBuilder(ResultSet resultSet) throws SQLException {
-        return Snapshot.builder()
-                .id(resultSet.getString(1))
-                .stuck(resultSet.getBoolean(2))
-                .startTime(resultSet.getLong(3))
-                .captureTime(resultSet.getLong(4))
-                .duration(resultSet.getLong(5))
-                .background(resultSet.getBoolean(6))
-                .transactionName(resultSet.getString(7))
-                .headline(resultSet.getString(8))
-                .error(resultSet.getString(9))
-                .user(resultSet.getString(10))
-                .attributes(resultSet.getString(11))
-                .metrics(resultSet.getString(12))
-                .jvmInfo(resultSet.getString(13));
     }
 
     private static void upgradeSnapshotTable(DataSource dataSource) throws SQLException {
@@ -314,22 +306,6 @@ public class SnapshotDao implements SnapshotRepository {
         }
     }
 
-    @ThreadSafe
-    private class TraceRowMapper implements RowMapper<PartiallyHydratedTrace> {
-
-        @Override
-        public PartiallyHydratedTrace mapRow(ResultSet resultSet) throws SQLException {
-            Snapshot.Builder builder = createBuilder(resultSet);
-            // wait and read from the capped database outside of the jdbc connection
-            String spansFileBlockId = resultSet.getString(14);
-            String coarseMergedStackTreeFileBlockId = resultSet.getString(15);
-            String fineMergedStackTreeFileBlockId = resultSet.getString(16);
-            return new PartiallyHydratedTrace(builder, spansFileBlockId,
-                    coarseMergedStackTreeFileBlockId, fineMergedStackTreeFileBlockId);
-        }
-    }
-
-    @ThreadSafe
     private class ErrorAggregateRowMapper implements RowMapper<ErrorAggregate> {
 
         @Override
@@ -341,64 +317,6 @@ public class SnapshotDao implements SnapshotRepository {
         }
     }
 
-    private class PartiallyHydratedTrace {
-
-        private final Snapshot.Builder builder;
-        // file block ids are stored temporarily while reading the trace snapshot from the database
-        // so that reading from the capped database can occur outside of the jdbc connection
-        @Nullable
-        private final String spansFileBlockId;
-        @Nullable
-        private final String coarseMergedStackTreeFileBlockId;
-        @Nullable
-        private final String fineMergedStackTreeFileBlockId;
-
-        private PartiallyHydratedTrace(Snapshot.Builder builder,
-                @Nullable String spansFileBlockId,
-                @Nullable String coarseMergedStackTreeFileBlockId,
-                @Nullable String fineMergedStackTreeFileBlockId) {
-
-            this.builder = builder;
-            this.spansFileBlockId = spansFileBlockId;
-            this.coarseMergedStackTreeFileBlockId = coarseMergedStackTreeFileBlockId;
-            this.fineMergedStackTreeFileBlockId = fineMergedStackTreeFileBlockId;
-        }
-
-        private Snapshot fullyHydrate() {
-            if (spansFileBlockId != null) {
-                FileBlock block;
-                try {
-                    block = FileBlock.from(spansFileBlockId);
-                    builder.spans(cappedDatabase.read(block, "{\"overwritten\":true}"));
-                } catch (InvalidBlockIdFormatException e) {
-                    logger.warn(e.getMessage(), e);
-                }
-            }
-            if (coarseMergedStackTreeFileBlockId != null) {
-                FileBlock block;
-                try {
-                    block = FileBlock.from(coarseMergedStackTreeFileBlockId);
-                    builder.coarseMergedStackTree(
-                            cappedDatabase.read(block, "{\"overwritten\":true}"));
-                } catch (InvalidBlockIdFormatException e) {
-                    logger.warn(e.getMessage(), e);
-                }
-            }
-            if (fineMergedStackTreeFileBlockId != null) {
-                FileBlock block;
-                try {
-                    block = FileBlock.from(fineMergedStackTreeFileBlockId);
-                    builder.fineMergedStackTree(
-                            cappedDatabase.read(block, "{\"overwritten\":true}"));
-                } catch (InvalidBlockIdFormatException e) {
-                    logger.warn(e.getMessage(), e);
-                }
-            }
-            return builder.build();
-        }
-    }
-
-    @ThreadSafe
     private static class PointRowMapper implements RowMapper<TracePoint> {
 
         @Override
@@ -408,12 +326,55 @@ public class SnapshotDao implements SnapshotRepository {
         }
     }
 
-    @ThreadSafe
-    private static class SnapshotRowMapper implements RowMapper<Snapshot> {
+    private class SnapshotRowMapper implements RowMapper<Snapshot> {
 
         @Override
         public Snapshot mapRow(ResultSet resultSet) throws SQLException {
-            return createBuilder(resultSet).build();
+            Snapshot.Builder snapshot = Snapshot.builder();
+            snapshot.id(resultSet.getString(1));
+            snapshot.stuck(resultSet.getBoolean(2));
+            snapshot.startTime(resultSet.getLong(3));
+            snapshot.captureTime(resultSet.getLong(4));
+            snapshot.duration(resultSet.getLong(5));
+            snapshot.background(resultSet.getBoolean(6));
+            snapshot.transactionName(resultSet.getString(7));
+            snapshot.headline(resultSet.getString(8));
+            snapshot.error(resultSet.getString(9));
+            snapshot.user(resultSet.getString(10));
+            snapshot.attributes(resultSet.getString(11));
+            snapshot.metrics(resultSet.getString(12));
+            snapshot.jvmInfo(resultSet.getString(13));
+            snapshot.spansExistence(getExistence(resultSet.getString(14)));
+            snapshot.coarseProfileExistence(getExistence(resultSet.getString(15)));
+            snapshot.fineProfileExistence(getExistence(resultSet.getString(16)));
+            return snapshot.build();
+        }
+
+        private Existence getExistence(@Nullable String fileBlockId) {
+            if (fileBlockId == null) {
+                return Existence.NO;
+            }
+            FileBlock fileBlock;
+            try {
+                fileBlock = FileBlock.from(fileBlockId);
+            } catch (InvalidBlockIdFormatException e) {
+                logger.warn(e.getMessage(), e);
+                return Existence.NO;
+            }
+            if (cappedDatabase.isExpired(fileBlock)) {
+                return Existence.EXPIRED;
+            } else {
+                return Existence.YES;
+            }
+        }
+    }
+
+    private static class SingleStringRowMapper implements RowMapper<String> {
+        @Override
+        public String mapRow(ResultSet resultSet) throws SQLException {
+            // need to use empty instead of null since this is added to ImmutableList which does not
+            // allow nulls
+            return Strings.nullToEmpty(resultSet.getString(1));
         }
     }
 }

@@ -16,16 +16,11 @@
 package org.glowroot.collector;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.List;
+import java.util.Locale;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
-import com.fasterxml.jackson.core.io.JsonStringEncoder;
-import com.google.common.collect.Lists;
-import com.google.common.io.CharSource;
-
-import org.glowroot.markers.OnlyUsedByTests;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.io.CharStreams;
 
 /**
  * @author Trask Stalnaker
@@ -33,111 +28,46 @@ import org.glowroot.markers.OnlyUsedByTests;
  */
 public class SnapshotWriter {
 
-    private final StringBuilder sb = new StringBuilder();
-    private final List</*@ReadOnly*/CharSource> charSources = Lists.newArrayList();
+    private static final JsonFactory jsonFactory = new JsonFactory();
 
-    @ReadOnly
-    public static CharSource toCharSource(Snapshot snapshot, boolean summary)
-            throws UnsupportedEncodingException {
-        return new SnapshotWriter().toCharSourceInternal(snapshot, summary);
-    }
-
-    private SnapshotWriter() {}
-
-    @ReadOnly
-    private CharSource toCharSourceInternal(Snapshot snapshot, boolean summary)
-            throws UnsupportedEncodingException {
-        sb.append("{\"id\":\"");
-        sb.append(snapshot.getId());
-        sb.append("\",\"active\":");
-        sb.append(snapshot.isActive());
-        sb.append(",\"stuck\":");
-        sb.append(snapshot.isStuck());
-        sb.append(",\"startTime\":");
-        sb.append(snapshot.getStartTime());
-        sb.append(",\"captureTime\":");
-        sb.append(snapshot.getCaptureTime());
-        sb.append(",\"duration\":");
-        sb.append(snapshot.getDuration());
-        sb.append(",\"background\":");
-        sb.append(snapshot.isBackground());
-        sb.append(",\"transactionName\":\"");
-        sb.append(JsonStringEncoder.getInstance().quoteAsString(snapshot.getTransactionName()));
-        sb.append("\"");
-        sb.append(",\"headline\":\"");
-        sb.append(JsonStringEncoder.getInstance().quoteAsString(snapshot.getHeadline()));
-        sb.append("\"");
-        writeErrorMessage(snapshot);
-        writeAttributes(snapshot);
-        writeUser(snapshot);
-        writeMetrics(snapshot);
-        sb.append(",\"jvmInfo\":");
-        sb.append(snapshot.getJvmInfo());
-        writeCharSource("spans", snapshot.getSpans());
-        writeCharSource("coarseMergedStackTree", snapshot.getCoarseMergedStackTree());
-        writeCharSource("fineMergedStackTree", snapshot.getFineMergedStackTree());
-        if (summary) {
-            sb.append(",\"summary\":true");
-        }
-        sb.append("}");
-        flushStringBuilder();
-        return CharSource.concat(charSources);
-    }
-
-    private void writeErrorMessage(Snapshot snapshot) {
-        String error = snapshot.getError();
-        if (error != null) {
-            sb.append(",\"error\":\"");
-            sb.append(JsonStringEncoder.getInstance().quoteAsString(error));
-            sb.append("\"");
-        }
-    }
-
-    private void writeAttributes(Snapshot snapshot) {
+    public static String toString(Snapshot snapshot) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeStringField("id", snapshot.getId());
+        jg.writeBooleanField("active", snapshot.isActive());
+        jg.writeBooleanField("stuck", snapshot.isStuck());
+        jg.writeNumberField("startTime", snapshot.getStartTime());
+        jg.writeNumberField("captureTime", snapshot.getCaptureTime());
+        jg.writeNumberField("duration", snapshot.getDuration());
+        jg.writeBooleanField("background", snapshot.isBackground());
+        jg.writeStringField("transactionName", snapshot.getTransactionName());
+        jg.writeStringField("headline", snapshot.getHeadline());
+        jg.writeStringField("error", snapshot.getError());
+        jg.writeStringField("user", snapshot.getUser());
         String attributes = snapshot.getAttributes();
         if (attributes != null) {
-            sb.append(",\"attributes\":");
-            sb.append(attributes);
+            jg.writeFieldName("attributes");
+            jg.writeRawValue(attributes);
         }
-    }
-
-    private void writeUser(Snapshot snapshot) {
-        String user = snapshot.getUser();
-        if (user != null) {
-            sb.append(",\"user\":\"");
-            sb.append(JsonStringEncoder.getInstance().quoteAsString(user));
-            sb.append("\"");
-        }
-    }
-
-    private void writeMetrics(Snapshot snapshot) {
         String metrics = snapshot.getMetrics();
         if (metrics != null) {
-            sb.append(",\"metrics\":");
-            sb.append(metrics);
+            jg.writeFieldName("metrics");
+            jg.writeRawValue(metrics);
         }
-    }
-
-    private void writeCharSource(String attributeName, @ReadOnly @Nullable CharSource charSource)
-            throws UnsupportedEncodingException {
-        if (charSource != null) {
-            sb.append(",\"");
-            sb.append(attributeName);
-            sb.append("\":");
-            flushStringBuilder();
-            charSources.add(charSource);
+        String jvmInfo = snapshot.getJvmInfo();
+        if (jvmInfo != null) {
+            jg.writeFieldName("jvmInfo");
+            jg.writeRawValue(jvmInfo);
         }
-    }
-
-    // flush current StringBuilder as its own chunk and reset StringBuilder
-    private void flushStringBuilder() throws UnsupportedEncodingException {
-        charSources.add(CharSource.wrap(sb.toString()));
-        sb.setLength(0);
-    }
-
-    // this method exists because tests cannot use (sometimes) shaded guava CharSource
-    @OnlyUsedByTests
-    public static String toString(Snapshot snapshot, boolean summary) throws IOException {
-        return toCharSource(snapshot, summary).read();
+        jg.writeStringField("spansExistence",
+                snapshot.getSpansExistence().name().toLowerCase(Locale.ENGLISH));
+        jg.writeStringField("coarseProfileExistence",
+                snapshot.getCoarseProfileExistence().name().toLowerCase(Locale.ENGLISH));
+        jg.writeStringField("fineProfileExistence",
+                snapshot.getFineProfileExistence().name().toLowerCase(Locale.ENGLISH));
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
     }
 }

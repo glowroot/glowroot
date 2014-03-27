@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, Glowroot, TraceRenderer, $, Spinner, alert */
+/* global glowroot, angular, Glowroot, $ */
 
 glowroot.controller('TracesCtrl', [
   '$scope',
@@ -233,127 +233,10 @@ glowroot.controller('TracesCtrl', [
     function showTraceDetailTooltip(item) {
       var x = item.pageX;
       var y = item.pageY;
-      var spinner = new Spinner({ lines: 10, width: 3, radius: 6, top: 2, left: 2 });
-
-      function displaySpinner() {
-        if (spinner) {
-          var html = '<div id="tooltipSpinner" style="width: 36px; height: 36px;"></div>';
-          $chart.qtip({
-            content: {
-              text: html
-            },
-            position: {
-              my: 'left center',
-              target: [ x, y ],
-              viewport: $chart
-            },
-            style: {
-              classes: 'ui-tooltip-bootstrap qtip-override qtip-border-color-' + item.seriesIndex
-            },
-            hide: {
-              event: 'unfocus'
-            },
-            show: {
-              event: false
-            },
-            events: {
-              hide: function () {
-                summaryItem = undefined;
-              }
-            }
-          });
-          $chart.qtip('show');
-          spinner.spin($('#tooltipSpinner').get(0));
-        }
-      }
-
-      // small delay so that if there is an immediate response the spinner doesn't blink
-      setTimeout(displaySpinner, 100);
-      var id = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
-      summaryItem = item;
+      var traceId = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
       var modalVanishPoint = [x, y];
-      var localSummaryItem = summaryItem;
       $scope.$apply(function () {
-        $http.get('backend/trace/summary/' + id)
-            .success(function (data) {
-              spinner.stop();
-              spinner = undefined;
-              // intentionally not using itemEquals() here to avoid edge case where user clicks on item
-              // then zooms and clicks on the same item. if the first request comes back after the second
-              // click, then itemEquals() will be true and it will pop up the correct summary, but at the
-              // incorrect location
-              if (localSummaryItem !== summaryItem) {
-                // too slow, the user has moved on to another summary already
-                return;
-              }
-              var text;
-              var summaryTrace;
-              if (data.expired) {
-                text = 'expired';
-              } else {
-                summaryTrace = data;
-                summaryTrace.truncateMetrics = true;
-                var html = TraceRenderer.renderSummary(summaryTrace);
-                var showDetailHtml = '<div style="margin-top: 0.5em;">' +
-                    '<button class="flat-btn flat-btn-big-pad1aligned glowroot-link-color" id="showDetail"' +
-                    ' style="font-size: 12px;">show detail</button></div>';
-                text = html + showDetailHtml;
-              }
-              var $chartContainer = $('.chart-container');
-              var chartOffset = $chartContainer.offset();
-              // the +2 makes tooltip spacing from the data point the same when tooltip is both left and right of the
-              // data point
-              var target = [ x - chartOffset.left + 2, y - chartOffset.top ];
-              $chart.qtip({
-                content: {
-                  text: text
-                },
-                position: {
-                  my: 'left center',
-                  target: target,
-                  adjust: {
-                    x: 5
-                  },
-                  viewport: $(window),
-                  // container is the dom node where qtip div is attached
-                  // this needs to be inside the angular template so that its lifecycle is tied to the angular template
-                  container: $chartContainer
-                },
-                style: {
-                  classes: 'ui-tooltip-bootstrap qtip-override qtip-border-color-' + item.seriesIndex
-                },
-                hide: {
-                  event: false
-                },
-                show: {
-                  event: false
-                },
-                events: {
-                  hide: function () {
-                    summaryItem = undefined;
-                  }
-                }
-              });
-
-              $chart.qtip('show');
-              $('#showDetail').click(function () {
-                var $qtip = $('.qtip');
-                var initialFixedOffset = {
-                  top: $qtip.offset().top - $(window).scrollTop(),
-                  left: $qtip.offset().left - $(window).scrollLeft()
-                };
-                var initialWidth = $qtip.width();
-                var initialHeight = $qtip.height();
-                $chart.qtip('hide');
-                traceModal.displayModal(summaryTrace, initialFixedOffset, initialWidth, initialHeight,
-                    modalVanishPoint);
-                return false;
-              });
-            })
-            .error(function () {
-              // TODO handle this better
-              alert('Error occurred');
-            });
+        traceModal.displayModal(traceId, modalVanishPoint);
       });
     }
 

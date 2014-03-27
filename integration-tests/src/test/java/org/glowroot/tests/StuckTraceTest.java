@@ -84,7 +84,7 @@ public class StuckTraceTest {
         Stopwatch stopwatch = Stopwatch.createStarted();
         Trace trace = null;
         while (stopwatch.elapsed(SECONDS) < 5) {
-            trace = container.getTraceService().getActiveTraceSummary(0, MILLISECONDS);
+            trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
             if (trace != null && trace.isStuck()) {
                 break;
             }
@@ -97,7 +97,7 @@ public class StuckTraceTest {
         container.interruptAppUnderTest();
         future.get();
         // should now be reported as unstuck
-        trace = container.getTraceService().getLastTraceSummary();
+        trace = container.getTraceService().getLastTrace();
         assertThat(trace.isActive()).isFalse();
         assertThat(trace.isStuck()).isFalse();
         // cleanup

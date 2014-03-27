@@ -83,10 +83,11 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("/testservlet");
         assertThat(trace.getTransactionName()).isEqualTo("/testservlet");
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         assertThat(span.getMessage().getText()).isEqualTo("/testservlet");
         assertThat(span.getMessage().getDetail().get("Request http method")).isEqualTo("GET");
     }
@@ -98,10 +99,11 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteFilter.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("/testfilter");
         assertThat(trace.getTransactionName()).isEqualTo("/testfilter");
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         assertThat(span.getMessage().getText()).isEqualTo("/testfilter");
         assertThat(span.getMessage().getDetail().get("Request http method")).isEqualTo("GET");
     }
@@ -113,10 +115,11 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("/testfilter");
         assertThat(trace.getTransactionName()).isEqualTo("/testfilter");
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         assertThat(span.getMessage().getText()).isEqualTo("/testfilter");
         assertThat(span.getMessage().getDetail().get("Request http method")).isEqualTo("GET");
     }
@@ -128,8 +131,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestNoQueryString.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         String queryString = (String) span.getMessage().getDetail().get("Request query string");
         assertThat(queryString).isNull();
     }
@@ -141,8 +145,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestEmptyQueryString.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         String queryString = (String) span.getMessage().getDetail().get("Request query string");
         assertThat(queryString).isEqualTo("");
     }
@@ -154,8 +159,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestNonEmptyQueryString.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         String queryString = (String) span.getMessage().getDetail().get("Request query string");
         assertThat(queryString).isEqualTo("a=b&c=d");
     }
@@ -167,8 +173,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(GetParameter.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> requestParameters =
                 (Map<String, Object>) span.getMessage().getDetail().get("Request parameters");
@@ -187,8 +194,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(GetParameter.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
-        Span span = trace.getSpans().get(0);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
+        Span span = spans.get(0);
         assertThat(span.getMessage().getDetail()).hasSize(1);
         assertThat(span.getMessage().getDetail()).containsKey("Request http method");
     }
@@ -210,14 +218,15 @@ public class ServletPluginTest {
         container.executeAppUnderTest(InvalidateSession.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
         assertThat(trace.getHeadline()).isEqualTo("/testservlet");
         assertThat(trace.getTransactionName()).isEqualTo("/testservlet");
-        assertThat(trace.getSpans().get(0).getMessage().getDetail()
+        assertThat(spans.get(0).getMessage().getDetail()
                 .get("Session ID (at beginning of this request)")).isEqualTo("1234");
-        assertThat(trace.getSpans().get(0).getMessage().getDetail()
+        assertThat(spans.get(0).getMessage().getDetail()
                 .get("Session ID (updated during this request)")).isEqualTo("");
-        Span span = trace.getSpans().get(0);
+        Span span = spans.get(0);
         assertThat(span.getMessage().getText()).isEqualTo("/testservlet");
         assertThat(span.getMessage().getDetail().get("Request http method")).isEqualTo("GET");
     }
@@ -230,7 +239,8 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestServletContextListener.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
         assertThat(trace.getHeadline()).isEqualTo(
                 TestServletContextListener.class.getName() + ".contextInitialized()");
     }
@@ -243,12 +253,13 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestServletInit.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
         assertThat(trace.getHeadline()).isEqualTo(
                 TestServletInit.class.getName() + ".init()");
         assertThat(trace.getTransactionName()).isEqualTo(
                 "servlet init / " + TestServletInit.class.getName());
-        assertThat(trace.getSpans().get(0).getMessage().getText())
+        assertThat(spans.get(0).getMessage().getText())
                 .isEqualTo(TestServletInit.class.getName() + ".init()");
     }
 
@@ -260,11 +271,12 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestFilterInit.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
         assertThat(trace.getHeadline()).isEqualTo(TestFilterInit.class.getName() + ".init()");
         assertThat(trace.getTransactionName()).isEqualTo("filter init / "
                 + TestFilterInit.class.getName());
-        assertThat(trace.getSpans().get(0).getMessage().getText())
+        assertThat(spans.get(0).getMessage().getText())
                 .isEqualTo(TestFilterInit.class.getName() + ".init()");
     }
 
@@ -275,9 +287,10 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ThrowsException.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(1);
         assertThat(trace.getError()).isNotNull();
-        assertThat(trace.getSpans().get(0).getError().getException()).isNotNull();
+        assertThat(spans.get(0).getError().getException()).isNotNull();
     }
 
     @Test
@@ -287,19 +300,20 @@ public class ServletPluginTest {
         container.executeAppUnderTest(Send500Error.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
         assertThat(trace.getError()).isEqualTo("sendError, HTTP status code 500");
-        assertThat(trace.getSpans().get(0).getError()).isNotNull();
-        assertThat(trace.getSpans().get(0).getError().getText()).isEqualTo(
+        assertThat(spans.get(0).getError()).isNotNull();
+        assertThat(spans.get(0).getError().getText()).isEqualTo(
                 "sendError, HTTP status code 500");
-        assertThat(trace.getSpans().get(0).getError().getException()).isNull();
-        assertThat(trace.getSpans().get(0).getStackTrace()).isNull();
-        assertThat(trace.getSpans().get(1).getError()).isNotNull();
-        assertThat(trace.getSpans().get(1).getError().getText()).isEqualTo(
+        assertThat(spans.get(0).getError().getException()).isNull();
+        assertThat(spans.get(0).getStackTrace()).isNull();
+        assertThat(spans.get(1).getError()).isNotNull();
+        assertThat(spans.get(1).getError().getText()).isEqualTo(
                 "sendError, HTTP status code 500");
-        assertThat(trace.getSpans().get(1).getError().getException()).isNull();
-        assertThat(trace.getSpans().get(1).getStackTrace()).isNotNull();
-        assertThat(trace.getSpans().get(1).getStackTrace().get(0)).contains(".sendError(");
+        assertThat(spans.get(1).getError().getException()).isNull();
+        assertThat(spans.get(1).getStackTrace()).isNotNull();
+        assertThat(spans.get(1).getStackTrace().get(0)).contains(".sendError(");
     }
 
     @Test
@@ -309,19 +323,20 @@ public class ServletPluginTest {
         container.executeAppUnderTest(SetStatus500Error.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans).hasSize(2);
         assertThat(trace.getError()).isEqualTo("setStatus, HTTP status code 500");
-        assertThat(trace.getSpans().get(0).getError()).isNotNull();
-        assertThat(trace.getSpans().get(0).getError().getText()).isEqualTo(
+        assertThat(spans.get(0).getError()).isNotNull();
+        assertThat(spans.get(0).getError().getText()).isEqualTo(
                 "setStatus, HTTP status code 500");
-        assertThat(trace.getSpans().get(0).getError().getException()).isNull();
-        assertThat(trace.getSpans().get(0).getStackTrace()).isNull();
-        assertThat(trace.getSpans().get(1).getError()).isNotNull();
-        assertThat(trace.getSpans().get(1).getError().getText()).isEqualTo(
+        assertThat(spans.get(0).getError().getException()).isNull();
+        assertThat(spans.get(0).getStackTrace()).isNull();
+        assertThat(spans.get(1).getError()).isNotNull();
+        assertThat(spans.get(1).getError().getText()).isEqualTo(
                 "setStatus, HTTP status code 500");
-        assertThat(trace.getSpans().get(1).getError().getException()).isNull();
-        assertThat(trace.getSpans().get(1).getStackTrace()).isNotNull();
-        assertThat(trace.getSpans().get(1).getStackTrace().get(0)).contains(".setStatus(");
+        assertThat(spans.get(1).getError().getException()).isNull();
+        assertThat(spans.get(1).getStackTrace()).isNotNull();
+        assertThat(spans.get(1).getStackTrace().get(0)).contains(".setStatus(");
     }
 
     @SuppressWarnings("serial")
