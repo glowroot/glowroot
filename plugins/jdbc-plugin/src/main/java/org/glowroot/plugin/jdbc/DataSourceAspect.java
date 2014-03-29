@@ -83,8 +83,12 @@ public class DataSourceAspect {
             }
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            span.endWithError(ErrorMessage.from(t));
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Object spanOrTimer) {
+            if (spanOrTimer instanceof Span) {
+                ((Span) spanOrTimer).endWithError(ErrorMessage.from(t));
+            } else {
+                ((MetricTimer) spanOrTimer).stop();
+            }
         }
     }
 }
