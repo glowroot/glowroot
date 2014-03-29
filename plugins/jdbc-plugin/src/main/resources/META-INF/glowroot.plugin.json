@@ -39,6 +39,12 @@
       ]
     },
     {
+      "prompt": "Connection.setAutoCommit() spans",
+      "name": "captureSetAutoCommitSpans",
+      "type": "boolean",
+      "description": "Capture spans for executions of Connection.setAutoCommit()"
+    },
+    {
       "prompt": "Connection.close() spans",
       "name": "captureConnectionCloseSpans",
       "type": "boolean",

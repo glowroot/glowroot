@@ -15,13 +15,22 @@
  */
 package org.glowroot.plugin.jdbc;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+
+import checkers.nullness.quals.MonotonicNonNull;
+
 import org.glowroot.api.ErrorMessage;
+import org.glowroot.api.Logger;
+import org.glowroot.api.LoggerFactory;
+import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
+import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -40,9 +49,12 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 // slow while expanding
 public class DataSourceAspect {
 
+    private static final Logger logger = LoggerFactory.getLogger(DataSourceAspect.class);
+
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
     private static volatile boolean captureGetConnectionSpans;
+    private static volatile boolean captureSetAutoCommitSpans;
 
     static {
         pluginServices.registerConfigListener(new ConfigListener() {
@@ -50,9 +62,12 @@ public class DataSourceAspect {
             public void onChange() {
                 captureGetConnectionSpans =
                         pluginServices.getBooleanProperty("captureGetConnectionSpans");
+                captureSetAutoCommitSpans =
+                        pluginServices.getBooleanProperty("captureSetAutoCommitSpans");
             }
         });
         captureGetConnectionSpans = pluginServices.getBooleanProperty("captureGetConnectionSpans");
+        captureSetAutoCommitSpans = pluginServices.getBooleanProperty("captureSetAutoCommitSpans");
     }
 
     @Pointcut(typeName = "javax.sql.DataSource", methodName = "getConnection",
@@ -67,17 +82,33 @@ public class DataSourceAspect {
         @OnBefore
         public static Object onBefore() {
             if (captureGetConnectionSpans) {
-                return pluginServices.startSpan(MessageSupplier.from("jdbc get connection"),
-                        metricName);
+                return pluginServices.startSpan(new GetConnectionMessageSupplier(), metricName);
             } else {
                 return pluginServices.startMetricTimer(metricName);
             }
         }
         @OnReturn
-        public static void onReturn(@BindTraveler Object spanOrTimer) {
+        public static void onReturn(@BindReturn Connection connection,
+                @BindTraveler Object spanOrTimer) {
             if (spanOrTimer instanceof Span) {
-                ((Span) spanOrTimer).endWithStackTrace(
-                        JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
+                Span span = (Span) spanOrTimer;
+                if (captureSetAutoCommitSpans) {
+                    String autoCommit;
+                    try {
+                        autoCommit = Boolean.toString(connection.getAutoCommit());
+                    } catch (SQLException e) {
+                        logger.warn(e.getMessage(), e);
+                        autoCommit = "unknown";
+                    }
+                    GetConnectionMessageSupplier messageSupplier =
+                            (GetConnectionMessageSupplier) span.getMessageSupplier();
+                    if (messageSupplier != null) {
+                        // messageSupplier can be null if NopSpan
+                        messageSupplier.setAutoCommit(autoCommit);
+                    }
+                }
+                span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                        MILLISECONDS);
             } else {
                 ((MetricTimer) spanOrTimer).stop();
             }
@@ -89,6 +120,25 @@ public class DataSourceAspect {
             } else {
                 ((MetricTimer) spanOrTimer).stop();
             }
+        }
+    }
+
+    private static class GetConnectionMessageSupplier extends MessageSupplier {
+
+        @MonotonicNonNull
+        private volatile String autoCommit;
+
+        @Override
+        public Message get() {
+            if (autoCommit == null) {
+                return Message.from("jdbc get connection");
+            } else {
+                return Message.from("jdbc get connection (autocommit: {})", autoCommit);
+            }
+        }
+
+        private void setAutoCommit(String autoCommit) {
+            this.autoCommit = autoCommit;
         }
     }
 }

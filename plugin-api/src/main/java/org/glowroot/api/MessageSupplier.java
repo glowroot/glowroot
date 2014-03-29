@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@ package org.glowroot.api;
 import checkers.nullness.quals.Nullable;
 
 /**
- * A (lazy) supplier of {@link Message} instances.
+ * A (lazy) supplier of {@link Message} instances. Needs to be thread safe since trace thread
+ * creates it, but trace storage (and live viewing) is done in a separate thread.
  * 
  * @author Trask Stalnaker
  * @since 0.5

@@ -452,6 +452,39 @@ public class JdbcPluginTest {
         assertThat(span2.getMessage().getText()).isEqualTo("jdbc connection close");
     }
 
+    @Test
+    public void testSetAutoCommit() throws Exception {
+        // given
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "captureSetAutoCommitSpans", true);
+        // when
+        container.executeAppUnderTest(ExecuteSetAutoCommit.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(3);
+        Span span1 = trace.getSpans().get(1);
+        assertThat(span1.getMessage().getText()).isEqualTo("jdbc set autocommit: false");
+        Span span2 = trace.getSpans().get(2);
+        assertThat(span2.getMessage().getText()).isEqualTo("jdbc set autocommit: true");
+    }
+
+    @Test
+    public void testGetConnectionAndSetAutoCommitTogether() throws Exception {
+        // given
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "captureGetConnectionSpans", true);
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "captureSetAutoCommitSpans", true);
+        // when
+        container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span span1 = trace.getSpans().get(1);
+        assertThat(span1.getMessage().getText())
+                .isEqualTo("jdbc get connection (autocommit: true)");
+    }
+
     // TODO make a release build profile that runs all tests against
     // Hsqldb, Oracle, SQLServer, MySQL, ...
 
@@ -1125,6 +1158,24 @@ public class JdbcPluginTest {
         @Override
         public void traceMarker() throws Exception {
             dataSource.getConnection().close();
+        }
+    }
+
+    public static class ExecuteSetAutoCommit implements AppUnderTest, TraceMarker {
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            connection.setAutoCommit(false);
+            connection.setAutoCommit(true);
         }
     }
 }

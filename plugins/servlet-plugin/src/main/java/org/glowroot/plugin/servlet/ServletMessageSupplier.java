@@ -75,8 +75,8 @@ class ServletMessageSupplier extends MessageSupplier {
     private volatile String sessionIdUpdatedValue;
 
     // session attributes may not be thread safe, so they must be converted to Strings
-    // within the request processing thread, which can then be used by the stuck trace alerting
-    // threads and real-time monitoring threads
+    // within the request processing thread, which can then be safely read by the trace storage
+    // thread (and live viewing thread also)
     // the initial value map contains the session attributes as they were present at the beginning
     // of the request
     @Nullable

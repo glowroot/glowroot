@@ -22,6 +22,7 @@ import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
+import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -41,6 +42,7 @@ public class ConnectionAspect {
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
     private static volatile boolean captureConnectionCloseSpans;
+    private static volatile boolean captureSetAutoCommitSpans;
 
     static {
         pluginServices.registerConfigListener(new ConfigListener() {
@@ -48,10 +50,13 @@ public class ConnectionAspect {
             public void onChange() {
                 captureConnectionCloseSpans =
                         pluginServices.getBooleanProperty("captureConnectionCloseSpans");
+                captureSetAutoCommitSpans =
+                        pluginServices.getBooleanProperty("captureSetAutoCommitSpans");
             }
         });
         captureConnectionCloseSpans =
                 pluginServices.getBooleanProperty("captureConnectionCloseSpans");
+        captureSetAutoCommitSpans = pluginServices.getBooleanProperty("captureSetAutoCommitSpans");
     }
 
     @Pointcut(typeName = "java.sql.Connection", methodName = "commit", ignoreSameNested = true,
@@ -134,6 +139,31 @@ public class ConnectionAspect {
             } else {
                 ((MetricTimer) spanOrTimer).stop();
             }
+        }
+    }
+
+    @Pointcut(typeName = "java.sql.Connection", methodName = "setAutoCommit",
+            methodArgs = {"boolean"}, ignoreSameNested = true, metricName = "jdbc set autocommit")
+    public static class SetAutoCommitAdvice {
+        private static final MetricName metricName =
+                pluginServices.getMetricName(CloseAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled() && captureSetAutoCommitSpans;
+        }
+        @OnBefore
+        public static Span onBefore(@BindMethodArg boolean autoCommit) {
+            return pluginServices.startSpan(
+                    MessageSupplier.from("jdbc set autocommit: {}", Boolean.toString(autoCommit)),
+                    metricName);
+        }
+        @OnReturn
+        public static void onReturn(@BindTraveler Span span) {
+            span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
+            span.endWithError(ErrorMessage.from(t));
         }
     }
 }
