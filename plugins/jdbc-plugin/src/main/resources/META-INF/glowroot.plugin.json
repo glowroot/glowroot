@@ -39,6 +39,12 @@
       ]
     },
     {
+      "prompt": "Connection.close() spans",
+      "name": "captureConnectionCloseSpans",
+      "type": "boolean",
+      "description": "Capture spans for executions of Connection.close()"
+    },
+    {
       "prompt": "DataSource.getConnection() spans",
       "name": "captureGetConnectionSpans",
       "type": "boolean",

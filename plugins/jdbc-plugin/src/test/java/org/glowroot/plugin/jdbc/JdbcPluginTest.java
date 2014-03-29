@@ -406,6 +406,52 @@ public class JdbcPluginTest {
                 "jdbc execution: select * from employee where name like ? ['nomatch%'] => 0 rows");
     }
 
+    @Test
+    public void testDataSourceGetConnection() throws Exception {
+        // given
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "captureGetConnectionSpans", true);
+        // when
+        container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span jdbcSpan = trace.getSpans().get(1);
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo("jdbc get connection");
+    }
+
+    @Test
+    public void testConnectionClose() throws Exception {
+        // given
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "captureConnectionCloseSpans", true);
+        // when
+        container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span jdbcSpan = trace.getSpans().get(1);
+        assertThat(jdbcSpan.getMessage().getText()).isEqualTo("jdbc connection close");
+    }
+
+    @Test
+    public void testGetConnectionAndConnectionCloseTogether() throws Exception {
+        // given
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "captureGetConnectionSpans", true);
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "captureConnectionCloseSpans", true);
+        // when
+        container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(3);
+        Span span1 = trace.getSpans().get(1);
+        assertThat(span1.getMessage().getText()).isEqualTo("jdbc get connection");
+        Span span2 = trace.getSpans().get(2);
+        assertThat(span2.getMessage().getText()).isEqualTo("jdbc connection close");
+    }
+
     // TODO make a release build profile that runs all tests against
     // Hsqldb, Oracle, SQLServer, MySQL, ...
 
@@ -494,8 +540,8 @@ public class JdbcPluginTest {
             SQLException {
         // set up database
         Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        Connection connection = DriverManager.getConnection("jdbc:sqlserver://localhost",
-                "sa", "Datac3rt");
+        Connection connection =
+                DriverManager.getConnection("jdbc:sqlserver://localhost", "sa", "password");
         insertRecords(connection);
         return connection;
     }
@@ -1060,6 +1106,25 @@ public class JdbcPluginTest {
             } finally {
                 preparedStatement.close();
             }
+        }
+    }
+
+    public static class ExecuteGetConnectionAndConnectionClose implements AppUnderTest,
+            TraceMarker {
+        private BasicDataSource dataSource;
+        @Override
+        public void executeApp() throws Exception {
+            dataSource = new BasicDataSource();
+            dataSource.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
+            dataSource.setUrl("jdbc:hsqldb:mem:test");
+            // BasicDataSource opens and closes a test connection on first getConnection(),
+            // so just getting that out of the way before starting trace
+            dataSource.getConnection().close();
+            traceMarker();
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            dataSource.getConnection().close();
         }
     }
 }

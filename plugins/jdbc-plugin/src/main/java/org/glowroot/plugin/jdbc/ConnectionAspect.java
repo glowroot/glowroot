@@ -18,7 +18,9 @@ package org.glowroot.plugin.jdbc;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
+import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -37,6 +39,20 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class ConnectionAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
+
+    private static volatile boolean captureConnectionCloseSpans;
+
+    static {
+        pluginServices.registerConfigListener(new ConfigListener() {
+            @Override
+            public void onChange() {
+                captureConnectionCloseSpans =
+                        pluginServices.getBooleanProperty("captureConnectionCloseSpans");
+            }
+        });
+        captureConnectionCloseSpans =
+                pluginServices.getBooleanProperty("captureConnectionCloseSpans");
+    }
 
     @Pointcut(typeName = "java.sql.Connection", methodName = "commit", ignoreSameNested = true,
             metricName = "jdbc commit")
@@ -81,6 +97,43 @@ public class ConnectionAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
             span.endWithError(ErrorMessage.from(t));
+        }
+    }
+
+    @Pointcut(typeName = "java.sql.Connection", methodName = "close", ignoreSameNested = true,
+            metricName = "jdbc connection close")
+    public static class CloseAdvice {
+        private static final MetricName metricName =
+                pluginServices.getMetricName(CloseAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+        @OnBefore
+        public static Object onBefore() {
+            if (captureConnectionCloseSpans) {
+                return pluginServices.startSpan(MessageSupplier.from("jdbc connection close"),
+                        metricName);
+            } else {
+                return pluginServices.startMetricTimer(metricName);
+            }
+        }
+        @OnReturn
+        public static void onReturn(@BindTraveler Object spanOrTimer) {
+            if (spanOrTimer instanceof Span) {
+                ((Span) spanOrTimer).endWithStackTrace(
+                        JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
+            } else {
+                ((MetricTimer) spanOrTimer).stop();
+            }
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Object spanOrTimer) {
+            if (spanOrTimer instanceof Span) {
+                ((Span) spanOrTimer).endWithError(ErrorMessage.from(t));
+            } else {
+                ((MetricTimer) spanOrTimer).stop();
+            }
         }
     }
 }
