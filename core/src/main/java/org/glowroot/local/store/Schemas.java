@@ -222,7 +222,8 @@ class Schemas {
             resultSet.close();
         }
         ImmutableSet.Builder<Index> indexes = ImmutableSet.builder();
-        for (Entry<String, Collection<String>> entry : indexColumns.asMap().entrySet()) {
+        // ? extends String needed for checker framework, see issue #311
+        for (Entry<? extends String, Collection<String>> entry : indexColumns.asMap().entrySet()) {
             String name = entry.getKey();
             indexes.add(new Index(name, entry.getValue()));
 

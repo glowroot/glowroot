@@ -124,7 +124,8 @@ public class ParsedTypeCache {
         String partialTypeNameUpper = partialTypeName.toUpperCase(Locale.ENGLISH);
         Set<String> typeNames = Sets.newTreeSet();
         synchronized (typeNameUppers) {
-            for (Entry<String, SortedSet<String>> entry : typeNameUppers.entrySet()) {
+            // ? extends String needed for checker framework, see issue #311
+            for (Entry<? extends String, SortedSet<String>> entry : typeNameUppers.entrySet()) {
                 String typeNameUpper = entry.getKey();
                 if (typeNameUpper.contains(partialTypeNameUpper)) {
                     typeNames.addAll(entry.getValue());
@@ -139,9 +140,12 @@ public class ParsedTypeCache {
 
     public List<Class<?>> getClassesWithReweavableAdvice() {
         List<Class<?>> classes = Lists.newArrayList();
-        for (Entry<ClassLoader, ConcurrentMap<String, ParsedType>> outerEntry : parsedTypeCache
+        // ? extends ClassLoader needed for checker framework, see issue #311
+        for (Entry<? extends ClassLoader, ConcurrentMap<String, ParsedType>> outerEntry : parsedTypeCache
                 .asMap().entrySet()) {
-            for (Entry<String, ParsedType> innerEntry : outerEntry.getValue().entrySet()) {
+            // ? extends String needed for checker framework, see issue #311
+            for (Entry<? extends String, ParsedType> innerEntry : outerEntry.getValue()
+                    .entrySet()) {
                 if (innerEntry.getValue().hasReweavableAdvice()) {
                     try {
                         classes.add(outerEntry.getKey().loadClass(innerEntry.getKey()));

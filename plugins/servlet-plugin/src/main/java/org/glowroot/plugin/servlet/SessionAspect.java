@@ -22,8 +22,8 @@ import javax.annotation.Nullable;
 import org.glowroot.api.Beans;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.weaving.BindMethodArg;
-import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindReceiver;
+import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
@@ -202,7 +202,8 @@ public class SessionAspect {
             if (val == null) {
                 messageSupplier.putSessionAttributeChangedValue(capturePathBase, null);
             } else {
-                for (Entry<String, String> entry : Beans.propertiesAsText(val)
+                // ? extends String needed for checker framework, see issue #311
+                for (Entry<? extends String, String> entry : Beans.propertiesAsText(val)
                         .entrySet()) {
                     messageSupplier.putSessionAttributeChangedValue(
                             capturePathBase + "." + entry.getKey(), entry.getValue());

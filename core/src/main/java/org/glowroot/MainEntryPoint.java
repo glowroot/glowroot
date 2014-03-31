@@ -161,7 +161,8 @@ public class MainEntryPoint {
 
     private static ImmutableMap<String, String> getGlowrootProperties() {
         ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
-        for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
+        // ? extends Object needed for checker framework, see issue #311
+        for (Entry<? extends Object, Object> entry : System.getProperties().entrySet()) {
             if (entry.getKey() instanceof String && entry.getValue() instanceof String
                     && ((String) entry.getKey()).startsWith("glowroot.")) {
                 String key = (String) entry.getKey();

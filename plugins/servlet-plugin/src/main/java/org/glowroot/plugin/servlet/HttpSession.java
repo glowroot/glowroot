@@ -107,7 +107,9 @@ class HttpSession {
                 capturePath = capturePath.substring(0, capturePath.length() - 2);
                 Object value = getSessionAttribute(capturePath);
                 if (value != null) {
-                    for (Entry<String, String> entry : Beans.propertiesAsText(value).entrySet()) {
+                    // ? extends String needed for checker framework, see issue #311
+                    for (Entry<? extends String, String> entry : Beans.propertiesAsText(value)
+                            .entrySet()) {
                         captureMap.put(capturePath + "." + entry.getKey(), entry.getValue());
                     }
                 }

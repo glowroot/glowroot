@@ -167,7 +167,8 @@ class JvmJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartArray();
-        for (Entry<String, String> entry : sortedProperties.entrySet()) {
+        // ? extends String needed for checker framework, see issue #311
+        for (Entry<? extends String, String> entry : sortedProperties.entrySet()) {
             jg.writeStartObject();
             jg.writeStringField("name", entry.getKey());
             jg.writeStringField("value", entry.getValue());
@@ -400,7 +401,8 @@ class JvmJsonService {
                 OptionalJsonServices.validateAvailability(diagnosticOptions);
         Map<String, Object> values =
                 mapper.readValue(content, new TypeReference<Map<String, Object>>() {});
-        for (Entry<String, Object> value : values.entrySet()) {
+        // ? extends String needed for checker framework, see issue #311
+        for (Entry<? extends String, Object> value : values.entrySet()) {
             service.setVMOption(value.getKey(), value.getValue().toString());
         }
         return getDiagnosticOptions();

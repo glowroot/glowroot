@@ -192,7 +192,9 @@ public class AggregateDao implements AggregateRepository {
                 @Override
                 public void addBatches(PreparedStatement preparedStatement)
                         throws SQLException {
-                    for (Entry<String, AggregateBuilder> entry : transactionAggregates.entrySet()) {
+                    // ? extends String needed for checker framework, see issue #311
+                    for (Entry<? extends String, AggregateBuilder> entry : transactionAggregates
+                            .entrySet()) {
                         preparedStatement.setString(1, entry.getKey());
                         preparedStatement.setLong(2, captureTime);
                         AggregateBuilder aggregate = entry.getValue();
