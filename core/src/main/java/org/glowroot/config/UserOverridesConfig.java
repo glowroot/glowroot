@@ -15,12 +15,12 @@
  */
 package org.glowroot.config;
 
-import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import dataflow.quals.Pure;
 
 import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.markers.UsedByJsonBinding;
@@ -80,8 +80,8 @@ public class UserOverridesConfig {
         return version;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("user", user)

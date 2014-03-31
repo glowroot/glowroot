@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,11 +42,11 @@ class DetailMapWriter {
         this.jg = jg;
     }
 
-    void write(@ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) throws IOException {
+    void write(Map<String, ? extends /*@Nullable*/Object> detail) throws IOException {
         writeMap(detail);
     }
 
-    private void writeMap(@ReadOnly Map<?, ?> detail) throws IOException {
+    private void writeMap(Map<?, ?> detail) throws IOException {
         jg.writeStartObject();
         for (Entry<?, ?> entry : detail.entrySet()) {
             Object key = entry.getKey();

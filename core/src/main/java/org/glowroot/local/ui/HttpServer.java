@@ -16,6 +16,7 @@
 package org.glowroot.local.ui;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -66,7 +66,7 @@ public class HttpServer {
 
     HttpServer(String bindAddress, int port, int numWorkerThreads,
             IndexHtmlService indexHtmlService, ImmutableMap<Pattern, Object> uriMappings,
-            HttpSessionManager httpSessionManager, ImmutableList<Object> jsonServices) {
+            HttpSessionManager httpSessionManager, List<Object> jsonServices) {
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
         ExecutorService bossExecutor = Executors.newCachedThreadPool(threadFactory);

@@ -89,9 +89,9 @@
         <version>4.11</version>
       </dependency>
       <dependency>
-        <groupId>edu.washington.cs.types.checker</groupId>
-        <artifactId>checker-quals-jdk5</artifactId>
-        <version>1.7.2</version>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+        <version>2.0.3</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
@@ -360,9 +360,9 @@
         <plugins>
           <plugin>
             <!-- running checker framework check requires jdk7 -->
-            <groupId>edu.washington.cs.types.checker</groupId>
-            <artifactId>checker-maven-plugin</artifactId>
-            <version>1.7.2</version>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checkerframework-maven-plugin</artifactId>
+            <version>1.8.0</version>
             <executions>
               <execution>
                 <phase>process-classes</phase>
@@ -373,13 +373,13 @@
             </executions>
             <configuration>
               <processors>
-                <processor>checkers.nullness.NullnessChecker</processor>
-                <!--processor>checkers.igj.IGJChecker</processor-->
+                <processor>org.checkerframework.checker.nullness.NullnessChecker</processor>
+                <!--processor>org.checkerframework.checker.igj.IGJChecker</processor-->
               </processors>
               <procOnly>false</procOnly>
               <!-- implicit imports for commented out uses of /*@Nullable*/, etc -->
               <javaParams>
-                -Djsr308_imports=checkers.nullness.quals.*${path.separator}checkers.igj.quals.*
+                -Djsr308_imports=org.checkerframework.checker.nullness.qual.*${path.separator}org.checkerframework.dataflow.qual.*
               </javaParams>
               <javacParams>-Astubs=core/src/main/stubs</javacParams>
             </configuration>

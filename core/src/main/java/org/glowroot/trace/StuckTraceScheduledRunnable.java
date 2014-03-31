@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 package org.glowroot.trace;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Objects;
-import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ScheduledRunnable;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.model.Trace;
 
 /**
@@ -68,8 +68,8 @@ class StuckTraceScheduledRunnable extends ScheduledRunnable {
         traceCollector.onStuckTrace(trace);
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("trace", trace)

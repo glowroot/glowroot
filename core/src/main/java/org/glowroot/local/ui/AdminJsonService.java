@@ -22,7 +22,9 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -95,7 +97,7 @@ class AdminJsonService {
             logger.warn("retransformClasses is not supported");
             return "{}";
         }
-        List<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
+        ImmutableList<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
         pointcutConfigAdviceCache.updateAdvisors(pointcutConfigs);
         Set<String> typeNames = Sets.newHashSet();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {

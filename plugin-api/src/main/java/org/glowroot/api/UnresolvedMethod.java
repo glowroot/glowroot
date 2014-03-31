@@ -19,9 +19,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.MapMaker;
@@ -130,8 +133,7 @@ public class UnresolvedMethod {
         checkNotNull(typeName);
         checkNotNull(methodName);
         checkNotNull(parameterTypes);
-        return new UnresolvedMethod(typeName, methodName, ImmutableList.copyOf(parameterTypes),
-                null);
+        return new UnresolvedMethod(typeName, methodName, Arrays.asList(parameterTypes), null);
     }
 
     /**
@@ -149,21 +151,29 @@ public class UnresolvedMethod {
         checkNotNull(typeName);
         checkNotNull(methodName);
         checkNotNull(parameterTypeNames);
-        return new UnresolvedMethod(typeName, methodName, null,
-                ImmutableList.copyOf(parameterTypeNames));
+        return new UnresolvedMethod(typeName, methodName, null, Arrays.asList(parameterTypeNames));
     }
 
     private UnresolvedMethod(String typeName, String methodName,
-            @Nullable ImmutableList<Class<?>> parameterTypes,
-            @Nullable ImmutableList<String> parameterTypeNames) {
+            @Nullable List<Class<?>> parameterTypes,
+            @Nullable List<String> parameterTypeNames) {
         if (parameterTypes == null && parameterTypeNames == null) {
             throw new AssertionError("Constructor args 'parameterTypes' and 'parameterTypeNames'"
                     + " cannot both be null (enforced by static factory methods)");
         }
         this.typeName = typeName;
         this.methodName = methodName;
-        this.parameterTypes = parameterTypes;
-        this.parameterTypeNames = parameterTypeNames;
+        if (parameterTypes == null) {
+            this.parameterTypes = null;
+        } else {
+            this.parameterTypes = ImmutableList.copyOf(parameterTypes);
+        }
+        if (parameterTypeNames == null) {
+            this.parameterTypeNames = null;
+        } else {
+            this.parameterTypeNames = ImmutableList.copyOf(parameterTypeNames);
+        }
+
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@ package org.glowroot.api.internal;
 
 import java.util.Map;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
 
 /**
  * This interface exists to provide access to ErrorMessageImpl from glowroot without making
@@ -31,7 +30,6 @@ public interface ReadableErrorMessage {
 
     String getText();
 
-    @ReadOnly
     @Nullable
     Map<String, ? extends /*@Nullable*/Object> getDetail();
 

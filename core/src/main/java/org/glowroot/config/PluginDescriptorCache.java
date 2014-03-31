@@ -20,19 +20,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Collections;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import org.slf4j.Logger;
@@ -42,6 +42,7 @@ import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.dynamicadvice.DynamicAdviceGenerator;
+import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.Advice.AdviceConstructionException;
 import org.glowroot.weaving.MixinType;
@@ -53,9 +54,7 @@ import org.glowroot.weaving.MixinType;
 @Immutable
 public class PluginDescriptorCache {
 
-    @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(PluginDescriptorCache.class);
-    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
@@ -63,19 +62,17 @@ public class PluginDescriptorCache {
     private final ImmutableList<Advice> advisors;
 
     public static PluginDescriptorCache create() {
-        ImmutableList.Builder<PluginDescriptor> thePluginDescriptors = ImmutableList.builder();
+        List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
         try {
-            thePluginDescriptors.addAll(readClasspathPluginDescriptors());
-            thePluginDescriptors.addAll(readStandalonePluginDescriptors());
+            pluginDescriptors.addAll(readClasspathPluginDescriptors());
+            pluginDescriptors.addAll(readStandalonePluginDescriptors());
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         } catch (URISyntaxException e) {
             logger.error(e.getMessage(), e);
         }
-        ImmutableList<PluginDescriptor> pluginDescriptors = thePluginDescriptors.build();
-
-        ImmutableList.Builder<MixinType> theMixinTypes = ImmutableList.builder();
-        ImmutableList.Builder<Advice> theAdvisors = ImmutableList.builder();
+        List<MixinType> mixinTypes = Lists.newArrayList();
+        List<Advice> advisors = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             for (String aspect : pluginDescriptor.getAspects()) {
                 try {
@@ -83,17 +80,16 @@ public class PluginDescriptorCache {
                     // will probably call PluginServices.get()
                     Class<?> aspectClass = Class.forName(aspect, false,
                             PluginDescriptor.class.getClassLoader());
-                    theAdvisors.addAll(getAdvisors(aspectClass));
-                    theMixinTypes.addAll(getMixinTypes(aspectClass));
+                    advisors.addAll(getAdvisors(aspectClass));
+                    mixinTypes.addAll(getMixinTypes(aspectClass));
                 } catch (ClassNotFoundException e) {
                     logger.warn("aspect not found: {}", aspect, e);
                 }
             }
-            theAdvisors.addAll(DynamicAdviceGenerator.getAdvisors(pluginDescriptor.getPointcuts(),
+            advisors.addAll(DynamicAdviceGenerator.createAdvisors(pluginDescriptor.getPointcuts(),
                     pluginDescriptor.getId()));
         }
-        return new PluginDescriptorCache(pluginDescriptors, theMixinTypes.build(),
-                theAdvisors.build());
+        return new PluginDescriptorCache(pluginDescriptors, mixinTypes, advisors);
     }
 
     public static PluginDescriptorCache createInViewerMode() {
@@ -106,27 +102,22 @@ public class PluginDescriptorCache {
         } catch (URISyntaxException e) {
             logger.error(e.getMessage(), e);
         }
-        ImmutableList.Builder<PluginDescriptor> pluginDescriptorsWithoutAdvice =
-                ImmutableList.builder();
+        List<PluginDescriptor> pluginDescriptorsWithoutAdvice = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             pluginDescriptorsWithoutAdvice.add(pluginDescriptor.copyWithoutAdvice());
         }
-        return new PluginDescriptorCache(pluginDescriptorsWithoutAdvice.build(),
+        return new PluginDescriptorCache(pluginDescriptorsWithoutAdvice,
                 ImmutableList.<MixinType>of(), ImmutableList.<Advice>of());
     }
 
-    private PluginDescriptorCache(ImmutableList<PluginDescriptor> pluginDescriptors,
-            ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> advisors) {
-        this.pluginDescriptors = pluginDescriptors;
-        this.mixinTypes = mixinTypes;
-        this.advisors = advisors;
+    private PluginDescriptorCache(List<PluginDescriptor> pluginDescriptors,
+            List<MixinType> mixinTypes, List<Advice> advisors) {
+        this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
+        this.mixinTypes = ImmutableList.copyOf(mixinTypes);
+        this.advisors = ImmutableList.copyOf(advisors);
     }
 
-    // don't return ImmutableList since this method is used by UiTestingMain and when UiTestingMain
-    // is compiled by maven, it is compiled against shaded glowroot, but then if it is run inside
-    // an IDE without rebuilding UiTestingMain it will fail since glowroot is then unshaded
-    @Immutable
-    public List<PluginDescriptor> getPluginDescriptors() {
+    public ImmutableList<PluginDescriptor> getPluginDescriptors() {
         return pluginDescriptors;
     }
 
@@ -140,24 +131,33 @@ public class PluginDescriptorCache {
         return null;
     }
 
-    // don't return ImmutableList since this method is used by SameJvmExecutionAdapter and when
-    // SameJvmExecutionAdapter is compiled by maven, it is compiled against shaded glowroot,
-    // but then if a unit test is run inside an IDE without rebuilding SameJvmExecutionAdapter it
-    // will fail since glowroot is then unshaded
-    @Immutable
-    public List<MixinType> getMixinTypes() {
+    public ImmutableList<MixinType> getMixinTypes() {
         return mixinTypes;
     }
 
-    // don't return ImmutableList, see comment above
-    @Immutable
-    public List<Advice> getAdvisors() {
+    public ImmutableList<Advice> getAdvisors() {
         return advisors;
     }
 
-    private static ImmutableList<PluginDescriptor> readClasspathPluginDescriptors()
+    // the 2 methods below only used by test harness (LocalContainer), so that tests will still
+    // succeed even if core is shaded (e.g. compiled from maven) and test-harness is compiled
+    // against unshaded core (e.g. compiled previously in IDE)
+    //
+    // don't return ImmutableList
+    @OnlyUsedByTests
+    public List<MixinType> getMixinTypesNeverShaded() {
+        return getMixinTypes();
+    }
+
+    // don't return ImmutableList, see comment above
+    @OnlyUsedByTests
+    public List<Advice> getAdvisorsNeverShaded() {
+        return getAdvisors();
+    }
+
+    private static List<PluginDescriptor> readClasspathPluginDescriptors()
             throws IOException {
-        ImmutableList.Builder<PluginDescriptor> pluginDescriptors = ImmutableList.builder();
+        List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
         List<URL> urls = getResources("META-INF/glowroot.plugin.json");
         for (URL url : urls) {
             try {
@@ -169,25 +169,25 @@ public class PluginDescriptorCache {
                 logger.error("error parsing plugin descriptor: {}", url.toExternalForm(), e);
             }
         }
-        return pluginDescriptors.build();
+        return pluginDescriptors;
     }
 
-    private static ImmutableList<PluginDescriptor> readStandalonePluginDescriptors()
-            throws IOException, URISyntaxException {
-        ImmutableList.Builder<PluginDescriptor> pluginDescriptors = ImmutableList.builder();
+    private static List<PluginDescriptor> readStandalonePluginDescriptors() throws IOException,
+            URISyntaxException {
+        List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
         for (File pluginDescriptorFile : Plugins.getStandalonePluginDescriptorFiles()) {
             PluginDescriptor pluginDescriptor = ObjectMappers.readRequiredValue(mapper,
                     pluginDescriptorFile, PluginDescriptor.class);
             pluginDescriptors.add(pluginDescriptor);
         }
-        return pluginDescriptors.build();
+        return pluginDescriptors;
     }
 
     // plugin descriptors aren't really on classpath in viewer mode
     // so need to read them directly from the jar files
-    private static ImmutableList<PluginDescriptor> readClasspathPluginDescriptorsViewerMode()
+    private static List<PluginDescriptor> readClasspathPluginDescriptorsViewerMode()
             throws IOException, URISyntaxException {
-        ImmutableList.Builder<PluginDescriptor> pluginDescriptors = ImmutableList.builder();
+        List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
         for (File pluginJar : Plugins.getPluginJars()) {
             JarFile jarFile = new JarFile(pluginJar);
             JarEntry jarEntry = jarFile.getJarEntry("META-INF/glowroot.plugin.json");
@@ -199,7 +199,7 @@ public class PluginDescriptorCache {
                     mapper.readValue(jarEntryIn, PluginDescriptor.class);
             pluginDescriptors.add(pluginDescriptor);
         }
-        return pluginDescriptors.build();
+        return pluginDescriptors;
     }
 
     private static List<Advice> getAdvisors(Class<?> aspectClass) {
@@ -228,14 +228,15 @@ public class PluginDescriptorCache {
         return mixinTypes;
     }
 
-    private static List<URL> getResources(String resourceName) throws IOException {
+    private static ImmutableList<URL> getResources(String resourceName) throws IOException {
         ClassLoader loader = PluginDescriptorCache.class.getClassLoader();
         if (loader == null) {
             // highly unlikely that this class is loaded by the bootstrap class loader,
             // but handling anyways
-            return Collections.list(ClassLoader.getSystemResources(resourceName));
+            return ImmutableList.copyOf(Iterators.forEnumeration(
+                    ClassLoader.getSystemResources(resourceName)));
         }
-        return Collections.list(loader.getResources(resourceName));
+        return ImmutableList.copyOf(Iterators.forEnumeration(loader.getResources(resourceName)));
     }
 
     @Nullable

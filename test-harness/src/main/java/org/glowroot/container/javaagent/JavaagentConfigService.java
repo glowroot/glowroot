@@ -17,8 +17,9 @@ package org.glowroot.container.javaagent;
 
 import java.util.List;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,7 +36,6 @@ import org.glowroot.container.config.PointcutConfig;
 import org.glowroot.container.config.StorageConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
 import org.glowroot.container.config.UserOverridesConfig;
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker
@@ -44,7 +44,6 @@ import org.glowroot.markers.ThreadSafe;
 @ThreadSafe
 class JavaagentConfigService implements ConfigService {
 
-    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final JavaagentHttpClient httpClient;

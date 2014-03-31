@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,22 +23,21 @@ import java.lang.management.ThreadMXBean;
 import java.util.List;
 import java.util.Set;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.lock.quals.GuardedBy;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
-import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.jvm.ThreadAllocatedBytes;
 
-import static org.glowroot.common.Nullness.castNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker
@@ -47,8 +46,6 @@ import static org.glowroot.common.Nullness.castNonNull;
 class JvmInfo {
 
     private static final Logger logger = LoggerFactory.getLogger(JvmInfo.class);
-
-    @ReadOnly
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     private static final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
@@ -77,7 +74,7 @@ class JvmInfo {
         threadId = Thread.currentThread().getId();
         ThreadInfo threadInfo = ManagementFactory.getThreadMXBean().getThreadInfo(threadId, 0);
         // thread info for current thread cannot be null
-        castNonNull(threadInfo);
+        checkNotNull(threadInfo);
         if (isThreadCpuTimeSupported) {
             threadCpuTimeStart = threadMXBean.getCurrentThreadCpuTime();
         } else {
@@ -211,8 +208,8 @@ class JvmInfo {
         jg.writeEndObject();
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("threadId", threadId)
@@ -241,8 +238,8 @@ class JvmInfo {
             return collectionTimeStart;
         }
 
+        /*@Pure*/
         @Override
-        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("collectionCountStart", collectionCountStart)

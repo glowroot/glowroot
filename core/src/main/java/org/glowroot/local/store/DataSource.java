@@ -25,9 +25,10 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.lock.quals.GuardedBy;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -42,7 +43,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * DataSource is a cross between javax.sql.DataSource and spring's JdbcTemplate. Ideally would have
@@ -152,7 +152,7 @@ public class DataSource {
         }
     }
 
-    <T extends /*@NonNull*/Object> ImmutableList<T> query(String sql, @ReadOnly List<?> args,
+    <T extends /*@NonNull*/Object> ImmutableList<T> query(String sql, ImmutableList<?> args,
             RowMapper<T> rowMapper) throws SQLException {
         synchronized (lock) {
             if (closing) {
@@ -164,11 +164,11 @@ public class DataSource {
             }
             ResultSet resultSet = preparedStatement.executeQuery();
             try {
-                ImmutableList.Builder<T> mappedRows = ImmutableList.builder();
+                List<T> mappedRows = Lists.newArrayList();
                 while (resultSet.next()) {
                     mappedRows.add(rowMapper.mapRow(resultSet));
                 }
-                return mappedRows.build();
+                return ImmutableList.copyOf(mappedRows);
             } finally {
                 resultSet.close();
             }
@@ -177,7 +177,7 @@ public class DataSource {
     }
 
     @Nullable
-    <T> T query(String sql, @ReadOnly List<?> args, ResultSetExtractor<T> rse) throws SQLException {
+    <T> T query(String sql, ImmutableList<?> args, ResultSetExtractor<T> rse) throws SQLException {
         synchronized (lock) {
             if (closing) {
                 return null;

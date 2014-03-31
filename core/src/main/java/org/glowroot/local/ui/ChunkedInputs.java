@@ -24,7 +24,8 @@ import java.io.Writer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Charsets;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.http.DefaultHttpChunk;

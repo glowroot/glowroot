@@ -19,8 +19,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 
-import checkers.nullness.quals.MonotonicNonNull;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -61,7 +61,7 @@ class ServletMessageSupplier extends MessageSupplier {
     @Nullable
     private final String requestQueryString;
 
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private volatile ImmutableMap<String, Object> requestParameters;
 
     private final ImmutableMap<String, Object> requestHeaders;
@@ -71,7 +71,7 @@ class ServletMessageSupplier extends MessageSupplier {
     // the initial value is the sessionId as it was present at the beginning of the request
     @Nullable
     private final String sessionIdInitialValue;
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private volatile String sessionIdUpdatedValue;
 
     // session attributes may not be thread safe, so they must be converted to Strings
@@ -83,7 +83,7 @@ class ServletMessageSupplier extends MessageSupplier {
     private final ImmutableMap<String, String> sessionAttributeInitialValueMap;
 
     // ConcurrentHashMap does not allow null values, so need to use Optional values
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private volatile ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
     ServletMessageSupplier(String requestMethod, String requestUri,

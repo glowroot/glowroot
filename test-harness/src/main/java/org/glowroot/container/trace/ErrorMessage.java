@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,13 @@ package org.glowroot.container.trace;
 
 import java.util.Map;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
-import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
@@ -38,7 +37,7 @@ public class ErrorMessage extends Message {
     @Nullable
     private final ExceptionInfo exception;
 
-    private ErrorMessage(@Nullable String text, @ReadOnly Map<String, /*@Nullable*/Object> detail,
+    private ErrorMessage(@Nullable String text, Map<String, /*@Nullable*/Object> detail,
             @Nullable ExceptionInfo exception) {
         super(text, detail);
         this.exception = exception;
@@ -49,8 +48,8 @@ public class ErrorMessage extends Message {
         return exception;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("text", getText())

@@ -26,9 +26,11 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.concurrent.ScheduledExecutorService;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.lock.quals.GuardedBy;
+import javax.annotation.concurrent.GuardedBy;
+import javax.annotation.concurrent.Immutable;
+import javax.annotation.concurrent.NotThreadSafe;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Charsets;
 import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
@@ -38,9 +40,7 @@ import com.ning.compress.lzf.LZFOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker
@@ -69,7 +69,7 @@ public class CappedDatabase {
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
-    FileBlock write(@ReadOnly CharSource charSource) {
+    FileBlock write(CharSource charSource) {
         synchronized (lock) {
             if (closing) {
                 return FileBlock.expired();
@@ -88,7 +88,6 @@ public class CappedDatabase {
         }
     }
 
-    @Immutable
     CharSource read(FileBlock block, String overwrittenResponse) {
         return new FileBlockCharSource(block, overwrittenResponse);
     }

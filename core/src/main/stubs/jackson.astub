@@ -1,5 +1,4 @@
-import checkers.igj.quals.*;
-import checkers.nullness.quals.*;
+import org.checkerframework.checker.nullness.qual.*;
 
 /* ========================================================================== */
 package com.fasterxml.jackson.core;
@@ -7,10 +6,6 @@ package com.fasterxml.jackson.core;
 public class JsonGenerator {
     public void writeString(@Nullable String text);
     public void writeStringField(String fieldName, @Nullable String value);
-}
-
-public class JsonFactory {
-    public JsonGenerator createGenerator(Writer out) @ReadOnly;
 }
 
 /* ========================================================================== */
@@ -21,18 +16,11 @@ public class JsonDeserializer<T> {
 }
 
 public class ObjectMapper {
-    public JsonNode readTree(String content) @ReadOnly;
-    public <T extends @Nullable Object> T treeToValue(TreeNode n, Class<T> valueType) @ReadOnly;
-    public @I JsonFactory getFactory() @I;
-    public ObjectWriter writerWithView(Class<?> serializationView) @ReadOnly;
-    public <T extends @Nullable Object> T readValue(String content, Class<T> valueType) @ReadOnly;
-    public <T extends @Nullable Object> T readValue(File src, Class<T> valueType) @ReadOnly;
-    public String writeValueAsString(@ReadOnly Object value) @ReadOnly;
-    public ObjectNode createObjectNode() @ReadOnly;
-    public ObjectNode createArrayNode() @ReadOnly;
-    public ObjectReader readerForUpdating(Object valueToUpdate) @ReadOnly;
+    public <T extends @Nullable Object> T treeToValue(TreeNode n, Class<T> valueType);
+    public <T extends @Nullable Object> T readValue(String content, Class<T> valueType);
+    public <T extends @Nullable Object> T readValue(File src, Class<T> valueType);
     public <T extends @Nullable Object> T convertValue(@Nullable Object fromValue,
-            Class<T> toValueType) @ReadOnly;
+            Class<T> toValueType);
 }
 
 public class ObjectWriter {
@@ -43,6 +31,5 @@ public class ObjectWriter {
 package com.fasterxml.jackson.databind.node;
 
 public class ObjectNode {
-    public @I @Nullable JsonNode get(String fieldName) @I;
     public ObjectNode put(String fieldName, @Nullable Double value);
 }

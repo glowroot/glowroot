@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -155,7 +155,7 @@ public class GlobalCollector {
         if (optional != null) {
             return optional;
         }
-        ImmutableList.Builder<String> allSuperTypes = ImmutableList.builder();
+        List<String> allSuperTypes = Lists.newArrayList();
         TypeCollector typeCollector = createTypeCollector(typeName);
         if (typeCollector == null) {
             optional = Optional.absent();
@@ -177,11 +177,11 @@ public class GlobalCollector {
                 allSuperTypes.add(interfaceType);
             } else {
                 logger.debug("could not find type: {}", interfaceType);
-                typeCollector.setAllSuperTypes(allSuperTypes.build());
+                typeCollector.setAllSuperTypes(allSuperTypes);
                 return Optional.absent();
             }
         }
-        typeCollector.setAllSuperTypes(allSuperTypes.build());
+        typeCollector.setAllSuperTypes(allSuperTypes);
         // add static initializer (if it exists)
         processMethod(ReferencedMethod.from(typeName, "<clinit>", "()V"));
         // always add default constructor (if it exists)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@ package org.glowroot.config;
 
 import java.util.List;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
@@ -38,7 +39,7 @@ class Config {
     private final ImmutableList<PluginConfig> pluginConfigs;
     private final ImmutableList<PointcutConfig> pointcutConfigs;
 
-    static Config getDefault(@ReadOnly List<PluginDescriptor> pluginDescriptors) {
+    static Config getDefault(ImmutableList<PluginDescriptor> pluginDescriptors) {
         return new Config(GeneralConfig.getDefault(), CoarseProfilingConfig.getDefault(),
                 FineProfilingConfig.getDefault(), UserOverridesConfig.getDefault(),
                 StorageConfig.getDefault(), UserInterfaceConfig.getDefault(),
@@ -53,8 +54,8 @@ class Config {
     Config(GeneralConfig generalConfig, CoarseProfilingConfig coarseProfilingConfig,
             FineProfilingConfig fineProfilingConfig, UserOverridesConfig userOverridesConfig,
             StorageConfig storageConfig, UserInterfaceConfig userInterfaceConfig,
-            AdvancedConfig advancedConfig, ImmutableList<PluginConfig> pluginConfigs,
-            ImmutableList<PointcutConfig> pointcutConfigs) {
+            AdvancedConfig advancedConfig, List<PluginConfig> pluginConfigs,
+            List<PointcutConfig> pointcutConfigs) {
         this.generalConfig = generalConfig;
         this.coarseProfilingConfig = coarseProfilingConfig;
         this.fineProfilingConfig = fineProfilingConfig;
@@ -62,8 +63,8 @@ class Config {
         this.storageConfig = storageConfig;
         this.userInterfaceConfig = userInterfaceConfig;
         this.advancedConfig = advancedConfig;
-        this.pluginConfigs = pluginConfigs;
-        this.pointcutConfigs = pointcutConfigs;
+        this.pluginConfigs = ImmutableList.copyOf(pluginConfigs);
+        this.pointcutConfigs = ImmutableList.copyOf(pointcutConfigs);
     }
 
     GeneralConfig getGeneralConfig() {
@@ -102,13 +103,13 @@ class Config {
         return pointcutConfigs;
     }
 
-    private static ImmutableList<PluginConfig> createPluginConfigs(
-            @ReadOnly List<PluginDescriptor> pluginDescriptors) {
-        ImmutableList.Builder<PluginConfig> pluginConfigs = ImmutableList.builder();
+    private static List<PluginConfig> createPluginConfigs(
+            ImmutableList<PluginDescriptor> pluginDescriptors) {
+        List<PluginConfig> pluginConfigs = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             pluginConfigs.add(PluginConfig.getDefault(pluginDescriptor));
         }
-        return pluginConfigs.build();
+        return pluginConfigs;
     }
 
     static class Builder {
@@ -120,8 +121,8 @@ class Config {
         private StorageConfig storageConfig;
         private UserInterfaceConfig userInterfaceConfig;
         private AdvancedConfig advancedConfig;
-        private ImmutableList<PluginConfig> pluginConfigs;
-        private ImmutableList<PointcutConfig> pointcutConfigs;
+        private List<PluginConfig> pluginConfigs;
+        private List<PointcutConfig> pointcutConfigs;
 
         private Builder(Config base) {
             generalConfig = base.generalConfig;
@@ -162,11 +163,11 @@ class Config {
             this.advancedConfig = advancedConfig;
             return this;
         }
-        Builder pluginConfigs(ImmutableList<PluginConfig> pluginConfigs) {
+        Builder pluginConfigs(List<PluginConfig> pluginConfigs) {
             this.pluginConfigs = pluginConfigs;
             return this;
         }
-        Builder pointcutConfigs(ImmutableList<PointcutConfig> pointcutConfigs) {
+        Builder pointcutConfigs(List<PointcutConfig> pointcutConfigs) {
             this.pointcutConfigs = pointcutConfigs;
             return this;
         }

@@ -19,16 +19,16 @@ import java.io.IOException;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.EnsuresNonNull;
-import checkers.nullness.quals.MonotonicNonNull;
-import checkers.nullness.quals.Nullable;
-import checkers.nullness.quals.RequiresNonNull;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.reflect.Reflection;
@@ -36,9 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 
-import static org.glowroot.common.Nullness.castNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * The placement of this code in the main Glowroot code base (and not inside of the tests folder) is
@@ -82,13 +81,13 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return new Builder();
     }
 
-    private IsolatedWeavingClassLoader(ImmutableList<MixinType> mixinTypes,
-            ImmutableList<Advice> advisors, MetricTimerService metricTimerService,
-            ImmutableList<Class<?>> bridgeClasses, ImmutableList<String> excludePackages,
-            boolean weavingDisabled, boolean metricWrapperMethods) {
+    private IsolatedWeavingClassLoader(List<MixinType> mixinTypes, List<Advice> advisors,
+            MetricTimerService metricTimerService, List<Class<?>> bridgeClasses,
+            List<String> excludePackages, boolean weavingDisabled,
+            boolean metricWrapperMethods) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
-        this.bridgeClasses = bridgeClasses;
-        this.excludePackages = excludePackages;
+        this.bridgeClasses = ImmutableList.copyOf(bridgeClasses);
+        this.excludePackages = ImmutableList.copyOf(excludePackages);
         if (weavingDisabled) {
             weaver = null;
         } else {
@@ -156,7 +155,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return super.defineClass(name, bytes, 0, bytes.length);
     }
 
-    @RequiresNonNull("weaver")
+    /*@RequiresNonNull("weaver")*/
     private byte[] weaveClass(String name, byte[] bytes) throws ClassFormatError {
         if (inWeaving.get()) {
             return bytes;
@@ -228,26 +227,26 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     public static class Builder {
 
-        private ImmutableList<MixinType> mixinTypes = ImmutableList.of();
-        private ImmutableList<Advice> advisors = ImmutableList.of();
-        @MonotonicNonNull
+        private List<MixinType> mixinTypes = Lists.newArrayList();
+        private List<Advice> advisors = Lists.newArrayList();
+        /*@MonotonicNonNull*/
         private MetricTimerService metricTimerService;
         private boolean weavingDisabled;
         private boolean metricWrapperMethods = true;
-        private final ImmutableList.Builder<Class<?>> bridgeClasses = ImmutableList.builder();
-        private final ImmutableList.Builder<String> excludePackages = ImmutableList.builder();
+        private final List<Class<?>> bridgeClasses = Lists.newArrayList();
+        private final List<String> excludePackages = Lists.newArrayList();
 
         private Builder() {}
 
-        public void setMixinTypes(@ReadOnly List<MixinType> mixinTypes) {
-            this.mixinTypes = ImmutableList.copyOf(mixinTypes);
+        public void setMixinTypes(List<MixinType> mixinTypes) {
+            this.mixinTypes = mixinTypes;
         }
 
-        public void setAdvisors(@ReadOnly Iterable<Advice> advisors) {
-            this.advisors = ImmutableList.copyOf(advisors);
+        public void setAdvisors(List<Advice> advisors) {
+            this.advisors = advisors;
         }
 
-        @EnsuresNonNull("metricTimerService")
+        /*@EnsuresNonNull("metricTimerService")*/
         public void setMetricTimerService(MetricTimerService metricTimerService) {
             this.metricTimerService = metricTimerService;
         }
@@ -261,14 +260,14 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         }
 
         public void addBridgeClasses(Class<?>... bridgeClasses) {
-            this.bridgeClasses.add(bridgeClasses);
+            this.bridgeClasses.addAll(Arrays.asList(bridgeClasses));
         }
 
         public void addExcludePackages(String... excludePackages) {
-            this.excludePackages.add(excludePackages);
+            this.excludePackages.addAll(Arrays.asList(excludePackages));
         }
 
-        @RequiresNonNull("metricTimerService")
+        /*@RequiresNonNull("metricTimerService")*/
         public IsolatedWeavingClassLoader build() {
             return AccessController.doPrivileged(
                     new PrivilegedAction<IsolatedWeavingClassLoader>() {
@@ -276,11 +275,10 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                         public IsolatedWeavingClassLoader run() {
                             // metricTimerService is non-null when outer method is called, and it is
                             // @MonotonicNonNull, so it must be non-null here
-                            castNonNull(metricTimerService);
+                            checkNotNull(metricTimerService);
                             return new IsolatedWeavingClassLoader(mixinTypes, advisors,
-                                    metricTimerService, bridgeClasses.build(),
-                                    excludePackages.build(), weavingDisabled,
-                                    metricWrapperMethods);
+                                    metricTimerService, bridgeClasses, excludePackages,
+                                    weavingDisabled, metricWrapperMethods);
                         }
                     });
         }

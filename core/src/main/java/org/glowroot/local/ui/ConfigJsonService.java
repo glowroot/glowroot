@@ -20,10 +20,8 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.sql.SQLException;
 
-import checkers.nullness.quals.EnsuresNonNull;
-import checkers.nullness.quals.MonotonicNonNull;
-import checkers.nullness.quals.Nullable;
-import checkers.nullness.quals.RequiresNonNull;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,7 +53,7 @@ import org.glowroot.markers.Singleton;
 import org.glowroot.trace.PointcutConfigAdviceCache;
 import org.glowroot.trace.TraceModule;
 
-import static org.glowroot.common.Nullness.castNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
 
@@ -80,7 +78,7 @@ class ConfigJsonService {
     private final HttpSessionManager httpSessionManager;
     private final TraceModule traceModule;
 
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private volatile HttpServer httpServer;
 
     ConfigJsonService(ConfigService configService, CappedDatabase cappedDatabase,
@@ -177,7 +175,7 @@ class ConfigJsonService {
     String getUserInterface() throws IOException, SQLException {
         logger.debug("getUserInterface()");
         // this code cannot be reached when httpServer is null
-        castNonNull(httpServer);
+        checkNotNull(httpServer);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
@@ -188,7 +186,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @RequiresNonNull("httpServer")
+    /*@RequiresNonNull("httpServer")*/
     private void writeUserInterface(JsonGenerator jg, ObjectWriter writer) throws IOException {
         jg.writeFieldName("config");
         writer.writeValue(jg, configService.getUserInterfaceConfig());
@@ -333,7 +331,7 @@ class ConfigJsonService {
             GeneralSecurityException, SQLException {
         logger.debug("updateUserInterfaceConfig(): content={}", content);
         // this code cannot be reached when httpServer is null
-        castNonNull(httpServer);
+        checkNotNull(httpServer);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         String priorVersion = getAndRemoveVersionNode(configNode);
         UserInterfaceConfig config = configService.getUserInterfaceConfig();
@@ -369,7 +367,7 @@ class ConfigJsonService {
         return getUserInterface();
     }
 
-    @RequiresNonNull("httpServer")
+    /*@RequiresNonNull("httpServer")*/
     private String getUserInterfaceWithPortChangeFailed() throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -462,7 +460,7 @@ class ConfigJsonService {
         return versionNode.asText();
     }
 
-    @EnsuresNonNull("#1")
+    /*@EnsuresNonNull("#1")*/
     private void validateVersionNode(@Nullable JsonNode versionNode) {
         if (versionNode == null) {
             throw new JsonServiceException(BAD_REQUEST, "Version is missing");

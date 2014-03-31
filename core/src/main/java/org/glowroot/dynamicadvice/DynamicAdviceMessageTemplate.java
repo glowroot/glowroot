@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,18 @@
  */
 package org.glowroot.dynamicadvice;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.UsedByGeneratedBytecode;
 
-import static org.glowroot.common.Nullness.castNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker
@@ -45,10 +47,10 @@ public class DynamicAdviceMessageTemplate {
 
     @UsedByGeneratedBytecode
     public static DynamicAdviceMessageTemplate create(String template) {
-        ImmutableList.Builder<Part> allParts = ImmutableList.builder();
-        ImmutableList.Builder<ValuePathPart> thisPathParts = ImmutableList.builder();
-        ImmutableList.Builder<ArgPathPart> argPathParts = ImmutableList.builder();
-        ImmutableList.Builder<ValuePathPart> returnPathParts = ImmutableList.builder();
+        List<Part> allParts = Lists.newArrayList();
+        List<ValuePathPart> thisPathParts = Lists.newArrayList();
+        List<ArgPathPart> argPathParts = Lists.newArrayList();
+        List<ValuePathPart> returnPathParts = Lists.newArrayList();
         Matcher matcher = pattern.matcher(template);
         int curr = 0;
         while (matcher.find()) {
@@ -56,7 +58,7 @@ public class DynamicAdviceMessageTemplate {
                 allParts.add(new ConstantPart(template.substring(curr, matcher.start())));
             }
             String group = matcher.group(1);
-            castNonNull(group);
+            checkNotNull(group);
             String path = group.trim();
             int index = path.indexOf('.');
             String base;
@@ -92,17 +94,16 @@ public class DynamicAdviceMessageTemplate {
         if (curr < template.length()) {
             allParts.add(new ConstantPart(template.substring(curr)));
         }
-        return new DynamicAdviceMessageTemplate(allParts.build(), thisPathParts.build(),
-                argPathParts.build(), returnPathParts.build());
+        return new DynamicAdviceMessageTemplate(allParts, thisPathParts,
+                argPathParts, returnPathParts);
     }
 
-    private DynamicAdviceMessageTemplate(ImmutableList<Part> allParts,
-            ImmutableList<ValuePathPart> thisPathParts, ImmutableList<ArgPathPart> argPathParts,
-            ImmutableList<ValuePathPart> returnPathParts) {
-        this.allParts = allParts;
-        this.thisPathParts = thisPathParts;
-        this.argPathParts = argPathParts;
-        this.returnPathParts = returnPathParts;
+    private DynamicAdviceMessageTemplate(List<Part> allParts, List<ValuePathPart> thisPathParts,
+            List<ArgPathPart> argPathParts, List<ValuePathPart> returnPathParts) {
+        this.allParts = ImmutableList.copyOf(allParts);
+        this.thisPathParts = ImmutableList.copyOf(thisPathParts);
+        this.argPathParts = ImmutableList.copyOf(argPathParts);
+        this.returnPathParts = ImmutableList.copyOf(returnPathParts);
     }
 
     ImmutableList<Part> getAllParts() {

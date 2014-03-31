@@ -18,8 +18,9 @@ package org.glowroot.container.local;
 import java.util.List;
 import java.util.Map.Entry;
 
-import checkers.nullness.quals.Nullable;
-import com.google.common.base.Objects;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.collect.Lists;
 
 import org.glowroot.GlowrootModule;
@@ -37,9 +38,9 @@ import org.glowroot.container.config.UserInterfaceConfig;
 import org.glowroot.container.config.UserOverridesConfig;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.ui.LocalUiModule;
-import org.glowroot.markers.ThreadSafe;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.nullToEmpty;
 
 /**
  * @author Trask Stalnaker
@@ -339,13 +340,10 @@ class LocalConfigService implements ConfigService {
         checkNotNull(methodReturnTypeName, "PointcutConfig methodReturnTypeName is null");
         return new org.glowroot.config.PointcutConfig(typeName, methodName,
                 config.getMethodArgTypeNames(), methodReturnTypeName, methodModifiers,
-                orEmpty(config.getMetricName()), orEmpty(config.getSpanText()),
+                nullToEmpty(config.getMetricName()), nullToEmpty(config.getSpanText()),
                 config.getSpanStackTraceThresholdMillis(), config.isSpanIgnoreSameNested(),
-                orEmpty(config.getTransactionName()), config.isBackground(),
-                orEmpty(config.getEnabledProperty()), orEmpty(config.getSpanEnabledProperty()));
-    }
-
-    private static String orEmpty(@Nullable String value) {
-        return Objects.firstNonNull(value, "");
+                nullToEmpty(config.getTransactionName()), config.isBackground(),
+                nullToEmpty(config.getEnabledProperty()),
+                nullToEmpty(config.getSpanEnabledProperty()));
     }
 }

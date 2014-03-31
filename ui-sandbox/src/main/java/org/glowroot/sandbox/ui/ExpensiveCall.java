@@ -18,7 +18,7 @@ package org.glowroot.sandbox.ui;
 import java.util.Random;
 import java.util.concurrent.Executors;
 
-import checkers.igj.quals.Immutable;
+import javax.annotation.concurrent.Immutable;
 
 /**
  * @author Trask Stalnaker

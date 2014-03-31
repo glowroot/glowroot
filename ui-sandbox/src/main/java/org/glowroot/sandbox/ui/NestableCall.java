@@ -15,8 +15,8 @@
  */
 package org.glowroot.sandbox.ui;
 
-import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 /**
  * @author Trask Stalnaker

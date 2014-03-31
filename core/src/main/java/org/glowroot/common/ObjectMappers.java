@@ -20,9 +20,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.EnsuresNonNull;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -62,8 +61,8 @@ public class ObjectMappers {
         return new ObjectMapper().registerModule(EnumModule.create());
     }
 
-    public static <T extends /*@Nullable*/Object> T readRequiredValue(
-            @ReadOnly ObjectMapper mapper, String content, Class<T> type) throws IOException {
+    public static <T extends /*@Nullable*/Object> T readRequiredValue(ObjectMapper mapper,
+            String content, Class<T> type) throws IOException {
         T value = mapper.readValue(content, type);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
@@ -71,8 +70,8 @@ public class ObjectMappers {
         return value;
     }
 
-    public static <T extends /*@Nullable*/Object> T readRequiredValue(
-            @ReadOnly ObjectMapper mapper, File file, Class<T> type) throws IOException {
+    public static <T extends /*@Nullable*/Object> T readRequiredValue(ObjectMapper mapper,
+            File file, Class<T> type) throws IOException {
         T value = mapper.readValue(file, type);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
@@ -80,9 +79,8 @@ public class ObjectMappers {
         return value;
     }
 
-    public static <T extends /*@Nullable*/Object> T treeToRequiredValue(
-            @ReadOnly ObjectMapper mapper, TreeNode n, Class<T> type)
-            throws JsonProcessingException {
+    public static <T extends /*@Nullable*/Object> T treeToRequiredValue(ObjectMapper mapper,
+            TreeNode n, Class<T> type) throws JsonProcessingException {
         T value = mapper.treeToValue(n, type);
         if (value == null) {
             throw new JsonMappingException("Node is json null");
@@ -90,7 +88,7 @@ public class ObjectMappers {
         return value;
     }
 
-    @EnsuresNonNull("#1")
+    /*@EnsuresNonNull("#1")*/
     public static <T extends /*@Nullable*/Object> void checkRequiredProperty(T reference,
             String fieldName) throws JsonMappingException {
         if (reference == null) {
@@ -98,12 +96,18 @@ public class ObjectMappers {
         }
     }
 
-    public static <T> List<T> orEmpty(@Nullable List<T> list) {
+    // named after guava Strings.nullToEmpty
+    public static <T> List<T> nullToEmpty(@Nullable List<T> list) {
         if (list == null) {
             return Lists.newArrayList();
         } else {
             return list;
         }
+    }
+
+    // named after guava Strings.nullToEmpty
+    public static boolean nullToFalse(@Nullable Boolean value) {
+        return value == null ? false : value;
     }
 
     @SuppressWarnings("serial")

@@ -17,11 +17,10 @@ package org.glowroot.api;
 
 import java.util.Map;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
-import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +70,7 @@ public abstract class ErrorMessage {
     }
 
     public static ErrorMessage withDetail(Throwable t,
-            @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
+            Map<String, ? extends /*@Nullable*/Object> detail) {
         if (t == null) {
             logger.warn("withDetail(): argument 't' must be non-null");
             return withDetail((String) null, detail);
@@ -81,7 +80,7 @@ public abstract class ErrorMessage {
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
     public static ErrorMessage withDetail(@Nullable String message, Throwable t,
-            @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
+            Map<String, ? extends /*@Nullable*/Object> detail) {
         if (t == null) {
             logger.warn("withDetail(): argument 't' must be non-null");
             return withDetail(message, detail);
@@ -91,7 +90,7 @@ public abstract class ErrorMessage {
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
     public static ErrorMessage withDetail(@Nullable String message,
-            @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
+            Map<String, ? extends /*@Nullable*/Object> detail) {
         if (detail == null) {
             logger.warn("withDetail(): argument 'detail' must be non-null");
             return new ErrorMessageImpl(message, null, null);
@@ -119,12 +118,11 @@ public abstract class ErrorMessage {
         private final String text;
         @Nullable
         private final ExceptionInfo exceptionInfo;
-        @ReadOnly
         @Nullable
         private final Map<String, ? extends /*@Nullable*/Object> detail;
 
         private ErrorMessageImpl(@Nullable String text, @Nullable ExceptionInfo exceptionInfo,
-                @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> detail) {
+                @Nullable Map<String, ? extends /*@Nullable*/Object> detail) {
             this.text = text;
             this.exceptionInfo = exceptionInfo;
             this.detail = detail;
@@ -142,14 +140,13 @@ public abstract class ErrorMessage {
         }
 
         @Override
-        @ReadOnly
         @Nullable
         public Map<String, ? extends /*@Nullable*/Object> getDetail() {
             return detail;
         }
 
+        /*@Pure*/
         @Override
-        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("text", text)

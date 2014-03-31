@@ -25,8 +25,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -41,7 +42,6 @@ import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.ui.LocalUiModule;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.TraceModule;
 
 /**
@@ -62,7 +62,7 @@ public class GlowrootModule {
     private final LocalUiModule uiModule;
     private final File dataDir;
 
-    GlowrootModule(File dataDir, @ReadOnly Map<String, String> properties,
+    GlowrootModule(File dataDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, String version, boolean viewerMode)
             throws StartupFailedException {
         Ticker ticker = Ticker.systemTicker();

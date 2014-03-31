@@ -16,11 +16,13 @@
 package org.glowroot.weaving;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import dataflow.quals.Pure;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,16 +70,16 @@ public class MixinType {
         return new MixinType(targets, implementation, interfaces, initMethodName);
     }
 
-    private MixinType(ImmutableList<String> targets, Class<?> implementation,
-            ImmutableList<Class<?>> interfaces, @Nullable String initMethodName) {
-        this.targets = targets;
+    private MixinType(List<String> targets, Class<?> implementation,
+            List<Class<?>> interfaces, @Nullable String initMethodName) {
+        this.targets = ImmutableList.copyOf(targets);
         this.implementation = implementation;
-        this.interfaces = interfaces;
-        ImmutableList.Builder<String> theInterfaceNames = ImmutableList.builder();
+        this.interfaces = ImmutableList.copyOf(interfaces);
+        List<String> interfaceNames = Lists.newArrayList();
         for (Class<?> type : interfaces) {
-            theInterfaceNames.add(type.getName());
+            interfaceNames.add(type.getName());
         }
-        this.interfaceNames = theInterfaceNames.build();
+        this.interfaceNames = ImmutableList.copyOf(interfaceNames);
         this.initMethodName = initMethodName;
     }
 
@@ -102,8 +104,8 @@ public class MixinType {
         return initMethodName;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("targets", targets)

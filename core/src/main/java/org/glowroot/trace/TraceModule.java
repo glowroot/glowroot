@@ -20,7 +20,9 @@ import java.lang.instrument.Instrumentation;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
@@ -34,7 +36,6 @@ import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.MetricTimerService;
 import org.glowroot.weaving.ParsedTypeCache;
 import org.glowroot.weaving.WeavingClassFileTransformer;

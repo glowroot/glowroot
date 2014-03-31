@@ -15,7 +15,7 @@
  */
 package org.glowroot.weaving;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
 
 /**
  * @author Trask Stalnaker

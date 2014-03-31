@@ -1,40 +1,33 @@
-import checkers.igj.quals.*;
-import checkers.nullness.quals.*;
+import org.checkerframework.checker.nullness.qual.*;
 
 /* ========================================================================== */
 package org.slf4j;
 
-// not @Immutable since isTraceEnabled(), etc can change over time
 public interface Logger {
-    public String getName() @ReadOnly;
-    public void trace(@Nullable String msg) @ReadOnly;
-    public void trace(@Nullable String format, @Nullable Object arg) @ReadOnly;
-    public void trace(@Nullable String format, @Nullable Object arg1,
-            @Nullable Object arg2) @ReadOnly;
-    public void trace(@Nullable String format, @Nullable Object... arguments) @ReadOnly;
-    public void trace(@Nullable String msg, @Nullable Throwable t) @ReadOnly;
-    public void debug(@Nullable String msg) @ReadOnly;
-    public void debug(@Nullable String format, @Nullable Object arg) @ReadOnly;
-    public void debug(@Nullable String format, @Nullable Object arg1,
-            @Nullable Object arg2) @ReadOnly;
-    public void debug(@Nullable String format, @Nullable Object... arguments) @ReadOnly;
-    public void debug(@Nullable String msg, @Nullable Throwable t) @ReadOnly;
-    public void info(@Nullable String msg) @ReadOnly;
-    public void info(@Nullable String format, @Nullable Object arg) @ReadOnly;
-    public void info(@Nullable String format, @Nullable Object arg1,
-            @Nullable Object arg2) @ReadOnly;
-    public void info(@Nullable String format, @Nullable Object... arguments) @ReadOnly;
-    public void info(@Nullable String msg, @Nullable Throwable t) @ReadOnly;
-    public void warn(@Nullable String msg) @ReadOnly;
-    public void warn(@Nullable String format, @Nullable Object arg) @ReadOnly;
-    public void warn(@Nullable String format, @Nullable Object arg1,
-            @Nullable Object arg2) @ReadOnly;
-    public void warn(@Nullable String format, @Nullable Object... arguments) @ReadOnly;
-    public void warn(@Nullable String msg, @Nullable Throwable t) @ReadOnly;
-    public void error(@Nullable String msg) @ReadOnly;
-    public void error(@Nullable String format, @Nullable Object arg) @ReadOnly;
-    public void error(@Nullable String format, @Nullable Object arg1,
-            @Nullable Object arg2) @ReadOnly;
-    public void error(@Nullable String format, @Nullable Object... arguments) @ReadOnly;
-    public void error(@Nullable String msg, @Nullable Throwable t) @ReadOnly;
+    public String getName();
+    public void trace(@Nullable String msg);
+    public void trace(@Nullable String format, @Nullable Object arg);
+    public void trace(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2);
+    public void trace(@Nullable String format, @Nullable Object... arguments);
+    public void trace(@Nullable String msg, @Nullable Throwable t);
+    public void debug(@Nullable String msg);
+    public void debug(@Nullable String format, @Nullable Object arg);
+    public void debug(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2);
+    public void debug(@Nullable String format, @Nullable Object... arguments);
+    public void debug(@Nullable String msg, @Nullable Throwable t);
+    public void info(@Nullable String msg);
+    public void info(@Nullable String format, @Nullable Object arg);
+    public void info(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2);
+    public void info(@Nullable String format, @Nullable Object... arguments);
+    public void info(@Nullable String msg, @Nullable Throwable t);
+    public void warn(@Nullable String msg);
+    public void warn(@Nullable String format, @Nullable Object arg);
+    public void warn(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2);
+    public void warn(@Nullable String format, @Nullable Object... arguments);
+    public void warn(@Nullable String msg, @Nullable Throwable t);
+    public void error(@Nullable String msg);
+    public void error(@Nullable String format, @Nullable Object arg);
+    public void error(@Nullable String format, @Nullable Object arg1, @Nullable Object arg2);
+    public void error(@Nullable String format, @Nullable Object... arguments);
+    public void error(@Nullable String msg, @Nullable Throwable t);
 }

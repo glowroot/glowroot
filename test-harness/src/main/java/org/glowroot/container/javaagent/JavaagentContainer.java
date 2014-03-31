@@ -30,7 +30,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
@@ -53,10 +55,9 @@ import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.ConfigService;
 import org.glowroot.container.javaagent.JavaagentConfigService.GetUiPortCommand;
 import org.glowroot.container.trace.TraceService;
-import org.glowroot.markers.ThreadSafe;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.glowroot.common.Nullness.castNonNull;
 
 /**
  * @author Trask Stalnaker
@@ -119,7 +120,7 @@ public class JavaagentContainer implements Container {
         InputStream in = process.getInputStream();
         // process.getInputStream() only returns null if ProcessBuilder.redirectOutput() is used
         // to redirect output to a file
-        castNonNull(in);
+        checkNotNull(in);
         consoleOutputPipe = new ConsoleOutputPipe(in, System.out, captureConsoleOutput);
         consolePipeExecutorService.submit(consoleOutputPipe);
         this.process = process;

@@ -17,7 +17,7 @@ package org.glowroot.container.config;
 
 import java.util.List;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
 
 /**
  * @author Trask Stalnaker

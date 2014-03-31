@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@ package org.glowroot.api.internal;
 
 import java.util.Map;
 
-import checkers.igj.quals.ReadOnly;
-
 /**
  * This interface exists to provide access to MessageImpl from glowroot without making MessageImpl
  * accessible to plugins (at least not through the org.glowroot.api package)
@@ -30,6 +28,5 @@ public interface ReadableMessage {
 
     String getText();
 
-    @ReadOnly
     Map<String, ? extends /*@Nullable*/Object> getDetail();
 }

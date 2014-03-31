@@ -18,7 +18,8 @@ package org.glowroot.sandbox.ui;
 import java.util.Map;
 import java.util.Random;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 

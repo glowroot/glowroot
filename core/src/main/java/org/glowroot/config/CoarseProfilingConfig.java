@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
  */
 package org.glowroot.config;
 
-import checkers.igj.quals.Immutable;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import dataflow.quals.Pure;
 
 import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.markers.UsedByJsonBinding;
@@ -85,8 +85,8 @@ public class CoarseProfilingConfig {
         return version;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("enabled", enabled)

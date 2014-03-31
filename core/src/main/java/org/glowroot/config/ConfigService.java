@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ArrayListMultimap;
@@ -252,7 +252,7 @@ public class ConfigService {
                 }
             }
             Config updatedConfig = Config.builder(config)
-                    .pluginConfigs(ImmutableList.copyOf(pluginConfigs))
+                    .pluginConfigs(pluginConfigs)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
@@ -261,8 +261,7 @@ public class ConfigService {
         return pluginConfig.getVersion();
     }
 
-    @ReadOnly
-    public List<PointcutConfig> getPointcutConfigs() {
+    public ImmutableList<PointcutConfig> getPointcutConfigs() {
         return config.getPointcutConfigs();
     }
 
@@ -272,7 +271,7 @@ public class ConfigService {
                     Lists.newArrayList(config.getPointcutConfigs());
             pointcutConfigs.add(pointcutConfig);
             Config updatedConfig = Config.builder(config)
-                    .pointcutConfigs(ImmutableList.copyOf(pointcutConfigs))
+                    .pointcutConfigs(pointcutConfigs)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
@@ -299,7 +298,7 @@ public class ConfigService {
                 return priorVersion;
             }
             Config updatedConfig = Config.builder(config)
-                    .pointcutConfigs(ImmutableList.copyOf(pointcutConfigs))
+                    .pointcutConfigs(pointcutConfigs)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
@@ -325,7 +324,7 @@ public class ConfigService {
                 return;
             }
             Config updatedConfig = Config.builder(config)
-                    .pointcutConfigs(ImmutableList.copyOf(pointcutConfigs))
+                    .pointcutConfigs(pointcutConfigs)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;

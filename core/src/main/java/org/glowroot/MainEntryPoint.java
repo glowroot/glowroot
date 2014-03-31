@@ -23,15 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.Nullable;
+
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.EnsuresNonNull;
-import checkers.nullness.quals.MonotonicNonNull;
-import checkers.nullness.quals.Nullable;
-import checkers.nullness.quals.RequiresNonNull;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
@@ -66,7 +63,7 @@ public class MainEntryPoint {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private static volatile GlowrootModule glowrootModule;
 
     private MainEntryPoint() {}
@@ -140,8 +137,8 @@ public class MainEntryPoint {
         Thread.sleep(Long.MAX_VALUE);
     }
 
-    @EnsuresNonNull("glowrootModule")
-    private static void start(File dataDir, @ReadOnly Map<String, String> properties,
+    /*@EnsuresNonNull("glowrootModule")*/
+    private static void start(File dataDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation) throws StartupFailedException {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
@@ -212,15 +209,15 @@ public class MainEntryPoint {
     }
 
     @OnlyUsedByTests
-    @EnsuresNonNull("glowrootModule")
-    public static void start(@ReadOnly Map<String, String> properties)
+    /*@EnsuresNonNull("glowrootModule")*/
+    public static void start(Map<String, String> properties)
             throws StartupFailedException {
         File dataDir = DataDir.getDataDir(properties);
         start(dataDir, properties, null);
     }
 
     @OnlyUsedByTests
-    @RequiresNonNull("glowrootModule")
+    /*@RequiresNonNull("glowrootModule")*/
     public static GlowrootModule getGlowrootModule() {
         return glowrootModule;
     }

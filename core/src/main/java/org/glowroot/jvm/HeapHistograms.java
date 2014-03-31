@@ -22,9 +22,9 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 
+import javax.annotation.concurrent.Immutable;
 import javax.tools.ToolProvider;
 
-import checkers.igj.quals.Immutable;
 import com.google.common.base.Splitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

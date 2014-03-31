@@ -19,13 +19,12 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import dataflow.quals.Pure;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,6 @@ import org.glowroot.api.weaving.MethodModifier;
 @Immutable
 class AdviceMatcher {
 
-    @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(AdviceMatcher.class);
 
     private final Advice advice;
@@ -49,13 +47,13 @@ class AdviceMatcher {
     AdviceMatcher(Advice advice, Type targetType, Iterable<ParsedType> superTypes) {
         this.advice = advice;
         targetTypeMatch = isTypeMatch(targetType.getClassName(), advice);
-        ImmutableList.Builder<ParsedType> builder = ImmutableList.builder();
+        List<ParsedType> preMatchedSuperTypes = Lists.newArrayList();
         for (ParsedType superType : superTypes) {
             if (isTypeMatch(superType.getName(), advice)) {
-                builder.add(superType);
+                preMatchedSuperTypes.add(superType);
             }
         }
-        preMatchedSuperTypes = builder.build();
+        this.preMatchedSuperTypes = ImmutableList.copyOf(preMatchedSuperTypes);
     }
 
     boolean isClassLevelMatch() {
@@ -121,7 +119,7 @@ class AdviceMatcher {
         }
     }
 
-    private boolean isMethodArgTypesMatch(@ReadOnly List<String> argTypeNames) {
+    private boolean isMethodArgTypesMatch(ImmutableList<String> argTypeNames) {
         String[] pointcutMethodArgs = advice.getPointcut().methodArgs();
         for (int i = 0; i < pointcutMethodArgs.length; i++) {
             if (pointcutMethodArgs[i].equals("..")) {
@@ -183,8 +181,8 @@ class AdviceMatcher {
         }
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         List<String> preMatchedSuperTypeNames = Lists.newArrayList();
         for (ParsedType preMatchedSuperType : preMatchedSuperTypes) {

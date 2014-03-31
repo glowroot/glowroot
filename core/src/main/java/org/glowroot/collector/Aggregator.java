@@ -18,7 +18,8 @@ package org.glowroot.collector;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
-import checkers.lock.quals.GuardedBy;
+import javax.annotation.concurrent.GuardedBy;
+
 import com.google.common.collect.Maps;
 
 import org.glowroot.common.Clock;

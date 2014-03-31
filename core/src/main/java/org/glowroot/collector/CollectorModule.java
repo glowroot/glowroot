@@ -17,12 +17,13 @@ package org.glowroot.collector;
 
 import java.util.concurrent.ScheduledExecutorService;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Ticker;
 
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

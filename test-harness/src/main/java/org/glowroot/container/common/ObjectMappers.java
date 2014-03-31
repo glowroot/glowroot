@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.EnsuresNonNull;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.BeanDescription;
@@ -59,8 +58,8 @@ public class ObjectMappers {
         return new ObjectMapper().registerModule(EnumModule.create());
     }
 
-    public static <T extends /*@Nullable*/Object> T readRequiredValue(
-            @ReadOnly ObjectMapper mapper, String content, Class<T> type) throws IOException {
+    public static <T extends /*@Nullable*/Object> T readRequiredValue(ObjectMapper mapper,
+            String content, Class<T> type) throws IOException {
         T value = mapper.readValue(content, type);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
@@ -68,7 +67,7 @@ public class ObjectMappers {
         return value;
     }
 
-    public static JsonNode getRequiredChildNode(@ReadOnly JsonNode parentNode, String fieldName)
+    public static JsonNode getRequiredChildNode(JsonNode parentNode, String fieldName)
             throws IOException {
         JsonNode node = parentNode.get(fieldName);
         if (node == null) {
@@ -80,7 +79,7 @@ public class ObjectMappers {
         return node;
     }
 
-    @EnsuresNonNull("#1")
+    /*@EnsuresNonNull("#1")*/
     public static <T extends /*@Nullable*/Object> void checkRequiredProperty(T reference,
             String fieldName) throws JsonMappingException {
         if (reference == null) {
@@ -88,6 +87,7 @@ public class ObjectMappers {
         }
     }
 
+    // named after guava Strings.nullToEmpty
     public static <T> List<T> nullToEmpty(@Nullable List<T> list) {
         if (list == null) {
             return Lists.newArrayList();
@@ -96,8 +96,9 @@ public class ObjectMappers {
         }
     }
 
+    // named after guava Strings.nullToEmpty
     public static <K, V extends /*@Nullable*/Object> Map<K, V> nullToEmpty(
-            @ReadOnly @Nullable Map<K, V> map) {
+            @Nullable Map<K, V> map) {
         if (map == null) {
             return Maps.newHashMap();
         } else {
@@ -105,6 +106,7 @@ public class ObjectMappers {
         }
     }
 
+    // named after guava Strings.nullToEmpty
     public static boolean nullToFalse(@Nullable Boolean value) {
         return value == null ? false : value;
     }

@@ -18,13 +18,14 @@ package org.glowroot.jvm;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 
-import checkers.igj.quals.Immutable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import org.slf4j.Logger;
@@ -32,6 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.jvm.OptionalService.OptionalServiceFactory;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker
@@ -77,7 +80,9 @@ public class DiagnosticOptions {
 
         public static final Ordering<VMOption> orderingByName = new Ordering<VMOption>() {
             @Override
-            public int compare(VMOption left, VMOption right) {
+            public int compare(@Nullable VMOption left, @Nullable VMOption right) {
+                checkNotNull(left);
+                checkNotNull(right);
                 return left.name.compareTo(right.name);
             }
         };

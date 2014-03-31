@@ -15,12 +15,14 @@
  */
 package org.glowroot.plugin.servlet;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
@@ -124,12 +126,12 @@ class ServletPluginProperties {
 
     private static ImmutableList<Pattern> buildPatternList(String propertyName) {
         String captureRequestParametersText = pluginServices.getStringProperty(propertyName);
-        ImmutableList.Builder<Pattern> captureParameters = ImmutableList.builder();
+        List<Pattern> captureParameters = Lists.newArrayList();
         for (String parameter : splitter.split(captureRequestParametersText)) {
             // converted to lower case for case-insensitive matching
             captureParameters.add(buildRegexPattern(parameter.toLowerCase(Locale.ENGLISH)));
         }
-        return captureParameters.build();
+        return ImmutableList.copyOf(captureParameters);
     }
 
     private static ImmutableSet<String> buildCaptureSessionAttributeNames() {

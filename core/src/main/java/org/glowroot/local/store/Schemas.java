@@ -28,9 +28,9 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
@@ -38,9 +38,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,9 +67,8 @@ class Schemas {
 
     private Schemas() {}
 
-    static void syncTable(String tableName, @ReadOnly List<Column> columns,
-            Connection connection) throws SQLException {
-
+    static void syncTable(String tableName, ImmutableList<Column> columns, Connection connection)
+            throws SQLException {
         if (!tableExists(tableName, connection)) {
             createTable(tableName, columns, connection);
         } else if (tableNeedsUpgrade(tableName, columns, connection)) {
@@ -80,9 +79,8 @@ class Schemas {
         }
     }
 
-    static void syncIndexes(String tableName, @ReadOnly List<Index> indexes, Connection connection)
+    static void syncIndexes(String tableName, ImmutableList<Index> indexes, Connection connection)
             throws SQLException {
-
         ImmutableSet<Index> desiredIndexes = ImmutableSet.copyOf(indexes);
         Set<Index> existingIndexes = getIndexes(tableName, connection);
         for (Index index : Sets.difference(existingIndexes, desiredIndexes)) {
@@ -111,7 +109,7 @@ class Schemas {
 
     static ImmutableList<Column> getColumns(String tableName, Connection connection)
             throws SQLException {
-        ImmutableList.Builder<Column> columns = ImmutableList.builder();
+        List<Column> columns = Lists.newArrayList();
         ResultSet resultSet = connection.getMetaData().getColumns(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), null);
         try {
@@ -123,12 +121,11 @@ class Schemas {
         } finally {
             resultSet.close();
         }
-        return columns.build();
+        return ImmutableList.copyOf(columns);
     }
 
-    private static void createTable(String tableName, @ReadOnly List<Column> columns,
+    private static void createTable(String tableName, ImmutableList<Column> columns,
             Connection connection) throws SQLException {
-
         StringBuilder sql = new StringBuilder();
         sql.append("create table ");
         sql.append(tableName);
@@ -156,9 +153,8 @@ class Schemas {
         }
     }
 
-    private static boolean tableNeedsUpgrade(String tableName, @ReadOnly List<Column> columns,
+    private static boolean tableNeedsUpgrade(String tableName, ImmutableList<Column> columns,
             Connection connection) throws SQLException {
-
         if (primaryKeyNeedsUpgrade(tableName, Iterables.filter(columns, PrimaryKeyColumn.class),
                 connection)) {
             return true;
@@ -188,9 +184,8 @@ class Schemas {
     }
 
     private static boolean primaryKeyNeedsUpgrade(String tableName,
-            @ReadOnly Iterable<PrimaryKeyColumn> primaryKeyColumns, Connection connection)
+            Iterable<PrimaryKeyColumn> primaryKeyColumns, Connection connection)
             throws SQLException {
-
         ResultSet resultSet = connection.getMetaData().getPrimaryKeys(null, null,
                 tableName.toUpperCase(Locale.ENGLISH));
         try {
@@ -210,7 +205,6 @@ class Schemas {
     @VisibleForTesting
     static ImmutableSet<Index> getIndexes(String tableName, Connection connection)
             throws SQLException {
-
         ListMultimap<String, String> indexColumns = ArrayListMultimap.create();
         ResultSet resultSet = connection.getMetaData().getIndexInfo(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), false, false);
@@ -238,7 +232,6 @@ class Schemas {
 
     private static void createIndex(String tableName, Index index, Connection connection)
             throws SQLException {
-
         StringBuilder sql = new StringBuilder();
         sql.append("create index ");
         sql.append(index.getName());
@@ -294,16 +287,16 @@ class Schemas {
         private final String name;
         private final String nameUpper;
         private final ImmutableList<String> columns;
-        private final ImmutableList<String> columnsUpper;
-        Index(String name, @ReadOnly Iterable<String> columns) {
+        private final ImmutableList<String> columnUppers;
+        Index(String name, Iterable<String> columns) {
             this.name = name;
             this.nameUpper = name.toUpperCase(Locale.ENGLISH);
             this.columns = ImmutableList.copyOf(columns);
-            ImmutableList.Builder<String> upperBuilder = ImmutableList.builder();
+            List<String> columnUppers = Lists.newArrayList();
             for (String column : columns) {
-                upperBuilder.add(column.toUpperCase(Locale.ENGLISH));
+                columnUppers.add(column.toUpperCase(Locale.ENGLISH));
             }
-            this.columnsUpper = upperBuilder.build();
+            this.columnUppers = ImmutableList.copyOf(columnUppers);
         }
         private String getName() {
             return name;
@@ -313,20 +306,20 @@ class Schemas {
         }
         // equals/hashCode are used in Schema.syncIndexes() to diff list of indexes with list of
         // existing indexes
+        /*@Pure*/
         @Override
-        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof Index) {
                 Index that = (Index) obj;
                 return nameUpper.equalsIgnoreCase(that.nameUpper)
-                        && Objects.equal(columnsUpper, that.columnsUpper);
+                        && Objects.equal(columnUppers, that.columnUppers);
             }
             return false;
         }
+        /*@Pure*/
         @Override
-        @Pure
         public int hashCode() {
-            return Objects.hashCode(nameUpper, columnsUpper);
+            return Objects.hashCode(nameUpper, columnUppers);
         }
     }
 }

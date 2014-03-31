@@ -22,10 +22,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
-import checkers.igj.quals.ReadOnly;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
@@ -103,19 +103,19 @@ public class DetailCapture {
                 if (!values.hasMoreElements()) {
                     map.put(name, Strings.nullToEmpty(value));
                 } else {
-                    ImmutableList.Builder<String> list = ImmutableList.builder();
+                    List<String> list = Lists.newArrayList();
                     list.add(Strings.nullToEmpty(value));
                     while (values.hasMoreElements()) {
                         list.add(Strings.nullToEmpty(values.nextElement()));
                     }
-                    map.put(name, list.build());
+                    map.put(name, ImmutableList.copyOf(list));
                 }
             }
         }
         return map.build();
     }
 
-    static boolean matchesOneOf(String key, @ReadOnly List<Pattern> patterns) {
+    static boolean matchesOneOf(String key, ImmutableList<Pattern> patterns) {
         for (Pattern pattern : patterns) {
             if (pattern.matcher(key).matches()) {
                 return true;

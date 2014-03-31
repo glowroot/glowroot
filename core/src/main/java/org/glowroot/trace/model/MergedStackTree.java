@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,19 +23,16 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.lock.quals.GuardedBy;
-import checkers.lock.quals.Holding;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
+import javax.annotation.concurrent.NotThreadSafe;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-import dataflow.quals.Pure;
 
-import org.glowroot.markers.NotThreadSafe;
-import org.glowroot.markers.ThreadSafe;
-
-import static org.glowroot.common.Nullness.castNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Merged stack tree built from sampled stack traces captured by periodic calls to
@@ -65,7 +62,6 @@ public class MergedStackTree {
 
     // must be holding lock to call and can only use resulting node tree inside the same
     // synchronized block
-    @Holding("lock")
     @Nullable
     public MergedStackTreeNode getRootNode() {
         mergeTheUnmergedStackTraces();
@@ -84,7 +80,7 @@ public class MergedStackTree {
         }
     }
 
-    @Holding("lock")
+    // must be holding lock to call
     private void mergeTheUnmergedStackTraces() {
         for (int i = 0; i < unmergedStackTraces.size(); i++) {
             List<StackTraceElement> stackTrace = unmergedStackTraces.get(i);
@@ -95,10 +91,9 @@ public class MergedStackTree {
         unmergedStackTraceThreadStates.clear();
     }
 
-    @Holding("lock")
+    // must be holding lock to call
     @VisibleForTesting
-    public void addToStackTree(@ReadOnly List<StackTraceElementPlus> stackTrace,
-            State threadState) {
+    public void addToStackTree(List<StackTraceElementPlus> stackTrace, State threadState) {
         MergedStackTreeNode lastMatchedNode = null;
         List<MergedStackTreeNode> nextChildNodes = rootNodes;
         int nextIndex;
@@ -152,8 +147,8 @@ public class MergedStackTree {
         }
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("rootNodes", rootNodes)
@@ -162,7 +157,7 @@ public class MergedStackTree {
 
     // recreate the stack trace as it would have been without the synthetic $metric$ methods
     public static List<StackTraceElementPlus> stripSyntheticMetricMethods(
-            @ReadOnly List<StackTraceElement> stackTrace) {
+            List<StackTraceElement> stackTrace) {
 
         List<StackTraceElementPlus> stackTracePlus = Lists.newArrayListWithCapacity(
                 stackTrace.size());
@@ -203,7 +198,7 @@ public class MergedStackTree {
         Matcher matcher = metricMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
         if (matcher.matches()) {
             String group = matcher.group(1);
-            castNonNull(group);
+            checkNotNull(group);
             return group.replace("$", " ");
         } else {
             return null;
@@ -227,18 +222,16 @@ public class MergedStackTree {
     @NotThreadSafe
     public static class StackTraceElementPlus {
         private final StackTraceElement stackTraceElement;
-        @ReadOnly
         @Nullable
         private final List<String> metricNames;
         private StackTraceElementPlus(StackTraceElement stackTraceElement,
-                @ReadOnly @Nullable List<String> metricNames) {
+                @Nullable List<String> metricNames) {
             this.stackTraceElement = stackTraceElement;
             this.metricNames = metricNames;
         }
         public StackTraceElement getStackTraceElement() {
             return stackTraceElement;
         }
-        @ReadOnly
         @Nullable
         private List<String> getMetricNames() {
             return metricNames;

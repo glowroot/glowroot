@@ -23,9 +23,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.MonotonicNonNull;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
@@ -49,7 +48,7 @@ import org.glowroot.markers.Singleton;
 import org.glowroot.trace.TraceRegistry;
 import org.glowroot.trace.model.Trace;
 
-import static org.glowroot.common.Nullness.castNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Json service to read trace point data, bound under /backend/trace/points.
@@ -62,8 +61,8 @@ import static org.glowroot.common.Nullness.castNonNull;
 class TracePointJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TracePointJsonService.class);
-    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
+
     private static final int NANOSECONDS_PER_SECOND = 1000000000;
 
     private final SnapshotDao snapshotDao;
@@ -95,15 +94,15 @@ class TracePointJsonService {
         private long requestAt;
         private long low;
         private long high;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private StringComparator transactionNameComparator;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private StringComparator headlineComparator;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private StringComparator errorComparator;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private StringComparator userComparator;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private StringComparator attributeValueComparator;
 
         public Handler(TracePointRequest request) {
@@ -222,7 +221,7 @@ class TracePointJsonService {
                         @Override
                         public Long apply(@Nullable Trace trace) {
                             // sorting activeTraces which is List<@NonNull Trace>
-                            castNonNull(trace);
+                            checkNotNull(trace);
                             return trace.getStartTick();
                         }
                     }));
@@ -394,9 +393,8 @@ class TracePointJsonService {
             }
         }
 
-        private String writeResponse(@ReadOnly List<TracePoint> points,
-                @ReadOnly List<Trace> activeTraces, long captureTime, long captureTick,
-                boolean limitExceeded) throws IOException {
+        private String writeResponse(List<TracePoint> points, List<Trace> activeTraces,
+                long captureTime, long captureTick, boolean limitExceeded) throws IOException {
             StringBuilder sb = new StringBuilder();
             JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();

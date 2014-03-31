@@ -22,7 +22,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import checkers.nullness.quals.MonotonicNonNull;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -51,7 +52,7 @@ public class ResponseHeaders {
 
     // map key is uppercase for case-insensitivity
     // implementation is LinkedHashMap to preserve insertion order
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private Map<String, ResponseHeader> responseHeaders;
 
     synchronized Map<String, Object> getMapOfStrings() {
@@ -101,10 +102,10 @@ public class ResponseHeaders {
         } else {
             Object existingValue = responseHeader.getValue();
             if (existingValue instanceof List) {
-                ImmutableList.Builder<Object> updatedValues = ImmutableList.builder();
+                List<Object> updatedValues = Lists.newArrayList();
                 updatedValues.addAll((List<?>) existingValue);
                 updatedValues.add(value);
-                responseHeader.setValue(updatedValues.build());
+                responseHeader.setValue(ImmutableList.copyOf(updatedValues));
             } else {
                 responseHeader.setValue(ImmutableList.of(existingValue, value));
             }
@@ -128,9 +129,10 @@ public class ResponseHeaders {
         }
     }
 
+    @ThreadSafe
     private static class ResponseHeader {
         private final String name;
-        private Object value;
+        private volatile Object value;
         private ResponseHeader(String name, Object value) {
             this.name = name;
             this.value = value;

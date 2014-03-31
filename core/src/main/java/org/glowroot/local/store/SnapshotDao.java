@@ -22,7 +22,8 @@ import java.sql.Types;
 import java.util.List;
 import java.util.Map.Entry;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;

@@ -15,9 +15,9 @@
  */
 package org.glowroot.local.ui;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
-import dataflow.quals.Pure;
 
 import org.glowroot.markers.UsedByJsonBinding;
 
@@ -226,8 +226,8 @@ class TracePointRequest {
         this.limit = limit;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("from", from)

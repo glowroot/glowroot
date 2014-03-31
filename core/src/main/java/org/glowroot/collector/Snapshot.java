@@ -15,13 +15,11 @@
  */
 package org.glowroot.collector;
 
-import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.MonotonicNonNull;
-import checkers.nullness.quals.Nullable;
-import checkers.nullness.quals.RequiresNonNull;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableSetMultimap;
-import dataflow.quals.Pure;
 
 /**
  * Structure used as part of the response to "/backend/trace/detail".
@@ -161,8 +159,8 @@ public class Snapshot {
         return attributesForIndexing;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
@@ -195,7 +193,7 @@ public class Snapshot {
 
     public static class Builder {
 
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private String id;
         private boolean active;
         private boolean stuck;
@@ -203,9 +201,9 @@ public class Snapshot {
         private long captureTime;
         private long duration;
         private boolean background;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private String headline;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private String transactionName;
         @Nullable
         private String error;
@@ -319,8 +317,8 @@ public class Snapshot {
             return this;
         }
 
-        @RequiresNonNull({"id", "transactionName", "headline", "spansExistence",
-                "coarseProfileExistence", "fineProfileExistence"})
+        /*@RequiresNonNull({"id", "transactionName", "headline", "spansExistence",
+                "coarseProfileExistence", "fineProfileExistence"})*/
         public Snapshot build() {
             return new Snapshot(id, active, stuck, startTime, captureTime, duration, background,
                     headline, transactionName, error, user, attributes, metrics, jvmInfo,

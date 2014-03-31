@@ -22,7 +22,8 @@ import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Set;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import org.jboss.netty.buffer.ChannelBuffers;

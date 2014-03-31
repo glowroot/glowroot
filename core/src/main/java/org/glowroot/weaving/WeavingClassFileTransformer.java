@@ -20,8 +20,9 @@ import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.List;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Supplier;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -29,8 +30,6 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker
@@ -76,8 +75,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // calculation in the test class org.glowroot.core.weaving.preinit.GlobalCollector, and
     // hard-coded results in org.glowroot.core.weaving.PreInitializeClasses)
     // note: an exception is made for WeavingMetric, see PreInitializeClassesTest for explanation
-    public WeavingClassFileTransformer(@ReadOnly List<MixinType> mixinTypes,
-            @ReadOnly List<Advice> pluginAdvisors,
+    public WeavingClassFileTransformer(List<MixinType> mixinTypes, List<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
             ParsedTypeCache parsedTypeCache, MetricTimerService metricTimerService,
             boolean metricWrapperMethods) {

@@ -23,6 +23,8 @@ import java.sql.Types;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
@@ -37,7 +39,6 @@ import org.glowroot.local.store.DataSource.ResultSetExtractor;
 import org.glowroot.local.store.DataSource.RowMapper;
 import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.markers.Singleton;
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

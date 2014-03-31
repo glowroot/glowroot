@@ -19,9 +19,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -33,7 +33,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,6 @@ import org.glowroot.markers.OnlyUsedByTests;
 @Immutable
 public class PluginConfig {
 
-    @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(PluginConfig.class);
 
     private final PluginDescriptor pluginDescriptor;
@@ -162,8 +160,8 @@ public class PluginConfig {
         return version;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", pluginDescriptor.getId())
@@ -219,7 +217,7 @@ public class PluginConfig {
             return this;
         }
 
-        public void overlay(@ReadOnly ObjectNode configNode) throws JsonMappingException {
+        public void overlay(ObjectNode configNode) throws JsonMappingException {
             overlay(configNode, false);
         }
 
@@ -230,8 +228,7 @@ public class PluginConfig {
                     ImmutableMap.copyOf(doubleProperties), version);
         }
 
-        void overlay(@ReadOnly ObjectNode configNode, boolean ignoreWarnings)
-                throws JsonMappingException {
+        void overlay(ObjectNode configNode, boolean ignoreWarnings) throws JsonMappingException {
             JsonNode enabledElement = configNode.get("enabled");
             if (enabledElement != null) {
                 enabled(enabledElement.asBoolean());
@@ -264,7 +261,7 @@ public class PluginConfig {
         }
 
         @OnlyUsedByTests
-        public Builder setProperty(String name, @Immutable @Nullable Object value) {
+        public Builder setProperty(String name, @Nullable Object value) {
             return setProperty(name, value, false);
         }
 
@@ -272,8 +269,7 @@ public class PluginConfig {
         // value which may be out of sync if the plugin has been updated and the given property has
         // changed, e.g. from not hidden to hidden, in which case the associated error messages
         // should be suppressed
-        private Builder setProperty(String name, @Immutable @Nullable Object value,
-                boolean ignoreWarnings) {
+        private Builder setProperty(String name, @Nullable Object value, boolean ignoreWarnings) {
             PropertyDescriptor propertyDescriptor = getPropertyDescriptor(name);
             if (propertyDescriptor == null) {
                 if (!ignoreWarnings) {

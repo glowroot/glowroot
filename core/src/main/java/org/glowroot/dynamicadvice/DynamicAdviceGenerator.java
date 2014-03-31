@@ -18,10 +18,11 @@ package org.glowroot.dynamicadvice;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -39,7 +40,7 @@ import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.Advice.AdviceConstructionException;
 import org.glowroot.weaving.TypeNames;
 
-import static org.glowroot.common.Nullness.castNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
@@ -77,7 +78,6 @@ import static org.objectweb.asm.Opcodes.V1_5;
  */
 public class DynamicAdviceGenerator {
 
-    @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(DynamicAdviceGenerator.class);
 
     private static final AtomicInteger counter = new AtomicInteger();
@@ -87,9 +87,9 @@ public class DynamicAdviceGenerator {
     private final String pluginId;
     private final String adviceTypeName;
 
-    public static ImmutableList<Advice> getAdvisors(@ReadOnly List<PointcutConfig> pointcutConfigs,
+    public static List<Advice> createAdvisors(ImmutableList<PointcutConfig> pointcutConfigs,
             @Nullable String pluginId) {
-        ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
+        List<Advice> advisors = Lists.newArrayList();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
             try {
                 Class<?> dynamicAdviceClass =
@@ -108,7 +108,7 @@ public class DynamicAdviceGenerator {
                 logger.error("error creating advice for pointcut config: {}", pointcutConfig, e);
             }
         }
-        return advisors.build();
+        return advisors;
     }
 
     private DynamicAdviceGenerator(PointcutConfig pointcutConfig, @Nullable String pluginId) {
@@ -199,7 +199,7 @@ public class DynamicAdviceGenerator {
 
     private void addStaticInitializer(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
-        castNonNull(mv);
+        checkNotNull(mv);
         mv.visitCode();
         if (pluginId == null) {
             mv.visitInsn(ACONST_NULL);
@@ -266,7 +266,7 @@ public class DynamicAdviceGenerator {
 
     private void addIsEnabledMethod(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "isEnabled", "()Z", null, null);
-        castNonNull(mv);
+        checkNotNull(mv);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/IsEnabled;", true)
                 .visitEnd();
         mv.visitCode();
@@ -294,7 +294,7 @@ public class DynamicAdviceGenerator {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
                 "(Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;)Lorg/glowroot/api/Span;",
                 null, null);
-        castNonNull(mv);
+        checkNotNull(mv);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnBefore;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindReceiver;", true)
@@ -374,7 +374,7 @@ public class DynamicAdviceGenerator {
     private void addOnBeforeMethodMetricOnly(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
                 "()Lorg/glowroot/api/MetricTimer;", null, null);
-        castNonNull(mv);
+        checkNotNull(mv);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnBefore;", true)
                 .visitEnd();
         mv.visitCode();
@@ -391,7 +391,7 @@ public class DynamicAdviceGenerator {
     private void addOnAfterMethodMetricOnly(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onAfter",
                 "(Lorg/glowroot/api/MetricTimer;)V", null, null);
-        castNonNull(mv);
+        checkNotNull(mv);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnAfter;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindTraveler;", true)
@@ -412,7 +412,7 @@ public class DynamicAdviceGenerator {
         if (pointcutConfig.getMethodReturnTypeName().isEmpty()) {
             mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
                     "(Lorg/glowroot/api/OptionalReturn;" + travelerType + ")V", null, null);
-            castNonNull(mv);
+            checkNotNull(mv);
             mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindOptionalReturn;", true)
                     .visitEnd();
             mv.visitParameterAnnotation(1, "Lorg/glowroot/api/weaving/BindTraveler;", true)
@@ -421,14 +421,14 @@ public class DynamicAdviceGenerator {
         } else if (pointcutConfig.getMethodReturnTypeName().equals("void")) {
             mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn", "(" + travelerType + ")V",
                     null, null);
-            castNonNull(mv);
+            checkNotNull(mv);
             mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindTraveler;", true)
                     .visitEnd();
             travelerParamIndex = 0;
         } else {
             mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn", "(Ljava/lang/Object;"
                     + travelerType + ")V", null, null);
-            castNonNull(mv);
+            checkNotNull(mv);
             mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindReturn;", true)
                     .visitEnd();
             mv.visitParameterAnnotation(1, "Lorg/glowroot/api/weaving/BindTraveler;", true)
@@ -496,7 +496,7 @@ public class DynamicAdviceGenerator {
     private void addOnThrowMethod(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onThrow",
                 "(Ljava/lang/Throwable;Lorg/glowroot/api/Span;)V", null, null);
-        castNonNull(mv);
+        checkNotNull(mv);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnThrow;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindThrowable;", true)
@@ -525,7 +525,7 @@ public class DynamicAdviceGenerator {
 
     private void addConstructor(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
-        castNonNull(mv);
+        checkNotNull(mv);
         mv.visitCode();
         mv.visitVarInsn(ALOAD, 0);
         mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
@@ -536,7 +536,7 @@ public class DynamicAdviceGenerator {
 
     private void addOnChangeMethod(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC, "onChange", "()V", null, null);
-        castNonNull(mv);
+        checkNotNull(mv);
         mv.visitCode();
         if (!pointcutConfig.getEnabledProperty().isEmpty()) {
             mv.visitFieldInsn(GETSTATIC, adviceTypeName, "pluginServices",

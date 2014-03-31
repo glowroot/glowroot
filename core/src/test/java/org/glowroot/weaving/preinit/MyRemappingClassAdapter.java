@@ -15,8 +15,10 @@
  */
 package org.glowroot.weaving.preinit;
 
-import checkers.nullness.quals.Nullable;
-import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
+
+import javax.annotation.Nullable;
+
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
@@ -41,10 +43,9 @@ class MyRemappingClassAdapter extends ClassVisitor {
     @Override
     public void visit(int version, int access, String name, @Nullable String signature,
             @Nullable String superName, String[] interfaces) {
-
         this.typeName = name;
         typeCollector.setSuperType(superName);
-        typeCollector.setInterfaceTypes(ImmutableList.copyOf(interfaces));
+        typeCollector.setInterfaceTypes(Arrays.asList(interfaces));
     }
 
     @Override

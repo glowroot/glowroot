@@ -18,18 +18,16 @@ package org.glowroot.trace;
 import java.util.List;
 import java.util.Set;
 
-import checkers.igj.quals.ReadOnly;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.config.PointcutConfig;
 import org.glowroot.dynamicadvice.DynamicAdviceGenerator;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.Advice;
 
 /**
@@ -39,15 +37,13 @@ import org.glowroot.weaving.Advice;
 @ThreadSafe
 public class PointcutConfigAdviceCache {
 
-    @ReadOnly
-    private static final Logger logger = LoggerFactory.getLogger(PointcutConfigAdviceCache.class);
-
     private volatile ImmutableList<Advice> advisors;
     private volatile ImmutableSet<String> pointcutConfigVersions;
 
-    PointcutConfigAdviceCache(@ReadOnly List<PointcutConfig> pointcutConfigs) {
-        advisors = DynamicAdviceGenerator.getAdvisors(pointcutConfigs, null);
-        pointcutConfigVersions = getPointcutConfigVersions(pointcutConfigs);
+    PointcutConfigAdviceCache(ImmutableList<PointcutConfig> pointcutConfigs) {
+        advisors =
+                ImmutableList.copyOf(DynamicAdviceGenerator.createAdvisors(pointcutConfigs, null));
+        pointcutConfigVersions = ImmutableSet.copyOf(createPointcutConfigVersions(pointcutConfigs));
     }
 
     Supplier<ImmutableList<Advice>> getAdvisorsSupplier() {
@@ -59,12 +55,13 @@ public class PointcutConfigAdviceCache {
         };
     }
 
-    public void updateAdvisors(@ReadOnly List<PointcutConfig> pointcutConfigs) {
-        advisors = DynamicAdviceGenerator.getAdvisors(pointcutConfigs, null);
-        pointcutConfigVersions = getPointcutConfigVersions(pointcutConfigs);
+    public void updateAdvisors(ImmutableList<PointcutConfig> pointcutConfigs) {
+        advisors =
+                ImmutableList.copyOf(DynamicAdviceGenerator.createAdvisors(pointcutConfigs, null));
+        pointcutConfigVersions = ImmutableSet.copyOf(createPointcutConfigVersions(pointcutConfigs));
     }
 
-    public boolean isPointcutConfigsOutOfSync(@ReadOnly List<PointcutConfig> pointcutConfigs) {
+    public boolean isPointcutConfigsOutOfSync(ImmutableList<PointcutConfig> pointcutConfigs) {
         Set<String> versions = Sets.newHashSet();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
             versions.add(pointcutConfig.getVersion());
@@ -72,13 +69,12 @@ public class PointcutConfigAdviceCache {
         return !versions.equals(this.pointcutConfigVersions);
     }
 
-    private static ImmutableSet<String> getPointcutConfigVersions(
-            List<PointcutConfig> pointcutConfigs) {
-        ImmutableSet.Builder<String> pointcutConfigVersions = ImmutableSet.builder();
+    private static Set<String> createPointcutConfigVersions(List<PointcutConfig> pointcutConfigs) {
+        Set<String> pointcutConfigVersions = Sets.newHashSet();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
             pointcutConfigVersions.add(pointcutConfig.getVersion());
         }
-        return pointcutConfigVersions.build();
+        return pointcutConfigVersions;
     }
 
     // this method exists because tests cannot use (sometimes) shaded guava Supplier

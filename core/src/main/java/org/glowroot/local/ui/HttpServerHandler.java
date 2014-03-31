@@ -28,7 +28,8 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -67,9 +68,9 @@ import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.common.Reflections.ReflectiveTargetException;
 import org.glowroot.markers.Singleton;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.glowroot.common.Nullness.castNonNull;
 import static org.glowroot.local.ui.HttpServerHandler.HttpMethod.GET;
 import static org.glowroot.local.ui.HttpServerHandler.HttpMethod.POST;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -88,6 +89,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerHandler.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
+
     private static final long TEN_YEARS = DAYS.toMillis(365 * 10);
     private static final long ONE_DAY = DAYS.toMillis(1);
     private static final long FIVE_MINUTES = MINUTES.toMillis(5);
@@ -122,11 +124,11 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             new ThreadLocal</*@Nullable*/Channel>();
 
     HttpServerHandler(IndexHtmlService indexHtmlService, ImmutableMap<Pattern, Object> uriMappings,
-            HttpSessionManager httpSessionManager, ImmutableList<Object> jsonServices) {
+            HttpSessionManager httpSessionManager, List<Object> jsonServices) {
         this.indexHtmlService = indexHtmlService;
         this.uriMappings = uriMappings;
         this.httpSessionManager = httpSessionManager;
-        ImmutableList.Builder<JsonServiceMapping> jsonServiceMappings = ImmutableList.builder();
+        List<JsonServiceMapping> jsonServiceMappings = Lists.newArrayList();
         for (Object jsonService : jsonServices) {
             for (Method method : jsonService.getClass().getDeclaredMethods()) {
                 GET annotationGET = method.getAnnotation(GET.class);
@@ -142,7 +144,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             }
         }
 
-        this.jsonServiceMappings = jsonServiceMappings.build();
+        this.jsonServiceMappings = ImmutableList.copyOf(jsonServiceMappings);
         allChannels = new DefaultChannelGroup();
     }
 
@@ -270,7 +272,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                 String[] args = new String[matcher.groupCount()];
                 for (int i = 0; i < args.length; i++) {
                     String group = matcher.group(i + 1);
-                    castNonNull(group);
+                    checkNotNull(group);
                     args[i] = group;
                 }
                 return handleJsonRequest(jsonServiceMapping.service,

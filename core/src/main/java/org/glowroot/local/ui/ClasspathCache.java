@@ -33,7 +33,8 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
-import checkers.lock.quals.GuardedBy;
+import javax.annotation.concurrent.GuardedBy;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -95,7 +96,7 @@ class ClasspathCache {
     ImmutableList<ParsedType> getParsedTypes(String typeName) {
         // update cache before proceeding
         updateCache();
-        ImmutableList.Builder<ParsedType> parsedTypes = ImmutableList.builder();
+        List<ParsedType> parsedTypes = Lists.newArrayList();
         Set<URI> uris = typeNames.get(typeName);
         if (uris == null) {
             return ImmutableList.of();
@@ -107,7 +108,7 @@ class ClasspathCache {
                 logger.warn(e.getMessage(), e);
             }
         }
-        return parsedTypes.build();
+        return ImmutableList.copyOf(parsedTypes);
     }
 
     void updateCache() {

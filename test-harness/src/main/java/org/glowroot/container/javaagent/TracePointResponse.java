@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,9 @@ package org.glowroot.container.javaagent;
 
 import java.util.List;
 
-import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -27,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
@@ -76,7 +78,9 @@ class TracePointResponse {
 
         static final Ordering<RawPoint> orderingByCaptureTime = new Ordering<RawPoint>() {
             @Override
-            public int compare(RawPoint left, RawPoint right) {
+            public int compare(@Nullable RawPoint left, @Nullable RawPoint right) {
+                checkNotNull(left);
+                checkNotNull(right);
                 return Longs.compare(left.captureTime, right.captureTime);
             }
         };

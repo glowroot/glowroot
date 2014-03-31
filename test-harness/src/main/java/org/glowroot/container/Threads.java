@@ -19,12 +19,10 @@ import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.List;
 
-import checkers.igj.quals.ReadOnly;
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
-import dataflow.quals.Pure;
 
 import org.glowroot.markers.Static;
 
@@ -63,7 +61,7 @@ public class Threads {
     }
 
     // ensure the test didn't create any non-daemon threads
-    public static void preShutdownCheck(@ReadOnly Collection<Thread> preExistingThreads)
+    public static void preShutdownCheck(Collection<Thread> preExistingThreads)
             throws InterruptedException {
         // give the test 5 seconds to shutdown any threads they may have created, e.g. give tomcat
         // time to shutdown when testing tomcat plugin
@@ -105,7 +103,7 @@ public class Threads {
     }
 
     // ensure the test shutdown all threads that it created
-    public static void postShutdownCheck(@ReadOnly Collection<Thread> preExistingThreads)
+    public static void postShutdownCheck(Collection<Thread> preExistingThreads)
             throws InterruptedException {
         // give it 5 seconds to shutdown threads
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -141,8 +139,7 @@ public class Threads {
         }
     }
 
-    private static List<Thread> getNonPreExistingThreads(
-            @ReadOnly Collection<Thread> preExistingThreads) {
+    private static List<Thread> getNonPreExistingThreads(Collection<Thread> preExistingThreads) {
         List<Thread> currentThreads = currentThreads();
         currentThreads.removeAll(preExistingThreads);
         // remove current thread in case it is newly created by the tests
@@ -206,8 +203,8 @@ public class Threads {
         private ThreadsException(Collection<Thread> threads) {
             this.threads = threads;
         }
+        /*@Pure*/
         @Override
-        @Pure
         public String getMessage() {
             StringBuilder sb = new StringBuilder();
             for (Thread thread : threads) {

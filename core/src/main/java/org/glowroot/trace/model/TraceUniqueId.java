@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,9 @@ package org.glowroot.trace.model;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.Mutable;
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.Strings;
-import dataflow.quals.Pure;
 
 /**
  * The unique identifier for a trace. The string representation of the unique identifier is lazily
@@ -34,7 +33,6 @@ import dataflow.quals.Pure;
 class TraceUniqueId {
 
     // used to populate id (below)
-    @Mutable
     private static final AtomicLong idCounter = new AtomicLong();
 
     private static final long MAX_ID = (long) Math.pow(16, 6); // at most 6 bytes in hex form
@@ -66,8 +64,8 @@ class TraceUniqueId {
         }
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return get();
     }

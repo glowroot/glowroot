@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,16 @@ package org.glowroot.container.trace;
 
 import java.util.List;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.nullToFalse;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -52,7 +50,7 @@ public class Span {
 
     private Span(long offset, long duration, boolean active, int nestingLevel,
             @Nullable Message message, @Nullable ErrorMessage error,
-            @ReadOnly @Nullable List<String> stackTrace, boolean limitExceededMarker,
+            @Nullable List<String> stackTrace, boolean limitExceededMarker,
             boolean limitExtendedMarker) {
         this.offset = offset;
         this.duration = duration;
@@ -136,8 +134,8 @@ public class Span {
         return limitExtendedMarker;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("offset", offset)

@@ -17,9 +17,8 @@ package org.glowroot.plugin.jdbc;
 
 import java.util.List;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.EnsuresNonNullIf;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 
 import org.glowroot.api.Message;
@@ -137,12 +136,12 @@ class JdbcMessageSupplier extends MessageSupplier {
         this.numRows = Math.max(this.numRows, currentRow);
     }
 
-    @EnsuresNonNullIf(expression = "parameters", result = true)
+    /*@EnsuresNonNullIf(expression = "parameters", result = true)*/
     private boolean isUsingParameters() {
         return parameters != null;
     }
 
-    @EnsuresNonNullIf(expression = "batchedParameters", result = true)
+    /*@EnsuresNonNullIf(expression = "batchedParameters", result = true)*/
     private boolean isUsingBatchedParameters() {
         return batchedParameters != null;
     }
@@ -170,7 +169,7 @@ class JdbcMessageSupplier extends MessageSupplier {
         args[1] = Integer.toString(numRows);
     }
 
-    private static void appendBatchedSqls(StringBuilder sb, @ReadOnly List<String> batchedSqls) {
+    private static void appendBatchedSqls(StringBuilder sb, ImmutableList<String> batchedSqls) {
         boolean first = true;
         for (String batchedSql : batchedSqls) {
             if (!first) {

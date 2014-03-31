@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,11 @@ package org.glowroot.trace.model;
 import java.lang.Thread.State;
 import java.util.List;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-import dataflow.quals.Pure;
-
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * Element of {@link MergedStackTree}.
@@ -40,7 +38,6 @@ public class MergedStackTreeNode {
     // nodes mostly have a single child node, and rarely have more than two child nodes
     private final List<MergedStackTreeNode> childNodes = Lists.newArrayListWithCapacity(2);
     // using List over Set in order to preserve ordering
-    @ReadOnly
     private List<String> metricNames;
     private int sampleCount;
     @Nullable
@@ -69,13 +66,12 @@ public class MergedStackTreeNode {
     }
 
     static MergedStackTreeNode create(StackTraceElement stackTraceElement,
-            @ReadOnly @Nullable List<String> metricNames) {
+            @Nullable List<String> metricNames) {
         return new MergedStackTreeNode(stackTraceElement, metricNames, 1);
     }
 
     private MergedStackTreeNode(@Nullable StackTraceElement stackTraceElement,
-            @ReadOnly @Nullable List<String> metricNames, int sampleCount) {
-
+            @Nullable List<String> metricNames, int sampleCount) {
         this.stackTraceElement = stackTraceElement;
         if (metricNames == null) {
             this.metricNames = Lists.newArrayList();
@@ -89,8 +85,8 @@ public class MergedStackTreeNode {
         childNodes.add(methodTreeElement);
     }
 
-    // may introduce contain duplicates
-    void setMetricNames(@ReadOnly List<String> metricNames) {
+    // may contain duplicates
+    void setMetricNames(List<String> metricNames) {
         this.metricNames = metricNames;
     }
 
@@ -104,12 +100,10 @@ public class MergedStackTreeNode {
         sampleCount++;
     }
 
-    @ReadOnly
     public List<MergedStackTreeNode> getChildNodes() {
         return childNodes;
     }
 
-    @ReadOnly
     public List<String> getMetricNames() {
         return metricNames;
     }
@@ -129,8 +123,8 @@ public class MergedStackTreeNode {
         return leafThreadState;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("stackTraceElement", stackTraceElement)

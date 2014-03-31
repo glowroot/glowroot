@@ -18,14 +18,13 @@ package org.glowroot.local.ui;
 import java.io.IOException;
 import java.util.List;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +34,7 @@ import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.markers.Singleton;
 
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
 /**
  * Json service to read error data, bound to /backend/error.
@@ -87,8 +87,8 @@ class ErrorJsonService {
             checkRequiredProperty(limit, "limit");
             this.from = from;
             this.to = to;
-            this.includes = orEmpty(includes);
-            this.excludes = orEmpty(excludes);
+            this.includes = nullToEmpty(includes);
+            this.excludes = nullToEmpty(excludes);
             this.limit = limit;
         }
 
@@ -110,15 +110,6 @@ class ErrorJsonService {
 
         private int getLimit() {
             return limit;
-        }
-
-        @ReadOnly
-        private static <T extends /*@NonNull*/Object> List<T> orEmpty(
-                @ReadOnly @Nullable List<T> list) {
-            if (list == null) {
-                return ImmutableList.of();
-            }
-            return list;
         }
     }
 }

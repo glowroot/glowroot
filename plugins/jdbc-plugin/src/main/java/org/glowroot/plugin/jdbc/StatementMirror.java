@@ -19,7 +19,8 @@ import java.lang.ref.WeakReference;
 import java.sql.Statement;
 import java.util.List;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 

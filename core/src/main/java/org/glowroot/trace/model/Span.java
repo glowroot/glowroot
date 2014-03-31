@@ -15,15 +15,15 @@
  */
 package org.glowroot.trace.model;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import dataflow.quals.Pure;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.internal.ReadableErrorMessage;
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * The "span" terminology is borrowed from <a
@@ -124,8 +124,8 @@ public class Span {
         this.stackTrace = stackTrace;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("message", messageSupplier == null ? null : messageSupplier.get())

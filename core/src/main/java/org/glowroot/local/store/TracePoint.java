@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package org.glowroot.local.store;
 
-import checkers.igj.quals.Immutable;
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.Objects;
-import dataflow.quals.Pure;
 
 /**
  * @author Trask Stalnaker
@@ -58,8 +58,8 @@ public class TracePoint {
         return error;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)

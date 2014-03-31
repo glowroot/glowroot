@@ -21,9 +21,8 @@ import java.io.Writer;
 import java.lang.Thread.State;
 import java.util.List;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Lists;
@@ -43,12 +42,10 @@ import org.glowroot.trace.model.MergedStackTreeNode;
 public class ProfileCharSourceCreator {
 
     private static final Logger logger = LoggerFactory.getLogger(ProfileCharSourceCreator.class);
-    @ReadOnly
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     private ProfileCharSourceCreator() {}
 
-    @Immutable
     @Nullable
     public static CharSource createProfileCharSource(
             @Nullable MergedStackTree mergedStackTree) {
@@ -149,7 +146,6 @@ public class ProfileCharSourceCreator {
             jg.writeEndArray();
         }
 
-        @Immutable
         private static enum JsonGeneratorOp {
             END_OBJECT, END_ARRAY, POP_METRIC_NAME
         }

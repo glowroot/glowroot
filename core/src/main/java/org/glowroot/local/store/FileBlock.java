@@ -15,9 +15,9 @@
  */
 package org.glowroot.local.store;
 
-import checkers.igj.quals.Immutable;
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.Objects;
-import dataflow.quals.Pure;
 
 /**
  * @author Trask Stalnaker
@@ -70,8 +70,8 @@ class FileBlock {
         return startIndex + ":" + length;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("startIndex", startIndex)

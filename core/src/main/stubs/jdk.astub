@@ -1,18 +1,7 @@
-import checkers.igj.quals.*;
-import checkers.nullness.quals.*;
-
-/* ========================================================================== */
-package java.io;
-
-@Immutable
-public class File {}
-
+import org.checkerframework.checker.nullness.qual.*;
 
 /* ========================================================================== */
 package java.lang;
-
-@Immutable
-public class Class<T> {}
 
 public class ClassLoader {
     protected ClassLoader(@Nullable ClassLoader parent);
@@ -22,25 +11,9 @@ public class ClassLoader {
     protected @Nullable Package getPackage(String name);
 }
 
-@Immutable
-public class Double {}
-
-@Immutable
-public class StackTraceElement {}
-
 public class Thread {
     public void setContextClassLoader(@Nullable ClassLoader cl);
 }
-
-@Immutable
-public class Thread$State {}
-
-/* ========================================================================== */
-package java.lang.annotation;
-
-@Immutable
-public interface Annotation {}
-
 
 /* ========================================================================== */
 package java.lang.instrument;
@@ -51,59 +24,11 @@ public interface ClassFileTransformer {
             byte[] classfileBuffer);
 }
 
-
-/* ========================================================================== */
-package java.lang.management;
-
-@Immutable
-public class ThreadInfo {}
-
-public interface ThreadMXBean {
-    public @Nullable ThreadInfo getThreadInfo(long id, int maxDepth);
-}
-
-/* ========================================================================== */
-package java.lang.ref;
-
-public class Reference<T> {
-    public @Nullable T get();
-}
-
-public class WeakReference<T> extends Reference<T> {
-    public WeakReference(@Nullable T referent);
-}
-
-/* ========================================================================== */
-package java.lang.reflect;
-
-@Immutable
-public class AccessibleObject {}
-
-public class Method {
-    public @Nullable Object invoke(@Nullable Object obj, @Nullable Object @Nullable ... args);
-}
-
-public class Proxy {
-    public static Object newProxyInstance(@Nullable ClassLoader loader, Class<?>[] interfaces,
-            InvocationHandler h);
-}
-
-public interface InvocationHandler {
-    public @Nullable Object invoke(Object proxy, Method method, Object[] args);
-}
-
 /* ========================================================================== */
 package java.net;
 
 public class Socket {
     public Socket(@Nullable String host, int port);
-}
-
-/* ========================================================================== */
-package java.security;
-
-public class CodeSource {
-    public @Nullable URL getLocation();
 }
 
 /* ========================================================================== */
@@ -125,52 +50,9 @@ public interface PreparedStatement {
     void setObject(int parameterIndex, @Nullable Object x);
 }
 
-public class SQLException {
-    public SQLException(@Nullable String reason);
-}
-
-public interface ResultSet {
-    @Nullable Statement getStatement();
-}
-
 /* ========================================================================== */
 package java.util;
 
-public interface Map<K, V> {
-    void putAll(@Nullable @ReadOnly Map<? extends K, ? extends V> m);
-}
-
 public interface Enumeration {
     @Nullable String nextElement();
-}
-
-/* ========================================================================== */
-package java.util.concurrent;
-
-public class CopyOnWriteArrayList {
-    public int addAllAbsent(@ReadOnly Collection<? extends E> c);
-}
-
-public interface ConcurrentMap<K extends @Nullable Object, V extends @Nullable Object> {
-    @Nullable V putIfAbsent(K key, V value);
-}
-
-/* ========================================================================== */
-package java.util.jar;
-
-public class JarInputStream {
-    public @Nullable JarEntry getNextJarEntry();
-}
-
-/* ========================================================================== */
-package java.util.regex;
-
-@Immutable
-public class Pattern {}
-
-/* ========================================================================== */
-package org.xml.sax;
-
-public interface EntityResolver {
-    public @Nullable InputSource resolveEntity(String publicId, String systemId);
 }

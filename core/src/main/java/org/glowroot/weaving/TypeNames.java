@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package org.glowroot.weaving;
 
-import checkers.nullness.quals.PolyNull;
+import java.util.List;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import org.glowroot.markers.Static;
 
@@ -29,8 +31,8 @@ public class TypeNames {
 
     private TypeNames() {}
 
-    @PolyNull
-    public static String fromInternal(@PolyNull String typeName) {
+    /*@PolyNull*/
+    public static String fromInternal(/*@PolyNull*/String typeName) {
         if (typeName == null) {
             return null;
         } else {
@@ -38,23 +40,18 @@ public class TypeNames {
         }
     }
 
-    @PolyNull
-    public static String toInternal(@PolyNull String typeName) {
-        if (typeName == null) {
-            return null;
-        } else {
-            return typeName.replace('.', '/');
-        }
+    public static String toInternal(String typeName) {
+        return typeName.replace('.', '/');
     }
 
-    static ImmutableList<String> fromInternal(String/*@Nullable*/[] typeNames) {
-        if (typeNames == null) {
+    static ImmutableList<String> fromInternal(String/*@Nullable*/[] internalTypeNames) {
+        if (internalTypeNames == null) {
             return ImmutableList.of();
         }
-        ImmutableList.Builder<String> builder = ImmutableList.builder();
-        for (String typeName : typeNames) {
-            builder.add(typeName.replace('/', '.'));
+        List<String> typeNames = Lists.newArrayList();
+        for (String typeName : internalTypeNames) {
+            typeNames.add(typeName.replace('/', '.'));
         }
-        return builder.build();
+        return ImmutableList.copyOf(typeNames);
     }
 }

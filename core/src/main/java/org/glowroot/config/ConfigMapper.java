@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
@@ -51,12 +52,9 @@ import org.glowroot.config.JsonViews.FileView;
 @Immutable
 class ConfigMapper {
 
-    @ReadOnly
-    private static final Logger logger = LoggerFactory.getLogger(ConfigMapper.class);
-
     private static final String NEWLINE = System.getProperty("line.separator");
 
-    @ReadOnly
+    private static final Logger logger = LoggerFactory.getLogger(ConfigMapper.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final String GENERAL = "general";
@@ -71,8 +69,8 @@ class ConfigMapper {
 
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
 
-    ConfigMapper(@ReadOnly List<PluginDescriptor> pluginDescriptors) {
-        this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
+    ConfigMapper(ImmutableList<PluginDescriptor> pluginDescriptors) {
+        this.pluginDescriptors = pluginDescriptors;
     }
 
     Config readValue(String content) throws IOException {
@@ -84,7 +82,7 @@ class ConfigMapper {
         StorageConfig storageConfig = readStorageNode(rootNode);
         UserInterfaceConfig userInterfaceConfig = readUserInterfaceNode(rootNode);
         AdvancedConfig advancedConfig = readAdvancedNode(rootNode);
-        Map<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
+        ImmutableMap<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
         ImmutableList<PluginConfig> pluginConfigs =
                 createPluginConfigs(pluginNodes, pluginDescriptors);
         ImmutableList<PointcutConfig> pointcutConfigs = createPointcutConfigs(rootNode);
@@ -226,8 +224,7 @@ class ConfigMapper {
         }
     }
 
-    @ReadOnly
-    private static Map<String, ObjectNode> createPluginNodes(ObjectNode rootNode) {
+    private static ImmutableMap<String, ObjectNode> createPluginNodes(ObjectNode rootNode) {
         ArrayNode pluginsNode = (ArrayNode) rootNode.get(PLUGINS);
         if (pluginsNode == null) {
             return ImmutableMap.of();
@@ -246,13 +243,14 @@ class ConfigMapper {
             }
             pluginNodes.put(id.asText(), pluginObjectNode);
         }
-        return pluginNodes;
+        return ImmutableMap.copyOf(pluginNodes);
     }
 
     private static ImmutableList<PluginConfig> createPluginConfigs(
-            @ReadOnly Map<String, ObjectNode> pluginNodes,
-            @ReadOnly List<PluginDescriptor> pluginDescriptors) throws JsonMappingException {
-        ImmutableList.Builder<PluginConfig> pluginConfigs = ImmutableList.builder();
+            ImmutableMap<String, ObjectNode> pluginNodes,
+            ImmutableList<PluginDescriptor> pluginDescriptors)
+            throws JsonMappingException {
+        List<PluginConfig> pluginConfigs = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             ObjectNode pluginConfigNode = pluginNodes.get(pluginDescriptor.getId());
             if (pluginConfigNode == null) {
@@ -263,7 +261,7 @@ class ConfigMapper {
                 pluginConfigs.add(builder.build());
             }
         }
-        return pluginConfigs.build();
+        return ImmutableList.copyOf(pluginConfigs);
     }
 
     private static ImmutableList<PointcutConfig> createPointcutConfigs(
@@ -272,12 +270,12 @@ class ConfigMapper {
         if (pointcutsNode == null) {
             return ImmutableList.of();
         }
-        ImmutableList.Builder<PointcutConfig> pointcutConfigs = ImmutableList.builder();
+        List<PointcutConfig> pointcutConfigs = Lists.newArrayList();
         for (JsonNode pointcutNode : pointcutsNode) {
             PointcutConfig pointcutConfig = ObjectMappers.treeToRequiredValue(mapper,
                     pointcutNode, PointcutConfig.class);
             pointcutConfigs.add(pointcutConfig);
         }
-        return pointcutConfigs.build();
+        return ImmutableList.copyOf(pointcutConfigs);
     }
 }

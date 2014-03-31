@@ -1,5 +1,4 @@
-import checkers.igj.quals.*;
-import checkers.nullness.quals.*;
+import org.checkerframework.checker.nullness.qual.*;
 
 /* ========================================================================== */
 package org.objectweb.asm;
@@ -28,27 +27,17 @@ public class AnnotationVisitor {
     public void visit(@Nullable String name, Object value);
 }
 
-@Immutable
-public class Type {}
-
-
 /* ========================================================================== */
 package org.objectweb.asm.commons;
 
 public class GeneratorAdapter {
     public GeneratorAdapter(int access, Method method, @Nullable String signature,
             @Nullable Type[] exceptions, ClassVisitor cv);
-    public Label newLabel();
 }
 
 public class LocalVariablesSorter {
     public void visitLocalVariable(String name, String desc, @Nullable String signature,
             Label start, Label end, int index);
-}
-
-@Immutable
-public class Method {
-    public static Method getMethod(java.lang.reflect.Method m);
 }
 
 public class JSRInlinerAdapter {

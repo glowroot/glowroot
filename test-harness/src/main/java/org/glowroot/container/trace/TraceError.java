@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,15 @@ package org.glowroot.container.trace;
 
 import java.util.Map;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
-import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -37,14 +35,13 @@ public class TraceError {
 
     @Nullable
     private final String text;
-    // can't use ImmutableMap since detail can have null values
     @Nullable
     private final ExceptionInfo exception;
-    @Immutable
+    // can't use ImmutableMap since detail can have null values
     private final Map<String, /*@Nullable*/Object> detail;
 
     private TraceError(@Nullable String text, @Nullable ExceptionInfo exception,
-            @ReadOnly Map<String, /*@Nullable*/Object> detail) {
+            Map<String, /*@Nullable*/Object> detail) {
         this.text = text;
         this.exception = exception;
         this.detail = detail;
@@ -61,13 +58,12 @@ public class TraceError {
     }
 
     // can't use ImmutableMap since detail can have null values
-    @Immutable
     public Map<String, /*@Nullable*/Object> getDetail() {
         return detail;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("text", text)

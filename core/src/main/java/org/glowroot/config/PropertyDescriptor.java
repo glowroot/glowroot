@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,13 @@
  */
 package org.glowroot.config;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
-import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +37,6 @@ import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 @UsedByJsonBinding
 public abstract class PropertyDescriptor {
 
-    @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(PropertyDescriptor.class);
 
     private final String name;
@@ -62,7 +60,6 @@ public abstract class PropertyDescriptor {
 
     public abstract PropertyType getType();
 
-    @Immutable
     @Nullable
     public abstract Object getDefault();
 
@@ -80,8 +77,8 @@ public abstract class PropertyDescriptor {
         return description;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)
@@ -128,7 +125,6 @@ public abstract class PropertyDescriptor {
                 type, defaultValue);
     }
 
-    @Immutable
     public enum PropertyType {
         STRING, BOOLEAN, DOUBLE
     }

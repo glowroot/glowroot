@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -47,6 +47,7 @@ import org.glowroot.local.store.OverallAggregate;
 import org.glowroot.local.store.TransactionAggregate;
 import org.glowroot.markers.Singleton;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
 /**
@@ -60,7 +61,6 @@ import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 class HomeJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(HomeJsonService.class);
-    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final AggregateDao aggregateDao;
@@ -164,7 +164,8 @@ class HomeJsonService {
         Ordering<Entry<String, Long>> valueOrdering = Ordering.natural().onResultOf(
                 new Function<Entry<String, Long>, Long>() {
                     @Override
-                    public Long apply(Entry<String, Long> entry) {
+                    public Long apply(@Nullable Entry<String, Long> entry) {
+                        checkNotNull(entry);
                         return entry.getValue();
                     }
                 });

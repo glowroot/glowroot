@@ -19,16 +19,14 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.MonotonicNonNull;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import dataflow.quals.Pure;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -120,12 +118,11 @@ public class Advice {
             @Nullable Pattern pointcutMethodPattern, @Nullable Method isEnabledAdvice,
             @Nullable Method onBeforeAdvice, @Nullable Method onReturnAdvice,
             @Nullable Method onThrowAdvice, @Nullable Method onAfterAdvice,
-            @Nullable Type travelerType, ImmutableList<AdviceParameter> isEnabledParameters,
-            ImmutableList<AdviceParameter> onBeforeParameters,
-            ImmutableList<AdviceParameter> onReturnParameters,
-            ImmutableList<AdviceParameter> onThrowParameterKinds,
-            ImmutableList<AdviceParameter> onAfterParameterKinds,
-            Class<?> generatedAdviceFlowClass, boolean reweavable) {
+            @Nullable Type travelerType, List<AdviceParameter> isEnabledParameters,
+            List<AdviceParameter> onBeforeParameters, List<AdviceParameter> onReturnParameters,
+            List<AdviceParameter> onThrowParameterKinds,
+            List<AdviceParameter> onAfterParameterKinds, Class<?> generatedAdviceFlowClass,
+            boolean reweavable) {
         this.pointcut = pointcut;
         this.adviceType = adviceType;
         this.pointcutTypePattern = pointcutTypePattern;
@@ -136,11 +133,11 @@ public class Advice {
         this.onThrowAdvice = onThrowAdvice;
         this.onAfterAdvice = onAfterAdvice;
         this.travelerType = travelerType;
-        this.isEnabledParameters = isEnabledParameters;
-        this.onBeforeParameters = onBeforeParameters;
-        this.onReturnParameters = onReturnParameters;
-        this.onThrowParameters = onThrowParameterKinds;
-        this.onAfterParameters = onAfterParameterKinds;
+        this.isEnabledParameters = ImmutableList.copyOf(isEnabledParameters);
+        this.onBeforeParameters = ImmutableList.copyOf(onBeforeParameters);
+        this.onReturnParameters = ImmutableList.copyOf(onReturnParameters);
+        this.onThrowParameters = ImmutableList.copyOf(onThrowParameterKinds);
+        this.onAfterParameters = ImmutableList.copyOf(onAfterParameterKinds);
         this.generatedAdviceFlowClass = generatedAdviceFlowClass;
         this.reweavable = reweavable;
     }
@@ -221,8 +218,8 @@ public class Advice {
         return reweavable;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("pointcut", pointcut)
@@ -260,7 +257,6 @@ public class Advice {
         }
     }
 
-    @Immutable
     enum ParameterKind {
         RECEIVER, METHOD_ARG, METHOD_ARG_ARRAY, METHOD_NAME, RETURN, OPTIONAL_RETURN, THROWABLE,
         TRAVELER
@@ -282,32 +278,32 @@ public class Advice {
         private final Class<?> adviceClass;
         private final boolean reweavable;
 
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private Type adviceType;
         @Nullable
         private Pattern pointcutTypePattern;
         @Nullable
         private Pattern pointcutMethodPattern;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private Method isEnabledAdvice;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private Method onBeforeAdvice;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private Method onReturnAdvice;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private Method onThrowAdvice;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private Method onAfterAdvice;
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private Type travelerType;
 
-        private ImmutableList<AdviceParameter> isEnabledParameters = ImmutableList.of();
-        private ImmutableList<AdviceParameter> onBeforeParameters = ImmutableList.of();
-        private ImmutableList<AdviceParameter> onReturnParameters = ImmutableList.of();
-        private ImmutableList<AdviceParameter> onThrowParameters = ImmutableList.of();
-        private ImmutableList<AdviceParameter> onAfterParameters = ImmutableList.of();
+        private List<AdviceParameter> isEnabledParameters = Lists.newArrayList();
+        private List<AdviceParameter> onBeforeParameters = Lists.newArrayList();
+        private List<AdviceParameter> onReturnParameters = Lists.newArrayList();
+        private List<AdviceParameter> onThrowParameters = Lists.newArrayList();
+        private List<AdviceParameter> onAfterParameters = Lists.newArrayList();
 
-        @MonotonicNonNull
+        /*@MonotonicNonNull*/
         private Class<?> generatedAdviceFlowClass;
 
         private Builder(Pointcut pointcut, Class<?> adviceClass, boolean reweavable) {
@@ -380,7 +376,7 @@ public class Advice {
                 throw new AdviceConstructionException("@Pointcut '" + adviceClass.getName()
                         + "' has more than one @OnReturn method");
             }
-            ImmutableList<AdviceParameter> parameters = getAdviceParameters(
+            List<AdviceParameter> parameters = getAdviceParameters(
                     method.getParameterAnnotations(), method.getParameterTypes(),
                     onReturnBindAnnotationTypes, OnReturn.class);
             for (int i = 1; i < parameters.size(); i++) {
@@ -403,7 +399,7 @@ public class Advice {
                 throw new AdviceConstructionException("@Pointcut '" + adviceClass.getName()
                         + "' has more than one @OnThrow method");
             }
-            ImmutableList<AdviceParameter> parameters = getAdviceParameters(
+            List<AdviceParameter> parameters = getAdviceParameters(
                     method.getParameterAnnotations(), method.getParameterTypes(),
                     onThrowBindAnnotationTypes, OnThrow.class);
             for (int i = 1; i < parameters.size(); i++) {
@@ -463,13 +459,13 @@ public class Advice {
             return pattern.replace("\\Q\\E", "");
         }
 
-        private static ImmutableList<AdviceParameter> getAdviceParameters(
+        private static List<AdviceParameter> getAdviceParameters(
                 Annotation[][] parameterAnnotations, Class<?>[] parameterTypes,
-                @ReadOnly List<Class<? extends Annotation>> validBindAnnotationTypes,
+                ImmutableList<Class<? extends Annotation>> validBindAnnotationTypes,
                 Class<? extends Annotation> adviceAnnotationType)
                 throws AdviceConstructionException {
 
-            ImmutableList.Builder<AdviceParameter> parameters = ImmutableList.builder();
+            List<AdviceParameter> parameters = Lists.newArrayList();
             for (int i = 0; i < parameterAnnotations.length; i++) {
                 Class<? extends Annotation> validBindAnnotationType = getValidBindAnnotationType(
                         parameterAnnotations[i], validBindAnnotationTypes);
@@ -485,13 +481,13 @@ public class Advice {
                 }
                 parameters.add(getAdviceParameter(validBindAnnotationType, parameterTypes[i]));
             }
-            return parameters.build();
+            return parameters;
         }
 
         @Nullable
         private static Class<? extends Annotation> getValidBindAnnotationType(
                 Annotation[] parameterAnnotations,
-                @ReadOnly List<Class<? extends Annotation>> validBindAnnotationTypes)
+                ImmutableList<Class<? extends Annotation>> validBindAnnotationTypes)
                 throws AdviceConstructionException {
 
             Class<? extends Annotation> foundBindAnnotationType = null;

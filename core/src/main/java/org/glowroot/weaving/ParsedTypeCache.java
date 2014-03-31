@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.security.CodeSource;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -30,9 +31,10 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import checkers.igj.quals.Immutable;
-import checkers.lock.quals.GuardedBy;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.Objects;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -44,7 +46,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
-import dataflow.quals.Pure;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -177,7 +178,7 @@ public class ParsedTypeCache {
         return parsedTypes;
     }
 
-    public List<ClassLoader> getClassLoaders() {
+    public ImmutableList<ClassLoader> getClassLoaders() {
         return ImmutableList.copyOf(parsedTypeCache.asMap().keySet());
     }
 
@@ -191,12 +192,12 @@ public class ParsedTypeCache {
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
-    ImmutableList<ParsedType> getTypeHierarchy(@Nullable String typeName,
+    List<ParsedType> getTypeHierarchy(@Nullable String typeName,
             @Nullable ClassLoader loader, ParseContext parseContext) {
         if (typeName == null || typeName.equals("java.lang.Object")) {
             return ImmutableList.of();
         }
-        return ImmutableList.copyOf(getSuperTypes(typeName, loader, parseContext));
+        return getSuperTypes(typeName, loader, parseContext);
     }
 
     ParsedType getParsedType(String typeName, @Nullable ClassLoader loader)
@@ -211,7 +212,7 @@ public class ParsedTypeCache {
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
-    private ImmutableList<ParsedType> getSuperTypes(String typeName, @Nullable ClassLoader loader,
+    private List<ParsedType> getSuperTypes(String typeName, @Nullable ClassLoader loader,
             ParseContext parseContext) {
         ParsedType parsedType;
         try {
@@ -225,7 +226,7 @@ public class ParsedTypeCache {
             logger.debug("type {} not found while parsing type {}", typeName, parseContext);
             return ImmutableList.of();
         }
-        ImmutableList.Builder<ParsedType> superTypes = ImmutableList.builder();
+        List<ParsedType> superTypes = Lists.newArrayList();
         superTypes.add(parsedType);
         String superName = parsedType.getSuperName();
         if (superName != null && !superName.equals("java.lang.Object")) {
@@ -234,7 +235,7 @@ public class ParsedTypeCache {
         for (String interfaceName : parsedType.getInterfaceNames()) {
             superTypes.addAll(getSuperTypes(interfaceName, loader, parseContext));
         }
-        return superTypes.build();
+        return superTypes;
     }
 
     private ParsedType getOrCreateParsedType(String typeName, @Nullable ClassLoader loader)
@@ -401,8 +402,8 @@ public class ParsedTypeCache {
         }
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("parsedTypes", parsedTypeCache)
@@ -412,39 +413,39 @@ public class ParsedTypeCache {
 
     // now that the type has been loaded anyways, build the parsed type via reflection
     private static ParsedType createParsedTypePlanC(String typeName, Class<?> type) {
-        ImmutableList.Builder<ParsedMethod> parsedMethods = ImmutableList.builder();
-        ImmutableList.Builder<ParsedMethod> nativeParsedMethods = ImmutableList.builder();
+        List<ParsedMethod> parsedMethods = Lists.newArrayList();
+        List<ParsedMethod> nativeParsedMethods = Lists.newArrayList();
         for (Method method : type.getDeclaredMethods()) {
             if (method.isSynthetic()) {
                 // don't add synthetic methods to the parsed type model
                 continue;
             }
-            ImmutableList.Builder<Type> argTypes = ImmutableList.builder();
+            List<Type> argTypes = Lists.newArrayList();
             for (Class<?> parameterType : method.getParameterTypes()) {
                 argTypes.add(Type.getType(parameterType));
             }
             Type returnType = Type.getType(method.getReturnType());
             String desc = Type.getMethodDescriptor(method);
-            ImmutableList.Builder<String> exceptions = ImmutableList.builder();
+            List<String> exceptions = Lists.newArrayList();
             for (Class<?> exceptionType : method.getExceptionTypes()) {
                 exceptions.add(Type.getInternalName(exceptionType));
             }
-            ParsedMethod parsedMethod = ParsedMethod.from(method.getName(), argTypes.build(),
-                    returnType, method.getModifiers(), desc, null, exceptions.build());
+            ParsedMethod parsedMethod = ParsedMethod.from(method.getName(), argTypes, returnType,
+                    method.getModifiers(), desc, null, exceptions);
             if (Modifier.isNative(method.getModifiers())) {
                 nativeParsedMethods.add(parsedMethod);
             } else {
                 parsedMethods.add(parsedMethod);
             }
         }
-        ImmutableList.Builder<String> interfaceNames = ImmutableList.builder();
+        List<String> interfaceNames = Lists.newArrayList();
         for (Class<?> interfaceClass : type.getInterfaces()) {
             interfaceNames.add(interfaceClass.getName());
         }
         Class<?> superclass = type.getSuperclass();
         String superName = superclass == null ? null : superclass.getName();
         return ParsedType.from(type.isInterface(), TypeNames.fromInternal(typeName), superName,
-                interfaceNames.build(), parsedMethods.build(), nativeParsedMethods.build());
+                interfaceNames, parsedMethods, nativeParsedMethods);
     }
 
     static class ParseContext {
@@ -456,8 +457,8 @@ public class ParsedTypeCache {
             this.className = className;
         }
         // toString() is used in logger warning construction
+        /*@Pure*/
         @Override
-        @Pure
         public String toString() {
             if (codeSource == null) {
                 return className;
@@ -473,7 +474,9 @@ public class ParsedTypeCache {
         public static final ParsedMethodOrdering INSTANCE = new ParsedMethodOrdering();
 
         @Override
-        public int compare(ParsedMethod left, ParsedMethod right) {
+        public int compare(@Nullable ParsedMethod left, @Nullable ParsedMethod right) {
+            checkNotNull(left);
+            checkNotNull(right);
             return ComparisonChain.start()
                     .compare(getAccessibility(left), getAccessibility(right))
                     .compare(left.getName(), right.getName())
@@ -520,8 +523,8 @@ public class ParsedTypeCache {
             checkNotNull(parsedTypeBuilder, "Call to visit() is required");
             if ((access & ACC_SYNTHETIC) == 0) {
                 // don't add synthetic methods to the parsed type model
-                ImmutableList<String> exceptionList = exceptions == null
-                        ? ImmutableList.<String>of() : ImmutableList.copyOf(exceptions);
+                List<String> exceptionList = exceptions == null ? ImmutableList.<String>of()
+                        : Arrays.asList(exceptions);
                 parsedTypeBuilder.addParsedMethod(access, name, desc, signature, exceptionList);
             }
             return null;

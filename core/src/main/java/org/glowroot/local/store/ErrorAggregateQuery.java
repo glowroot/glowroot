@@ -20,7 +20,6 @@ import java.util.Locale;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-import dataflow.quals.Pure;
 
 /**
  * @author Trask Stalnaker
@@ -63,8 +62,8 @@ public class ErrorAggregateQuery {
         return new ParameterizedSql(sql, args);
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("captureTimeFrom", captureTimeFrom)

@@ -20,7 +20,8 @@ import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.List;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.io.CharSource;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;

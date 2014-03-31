@@ -17,14 +17,15 @@ package org.glowroot.local.store;
 
 import java.util.List;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.collect.TreeTraverser;
 
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.common.ObjectMappers.orEmpty;
+import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
 /**
  * @author Trask Stalnaker
@@ -124,7 +125,7 @@ public class Aggregate {
             checkRequiredProperty(name, "name");
             checkRequiredProperty(totalMicros, "totalMicros");
             checkRequiredProperty(count, "count");
-            return new AggregateMetric(name, totalMicros, count, orEmpty(nestedMetrics));
+            return new AggregateMetric(name, totalMicros, count, nullToEmpty(nestedMetrics));
         }
     }
 }

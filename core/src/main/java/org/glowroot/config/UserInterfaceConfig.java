@@ -17,12 +17,12 @@ package org.glowroot.config;
 
 import java.security.GeneralSecurityException;
 
-import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import dataflow.quals.Pure;
 
 import org.glowroot.config.JsonViews.FileView;
 import org.glowroot.config.JsonViews.UiView;
@@ -99,8 +99,8 @@ public class UserInterfaceConfig {
         return version;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         // don't expose passwordHash
         return Objects.toStringHelper(this)

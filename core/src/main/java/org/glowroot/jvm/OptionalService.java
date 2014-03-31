@@ -17,8 +17,9 @@ package org.glowroot.jvm;
 
 import java.lang.reflect.Method;
 
-import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,7 @@ import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.UsedByJsonBinding;
 
-import static org.glowroot.common.Nullness.castNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker
@@ -53,7 +54,7 @@ public class OptionalService<T> {
                 String message = e.getMessage();
                 // OptionalServiceFactoryException can only be constructed with non-null cause or
                 // non-null message
-                castNonNull(message);
+                checkNotNull(message);
                 availabilityLocal = new Availability(false, message);
             } else {
                 logger.warn(e.getMessage(), e);

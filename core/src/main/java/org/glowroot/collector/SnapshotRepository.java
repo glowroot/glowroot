@@ -15,7 +15,8 @@
  */
 package org.glowroot.collector;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.io.CharSource;
 
 /**

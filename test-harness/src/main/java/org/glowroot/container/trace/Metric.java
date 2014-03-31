@@ -18,9 +18,9 @@ package org.glowroot.container.trace;
 import java.util.Iterator;
 import java.util.List;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -30,8 +30,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
-import dataflow.quals.Pure;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.glowroot.common.ObjectMappers.nullToEmpty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
@@ -43,7 +44,9 @@ public class Metric {
 
     static final Ordering<Metric> orderingByTotal = new Ordering<Metric>() {
         @Override
-        public int compare(Metric left, Metric right) {
+        public int compare(@Nullable Metric left, @Nullable Metric right) {
+            checkNotNull(left);
+            checkNotNull(right);
             return Longs.compare(left.total, right.total);
         }
     };
@@ -60,7 +63,7 @@ public class Metric {
     private final ImmutableList<Metric> nestedMetrics;
 
     private Metric(String name, long total, long min, long max, long count, boolean active,
-            boolean minActive, boolean maxActive, @ReadOnly List<Metric> nestedMetrics) {
+            boolean minActive, boolean maxActive, List<Metric> nestedMetrics) {
         this.name = name;
         this.total = total;
         this.min = min;
@@ -123,16 +126,16 @@ public class Metric {
     }
 
     @JsonIgnore
-    public ImmutableList<String> getNestedMetricNames() {
-        ImmutableList.Builder<String> stableMetricNames = ImmutableList.builder();
+    public List<String> getNestedMetricNames() {
+        List<String> stableMetricNames = Lists.newArrayList();
         for (Metric stableMetric : getStableAndOrderedMetrics()) {
             stableMetricNames.add(stableMetric.getName());
         }
-        return stableMetricNames.build();
+        return stableMetricNames;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)
@@ -168,15 +171,6 @@ public class Metric {
         checkRequiredProperty(minActive, "minActive");
         checkRequiredProperty(maxActive, "maxActive");
         return new Metric(name, total, min, max, count, active, minActive, maxActive,
-                orEmpty(nestedMetrics));
-    }
-
-    @ReadOnly
-    private static <T extends /*@NonNull*/Object> List<T> orEmpty(
-            @ReadOnly @Nullable List<T> list) {
-        if (list == null) {
-            return ImmutableList.of();
-        }
-        return list;
+                nullToEmpty(nestedMetrics));
     }
 }

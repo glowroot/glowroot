@@ -17,25 +17,30 @@ package org.glowroot.local.store;
 
 import java.util.List;
 
+import javax.annotation.concurrent.Immutable;
+
+import com.google.common.collect.ImmutableList;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 class ParameterizedSql {
 
     private final String sql;
-    private final List<Object> args;
+    private final ImmutableList<Object> args;
 
     ParameterizedSql(String sql, List<Object> args) {
         this.sql = sql;
-        this.args = args;
+        this.args = ImmutableList.copyOf(args);
     }
 
     String getSql() {
         return sql;
     }
 
-    List<Object> getArgs() {
+    ImmutableList<Object> getArgs() {
         return args;
     }
 }

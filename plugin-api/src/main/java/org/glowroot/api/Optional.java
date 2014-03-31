@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ package org.glowroot.api;
 
 import java.util.concurrent.ConcurrentMap;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
-import dataflow.quals.Pure;
 
 /**
  * This class is modeled after Guava's Optional class. It can be useful for plugins when returning a
@@ -155,8 +155,8 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
         public boolean isPresent() {
             return true;
         }
+        /*@Pure*/
         @Override
-        @Pure
         public boolean equals(@Nullable Object o) {
             if (o instanceof Present) {
                 Present<?> that = (Present<?>) o;
@@ -164,8 +164,8 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
             }
             return false;
         }
+        /*@Pure*/
         @Override
-        @Pure
         public int hashCode() {
             return Objects.hashCode(reference);
         }

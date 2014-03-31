@@ -21,8 +21,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Map;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
@@ -64,7 +64,7 @@ class DataDir {
 
     private DataDir() {}
 
-    public static File getDataDir(@ReadOnly Map<String, String> properties) {
+    public static File getDataDir(Map<String, String> properties) {
         String dataDirPath = properties.get("data.dir");
         // empty check to support parameterized script, e.g. -Dglowroot.data.dir=${somevar}
         if (Strings.isNullOrEmpty(dataDirPath)) {

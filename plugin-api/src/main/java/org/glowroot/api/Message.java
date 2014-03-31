@@ -17,11 +17,10 @@ package org.glowroot.api;
 
 import java.util.Map;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
-import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +63,7 @@ public abstract class Message {
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
     public static Message withDetail(@Nullable String message,
-            @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
+            Map<String, ? extends /*@Nullable*/Object> detail) {
         return new MessageImpl(message, new String[0], detail);
     }
 
@@ -79,11 +78,10 @@ public abstract class Message {
         @Nullable
         private final String template;
         private final/*@Nullable*/String[] args;
-        @ReadOnly
         private final Map<String, ? extends /*@Nullable*/Object> detail;
 
         private MessageImpl(@Nullable String template, @Nullable String[] args,
-                @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
+                Map<String, ? extends /*@Nullable*/Object> detail) {
             this.template = template;
             this.args = args;
             this.detail = detail;
@@ -122,13 +120,12 @@ public abstract class Message {
         }
 
         @Override
-        @ReadOnly
         public Map<String, ? extends /*@Nullable*/Object> getDetail() {
             return detail;
         }
 
+        /*@Pure*/
         @Override
-        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("template", template)

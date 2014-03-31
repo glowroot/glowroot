@@ -18,7 +18,6 @@ package org.glowroot.api;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,8 +101,8 @@ public class MetricName {
         return metricNames.getUnchecked("unknown");
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return name;
     }

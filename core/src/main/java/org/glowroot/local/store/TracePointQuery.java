@@ -18,11 +18,11 @@ package org.glowroot.local.store;
 import java.util.List;
 import java.util.Locale;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
-import dataflow.quals.Pure;
 
 /**
  * @author Trask Stalnaker
@@ -157,8 +157,8 @@ public class TracePointQuery {
         return new ParameterizedSql(sql, args);
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("captureTimeFrom", captureTimeFrom)

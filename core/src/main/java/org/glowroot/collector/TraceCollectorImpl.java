@@ -20,8 +20,9 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import checkers.lock.quals.GuardedBy;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
+
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharSource;

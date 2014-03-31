@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.objectweb.asm.Type;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker
@@ -83,7 +87,9 @@ class HeapHistogram {
 
         private static final Ordering<ClassInfo> byBytesDesc = new Ordering<ClassInfo>() {
             @Override
-            public int compare(ClassInfo left, ClassInfo right) {
+            public int compare(@Nullable ClassInfo left, @Nullable ClassInfo right) {
+                checkNotNull(left);
+                checkNotNull(right);
                 return Long.signum(right.bytes - left.bytes);
             }
         };

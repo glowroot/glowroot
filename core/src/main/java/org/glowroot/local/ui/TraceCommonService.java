@@ -18,7 +18,8 @@ package org.glowroot.local.ui;
 import java.io.IOException;
 import java.sql.SQLException;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;

@@ -16,12 +16,14 @@
 package org.glowroot.weaving;
 
 import java.lang.reflect.Modifier;
+import java.util.List;
 
-import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import dataflow.quals.Pure;
+import com.google.common.collect.Lists;
 import org.objectweb.asm.Type;
 
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
@@ -48,23 +50,22 @@ public class ParsedMethod {
     private final String signature;
     private final ImmutableList<String> exceptions;
 
-    static ParsedMethod from(String name, ImmutableList<Type> argTypes, Type returnType,
-            int modifiers, String desc, @Nullable String signature,
-            ImmutableList<String> exceptions) {
-        ImmutableList.Builder<String> argTypeNames = ImmutableList.builder();
+    static ParsedMethod from(String name, List<Type> argTypes, Type returnType, int modifiers,
+            String desc, @Nullable String signature, List<String> exceptions) {
+        List<String> argTypeNames = Lists.newArrayList();
         for (Type argType : argTypes) {
             argTypeNames.add(argType.getClassName());
         }
         String returnTypeName = returnType.getClassName();
-        return new ParsedMethod(name, argTypeNames.build(), returnTypeName, modifiers, desc,
+        return new ParsedMethod(name, argTypeNames, returnTypeName, modifiers, desc,
                 signature, exceptions);
     }
 
-    private ParsedMethod(String name, ImmutableList<String> argTypeNames, String returnTypeName,
+    private ParsedMethod(String name, List<String> argTypeNames, String returnTypeName,
             int modifiers, String desc, @Nullable String signature,
-            ImmutableList<String> exceptions) {
+            List<String> exceptions) {
         this.name = name;
-        this.argTypeNames = argTypeNames;
+        this.argTypeNames = ImmutableList.copyOf(argTypeNames);
         this.returnTypeName = returnTypeName;
         // remove final and synchronized modifiers from the parsed method model
         this.modifiers = modifiers & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
@@ -72,7 +73,7 @@ public class ParsedMethod {
         isFinal = Modifier.isFinal(modifiers);
         this.desc = desc;
         this.signature = signature;
-        this.exceptions = exceptions;
+        this.exceptions = ImmutableList.copyOf(exceptions);
     }
 
     public String getName() {
@@ -111,8 +112,8 @@ public class ParsedMethod {
 
     // equals and hashCode are only defined in terms of name and argTypeNames since those uniquely
     // identify a method within a given class
+    /*@Pure*/
     @Override
-    @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj == this) {
             return true;
@@ -126,14 +127,14 @@ public class ParsedMethod {
 
     // equals and hashCode are only defined in terms of name and argTypeNames since those uniquely
     // identify a method within a given class
+    /*@Pure*/
     @Override
-    @Pure
     public int hashCode() {
         return Objects.hashCode(name, argTypeNames);
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)

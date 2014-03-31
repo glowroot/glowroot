@@ -25,10 +25,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.MonotonicNonNull;
-import checkers.nullness.quals.Nullable;
-import checkers.nullness.quals.RequiresNonNull;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
@@ -37,7 +36,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import dataflow.quals.Pure;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -56,7 +54,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.weaving.ParsedTypeCache.ParseContext;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.common.Nullness.castNonNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
@@ -82,7 +79,6 @@ class WeavingClassVisitor extends ClassVisitor {
     private final ClassVisitor cv;
 
     private final ImmutableList<MixinType> mixinTypes;
-    @ReadOnly
     private final Iterable<Advice> advisors;
     @Nullable
     private final ClassLoader loader;
@@ -93,11 +89,11 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private ImmutableList<AdviceMatcher> adviceMatchers = ImmutableList.of();
     private ImmutableList<MixinType> matchedMixinTypes = ImmutableList.of();
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private Type type;
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private List<ParsedType> superHierarchy;
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private List<ParsedType> interfaceHierarchy;
 
     private int innerMethodCounter;
@@ -106,7 +102,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private ParsedType./*@MonotonicNonNull*/Builder parsedTypeBuilder;
 
     public WeavingClassVisitor(ClassVisitor cv, ImmutableList<MixinType> mixinTypes,
-            @ReadOnly Iterable<Advice> advisors, @Nullable ClassLoader loader,
+            Iterable<Advice> advisors, @Nullable ClassLoader loader,
             ParsedTypeCache parsedTypeCache, @Nullable CodeSource codeSource,
             boolean metricWrapperMethods) {
         super(ASM5, cv);
@@ -162,8 +158,8 @@ class WeavingClassVisitor extends ClassVisitor {
         ParsedMethod parsedMethod = null;
         if ((access & ACC_SYNTHETIC) == 0) {
             // don't add synthetic methods to the parsed type model
-            ImmutableList<String> exceptionList = exceptions == null
-                    ? ImmutableList.<String>of() : ImmutableList.copyOf(exceptions);
+            List<String> exceptionList = exceptions == null ? ImmutableList.<String>of()
+                    : Arrays.asList(exceptions);
             parsedMethod = parsedTypeBuilder.addParsedMethod(access, name, desc, signature,
                     exceptionList);
         }
@@ -210,7 +206,7 @@ class WeavingClassVisitor extends ClassVisitor {
         return nothingAtAllToWeave;
     }
 
-    @RequiresNonNull("type")
+    /*@RequiresNonNull("type")*/
     private List<ParsedType> getInterfaceHierarchy(String[] interfaceNames) {
         List<ParsedType> superTypes = Lists.newArrayList();
         ParseContext parseContext = new ParseContext(type.getClassName(), codeSource);
@@ -223,25 +219,25 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private ImmutableList<AdviceMatcher> getAdviceMatchers(Type type,
             Iterable<ParsedType> superTypes) {
-        ImmutableList.Builder<AdviceMatcher> adviceMatchersBuilder = ImmutableList.builder();
+        List<AdviceMatcher> adviceMatchers = Lists.newArrayList();
         for (Advice advice : advisors) {
             AdviceMatcher adviceMatcher = new AdviceMatcher(advice, type, superTypes);
             if (adviceMatcher.isClassLevelMatch()) {
-                adviceMatchersBuilder.add(adviceMatcher);
+                adviceMatchers.add(adviceMatcher);
             }
         }
-        return adviceMatchersBuilder.build();
+        return ImmutableList.copyOf(adviceMatchers);
     }
 
     private ImmutableList<MixinType> getMatchedMixinTypes(Type type,
             Iterable<ParsedType> superTypes) {
-        ImmutableList.Builder<MixinType> matchedMixinTypesBuilder = ImmutableList.builder();
+        List<MixinType> matchedMixinTypes = Lists.newArrayList();
         for (MixinType mixinType : mixinTypes) {
             if (MixinMatcher.isMatch(mixinType, type, superTypes)) {
-                matchedMixinTypesBuilder.add(mixinType);
+                matchedMixinTypes.add(mixinType);
             }
         }
-        return matchedMixinTypesBuilder.build();
+        return ImmutableList.copyOf(matchedMixinTypes);
     }
 
     private static String[] getInterfacesIncludingMixins(String[] interfaceNames,
@@ -258,7 +254,7 @@ class WeavingClassVisitor extends ClassVisitor {
         return Iterables.toArray(interfacesIncludingMixins, String.class);
     }
 
-    @RequiresNonNull("parsedTypeBuilder")
+    /*@RequiresNonNull("parsedTypeBuilder")*/
     private List<Advice> getMatchingAdvisors(int access, ParsedMethod parsedMethod,
             @Nullable String exactTargetTypeOverride) {
         List<Advice> matchingAdvisors = Lists.newArrayList();
@@ -273,12 +269,12 @@ class WeavingClassVisitor extends ClassVisitor {
         return matchingAdvisors;
     }
 
-    @RequiresNonNull("type")
+    /*@RequiresNonNull("type")*/
     private MethodVisitor visitInitWithMixin(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions,
             List<Advice> matchingAdvisors) {
         MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
-        castNonNull(mv);
+        checkNotNull(mv);
         mv = new InitMixins(mv, access, name, desc, matchedMixinTypes, type);
         for (Advice advice : matchingAdvisors) {
             if (advice.getPointcut().metricName().length() != 0) {
@@ -289,7 +285,7 @@ class WeavingClassVisitor extends ClassVisitor {
         return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors);
     }
 
-    @RequiresNonNull("type")
+    /*@RequiresNonNull("type")*/
     private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions,
             Iterable<Advice> matchingAdvisors) {
@@ -304,18 +300,18 @@ class WeavingClassVisitor extends ClassVisitor {
             }
             MethodVisitor mv =
                     cv.visitMethod(methodAccess, methodName, desc, signature, exceptions);
-            castNonNull(mv);
+            checkNotNull(mv);
             return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type,
                     matchingAdvisors);
         } else {
             MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
-            castNonNull(mv);
+            checkNotNull(mv);
             return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors);
         }
     }
 
     // returns null if no synthetic metric marker methods were needed
-    @RequiresNonNull("type")
+    /*@RequiresNonNull("type")*/
     @Nullable
     private String wrapWithSyntheticMetricMarkerMethods(int outerAccess, String outerName,
             String desc, @Nullable String signature, String/*@Nullable*/[] exceptions,
@@ -336,7 +332,7 @@ class WeavingClassVisitor extends ClassVisitor {
                     + '$' + innerMethodCounter++;
             int access = first ? outerAccess : innerAccess;
             MethodVisitor mv = cv.visitMethod(access, currMethodName, desc, signature, exceptions);
-            castNonNull(mv);
+            checkNotNull(mv);
             GeneratorAdapter mg = new GeneratorAdapter(mv, access, nextMethodName, desc);
             if (!Modifier.isStatic(outerAccess)) {
                 mg.loadThis();
@@ -354,7 +350,7 @@ class WeavingClassVisitor extends ClassVisitor {
         return first ? null : currMethodName;
     }
 
-    @RequiresNonNull("type")
+    /*@RequiresNonNull("type")*/
     private void addMixin(MixinType mixinType) {
         ClassReader cr;
         try {
@@ -384,13 +380,13 @@ class WeavingClassVisitor extends ClassVisitor {
             String[] exceptions = Iterables.toArray(mn.exceptions, String.class);
             MethodVisitor mv = cv.visitMethod(mn.access, mn.name, mn.desc, mn.signature,
                     exceptions);
-            castNonNull(mv);
+            checkNotNull(mv);
             mn.accept(new RemappingMethodAdapter(mn.access, mn.desc, mv,
                     new SimpleRemapper(cn.name, type.getInternalName())));
         }
     }
 
-    @RequiresNonNull({"type", "interfaceHierarchy", "superHierarchy", "parsedTypeBuilder"})
+    /*@RequiresNonNull({"type", "interfaceHierarchy", "superHierarchy", "parsedTypeBuilder"})*/
     private void handleInheritedMethodsThatNowFulfillAdvice(ParsedType parsedType) {
         Iterable<ParsedType> superHierarchyPlus = Iterables.concat(superHierarchy,
                 Arrays.asList(parsedTypeCache.getJavaLangObjectParsedType()));
@@ -445,14 +441,14 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
-    @RequiresNonNull({"type"})
+    /*@RequiresNonNull({"type"})*/
     private void overrideAndWeaveInheritedMethod(ParsedType parsedType,
             ParsedMethod inheritedMethod, Collection<Advice> matchingAdvisors) {
         String[] exceptions = Iterables.toArray(inheritedMethod.getExceptions(), String.class);
         MethodVisitor mv = visitMethodWithAdvice(ACC_PUBLIC, inheritedMethod.getName(),
                 inheritedMethod.getDesc(), inheritedMethod.getSignature(), exceptions,
                 matchingAdvisors);
-        castNonNull(mv);
+        checkNotNull(mv);
         GeneratorAdapter mg = new GeneratorAdapter(mv, ACC_PUBLIC, inheritedMethod.getName(),
                 inheritedMethod.getDesc());
         mg.visitCode();
@@ -472,8 +468,8 @@ class WeavingClassVisitor extends ClassVisitor {
         mg.endMethod();
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         // not including fields that are just direct copies from Weaver
         ToStringHelper toStringHelper = Objects.toStringHelper(this)
@@ -495,15 +491,15 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
+    @Immutable
     private static class InitMixins extends AdviceAdapter {
 
-        @ReadOnly
-        private final List<MixinType> matchedMixinTypes;
+        private final ImmutableList<MixinType> matchedMixinTypes;
         private final Type type;
         private boolean cascadingConstructor;
 
         InitMixins(MethodVisitor mv, int access, String name, String desc,
-                @ReadOnly List<MixinType> matchedMixinTypes, Type type) {
+                ImmutableList<MixinType> matchedMixinTypes, Type type) {
             super(ASM5, mv, access, name, desc);
             this.matchedMixinTypes = matchedMixinTypes;
             this.type = type;

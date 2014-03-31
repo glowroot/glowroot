@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,12 @@
  */
 package org.glowroot.container.config;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
-import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -68,8 +68,8 @@ public class AdvancedConfig {
         return version;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof AdvancedConfig) {
             AdvancedConfig that = (AdvancedConfig) obj;
@@ -83,8 +83,8 @@ public class AdvancedConfig {
         return false;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public int hashCode() {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
@@ -93,8 +93,8 @@ public class AdvancedConfig {
                 weavingDisabled);
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("metricWrapperMethodsDisabled", metricWrapperMethodsDisabled)

@@ -15,7 +15,7 @@
  */
 package org.glowroot.tests;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
 
 /**
  * @author Trask Stalnaker

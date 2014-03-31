@@ -28,7 +28,7 @@ import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.jvm.ClassLoaders;
 import org.glowroot.weaving.Advice.AdviceConstructionException;
 
-import static org.glowroot.common.Nullness.castNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
@@ -75,7 +75,7 @@ class AdviceFlowGenerator {
 
     private static void writeThreadLocalInitialization(ClassVisitor cv, String adviceFlowTypeName) {
         MethodVisitor mv = cv.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
-        castNonNull(mv);
+        checkNotNull(mv);
         mv.visitCode();
         String adviceFlowInternalName = adviceFlowOuterHolderType.getInternalName();
         mv.visitMethodInsn(INVOKESTATIC, adviceFlowInternalName, "create",

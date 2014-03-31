@@ -98,8 +98,8 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>edu.washington.cs.types.checker</groupId>
-      <artifactId>checker-quals-jdk5</artifactId>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
       <!-- only annotations are used, so don't need this dependency at runtime -->
       <optional>true</optional>
     </dependency>
@@ -319,7 +319,7 @@
                   <artifactSet>
                     <excludes>
                       <!-- only annotations are used, so don't need this dependency at runtime -->
-                      <exclude>edu.washington.cs.types.checker:checker-quals-jdk5</exclude>
+                      <exclude>com.google.code.findbugs:jsr305</exclude>
                     </excludes>
                   </artifactSet>
                   <filters>

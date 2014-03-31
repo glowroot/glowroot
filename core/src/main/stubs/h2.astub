@@ -1,4 +1,4 @@
-import checkers.nullness.quals.*;
+import org.checkerframework.checker.nullness.qual.*;
 
 /* ========================================================================== */
 package org.h2.store;

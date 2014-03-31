@@ -18,8 +18,8 @@ package org.glowroot.plugin.servlet;
 import java.util.Enumeration;
 import java.util.Map;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.api.UnresolvedMethod;
@@ -90,7 +90,6 @@ class HttpServletRequest {
                 "<error calling HttpServletRequest.getQueryString()>");
     }
 
-    @ReadOnly
     Map<?, ?> getParameterMaps() {
         Map<?, ?> parameterMap =
                 (Map<?, ?>) getParameterMapMethod.invoke(realRequest, ImmutableMap.of());

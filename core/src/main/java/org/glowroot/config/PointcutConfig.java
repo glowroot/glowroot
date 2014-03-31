@@ -17,9 +17,9 @@ package org.glowroot.config;
 
 import java.util.List;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -28,13 +28,14 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import dataflow.quals.Pure;
 
 import org.glowroot.api.weaving.MethodModifier;
 import org.glowroot.config.JsonViews.UiView;
 
+import static com.google.common.base.Strings.nullToEmpty;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.common.ObjectMappers.nullToEmpty;
+import static org.glowroot.common.ObjectMappers.nullToFalse;
 
 /**
  * Immutable structure to hold a pointcut configuration.
@@ -65,12 +66,11 @@ public class PointcutConfig {
     private final String version;
 
     @VisibleForTesting
-    public PointcutConfig(String typeName, String methodName,
-            @ReadOnly List<String> methodArgTypeNames, String methodReturnTypeName,
-            @ReadOnly List<MethodModifier> methodModifiers, String metricName, String spanText,
-            @Nullable Long spanStackTraceThresholdMillis, boolean spanIgnoreSameNested,
-            String transactionName, boolean background, String enabledProperty,
-            String spanEnabledProperty) {
+    public PointcutConfig(String typeName, String methodName, List<String> methodArgTypeNames,
+            String methodReturnTypeName, List<MethodModifier> methodModifiers, String metricName,
+            String spanText, @Nullable Long spanStackTraceThresholdMillis,
+            boolean spanIgnoreSameNested, String transactionName, boolean background,
+            String enabledProperty, String spanEnabledProperty) {
         this.typeName = typeName;
         this.methodName = methodName;
         this.methodArgTypeNames = ImmutableList.copyOf(methodArgTypeNames);
@@ -98,8 +98,7 @@ public class PointcutConfig {
         return methodName;
     }
 
-    @Immutable
-    public List<String> getMethodArgTypeNames() {
+    public ImmutableList<String> getMethodArgTypeNames() {
         return methodArgTypeNames;
     }
 
@@ -107,8 +106,7 @@ public class PointcutConfig {
         return methodReturnTypeName;
     }
 
-    @Immutable
-    public List<MethodModifier> getMethodModifiers() {
+    public ImmutableList<MethodModifier> getMethodModifiers() {
         return methodModifiers;
     }
 
@@ -190,30 +188,16 @@ public class PointcutConfig {
         if (version != null) {
             throw new JsonMappingException("Version field is not allowed for deserialization");
         }
-        return new PointcutConfig(typeName, methodName, orEmpty(methodArgTypeNames),
-                methodReturnTypeName, orEmpty(methodModifiers), orEmpty(metricName),
-                orEmpty(spanText), spanStackTraceThresholdMillis, orFalse(spanIgnoreSameNested),
-                orEmpty(transactionName), orFalse(background), orEmpty(enabledProperty),
-                orEmpty(spanEnabledProperty));
+        return new PointcutConfig(typeName, methodName, nullToEmpty(methodArgTypeNames),
+                methodReturnTypeName, nullToEmpty(methodModifiers), nullToEmpty(metricName),
+                nullToEmpty(spanText), spanStackTraceThresholdMillis,
+                nullToFalse(spanIgnoreSameNested), nullToEmpty(transactionName),
+                nullToFalse(background), nullToEmpty(enabledProperty),
+                nullToEmpty(spanEnabledProperty));
     }
 
-    private static <T> List<T> orEmpty(@Nullable List<T> list) {
-        if (list == null) {
-            return Lists.newArrayList();
-        }
-        return list;
-    }
-
-    private static boolean orFalse(@ReadOnly @Nullable Boolean value) {
-        return value != null && value;
-    }
-
-    private static String orEmpty(@Nullable String value) {
-        return Objects.firstNonNull(value, "");
-    }
-
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("typeName", typeName)

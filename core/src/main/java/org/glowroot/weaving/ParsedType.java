@@ -15,15 +15,18 @@
  */
 package org.glowroot.weaving;
 
-import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.Nullable;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+import javax.annotation.concurrent.NotThreadSafe;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import dataflow.quals.Pure;
+import com.google.common.collect.Lists;
 import org.objectweb.asm.Type;
-
-import org.glowroot.markers.NotThreadSafe;
 
 import static org.objectweb.asm.Opcodes.ACC_NATIVE;
 
@@ -49,21 +52,21 @@ public class ParsedType {
 
     // interfaces that do not extend anything have null superClass
     static ParsedType from(boolean iface, String name, @Nullable String superName,
-            ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods,
-            ImmutableList<ParsedMethod> nativeMethods) {
+            List<String> interfaceNames, List<ParsedMethod> methods,
+            List<ParsedMethod> nativeMethods) {
         return new ParsedType(iface, name, superName, interfaceNames, methods, nativeMethods,
                 false);
     }
 
     private ParsedType(boolean iface, String name, @Nullable String superName,
-            ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods,
-            ImmutableList<ParsedMethod> nativeMethods, boolean hasReweavableAdvice) {
+            List<String> interfaceNames, List<ParsedMethod> methods,
+            List<ParsedMethod> nativeMethods, boolean hasReweavableAdvice) {
         this.iface = iface;
         this.name = name;
         this.superName = superName;
-        this.interfaceNames = interfaceNames;
-        this.methods = methods;
-        this.nativeMethods = nativeMethods;
+        this.interfaceNames = ImmutableList.copyOf(interfaceNames);
+        this.methods = ImmutableList.copyOf(methods);
+        this.nativeMethods = ImmutableList.copyOf(nativeMethods);
         this.hasReweavableAdvice = hasReweavableAdvice;
     }
 
@@ -108,8 +111,8 @@ public class ParsedType {
         return hasReweavableAdvice;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("interface", iface)
@@ -134,9 +137,9 @@ public class ParsedType {
         private final String name;
         @Nullable
         private final String superName;
-        private final ImmutableList<String> interfaceNames;
-        private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
-        private final ImmutableList.Builder<ParsedMethod> nativeMethods = ImmutableList.builder();
+        private final List<String> interfaceNames;
+        private final List<ParsedMethod> methods = Lists.newArrayList();
+        private final List<ParsedMethod> nativeMethods = Lists.newArrayList();
         private boolean hasReweavableAdvice;
 
         private Builder(boolean iface, String name, @Nullable String superName,
@@ -148,9 +151,9 @@ public class ParsedType {
         }
 
         ParsedMethod addParsedMethod(int access, String name, String desc,
-                @Nullable String signature, ImmutableList<String> exceptions) {
-            ParsedMethod method = ParsedMethod.from(name,
-                    ImmutableList.copyOf(Type.getArgumentTypes(desc)), Type.getReturnType(desc),
+                @Nullable String signature, List<String> exceptions) {
+            List<Type> argTypes = Arrays.asList(Type.getArgumentTypes(desc));
+            ParsedMethod method = ParsedMethod.from(name, argTypes, Type.getReturnType(desc),
                     access, desc, signature, exceptions);
             if ((access & ACC_NATIVE) == 0) {
                 methods.add(method);
@@ -159,14 +162,13 @@ public class ParsedType {
             }
             return method;
         }
-
         void setHasReweavableAdvice(boolean hasReweavableAdvice) {
             this.hasReweavableAdvice = hasReweavableAdvice;
         }
 
         ParsedType build() {
-            return new ParsedType(iface, name, superName, interfaceNames, methods.build(),
-                    nativeMethods.build(), hasReweavableAdvice);
+            return new ParsedType(iface, name, superName, interfaceNames, methods, nativeMethods,
+                    hasReweavableAdvice);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
-import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.collect.ImmutableList;
 
 /**
@@ -77,10 +78,10 @@ public class ExceptionInfo {
         }
     }
 
-    private ExceptionInfo(String display, ImmutableList<StackTraceElement> stackTrace,
+    private ExceptionInfo(String display, List<StackTraceElement> stackTrace,
             @Nullable ExceptionInfo cause, int framesInCommon) {
         this.display = display;
-        this.stackTrace = stackTrace;
+        this.stackTrace = ImmutableList.copyOf(stackTrace);
         this.cause = cause;
         this.framesInCommonWithCaused = framesInCommon;
     }
@@ -89,7 +90,9 @@ public class ExceptionInfo {
         return display;
     }
 
-    @Immutable
+    // don't return ImmutableList since tests have maven dependency on plugin-api, they will always
+    // include unshaded plugin-api, while core may be shaded, in which case NoSuchMethodError will
+    // occur since shaded core thinks this method returns shaded ImmutableList
     public List<StackTraceElement> getStackTrace() {
         return stackTrace;
     }

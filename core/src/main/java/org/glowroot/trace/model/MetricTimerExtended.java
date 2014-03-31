@@ -15,8 +15,9 @@
  */
 package org.glowroot.trace.model;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.glowroot.api.MetricTimer;
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

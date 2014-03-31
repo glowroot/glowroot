@@ -17,15 +17,14 @@ package org.glowroot.container.config;
 
 import java.util.List;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import dataflow.quals.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -97,7 +96,7 @@ public class PointcutConfig {
         return methodArgTypeNames;
     }
 
-    public void setMethodArgTypeNames(@ReadOnly List<String> methodArgTypeNames) {
+    public void setMethodArgTypeNames(List<String> methodArgTypeNames) {
         this.methodArgTypeNames = ImmutableList.copyOf(methodArgTypeNames);
     }
 
@@ -114,7 +113,7 @@ public class PointcutConfig {
         return methodModifiers;
     }
 
-    public void setMethodModifiers(@ReadOnly List<MethodModifier> methodModifiers) {
+    public void setMethodModifiers(List<MethodModifier> methodModifiers) {
         this.methodModifiers = ImmutableList.copyOf(methodModifiers);
     }
 
@@ -195,8 +194,8 @@ public class PointcutConfig {
         return version;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof PointcutConfig) {
             PointcutConfig that = (PointcutConfig) obj;
@@ -221,8 +220,8 @@ public class PointcutConfig {
         return false;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public int hashCode() {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
@@ -233,8 +232,8 @@ public class PointcutConfig {
                 spanEnabledProperty);
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("typeName", typeName)

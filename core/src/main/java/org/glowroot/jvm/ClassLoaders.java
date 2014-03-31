@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.Static;
 
-import static org.glowroot.common.Nullness.castNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker
@@ -45,7 +45,7 @@ public class ClassLoaders {
         }
         Class<?> definedClass = (Class<?>) Reflections.invoke(defineClassMethod, classLoader, name,
                 bytes, 0, bytes.length);
-        castNonNull(definedClass);
+        checkNotNull(definedClass);
         return definedClass;
     }
 }

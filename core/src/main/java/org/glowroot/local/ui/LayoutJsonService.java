@@ -17,7 +17,8 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.CharStreams;
@@ -28,9 +29,9 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PluginDescriptorCache;
-import org.glowroot.jvm.HeapHistograms;
 import org.glowroot.jvm.DiagnosticOptions;
 import org.glowroot.jvm.HeapDumps;
+import org.glowroot.jvm.HeapHistograms;
 import org.glowroot.markers.Singleton;
 
 /**

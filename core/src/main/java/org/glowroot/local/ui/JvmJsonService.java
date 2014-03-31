@@ -34,9 +34,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
+import javax.annotation.Nullable;
 import javax.management.JMException;
 
-import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -67,6 +67,7 @@ import org.glowroot.jvm.ProcessId;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.Singleton;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
 /**
@@ -84,7 +85,9 @@ class JvmJsonService {
 
     private static final Ordering<ThreadInfo> orderingByStackSize = new Ordering<ThreadInfo>() {
         @Override
-        public int compare(ThreadInfo left, ThreadInfo right) {
+        public int compare(@Nullable ThreadInfo left, @Nullable ThreadInfo right) {
+            checkNotNull(left);
+            checkNotNull(right);
             return Ints.compare(right.getStackTrace().length, left.getStackTrace().length);
         }
     };

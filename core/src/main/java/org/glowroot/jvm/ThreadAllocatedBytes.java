@@ -18,6 +18,8 @@ package org.glowroot.jvm;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +29,6 @@ import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactory;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactoryHelper;
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

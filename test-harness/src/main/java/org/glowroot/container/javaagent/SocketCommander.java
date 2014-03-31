@@ -19,21 +19,22 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import checkers.lock.quals.GuardedBy;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
-import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker
@@ -69,7 +70,7 @@ class SocketCommander {
         ResponseHolder responseHolder = new ResponseHolder();
         responseHolders.put(commandNum, responseHolder);
         CommandWrapper commandWrapper =
-                new CommandWrapper(commandName, ImmutableList.copyOf(args), commandNum);
+                new CommandWrapper(commandName, Arrays.asList(args), commandNum);
         // need to acquire lock on responseHolder before sending command to ensure
         // responseHolder.notify() cannot happen before responseHolder.wait()
         // (in case response comes back super quick)
@@ -111,10 +112,10 @@ class SocketCommander {
         private final String commandName;
         private final ImmutableList<Object> args;
         private final int commandNum;
-        private CommandWrapper(String commandName, ImmutableList<Object> args, int commandNum) {
+        private CommandWrapper(String commandName, List<Object> args, int commandNum) {
             this.commandNum = commandNum;
             this.commandName = commandName;
-            this.args = args;
+            this.args = ImmutableList.copyOf(args);
         }
         int getCommandNum() {
             return commandNum;
@@ -125,8 +126,8 @@ class SocketCommander {
         ImmutableList<Object> getArgs() {
             return args;
         }
+        /*@Pure*/
         @Override
-        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("commandNum", commandNum)
@@ -152,8 +153,8 @@ class SocketCommander {
         private Object getResponse() {
             return response;
         }
+        /*@Pure*/
         @Override
-        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("commandNum", commandNum)

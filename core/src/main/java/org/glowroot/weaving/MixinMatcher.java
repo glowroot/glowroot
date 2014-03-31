@@ -15,7 +15,6 @@
  */
 package org.glowroot.weaving;
 
-import checkers.igj.quals.ReadOnly;
 import org.objectweb.asm.Type;
 
 import org.glowroot.markers.Static;
@@ -29,8 +28,7 @@ class MixinMatcher {
 
     private MixinMatcher() {}
 
-    static boolean isMatch(MixinType mixinType, Type targetType,
-            @ReadOnly Iterable<ParsedType> superTypes) {
+    static boolean isMatch(MixinType mixinType, Type targetType, Iterable<ParsedType> superTypes) {
         boolean targetTypeClassMatch = isTypeMatch(mixinType, targetType.getClassName());
         boolean superClassMatch = false;
         boolean alreadyImplementsMixin = false;

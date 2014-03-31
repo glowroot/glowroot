@@ -20,10 +20,9 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.lock.quals.GuardedBy;
-import checkers.nullness.quals.MonotonicNonNull;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
+
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
@@ -31,7 +30,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
-import dataflow.quals.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +86,7 @@ public class Trace {
 
     // lazy loaded to reduce memory when attributes are not used
     @GuardedBy("attributes")
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private volatile SetMultimap<String, String> attributes;
 
     private final Metric rootMetric;
@@ -105,10 +103,10 @@ public class Trace {
     private final RootSpan rootSpan;
 
     // stack trace data constructed from coarse-grained profiling
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private volatile MergedStackTree coarseMergedStackTree;
     // stack trace data constructed from fine-grained profiling
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private volatile MergedStackTree fineMergedStackTree;
 
     private final long threadId;
@@ -246,7 +244,6 @@ public class Trace {
         return rootSpan.getSize();
     }
 
-    @ReadOnly
     public Iterable<Span> getSpans() {
         return rootSpan.getSpans();
     }
@@ -458,8 +455,8 @@ public class Trace {
         this.activeMetric = activeMetric;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)

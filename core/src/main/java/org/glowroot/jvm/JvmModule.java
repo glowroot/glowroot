@@ -15,7 +15,7 @@
  */
 package org.glowroot.jvm;
 
-import org.glowroot.markers.ThreadSafe;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

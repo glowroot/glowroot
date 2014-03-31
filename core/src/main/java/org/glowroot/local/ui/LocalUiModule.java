@@ -17,15 +17,17 @@ package org.glowroot.local.ui;
 
 import java.io.File;
 import java.lang.instrument.Instrumentation;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.jboss.netty.channel.ChannelException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +46,6 @@ import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.TraceModule;
 import org.glowroot.trace.TraceRegistry;
 import org.glowroot.weaving.ParsedTypeCache;
@@ -78,7 +79,7 @@ public class LocalUiModule {
     public LocalUiModule(Ticker ticker, Clock clock, File dataDir, JvmModule jvmModule,
             ConfigModule configModule, StorageModule storageModule,
             CollectorModule collectorModule, TraceModule traceModule,
-            @Nullable Instrumentation instrumentation, @ReadOnly Map<String, String> properties,
+            @Nullable Instrumentation instrumentation, Map<String, String> properties,
             String version) {
 
         ConfigService configService = configModule.getConfigService();
@@ -128,7 +129,7 @@ public class LocalUiModule {
                 configService, traceModule.getPointcutConfigAdviceCache(), parsedTypeCache,
                 instrumentation, traceCollector, dataSource, traceRegistry);
 
-        ImmutableList.Builder<Object> jsonServices = ImmutableList.builder();
+        List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(layoutJsonService);
         jsonServices.add(homeJsonService);
         jsonServices.add(tracePointJsonService);
@@ -149,8 +150,7 @@ public class LocalUiModule {
         }
         String bindAddress = getBindAddress(properties);
         httpServer = buildHttpServer(bindAddress, port, numWorkerThreads, httpSessionManager,
-                indexHtmlService, traceDetailHttpService, traceExportHttpService,
-                jsonServices.build());
+                indexHtmlService, traceDetailHttpService, traceExportHttpService, jsonServices);
         if (httpServer != null) {
             configJsonService.setHttpServer(httpServer);
         }
@@ -189,7 +189,7 @@ public class LocalUiModule {
         }
     }
 
-    private static String getBaseHref(@ReadOnly Map<String, String> properties) {
+    private static String getBaseHref(Map<String, String> properties) {
         // empty check to support parameterized script, e.g. -Dglowroot.ui.base=${somevar}
         String baseHref = properties.get("ui.base");
         if (Strings.isNullOrEmpty(baseHref)) {
@@ -199,7 +199,7 @@ public class LocalUiModule {
         }
     }
 
-    private static String getBindAddress(@ReadOnly Map<String, String> properties) {
+    private static String getBindAddress(Map<String, String> properties) {
         // empty check to support parameterized script, e.g. -Dglowroot.ui.bind.address=${somevar}
         String bindAddress = properties.get("ui.bind.address");
         if (Strings.isNullOrEmpty(bindAddress)) {
@@ -213,8 +213,7 @@ public class LocalUiModule {
     private static HttpServer buildHttpServer(String bindAddress, int port, int numWorkerThreads,
             HttpSessionManager httpSessionManager, IndexHtmlService indexHtmlService,
             TraceDetailHttpService snapshotHttpService,
-            TraceExportHttpService traceExportHttpService,
-            ImmutableList<Object> jsonServices) {
+            TraceExportHttpService traceExportHttpService, List<Object> jsonServices) {
 
         String resourceBase = "org/glowroot/local/ui/app-dist";
 

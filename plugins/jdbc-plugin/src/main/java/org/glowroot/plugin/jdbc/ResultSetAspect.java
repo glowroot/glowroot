@@ -19,7 +19,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
 
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;

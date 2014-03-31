@@ -18,8 +18,9 @@ package org.glowroot.container.javaagent;
 import java.io.InputStream;
 import java.util.List;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
@@ -31,7 +32,6 @@ import org.glowroot.container.trace.MergedStackTreeNode;
 import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceService;
-import org.glowroot.markers.ThreadSafe;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -44,7 +44,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 @ThreadSafe
 class JavaagentTraceService extends TraceService {
 
-    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final JavaagentHttpClient httpClient;

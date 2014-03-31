@@ -19,14 +19,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import dataflow.quals.Pure;
 
 import org.glowroot.api.MetricName;
 import org.glowroot.markers.PartiallyThreadSafe;
@@ -232,8 +232,8 @@ public class Metric implements MetricTimerExtended {
         total += time;
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         ImmutableList<Metric> copyOfNestedMetrics = null;
         if (threadSafeNestedMetrics != null) {

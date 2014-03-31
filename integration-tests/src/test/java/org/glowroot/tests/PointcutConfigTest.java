@@ -18,7 +18,8 @@ package org.glowroot.tests;
 import java.io.File;
 import java.util.List;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.junit.After;

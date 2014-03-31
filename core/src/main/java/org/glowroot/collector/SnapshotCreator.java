@@ -17,12 +17,11 @@ package org.glowroot.collector;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.ImmutableSetMultimap;
@@ -40,7 +39,6 @@ import org.glowroot.trace.model.Trace;
 @Static
 public class SnapshotCreator {
 
-    @ReadOnly
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     private SnapshotCreator() {}
@@ -96,8 +94,7 @@ public class SnapshotCreator {
 
     @Nullable
     private static String writeErrorDetailAsString(
-            @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> errorDetail)
-            throws IOException {
+            @Nullable Map<String, ? extends /*@Nullable*/Object> errorDetail) throws IOException {
         if (errorDetail == null) {
             return null;
         }

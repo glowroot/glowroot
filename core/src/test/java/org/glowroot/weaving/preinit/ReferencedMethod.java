@@ -15,7 +15,8 @@
  */
 package org.glowroot.weaving.preinit;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
 
 /**

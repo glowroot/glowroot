@@ -76,8 +76,8 @@
       <artifactId>junit</artifactId>
     </dependency>
     <dependency>
-      <groupId>edu.washington.cs.types.checker</groupId>
-      <artifactId>checker-quals-jdk5</artifactId>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
       <!-- only annotations are used, so don't need this dependency at runtime -->
       <optional>true</optional>
     </dependency>

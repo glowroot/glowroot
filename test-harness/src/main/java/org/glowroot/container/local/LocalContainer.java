@@ -19,10 +19,11 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
@@ -39,8 +40,8 @@ import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.ConfigService;
 import org.glowroot.container.javaagent.JavaagentContainer;
 import org.glowroot.container.trace.TraceService;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.PointcutConfigAdviceCache;
+import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.IsolatedWeavingClassLoader;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -100,9 +101,11 @@ public class LocalContainer implements Container {
                 glowrootModule.getConfigModule().getPluginDescriptorCache();
         PointcutConfigAdviceCache pointcutConfigAdviceCache =
                 glowrootModule.getTraceModule().getPointcutConfigAdviceCache();
-        loader.setMixinTypes(pluginDescriptorCache.getMixinTypes());
-        loader.setAdvisors(Iterables.concat(pluginDescriptorCache.getAdvisors(),
-                pointcutConfigAdviceCache.getAdvisors()));
+        loader.setMixinTypes(pluginDescriptorCache.getMixinTypesNeverShaded());
+        List<Advice> advisors = Lists.newArrayList();
+        advisors.addAll(pluginDescriptorCache.getAdvisorsNeverShaded());
+        advisors.addAll(pointcutConfigAdviceCache.getAdvisors());
+        loader.setAdvisors(advisors);
         loader.setMetricTimerService(glowrootModule.getTraceModule().getMetricTimerService());
         loader.setWeavingDisabled(glowrootModule.getConfigModule().getConfigService()
                 .getAdvancedConfig().isWeavingDisabled());

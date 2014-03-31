@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -57,7 +57,6 @@ import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 class PointcutConfigJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(PointcutConfigJsonService.class);
-    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
     private static final Splitter splitter = Splitter.on(' ').omitEmptyStrings();
 

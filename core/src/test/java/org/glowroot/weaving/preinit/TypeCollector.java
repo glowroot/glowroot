@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,12 @@
  */
 package org.glowroot.weaving.preinit;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
@@ -64,12 +66,12 @@ class TypeCollector {
         this.superType = superType;
     }
 
-    void setInterfaceTypes(ImmutableList<String> interfaceTypes) {
-        this.interfaceTypes = interfaceTypes;
+    void setInterfaceTypes(List<String> interfaceTypes) {
+        this.interfaceTypes = ImmutableList.copyOf(interfaceTypes);
     }
 
-    void setAllSuperTypes(ImmutableList<String> allSuperTypes) {
-        this.allSuperTypes = allSuperTypes;
+    void setAllSuperTypes(List<String> allSuperTypes) {
+        this.allSuperTypes = ImmutableList.copyOf(allSuperTypes);
     }
 
     void addMethod(ReferencedMethod referencedMethod, MethodCollector methodCollector) {

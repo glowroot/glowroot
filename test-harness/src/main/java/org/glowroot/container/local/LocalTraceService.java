@@ -19,8 +19,9 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.List;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
@@ -41,7 +42,6 @@ import org.glowroot.container.trace.TraceService;
 import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.local.ui.TraceCommonService;
 import org.glowroot.local.ui.TraceExportHttpService;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.TraceRegistry;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -55,7 +55,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 @ThreadSafe
 class LocalTraceService extends TraceService {
 
-    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final SnapshotDao snapshotDao;

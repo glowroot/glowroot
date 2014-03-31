@@ -21,17 +21,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
+import javax.annotation.concurrent.Immutable;
+import javax.annotation.concurrent.NotThreadSafe;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharSource;
 
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.internal.ExceptionInfo;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
-import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.Static;
 import org.glowroot.trace.model.MergedStackTree;
 import org.glowroot.trace.model.MergedStackTree.StackTraceElementPlus;
@@ -44,7 +45,6 @@ import org.glowroot.trace.model.Span;
 @Static
 public class SpansCharSourceCreator {
 
-    @ReadOnly
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     private SpansCharSourceCreator() {}
@@ -53,8 +53,8 @@ public class SpansCharSourceCreator {
         return new SpansCharSource(spans, captureTick);
     }
 
-    private static void writeStackTrace(@ReadOnly List<StackTraceElement> stackTrace,
-            JsonGenerator jw) throws IOException {
+    private static void writeStackTrace(List<StackTraceElement> stackTrace, JsonGenerator jw)
+            throws IOException {
         jw.writeStartArray();
         List<StackTraceElementPlus> elements =
                 MergedStackTree.stripSyntheticMetricMethods(stackTrace);
@@ -67,11 +67,10 @@ public class SpansCharSourceCreator {
     @Immutable
     private static class SpansCharSource extends CharSource {
 
-        @ReadOnly
         private final Iterable<Span> spans;
         private final long captureTick;
 
-        private SpansCharSource(@ReadOnly Iterable<Span> spans, long captureTick) {
+        private SpansCharSource(Iterable<Span> spans, long captureTick) {
             this.spans = spans;
             this.captureTick = captureTick;
         }
@@ -85,7 +84,6 @@ public class SpansCharSourceCreator {
     @NotThreadSafe
     private static class SpansReader extends Reader {
 
-        @ReadOnly
         private final Iterator<Span> spans;
         private final long captureTick;
         private final CharArrayWriter writer;
@@ -93,7 +91,7 @@ public class SpansCharSourceCreator {
 
         private int writerIndex;
 
-        private SpansReader(@ReadOnly Iterator<Span> spans, long captureTick) throws IOException {
+        private SpansReader(Iterator<Span> spans, long captureTick) throws IOException {
             this.spans = spans;
             this.captureTick = captureTick;
             writer = new CharArrayWriter();
@@ -170,7 +168,7 @@ public class SpansCharSourceCreator {
                 jg.writeFieldName("error");
                 writeErrorMessage(errorMessage);
             }
-            List<StackTraceElement> stackTrace = span.getStackTrace();
+            ImmutableList<StackTraceElement> stackTrace = span.getStackTrace();
             if (stackTrace != null) {
                 jg.writeFieldName("stackTrace");
                 writeStackTrace(stackTrace, jg);

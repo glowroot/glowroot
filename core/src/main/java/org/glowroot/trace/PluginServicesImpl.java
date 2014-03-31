@@ -18,7 +18,10 @@ package org.glowroot.trace;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.NotThreadSafe;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
@@ -43,8 +46,6 @@ import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.markers.NotThreadSafe;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.model.MetricTimerExtended;
 import org.glowroot.trace.model.Trace;
 

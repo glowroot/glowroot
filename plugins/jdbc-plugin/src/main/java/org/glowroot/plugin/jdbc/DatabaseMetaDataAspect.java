@@ -15,7 +15,7 @@
  */
 package org.glowroot.plugin.jdbc;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;

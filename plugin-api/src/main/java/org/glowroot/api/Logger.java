@@ -15,7 +15,7 @@
  */
 package org.glowroot.api;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
 
 /**
  * Very thin wrapper around SLF4J so plugins don't have to worry about SLF4J shading.

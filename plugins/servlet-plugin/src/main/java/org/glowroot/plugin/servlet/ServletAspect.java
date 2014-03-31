@@ -15,7 +15,8 @@
  */
 package org.glowroot.plugin.servlet;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Strings;
 
 import org.glowroot.api.CompletedSpan;

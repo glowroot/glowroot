@@ -51,6 +51,7 @@ public class TracePointJsonServiceTest {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
     private static final Random random = new Random();
+
     private static final long DEFAULT_CURRENT_TICK = random.nextLong();
     private static final long DEFAULT_CURRENT_TIME_MILLIS = Math.abs(random.nextLong());
 

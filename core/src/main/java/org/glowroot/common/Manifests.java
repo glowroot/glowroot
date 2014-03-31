@@ -20,7 +20,8 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.jar.Manifest;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

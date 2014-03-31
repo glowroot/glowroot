@@ -17,17 +17,14 @@ package org.glowroot.weaving;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
-import java.util.List;
 import java.util.Map;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.MonotonicNonNull;
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import dataflow.quals.Pure;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
@@ -78,14 +75,14 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
 
     private boolean needsTryCatch;
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private Label methodStartLabel;
-    @MonotonicNonNull
+    /*@MonotonicNonNull*/
     private Label catchStartLabel;
     private boolean visitedLocalVariableThis;
 
     WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
-            @ReadOnly Iterable<Advice> advisors) {
+            Iterable<Advice> advisors) {
         super(ASM5, mv, access, name, desc);
         this.access = access;
         this.name = name;
@@ -511,7 +508,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    private void loadMethodArgs(@ReadOnly List<AdviceParameter> parameters, int startIndex,
+    private void loadMethodArgs(ImmutableList<AdviceParameter> parameters, int startIndex,
             @Nullable Integer travelerLocal, Type adviceType,
             Class<? extends Annotation> annotationType) {
 
@@ -626,8 +623,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("access", access)

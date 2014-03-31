@@ -18,14 +18,16 @@ package org.glowroot.weaving;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.CodeSource;
+import java.util.List;
 
-import checkers.nullness.quals.Nullable;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import dataflow.quals.Pure;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -38,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.MetricTimer;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.ParsedTypeCache.ParseContext;
 
 import static org.objectweb.asm.Opcodes.ASM5;
@@ -66,12 +67,12 @@ class Weaver {
 
     private final MetricName weavingMetricName;
 
-    Weaver(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> pluginAdvisors,
+    Weaver(List<MixinType> mixinTypes, List<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
             ParsedTypeCache parsedTypeCache, MetricTimerService metricTimerService,
             boolean metricWrapperMethods) {
-        this.mixinTypes = mixinTypes;
-        this.pluginAdvisors = pluginAdvisors;
+        this.mixinTypes = ImmutableList.copyOf(mixinTypes);
+        this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
         this.pointcutConfigAdvisors = pointcutConfigAdvisors;
         this.parsedTypeCache = parsedTypeCache;
         this.metricTimerService = metricTimerService;
@@ -140,8 +141,8 @@ class Weaver {
         }
     }
 
+    /*@Pure*/
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("mixinTypes", mixinTypes)
