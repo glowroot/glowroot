@@ -36,14 +36,18 @@ public class ConfigModule {
     private final PluginDescriptorCache pluginDescriptorCache;
     private final ConfigService configService;
 
-    public ConfigModule(@Nullable Instrumentation instrumentation, File dataDir)
+    public ConfigModule(@Nullable Instrumentation instrumentation, File dataDir, boolean viewerMode)
             throws IOException, URISyntaxException {
         // instrumentation is null when debugging with IsolatedWeavingClassLoader instead of
         // javaagent
         if (instrumentation != null) {
             addPluginJarsToClasspath(instrumentation);
         }
-        pluginDescriptorCache = new PluginDescriptorCache();
+        if (viewerMode) {
+            pluginDescriptorCache = PluginDescriptorCache.createInViewerMode();
+        } else {
+            pluginDescriptorCache = PluginDescriptorCache.create();
+        }
         configService = new ConfigService(dataDir, pluginDescriptorCache);
     }
 

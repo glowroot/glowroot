@@ -63,8 +63,7 @@ public class GlowrootModule {
     private final File dataDir;
 
     GlowrootModule(File dataDir, @ReadOnly Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, String version,
-            boolean snapshotReaperDisabled, boolean aggregatorDisabled)
+            @Nullable Instrumentation instrumentation, String version, boolean viewerMode)
             throws StartupFailedException {
         Ticker ticker = Ticker.systemTicker();
         Clock clock = Clock.systemClock();
@@ -74,7 +73,7 @@ public class GlowrootModule {
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
         JvmModule jvmModule = new JvmModule();
         try {
-            configModule = new ConfigModule(instrumentation, dataDir);
+            configModule = new ConfigModule(instrumentation, dataDir, viewerMode);
         } catch (IOException e) {
             throw new StartupFailedException(e);
         } catch (URISyntaxException e) {
@@ -82,7 +81,7 @@ public class GlowrootModule {
         }
         try {
             storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
-                    scheduledExecutor, snapshotReaperDisabled);
+                    scheduledExecutor, viewerMode);
         } catch (SQLException e) {
             throw new StartupFailedException(e);
         } catch (IOException e) {
@@ -90,7 +89,7 @@ public class GlowrootModule {
         }
         collectorModule = new CollectorModule(clock, ticker, configModule,
                 storageModule.getSnapshotRepository(), storageModule.getAggregateRepository(),
-                scheduledExecutor, aggregatorDisabled);
+                scheduledExecutor, viewerMode);
         traceModule = new TraceModule(ticker, clock, configModule,
                 collectorModule.getTraceCollector(),
                 jvmModule.getThreadAllocatedBytes().getService(), instrumentation,

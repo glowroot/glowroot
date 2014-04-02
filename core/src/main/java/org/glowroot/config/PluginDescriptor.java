@@ -96,6 +96,11 @@ public class PluginDescriptor {
         return pointcuts;
     }
 
+    public PluginDescriptor copyWithoutAdvice() {
+        return new PluginDescriptor(name, id, version, traceAttributes, properties,
+                ImmutableList.<String>of(), ImmutableList.<PointcutConfig>of());
+    }
+
     @Override
     @Pure
     public String toString() {

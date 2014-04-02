@@ -131,7 +131,7 @@ public class MainEntryPoint {
             return;
         }
         String version = Version.getVersion();
-        glowrootModule = new GlowrootModule(dataDir, properties, null, version, true, true);
+        glowrootModule = new GlowrootModule(dataDir, properties, null, version, true);
         startupLogger.info("Viewer started (version {})", version);
         startupLogger.info("Viewer listening at http://localhost:{}",
                 glowrootModule.getUiModule().getPort());
@@ -147,7 +147,7 @@ public class MainEntryPoint {
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
         glowrootModule =
-                new GlowrootModule(dataDir, properties, instrumentation, version, false, false);
+                new GlowrootModule(dataDir, properties, instrumentation, version, false);
         startupLogger.info("Glowroot started (version {})", version);
         startupLogger.info("Glowroot listening at http://localhost:{}",
                 glowrootModule.getUiModule().getPort());

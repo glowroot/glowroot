@@ -17,10 +17,13 @@ package org.glowroot.config;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
@@ -59,7 +62,7 @@ public class PluginDescriptorCache {
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
 
-    public PluginDescriptorCache() {
+    public static PluginDescriptorCache create() {
         ImmutableList.Builder<PluginDescriptor> thePluginDescriptors = ImmutableList.builder();
         try {
             thePluginDescriptors.addAll(readClasspathPluginDescriptors());
@@ -69,11 +72,11 @@ public class PluginDescriptorCache {
         } catch (URISyntaxException e) {
             logger.error(e.getMessage(), e);
         }
-        this.pluginDescriptors = thePluginDescriptors.build();
+        ImmutableList<PluginDescriptor> pluginDescriptors = thePluginDescriptors.build();
 
         ImmutableList.Builder<MixinType> theMixinTypes = ImmutableList.builder();
         ImmutableList.Builder<Advice> theAdvisors = ImmutableList.builder();
-        for (PluginDescriptor pluginDescriptor : this.pluginDescriptors) {
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             for (String aspect : pluginDescriptor.getAspects()) {
                 try {
                     // don't initialize the aspect since that will trigger static initializers which
@@ -89,8 +92,34 @@ public class PluginDescriptorCache {
             theAdvisors.addAll(DynamicAdviceGenerator.getAdvisors(pluginDescriptor.getPointcuts(),
                     pluginDescriptor.getId()));
         }
-        this.mixinTypes = theMixinTypes.build();
-        this.advisors = theAdvisors.build();
+        return new PluginDescriptorCache(pluginDescriptors, theMixinTypes.build(),
+                theAdvisors.build());
+    }
+
+    public static PluginDescriptorCache createInViewerMode() {
+        List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
+        try {
+            pluginDescriptors.addAll(readClasspathPluginDescriptorsViewerMode());
+            pluginDescriptors.addAll(readStandalonePluginDescriptors());
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        } catch (URISyntaxException e) {
+            logger.error(e.getMessage(), e);
+        }
+        ImmutableList.Builder<PluginDescriptor> pluginDescriptorsWithoutAdvice =
+                ImmutableList.builder();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            pluginDescriptorsWithoutAdvice.add(pluginDescriptor.copyWithoutAdvice());
+        }
+        return new PluginDescriptorCache(pluginDescriptorsWithoutAdvice.build(),
+                ImmutableList.<MixinType>of(), ImmutableList.<Advice>of());
+    }
+
+    private PluginDescriptorCache(ImmutableList<PluginDescriptor> pluginDescriptors,
+            ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> advisors) {
+        this.pluginDescriptors = pluginDescriptors;
+        this.mixinTypes = mixinTypes;
+        this.advisors = advisors;
     }
 
     // don't return ImmutableList since this method is used by UiTestingMain and when UiTestingMain
@@ -149,6 +178,25 @@ public class PluginDescriptorCache {
         for (File pluginDescriptorFile : Plugins.getStandalonePluginDescriptorFiles()) {
             PluginDescriptor pluginDescriptor = ObjectMappers.readRequiredValue(mapper,
                     pluginDescriptorFile, PluginDescriptor.class);
+            pluginDescriptors.add(pluginDescriptor);
+        }
+        return pluginDescriptors.build();
+    }
+
+    // plugin descriptors aren't really on classpath in viewer mode
+    // so need to read them directly from the jar files
+    private static ImmutableList<PluginDescriptor> readClasspathPluginDescriptorsViewerMode()
+            throws IOException, URISyntaxException {
+        ImmutableList.Builder<PluginDescriptor> pluginDescriptors = ImmutableList.builder();
+        for (File pluginJar : Plugins.getPluginJars()) {
+            JarFile jarFile = new JarFile(pluginJar);
+            JarEntry jarEntry = jarFile.getJarEntry("META-INF/glowroot.plugin.json");
+            if (jarEntry == null) {
+                continue;
+            }
+            InputStream jarEntryIn = jarFile.getInputStream(jarEntry);
+            PluginDescriptor pluginDescriptor =
+                    mapper.readValue(jarEntryIn, PluginDescriptor.class);
             pluginDescriptors.add(pluginDescriptor);
         }
         return pluginDescriptors.build();
