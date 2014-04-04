@@ -141,8 +141,10 @@ public class LocalUiModule {
         } else {
             port = LocalUiModule.port;
         }
-        httpServer = buildHttpServer(port, numWorkerThreads, httpSessionManager, indexHtmlService,
-                snapshotHttpService, traceExportHttpService, jsonServices.build());
+        String bindAddress = getBindAddress(properties);
+        httpServer = buildHttpServer(bindAddress, port, numWorkerThreads, httpSessionManager,
+                indexHtmlService, snapshotHttpService, traceExportHttpService,
+                jsonServices.build());
         if (httpServer != null) {
             configJsonService.setHttpServer(httpServer);
         }
@@ -181,8 +183,13 @@ public class LocalUiModule {
         return baseHref == null ? "/" : baseHref;
     }
 
+    private static String getBindAddress(@ReadOnly Map<String, String> properties) {
+        String bindAddress = properties.get("ui.bind.address");
+        return bindAddress == null ? "0.0.0.0" : bindAddress;
+    }
+
     @Nullable
-    private static HttpServer buildHttpServer(int port, int numWorkerThreads,
+    private static HttpServer buildHttpServer(String bindAddress, int port, int numWorkerThreads,
             HttpSessionManager httpSessionManager, IndexHtmlService indexHtmlService,
             SnapshotHttpService snapshotHttpService, TraceExportHttpService traceExportHttpService,
             ImmutableList<Object> jsonServices) {
@@ -212,8 +219,8 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/export/.*$"), traceExportHttpService);
         uriMappings.put(Pattern.compile("^/backend/trace/detail/.*$"), snapshotHttpService);
         try {
-            return new HttpServer(port, numWorkerThreads, indexHtmlService, uriMappings.build(),
-                    httpSessionManager, jsonServices);
+            return new HttpServer(bindAddress, port, numWorkerThreads, indexHtmlService,
+                    uriMappings.build(), httpSessionManager, jsonServices);
         } catch (ChannelException e) {
             // binding to the specified port failed and binding to port 0 (any port) failed
             logger.error("error binding to any port, the user interface will not be available", e);

@@ -64,9 +64,9 @@ public class HttpServer {
     private volatile Channel serverChannel;
     private volatile int port;
 
-    HttpServer(int port, int numWorkerThreads, IndexHtmlService indexHtmlService,
-            ImmutableMap<Pattern, Object> uriMappings, HttpSessionManager httpSessionManager,
-            ImmutableList<Object> jsonServices) {
+    HttpServer(String bindAddress, int port, int numWorkerThreads,
+            IndexHtmlService indexHtmlService, ImmutableMap<Pattern, Object> uriMappings,
+            HttpSessionManager httpSessionManager, ImmutableList<Object> jsonServices) {
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
         ExecutorService bossExecutor = Executors.newCachedThreadPool(threadFactory);
@@ -92,7 +92,7 @@ public class HttpServer {
             }
         });
         this.handler = handler;
-        InetSocketAddress localAddress = new InetSocketAddress(port);
+        InetSocketAddress localAddress = new InetSocketAddress(bindAddress, port);
         logger.debug("<init>(): binding http server to port {}", port);
         Channel serverChannel;
         try {
