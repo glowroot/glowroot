@@ -55,8 +55,6 @@ public class CappedDatabase {
     private final Object lock = new Object();
     @GuardedBy("lock")
     private final CappedDatabaseOutputStream out;
-    @GuardedBy("lock")
-    private final Writer compressedWriter;
     private final Thread shutdownHookThread;
     @GuardedBy("lock")
     private RandomAccessFile inFile;
@@ -66,7 +64,6 @@ public class CappedDatabase {
             Ticker ticker) throws IOException {
         this.file = file;
         out = CappedDatabaseOutputStream.create(file, requestedSizeKb, scheduledExecutor, ticker);
-        compressedWriter = new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
         inFile = new RandomAccessFile(file, "r");
         shutdownHookThread = new ShutdownHookThread();
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
@@ -79,6 +76,8 @@ public class CappedDatabase {
             }
             out.startBlock();
             try {
+                Writer compressedWriter =
+                        new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
                 charSource.copyTo(compressedWriter);
                 compressedWriter.flush();
             } catch (IOException e) {

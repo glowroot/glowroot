@@ -58,8 +58,6 @@ class CappedDatabaseOutputStream extends OutputStream {
     private long currIndex;
     // lastResizeBaseIndex is the smallest currIndex saved during the last resize
     private long lastResizeBaseIndex;
-    // currPosition is the current position in the file
-    private long currPosition;
     // sizeKb is volatile so it can be read outside of the external synchronization around
     // startBlock()/write()/endBlock()
     private volatile int sizeKb;
@@ -102,8 +100,6 @@ class CappedDatabaseOutputStream extends OutputStream {
             sizeKb = out.readInt();
             sizeBytes = sizeKb * 1024L;
             lastResizeBaseIndex = out.readLong();
-            currPosition = (currIndex - lastResizeBaseIndex) % sizeBytes;
-            out.seek(HEADER_SKIP_BYTES + currPosition);
         }
         lastFsyncTick.set(ticker.read());
         fsyncScheduledRunnable = new FsyncScheduledRunnable();
@@ -195,14 +191,7 @@ class CappedDatabaseOutputStream extends OutputStream {
         }
         sizeKb = newSizeKb;
         sizeBytes = newSizeBytes;
-        if (numKeepBytes == newSizeBytes) {
-            // shrunk and filled up file
-            currPosition = 0;
-        } else {
-            currPosition = numKeepBytes;
-        }
         out = new RandomAccessFile(file, "rw");
-        out.seek(HEADER_SKIP_BYTES + currPosition);
     }
 
     @Override
@@ -227,23 +216,20 @@ class CappedDatabaseOutputStream extends OutputStream {
             throw new IOException("A single block cannot have more bytes than size of the capped"
                     + " database");
         }
-        // update header before writing data in case of abnormal shutdown during writing data
-        currIndex += len;
-        out.seek(HEADER_CURR_INDEX_POS);
-        out.writeLong(currIndex);
+        long currPosition = (currIndex - lastResizeBaseIndex) % sizeBytes;
         out.seek(HEADER_SKIP_BYTES + currPosition);
-
         long remaining = sizeBytes - currPosition;
         if (len >= remaining) {
             // intentionally handling == case here
             out.write(b, off, (int) remaining);
             out.seek(HEADER_SKIP_BYTES);
             out.write(b, (int) remaining, (int) (len - remaining));
-            currPosition = len - remaining;
         } else {
             out.write(b, off, len);
-            currPosition += len;
         }
+        currIndex += len;
+        out.seek(HEADER_CURR_INDEX_POS);
+        out.writeLong(currIndex);
     }
 
     private void fsyncIfNeeded() {
