@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -179,13 +180,23 @@ public class LocalUiModule {
     }
 
     private static String getBaseHref(@ReadOnly Map<String, String> properties) {
+        // empty check to support parameterized script, e.g. -Dglowroot.ui.base=${somevar}
         String baseHref = properties.get("ui.base");
-        return baseHref == null ? "/" : baseHref;
+        if (Strings.isNullOrEmpty(baseHref)) {
+            return "/";
+        } else {
+            return baseHref;
+        }
     }
 
     private static String getBindAddress(@ReadOnly Map<String, String> properties) {
+        // empty check to support parameterized script, e.g. -Dglowroot.ui.bind.address=${somevar}
         String bindAddress = properties.get("ui.bind.address");
-        return bindAddress == null ? "0.0.0.0" : bindAddress;
+        if (Strings.isNullOrEmpty(bindAddress)) {
+            return "0.0.0.0";
+        } else {
+            return bindAddress;
+        }
     }
 
     @Nullable

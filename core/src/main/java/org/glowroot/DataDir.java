@@ -23,6 +23,7 @@ import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +66,8 @@ class DataDir {
 
     public static File getDataDir(@ReadOnly Map<String, String> properties) {
         String dataDirPath = properties.get("data.dir");
-        if (dataDirPath == null) {
+        // empty check to support parameterized script, e.g. -Dglowroot.data.dir=${somevar}
+        if (Strings.isNullOrEmpty(dataDirPath)) {
             return getBaseDir();
         }
         File dataDir = new File(dataDirPath);
