@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,7 +142,7 @@ class RootSpan {
 
     private Span createSpan(long startTick, @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage, @Nullable Metric metric, boolean limitBypassed) {
-        if (!limitBypassed && spanLimitExceeded) {
+        if (spanLimitExceeded && !limitBypassed) {
             // just in case the spanLimit property is changed in the middle of a trace this resets
             // the flag so that it can be triggered again (and possibly then a second limit marker)
             spanLimitExceeded = false;
@@ -153,8 +153,13 @@ class RootSpan {
             size++;
         }
         Span currentSpan = spanStack.get(spanStack.size() - 1);
-        // limit bypassed spans have no proper nesting, so put them directly under the root
-        int nestingLevel = limitBypassed ? 1 : currentSpan.getNestingLevel() + 1;
+        int nestingLevel;
+        if (spanLimitExceeded && limitBypassed) {
+            // limit bypassed spans have no proper nesting, so put them directly under the root
+            nestingLevel = 1;
+        } else {
+            nestingLevel = currentSpan.getNestingLevel() + 1;
+        }
         Span span = new Span(messageSupplier, this.startTick, startTick, nestingLevel, metric);
         span.setErrorMessage(errorMessage);
         return span;

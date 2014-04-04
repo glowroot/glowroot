@@ -139,6 +139,27 @@ public class ErrorCaptureTest {
         assertThat(causeLineNumbers).hasSize(3);
     }
 
+    @Test
+    public void shouldAddNestedErrorSpan() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ShouldAddNestedErrorSpan.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getError()).isNull();
+        assertThat(trace.getSpans()).hasSize(3);
+        assertThat(trace.getSpans().get(0).getNestingLevel())
+                .isEqualTo(0);
+        assertThat(trace.getSpans().get(1).getMessage().getText())
+                .isEqualTo("outer span to test nesting level");
+        assertThat(trace.getSpans().get(1).getNestingLevel())
+                .isEqualTo(1);
+        assertThat(trace.getSpans().get(2).getError().getText())
+                .isEqualTo("test add nested error span message");
+        assertThat(trace.getSpans().get(2).getNestingLevel())
+                .isEqualTo(2);
+    }
+
     private static int getFirstLineNumber(ExceptionInfo cause) {
         String element = cause.getStackTrace().get(0);
         return Integer.parseInt(element.substring(element.lastIndexOf(':') + 1,
@@ -186,6 +207,17 @@ public class ErrorCaptureTest {
         @Override
         public void traceMarker() throws Exception {
             new LogCause().log("abc");
+        }
+    }
+
+    public static class ShouldAddNestedErrorSpan implements AppUnderTest, TraceMarker {
+        @Override
+        public void executeApp() throws Exception {
+            traceMarker();
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            new LogError().addNestedErrorSpan();
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,32 @@ public class LogErrorAspect {
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
             span.endWithError(ErrorMessage.from("test error message")).captureSpanStackTrace();
+        }
+    }
+
+    @Pointcut(typeName = "org.glowroot.tests.LogError", methodName = "addNestedErrorSpan",
+            metricName = "add nested error span")
+    public static class AddErrorSpanAdvice {
+
+        private static final MetricName metricName =
+                pluginServices.getMetricName(AddErrorSpanAdvice.class);
+
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+
+        @OnBefore
+        public static Span onBefore() {
+            Span span = pluginServices.startSpan(
+                    MessageSupplier.from("outer span to test nesting level"), metricName);
+            pluginServices.addErrorSpan(ErrorMessage.from("test add nested error span message"));
+            return span;
+        }
+
+        @OnAfter
+        public static void onAfter(@BindTraveler Span span) {
+            span.end();
         }
     }
 
