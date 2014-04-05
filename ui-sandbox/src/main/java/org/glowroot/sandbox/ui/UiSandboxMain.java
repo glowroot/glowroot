@@ -19,6 +19,7 @@ import java.io.File;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 
 import org.glowroot.container.AppUnderTest;
@@ -56,7 +57,8 @@ public class UiSandboxMain {
             Files.write("{\"ui\":{\"port\":" + INITIAL_UI_PORT + "}}", configFile, Charsets.UTF_8);
         }
         if (useJavaagent) {
-            container = new JavaagentContainer(dataDir, true, false, false);
+            container =
+                    new JavaagentContainer(dataDir, true, false, false, ImmutableList.<String>of());
         } else {
             container = new LocalContainer(dataDir, true, false);
         }

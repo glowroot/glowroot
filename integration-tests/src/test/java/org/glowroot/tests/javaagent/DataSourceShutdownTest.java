@@ -22,6 +22,7 @@ import java.util.concurrent.ThreadFactory;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.junit.Test;
 
@@ -46,7 +47,8 @@ public class DataSourceShutdownTest {
     @Test
     public void shouldShutdown() throws Exception {
         // given
-        final JavaagentContainer container = new JavaagentContainer(null, true, false, true);
+        final JavaagentContainer container =
+                new JavaagentContainer(null, true, false, true, ImmutableList.<String>of());
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit(new Callable<Void>() {

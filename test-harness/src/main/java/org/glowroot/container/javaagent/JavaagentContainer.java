@@ -34,6 +34,7 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
@@ -81,19 +82,19 @@ public class JavaagentContainer implements Container {
     private final Thread shutdownHook;
 
     public static JavaagentContainer create() throws Exception {
-        return new JavaagentContainer(null, false, false, false);
+        return new JavaagentContainer(null, false, false, false, ImmutableList.<String>of());
     }
 
     public static JavaagentContainer createWithFileDb() throws Exception {
-        return new JavaagentContainer(null, true, false, false);
+        return new JavaagentContainer(null, true, false, false, ImmutableList.<String>of());
     }
 
     public static JavaagentContainer createWithFileDb(File dataDir) throws Exception {
-        return new JavaagentContainer(dataDir, true, false, false);
+        return new JavaagentContainer(dataDir, true, false, false, ImmutableList.<String>of());
     }
 
     public JavaagentContainer(@Nullable File dataDir, boolean useFileDb, boolean shared,
-            final boolean captureConsoleOutput) throws Exception {
+            final boolean captureConsoleOutput, List<String> extraJvmArgs) throws Exception {
         if (dataDir == null) {
             this.dataDir = TempDirs.createTempDir("glowroot-test-datadir");
             deleteDataDirOnClose = true;
@@ -109,7 +110,8 @@ public class JavaagentContainer implements Container {
         if (!configFile.exists()) {
             Files.write("{\"ui\":{\"port\":0}}", configFile, Charsets.UTF_8);
         }
-        List<String> command = buildCommand(serverSocket.getLocalPort(), this.dataDir, useFileDb);
+        List<String> command =
+                buildCommand(serverSocket.getLocalPort(), this.dataDir, useFileDb, extraJvmArgs);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         final Process process = processBuilder.start();
@@ -317,15 +319,14 @@ public class JavaagentContainer implements Container {
         Thread.sleep(1);
     }
 
-    private static List<String> buildCommand(int containerPort, File dataDir, boolean useFileDb)
-            throws Exception {
+    private static List<String> buildCommand(int containerPort, File dataDir, boolean useFileDb,
+            List<String> extraJvmArgs) throws Exception {
         List<String> command = Lists.newArrayList();
         String javaExecutable = System.getProperty("java.home") + File.separator + "bin"
                 + File.separator + "java";
         command.add(javaExecutable);
+        command.addAll(extraJvmArgs);
         String classpath = System.getProperty("java.class.path");
-        // limit MaxPermSize for ClassLoaderLeakTest
-        command.add("-XX:MaxPermSize=64m");
         command.add("-cp");
         command.add(classpath);
         command.addAll(getJavaAgentsFromCurrentJvm());

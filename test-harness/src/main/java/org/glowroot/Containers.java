@@ -18,6 +18,7 @@ package org.glowroot;
 import java.io.File;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,12 +69,13 @@ public class Containers {
 
     public static Container getSharedJavaagentContainer() throws Exception {
         if (!SharedContainerRunListener.useSharedContainer()) {
-            return new JavaagentContainer(null, false, false, false);
+            return new JavaagentContainer(null, false, false, false, ImmutableList.<String>of());
         }
         JavaagentContainer container =
                 (JavaagentContainer) SharedContainerRunListener.getSharedJavaagentContainer();
         if (container == null) {
-            container = new JavaagentContainer(null, false, true, false);
+            container =
+                    new JavaagentContainer(null, false, true, false, ImmutableList.<String>of());
             SharedContainerRunListener.setSharedJavaagentContainer(container);
         }
         return container;
@@ -118,7 +120,8 @@ public class Containers {
                 // this is the most realistic way to run tests because it launches an external JVM
                 // process using -javaagent:glowroot.jar
                 logger.debug("create(): using javaagent container");
-                return new JavaagentContainer(dataDir, useFileDb, shared, false);
+                return new JavaagentContainer(dataDir, useFileDb, shared, false,
+                        ImmutableList.<String>of());
             case LOCAL:
                 // this is the easiest way to run/debug tests inside of Eclipse
                 logger.debug("create(): using local container");

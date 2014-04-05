@@ -16,16 +16,18 @@
 package org.glowroot.tests;
 
 import java.io.IOException;
+import java.util.List;
 
 import com.google.common.io.Resources;
+import org.assertj.core.util.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
+import org.glowroot.container.javaagent.JavaagentContainer;
 import org.glowroot.weaving.TypeNames;
 
 /**
@@ -38,7 +40,17 @@ public class ClassLoaderLeakTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedJavaagentContainer();
+        // need memory limited javaagent
+        List<String> extraJvmArgs = Lists.newArrayList();
+        String javaVersion = System.getProperty("java.version");
+        if (javaVersion.startsWith("1.6") || javaVersion.startsWith("1.7")) {
+            // limit MaxPermSize for ClassLoaderLeakTest
+            extraJvmArgs.add("-XX:MaxPermSize=64m");
+        } else {
+            // jdk8+ eliminated perm gen, so just limit overall memory
+            extraJvmArgs.add("-Xmx64m");
+        }
+        container = new JavaagentContainer(null, false, true, false, extraJvmArgs);
     }
 
     @AfterClass
@@ -62,8 +74,9 @@ public class ClassLoaderLeakTest {
     public static class ShouldGenerateLotsOfClassLoaders implements AppUnderTest {
         @Override
         public void executeApp() throws IOException {
-            // javaagent container limits MaxPermSize to 64m
-            // if these class loaders are not collected, they will fill up perm gen around 36,000
+            // javaagent container limits MaxPermSize to 64m (and limits normal memory to 64m in
+            // jdk8+ since no more perm gen)
+            // if these class loaders are not collected, they will fill up 64m around 36,000
             // iterations
             for (int i = 0; i < 50000; i++) {
                 new TempClassLoader().defineTempClass();

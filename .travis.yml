@@ -1,5 +1,6 @@
 language: java
 jdk:
+  - oraclejdk8
   - oraclejdk7
   - openjdk7
   - openjdk6
@@ -11,37 +12,37 @@ install: true
 script: travis-build/travis-build.sh $TARGET
 matrix:
   include:
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=deploy
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=sonarqube
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=checker
       # firefox
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=
       # chrome
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=
       # safari
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.9" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=7
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.8" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=6
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.6" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=5
       # internet explorer
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 8.1" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 8" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=9
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=8
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows XP" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=8
 env:
   global:
@@ -69,7 +70,7 @@ deploy:
   bucket: glowroot
   skip_cleanup: true
   on:
-    jdk: oraclejdk7
+    jdk: oraclejdk8
     branch: master
     repo: glowroot/glowroot
     condition: "$TARGET = deploy"
