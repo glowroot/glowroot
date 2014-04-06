@@ -115,6 +115,9 @@ public class Metric {
     // same GlowrootContainer for test speed, so test order affects whether any classes are
     // woven during the test or not
     // it's easiest to just ignore this metric completely
+    //
+    // suppress warning for checker framework issue #312
+    @SuppressWarnings("type.argument.type.incompatible")
     private ImmutableList<Metric> getStableAndOrderedMetrics() {
         List<Metric> stableMetrics = Lists.newArrayList(nestedMetrics);
         for (Iterator<Metric> i = stableMetrics.iterator(); i.hasNext();) {
