@@ -22,6 +22,7 @@ import java.util.jar.Manifest;
 
 import javax.annotation.Nullable;
 
+import com.google.common.io.Closer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,11 +53,15 @@ public class Manifests {
         }
         URL manifestURL = new URL(externalForm.substring(0, externalForm.lastIndexOf('!')) +
                 "!/META-INF/MANIFEST.MF");
-        InputStream manifestIn = manifestURL.openStream();
+        // Closer is used to simulate Java 7 try-with-resources
+        Closer closer = Closer.create();
+        InputStream manifestIn = closer.register(manifestURL.openStream());
         try {
             return new Manifest(manifestIn);
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
         } finally {
-            manifestIn.close();
+            closer.close();
         }
     }
 }

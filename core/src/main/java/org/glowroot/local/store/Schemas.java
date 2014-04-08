@@ -100,10 +100,13 @@ class Schemas {
         logger.debug("tableExists(): tableName={}", tableName);
         ResultSet resultSet = connection.getMetaData().getTables(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), null);
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
             return resultSet.next();
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
         } finally {
-            resultSet.close();
+            closer.close();
         }
     }
 
@@ -112,14 +115,17 @@ class Schemas {
         List<Column> columns = Lists.newArrayList();
         ResultSet resultSet = connection.getMetaData().getColumns(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), null);
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
             while (resultSet.next()) {
                 String columnName = resultSet.getString("COLUMN_NAME").toLowerCase(Locale.ENGLISH);
                 int columnType = resultSet.getInt("DATA_TYPE");
                 columns.add(new Column(columnName, columnType));
             }
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
         } finally {
-            resultSet.close();
+            closer.close();
         }
         return ImmutableList.copyOf(columns);
     }
@@ -167,6 +173,7 @@ class Schemas {
         }
         ResultSet resultSet = connection.getMetaData().getColumns(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), null);
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
             while (resultSet.next()) {
                 Column column = remaining.remove(resultSet.getString("COLUMN_NAME"));
@@ -177,8 +184,10 @@ class Schemas {
                     return true;
                 }
             }
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
         } finally {
-            resultSet.close();
+            closer.close();
         }
         return !remaining.isEmpty();
     }
@@ -188,6 +197,7 @@ class Schemas {
             throws SQLException {
         ResultSet resultSet = connection.getMetaData().getPrimaryKeys(null, null,
                 tableName.toUpperCase(Locale.ENGLISH));
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
             for (PrimaryKeyColumn primaryKeyColumn : primaryKeyColumns) {
                 if (!resultSet.next() || !primaryKeyColumn.getName()
@@ -197,8 +207,10 @@ class Schemas {
             }
             // not ok to have extra columns on primary key
             return resultSet.next();
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
         } finally {
-            resultSet.close();
+            closer.close();
         }
     }
 
@@ -208,6 +220,7 @@ class Schemas {
         ListMultimap<String, String> indexColumns = ArrayListMultimap.create();
         ResultSet resultSet = connection.getMetaData().getIndexInfo(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), false, false);
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
             while (resultSet.next()) {
                 String indexName = resultSet.getString("INDEX_NAME");
@@ -218,8 +231,10 @@ class Schemas {
                     indexColumns.put(indexName, columnName);
                 }
             }
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
         } finally {
-            resultSet.close();
+            closer.close();
         }
         ImmutableSet.Builder<Index> indexes = ImmutableSet.builder();
         // ? extends String needed for checker framework, see issue #311

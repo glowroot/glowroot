@@ -26,8 +26,7 @@ import javax.annotation.concurrent.Immutable;
 import javax.tools.ToolProvider;
 
 import com.google.common.base.Splitter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.common.io.Closer;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
@@ -42,8 +41,6 @@ import org.glowroot.jvm.OptionalService.OptionalServiceFactoryHelper;
 @Immutable
 public class HeapHistograms {
 
-    private static final Logger logger = LoggerFactory.getLogger(HeapHistograms.class);
-
     private final Method attachMethod;
     private final Method heapHistoMethod;
     private final Method detachMethod;
@@ -57,24 +54,19 @@ public class HeapHistograms {
 
     public String heapHistogramJson() throws HeapHistogramException {
         InputStream in = heapHisto();
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-        IOException exception = null;
         try {
-            return process(reader);
-        } catch (IOException e) {
-            exception = e;
-            throw new HeapHistogramException(e);
-        } finally {
+            // Closer is used to simulate Java 7 try-with-resources
+            Closer closer = Closer.create();
+            BufferedReader reader = closer.register(new BufferedReader(new InputStreamReader(in)));
             try {
-                reader.close();
-            } catch (IOException e) {
-                if (exception == null) {
-                    // don't re-throw since it could suppress a non-IOException thrown above
-                    // but at least log it in this case
-                    // (ideally would use JDK7 try-with-resources which handles these corner cases)
-                    logger.error(e.getMessage(), e);
-                }
+                return process(reader);
+            } catch (Throwable t) {
+                throw closer.rethrow(t);
+            } finally {
+                closer.close();
             }
+        } catch (IOException e) {
+            throw new HeapHistogramException(e);
         }
     }
 

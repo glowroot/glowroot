@@ -40,6 +40,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.io.Closer;
 import com.google.common.io.Resources;
 import org.objectweb.asm.ClassReader;
 import org.slf4j.Logger;
@@ -218,18 +219,19 @@ class ClasspathCache {
     }
 
     private void loadTypeNamesFromJarFile(URI jarUri) throws IOException {
-        JarInputStream jarIn = new JarInputStream(jarUri.toURL().openStream());
-        Manifest manifest = jarIn.getManifest();
-        if (manifest != null) {
-            String classpath = manifest.getMainAttributes().getValue("Class-Path");
-            if (classpath != null) {
-                for (String path : Splitter.on(' ').omitEmptyStrings().split(classpath)) {
-                    URI uri = jarUri.resolve(path);
-                    loadTypeNames(uri);
+        Closer closer = Closer.create();
+        JarInputStream jarIn = closer.register(new JarInputStream(jarUri.toURL().openStream()));
+        try {
+            Manifest manifest = jarIn.getManifest();
+            if (manifest != null) {
+                String classpath = manifest.getMainAttributes().getValue("Class-Path");
+                if (classpath != null) {
+                    for (String path : Splitter.on(' ').omitEmptyStrings().split(classpath)) {
+                        URI uri = jarUri.resolve(path);
+                        loadTypeNames(uri);
+                    }
                 }
             }
-        }
-        try {
             JarEntry jarEntry;
             while ((jarEntry = jarIn.getNextJarEntry()) != null) {
                 if (jarEntry.isDirectory()) {
@@ -239,15 +241,19 @@ class ClasspathCache {
                 if (name.endsWith(".class")) {
                     String typeName = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
                     // TODO test if this works with jar loaded over http protocol
-                    URI fileURI = new URI("jar", jarUri.getScheme() + ":" + jarUri.getPath()
-                            + "!/" + name, "");
-                    addTypeName(typeName, fileURI);
+                    try {
+                        URI fileURI = new URI("jar", jarUri.getScheme() + ":" + jarUri.getPath()
+                                + "!/" + name, "");
+                        addTypeName(typeName, fileURI);
+                    } catch (URISyntaxException e) {
+                        logger.error(e.getMessage(), e);
+                    }
                 }
             }
-        } catch (URISyntaxException e) {
-            logger.error(e.getMessage(), e);
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
         } finally {
-            jarIn.close();
+            closer.close();
         }
     }
 

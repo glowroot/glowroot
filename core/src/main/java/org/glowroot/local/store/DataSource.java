@@ -119,10 +119,13 @@ public class DataSource {
                 return;
             }
             Statement statement = connection.createStatement();
+            StatementCloser closer = new StatementCloser(statement);
             try {
                 statement.execute(sql);
+            } catch (Throwable t) {
+                throw closer.rethrow(t);
             } finally {
-                statement.close();
+                closer.close();
             }
         }
     }
@@ -163,14 +166,17 @@ public class DataSource {
                 preparedStatement.setObject(i + 1, args.get(i));
             }
             ResultSet resultSet = preparedStatement.executeQuery();
+            ResultSetCloser closer = new ResultSetCloser(resultSet);
             try {
                 List<T> mappedRows = Lists.newArrayList();
                 while (resultSet.next()) {
                     mappedRows.add(rowMapper.mapRow(resultSet));
                 }
                 return ImmutableList.copyOf(mappedRows);
+            } catch (Throwable t) {
+                throw closer.rethrow(t);
             } finally {
-                resultSet.close();
+                closer.close();
             }
             // don't need to close statement since they are all cached and used under lock
         }
@@ -187,10 +193,13 @@ public class DataSource {
                 preparedStatement.setObject(i + 1, args.get(i));
             }
             ResultSet resultSet = preparedStatement.executeQuery();
+            ResultSetCloser closer = new ResultSetCloser(resultSet);
             try {
                 return rse.extractData(resultSet);
+            } catch (Throwable t) {
+                throw closer.rethrow(t);
             } finally {
-                resultSet.close();
+                closer.close();
             }
             // don't need to close statement since they are all cached and used under lock
         }
@@ -289,10 +298,13 @@ public class DataSource {
             preparedStatement.setObject(i + 1, args[i]);
         }
         ResultSet resultSet = preparedStatement.executeQuery();
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
             return rse.extractData(resultSet);
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
         } finally {
-            resultSet.close();
+            closer.close();
         }
         // don't need to close statement since they are all cached and used under lock
     }
