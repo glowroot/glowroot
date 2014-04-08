@@ -92,7 +92,19 @@ class LocalTraceService extends TraceService {
     @Override
     @Nullable
     public Trace getLastTrace() throws Exception {
-        Snapshot snapshot = snapshotDao.getLastSnapshot();
+        // check pending traces first
+        List<org.glowroot.trace.model.Trace> pendingTraces =
+                Lists.newArrayList(traceCollector.getPendingCompleteTraces());
+        if (pendingTraces.size() > 1) {
+            throw new AssertionError("Unexpected multiple pending traces during test");
+        }
+        Snapshot snapshot = null;
+        if (pendingTraces.size() == 1) {
+            snapshot = traceCommonService.getSnapshot(pendingTraces.get(0).getId());
+        } else {
+            // no pending traces, so check stored snapshots
+            snapshot = snapshotDao.getLastSnapshot();
+        }
         if (snapshot == null) {
             return null;
         }

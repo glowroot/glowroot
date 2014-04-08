@@ -60,8 +60,9 @@ public class TraceCommonService {
         this.ticker = ticker;
     }
 
+    @VisibleForTesting
     @Nullable
-    Snapshot getSnapshot(String traceId) throws IOException {
+    public Snapshot getSnapshot(String traceId) throws IOException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {
