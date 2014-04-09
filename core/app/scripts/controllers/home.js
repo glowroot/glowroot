@@ -23,9 +23,10 @@ glowroot.controller('HomeCtrl', [
   '$http',
   '$q',
   '$timeout',
-  'traceModal',
+  '$modal',
   'queryStrings',
-  function ($scope, $location, $filter, $http, $q, $timeout, traceModal, queryStrings) {
+  'httpErrors',
+  function ($scope, $location, $filter, $http, $q, $timeout, $modal, queryStrings, httpErrors) {
     // \u00b7 is &middot;
     document.title = 'Home \u00b7 Glowroot';
     $scope.$parent.title = 'Home';
@@ -43,10 +44,10 @@ glowroot.controller('HomeCtrl', [
     var $chart = $('#chart');
 
     // top 25 is a nice number, screen is not too large
-    var transactionAggregatesLimit = 25;
+    var transactionLimit = 25;
 
     // this is used to calculate bar width under transaction name representing the proportion of total time
-    var maxTransactionAggregateTotalMicros;
+    var maxTransactionTotalMicros;
 
     $scope.$watchCollection('[containerWidth, windowHeight]', function () {
       plot.resize();
@@ -125,21 +126,21 @@ glowroot.controller('HomeCtrl', [
       if (!skipUpdateTransactions) {
         // TODO this conditional will be always true once the home page displays metric stacked chart and
         // skipUpdateTransactions is not needed
-        var aggregatesDeferred;
+        var transactionsDeferred;
         if (refreshButtonDeferred) {
-          aggregatesDeferred = $q.defer();
-          $q.all([pointsDeferred.promise, aggregatesDeferred.promise])
+          transactionsDeferred = $q.defer();
+          $q.all([pointsDeferred.promise, transactionsDeferred.promise])
               .then(function () {
                 refreshButtonDeferred.resolve('Success');
               }, function (data) {
                 refreshButtonDeferred.resolve(data);
               });
         }
-        // give the points request above a small head start since otherwise the aggregate query could get handled first,
-        // which isn't that bad, but the aggregate query is much slower and the glowroot http handler is throttled to
-        // one thread currently
+        // give the points request above a small head start since otherwise the transactions query could get handled
+        // first, which isn't that bad, but the aggregate query is much slower and the glowroot http handler is
+        // throttled to one thread currently
         $timeout(function () {
-          updateAggregates(aggregatesDeferred);
+          updateTransactions(transactionsDeferred);
         }, 5);
       }
     }
@@ -291,69 +292,87 @@ glowroot.controller('HomeCtrl', [
       }
     });
 
-    $scope.showTableOverlay = 0;
-    $scope.showTableSpinner = 0;
+    $scope.viewTransactionDetail = function () {
+      var transactionQuery = {
+        from: $scope.chartFrom,
+        to: $scope.chartTo,
+        transactionName: $scope.selectedTransactionName
+      };
+      $modal.open({
+        templateUrl: 'views/transaction-detail.html',
+        controller: 'TransactionDetailCtrl',
+        windowClass: 'full-screen-modal',
+        resolve: {
+          transactionQuery: function() {
+            return transactionQuery;
+          }
+        }
+      });
+    };
 
-    function updateAggregates(buttonDeferred) {
+    $scope.showTransactionTableOverlay = 0;
+    $scope.showTransactionTableSpinner = 0;
+
+    function updateTransactions(buttonDeferred) {
       var query = {
         from: $scope.chartFrom,
         to: $scope.chartTo,
         sortAttribute: $scope.tableSortAttribute,
         sortDirection: $scope.tableSortDirection,
         // +1 just to find out if there are more and to show "Show more" button, the +1 will not be displayed
-        transactionAggregatesLimit: transactionAggregatesLimit + 1
+        limit: transactionLimit + 1
       };
-      $scope.showTableOverlay++;
+      $scope.showTransactionTableOverlay++;
       if (!buttonDeferred) {
         // show table spinner if not triggered from refresh button or show more button
-        $scope.showTableSpinner++;
+        $scope.showTransactionTableSpinner++;
       }
-      $http.get('backend/home/aggregates?' + queryStrings.encodeObject(query))
+      $http.get('backend/home/transactions?' + queryStrings.encodeObject(query))
           .success(function (data) {
-            $scope.showTableOverlay--;
+            $scope.showTransactionTableOverlay--;
             if (!buttonDeferred) {
-              $scope.showTableSpinner--;
+              $scope.showTransactionTableSpinner--;
             }
-            $scope.aggregatesError = false;
-            $scope.overallAggregate = data.overallAggregate;
-            if (data.transactionAggregates.length === transactionAggregatesLimit + 1) {
-              data.transactionAggregates.pop();
-              $scope.hasMoreAggregates = true;
+            $scope.transactionTableError = false;
+            $scope.overall = data.overall;
+            if (data.transactions.length === query.limit) {
+              data.transactions.pop();
+              $scope.hasMoreTransactions = true;
             } else {
-              $scope.hasMoreAggregates = false;
+              $scope.hasMoreTransactions = false;
             }
-            $scope.transactionAggregates = data.transactionAggregates;
-            maxTransactionAggregateTotalMicros = 0;
-            angular.forEach($scope.transactionAggregates, function (transactionAggregate) {
-              maxTransactionAggregateTotalMicros =
-                  Math.max(maxTransactionAggregateTotalMicros, transactionAggregate.totalMicros);
+            $scope.transactions = data.transactions;
+            maxTransactionTotalMicros = 0;
+            angular.forEach($scope.transactions, function (transaction) {
+              maxTransactionTotalMicros =
+                  Math.max(maxTransactionTotalMicros, transaction.totalMicros);
             });
             if (buttonDeferred) {
               buttonDeferred.resolve();
             }
           })
           .error(function (data, status) {
-            $scope.showTableOverlay--;
+            $scope.showTransactionTableOverlay--;
             if (!buttonDeferred) {
-              $scope.showTableSpinner--;
+              $scope.showTransactionTableSpinner--;
             }
             if (status === 0) {
-              $scope.aggregatesError = 'Unable to connect to server';
+              $scope.transactionTableError = 'Unable to connect to server';
             } else {
-              $scope.aggregatesError = 'An error occurred';
+              $scope.transactionTableError = 'An error occurred';
             }
             if (buttonDeferred) {
-              buttonDeferred.reject($scope.aggregatesError);
+              buttonDeferred.reject($scope.transactionTableError);
             }
           });
     }
 
-    $scope.overallAggregateAverage = function () {
-      if (!$scope.overallAggregate) {
-        // overallAggregate hasn't loaded yet
+    $scope.overallAverage = function () {
+      if (!$scope.overall) {
+        // overall hasn't loaded yet
         return '';
-      } else if ($scope.overallAggregate.count) {
-        return (($scope.overallAggregate.totalMicros / $scope.overallAggregate.count) / 1000000).toFixed(2);
+      } else if ($scope.overall.count) {
+        return (($scope.overall.totalMicros / $scope.overall.count) / 1000000).toFixed(2);
       } else {
         return '-';
       }
@@ -372,7 +391,7 @@ glowroot.controller('HomeCtrl', [
         $scope.tableSortDirection = 'desc';
       }
       updateLocation();
-      updateAggregates();
+      updateTransactions();
     };
 
     $scope.sortIconClass = function (attributeName) {
@@ -389,7 +408,7 @@ glowroot.controller('HomeCtrl', [
     $scope.tracesQueryString = function (transactionName) {
       if (transactionName) {
         return queryStrings.encodeObject({
-          // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
+          // from is adjusted because transactions are really aggregates of the interval before the transaction point
           from: $scope.chartFrom - fixedAggregationIntervalMillis,
           to: $scope.chartTo,
           transactionName: transactionName,
@@ -398,7 +417,7 @@ glowroot.controller('HomeCtrl', [
         });
       } else {
         return queryStrings.encodeObject({
-          // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
+          // from is adjusted because transactions are really aggregates of the interval before the transaction point
           from: $scope.chartFrom - fixedAggregationIntervalMillis,
           to: $scope.chartTo,
           background: 'false'
@@ -406,10 +425,10 @@ glowroot.controller('HomeCtrl', [
       }
     };
 
-    $scope.showMoreAggregates = function (deferred) {
+    $scope.showMoreTransactions = function (deferred) {
       // double each time
-      transactionAggregatesLimit *= 2;
-      updateAggregates(deferred);
+      transactionLimit *= 2;
+      updateTransactions(deferred);
     };
 
     $scope.updateFilterLimit = function (limit) {
@@ -430,7 +449,7 @@ glowroot.controller('HomeCtrl', [
     };
 
     $scope.transactionBarWidth = function (totalMicros) {
-      return (totalMicros / maxTransactionAggregateTotalMicros) * 100 + '%';
+      return (totalMicros / maxTransactionTotalMicros) * 100 + '%';
     };
 
     // TODO CONVERT TO ANGULARJS, global $http error handler?
@@ -439,7 +458,6 @@ glowroot.controller('HomeCtrl', [
     $('#zoomOut').click(function () {
       plot.zoomOut();
     });
-    $('#modalHide').click(traceModal.hideModal);
 
     var chartFromToDefault;
 
@@ -498,7 +516,7 @@ glowroot.controller('HomeCtrl', [
         grid: {
           hoverable: true,
           mouseActiveRadius: 10,
-          // min border margin should match aggregate chart so they are positioned the same from the top of page
+          // min border margin should match trace chart so they are positioned the same from the top of page
           // without specifying min border margin, the point radius is used
           minBorderMargin: 10,
           borderColor: '#7d7358',

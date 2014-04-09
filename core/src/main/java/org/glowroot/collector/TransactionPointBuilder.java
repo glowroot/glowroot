@@ -18,6 +18,7 @@ package org.glowroot.collector;
 import java.io.IOException;
 import java.util.Map;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -25,7 +26,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 
-import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.trace.model.MergedStackTree;
 import org.glowroot.trace.model.Metric;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -36,7 +37,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 // must be used under an appropriate lock
 @NotThreadSafe
-public class AggregateBuilder {
+public class TransactionPointBuilder {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
 
@@ -45,39 +46,10 @@ public class AggregateBuilder {
     private long count;
     private long errorCount;
     private long storedTraceCount;
-    private final AggregateMetric syntheticRootAggregateMetric = new AggregateMetric("");
+    private final TransactionMetric syntheticRootTransactionMetric = new TransactionMetric("");
+    private final TransactionProfileBuilder transactionProfile = new TransactionProfileBuilder();
 
-    AggregateBuilder() {}
-
-    @OnlyUsedByTests
-    public AggregateBuilder(long totalMicros, long count) {
-        this.totalMicros = totalMicros;
-        this.count = count;
-    }
-
-    public long getTotalMicros() {
-        return totalMicros;
-    }
-
-    public long getCount() {
-        return count;
-    }
-
-    public long getErrorCount() {
-        return errorCount;
-    }
-
-    public long getStoredTraceCount() {
-        return storedTraceCount;
-    }
-
-    public String getMetricsJson() throws IOException {
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        writeAggregateMetric(jg, syntheticRootAggregateMetric);
-        jg.close();
-        return sb.toString();
-    }
+    TransactionPointBuilder() {}
 
     void add(long duration) {
         totalMicros += NANOSECONDS.toMicros(duration);
@@ -93,45 +65,71 @@ public class AggregateBuilder {
     }
 
     void addToMetrics(Metric rootMetric) {
-        addToMetrics(rootMetric, syntheticRootAggregateMetric);
+        addToMetrics(rootMetric, syntheticRootTransactionMetric);
     }
 
-    private void addToMetrics(Metric metric, AggregateMetric parentAggregateMetric) {
+    void addToProfile(MergedStackTree profile) {
+        transactionProfile.addProfile(profile);
+    }
+
+    TransactionPoint build(long captureTime) throws IOException {
+        return new TransactionPoint(captureTime, totalMicros, count, errorCount, storedTraceCount,
+                getMetricsJson(), getProfileJson());
+    }
+
+    private void addToMetrics(Metric metric, TransactionMetric parentTransactionMetric) {
         String name = metric.getMetricName().getName();
-        AggregateMetric aggregateMetric = parentAggregateMetric.nestedMetrics.get(name);
-        if (aggregateMetric == null) {
-            aggregateMetric = new AggregateMetric(name);
-            parentAggregateMetric.nestedMetrics.put(name, aggregateMetric);
+        TransactionMetric transactionMetric = parentTransactionMetric.nestedMetrics.get(name);
+        if (transactionMetric == null) {
+            transactionMetric = new TransactionMetric(name);
+            parentTransactionMetric.nestedMetrics.put(name, transactionMetric);
         }
-        aggregateMetric.totalMicros += NANOSECONDS.toMicros(metric.getTotal());
-        aggregateMetric.count += metric.getCount();
+        transactionMetric.totalMicros += NANOSECONDS.toMicros(metric.getTotal());
+        transactionMetric.count += metric.getCount();
         for (Metric nestedMetric : metric.getNestedMetrics()) {
-            addToMetrics(nestedMetric, aggregateMetric);
+            addToMetrics(nestedMetric, transactionMetric);
         }
     }
 
-    private void writeAggregateMetric(JsonGenerator jg, AggregateMetric metric) throws IOException {
+    private String getMetricsJson() throws IOException {
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+        writeTransactionMetric(jg, syntheticRootTransactionMetric);
+        jg.close();
+        return sb.toString();
+    }
+
+    @Nullable
+    private String getProfileJson() throws IOException {
+        synchronized (transactionProfile.getLock()) {
+            return ProfileCharSourceCreator
+                    .createProfile(transactionProfile.getSyntheticRootNode());
+        }
+    }
+
+    private void writeTransactionMetric(JsonGenerator jg, TransactionMetric metric)
+            throws IOException {
         jg.writeStartObject();
         jg.writeStringField("name", metric.name);
         jg.writeNumberField("totalMicros", metric.totalMicros);
         jg.writeNumberField("count", metric.count);
         if (!metric.nestedMetrics.isEmpty()) {
             jg.writeArrayFieldStart("nestedMetrics");
-            for (AggregateMetric nestedMetric : metric.nestedMetrics.values()) {
-                writeAggregateMetric(jg, nestedMetric);
+            for (TransactionMetric nestedMetric : metric.nestedMetrics.values()) {
+                writeTransactionMetric(jg, nestedMetric);
             }
             jg.writeEndArray();
         }
         jg.writeEndObject();
     }
 
-    static class AggregateMetric {
+    static class TransactionMetric {
         private final String name;
         // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
         private long totalMicros;
         private long count;
-        private final Map<String, AggregateMetric> nestedMetrics = Maps.newHashMap();
-        private AggregateMetric(String name) {
+        private final Map<String, TransactionMetric> nestedMetrics = Maps.newHashMap();
+        private TransactionMetric(String name) {
             this.name = name;
         }
     }

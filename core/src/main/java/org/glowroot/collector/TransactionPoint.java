@@ -13,35 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.local.store;
+package org.glowroot.collector;
 
-import org.glowroot.markers.UsedByJsonBinding;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@UsedByJsonBinding
-public class TransactionAggregate {
+@Immutable
+public class TransactionPoint {
 
-    private final String transactionName;
+    private final long captureTime;
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
     private final long totalMicros;
     private final long count;
     private final long errorCount;
     private final long storedTraceCount;
+    private final String metrics;
+    @Nullable
+    private final String profile;
 
-    TransactionAggregate(String transactionName, long totalMicros, long count,
-            long errorCount, long storedTraceCount) {
-        this.transactionName = transactionName;
+    public TransactionPoint(long captureTime, long totalMicros, long count, long errorCount,
+            long storedTraceCount, String metrics, @Nullable String profile) {
+        this.captureTime = captureTime;
         this.totalMicros = totalMicros;
         this.count = count;
         this.errorCount = errorCount;
         this.storedTraceCount = storedTraceCount;
+        this.metrics = metrics;
+        this.profile = profile;
     }
 
-    public String getTransactionName() {
-        return transactionName;
+    public long getCaptureTime() {
+        return captureTime;
     }
 
     public long getTotalMicros() {
@@ -58,5 +64,14 @@ public class TransactionAggregate {
 
     public long getStoredTraceCount() {
         return storedTraceCount;
+    }
+
+    public String getMetrics() {
+        return metrics;
+    }
+
+    @Nullable
+    public String getProfile() {
+        return profile;
     }
 }

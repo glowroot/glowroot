@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
@@ -29,6 +30,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -114,6 +116,7 @@ public class DataSource {
     }
 
     void execute(String sql) throws SQLException {
+        debug(sql);
         synchronized (lock) {
             if (closing) {
                 return;
@@ -131,6 +134,7 @@ public class DataSource {
     }
 
     long queryForLong(final String sql, Object... args) throws SQLException {
+        debug(sql, args);
         synchronized (lock) {
             if (closing) {
                 return 0;
@@ -157,6 +161,7 @@ public class DataSource {
 
     <T extends /*@NonNull*/Object> ImmutableList<T> query(String sql, ImmutableList<?> args,
             RowMapper<T> rowMapper) throws SQLException {
+        debug(sql, args);
         synchronized (lock) {
             if (closing) {
                 return ImmutableList.of();
@@ -184,6 +189,7 @@ public class DataSource {
 
     @Nullable
     <T> T query(String sql, ImmutableList<?> args, ResultSetExtractor<T> rse) throws SQLException {
+        debug(sql, args);
         synchronized (lock) {
             if (closing) {
                 return null;
@@ -206,6 +212,7 @@ public class DataSource {
     }
 
     int update(String sql, @Nullable Object... args) throws SQLException {
+        debug(sql, args);
         if (closing) {
             // this can get called a lot inserting trace snapshots, and these can get backlogged
             // on the lock below during jvm shutdown without pre-checking here (and backlogging
@@ -227,6 +234,7 @@ public class DataSource {
 
     int[] batchUpdate(String sql, BatchAdder batchAdder)
             throws SQLException {
+        debug(sql);
         if (closing) {
             // this can get called a lot inserting trace snapshots, and these can get backlogged
             // on the lock below during jvm shutdown without pre-checking here (and backlogging
@@ -348,6 +356,30 @@ public class DataSource {
             }
             url += ";db_close_on_exit=false;compress_lob=lzf";
             return new JdbcConnection(url, props);
+        }
+    }
+
+    private static void debug(String sql, @Nullable Object... args) {
+        debug(sql, Arrays.asList(args));
+    }
+
+    private static void debug(String sql, List<?> args) {
+        if (logger.isDebugEnabled()) {
+            if (args.isEmpty()) {
+                logger.debug(sql);
+            } else {
+                List<String> argStrings = Lists.newArrayList();
+                for (Object arg : args) {
+                    if (arg instanceof String) {
+                        argStrings.add('\'' + (String) arg + '\'');
+                    } else if (arg == null) {
+                        argStrings.add("NULL");
+                    } else {
+                        argStrings.add(arg.toString());
+                    }
+                }
+                logger.debug("{} [{}]", sql, Joiner.on(", ").join(argStrings));
+            }
         }
     }
 

@@ -88,8 +88,8 @@ public class GlowrootModule {
             throw new StartupFailedException(e);
         }
         collectorModule = new CollectorModule(clock, ticker, configModule,
-                storageModule.getSnapshotRepository(), storageModule.getAggregateRepository(),
-                scheduledExecutor, viewerMode);
+                storageModule.getSnapshotRepository(),
+                storageModule.getTransactionPointRepository(), scheduledExecutor, viewerMode);
         traceModule = new TraceModule(ticker, clock, configModule,
                 collectorModule.getTraceCollector(),
                 jvmModule.getThreadAllocatedBytes().getService(), instrumentation,

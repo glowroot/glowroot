@@ -43,17 +43,18 @@ public class CollectorModule {
 
     private final TraceCollectorImpl traceCollector;
     @Nullable
-    private final Aggregator aggregator;
+    private final TransactionAggregator aggregator;
 
     public CollectorModule(Clock clock, Ticker ticker, ConfigModule configModule,
-            SnapshotRepository snapshotRepository, AggregateRepository aggregateRepository,
+            SnapshotRepository snapshotRepository,
+            TransactionPointRepository transactionPointRepository,
             ScheduledExecutorService scheduledExecutor, boolean aggregatorDisabled) {
         ConfigService configService = configModule.getConfigService();
         if (aggregatorDisabled) {
             aggregator = null;
         } else {
-            aggregator = new Aggregator(scheduledExecutor, aggregateRepository, clock,
-                    fixedAggregationIntervalSeconds);
+            aggregator = new TransactionAggregator(scheduledExecutor, transactionPointRepository,
+                    clock, fixedAggregationIntervalSeconds);
         }
         traceCollector = new TraceCollectorImpl(scheduledExecutor, configService,
                 snapshotRepository, aggregator, clock, ticker);

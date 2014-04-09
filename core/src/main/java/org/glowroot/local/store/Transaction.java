@@ -15,27 +15,30 @@
  */
 package org.glowroot.local.store;
 
-import org.glowroot.markers.UsedByJsonBinding;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@UsedByJsonBinding
-public class OverallAggregate {
+public class Transaction {
 
+    private final String name;
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
     private final long totalMicros;
     private final long count;
     private final long errorCount;
     private final long storedTraceCount;
 
-    OverallAggregate(long totalMicros, long count, long errorCount,
-            long storedTraceCount) {
+    Transaction(String name, long totalMicros, long count, long errorCount, long storedTraceCount) {
+        this.name = name;
         this.totalMicros = totalMicros;
         this.count = count;
         this.errorCount = errorCount;
         this.storedTraceCount = storedTraceCount;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public long getTotalMicros() {

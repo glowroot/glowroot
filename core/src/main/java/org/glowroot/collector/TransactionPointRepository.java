@@ -18,17 +18,13 @@ package org.glowroot.collector;
 import java.util.Map;
 
 /**
- * Interface for storing aggregates.
+ * Interface for storing transaction points.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface AggregateRepository {
+public interface TransactionPointRepository {
 
-    // implementations must be aware that Aggregate instances are not thread safe and cannot be
-    // retained for later use
-    void store(long captureTime, AggregateBuilder overallAggregate,
-            Map<String, AggregateBuilder> transactionAggregates,
-            AggregateBuilder bgOverallAggregate,
-            Map<String, AggregateBuilder> bgTransactionAggregates);
+    void store(String transactionType, TransactionPoint overallPoint,
+            Map<String, TransactionPoint> transactionPoints);
 }

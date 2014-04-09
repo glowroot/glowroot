@@ -25,11 +25,11 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -54,7 +54,7 @@ public class MergedStackTree {
     @GuardedBy("lock")
     private final List<State> unmergedStackTraceThreadStates = Lists.newArrayList();
     @GuardedBy("lock")
-    private final List<MergedStackTreeNode> rootNodes = Lists.newArrayList();
+    private final MergedStackTreeNode syntheticRootNode = MergedStackTreeNode.createSyntheticRoot();
 
     public Object getLock() {
         return lock;
@@ -62,10 +62,9 @@ public class MergedStackTree {
 
     // must be holding lock to call and can only use resulting node tree inside the same
     // synchronized block
-    @Nullable
-    public MergedStackTreeNode getRootNode() {
+    public MergedStackTreeNode getSyntheticRootNode() {
         mergeTheUnmergedStackTraces();
-        return MergedStackTreeNode.createSyntheticRoot(rootNodes);
+        return syntheticRootNode;
     }
 
     void addStackTrace(ThreadInfo threadInfo) {
@@ -94,8 +93,9 @@ public class MergedStackTree {
     // must be holding lock to call
     @VisibleForTesting
     public void addToStackTree(List<StackTraceElementPlus> stackTrace, State threadState) {
-        MergedStackTreeNode lastMatchedNode = null;
-        List<MergedStackTreeNode> nextChildNodes = rootNodes;
+        syntheticRootNode.incrementSampleCount(1);
+        MergedStackTreeNode lastMatchedNode = syntheticRootNode;
+        List<MergedStackTreeNode> nextChildNodes = syntheticRootNode.getChildNodes();
         int nextIndex;
         // navigate the stack tree nodes
         // matching the new stack trace as far as possible
@@ -107,7 +107,7 @@ public class MergedStackTree {
                 if (matches(element.getStackTraceElement(), childNode, nextIndex == 0,
                         threadState)) {
                     // match found, update lastMatchedNode and break out of the inner loop
-                    childNode.incrementSampleCount();
+                    childNode.incrementSampleCount(1);
                     // the metric names for a given stack element should always match, unless
                     // the line numbers aren't available and overloaded methods are matched up, or
                     // the stack trace was captured while one of the synthetic $metric$ methods was
@@ -131,18 +131,16 @@ public class MergedStackTree {
         // add remaining stack trace elements
         for (int i = nextIndex; i >= 0; i--) {
             StackTraceElementPlus element = stackTrace.get(i);
-            MergedStackTreeNode nextNode = MergedStackTreeNode.create(
-                    element.getStackTraceElement(), element.getMetricNames());
+            MergedStackTreeNode nextNode;
             if (i == 0) {
                 // leaf node
-                nextNode.setLeafThreadState(threadState);
-            }
-            if (lastMatchedNode == null) {
-                // new root node
-                rootNodes.add(nextNode);
+                nextNode = MergedStackTreeNode.create(element.getStackTraceElement(), threadState);
             } else {
-                lastMatchedNode.addChildNode(nextNode);
+                nextNode = MergedStackTreeNode.create(element.getStackTraceElement(), null);
             }
+            nextNode.setMetricNames(element.getMetricNames());
+            nextNode.incrementSampleCount(1);
+            lastMatchedNode.addChildNode(nextNode);
             lastMatchedNode = nextNode;
         }
     }
@@ -151,7 +149,9 @@ public class MergedStackTree {
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("rootNodes", rootNodes)
+                .add("unmergedStackTraces", unmergedStackTraces)
+                .add("unmergedStackTraceThreadStates", unmergedStackTraceThreadStates)
+                .add("syntheticRootNode", syntheticRootNode)
                 .toString();
     }
 
@@ -166,7 +166,7 @@ public class MergedStackTree {
             String metricName = getMetricName(element);
             if (metricName != null) {
                 String originalMethodName = element.getMethodName();
-                List<String> metricNames = Lists.newArrayList();
+                List<String> metricNames = Lists.newArrayListWithCapacity(2);
                 metricNames.add(metricName);
                 // skip over successive $metric$ methods up to and including the "original" method
                 while (i.hasNext()) {
@@ -187,7 +187,7 @@ public class MergedStackTree {
                         originalMethodName, element.getFileName(), element.getLineNumber());
                 stackTracePlus.add(new StackTraceElementPlus(originalElement, metricNames));
             } else {
-                stackTracePlus.add(new StackTraceElementPlus(element, null));
+                stackTracePlus.add(new StackTraceElementPlus(element, ImmutableList.<String>of()));
             }
         }
         return stackTracePlus;
@@ -219,21 +219,18 @@ public class MergedStackTree {
         }
     }
 
-    @NotThreadSafe
     public static class StackTraceElementPlus {
         private final StackTraceElement stackTraceElement;
-        @Nullable
-        private final List<String> metricNames;
+        private final ImmutableList<String> metricNames;
         private StackTraceElementPlus(StackTraceElement stackTraceElement,
-                @Nullable List<String> metricNames) {
+                List<String> metricNames) {
             this.stackTraceElement = stackTraceElement;
-            this.metricNames = metricNames;
+            this.metricNames = ImmutableList.copyOf(metricNames);
         }
         public StackTraceElement getStackTraceElement() {
             return stackTraceElement;
         }
-        @Nullable
-        private List<String> getMetricNames() {
+        public ImmutableList<String> getMetricNames() {
             return metricNames;
         }
     }

@@ -33,9 +33,9 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.collector.TraceCollectorImpl;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PointcutConfig;
-import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.SnapshotDao;
+import org.glowroot.local.store.TransactionPointDao;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
 import org.glowroot.trace.PointcutConfigAdviceCache;
@@ -54,7 +54,7 @@ class AdminJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
 
-    private final AggregateDao aggregateDao;
+    private final TransactionPointDao transactionPointDao;
     private final SnapshotDao snapshotDao;
     private final ConfigService configService;
     private final PointcutConfigAdviceCache pointcutConfigAdviceCache;
@@ -65,11 +65,11 @@ class AdminJsonService {
     private final DataSource dataSource;
     private final TraceRegistry traceRegistry;
 
-    AdminJsonService(AggregateDao aggregateDao, SnapshotDao snapshotDao,
+    AdminJsonService(TransactionPointDao transactionPointDao, SnapshotDao snapshotDao,
             ConfigService configService, PointcutConfigAdviceCache pointcutConfigAdviceCache,
             ParsedTypeCache parsedTypeCache, @Nullable Instrumentation instrumentation,
             TraceCollectorImpl traceCollector, DataSource dataSource, TraceRegistry traceRegistry) {
-        this.aggregateDao = aggregateDao;
+        this.transactionPointDao = transactionPointDao;
         this.snapshotDao = snapshotDao;
         this.configService = configService;
         this.pointcutConfigAdviceCache = pointcutConfigAdviceCache;
@@ -83,7 +83,7 @@ class AdminJsonService {
     @POST("/backend/admin/data/delete-all")
     void deleteAllData() {
         logger.debug("deleteAllData()");
-        aggregateDao.deleteAllAggregates();
+        transactionPointDao.deleteAll();
         snapshotDao.deleteAllSnapshots();
     }
 

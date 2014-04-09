@@ -39,11 +39,11 @@ import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.jvm.JvmModule;
-import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.local.store.StorageModule;
+import org.glowroot.local.store.TransactionPointDao;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.trace.TraceModule;
@@ -85,7 +85,7 @@ public class LocalUiModule {
         ConfigService configService = configModule.getConfigService();
         PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();
 
-        AggregateDao aggregateDao = storageModule.getAggregateDao();
+        TransactionPointDao transactionPointDao = storageModule.getTransactionPointDao();
         SnapshotDao snapshotDao = storageModule.getSnapshotDao();
         DataSource dataSource = storageModule.getDataSource();
         CappedDatabase cappedDatabase = storageModule.getCappedDatabase();
@@ -104,8 +104,9 @@ public class LocalUiModule {
         String baseHref = getBaseHref(properties);
         IndexHtmlService indexHtmlService =
                 new IndexHtmlService(baseHref, httpSessionManager, layoutJsonService);
-        HomeJsonService homeJsonService = new HomeJsonService(storageModule.getAggregateDao(),
-                clock, collectorModule.getFixedAggregationIntervalSeconds());
+        HomeJsonService homeJsonService =
+                new HomeJsonService(storageModule.getTransactionPointDao(), clock,
+                        collectorModule.getFixedAggregationIntervalSeconds());
         traceCommonService = new TraceCommonService(snapshotDao, traceRegistry, traceCollector,
                 clock, ticker);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,
@@ -125,7 +126,7 @@ public class LocalUiModule {
         ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
         PointcutConfigJsonService pointcutConfigJsonService =
                 new PointcutConfigJsonService(parsedTypeCache, classpathCache);
-        AdminJsonService adminJsonService = new AdminJsonService(aggregateDao, snapshotDao,
+        AdminJsonService adminJsonService = new AdminJsonService(transactionPointDao, snapshotDao,
                 configService, traceModule.getPointcutConfigAdviceCache(), parsedTypeCache,
                 instrumentation, traceCollector, dataSource, traceRegistry);
 

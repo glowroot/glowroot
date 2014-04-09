@@ -47,27 +47,40 @@ public class ProfileCharSourceCreator {
     private ProfileCharSourceCreator() {}
 
     @Nullable
-    public static CharSource createProfileCharSource(
-            @Nullable MergedStackTree mergedStackTree) {
+    public static CharSource createProfileCharSource(@Nullable MergedStackTree mergedStackTree) {
         if (mergedStackTree == null) {
             return null;
         }
         synchronized (mergedStackTree.getLock()) {
-            MergedStackTreeNode rootNode = mergedStackTree.getRootNode();
-            if (rootNode == null) {
+            String profile = createProfile(mergedStackTree.getSyntheticRootNode());
+            if (profile == null) {
                 return null;
             }
-            // need to convert merged stack tree into bytes entirely inside of the above lock
-            // (no lazy CharSource)
-            StringWriter sw = new StringWriter(32768);
-            try {
-                new MergedStackTreeWriter(rootNode, sw).write();
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-                return null;
-            }
-            return CharSource.wrap(sw.toString());
+            return CharSource.wrap(profile);
         }
+    }
+
+    @Nullable
+    public static String createProfile(MergedStackTreeNode syntheticRootNode) {
+        MergedStackTreeNode rootNode;
+        if (syntheticRootNode.getChildNodes().size() == 0) {
+            return null;
+        } else if (syntheticRootNode.getChildNodes().size() == 1) {
+            // strip off synthetic root node since only one real root node
+            rootNode = syntheticRootNode.getChildNodes().get(0);
+        } else {
+            rootNode = syntheticRootNode;
+        }
+        // need to convert merged stack tree into bytes entirely inside of the above lock
+        // (no lazy CharSource)
+        StringWriter sw = new StringWriter(32768);
+        try {
+            new MergedStackTreeWriter(rootNode, sw).write();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+            return null;
+        }
+        return sw.toString();
     }
 
     private static class MergedStackTreeWriter {

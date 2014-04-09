@@ -15,7 +15,9 @@
  */
 package org.glowroot.collector;
 
+import java.io.IOException;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -29,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.Clock;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
+import org.glowroot.trace.model.MergedStackTree;
 import org.glowroot.trace.model.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -39,7 +42,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 // TODO add JvmInfo aggregation
 @Singleton
-class Aggregator {
+class TransactionAggregator {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceProcessor.class);
 
@@ -48,7 +51,7 @@ class Aggregator {
     private final Object lock = new Object();
 
     private final ScheduledExecutorService scheduledExecutor;
-    private final AggregateRepository aggregateRepository;
+    private final TransactionPointRepository transactionPointRepository;
     private final Clock clock;
 
     private final long fixedAggregationIntervalMillis;
@@ -58,10 +61,11 @@ class Aggregator {
 
     private final Thread processingThread;
 
-    Aggregator(ScheduledExecutorService scheduledExecutor, AggregateRepository aggregateRepository,
-            Clock clock, long fixedAggregationIntervalSeconds) {
+    TransactionAggregator(ScheduledExecutorService scheduledExecutor,
+            TransactionPointRepository transactionPointRepository, Clock clock,
+            long fixedAggregationIntervalSeconds) {
         this.scheduledExecutor = scheduledExecutor;
-        this.aggregateRepository = aggregateRepository;
+        this.transactionPointRepository = transactionPointRepository;
         this.clock = clock;
         this.fixedAggregationIntervalMillis = fixedAggregationIntervalSeconds * 1000;
         currentAggregates = new Aggregates(clock.currentTimeMillis());
@@ -87,75 +91,6 @@ class Aggregator {
     @OnlyUsedByTests
     void close() {
         processingThread.interrupt();
-    }
-
-    private class Aggregates {
-
-        private final long captureTime;
-        private final AggregateBuilder overallAggregate = new AggregateBuilder();
-        private final AggregateBuilder bgOverallAggregate = new AggregateBuilder();
-        private final Map<String, AggregateBuilder> transactionAggregates = Maps.newHashMap();
-        private final Map<String, AggregateBuilder> bgTransactionAggregates = Maps.newHashMap();
-
-        private Aggregates(long currentTime) {
-            this.captureTime = (long) Math.ceil(currentTime
-                    / (double) fixedAggregationIntervalMillis) * fixedAggregationIntervalMillis;
-        }
-
-        private void add(Trace trace, boolean traceWillBeStored) {
-            AggregateBuilder overallAggregate;
-            Map<String, AggregateBuilder> transactionAggregates;
-            if (trace.isBackground()) {
-                overallAggregate = this.bgOverallAggregate;
-                transactionAggregates = this.bgTransactionAggregates;
-            } else {
-                overallAggregate = this.overallAggregate;
-                transactionAggregates = this.transactionAggregates;
-            }
-            overallAggregate.add(trace.getDuration());
-            AggregateBuilder transactionAggregate =
-                    transactionAggregates.get(trace.getTransactionName());
-            if (transactionAggregate == null) {
-                transactionAggregate = new AggregateBuilder();
-                transactionAggregates.put(trace.getTransactionName(), transactionAggregate);
-            }
-            transactionAggregate.add(trace.getDuration());
-            if (trace.getError() != null) {
-                overallAggregate.addToErrorCount();
-                transactionAggregate.addToErrorCount();
-            }
-            if (traceWillBeStored) {
-                overallAggregate.addToStoredTraceCount();
-                transactionAggregate.addToStoredTraceCount();
-            }
-            overallAggregate.addToMetrics(trace.getRootMetric());
-            transactionAggregate.addToMetrics(trace.getRootMetric());
-        }
-    }
-
-    private static class PendingAggregation {
-
-        private final long captureTime;
-        private final Trace trace;
-        private final boolean traceWillBeStored;
-
-        private PendingAggregation(long captureTime, Trace trace, boolean traceWillBeStored) {
-            this.captureTime = captureTime;
-            this.trace = trace;
-            this.traceWillBeStored = traceWillBeStored;
-        }
-
-        private long getCaptureTime() {
-            return captureTime;
-        }
-
-        private Trace getTrace() {
-            return trace;
-        }
-
-        private boolean isTraceWillBeStored() {
-            return traceWillBeStored;
-        }
     }
 
     private class TraceProcessor implements Runnable {
@@ -189,7 +124,8 @@ class Aggregator {
                 return;
             }
             if (pendingAggregation.getCaptureTime() > currentAggregates.captureTime) {
-                flushInSeparateThread(currentAggregates);
+                // flush in separate thread to avoid pending aggregates piling up quickly
+                scheduledExecutor.execute(new AggregatesFlusher(currentAggregates));
                 currentAggregates = new Aggregates(pendingAggregation.getCaptureTime());
             }
             // the synchronized block is to ensure visibility of updates to this particular
@@ -214,26 +150,137 @@ class Aggregator {
                 if (currentTime > currentAggregates.captureTime) {
                     // safe to flush, no other pending aggregates can enter queue with later
                     // time (since under same lock that they use)
-                    flushInSeparateThread(currentAggregates);
+                    //
+                    // flush in separate thread to avoid pending aggregates piling up quickly
+                    scheduledExecutor.execute(new AggregatesFlusher(currentAggregates));
                     currentAggregates = new Aggregates(currentTime);
                 }
             }
         }
+    }
 
-        // flush in separate thread to avoid pending aggregates piling up quickly
-        private void flushInSeparateThread(final Aggregates aggregates) {
-            scheduledExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    // this synchronized block is to ensure visibility of updates to this particular
-                    // currentAggregates
-                    synchronized (aggregates) {
-                        aggregateRepository.store(aggregates.captureTime,
-                                aggregates.overallAggregate, aggregates.transactionAggregates,
-                                aggregates.bgOverallAggregate, aggregates.bgTransactionAggregates);
-                    }
+    private class AggregatesFlusher implements Runnable {
+
+        private final Aggregates aggregates;
+
+        private AggregatesFlusher(Aggregates aggregates) {
+            this.aggregates = aggregates;
+        }
+
+        @Override
+        public void run() {
+            // this synchronized block is to ensure visibility of updates to this particular
+            // currentAggregates
+            synchronized (aggregates) {
+                try {
+                    runInternal();
+                } catch (IOException e) {
+                    logger.error(e.getMessage(), e);
                 }
-            });
+            }
+        }
+
+        private void runInternal() throws IOException {
+            for (Entry<String, TypeAggregates> e : aggregates.typeAggregatesMap.entrySet()) {
+                TypeAggregates typeAggregates = e.getValue();
+                TransactionPoint overallPoint =
+                        typeAggregates.overallPoint.build(aggregates.captureTime);
+                Map<String, TransactionPoint> transactionPoints = Maps.newHashMap();
+                for (Entry<String, TransactionPointBuilder> f : typeAggregates.transactionPoints
+                        .entrySet()) {
+                    transactionPoints.put(f.getKey(), f.getValue().build(aggregates.captureTime));
+                }
+                transactionPointRepository.store(e.getKey(), overallPoint, transactionPoints);
+            }
+        }
+    }
+
+    private class Aggregates {
+
+        private final long captureTime;
+        private final Map<String, TypeAggregates> typeAggregatesMap = Maps.newHashMap();
+
+        private Aggregates(long currentTime) {
+            this.captureTime = (long) Math.ceil(currentTime
+                    / (double) fixedAggregationIntervalMillis) * fixedAggregationIntervalMillis;
+        }
+
+        private void add(Trace trace, boolean traceWillBeStored) {
+            TypeAggregates typeAggregates;
+            if (trace.isBackground()) {
+                typeAggregates = getTypeAggregates("bg");
+            } else {
+                typeAggregates = getTypeAggregates("");
+            }
+            typeAggregates.add(trace, traceWillBeStored);
+        }
+
+        private TypeAggregates getTypeAggregates(String transactionType) {
+            TypeAggregates typeAggregates;
+            typeAggregates = typeAggregatesMap.get(transactionType);
+            if (typeAggregates == null) {
+                typeAggregates = new TypeAggregates();
+                typeAggregatesMap.put(transactionType, typeAggregates);
+            }
+            return typeAggregates;
+        }
+    }
+
+    private static class TypeAggregates {
+
+        private final TransactionPointBuilder overallPoint = new TransactionPointBuilder();
+        private final Map<String, TransactionPointBuilder> transactionPoints = Maps.newHashMap();
+
+        private void add(Trace trace, boolean traceWillBeStored) {
+            overallPoint.add(trace.getDuration());
+            TransactionPointBuilder transactionPoint =
+                    transactionPoints.get(trace.getTransactionName());
+            if (transactionPoint == null) {
+                transactionPoint = new TransactionPointBuilder();
+                transactionPoints.put(trace.getTransactionName(), transactionPoint);
+            }
+            transactionPoint.add(trace.getDuration());
+            if (trace.getError() != null) {
+                overallPoint.addToErrorCount();
+                transactionPoint.addToErrorCount();
+            }
+            if (traceWillBeStored) {
+                overallPoint.addToStoredTraceCount();
+                transactionPoint.addToStoredTraceCount();
+            }
+            overallPoint.addToMetrics(trace.getRootMetric());
+            transactionPoint.addToMetrics(trace.getRootMetric());
+            // only add profile to transaction, overall profile doesn't seem worth the overhead
+            MergedStackTree profile = trace.getFineMergedStackTree();
+            if (profile != null) {
+                transactionPoint.addToProfile(profile);
+            }
+
+        }
+    }
+
+    private static class PendingAggregation {
+
+        private final long captureTime;
+        private final Trace trace;
+        private final boolean traceWillBeStored;
+
+        private PendingAggregation(long captureTime, Trace trace, boolean traceWillBeStored) {
+            this.captureTime = captureTime;
+            this.trace = trace;
+            this.traceWillBeStored = traceWillBeStored;
+        }
+
+        private long getCaptureTime() {
+            return captureTime;
+        }
+
+        private Trace getTrace() {
+            return trace;
+        }
+
+        private boolean isTraceWillBeStored() {
+            return traceWillBeStored;
         }
     }
 }

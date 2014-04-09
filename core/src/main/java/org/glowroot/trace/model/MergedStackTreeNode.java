@@ -19,9 +19,9 @@ import java.lang.Thread.State;
 import java.util.List;
 
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 /**
@@ -30,82 +30,49 @@ import com.google.common.collect.Lists;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
 public class MergedStackTreeNode {
 
     @Nullable
     private final StackTraceElement stackTraceElement;
+    @Nullable
+    private final State leafThreadState;
+    private int sampleCount;
+    // using List over Set in order to preserve ordering
+    // may contain duplicates (common from weaving groups of overloaded methods), these are filtered
+    // out later when profile is written to json
+    @Nullable
+    private ImmutableList<String> metricNames;
     // nodes mostly have a single child node, and rarely have more than two child nodes
     private final List<MergedStackTreeNode> childNodes = Lists.newArrayListWithCapacity(2);
-    // using List over Set in order to preserve ordering
-    private List<String> metricNames;
-    private int sampleCount;
-    @Nullable
-    private State leafThreadState;
 
-    // this is for creating a single synthetic root node above other root nodes when there are
-    // multiple root nodes
-    @Nullable
-    static MergedStackTreeNode createSyntheticRoot(List<MergedStackTreeNode> rootNodes) {
-        if (rootNodes.isEmpty()) {
-            return null;
-        } else if (rootNodes.size() == 1) {
-            return rootNodes.get(0);
-        } else {
-            int totalSampleCount = 0;
-            for (MergedStackTreeNode rootNode : rootNodes) {
-                totalSampleCount += rootNode.getSampleCount();
-            }
-            MergedStackTreeNode syntheticRootNode = new MergedStackTreeNode(null, null,
-                    totalSampleCount);
-            for (MergedStackTreeNode rootNode : rootNodes) {
-                syntheticRootNode.addChildNode(rootNode);
-            }
-            return syntheticRootNode;
-        }
+    public static MergedStackTreeNode createSyntheticRoot() {
+        return new MergedStackTreeNode(null, null);
     }
 
-    static MergedStackTreeNode create(StackTraceElement stackTraceElement,
-            @Nullable List<String> metricNames) {
-        return new MergedStackTreeNode(stackTraceElement, metricNames, 1);
+    public static MergedStackTreeNode create(StackTraceElement stackTraceElement,
+            @Nullable State leafThreadState) {
+        return new MergedStackTreeNode(stackTraceElement, leafThreadState);
     }
 
     private MergedStackTreeNode(@Nullable StackTraceElement stackTraceElement,
-            @Nullable List<String> metricNames, int sampleCount) {
+            @Nullable State leafThreadState) {
         this.stackTraceElement = stackTraceElement;
-        if (metricNames == null) {
-            this.metricNames = Lists.newArrayList();
-        } else {
-            this.metricNames = Lists.newArrayList(metricNames);
-        }
-        this.sampleCount = sampleCount;
+        this.leafThreadState = leafThreadState;
     }
 
-    void addChildNode(MergedStackTreeNode methodTreeElement) {
-        childNodes.add(methodTreeElement);
+    public void addChildNode(MergedStackTreeNode node) {
+        childNodes.add(node);
     }
 
     // may contain duplicates
-    void setMetricNames(List<String> metricNames) {
-        this.metricNames = metricNames;
-    }
-
-    void setLeafThreadState(State leafThreadState) {
-        this.leafThreadState = leafThreadState;
+    public void setMetricNames(List<String> metricNames) {
+        this.metricNames = ImmutableList.copyOf(metricNames);
     }
 
     // sampleCount is volatile to ensure visibility, but this method still needs to be called under
     // an appropriate lock so that two threads do not try to increment the count at the same time
-    void incrementSampleCount() {
-        sampleCount++;
-    }
-
-    public List<MergedStackTreeNode> getChildNodes() {
-        return childNodes;
-    }
-
-    public List<String> getMetricNames() {
-        return metricNames;
+    public void incrementSampleCount(int num) {
+        sampleCount += num;
     }
 
     // only returns null for synthetic root
@@ -114,13 +81,26 @@ public class MergedStackTreeNode {
         return stackTraceElement;
     }
 
+    @Nullable
+    public State getLeafThreadState() {
+        return leafThreadState;
+    }
+
     public int getSampleCount() {
         return sampleCount;
     }
 
-    @Nullable
-    public State getLeafThreadState() {
-        return leafThreadState;
+    // may contain duplicates
+    public ImmutableList<String> getMetricNames() {
+        if (metricNames == null) {
+            return ImmutableList.of();
+        } else {
+            return metricNames;
+        }
+    }
+
+    public List<MergedStackTreeNode> getChildNodes() {
+        return childNodes;
     }
 
     /*@Pure*/
@@ -128,10 +108,10 @@ public class MergedStackTreeNode {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("stackTraceElement", stackTraceElement)
-                .add("childNodes", childNodes)
-                .add("metricNames", metricNames)
-                .add("sampleCount", sampleCount)
                 .add("leafThreadState", leafThreadState)
+                .add("sampleCount", sampleCount)
+                .add("metricNames", metricNames)
+                .add("childNodes", childNodes)
                 .toString();
     }
 }

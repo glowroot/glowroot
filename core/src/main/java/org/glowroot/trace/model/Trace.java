@@ -435,6 +435,8 @@ public class Trace {
                 // an almost simultaneously captured stack trace
                 fineMergedStackTree = new MergedStackTree();
             }
+            // TODO make sure that when reading merged stack tree it is not in-between instantiation
+            // and having its first stack trace here, maybe pass threadInfo to constructor????
             fineMergedStackTree.addStackTrace(threadInfo);
         } else {
             if (coarseMergedStackTree == null) {

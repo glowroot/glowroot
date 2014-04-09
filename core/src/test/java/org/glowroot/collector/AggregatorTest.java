@@ -31,10 +31,9 @@ import org.glowroot.trace.model.Trace;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -44,7 +43,7 @@ import static org.mockito.Mockito.when;
 public class AggregatorTest {
 
     @Test
-    public void shouldFlushWithNoTraces() throws InterruptedException {
+    public void shouldNotFlushWithNoTraces() throws InterruptedException {
         // given
         ScheduledExecutorService scheduledExecutorService = mock(ScheduledExecutorService.class);
         doAnswer(new Answer<Void>() {
@@ -55,14 +54,14 @@ public class AggregatorTest {
                 return null;
             }
         }).when(scheduledExecutorService).execute(any(Runnable.class));
-        AggregateRepository aggregateRepository = mock(AggregateRepository.class);
-        new Aggregator(scheduledExecutorService, aggregateRepository, Clock.systemClock(), 1);
+        TransactionPointRepository transactionPointRepository =
+                mock(TransactionPointRepository.class);
+        new TransactionAggregator(scheduledExecutorService, transactionPointRepository,
+                Clock.systemClock(), 1);
         // when
         Thread.sleep(2100);
         // then
-        verify(aggregateRepository).store(any(Long.class), any(AggregateBuilder.class),
-                anyMapOf(String.class, AggregateBuilder.class), any(AggregateBuilder.class),
-                anyMapOf(String.class, AggregateBuilder.class));
+        verifyZeroInteractions(transactionPointRepository);
     }
 
     @Test
@@ -77,9 +76,10 @@ public class AggregatorTest {
                 return null;
             }
         }).when(scheduledExecutorService).execute(any(Runnable.class));
-        MockAggregateRepository aggregateRepository = new MockAggregateRepository();
-        Aggregator aggregator = new Aggregator(scheduledExecutorService, aggregateRepository,
-                Clock.systemClock(), 1);
+        MockTransactionPointRepository transactionPointRepository =
+                new MockTransactionPointRepository();
+        TransactionAggregator aggregator = new TransactionAggregator(scheduledExecutorService,
+                transactionPointRepository, Clock.systemClock(), 1);
 
         Trace trace = mock(Trace.class);
         Metric metric = mock(Metric.class);
@@ -102,26 +102,25 @@ public class AggregatorTest {
         // aggregation is done in a separate thread, so give it a little time to complete
         long start = System.currentTimeMillis();
         while (System.currentTimeMillis() - start < 5000) {
-            if (aggregateRepository.getTotalMicros() > 0) {
+            if (transactionPointRepository.getTotalMicros() > 0) {
                 break;
             }
         }
-        assertThat(aggregateRepository.getTotalMicros()).isEqualTo(count * 123 * 1000);
+        assertThat(transactionPointRepository.getTotalMicros()).isEqualTo(count * 123 * 1000);
         aggregator.close();
     }
 
-    private static class MockAggregateRepository implements AggregateRepository {
+    private static class MockTransactionPointRepository implements TransactionPointRepository {
 
-        private long totalMicros;
+        // volatile needed for visibility from other thread
+        private volatile long totalMicros;
 
         @Override
-        public void store(long captureTime, AggregateBuilder overallAggregate,
-                Map<String, AggregateBuilder> transactionAggregates,
-                AggregateBuilder bgOverallAggregate,
-                Map<String, AggregateBuilder> bgTransactionAggregates) {
+        public void store(String transactionType, TransactionPoint overall,
+                Map<String, TransactionPoint> transactions) {
             // only capture first non-zero value
             if (totalMicros == 0) {
-                totalMicros = overallAggregate.getTotalMicros();
+                totalMicros = overall.getTotalMicros();
             }
         }
 

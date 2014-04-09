@@ -28,7 +28,7 @@ import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.AggregateRepository;
+import org.glowroot.collector.TransactionPointRepository;
 import org.glowroot.collector.SnapshotRepository;
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
@@ -53,7 +53,7 @@ public class StorageModule {
     private final SnapshotDao snapshotDao;
     @Nullable
     private final ReaperScheduledRunnable reaperScheduledRunnable;
-    private final AggregateDao aggregateDao;
+    private final TransactionPointDao transactionPointDao;
 
     public StorageModule(File dataDir, Map<String, String> properties, Ticker ticker, Clock clock,
             ConfigModule configModule, ScheduledExecutorService scheduledExecutor,
@@ -78,11 +78,11 @@ public class StorageModule {
             reaperScheduledRunnable.scheduleAtFixedRate(scheduledExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
-        aggregateDao = new AggregateDao(dataSource);
+        transactionPointDao = new TransactionPointDao(dataSource);
     }
 
-    public AggregateRepository getAggregateRepository() {
-        return aggregateDao;
+    public TransactionPointRepository getTransactionPointRepository() {
+        return transactionPointDao;
     }
 
     public SnapshotRepository getSnapshotRepository() {
@@ -93,8 +93,8 @@ public class StorageModule {
         return dataSource;
     }
 
-    public AggregateDao getAggregateDao() {
-        return aggregateDao;
+    public TransactionPointDao getTransactionPointDao() {
+        return transactionPointDao;
     }
 
     public SnapshotDao getSnapshotDao() {

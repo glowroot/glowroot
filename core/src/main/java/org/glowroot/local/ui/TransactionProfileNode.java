@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,45 +13,59 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.container.trace;
+package org.glowroot.local.ui;
 
 import java.util.List;
 
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
-import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
+import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Immutable
-public class MergedStackTreeNode {
+public class TransactionProfileNode {
 
+    // null for synthetic root only
     @Nullable
     private final String stackTraceElement;
     @Nullable
     private final String leafThreadState;
-    private final int sampleCount;
-    private final ImmutableList<String> metricNames;
-    private final ImmutableList<MergedStackTreeNode> childNodes;
+    private int sampleCount;
+    private List<String> metricNames;
+    private final List<TransactionProfileNode> childNodes;
 
-    private MergedStackTreeNode(@Nullable String stackTraceElement,
-            @Nullable String leafThreadState, int sampleCount, List<String> metricNames,
-            List<MergedStackTreeNode> childNodes) {
+    TransactionProfileNode(@Nullable String stackTraceElement, @Nullable String leafThreadState,
+            int sampleCount, List<String> metricNames, List<TransactionProfileNode> childNodes) {
         this.stackTraceElement = stackTraceElement;
         this.leafThreadState = leafThreadState;
         this.sampleCount = sampleCount;
-        this.metricNames = ImmutableList.copyOf(metricNames);
-        this.childNodes = ImmutableList.copyOf(childNodes);
+        this.metricNames = metricNames;
+        this.childNodes = childNodes;
+    }
+
+    // creates new synthetic root
+    TransactionProfileNode() {
+        stackTraceElement = null;
+        leafThreadState = null;
+        metricNames = Lists.newArrayList();
+        childNodes = Lists.newArrayList();
+    }
+
+    public void setMetricNames(List<String> metricNames) {
+        this.metricNames = metricNames;
+    }
+
+    public void incrementSampleCount(int num) {
+        sampleCount += num;
     }
 
     // null for synthetic root only
@@ -69,11 +83,11 @@ public class MergedStackTreeNode {
         return sampleCount;
     }
 
-    public ImmutableList<String> getMetricNames() {
+    public List<String> getMetricNames() {
         return metricNames;
     }
 
-    public ImmutableList<MergedStackTreeNode> getChildNodes() {
+    public List<TransactionProfileNode> getChildNodes() {
         return childNodes;
     }
 
@@ -81,8 +95,8 @@ public class MergedStackTreeNode {
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("stackTraceElement", stackTraceElement)
                 .add("leafThreadState", leafThreadState)
+                .add("stackTraceElement", stackTraceElement)
                 .add("sampleCount", sampleCount)
                 .add("metricNames", metricNames)
                 .add("childNodes", childNodes)
@@ -90,15 +104,15 @@ public class MergedStackTreeNode {
     }
 
     @JsonCreator
-    static MergedStackTreeNode readValue(
+    static TransactionProfileNode readValue(
             @JsonProperty("stackTraceElement") @Nullable String stackTraceElement,
             @JsonProperty("leafThreadState") @Nullable String leafThreadState,
             @JsonProperty("sampleCount") @Nullable Integer sampleCount,
             @JsonProperty("metricNames") @Nullable List<String> metricNames,
-            @JsonProperty("childNodes") @Nullable List<MergedStackTreeNode> childNodes)
+            @JsonProperty("childNodes") @Nullable List<TransactionProfileNode> childNodes)
             throws JsonMappingException {
         checkRequiredProperty(sampleCount, "sampleCount");
-        return new MergedStackTreeNode(stackTraceElement, leafThreadState,
+        return new TransactionProfileNode(stackTraceElement, leafThreadState,
                 sampleCount, nullToEmpty(metricNames), nullToEmpty(childNodes));
     }
 }

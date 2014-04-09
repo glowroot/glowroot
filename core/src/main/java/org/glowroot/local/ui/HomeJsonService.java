@@ -16,8 +16,8 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
@@ -29,29 +29,28 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Function;
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
-import com.google.common.util.concurrent.AtomicLongMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.collector.TransactionPoint;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
-import org.glowroot.local.store.Aggregate;
-import org.glowroot.local.store.Aggregate.AggregateMetric;
-import org.glowroot.local.store.AggregateDao;
-import org.glowroot.local.store.AggregateDao.SortDirection;
-import org.glowroot.local.store.AggregateDao.TransactionAggregateSortColumn;
-import org.glowroot.local.store.OverallAggregate;
-import org.glowroot.local.store.TransactionAggregate;
+import org.glowroot.local.store.Overall;
+import org.glowroot.local.store.Transaction;
+import org.glowroot.local.store.TransactionPointDao;
+import org.glowroot.local.store.TransactionPointDao.SortDirection;
+import org.glowroot.local.store.TransactionPointDao.TransactionSortColumn;
 import org.glowroot.markers.Singleton;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
 /**
- * Json service to read aggregate data, bound to /backend/home.
+ * Json service to read transaction point data, bound to /backend/home.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -63,12 +62,13 @@ class HomeJsonService {
     private static final Logger logger = LoggerFactory.getLogger(HomeJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final AggregateDao aggregateDao;
+    private final TransactionPointDao transactionPointDao;
     private final Clock clock;
     private final long fixedAggregationIntervalMillis;
 
-    HomeJsonService(AggregateDao aggregateDao, Clock clock, long fixedAggregationIntervalSeconds) {
-        this.aggregateDao = aggregateDao;
+    HomeJsonService(TransactionPointDao transactionPointDao, Clock clock,
+            long fixedAggregationIntervalSeconds) {
+        this.transactionPointDao = transactionPointDao;
         this.clock = clock;
         fixedAggregationIntervalMillis = fixedAggregationIntervalSeconds * 1000;
     }
@@ -76,163 +76,242 @@ class HomeJsonService {
     @GET("/backend/home/stacked")
     String getStacked(String content) throws IOException {
         logger.debug("getStacked(): content={}", content);
-        StackedRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, StackedRequest.class);
-        List<Aggregate> aggregates;
+        CommonRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, CommonRequest.class);
+        List<TransactionPoint> transactionPoints;
         String transactionName = request.getTransactionName();
         if (transactionName == null) {
-            aggregates = aggregateDao.readAggregates(request.getFrom(), request.getTo());
+            transactionPoints = transactionPointDao.readOverallPoints("", request.getFrom(),
+                    request.getTo());
         } else {
-            aggregates = aggregateDao.readTransactionAggregates(request.getFrom(),
-                    request.getTo(), transactionName);
+            transactionPoints = transactionPointDao.readTransactionPoints("", transactionName,
+                    request.getFrom(), request.getTo());
         }
-        List<StackedAggregate> stackedAggregates = Lists.newArrayList();
-        for (Aggregate aggregate : aggregates) {
-            stackedAggregates.add(StackedAggregate.create(aggregate));
+        List<StackedPoint> stackedPoints = Lists.newArrayList();
+        for (TransactionPoint transactionPoint : transactionPoints) {
+            stackedPoints.add(StackedPoint.create(transactionPoint));
         }
-        List<String> metricNames = getTopMetricNames(stackedAggregates);
+        List<String> metricNames = getTopMetricNames(stackedPoints);
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (String metricName : metricNames) {
             dataSeriesList.add(new DataSeries(metricName));
         }
         DataSeries otherDataSeries = new DataSeries(null);
-        Aggregate lastAggregate = null;
-        for (StackedAggregate stackedAggregate : stackedAggregates) {
-            Aggregate aggregate = stackedAggregate.getAggregate();
-            if (lastAggregate == null) {
-                // first aggregate
-                addInitialUpslope(request.getFrom(), aggregate, dataSeriesList, otherDataSeries);
+        TransactionPoint lastTransactionPoint = null;
+        for (StackedPoint stackedPoint : stackedPoints) {
+            TransactionPoint transactionPoint = stackedPoint.getTransactionPoint();
+            if (lastTransactionPoint == null) {
+                // first transaction point
+                addInitialUpslope(request.getFrom(), transactionPoint, dataSeriesList,
+                        otherDataSeries);
             } else {
-                addGap(lastAggregate, aggregate, dataSeriesList, otherDataSeries);
+                addGap(lastTransactionPoint, transactionPoint, dataSeriesList, otherDataSeries);
             }
-            lastAggregate = aggregate;
-            Map<String, Long> stackedMetrics = stackedAggregate.getStackedMetrics();
-            long totalOtherMicros = aggregate.getTotalMicros();
+            lastTransactionPoint = transactionPoint;
+            MutableLongMap<String> stackedMetrics = stackedPoint.getStackedMetrics();
+            long totalOtherMicros = transactionPoint.getTotalMicros();
             for (DataSeries dataSeries : dataSeriesList) {
-                Long totalMicros = stackedMetrics.get(dataSeries.getName());
+                MutableLong totalMicros = stackedMetrics.get(dataSeries.getName());
                 if (totalMicros == null) {
-                    dataSeries.add(aggregate.getCaptureTime(), 0);
+                    dataSeries.add(transactionPoint.getCaptureTime(), 0);
                 } else {
-                    dataSeries.add(aggregate.getCaptureTime(), totalMicros / aggregate.getCount());
-                    totalOtherMicros -= totalMicros;
+                    dataSeries.add(transactionPoint.getCaptureTime(),
+                            totalMicros.longValue() / transactionPoint.getCount());
+                    totalOtherMicros -= totalMicros.longValue();
                 }
             }
-            if (aggregate.getCount() == 0) {
-                otherDataSeries.add(aggregate.getCaptureTime(), 0);
+            if (transactionPoint.getCount() == 0) {
+                otherDataSeries.add(transactionPoint.getCaptureTime(), 0);
             } else {
-                otherDataSeries.add(aggregate.getCaptureTime(),
-                        totalOtherMicros / aggregate.getCount());
+                otherDataSeries.add(transactionPoint.getCaptureTime(),
+                        totalOtherMicros / transactionPoint.getCount());
             }
         }
-        if (lastAggregate != null) {
-            addFinalDownslope(request, dataSeriesList, otherDataSeries, lastAggregate);
+        if (lastTransactionPoint != null) {
+            addFinalDownslope(request, dataSeriesList, otherDataSeries, lastTransactionPoint);
         }
         dataSeriesList.add(otherDataSeries);
         return mapper.writeValueAsString(dataSeriesList);
     }
 
-    @GET("/backend/home/aggregates")
-    String getAggregates(String content) throws IOException {
-        logger.debug("getAggregates(): content={}", content);
-        AggregatesRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, AggregatesRequest.class);
-        OverallAggregate overallAggregate =
-                aggregateDao.readOverallAggregate(request.getFrom(), request.getTo());
+    @GET("/backend/home/transactions")
+    String getTransactions(String content) throws IOException {
+        logger.debug("getTransactions(): content={}", content);
+        TransactionRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, TransactionRequest.class);
+        Overall overall = transactionPointDao.readOverall("", request.getFrom(), request.getTo());
         String sortAttribute =
                 CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, request.getSortAttribute());
-        TransactionAggregateSortColumn sortColumn =
-                TransactionAggregateSortColumn.valueOf(sortAttribute);
-        List<TransactionAggregate> transactionAggregates = aggregateDao.readTransactionAggregates(
+        TransactionSortColumn sortColumn = TransactionSortColumn.valueOf(sortAttribute);
+        List<Transaction> transactions = transactionPointDao.readTransactions("",
                 request.getFrom(), request.getTo(), sortColumn, request.getSortDirection(),
-                request.getTransactionAggregatesLimit());
+                request.getLimit());
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeObjectField("overallAggregate", overallAggregate);
-        jg.writeObjectField("transactionAggregates", transactionAggregates);
+        jg.writeObjectField("overall", overall);
+        jg.writeObjectField("transactions", transactions);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
-    // calculate top 5 metrics
-    private List<String> getTopMetricNames(List<StackedAggregate> stackedAggregates) {
-        AtomicLongMap<String> totalMicros = AtomicLongMap.create();
-        for (StackedAggregate stackedAggregate : stackedAggregates) {
-            totalMicros.putAll(stackedAggregate.getStackedMetrics());
+    @GET("/backend/home/profile")
+    String getProfile(String content) throws IOException {
+        logger.debug("getProfile(): content={}", content);
+        CommonRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, CommonRequest.class);
+        String transactionName = request.getTransactionName();
+        if (transactionName == null) {
+            throw new IllegalStateException("Required field missing: 'transactionName'");
         }
-        Ordering<Entry<String, Long>> valueOrdering = Ordering.natural().onResultOf(
-                new Function<Entry<String, Long>, Long>() {
+        List<String> profiles = transactionPointDao.readProfiles("", transactionName,
+                request.getFrom(), request.getTo());
+        TransactionProfileNode syntheticRootNode = new TransactionProfileNode();
+        for (String profile : profiles) {
+            TransactionProfileNode toBeMergedRootNode =
+                    ObjectMappers.readRequiredValue(mapper, profile, TransactionProfileNode.class);
+            if (toBeMergedRootNode.getStackTraceElement() == null) {
+                // to-be-merged root node is already synthetic
+                mergeMatchedNode(toBeMergedRootNode, syntheticRootNode);
+            } else {
+                mergeChildNodeIntoParent(toBeMergedRootNode, syntheticRootNode);
+            }
+        }
+        if (syntheticRootNode.getChildNodes().size() == 0) {
+            return "null"; // json null
+        } else if (syntheticRootNode.getChildNodes().size() == 1) {
+            // strip off synthetic root node since only one real root node
+            return mapper.writeValueAsString(syntheticRootNode.getChildNodes().get(0));
+        } else {
+            return mapper.writeValueAsString(syntheticRootNode);
+        }
+    }
+
+    // calculate top 5 metrics
+    private List<String> getTopMetricNames(List<StackedPoint> stackedPoints) {
+        MutableLongMap<String> totalMicros = new MutableLongMap<String>();
+        for (StackedPoint stackedPoint : stackedPoints) {
+            for (Entry<String, MutableLong> entry : stackedPoint.getStackedMetrics().entrySet()) {
+                totalMicros.add(entry.getKey(), entry.getValue().longValue());
+            }
+        }
+        Ordering<Entry<String, MutableLong>> valueOrdering = Ordering.natural().onResultOf(
+                new Function<Entry<String, MutableLong>, Long>() {
                     @Override
-                    public Long apply(@Nullable Entry<String, Long> entry) {
+                    public Long apply(@Nullable Entry<String, MutableLong> entry) {
                         checkNotNull(entry);
-                        return entry.getValue();
+                        return entry.getValue().longValue();
                     }
                 });
         final int topX = 5;
         List<String> metricNames = Lists.newArrayList();
-        for (Entry<String, Long> entry : valueOrdering
-                .greatestOf(totalMicros.asMap().entrySet(), topX)) {
+        for (Entry<String, MutableLong> entry : valueOrdering
+                .greatestOf(totalMicros.entrySet(), topX)) {
             metricNames.add(entry.getKey());
         }
         return metricNames;
     }
 
-    private void addInitialUpslope(long requestFrom, Aggregate aggregate,
+    private void addInitialUpslope(long requestFrom, TransactionPoint transactionPoint,
             List<DataSeries> dataSeriesList, DataSeries otherDataSeries) {
-        long millisecondsFromEdge = aggregate.getCaptureTime() - requestFrom;
+        long millisecondsFromEdge = transactionPoint.getCaptureTime() - requestFrom;
         if (millisecondsFromEdge < fixedAggregationIntervalMillis / 2) {
             return;
         }
         // bring up from zero
         for (DataSeries dataSeries : dataSeriesList) {
-            dataSeries.add(aggregate.getCaptureTime() - fixedAggregationIntervalMillis / 2, 0);
+            dataSeries.add(transactionPoint.getCaptureTime() - fixedAggregationIntervalMillis / 2,
+                    0);
         }
-        otherDataSeries.add(aggregate.getCaptureTime() - fixedAggregationIntervalMillis / 2, 0);
+        otherDataSeries.add(transactionPoint.getCaptureTime() - fixedAggregationIntervalMillis / 2,
+                0);
     }
 
-    private void addGap(Aggregate lastAggregate, Aggregate aggregate,
+    private void addGap(TransactionPoint lastTransactionPoint, TransactionPoint transactionPoint,
             List<DataSeries> dataSeriesList, DataSeries otherDataSeries) {
-        long millisecondsSinceLastAggregate =
-                aggregate.getCaptureTime() - lastAggregate.getCaptureTime();
-        if (millisecondsSinceLastAggregate < fixedAggregationIntervalMillis * 1.5) {
+        long millisecondsSinceLastPoint =
+                transactionPoint.getCaptureTime() - lastTransactionPoint.getCaptureTime();
+        if (millisecondsSinceLastPoint < fixedAggregationIntervalMillis * 1.5) {
             return;
         }
         // gap between points, bring down to zero and then back up from zero to show gap
         for (DataSeries dataSeries : dataSeriesList) {
-            addGap(dataSeries, lastAggregate, aggregate);
+            addGap(dataSeries, lastTransactionPoint, transactionPoint);
         }
-        addGap(otherDataSeries, lastAggregate, aggregate);
+        addGap(otherDataSeries, lastTransactionPoint, transactionPoint);
     }
 
-    private void addGap(DataSeries dataSeries, Aggregate lastAggregate, Aggregate aggregate) {
-        dataSeries.add(lastAggregate.getCaptureTime()
+    private void addGap(DataSeries dataSeries, TransactionPoint lastTransactionPoint,
+            TransactionPoint transactionPoint) {
+        dataSeries.add(lastTransactionPoint.getCaptureTime()
                 + fixedAggregationIntervalMillis / 2, 0);
         dataSeries.addNull();
-        dataSeries.add(aggregate.getCaptureTime()
+        dataSeries.add(transactionPoint.getCaptureTime()
                 - fixedAggregationIntervalMillis / 2, 0);
     }
 
-    private void addFinalDownslope(StackedRequest request, List<DataSeries> dataSeriesList,
-            DataSeries otherDataSeries, Aggregate lastAggregate) {
-        long millisecondsAgoFromNow = clock.currentTimeMillis() - lastAggregate.getCaptureTime();
+    private void addFinalDownslope(CommonRequest request, List<DataSeries> dataSeriesList,
+            DataSeries otherDataSeries, TransactionPoint lastTransactionPoint) {
+        long millisecondsAgoFromNow =
+                clock.currentTimeMillis() - lastTransactionPoint.getCaptureTime();
         if (millisecondsAgoFromNow < fixedAggregationIntervalMillis * 1.5) {
             return;
         }
-        long millisecondsFromEdge = request.getTo() - lastAggregate.getCaptureTime();
+        long millisecondsFromEdge = request.getTo() - lastTransactionPoint.getCaptureTime();
         if (millisecondsFromEdge < fixedAggregationIntervalMillis / 2) {
             return;
         }
         // bring down to zero
         for (DataSeries dataSeries : dataSeriesList) {
-            dataSeries.add(lastAggregate.getCaptureTime()
+            dataSeries.add(lastTransactionPoint.getCaptureTime()
                     + fixedAggregationIntervalMillis / 2, 0);
         }
-        otherDataSeries.add(lastAggregate.getCaptureTime()
+        otherDataSeries.add(lastTransactionPoint.getCaptureTime()
                 + fixedAggregationIntervalMillis / 2, 0);
     }
 
-    private static class StackedRequest {
+    private void mergeMatchedNode(TransactionProfileNode toBeMergedNode,
+            TransactionProfileNode node) {
+        node.incrementSampleCount(toBeMergedNode.getSampleCount());
+        // the metric names for a given stack element should always match, unless
+        // the line numbers aren't available and overloaded methods are matched up, or
+        // the stack trace was captured while one of the synthetic $metric$ methods was
+        // executing in which case one of the metric names may be a subset of the other,
+        // in which case, the superset wins:
+        List<String> metricNames = toBeMergedNode.getMetricNames();
+        if (metricNames != null
+                && metricNames.size() > node.getMetricNames().size()) {
+            node.setMetricNames(metricNames);
+        }
+        for (TransactionProfileNode toBeMergedChildNode : toBeMergedNode.getChildNodes()) {
+            mergeChildNodeIntoParent(toBeMergedChildNode, node);
+        }
+    }
+
+    private void mergeChildNodeIntoParent(TransactionProfileNode toBeMergedChildNode,
+            TransactionProfileNode parentNode) {
+        // for each to-be-merged child node look for a match
+        TransactionProfileNode foundMatchingChildNode = null;
+        for (TransactionProfileNode childNode : parentNode.getChildNodes()) {
+            if (matches(toBeMergedChildNode, childNode)) {
+                foundMatchingChildNode = childNode;
+                break;
+            }
+        }
+        if (foundMatchingChildNode == null) {
+            parentNode.getChildNodes().add(toBeMergedChildNode);
+        } else {
+            mergeMatchedNode(toBeMergedChildNode, foundMatchingChildNode);
+        }
+    }
+
+    private boolean matches(TransactionProfileNode node1, TransactionProfileNode node2) {
+        return Objects.equal(node1.getStackTraceElement(), node2.getStackTraceElement())
+                && Objects.equal(node1.getLeafThreadState(), node2.getLeafThreadState());
+    }
+
+    private static class CommonRequest {
 
         private final long from;
         private final long to;
@@ -240,7 +319,7 @@ class HomeJsonService {
         private final String transactionName;
 
         @JsonCreator
-        StackedRequest(@JsonProperty("from") @Nullable Long from,
+        CommonRequest(@JsonProperty("from") @Nullable Long from,
                 @JsonProperty("to") @Nullable Long to,
                 @JsonProperty("transactionName") @Nullable String transactionName)
                 throws JsonMappingException {
@@ -294,32 +373,32 @@ class HomeJsonService {
         }
     }
 
-    private static class AggregatesRequest {
+    private static class TransactionRequest {
 
         private final long from;
         private final long to;
         private final String sortAttribute;
         private final SortDirection sortDirection;
-        private final int transactionAggregatesLimit;
+        private final int limit;
 
         @JsonCreator
-        AggregatesRequest(
+        TransactionRequest(
                 @JsonProperty("from") @Nullable Long from,
                 @JsonProperty("to") @Nullable Long to,
                 @JsonProperty("sortAttribute") @Nullable String sortAttribute,
                 @JsonProperty("sortDirection") @Nullable SortDirection sortDirection,
-                @JsonProperty("transactionAggregatesLimit") @Nullable Integer transactionAggregatesLimit)
+                @JsonProperty("limit") @Nullable Integer limit)
                 throws JsonMappingException {
             checkRequiredProperty(from, "from");
             checkRequiredProperty(to, "to");
             checkRequiredProperty(sortAttribute, "sortAttribute");
             checkRequiredProperty(sortDirection, "sortDirection");
-            checkRequiredProperty(transactionAggregatesLimit, "transactionAggregatesLimit");
+            checkRequiredProperty(limit, "limit");
             this.from = from;
             this.to = to;
             this.sortAttribute = sortAttribute;
             this.sortDirection = sortDirection;
-            this.transactionAggregatesLimit = transactionAggregatesLimit;
+            this.limit = limit;
         }
 
         private long getFrom() {
@@ -338,50 +417,86 @@ class HomeJsonService {
             return sortDirection;
         }
 
-        private int getTransactionAggregatesLimit() {
-            return transactionAggregatesLimit;
+        private int getLimit() {
+            return limit;
         }
     }
 
-    private static class StackedAggregate {
+    private static class StackedPoint {
 
-        private final Aggregate aggregate;
+        private final TransactionPoint transactionPoint;
         // flattened metric values only include time spent as a leaf node in the metric tree
-        private final Map<String, Long> stackedMetrics;
+        private final MutableLongMap<String> stackedMetrics;
 
-        private static StackedAggregate create(Aggregate aggregate) {
-            AtomicLongMap<String> stackedMetrics = AtomicLongMap.create();
+        private static StackedPoint create(TransactionPoint transactionPoint)
+                throws IOException {
+            String metrics = transactionPoint.getMetrics();
+            if (metrics == null) {
+                return new StackedPoint(transactionPoint, new MutableLongMap<String>());
+            }
+            // don't need thread safety, but guessing AtomicLongMap is faster since doesn't require
+            //
+            MutableLongMap<String> stackedMetrics = new MutableLongMap<String>();
+            TransactionMetric syntheticRootTransactionMetric;
+            syntheticRootTransactionMetric =
+                    mapper.readValue(metrics, TransactionMetric.class);
             // skip synthetic root metric
-            for (AggregateMetric rootMetric : aggregate.getSyntheticRootAggregateMetric()
-                    .getNestedMetrics()) {
+            for (TransactionMetric rootMetric : syntheticRootTransactionMetric.getNestedMetrics()) {
                 // skip root metrics
-                for (AggregateMetric topLevelMetric : rootMetric.getNestedMetrics()) {
+                for (TransactionMetric topLevelMetric : rootMetric.getNestedMetrics()) {
                     // traverse tree starting at top-level (under root) metrics
-                    for (AggregateMetric metric : AggregateMetric.TRAVERSER
+                    for (TransactionMetric metric : TransactionMetric.TRAVERSER
                             .preOrderTraversal(topLevelMetric)) {
                         long totalNestedMicros = 0;
-                        for (AggregateMetric nestedMetric : metric.getNestedMetrics()) {
+                        for (TransactionMetric nestedMetric : metric.getNestedMetrics()) {
                             totalNestedMicros += nestedMetric.getTotalMicros();
                         }
-                        stackedMetrics.addAndGet(metric.getName(),
+                        stackedMetrics.add(metric.getName(),
                                 metric.getTotalMicros() - totalNestedMicros);
                     }
                 }
             }
-            return new StackedAggregate(aggregate, stackedMetrics.asMap());
+            return new StackedPoint(transactionPoint, stackedMetrics);
         }
 
-        private StackedAggregate(Aggregate aggregate, Map<String, Long> stackedMetrics) {
-            this.aggregate = aggregate;
+        private StackedPoint(TransactionPoint transactionPoint,
+                MutableLongMap<String> stackedMetrics) {
+            this.transactionPoint = transactionPoint;
             this.stackedMetrics = stackedMetrics;
         }
 
-        private Aggregate getAggregate() {
-            return aggregate;
+        private TransactionPoint getTransactionPoint() {
+            return transactionPoint;
         }
 
-        private Map<String, Long> getStackedMetrics() {
+        private MutableLongMap<String> getStackedMetrics() {
             return stackedMetrics;
+        }
+    }
+
+    // by using MutableLong, two operations (get/put) are not required for each increment,
+    // instead just a single get is needed (except for first delta)
+    //
+    // not thread safe, for thread safety use guava's AtomicLongMap
+    @SuppressWarnings("serial")
+    private static class MutableLongMap<K> extends HashMap<K, MutableLong> {
+        private void add(K key, long delta) {
+            MutableLong existing = get(key);
+            if (existing == null) {
+                put(key, new MutableLong(delta));
+            } else {
+                existing.value += delta;
+            }
+        }
+    }
+
+    private static class MutableLong {
+        private long value;
+        private MutableLong(long value) {
+            this.value = value;
+        }
+        private long longValue() {
+            return value;
         }
     }
 }

@@ -585,8 +585,7 @@ TraceRenderer = (function () {
 
   return {
     render: function (trace, $selector) {
-      var newVar = JST['trace-detail'](trace);
-      var html = JST['trace-summary'](trace) + '<br>' + newVar;
+      var html = JST['trace-summary'](trace) + '<br>' + JST['trace-detail'](trace);
       $selector.html(html);
       $selector.addClass('trace-parent');
       $selector.data('traceId', trace.id);
@@ -596,6 +595,10 @@ TraceRenderer = (function () {
       $selector.data('coarseProfile', coarseProfile);
       $selector.data('fineProfile', fineProfile);
       this.render(trace, $selector);
+    },
+    renderProfile: function(profile, $selector) {
+      buildMergedStackTree(profile, $selector);
+      $selector.removeClass('hide');
     }
   };
 })();

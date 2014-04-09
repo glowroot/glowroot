@@ -53,7 +53,7 @@ public class TraceCollectorImpl implements TraceCollector {
     private final ConfigService configService;
     private final SnapshotRepository snapshotRepository;
     @Nullable
-    private final Aggregator aggregator;
+    private final TransactionAggregator aggregator;
     private final Clock clock;
     private final Ticker ticker;
     private final Set<Trace> pendingCompleteTraces = Sets.newCopyOnWriteArraySet();
@@ -63,7 +63,8 @@ public class TraceCollectorImpl implements TraceCollector {
     private int countSinceLastWarning;
 
     TraceCollectorImpl(ExecutorService executorService, ConfigService configService,
-            SnapshotRepository snapshotRepository, @Nullable Aggregator aggregator, Clock clock,
+            SnapshotRepository snapshotRepository, @Nullable TransactionAggregator aggregator,
+            Clock clock,
             Ticker ticker) {
         this.executorService = executorService;
         this.configService = configService;
@@ -115,8 +116,9 @@ public class TraceCollectorImpl implements TraceCollector {
             }
         }
         // capture time is calculated by the aggregator because it depends on monotonically
-        // increasing capture times so it can flush aggregates without concern for new data points
+        // increasing capture times so it can flush transaction points without concern for new data
         // arriving with a prior capture time
+        //
         // this is a reasonable place to get the capture time since this code is still being
         // executed by the trace thread
         final long captureTime;
@@ -124,7 +126,7 @@ public class TraceCollectorImpl implements TraceCollector {
             captureTime = clock.currentTimeMillis();
         } else {
             // there's a small window where something bad could happen and the snapshot is not
-            // stored, and aggregate stored_trace_count would be off by one
+            // stored, and transaction point 'stored count' would be off by one
             captureTime = aggregator.add(trace, store);
         }
         if (store) {

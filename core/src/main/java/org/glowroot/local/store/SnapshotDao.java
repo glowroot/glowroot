@@ -106,7 +106,6 @@ public class SnapshotDao implements SnapshotRepository {
     @Override
     public void store(final Snapshot snapshot, CharSource spans,
             @Nullable CharSource coarseProfile, @Nullable CharSource fineProfile) {
-        logger.debug("store(): snapshot={}", snapshot);
         String spansId = cappedDatabase.write(spans).getId();
         String coarseProfileId = null;
         if (coarseProfile != null) {
@@ -155,7 +154,6 @@ public class SnapshotDao implements SnapshotRepository {
     }
 
     public ImmutableList<TracePoint> readPoints(TracePointQuery query) {
-        logger.debug("readPoints(): query={}", query);
         try {
             ParameterizedSql parameterizedSql = query.getParameterizedSql();
             return dataSource.query(parameterizedSql.getSql(), parameterizedSql.getArgs(),
@@ -168,7 +166,6 @@ public class SnapshotDao implements SnapshotRepository {
 
     @Nullable
     public Snapshot readSnapshot(String traceId) {
-        logger.debug("readSnapshot(): id={}", traceId);
         List<Snapshot> snapshots;
         try {
             snapshots = dataSource.query("select id, stuck, start_time, capture_time, duration,"
@@ -204,7 +201,6 @@ public class SnapshotDao implements SnapshotRepository {
     }
 
     public List<ErrorAggregate> readErrorAggregates(ErrorAggregateQuery query) {
-        logger.debug("readPoints(): query={}", query);
         try {
             ParameterizedSql parameterizedSql = query.getParameterizedSql();
             return dataSource.query(parameterizedSql.getSql(), parameterizedSql.getArgs(),
@@ -216,7 +212,6 @@ public class SnapshotDao implements SnapshotRepository {
     }
 
     public void deleteAllSnapshots() {
-        logger.debug("deleteAllSnapshots()");
         try {
             dataSource.execute("truncate table snapshot_attribute");
             dataSource.execute("truncate table snapshot");
@@ -226,7 +221,6 @@ public class SnapshotDao implements SnapshotRepository {
     }
 
     void deleteSnapshotsBefore(long captureTime) {
-        logger.debug("deleteSnapshotsBefore(): captureTime={}", captureTime);
         try {
             dataSource.update("delete from snapshot_attribute where capture_time < ?", captureTime);
             dataSource.update("delete from snapshot where capture_time < ?", captureTime);

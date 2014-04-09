@@ -40,26 +40,21 @@ glowroot.factory('traceModal', [
       $modal.css('position', 'fixed');
       $modal.css('left', modalVanishPoint[0]);
       $modal.css('top', modalVanishPoint[1]);
-      $modal.width(0);
-      $modal.height(0);
+      $modal.css('right', $(window).width() - modalVanishPoint[0]);
+      $modal.css('bottom', $(window).height() - modalVanishPoint[1]);
       $modal.css('margin', 0);
       $modal.css('background-color', '#fff');
       $modal.css('font-size', '14px');
       $modal.css('line-height', '20px');
-      // this is needed to prevent the background from scrolling
-      $body.css('overflow', 'hidden');
       // .modal-open-full-screen compensates for the missing scrollbar
       // to prevent the background page from shifting underneath the modal
       $body.addClass('modal-open-full-screen');
       $modal.modal({ 'show': true, 'keyboard': false, 'backdrop': false });
-      // +15 is to account for scrollbar
-      var width = $(window).width() - 50;
-      var height = $(window).height() - 50;
       $modal.animate({
         left: '25px',
         top: '25px',
-        width: width + 'px',
-        height: height + 'px'
+        right: '25px',
+        bottom: '25px'
       }, 200, function () {
         tracePromise.then(function (result) {
           if (spinner) {
@@ -106,8 +101,6 @@ glowroot.factory('traceModal', [
       var $modalContent = $('#modalContent');
       var modalVanishPoint = $modalContent.data('vanishPoint');
 
-      // reset overflow so the background can scroll again
-      $body.css('overflow', '');
       $body.removeClass('modal-open-full-screen');
       // .modal-open will be removed by modal('hide'), but it needs to be removed at the same time
       // as the scrollbar is put back in order to prevent page from shifting
@@ -121,8 +114,8 @@ glowroot.factory('traceModal', [
       $modal.animate({
         left: (modalVanishPoint[0] - $(window).scrollLeft()) + 'px',
         top: (modalVanishPoint[1] - $(window).scrollTop()) + 'px',
-        width: 0,
-        height: 0,
+        right: $(window).width() - modalVanishPoint[0],
+        bottom: $(window).height() - modalVanishPoint[1],
         backgroundColor: '#eee'
       }, 200, function () {
         $modal.modal('hide');

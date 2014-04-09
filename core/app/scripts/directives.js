@@ -305,7 +305,10 @@ glowroot.directive('gtSpinner', function () {
         function (newValue) {
           if (newValue) {
             if (spinner === undefined) {
-              var left = iAttrs.gtSpinnerInline ? 10 : 'auto';
+              var left;
+              if (iAttrs.gtSpinnerInline) {
+                left = 10;
+              }
               spinner = new Spinner({ lines: 10, radius: 8, width: 4, left: left });
             }
             // small delay so that if there is an immediate response the spinner doesn't blink

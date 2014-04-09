@@ -401,6 +401,7 @@ class PreInitializeClasses {
         types.add("org.glowroot.trace.TraceRegistry");
         types.add("org.glowroot.trace.model.JvmInfo");
         types.add("org.glowroot.trace.model.MergedStackTree");
+        types.add("org.glowroot.trace.model.MergedStackTreeNode");
         types.add("org.glowroot.trace.model.Metric");
         types.add("org.glowroot.trace.model.MetricTimerExtended");
         types.add("org.glowroot.trace.model.MetricTimerExtended$NopMetricTimerExtended");
