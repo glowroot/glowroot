@@ -16,24 +16,32 @@
 package org.glowroot.collector;
 
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Queues;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
+import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
-import org.glowroot.trace.model.Metric;
+import org.glowroot.trace.model.Trace;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+// TODO add JvmInfo aggregation
 @Singleton
 class Aggregator {
+
+    private static final Logger logger = LoggerFactory.getLogger(TraceProcessor.class);
 
     @GuardedBy("lock")
     private volatile Aggregates currentAggregates;
@@ -45,82 +53,40 @@ class Aggregator {
 
     private final long fixedAggregationIntervalMillis;
 
-    static Aggregator create(ScheduledExecutorService scheduledExecutor,
-            AggregateRepository aggregateRepository, Clock clock,
-            long fixedAggregationIntervalSeconds) {
-        final Aggregator aggregator = new Aggregator(scheduledExecutor, aggregateRepository, clock,
-                fixedAggregationIntervalSeconds);
-        // this scheduled job ensures that an aggregate record is stored for each interval even if
-        // no data, which is useful to differentiate between no user requests vs server down
-        scheduledExecutor.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                aggregator.flush();
-            }
-        }, 10, 10, SECONDS);
-        return aggregator;
-    }
+    private final BlockingQueue<PendingAggregation> pendingAggregationQueue =
+            Queues.newLinkedBlockingQueue();
 
-    private Aggregator(ScheduledExecutorService scheduledExecutor,
-            AggregateRepository aggregateRepository, Clock clock,
-            long fixedAggregationIntervalSeconds) {
+    private final Thread processingThread;
+
+    Aggregator(ScheduledExecutorService scheduledExecutor, AggregateRepository aggregateRepository,
+            Clock clock, long fixedAggregationIntervalSeconds) {
         this.scheduledExecutor = scheduledExecutor;
         this.aggregateRepository = aggregateRepository;
         this.clock = clock;
         this.fixedAggregationIntervalMillis = fixedAggregationIntervalSeconds * 1000;
         currentAggregates = new Aggregates(clock.currentTimeMillis());
+        // dedicated thread to processing aggregates
+        processingThread = new Thread(new TraceProcessor());
+        processingThread.setDaemon(true);
+        processingThread.setName("Glowroot-Aggregator");
+        processingThread.start();
     }
 
-    // TODO add CPU, errorCount, metrics, profile
-    long add(boolean background, String transactionName, long duration, boolean error,
-            boolean traceWillBeStored, Metric rootMetric) {
-        // this first synchronized block is to ensure atomicity between updates and flushes
+    long add(Trace trace, boolean traceWillBeStored) {
+        // this synchronized block is to ensure traces are placed into processing queue in the
+        // order of captureTime (so that queue reader can assume if captureTime indicates time to
+        // flush, then no new traces will come in with prior captureTime)
         synchronized (lock) {
             long captureTime = clock.currentTimeMillis();
-            if (captureTime > currentAggregates.captureTime) {
-                final Aggregates completedAggregates = currentAggregates;
-                currentAggregates = new Aggregates(captureTime);
-                // flush in separate thread
-                scheduledExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        flush(completedAggregates);
-                    }
-                });
-            }
-            // this second synchronized block is to ensure visibility of updates to this particular
-            // currentAggregates
-            synchronized (currentAggregates) {
-                currentAggregates.add(background, transactionName, duration, error,
-                        traceWillBeStored, rootMetric);
-            }
+            pendingAggregationQueue.add(
+                    new PendingAggregation(captureTime, trace, traceWillBeStored));
             return captureTime;
         }
     }
 
-    private void flush() {
-        Aggregates completedAggregates = null;
-        // this synchronized block is to ensure atomicity between updates and flushes
-        synchronized (lock) {
-            if (clock.currentTimeMillis() > currentAggregates.captureTime) {
-                completedAggregates = currentAggregates;
-                currentAggregates = new Aggregates(clock.currentTimeMillis());
-            }
-        }
-        if (completedAggregates != null) {
-            // the actual flushing does not block the add() method above
-            flush(completedAggregates);
-        }
-    }
-
-    private void flush(Aggregates aggregates) {
-        // this synchronized block is to ensure visibility of updates to this particular
-        // currentAggregates
-        synchronized (aggregates) {
-            aggregateRepository.store(aggregates.captureTime, aggregates.overallAggregate,
-                    aggregates.transactionAggregates, aggregates.bgOverallAggregate,
-                    aggregates.bgTransactionAggregates);
-        }
+    @OnlyUsedByTests
+    void close() {
+        processingThread.interrupt();
     }
 
     private class Aggregates {
@@ -136,25 +102,25 @@ class Aggregator {
                     / (double) fixedAggregationIntervalMillis) * fixedAggregationIntervalMillis;
         }
 
-        private void add(boolean background, String transactionName, long duration, boolean error,
-                boolean traceWillBeStored, Metric rootMetric) {
+        private void add(Trace trace, boolean traceWillBeStored) {
             AggregateBuilder overallAggregate;
             Map<String, AggregateBuilder> transactionAggregates;
-            if (background) {
+            if (trace.isBackground()) {
                 overallAggregate = this.bgOverallAggregate;
                 transactionAggregates = this.bgTransactionAggregates;
             } else {
                 overallAggregate = this.overallAggregate;
                 transactionAggregates = this.transactionAggregates;
             }
-            overallAggregate.add(duration);
-            AggregateBuilder transactionAggregate = transactionAggregates.get(transactionName);
+            overallAggregate.add(trace.getDuration());
+            AggregateBuilder transactionAggregate =
+                    transactionAggregates.get(trace.getTransactionName());
             if (transactionAggregate == null) {
                 transactionAggregate = new AggregateBuilder();
-                transactionAggregates.put(transactionName, transactionAggregate);
+                transactionAggregates.put(trace.getTransactionName(), transactionAggregate);
             }
-            transactionAggregate.add(duration);
-            if (error) {
+            transactionAggregate.add(trace.getDuration());
+            if (trace.getError() != null) {
                 overallAggregate.addToErrorCount();
                 transactionAggregate.addToErrorCount();
             }
@@ -162,8 +128,112 @@ class Aggregator {
                 overallAggregate.addToStoredTraceCount();
                 transactionAggregate.addToStoredTraceCount();
             }
-            overallAggregate.addToMetrics(rootMetric);
-            transactionAggregate.addToMetrics(rootMetric);
+            overallAggregate.addToMetrics(trace.getRootMetric());
+            transactionAggregate.addToMetrics(trace.getRootMetric());
+        }
+    }
+
+    private static class PendingAggregation {
+
+        private final long captureTime;
+        private final Trace trace;
+        private final boolean traceWillBeStored;
+
+        private PendingAggregation(long captureTime, Trace trace, boolean traceWillBeStored) {
+            this.captureTime = captureTime;
+            this.trace = trace;
+            this.traceWillBeStored = traceWillBeStored;
+        }
+
+        private long getCaptureTime() {
+            return captureTime;
+        }
+
+        private Trace getTrace() {
+            return trace;
+        }
+
+        private boolean isTraceWillBeStored() {
+            return traceWillBeStored;
+        }
+    }
+
+    private class TraceProcessor implements Runnable {
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    processOne();
+                } catch (InterruptedException e) {
+                    // terminate successfully
+                    return;
+                } catch (Exception e) {
+                    // log and re-try
+                    logger.error(e.getMessage(), e);
+                } catch (Throwable t) {
+                    // serious error, log and terminate
+                    logger.error(t.getMessage(), t);
+                    return;
+                }
+            }
+        }
+
+        private void processOne() throws InterruptedException {
+            long timeToAggregateCaptureTime =
+                    Math.max(0, currentAggregates.captureTime - clock.currentTimeMillis());
+            PendingAggregation pendingAggregation =
+                    pendingAggregationQueue.poll(timeToAggregateCaptureTime + 1000, MILLISECONDS);
+            if (pendingAggregation == null) {
+                maybeEndOfAggregate();
+                return;
+            }
+            if (pendingAggregation.getCaptureTime() > currentAggregates.captureTime) {
+                flushInSeparateThread(currentAggregates);
+                currentAggregates = new Aggregates(pendingAggregation.getCaptureTime());
+            }
+            // the synchronized block is to ensure visibility of updates to this particular
+            // currentAggregates
+            synchronized (currentAggregates) {
+                currentAggregates.add(pendingAggregation.getTrace(),
+                        pendingAggregation.isTraceWillBeStored());
+            }
+        }
+
+        private void maybeEndOfAggregate() {
+            synchronized (lock) {
+                if (pendingAggregationQueue.peek() != null) {
+                    // something just crept into the queue, possibly still something from
+                    // current aggregate, it will get picked up right away and if it is in
+                    // next aggregate interval it will force current aggregate to be flushed
+                    // anyways
+                    return;
+                }
+                // this should be true since poll timed out above, but checking again to be sure
+                long currentTime = clock.currentTimeMillis();
+                if (currentTime > currentAggregates.captureTime) {
+                    // safe to flush, no other pending aggregates can enter queue with later
+                    // time (since under same lock that they use)
+                    flushInSeparateThread(currentAggregates);
+                    currentAggregates = new Aggregates(currentTime);
+                }
+            }
+        }
+
+        // flush in separate thread to avoid pending aggregates piling up quickly
+        private void flushInSeparateThread(final Aggregates aggregates) {
+            scheduledExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    // this synchronized block is to ensure visibility of updates to this particular
+                    // currentAggregates
+                    synchronized (aggregates) {
+                        aggregateRepository.store(aggregates.captureTime,
+                                aggregates.overallAggregate, aggregates.transactionAggregates,
+                                aggregates.bgOverallAggregate, aggregates.bgTransactionAggregates);
+                    }
+                }
+            });
         }
     }
 }

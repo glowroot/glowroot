@@ -137,6 +137,7 @@ public class GlowrootModule {
     public void close() {
         logger.debug("close()");
         uiModule.close();
+        collectorModule.close();
         traceModule.close();
         storageModule.close();
         scheduledExecutor.shutdownNow();

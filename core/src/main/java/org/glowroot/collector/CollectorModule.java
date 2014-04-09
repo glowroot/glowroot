@@ -17,6 +17,7 @@ package org.glowroot.collector;
 
 import java.util.concurrent.ScheduledExecutorService;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.base.Ticker;
@@ -24,6 +25,7 @@ import com.google.common.base.Ticker;
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
+import org.glowroot.markers.OnlyUsedByTests;
 
 /**
  * @author Trask Stalnaker
@@ -40,16 +42,17 @@ public class CollectorModule {
     }
 
     private final TraceCollectorImpl traceCollector;
+    @Nullable
+    private final Aggregator aggregator;
 
     public CollectorModule(Clock clock, Ticker ticker, ConfigModule configModule,
             SnapshotRepository snapshotRepository, AggregateRepository aggregateRepository,
             ScheduledExecutorService scheduledExecutor, boolean aggregatorDisabled) {
         ConfigService configService = configModule.getConfigService();
-        Aggregator aggregator;
         if (aggregatorDisabled) {
             aggregator = null;
         } else {
-            aggregator = Aggregator.create(scheduledExecutor, aggregateRepository, clock,
+            aggregator = new Aggregator(scheduledExecutor, aggregateRepository, clock,
                     fixedAggregationIntervalSeconds);
         }
         traceCollector = new TraceCollectorImpl(scheduledExecutor, configService,
@@ -62,5 +65,12 @@ public class CollectorModule {
 
     public long getFixedAggregationIntervalSeconds() {
         return fixedAggregationIntervalSeconds;
+    }
+
+    @OnlyUsedByTests
+    public void close() {
+        if (aggregator != null) {
+            aggregator.close();
+        }
     }
 }
