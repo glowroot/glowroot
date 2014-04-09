@@ -78,8 +78,12 @@
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
-      <!-- only annotations are used, so don't need this dependency at runtime -->
-      <optional>true</optional>
+      <!-- TODO this should be optional, but then eclipse marks an error in tests that use
+        test-harness (and don't have their own dependency on jsr305):
+        "The type javax.annotation.Nullable cannot be resolved. It is indirectly referenced from
+        required .class files"
+        this only occurs when test-harness is in eclipse also (it doesn't occur when test-harness is
+        just maven dependency) -->
     </dependency>
   </dependencies>
 </project>
