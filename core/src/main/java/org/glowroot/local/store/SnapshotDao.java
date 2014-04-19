@@ -222,8 +222,17 @@ public class SnapshotDao implements SnapshotRepository {
 
     void deleteSnapshotsBefore(long captureTime) {
         try {
-            dataSource.update("delete from snapshot_attribute where capture_time < ?", captureTime);
-            dataSource.update("delete from snapshot where capture_time < ?", captureTime);
+            // delete 100 at a time, which is both faster than deleting all at once, and doesn't
+            // lock the single jdbc connection for one large chunk of time
+            while (true) {
+                int deleted = dataSource.update("delete from snapshot_attribute"
+                        + " where capture_time < ? limit 100", captureTime);
+                deleted += dataSource.update("delete from snapshot where capture_time < ?"
+                        + " limit 100", captureTime);
+                if (deleted == 0) {
+                    break;
+                }
+            }
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }

@@ -47,7 +47,7 @@ public class StorageModule {
 
     private static final Logger logger = LoggerFactory.getLogger(StorageModule.class);
 
-    private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 60;
+    private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 5;
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
@@ -71,6 +71,10 @@ public class StorageModule {
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
         snapshotDao = new SnapshotDao(dataSource, cappedDatabase);
+        transactionPointDao = new TransactionPointDao(dataSource);
+        PreInitializeStorageShutdownClasses.preInitializeClasses(
+                StorageModule.class.getClassLoader());
+
         if (snapshotReaperDisabled) {
             reaperScheduledRunnable = null;
         } else {
@@ -79,9 +83,6 @@ public class StorageModule {
             reaperScheduledRunnable.scheduleAtFixedRate(scheduledExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
-        transactionPointDao = new TransactionPointDao(dataSource);
-        PreInitializeStorageShutdownClasses.preInitializeClasses(
-                StorageModule.class.getClassLoader());
     }
 
     public TransactionPointRepository getTransactionPointRepository() {
