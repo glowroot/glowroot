@@ -15,16 +15,19 @@
  */
 package org.glowroot.tests;
 
+import java.util.List;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
-import org.glowroot.api.PluginServices;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
+import org.glowroot.container.trace.Span;
+import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,7 +41,7 @@ public class JdbcDriverTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.createWithFileDb();
+        container = Containers.getSharedContainer();
     }
 
     @AfterClass
@@ -51,16 +54,14 @@ public class JdbcDriverTest {
         container.checkAndReset();
     }
 
-    // can't just check MockDriverState.isLoaded() since need to check value in external jvm
-    // may as well use trace attribute data to pass the value back from the external jvm
     @Test
     public void shouldNotTriggerMockJdbcDriverToLoad() throws Exception {
         // given
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
-        String mockDriverLoaded = container.getTraceService().getLastTrace().getAttributes()
-                .get("Mock driver loaded").iterator().next();
-        assertThat(mockDriverLoaded).isEqualTo("false");
+        Trace trace = container.getTraceService().getLastTrace();
+        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        assertThat(spans.get(1).getMessage().getText()).isEqualTo("major version");
     }
 
     public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest, TraceMarker {
@@ -70,10 +71,7 @@ public class JdbcDriverTest {
         }
         @Override
         public void traceMarker() throws Exception {
-            PluginServices pluginServices =
-                    PluginServices.get("glowroot-integration-tests");
-            pluginServices.addTraceAttribute("Mock driver loaded",
-                    Boolean.toString(MockDriverState.isLoaded()));
+            new MockDriver().getMajorVersion();
         }
     }
 }

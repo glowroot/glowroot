@@ -73,6 +73,7 @@ public interface ConfigService {
 
     int reweavePointcutConfigs() throws Exception;
 
+    // TODO move to TraceService
     void compactData() throws Exception;
 
     @SuppressWarnings("serial")

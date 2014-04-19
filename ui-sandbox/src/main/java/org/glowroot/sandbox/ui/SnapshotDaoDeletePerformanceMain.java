@@ -40,10 +40,10 @@ public class SnapshotDaoDeletePerformanceMain {
     private SnapshotDaoDeletePerformanceMain() {}
 
     public static void main(String... args) throws Exception {
-        Container container = Containers.getSharedContainer();
+        Container container = Containers.createWithFileDb(new File("target"));
         // set thresholds low so there will be lots of data to view
-        CoarseProfilingConfig profilingConfig = container.getConfigService()
-                .getCoarseProfilingConfig();
+        CoarseProfilingConfig profilingConfig =
+                container.getConfigService().getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(100);
         profilingConfig.setIntervalMillis(10);
         container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
@@ -54,24 +54,29 @@ public class SnapshotDaoDeletePerformanceMain {
             Thread.sleep(1000);
             pendingWrites = container.getTraceService().getNumPendingCompleteTraces();
         }
-        File dbFile = new File("glowroot.h2.db");
+        File dbFile = new File("target/glowroot.h2.db");
         long dbSize = dbFile.length();
         logger.info("glowroot.h2.db: {} bytes", dbSize);
         Stopwatch stopwatch = Stopwatch.createStarted();
-        container.checkAndReset();
+        container.getTraceService().deleteAllSnapshots();
         logger.info("all traces deleted in: {} millis", stopwatch.elapsed(MILLISECONDS));
         logger.info("glowroot.h2.db: {} bytes", dbFile.length());
         container.close();
         logger.info("glowroot.h2.db: {} bytes", dbFile.length());
     }
 
-    private static class GenerateTraces implements AppUnderTest {
+    public static class GenerateTraces implements AppUnderTest {
         @Override
         public void executeApp() throws InterruptedException {
-            File cappedFile = new File("glowroot.capped.db");
-            while (cappedFile.length() < 100 * 1024 * 1024) {
+            File dbFile = new File("target/glowroot.h2.db");
+            long lastSizeMb = 0;
+            while (dbFile.length() < 100 * 1024 * 1024) {
                 new NestableCall(new NestableCall(10, 2, 5000), 20, 2, 5000).execute();
-                logger.info("capped file: {} mb", cappedFile.length() / (1024 * 1024));
+                long sizeMb = dbFile.length() / (1024 * 1024);
+                if (sizeMb > lastSizeMb) {
+                    logger.info("glowroot.h2.db: {} mb", sizeMb);
+                    lastSizeMb = sizeMb;
+                }
             }
         }
     }

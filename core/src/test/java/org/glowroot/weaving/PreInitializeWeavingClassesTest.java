@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class PreInitializeClassesTest {
+public class PreInitializeWeavingClassesTest {
 
     // TODO this test should be run against glowroot after shading
     @Test
@@ -51,23 +51,17 @@ public class PreInitializeClassesTest {
                 "org/glowroot/weaving/WeavingClassFileTransformer", "transform",
                 "(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/Class;"
                         + "Ljava/security/ProtectionDomain;[B)[B"));
-        // "call" DataSource$ShutdownHookThread.run() and CappedDatabase$ShutdownHookThread.run()
-        // because class loading during jvm shutdown throws exception
-        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
-                "org/glowroot/local/store/DataSource$ShutdownHookThread", "run", "()V"));
-        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
-                "org/glowroot/local/store/CappedDatabase$ShutdownHookThread", "run", "()V"));
         globalCollector.processOverrides();
         // these assertions just help for debugging, since it can be hard to see the differences in
         // the very large lists below in the "real" assertion
         List<String> globalCollectorUsedTypes = globalCollector.usedTypes();
-        globalCollectorUsedTypes.removeAll(PreInitializeClasses.maybeUsedTypes());
+        globalCollectorUsedTypes.removeAll(PreInitializeWeavingClasses.maybeUsedTypes());
         assertThat(Sets.difference(Sets.newHashSet(globalCollectorUsedTypes),
-                Sets.newHashSet(PreInitializeClasses.usedTypes()))).isEmpty();
-        assertThat(Sets.difference(Sets.newHashSet(PreInitializeClasses.usedTypes()),
+                Sets.newHashSet(PreInitializeWeavingClasses.usedTypes()))).isEmpty();
+        assertThat(Sets.difference(Sets.newHashSet(PreInitializeWeavingClasses.usedTypes()),
                 Sets.newHashSet(globalCollectorUsedTypes))).isEmpty();
 
         // this is the real assertion
-        assertThat(PreInitializeClasses.usedTypes()).isEqualTo(globalCollectorUsedTypes);
+        assertThat(PreInitializeWeavingClasses.usedTypes()).isEqualTo(globalCollectorUsedTypes);
     }
 }

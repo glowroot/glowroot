@@ -26,10 +26,6 @@ import java.util.Properties;
  */
 public class MockDriver implements Driver {
 
-    static {
-        MockDriverState.setLoaded(true);
-    }
-
     @Override
     public Connection connect(String url, Properties info) {
         throw new UnsupportedOperationException();

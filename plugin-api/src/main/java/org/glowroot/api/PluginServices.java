@@ -68,8 +68,8 @@ public abstract class PluginServices {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServices.class);
 
-    private static final String MAIN_ENTRY_POINT_CLASS_NAME = "org.glowroot.MainEntryPoint";
-    private static final String GET_PLUGIN_SERVICES_METHOD_NAME = "getPluginServices";
+    private static final String HANDLE_CLASS_NAME = "org.glowroot.trace.PluginServicesRegistry";
+    private static final String HANDLE_METHOD_NAME = "get";
 
     /**
      * Returns the {@code PluginServices} instance for the specified {@code pluginId}.
@@ -354,15 +354,13 @@ public abstract class PluginServices {
 
     private static PluginServices getPluginServices(String pluginId) {
         try {
-            Class<?> mainEntryPointClass = Class.forName(MAIN_ENTRY_POINT_CLASS_NAME);
-            Method getPluginServicesMethod = mainEntryPointClass.getMethod(
-                    GET_PLUGIN_SERVICES_METHOD_NAME, String.class);
-            PluginServices pluginServices = (PluginServices) getPluginServicesMethod.invoke(null,
-                    pluginId);
+            Class<?> handleClass = Class.forName(HANDLE_CLASS_NAME);
+            Method handleMethod = handleClass.getMethod(HANDLE_METHOD_NAME, String.class);
+            PluginServices pluginServices = (PluginServices) handleMethod.invoke(null, pluginId);
             if (pluginServices == null) {
-                // this really really really shouldn't happen
-                logger.error("{}.{}({}) returned null", MAIN_ENTRY_POINT_CLASS_NAME,
-                        GET_PLUGIN_SERVICES_METHOD_NAME, pluginId);
+                // null return value indicates that glowroot is still starting
+                logger.error("plugin services requested while glowroot is still starting",
+                        new IllegalStateException());
                 return PluginServicesNop.INSTANCE;
             }
             return pluginServices;

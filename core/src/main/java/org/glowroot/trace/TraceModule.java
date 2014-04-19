@@ -23,12 +23,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 
 import org.glowroot.api.PluginServices;
 import org.glowroot.common.Clock;
@@ -36,8 +31,10 @@ import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.trace.PluginServicesRegistry.PluginServicesFactory;
 import org.glowroot.weaving.MetricTimerService;
 import org.glowroot.weaving.ParsedTypeCache;
+import org.glowroot.weaving.PreInitializeWeavingClasses;
 import org.glowroot.weaving.WeavingClassFileTransformer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -49,11 +46,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @ThreadSafe
 public class TraceModule {
 
-    private final Ticker ticker;
-    private final Clock clock;
-
-    private final ConfigModule configModule;
-    private final TraceCollector traceCollector;
     private final ParsedTypeCache parsedTypeCache;
     private final TraceRegistry traceRegistry;
     private final PointcutConfigAdviceCache pointcutConfigAdviceCache;
@@ -63,35 +55,17 @@ public class TraceModule {
 
     private final StuckTraceWatcher stuckTraceWatcher;
     private final CoarseProfilerWatcher coarseProfilerWatcher;
-    private final FineProfileScheduler fineProfileScheduler;
 
     private final boolean weavingDisabled;
     private final boolean metricWrapperMethodsDisabled;
     private final boolean jvmRetransformClassesSupported;
 
-    private final LoadingCache<String, PluginServices> pluginServices =
-            CacheBuilder.newBuilder().build(new CacheLoader<String, PluginServices>() {
-                @Override
-                public PluginServices load(String pluginId) {
-                    return create(pluginId);
-                }
-            });
+    private final PluginServicesFactory pluginServicesFactory;
 
-    private final Supplier<PluginServices> pluginServicesWithoutPlugin =
-            Suppliers.memoize(new Supplier<PluginServices>() {
-                @Override
-                public PluginServices get() {
-                    return create(null);
-                }
-            });
-
-    public TraceModule(Ticker ticker, Clock clock, ConfigModule configModule,
-            TraceCollector traceCollector, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
+    public TraceModule(final Ticker ticker, final Clock clock, final ConfigModule configModule,
+            final TraceCollector traceCollector,
+            final @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             @Nullable Instrumentation instrumentation, ScheduledExecutorService scheduledExecutor) {
-        this.ticker = ticker;
-        this.clock = clock;
-        this.configModule = configModule;
-        this.traceCollector = traceCollector;
         this.threadAllocatedBytes = threadAllocatedBytes;
         ConfigService configService = configModule.getConfigService();
         parsedTypeCache = new ParsedTypeCache();
@@ -99,16 +73,6 @@ public class TraceModule {
         pointcutConfigAdviceCache =
                 new PointcutConfigAdviceCache(configService.getPointcutConfigs());
         metricTimerService = new MetricTimerServiceImpl(traceRegistry);
-        fineProfileScheduler =
-                new FineProfileScheduler(scheduledExecutor, configService, ticker, new Random());
-        stuckTraceWatcher = new StuckTraceWatcher(scheduledExecutor, traceRegistry,
-                traceCollector, configService, ticker);
-        coarseProfilerWatcher =
-                new CoarseProfilerWatcher(scheduledExecutor, traceRegistry, configService, ticker);
-        stuckTraceWatcher.scheduleAtFixedRate(scheduledExecutor, 0,
-                StuckTraceWatcher.PERIOD_MILLIS, MILLISECONDS);
-        coarseProfilerWatcher.scheduleAtFixedRate(scheduledExecutor, 0,
-                CoarseProfilerWatcher.PERIOD_MILLIS, MILLISECONDS);
 
         weavingDisabled = configModule.getConfigService().getAdvancedConfig().isWeavingDisabled();
         metricWrapperMethodsDisabled = configModule.getConfigService().getAdvancedConfig()
@@ -121,6 +85,7 @@ public class TraceModule {
                     configModule.getPluginDescriptorCache().getAdvisors(),
                     pointcutConfigAdviceCache.getAdvisorsSupplier(), parsedTypeCache,
                     metricTimerService, !metricWrapperMethodsDisabled);
+            PreInitializeWeavingClasses.preInitializeClasses(TraceModule.class.getClassLoader());
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
                 jvmRetransformClassesSupported = true;
@@ -131,13 +96,31 @@ public class TraceModule {
         } else {
             jvmRetransformClassesSupported = false;
         }
-    }
 
-    public PluginServices getPluginServices(@Nullable String pluginId) {
-        if (pluginId == null) {
-            return pluginServicesWithoutPlugin.get();
-        }
-        return pluginServices.getUnchecked(pluginId);
+        stuckTraceWatcher = new StuckTraceWatcher(scheduledExecutor, traceRegistry,
+                traceCollector, configService, ticker);
+        coarseProfilerWatcher =
+                new CoarseProfilerWatcher(scheduledExecutor, traceRegistry, configService, ticker);
+        stuckTraceWatcher.scheduleAtFixedRate(scheduledExecutor, 0,
+                StuckTraceWatcher.PERIOD_MILLIS, MILLISECONDS);
+        coarseProfilerWatcher.scheduleAtFixedRate(scheduledExecutor, 0,
+                CoarseProfilerWatcher.PERIOD_MILLIS, MILLISECONDS);
+        final FineProfileScheduler fineProfileScheduler =
+                new FineProfileScheduler(scheduledExecutor, configService, ticker, new Random());
+        // this assignment to local variable is just to make checker framework happy
+        // instead of directly accessing the field from inside the anonymous inner class below
+        // (in which case checker framework thinks the field may still be null)
+        final TraceRegistry traceRegistry = this.traceRegistry;
+        pluginServicesFactory = new PluginServicesFactory() {
+            @Override
+            public PluginServices create(@Nullable String pluginId) {
+                return PluginServicesImpl.create(traceRegistry, traceCollector,
+                        configModule.getConfigService(), threadAllocatedBytes,
+                        fineProfileScheduler, ticker, clock,
+                        configModule.getPluginDescriptorCache(), pluginId);
+            }
+        };
+        PluginServicesRegistry.initStaticState(pluginServicesFactory);
     }
 
     public ParsedTypeCache getParsedTypeCache() {
@@ -168,15 +151,15 @@ public class TraceModule {
         return jvmRetransformClassesSupported;
     }
 
-    private PluginServices create(@Nullable String pluginId) {
-        return PluginServicesImpl.create(traceRegistry, traceCollector,
-                configModule.getConfigService(), threadAllocatedBytes, fineProfileScheduler,
-                ticker, clock, configModule.getPluginDescriptorCache(), pluginId);
+    @OnlyUsedByTests
+    public void initStaticState() {
+        PluginServicesRegistry.initStaticState(pluginServicesFactory);
     }
 
     @OnlyUsedByTests
     public void close() {
         stuckTraceWatcher.cancel();
         coarseProfilerWatcher.cancel();
+        PluginServicesRegistry.clearStaticState();
     }
 }

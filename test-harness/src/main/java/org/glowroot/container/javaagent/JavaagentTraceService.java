@@ -91,7 +91,7 @@ class JavaagentTraceService extends TraceService {
 
     @Override
     @Nullable
-    public Trace getActiveTrace() throws Exception {
+    protected Trace getActiveTrace() throws Exception {
         String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
                 + "&low=0&high=" + Long.MAX_VALUE + "&limit=1000");
         TracePointResponse response =
@@ -128,6 +128,11 @@ class JavaagentTraceService extends TraceService {
         return mapper.readValue(content, MergedStackTreeNode.class);
     }
 
+    @Override
+    public void deleteAllSnapshots() throws Exception {
+        httpClient.post("/backend/admin/data/delete-all", "");
+    }
+
     void assertNoActiveTraces() throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
         // if interruptAppUnderTest() was used to terminate an active trace, it may take a few
@@ -140,9 +145,5 @@ class JavaagentTraceService extends TraceService {
             }
         }
         throw new AssertionError("There are still active traces");
-    }
-
-    void deleteAllSnapshots() throws Exception {
-        httpClient.post("/backend/admin/data/delete-all", "");
     }
 }

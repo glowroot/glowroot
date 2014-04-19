@@ -143,6 +143,11 @@ class LocalTraceService extends TraceService {
     }
 
     @Override
+    public void deleteAllSnapshots() {
+        snapshotDao.deleteAllSnapshots();
+    }
+
+    @Override
     @Nullable
     protected Trace getActiveTrace() throws Exception {
         List<org.glowroot.trace.model.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
@@ -169,9 +174,5 @@ class LocalTraceService extends TraceService {
             }
         }
         throw new AssertionError("There are still active traces");
-    }
-
-    void deleteAllSnapshots() {
-        snapshotDao.deleteAllSnapshots();
     }
 }

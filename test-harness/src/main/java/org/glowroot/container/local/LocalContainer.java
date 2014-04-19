@@ -205,7 +205,8 @@ public class LocalContainer implements Container {
         }
     }
 
+    // this is used to re-open a shared container after a non-shared container was used
     public void reopen() {
-        MainEntryPoint.setGlowrootModule(glowrootModule);
+        MainEntryPoint.initStaticState(glowrootModule);
     }
 }

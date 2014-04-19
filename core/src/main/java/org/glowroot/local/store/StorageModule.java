@@ -28,12 +28,13 @@ import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.TransactionPointRepository;
 import org.glowroot.collector.SnapshotRepository;
+import org.glowroot.collector.TransactionPointRepository;
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.weaving.PreInitializeStorageShutdownClasses;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -79,6 +80,8 @@ public class StorageModule {
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
         transactionPointDao = new TransactionPointDao(dataSource);
+        PreInitializeStorageShutdownClasses.preInitializeClasses(
+                StorageModule.class.getClassLoader());
     }
 
     public TransactionPointRepository getTransactionPointRepository() {

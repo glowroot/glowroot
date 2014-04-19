@@ -18,7 +18,6 @@ package org.glowroot;
 import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,14 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.GlowrootModule.StartupFailedException;
-import org.glowroot.api.PluginServices;
 import org.glowroot.config.PluginDescriptor;
-import org.glowroot.local.store.DataSource;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Static;
-import org.glowroot.markers.UsedByReflection;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * This class is registered as the Premain-Class in the MANIFEST.MF of glowroot.jar:
@@ -63,6 +57,7 @@ public class MainEntryPoint {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
+    // this static field is only present for tests
     /*@MonotonicNonNull*/
     private static volatile GlowrootModule glowrootModule;
 
@@ -78,57 +73,37 @@ public class MainEntryPoint {
             reconfigureLogging(dataDir);
         }
         try {
-            DataSource.tryUnlockDatabase(new File(dataDir, "glowroot.lock.db"));
-        } catch (SQLException e) {
-            // this is common when stopping tomcat since 'catalina.sh stop' launches a java process
-            // to stop the tomcat jvm, and it uses the same JAVA_OPTS environment variable that may
-            // have been used to specify '-javaagent:glowroot.jar', in which case Glowroot tries
-            // to start up, but it finds the h2 database is locked (by the tomcat jvm).
-            // this can be avoided by using CATALINA_OPTS instead of JAVA_OPTS to specify
-            // -javaagent:glowroot.jar, since CATALINA_OPTS is not used by the 'catalina.sh stop'.
-            // however, when running tomcat from inside eclipse, the tomcat server adapter uses the
-            // same 'VM arguments' for both starting and stopping tomcat, so this code path seems
-            // inevitable at least in this case
-            //
-            // no need for logging in the special (but common) case described above
-            if (!isTomcatStop()) {
-                startupLogger.error("Glowroot not started: database file {} is locked by another"
-                        + " process.", dataDir.getAbsolutePath());
-                // log exception stack trace at debug level
-                startupLogger.debug(e.getMessage(), e);
-            }
-            return;
-        }
-        try {
             start(dataDir, properties, instrumentation);
         } catch (Throwable t) {
-            // log error but don't re-throw which would prevent monitored app from starting
-            startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
+            if (t instanceof StartupFailedException
+                    && ((StartupFailedException) t).isDataSourceLocked()) {
+                logDataSourceLockedException(dataDir);
+            } else {
+                // log error but don't re-throw which would prevent monitored app from starting
+                startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
+            }
         }
-    }
-
-    // called via reflection from org.glowroot.api.PluginServices
-    // also called via reflection from generated pointcut config advice
-    @UsedByReflection
-    public static PluginServices getPluginServices(@Nullable String pluginId) {
-        checkNotNull(glowrootModule, "Glowroot has not been started");
-        return glowrootModule.getPluginServices(pluginId);
     }
 
     static void runViewer() throws StartupFailedException, InterruptedException {
         ImmutableMap<String, String> properties = getGlowrootProperties();
         File dataDir = DataDir.getDataDir(properties);
+        String version = Version.getVersion();
         try {
-            DataSource.tryUnlockDatabase(new File(dataDir, "glowroot.lock.db"));
-        } catch (SQLException e) {
-            startupLogger.error("Viewer cannot start: database file {} is locked by another"
-                    + " process.", dataDir.getAbsolutePath());
-            // log exception stack trace at debug level
-            startupLogger.debug(e.getMessage(), e);
+            glowrootModule = new GlowrootModule(dataDir, properties, null, version, true);
+        } catch (Throwable t) {
+            if (t instanceof StartupFailedException
+                    && ((StartupFailedException) t).isDataSourceLocked()) {
+                // log nice message without stack trace for this common case
+                startupLogger.error("Viewer cannot start: database file {} is locked by another"
+                        + " process.", dataDir.getAbsolutePath());
+                // log exception stack trace at debug level
+                startupLogger.debug(t.getMessage(), t);
+            } else {
+                startupLogger.error("Viewer cannot start: {}", t.getMessage(), t);
+            }
             return;
         }
-        String version = Version.getVersion();
-        glowrootModule = new GlowrootModule(dataDir, properties, null, version, true);
         startupLogger.info("Viewer started (version {})", version);
         startupLogger.info("Viewer listening at http://localhost:{}",
                 glowrootModule.getUiModule().getPort());
@@ -143,8 +118,7 @@ public class MainEntryPoint {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
-        glowrootModule =
-                new GlowrootModule(dataDir, properties, instrumentation, version, false);
+        glowrootModule = new GlowrootModule(dataDir, properties, instrumentation, version, false);
         startupLogger.info("Glowroot started (version {})", version);
         startupLogger.info("Glowroot listening at http://localhost:{}",
                 glowrootModule.getUiModule().getPort());
@@ -170,6 +144,24 @@ public class MainEntryPoint {
             }
         }
         return builder.build();
+    }
+
+    private static void logDataSourceLockedException(File dataDir) {
+        // this is common when stopping tomcat since 'catalina.sh stop' launches a java process
+        // to stop the tomcat jvm, and it uses the same JAVA_OPTS environment variable that may
+        // have been used to specify '-javaagent:glowroot.jar', in which case Glowroot tries
+        // to start up, but it finds the h2 database is locked (by the tomcat jvm).
+        // this can be avoided by using CATALINA_OPTS instead of JAVA_OPTS to specify
+        // -javaagent:glowroot.jar, since CATALINA_OPTS is not used by the 'catalina.sh stop'.
+        // however, when running tomcat from inside eclipse, the tomcat server adapter uses the
+        // same 'VM arguments' for both starting and stopping tomcat, so this code path seems
+        // inevitable at least in this case
+        //
+        // no need for logging in the special (but common) case described above
+        if (!isTomcatStop()) {
+            startupLogger.error("Glowroot not started: database file {} is locked by another"
+                    + " process.", dataDir.getAbsolutePath());
+        }
     }
 
     private static void reconfigureLogging(File dataDir) {
@@ -223,10 +215,12 @@ public class MainEntryPoint {
         return glowrootModule;
     }
 
-    public static void setGlowrootModule(GlowrootModule glowrootModule) {
-        MainEntryPoint.glowrootModule = glowrootModule;
+    @OnlyUsedByTests
+    public static void initStaticState(GlowrootModule glowrootModule) {
+        glowrootModule.getTraceModule().initStaticState();
         if (isShaded()) {
             reconfigureLogging(glowrootModule.getDataDir());
         }
+        MainEntryPoint.glowrootModule = glowrootModule;
     }
 }

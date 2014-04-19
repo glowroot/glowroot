@@ -34,15 +34,17 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.PluginServices;
 import org.glowroot.collector.CollectorModule;
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.jvm.JvmModule;
+import org.glowroot.local.store.DataSource.DataSourceLockedException;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.ui.LocalUiModule;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.trace.TraceCollector;
 import org.glowroot.trace.TraceModule;
+import org.glowroot.trace.model.Trace;
 
 /**
  * @author Trask Stalnaker
@@ -79,9 +81,20 @@ public class GlowrootModule {
         } catch (URISyntaxException e) {
             throw new StartupFailedException(e);
         }
+        // trace module needs to be started as early as possible, so that weaving will be applied to
+        // as many classes as possible
+        // in particular, it needs to be started before StorageModule which uses shaded H2, which
+        // loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
+        // services/java.sql.Driver, and those drivers need to be woven
+        TraceCollectorProxy traceCollectorProxy = new TraceCollectorProxy();
+        traceModule = new TraceModule(ticker, clock, configModule, traceCollectorProxy,
+                jvmModule.getThreadAllocatedBytes().getService(), instrumentation,
+                scheduledExecutor);
         try {
             storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
                     scheduledExecutor, viewerMode);
+        } catch (DataSourceLockedException e) {
+            throw new StartupFailedException(e, true);
         } catch (SQLException e) {
             throw new StartupFailedException(e);
         } catch (IOException e) {
@@ -90,17 +103,11 @@ public class GlowrootModule {
         collectorModule = new CollectorModule(clock, ticker, configModule,
                 storageModule.getSnapshotRepository(),
                 storageModule.getTransactionPointRepository(), scheduledExecutor, viewerMode);
-        traceModule = new TraceModule(ticker, clock, configModule,
-                collectorModule.getTraceCollector(),
-                jvmModule.getThreadAllocatedBytes().getService(), instrumentation,
-                scheduledExecutor);
+        // now inject the real TraceCollector into the proxy
+        traceCollectorProxy.setInstance(collectorModule.getTraceCollector());
         uiModule = new LocalUiModule(ticker, clock, dataDir, jvmModule, configModule,
                 storageModule, collectorModule, traceModule, instrumentation, properties, version);
         this.dataDir = dataDir;
-    }
-
-    PluginServices getPluginServices(@Nullable String pluginId) {
-        return traceModule.getPluginServices(pluginId);
     }
 
     @OnlyUsedByTests
@@ -146,8 +153,45 @@ public class GlowrootModule {
     @VisibleForTesting
     @SuppressWarnings("serial")
     public static class StartupFailedException extends Exception {
-        public StartupFailedException(Throwable cause) {
+
+        private final boolean dataSourceLocked;
+
+        private StartupFailedException(Throwable cause) {
             super(cause);
+            this.dataSourceLocked = false;
+        }
+
+        private StartupFailedException(Throwable cause, boolean dataSourceLocked) {
+            super(cause);
+            this.dataSourceLocked = dataSourceLocked;
+        }
+
+        public boolean isDataSourceLocked() {
+            return dataSourceLocked;
+        }
+    }
+
+    private static class TraceCollectorProxy implements TraceCollector {
+
+        /*@MonotonicNonNull*/
+        private volatile TraceCollector instance;
+
+        @Override
+        public void onCompletedTrace(Trace trace) {
+            if (instance != null) {
+                instance.onCompletedTrace(trace);
+            }
+        }
+
+        @Override
+        public void onStuckTrace(Trace trace) {
+            if (instance != null) {
+                instance.onStuckTrace(trace);
+            }
+        }
+
+        private void setInstance(TraceCollector instance) {
+            this.instance = instance;
         }
     }
 }

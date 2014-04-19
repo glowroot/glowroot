@@ -17,6 +17,7 @@ package org.glowroot.local.store;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,8 +38,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.h2.jdbc.JdbcConnection;
-import org.h2.store.FileLister;
+import org.h2.jdbc.JdbcSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -330,17 +330,14 @@ public class DataSource {
         }
     }
 
-    public static void tryUnlockDatabase(File dbFile) throws SQLException {
-        if (!h2LocalServer) {
-            FileLister.tryUnlockDatabase(Lists.newArrayList(dbFile.getPath()), null);
-        }
-    }
-
     private static Connection createConnection(@Nullable File dbFile) throws SQLException {
-        // do not use java.sql.DriverManager or org.h2.Driver because these register the driver
-        // globally with the JVM
+        try {
+            Class.forName("org.h2.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new SQLException(e);
+        }
         if (dbFile == null) {
-            return new JdbcConnection("jdbc:h2:mem:", new Properties());
+            return DriverManager.getConnection("jdbc:h2:mem:", new Properties());
         } else {
             String dbPath = dbFile.getPath();
             dbPath = dbPath.replaceFirst(".h2.db$", "");
@@ -354,8 +351,17 @@ public class DataSource {
             } else {
                 url = "jdbc:h2:" + dbPath;
             }
-            url += ";db_close_on_exit=false;compress_lob=lzf";
-            return new JdbcConnection(url, props);
+            url += ";db_close_on_exit=false";
+            try {
+                return DriverManager.getConnection(url, props);
+            } catch (JdbcSQLException e) {
+                if (e.getMessage().endsWith(" [90020-176]")) {
+                    // convert to DataSourceLockedException
+                    throw new DataSourceLockedException();
+                } else {
+                    throw e;
+                }
+            }
         }
     }
 
@@ -393,6 +399,11 @@ public class DataSource {
 
     interface ResultSetExtractor<T> {
         T extractData(ResultSet resultSet) throws SQLException;
+    }
+
+    @SuppressWarnings("serial")
+    public static class DataSourceLockedException extends SQLException {
+        private DataSourceLockedException() {}
     }
 
     // this replaces H2's default shutdown hook (see jdbc connection db_close_on_exit=false above)

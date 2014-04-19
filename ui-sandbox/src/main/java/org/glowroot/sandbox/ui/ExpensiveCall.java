@@ -17,8 +17,11 @@ package org.glowroot.sandbox.ui;
 
 import java.util.Random;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import javax.annotation.concurrent.Immutable;
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * @author Trask Stalnaker
@@ -129,7 +132,8 @@ public class ExpensiveCall {
     private static final Object lock = new Object();
 
     static {
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
+        Executors.newSingleThreadExecutor(threadFactory).execute(new Runnable() {
             @Override
             public void run() {
                 try {

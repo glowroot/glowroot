@@ -68,4 +68,6 @@ public abstract class TraceService {
 
     @Nullable
     public abstract MergedStackTreeNode getFineProfile(String traceId) throws Exception;
+
+    public abstract void deleteAllSnapshots() throws Exception;
 }

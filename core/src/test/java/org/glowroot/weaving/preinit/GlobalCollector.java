@@ -192,7 +192,10 @@ public class GlobalCollector {
     @Nullable
     private TypeCollector createTypeCollector(String typeName) {
         if (ClassLoader.getSystemResource(typeName + ".class") == null) {
-            logger.error("could not find class: {}", typeName);
+            // no need to log error for H2 optional geometry support
+            if (!typeName.startsWith("com/vividsolutions/jts/")) {
+                logger.error("could not find class: {}", typeName);
+            }
             return null;
         }
         TypeCollector typeCollector = new TypeCollector();

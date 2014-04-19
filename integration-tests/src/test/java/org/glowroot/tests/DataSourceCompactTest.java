@@ -17,12 +17,14 @@ package org.glowroot.tests;
 
 import java.io.File;
 
+import com.google.common.base.Strings;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
+import org.glowroot.api.PluginServices;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
@@ -61,21 +63,32 @@ public class DataSourceCompactTest {
         // given
         File dbFile = new File(dataDir, "glowroot.h2.db");
         // when
+        container.addExpectedLogMessage("org.glowroot.collector.TraceCollectorImpl",
+                "not storing a trace because of an excessive backlog");
         container.executeAppUnderTest(GenerateLotsOfTraces.class);
         long preCompactionDbSize = dbFile.length();
+        container.getTraceService().deleteAllSnapshots();
         container.getConfigService().compactData();
         // then
         assertThat(dbFile.length()).isLessThan(preCompactionDbSize);
     }
 
     public static class GenerateLotsOfTraces implements AppUnderTest, TraceMarker {
+
+        private static final PluginServices pluginServices =
+                PluginServices.get("glowroot-integration-tests");
+
         @Override
         public void executeApp() throws InterruptedException {
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 10000; i++) {
                 traceMarker();
             }
         }
+
         @Override
-        public void traceMarker() {}
+        public void traceMarker() {
+            // need to fill up h2 db enough or it won't compact
+            pluginServices.setTransactionName(Strings.repeat("a", 10000));
+        }
     }
 }

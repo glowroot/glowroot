@@ -80,6 +80,9 @@ public class DynamicAdviceGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(DynamicAdviceGenerator.class);
 
+    private static final String HANDLE_CLASS_NAME = "org/glowroot/trace/PluginServicesRegistry";
+    private static final String HANDLE_METHOD_NAME = "get";
+
     private static final AtomicInteger counter = new AtomicInteger();
 
     private final PointcutConfig pointcutConfig;
@@ -206,7 +209,7 @@ public class DynamicAdviceGenerator {
         } else {
             mv.visitLdcInsn(pluginId);
         }
-        mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/MainEntryPoint", "getPluginServices",
+        mv.visitMethodInsn(INVOKESTATIC, HANDLE_CLASS_NAME, HANDLE_METHOD_NAME,
                 "(Ljava/lang/String;)Lorg/glowroot/api/PluginServices;", false);
         mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;");

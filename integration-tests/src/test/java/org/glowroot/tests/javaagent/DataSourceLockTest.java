@@ -19,6 +19,7 @@ import java.io.File;
 
 import org.junit.Test;
 
+import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.Container.StartupFailedException;
 import org.glowroot.container.TempDirs;
@@ -36,13 +37,13 @@ public class DataSourceLockTest {
     public void shouldShutdown() throws Exception {
         // given
         File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
-        // this test is only relevant using an external jvm for one of containers since H2
-        // transparently handles two connections to the same file inside the same jvm with no
-        // problem
-        Container container = JavaagentContainer.createWithFileDb(dataDir);
+        Container container = Containers.createWithFileDb(dataDir);
         // when
         boolean exception = false;
         try {
+            // this test is only relevant using an external jvm for one of containers since H2
+            // transparently handles two connections to the same file inside the same jvm with no
+            // problem
             JavaagentContainer.createWithFileDb(dataDir);
         } catch (StartupFailedException e) {
             exception = true;

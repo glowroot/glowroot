@@ -95,8 +95,6 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         } else {
             bootstrapLoaderWeaver = null;
         }
-        PreInitializeClasses.preInitializeClasses(WeavingClassFileTransformer.class
-                .getClassLoader());
     }
 
     // From the javadoc on ClassFileTransformer.transform():
