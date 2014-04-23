@@ -88,7 +88,6 @@ public class PreInitializeStorageShutdownClasses {
         types.add("com.google.common.base.Objects$ToStringHelper");
         types.add("com.google.common.base.Objects$ToStringHelper$ValueHolder");
         types.add("com.google.common.base.Platform");
-        types.add("com.google.common.base.Platform$1");
         types.add("com.google.common.base.Preconditions");
         types.add("com.google.common.base.Stopwatch");
         types.add("com.google.common.base.Stopwatch$1");
@@ -208,7 +207,7 @@ public class PreInitializeStorageShutdownClasses {
         types.add("com.google.common.util.concurrent.Futures");
         types.add("com.google.common.util.concurrent.Futures$1");
         types.add("com.google.common.util.concurrent.Futures$3");
-        types.add("com.google.common.util.concurrent.Futures$5");
+        types.add("com.google.common.util.concurrent.Futures$6");
         types.add("com.google.common.util.concurrent.Futures$ChainingListenableFuture");
         types.add("com.google.common.util.concurrent.Futures$ChainingListenableFuture$1");
         types.add("com.google.common.util.concurrent.Futures$ImmediateFailedFuture");
