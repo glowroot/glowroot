@@ -104,10 +104,10 @@ public class Trace {
 
     // stack trace data constructed from coarse-grained profiling
     /*@MonotonicNonNull*/
-    private volatile MergedStackTree coarseMergedStackTree;
+    private volatile Profile coarseProfile;
     // stack trace data constructed from fine-grained profiling
     /*@MonotonicNonNull*/
-    private volatile MergedStackTree fineMergedStackTree;
+    private volatile Profile fineProfile;
 
     private final long threadId;
 
@@ -249,17 +249,17 @@ public class Trace {
     }
 
     public boolean isFine() {
-        return fineMergedStackTree != null;
+        return fineProfile != null;
     }
 
     @Nullable
-    public MergedStackTree getCoarseMergedStackTree() {
-        return coarseMergedStackTree;
+    public Profile getCoarseProfile() {
+        return coarseProfile;
     }
 
     @Nullable
-    public MergedStackTree getFineMergedStackTree() {
-        return fineMergedStackTree;
+    public Profile getFineProfile() {
+        return fineProfile;
     }
 
     public int getStoreThresholdMillisOverride() {
@@ -430,21 +430,21 @@ public class Trace {
             return;
         }
         if (fine) {
-            if (fineMergedStackTree == null) {
+            if (fineProfile == null) {
                 // initialization possible race condition is ok, worst case scenario it misses
                 // an almost simultaneously captured stack trace
-                fineMergedStackTree = new MergedStackTree();
+                fineProfile = new Profile();
             }
-            // TODO make sure that when reading merged stack tree it is not in-between instantiation
+            // TODO make sure that when reading profile it is not in-between instantiation
             // and having its first stack trace here, maybe pass threadInfo to constructor????
-            fineMergedStackTree.addStackTrace(threadInfo);
+            fineProfile.addStackTrace(threadInfo);
         } else {
-            if (coarseMergedStackTree == null) {
+            if (coarseProfile == null) {
                 // initialization possible race condition is ok, worst case scenario it misses
                 // an almost simultaneously captured stack trace
-                coarseMergedStackTree = new MergedStackTree();
+                coarseProfile = new Profile();
             }
-            coarseMergedStackTree.addStackTrace(threadInfo);
+            coarseProfile.addStackTrace(threadInfo);
         }
     }
 
@@ -472,8 +472,8 @@ public class Trace {
                 .add("activeMetric", activeMetric)
                 .add("jvmInfo", jvmInfo)
                 .add("rootSpan", rootSpan)
-                .add("coarseMergedStackTree", coarseMergedStackTree)
-                .add("fineMergedStackTree", fineMergedStackTree)
+                .add("coarseProfile", coarseProfile)
+                .add("fineProfile", fineProfile)
                 .add("coarseProfilingScheduledRunnable", coarseProfilerScheduledRunnable)
                 .add("fineProfilingScheduledRunnable", fineProfilerScheduledRunnable)
                 .add("stuckScheduledRunnable", stuckScheduledRunnable)

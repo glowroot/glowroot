@@ -196,13 +196,13 @@ public class TraceCommonService {
     @Nullable
     private CharSource createCoarseProfile(Trace active) {
         return ProfileCharSourceCreator.createProfileCharSource(
-                active.getCoarseMergedStackTree());
+                active.getCoarseProfile());
     }
 
     @Nullable
     private CharSource createFineProfile(Trace active) {
         return ProfileCharSourceCreator.createProfileCharSource(
-                active.getFineMergedStackTree());
+                active.getFineProfile());
     }
 
     static class TraceExport {

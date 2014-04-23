@@ -22,7 +22,7 @@ import java.util.Arrays;
 import com.google.common.io.CharSource;
 import org.junit.Test;
 
-import org.glowroot.trace.model.MergedStackTree;
+import org.glowroot.trace.model.Profile;
 import org.glowroot.trace.model.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,11 +36,11 @@ import static org.mockito.Mockito.when;
 public class SnapshotCreatorTest {
 
     @Test
-    public void shouldStoreVeryLargeMergedStackTree() throws IOException {
+    public void shouldStoreVeryLargeProfile() throws IOException {
         // given
-        MergedStackTree mergedStackTree = new MergedStackTree();
+        Profile profile = new Profile();
         Trace trace = mock(Trace.class);
-        when(trace.getCoarseMergedStackTree()).thenReturn(mergedStackTree);
+        when(trace.getCoarseProfile()).thenReturn(profile);
         // StackOverflowError was previously occurring somewhere around 1300 stack trace elements
         // using a 1mb thread stack size so testing with 10,000 here just to be sure
         StackTraceElement[] stackTrace = new StackTraceElement[10000];
@@ -48,15 +48,14 @@ public class SnapshotCreatorTest {
             stackTrace[i] = new StackTraceElement(SnapshotCreatorTest.class.getName(),
                     "method" + i, "TraceSnapshotsTest.java", 100 + 10 * i);
         }
-        mergedStackTree.addToStackTree(
-                MergedStackTree.stripSyntheticMetricMethods(Arrays.asList(stackTrace)),
+        profile.addToStackTree(Profile.stripSyntheticMetricMethods(Arrays.asList(stackTrace)),
                 State.RUNNABLE);
         // when
-        CharSource mergedStackTreeCharSource =
-                ProfileCharSourceCreator.createProfileCharSource(trace.getCoarseMergedStackTree());
-        assertThat(mergedStackTreeCharSource).isNotNull();
+        CharSource profileCharSource =
+                ProfileCharSourceCreator.createProfileCharSource(trace.getCoarseProfile());
+        assertThat(profileCharSource).isNotNull();
         // then don't blow up with StackOverflowError
         // (and an extra verification just to make sure the test was valid)
-        assertThat(mergedStackTreeCharSource.read().length()).isGreaterThan(1000000);
+        assertThat(profileCharSource.read().length()).isGreaterThan(1000000);
     }
 }

@@ -21,12 +21,12 @@ import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 
 import org.glowroot.common.ScheduledRunnable;
-import org.glowroot.trace.model.MergedStackTree;
+import org.glowroot.trace.model.Profile;
 import org.glowroot.trace.model.Trace;
 
 /**
  * Captures a stack trace for the thread executing a trace and stores the stack trace in the
- * {@link Trace}'s {@link MergedStackTree}.
+ * {@link Trace}'s {@link Profile}.
  * 
  * @author Trask Stalnaker
  * @since 0.5

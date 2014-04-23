@@ -21,8 +21,8 @@ import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Objects;
 
-import org.glowroot.trace.model.MergedStackTree;
-import org.glowroot.trace.model.MergedStackTreeNode;
+import org.glowroot.trace.model.Profile;
+import org.glowroot.trace.model.ProfileNode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -34,7 +34,7 @@ class TransactionProfileBuilder {
 
     private final Object lock = new Object();
     @GuardedBy("lock")
-    private final MergedStackTreeNode syntheticRootNode = MergedStackTreeNode.createSyntheticRoot();
+    private final ProfileNode syntheticRootNode = ProfileNode.createSyntheticRoot();
 
     Object getLock() {
         return lock;
@@ -42,11 +42,11 @@ class TransactionProfileBuilder {
 
     // must be holding lock to call and can only use resulting node tree inside the same
     // synchronized block
-    MergedStackTreeNode getSyntheticRootNode() {
+    ProfileNode getSyntheticRootNode() {
         return syntheticRootNode;
     }
 
-    void addProfile(MergedStackTree profile) {
+    void addProfile(Profile profile) {
         synchronized (lock) {
             synchronized (profile.getLock()) {
                 mergeNode(syntheticRootNode, profile.getSyntheticRootNode());
@@ -54,7 +54,7 @@ class TransactionProfileBuilder {
         }
     }
 
-    private void mergeNode(MergedStackTreeNode node, MergedStackTreeNode toBeMergedNode) {
+    private void mergeNode(ProfileNode node, ProfileNode toBeMergedNode) {
         node.incrementSampleCount(toBeMergedNode.getSampleCount());
         // the metric names for a given stack element should always match, unless
         // the line numbers aren't available and overloaded methods are matched up, or
@@ -66,10 +66,10 @@ class TransactionProfileBuilder {
                 && metricNames.size() > node.getMetricNames().size()) {
             node.setMetricNames(metricNames);
         }
-        for (MergedStackTreeNode toBeMergedChildNode : toBeMergedNode.getChildNodes()) {
+        for (ProfileNode toBeMergedChildNode : toBeMergedNode.getChildNodes()) {
             // for each to-be-merged child node look for a match
-            MergedStackTreeNode foundMatchingChildNode = null;
-            for (MergedStackTreeNode childNode : node.getChildNodes()) {
+            ProfileNode foundMatchingChildNode = null;
+            for (ProfileNode childNode : node.getChildNodes()) {
                 if (matches(toBeMergedChildNode, childNode)) {
                     foundMatchingChildNode = childNode;
                     break;
@@ -81,7 +81,7 @@ class TransactionProfileBuilder {
                 StackTraceElement stackTraceElement = toBeMergedChildNode.getStackTraceElement();
                 // stackTraceElement is only null for synthetic root
                 checkNotNull(stackTraceElement);
-                foundMatchingChildNode = MergedStackTreeNode.create(stackTraceElement,
+                foundMatchingChildNode = ProfileNode.create(stackTraceElement,
                         toBeMergedChildNode.getLeafThreadState());
                 node.addChildNode(foundMatchingChildNode);
             }
@@ -89,7 +89,7 @@ class TransactionProfileBuilder {
         }
     }
 
-    private boolean matches(MergedStackTreeNode node1, MergedStackTreeNode node2) {
+    private boolean matches(ProfileNode node1, ProfileNode node2) {
         return Objects.equal(node1.getStackTraceElement(), node2.getStackTraceElement())
                 && Objects.equal(node1.getLeafThreadState(), node2.getLeafThreadState());
     }

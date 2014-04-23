@@ -26,8 +26,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 
-import org.glowroot.trace.model.MergedStackTree;
 import org.glowroot.trace.model.Metric;
+import org.glowroot.trace.model.Profile;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -68,7 +68,7 @@ class TransactionPointBuilder {
         addToMetrics(rootMetric, syntheticRootTransactionMetric);
     }
 
-    void addToProfile(MergedStackTree profile) {
+    void addToProfile(Profile profile) {
         transactionProfile.addProfile(profile);
     }
 
@@ -103,7 +103,7 @@ class TransactionPointBuilder {
     private String getProfileJson() throws IOException {
         synchronized (transactionProfile.getLock()) {
             return ProfileCharSourceCreator
-                    .createProfile(transactionProfile.getSyntheticRootNode());
+                    .createProfileJson(transactionProfile.getSyntheticRootNode());
         }
     }
 

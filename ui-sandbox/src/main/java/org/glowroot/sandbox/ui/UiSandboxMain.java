@@ -88,9 +88,9 @@ public class UiSandboxMain {
             while (true) {
                 Stopwatch stopwatch = Stopwatch.createStarted();
                 while (stopwatch.elapsed(SECONDS) < 30) {
-                    // a very short trace that will have an empty merged stack tree
+                    // a very short trace that will have an empty profile
                     new NestableCall(1, 10, 100).execute();
-                    // a trace that will have merged stack tree with only a single leaf
+                    // a trace that will have profile tree with only a single leaf
                     new NestableCall(1, 100, 100).execute();
                     new NestableCall(new NestableCall(10, 50, 5000), 20, 50, 5000).execute();
                     new NestableCall(new NestableCall(5, 50, 5000), 5, 50, 5000).execute();

@@ -285,15 +285,15 @@ TraceRenderer = (function () {
       $selector.addClass('hide');
     }
   });
-  $(document).on('click', '.mst-coarse-toggle', function () {
+  $(document).on('click', '.profile-coarse-toggle', function () {
     var $traceParent = $(this).parents('.trace-parent');
     var $button = $(this);
-    profileToggle($button, $traceParent, '#mstCoarseOuter', 'coarseProfile', 'backend/trace/coarse-profile');
+    profileToggle($button, $traceParent, '#coarseProfileOuter', 'coarseProfile', 'backend/trace/coarse-profile');
   });
-  $(document).on('click', '.mst-fine-toggle', function () {
+  $(document).on('click', '.profile-fine-toggle', function () {
     var $traceParent = $(this).parents('.trace-parent');
     var $button = $(this);
-    profileToggle($button, $traceParent, '#mstFineOuter', 'fineProfile', 'backend/trace/fine-profile');
+    profileToggle($button, $traceParent, '#fineProfileOuter', 'fineProfile', 'backend/trace/fine-profile');
   });
 
   function profileToggle($button, $traceParent, selector, traceParentDataAttribute, url) {
@@ -486,10 +486,10 @@ TraceRenderer = (function () {
     // build initial merged stack tree
     var interestingHtml = curr(interestingRootNode, 0);
     if (uninterestingHtml) {
-      $selector.find('.mst-common .expanded-content').html(uninterestingHtml);
-      $selector.find('.mst-common').removeClass('hide');
+      $selector.find('.profile-common .expanded-content').html(uninterestingHtml);
+      $selector.find('.profile-common').removeClass('hide');
     }
-    $selector.find('.mst-interesting').html(interestingHtml);
+    $selector.find('.profile-interesting').html(interestingHtml);
 
     var mergedCounts = calculateMetricNameCounts(rootNode);
     if (!$.isEmptyObject(mergedCounts)) {
@@ -537,16 +537,16 @@ TraceRenderer = (function () {
       // remove the root '' since all nodes are already under the single root span metric
       orderedNodes.splice(0, 1);
       // build filter dropdown
-      var $mstFilter = $selector.find('.mst-filter');
-      $mstFilter.removeClass('hide');
+      var $profileFilter = $selector.find('.profile-filter');
+      $profileFilter.removeClass('hide');
       $.each(orderedNodes, function (i, node) {
-        $mstFilter.append($('<option />').val(node.name)
+        $profileFilter.append($('<option />').val(node.name)
             .text(node.name + ' (' + rootNode.metricNameCounts[node.name] + ')'));
       });
-      $mstFilter.change(function () {
+      $profileFilter.change(function () {
         // update merged stack tree based on filter
         var interestingHtml = curr(interestingRootNode, 0, $(this).val());
-        $selector.find('.mst-interesting').html(interestingHtml);
+        $selector.find('.profile-interesting').html(interestingHtml);
       });
     }
   }

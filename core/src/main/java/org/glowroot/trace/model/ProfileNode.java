@@ -25,12 +25,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 /**
- * Element of {@link MergedStackTree}.
+ * Element of {@link Profile}.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class MergedStackTreeNode {
+public class ProfileNode {
 
     @Nullable
     private final StackTraceElement stackTraceElement;
@@ -43,24 +43,24 @@ public class MergedStackTreeNode {
     @Nullable
     private ImmutableList<String> metricNames;
     // nodes mostly have a single child node, and rarely have more than two child nodes
-    private final List<MergedStackTreeNode> childNodes = Lists.newArrayListWithCapacity(2);
+    private final List<ProfileNode> childNodes = Lists.newArrayListWithCapacity(2);
 
-    public static MergedStackTreeNode createSyntheticRoot() {
-        return new MergedStackTreeNode(null, null);
+    public static ProfileNode createSyntheticRoot() {
+        return new ProfileNode(null, null);
     }
 
-    public static MergedStackTreeNode create(StackTraceElement stackTraceElement,
+    public static ProfileNode create(StackTraceElement stackTraceElement,
             @Nullable State leafThreadState) {
-        return new MergedStackTreeNode(stackTraceElement, leafThreadState);
+        return new ProfileNode(stackTraceElement, leafThreadState);
     }
 
-    private MergedStackTreeNode(@Nullable StackTraceElement stackTraceElement,
+    private ProfileNode(@Nullable StackTraceElement stackTraceElement,
             @Nullable State leafThreadState) {
         this.stackTraceElement = stackTraceElement;
         this.leafThreadState = leafThreadState;
     }
 
-    public void addChildNode(MergedStackTreeNode node) {
+    public void addChildNode(ProfileNode node) {
         childNodes.add(node);
     }
 
@@ -99,7 +99,7 @@ public class MergedStackTreeNode {
         }
     }
 
-    public List<MergedStackTreeNode> getChildNodes() {
+    public List<ProfileNode> getChildNodes() {
         return childNodes;
     }
 

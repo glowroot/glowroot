@@ -34,7 +34,7 @@ import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
  * @since 0.5
  */
 @Immutable
-public class MergedStackTreeNode {
+public class ProfileNode {
 
     @Nullable
     private final String stackTraceElement;
@@ -42,11 +42,10 @@ public class MergedStackTreeNode {
     private final String leafThreadState;
     private final int sampleCount;
     private final ImmutableList<String> metricNames;
-    private final ImmutableList<MergedStackTreeNode> childNodes;
+    private final ImmutableList<ProfileNode> childNodes;
 
-    private MergedStackTreeNode(@Nullable String stackTraceElement,
-            @Nullable String leafThreadState, int sampleCount, List<String> metricNames,
-            List<MergedStackTreeNode> childNodes) {
+    private ProfileNode(@Nullable String stackTraceElement, @Nullable String leafThreadState,
+            int sampleCount, List<String> metricNames, List<ProfileNode> childNodes) {
         this.stackTraceElement = stackTraceElement;
         this.leafThreadState = leafThreadState;
         this.sampleCount = sampleCount;
@@ -73,7 +72,7 @@ public class MergedStackTreeNode {
         return metricNames;
     }
 
-    public ImmutableList<MergedStackTreeNode> getChildNodes() {
+    public ImmutableList<ProfileNode> getChildNodes() {
         return childNodes;
     }
 
@@ -90,15 +89,15 @@ public class MergedStackTreeNode {
     }
 
     @JsonCreator
-    static MergedStackTreeNode readValue(
+    static ProfileNode readValue(
             @JsonProperty("stackTraceElement") @Nullable String stackTraceElement,
             @JsonProperty("leafThreadState") @Nullable String leafThreadState,
             @JsonProperty("sampleCount") @Nullable Integer sampleCount,
             @JsonProperty("metricNames") @Nullable List<String> metricNames,
-            @JsonProperty("childNodes") @Nullable List<MergedStackTreeNode> childNodes)
+            @JsonProperty("childNodes") @Nullable List<ProfileNode> childNodes)
             throws JsonMappingException {
         checkRequiredProperty(sampleCount, "sampleCount");
-        return new MergedStackTreeNode(stackTraceElement, leafThreadState,
+        return new ProfileNode(stackTraceElement, leafThreadState,
                 sampleCount, nullToEmpty(metricNames), nullToEmpty(childNodes));
     }
 }

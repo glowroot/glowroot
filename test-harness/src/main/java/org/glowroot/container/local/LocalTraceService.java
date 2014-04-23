@@ -35,7 +35,7 @@ import org.glowroot.collector.SnapshotCreator;
 import org.glowroot.collector.SnapshotWriter;
 import org.glowroot.collector.TraceCollectorImpl;
 import org.glowroot.container.common.ObjectMappers;
-import org.glowroot.container.trace.MergedStackTreeNode;
+import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceService;
@@ -124,22 +124,22 @@ class LocalTraceService extends TraceService {
 
     @Override
     @Nullable
-    public MergedStackTreeNode getCoarseProfile(String traceId) throws Exception {
+    public ProfileNode getCoarseProfile(String traceId) throws Exception {
         String profile = traceCommonService.getCoarseProfileString(traceId);
         if (profile == null) {
             return null;
         }
-        return mapper.readValue(profile, MergedStackTreeNode.class);
+        return mapper.readValue(profile, ProfileNode.class);
     }
 
     @Override
     @Nullable
-    public MergedStackTreeNode getFineProfile(String traceId) throws Exception {
+    public ProfileNode getFineProfile(String traceId) throws Exception {
         String profile = traceCommonService.getFineProfileString(traceId);
         if (profile == null) {
             return null;
         }
-        return mapper.readValue(profile, MergedStackTreeNode.class);
+        return mapper.readValue(profile, ProfileNode.class);
     }
 
     @Override

@@ -37,7 +37,7 @@ import org.glowroot.container.config.CoarseProfilingConfig;
 import org.glowroot.container.config.FineProfilingConfig;
 import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.UserOverridesConfig;
-import org.glowroot.container.trace.MergedStackTreeNode;
+import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.Trace.Existence;
 
@@ -62,7 +62,7 @@ public class ProfilingTest {
         profilingConfig.setInitialDelayMillis(60);
         profilingConfig.setIntervalMillis(10);
         container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
-        container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
     }
 
     @AfterClass
@@ -84,17 +84,17 @@ public class ProfilingTest {
         profilingConfig.setIntervalMillis(10);
         container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        MergedStackTreeNode coarseProfile =
+        ProfileNode coarseRootProfileNode =
                 container.getTraceService().getCoarseProfile(trace.getId());
         assertThat(trace.getCoarseProfileExistence()).isEqualTo(Existence.YES);
         assertThat(trace.getFineProfileExistence()).isEqualTo(Existence.NO);
         // coarse profiler should have captured exactly 5 stack traces
-        int sampleCount = coarseProfile.getSampleCount();
+        int sampleCount = coarseRootProfileNode.getSampleCount();
         assertThat(sampleCount).isBetween(3, 7);
-        assertThatTreeDoesNotContainSyntheticMetricMethods(coarseProfile);
+        assertThatTreeDoesNotContainSyntheticMetricMethods(coarseRootProfileNode);
     }
 
     @Test
@@ -107,16 +107,16 @@ public class ProfilingTest {
         profilingConfig.setTotalSeconds(0);
         container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        MergedStackTreeNode coarseProfile =
+        ProfileNode coarseRootProfileNode =
                 container.getTraceService().getCoarseProfile(trace.getId());
         assertThat(trace.getCoarseProfileExistence()).isEqualTo(Existence.YES);
         assertThat(trace.getFineProfileExistence()).isEqualTo(Existence.NO);
         // coarse profiler should have captured exactly 1 stack trace
-        assertThat(coarseProfile.getSampleCount()).isEqualTo(1);
-        assertThatTreeDoesNotContainSyntheticMetricMethods(coarseProfile);
+        assertThat(coarseRootProfileNode.getSampleCount()).isEqualTo(1);
+        assertThatTreeDoesNotContainSyntheticMetricMethods(coarseRootProfileNode);
     }
 
     @Test
@@ -138,14 +138,14 @@ public class ProfilingTest {
         fineProfilingConfig.setStoreThresholdMillis(0);
         container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getCoarseProfileExistence()).isEqualTo(Existence.NO);
         assertThat(trace.getFineProfileExistence()).isEqualTo(Existence.YES);
         // fine profiler should have captured about 10 stack traces
-        MergedStackTreeNode fineProfile = container.getTraceService().getFineProfile(trace.getId());
-        assertThat(fineProfile.getSampleCount()).isBetween(5, 15);
+        ProfileNode fineRootProfileNode = container.getTraceService().getFineProfile(trace.getId());
+        assertThat(fineRootProfileNode.getSampleCount()).isBetween(5, 15);
     }
 
     @Test
@@ -172,14 +172,14 @@ public class ProfilingTest {
         userOverridesConfig.setFineProfiling(true);
         container.getConfigService().updateUserOverridesConfig(userOverridesConfig);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTreeForAble.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithProfileForAble.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getCoarseProfileExistence()).isEqualTo(Existence.NO);
         assertThat(trace.getFineProfileExistence()).isEqualTo(Existence.YES);
         // fine profiler should have captured about 10 stack traces
-        MergedStackTreeNode fineProfile = container.getTraceService().getFineProfile(trace.getId());
-        assertThat(fineProfile.getSampleCount()).isBetween(5, 15);
+        ProfileNode fineRootProfileNode = container.getTraceService().getFineProfile(trace.getId());
+        assertThat(fineRootProfileNode.getSampleCount()).isBetween(5, 15);
     }
 
     // set fine store threshold to 0, and see if trace shows up in active list right away
@@ -201,7 +201,7 @@ public class ProfilingTest {
             @Override
             @Nullable
             public Void call() throws Exception {
-                container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
+                container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
                 return null;
             }
         });
@@ -223,7 +223,7 @@ public class ProfilingTest {
         coarseProfilingConfig.setIntervalMillis(10);
         container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getCoarseProfileExistence()).isEqualTo(Existence.NO);
@@ -231,19 +231,19 @@ public class ProfilingTest {
     }
 
     private static void assertThatTreeDoesNotContainSyntheticMetricMethods(
-            MergedStackTreeNode mergedStackTree) {
-        if (mergedStackTree.getStackTraceElement().contains("$glowroot$metric$")) {
+            ProfileNode profileNode) {
+        if (profileNode.getStackTraceElement().contains("$glowroot$metric$")) {
             throw new AssertionError("Not expecting synthetic metric methods but found: "
-                    + mergedStackTree.getStackTraceElement());
+                    + profileNode.getStackTraceElement());
         }
-        if (mergedStackTree.getChildNodes() != null) {
-            for (MergedStackTreeNode child : mergedStackTree.getChildNodes()) {
+        if (profileNode.getChildNodes() != null) {
+            for (ProfileNode child : profileNode.getChildNodes()) {
                 assertThatTreeDoesNotContainSyntheticMetricMethods(child);
             }
         }
     }
 
-    public static class ShouldGenerateTraceWithMergedStackTree implements AppUnderTest,
+    public static class ShouldGenerateTraceWithProfile implements AppUnderTest,
             TraceMarker {
         @Override
         public void executeApp() throws InterruptedException {
@@ -255,7 +255,7 @@ public class ProfilingTest {
         }
     }
 
-    public static class ShouldGenerateTraceWithMergedStackTreeForAble implements AppUnderTest,
+    public static class ShouldGenerateTraceWithProfileForAble implements AppUnderTest,
             TraceMarker {
         private static final PluginServices pluginServices =
                 PluginServices.get("glowroot-integration-tests");

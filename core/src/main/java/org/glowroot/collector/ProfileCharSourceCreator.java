@@ -31,8 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.Static;
-import org.glowroot.trace.model.MergedStackTree;
-import org.glowroot.trace.model.MergedStackTreeNode;
+import org.glowroot.trace.model.Profile;
+import org.glowroot.trace.model.ProfileNode;
 
 /**
  * @author Trask Stalnaker
@@ -47,22 +47,22 @@ public class ProfileCharSourceCreator {
     private ProfileCharSourceCreator() {}
 
     @Nullable
-    public static CharSource createProfileCharSource(@Nullable MergedStackTree mergedStackTree) {
-        if (mergedStackTree == null) {
+    public static CharSource createProfileCharSource(@Nullable Profile profile) {
+        if (profile == null) {
             return null;
         }
-        synchronized (mergedStackTree.getLock()) {
-            String profile = createProfile(mergedStackTree.getSyntheticRootNode());
-            if (profile == null) {
+        synchronized (profile.getLock()) {
+            String profileJson = createProfileJson(profile.getSyntheticRootNode());
+            if (profileJson == null) {
                 return null;
             }
-            return CharSource.wrap(profile);
+            return CharSource.wrap(profileJson);
         }
     }
 
     @Nullable
-    static String createProfile(MergedStackTreeNode syntheticRootNode) {
-        MergedStackTreeNode rootNode;
+    static String createProfileJson(ProfileNode syntheticRootNode) {
+        ProfileNode rootNode;
         if (syntheticRootNode.getChildNodes().size() == 0) {
             return null;
         } else if (syntheticRootNode.getChildNodes().size() == 1) {
@@ -71,11 +71,10 @@ public class ProfileCharSourceCreator {
         } else {
             rootNode = syntheticRootNode;
         }
-        // need to convert merged stack tree into bytes entirely inside of the above lock
-        // (no lazy CharSource)
+        // need to convert profile into bytes entirely inside of the above lock (no lazy CharSource)
         StringWriter sw = new StringWriter(32768);
         try {
-            new MergedStackTreeWriter(rootNode, sw).write();
+            new ProfileWriter(rootNode, sw).write();
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -83,13 +82,13 @@ public class ProfileCharSourceCreator {
         return sw.toString();
     }
 
-    private static class MergedStackTreeWriter {
+    private static class ProfileWriter {
 
         private final List<Object> toVisit;
         private final JsonGenerator jg;
         private final List<String> metricNameStack = Lists.newArrayList();
 
-        private MergedStackTreeWriter(MergedStackTreeNode rootNode, Writer writer)
+        private ProfileWriter(ProfileNode rootNode, Writer writer)
                 throws IOException {
             this.toVisit = Lists.newArrayList((Object) rootNode);
             jg = jsonFactory.createGenerator(writer);
@@ -104,8 +103,8 @@ public class ProfileCharSourceCreator {
 
         private void writeNext() throws IOException {
             Object curr = toVisit.remove(toVisit.size() - 1);
-            if (curr instanceof MergedStackTreeNode) {
-                MergedStackTreeNode currNode = (MergedStackTreeNode) curr;
+            if (curr instanceof ProfileNode) {
+                ProfileNode currNode = (ProfileNode) curr;
                 jg.writeStartObject();
                 toVisit.add(JsonGeneratorOp.END_OBJECT);
                 StackTraceElement stackTraceElement = currNode.getStackTraceElement();
@@ -115,7 +114,7 @@ public class ProfileCharSourceCreator {
                 } else {
                     writeStackTraceElement(stackTraceElement, currNode);
                 }
-                List<MergedStackTreeNode> childNodes = currNode.getChildNodes();
+                List<ProfileNode> childNodes = currNode.getChildNodes();
                 if (!childNodes.isEmpty()) {
                     jg.writeArrayFieldStart("childNodes");
                     toVisit.add(JsonGeneratorOp.END_ARRAY);
@@ -131,7 +130,7 @@ public class ProfileCharSourceCreator {
         }
 
         private void writeStackTraceElement(StackTraceElement stackTraceElement,
-                MergedStackTreeNode currNode) throws IOException {
+                ProfileNode currNode) throws IOException {
             jg.writeStringField("stackTraceElement", stackTraceElement.toString());
             List<String> currMetricNames = currNode.getMetricNames();
             for (String currMetricName : currMetricNames) {

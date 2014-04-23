@@ -20,7 +20,7 @@
 {{/ifExistenceExpired}}
 {{#ifExistenceYes coarseProfileExistence}}
   <div>
-    <button class="flat-btn flat-btn-big-pad1aligned mst-coarse-toggle">
+    <button class="flat-btn flat-btn-big-pad1aligned profile-coarse-toggle">
       <span class="glowroot-link-color">Coarse-grained profile</span>
     </button>
     {{! spinner is not used in export file }}
@@ -28,17 +28,17 @@
       <div class="hide trace-detail-spinner"></div>
     </div>
   </div>
-  <div class="nowrap hide" id="mstCoarseOuter">
-    <select class="form-control mst-filter input-xlarge lt-ie9-width-auto hide" onchange="this.blur()"
+  <div class="nowrap hide" id="coarseProfileOuter">
+    <select class="form-control profile-filter input-xlarge lt-ie9-width-auto hide" onchange="this.blur()"
             style="margin: 4px;">
     </select>
-    <div class="mst-common hide">
+    <div class="profile-common hide">
       <span class="inline-block unexpanded-content glowroot-link-color">common base</span>
       {{! standard expanded-content bottom margin is not needed since nothing can be expanded
           directly below using span so background will stretch beyond page border if needed }}
       <span class="inline-block expanded-content hide" style="margin-bottom: 0;"></span>
     </div>
-    <div class="mst-interesting indent1"></div>
+    <div class="profile-interesting indent1"></div>
   </div>
 {{/ifExistenceYes}}
 {{#ifExistenceExpired coarseProfileExistence}}
@@ -51,7 +51,7 @@
 {{/ifExistenceExpired}}
 {{#ifExistenceYes fineProfileExistence}}
   <div>
-    <button class="flat-btn flat-btn-big-pad1aligned mst-fine-toggle">
+    <button class="flat-btn flat-btn-big-pad1aligned profile-fine-toggle">
       <span class="glowroot-link-color">Fine-grained profile</span>
     </button>
     {{! spinner is not used in export file }}
@@ -59,17 +59,17 @@
       <div class="hide trace-detail-spinner"></div>
     </div>
   </div>
-  <div class="nowrap hide" id="mstFineOuter">
-    <select class="form-control mst-filter input-xlarge lt-ie9-width-auto hide" onchange="this.blur()"
+  <div class="nowrap hide" id="fineProfileOuter">
+    <select class="form-control profile-filter input-xlarge lt-ie9-width-auto hide" onchange="this.blur()"
             style="margin: 4px;">
     </select>
-    <div class="mst-common hide">
+    <div class="profile-common hide">
       <span class="inline-block unexpanded-content glowroot-link-color">common base</span>
       {{! standard expanded-content bottom margin is not needed since nothing can be expanded
           directly below using span so background will stretch beyond page border if needed }}
       <span class="inline-block expanded-content hide" style="margin-bottom: 0;"></span>
     </div>
-    <div class="mst-interesting indent1"></div>
+    <div class="profile-interesting indent1"></div>
   </div>
 {{/ifExistenceYes}}
 {{#ifExistenceExpired fineProfileExistence}}

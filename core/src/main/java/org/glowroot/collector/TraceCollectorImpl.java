@@ -182,9 +182,9 @@ public class TraceCollectorImpl implements TraceCollector {
         CharSource spans = SpansCharSourceCreator
                 .createSpansCharSource(trace.getSpans(), trace.getEndTick());
         CharSource coarseProfile = ProfileCharSourceCreator
-                .createProfileCharSource(trace.getCoarseMergedStackTree());
+                .createProfileCharSource(trace.getCoarseProfile());
         CharSource fineProfile = ProfileCharSourceCreator
-                .createProfileCharSource(trace.getFineMergedStackTree());
+                .createProfileCharSource(trace.getFineProfile());
         snapshotRepository.store(snapshot, spans, coarseProfile, fineProfile);
     }
 }

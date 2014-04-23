@@ -79,12 +79,12 @@ public class SnapshotCreator {
         builder.metrics(writeMetricsAsString(trace.getRootMetric()));
         builder.jvmInfo(trace.getJvmInfoJson());
         builder.spansExistence(Existence.YES);
-        if (trace.getCoarseMergedStackTree() == null) {
+        if (trace.getCoarseProfile() == null) {
             builder.coarseProfileExistence(Existence.NO);
         } else {
             builder.coarseProfileExistence(Existence.YES);
         }
-        if (trace.getFineMergedStackTree() == null) {
+        if (trace.getFineProfile() == null) {
             builder.fineProfileExistence(Existence.NO);
         } else {
             builder.fineProfileExistence(Existence.YES);

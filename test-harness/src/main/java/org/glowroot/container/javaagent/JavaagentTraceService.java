@@ -28,7 +28,7 @@ import com.google.common.collect.Lists;
 
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.javaagent.TracePointResponse.RawPoint;
-import org.glowroot.container.trace.MergedStackTreeNode;
+import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceService;
@@ -116,16 +116,16 @@ class JavaagentTraceService extends TraceService {
 
     @Override
     @Nullable
-    public MergedStackTreeNode getCoarseProfile(String traceId) throws Exception {
+    public ProfileNode getCoarseProfile(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/coarse-profile?traceId=" + traceId);
-        return mapper.readValue(content, MergedStackTreeNode.class);
+        return mapper.readValue(content, ProfileNode.class);
     }
 
     @Override
     @Nullable
-    public MergedStackTreeNode getFineProfile(String traceId) throws Exception {
+    public ProfileNode getFineProfile(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/fine-profile?traceId=" + traceId);
-        return mapper.readValue(content, MergedStackTreeNode.class);
+        return mapper.readValue(content, ProfileNode.class);
     }
 
     @Override

@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.Clock;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
-import org.glowroot.trace.model.MergedStackTree;
+import org.glowroot.trace.model.Profile;
 import org.glowroot.trace.model.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -251,7 +251,7 @@ class TransactionAggregator {
             overallPoint.addToMetrics(trace.getRootMetric());
             transactionPoint.addToMetrics(trace.getRootMetric());
             // only add profile to transaction, overall profile doesn't seem worth the overhead
-            MergedStackTree profile = trace.getFineMergedStackTree();
+            Profile profile = trace.getFineProfile();
             if (profile != null) {
                 transactionPoint.addToProfile(profile);
             }

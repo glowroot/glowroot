@@ -64,10 +64,10 @@ public abstract class TraceService {
     public abstract List<Span> getSpans(String traceId) throws Exception;
 
     @Nullable
-    public abstract MergedStackTreeNode getCoarseProfile(String traceId) throws Exception;
+    public abstract ProfileNode getCoarseProfile(String traceId) throws Exception;
 
     @Nullable
-    public abstract MergedStackTreeNode getFineProfile(String traceId) throws Exception;
+    public abstract ProfileNode getFineProfile(String traceId) throws Exception;
 
     public abstract void deleteAllSnapshots() throws Exception;
 }

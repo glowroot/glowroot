@@ -42,10 +42,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @since 0.5
  */
 @ThreadSafe
-public class MergedStackTree {
+public class Profile {
 
-    private static final Pattern metricMarkerMethodPattern = Pattern
-            .compile("^.*\\$glowroot\\$metric\\$(.*)\\$[0-9]+$");
+    private static final Pattern metricMarkerMethodPattern =
+            Pattern.compile("^.*\\$glowroot\\$metric\\$(.*)\\$[0-9]+$");
 
     private final Object lock = new Object();
     // optimized for trace captures which are never read
@@ -54,7 +54,7 @@ public class MergedStackTree {
     @GuardedBy("lock")
     private final List<State> unmergedStackTraceThreadStates = Lists.newArrayList();
     @GuardedBy("lock")
-    private final MergedStackTreeNode syntheticRootNode = MergedStackTreeNode.createSyntheticRoot();
+    private final ProfileNode syntheticRootNode = ProfileNode.createSyntheticRoot();
 
     public Object getLock() {
         return lock;
@@ -62,7 +62,7 @@ public class MergedStackTree {
 
     // must be holding lock to call and can only use resulting node tree inside the same
     // synchronized block
-    public MergedStackTreeNode getSyntheticRootNode() {
+    public ProfileNode getSyntheticRootNode() {
         mergeTheUnmergedStackTraces();
         return syntheticRootNode;
     }
@@ -94,8 +94,8 @@ public class MergedStackTree {
     @VisibleForTesting
     public void addToStackTree(List<StackTraceElementPlus> stackTrace, State threadState) {
         syntheticRootNode.incrementSampleCount(1);
-        MergedStackTreeNode lastMatchedNode = syntheticRootNode;
-        List<MergedStackTreeNode> nextChildNodes = syntheticRootNode.getChildNodes();
+        ProfileNode lastMatchedNode = syntheticRootNode;
+        List<ProfileNode> nextChildNodes = syntheticRootNode.getChildNodes();
         int nextIndex;
         // navigate the stack tree nodes
         // matching the new stack trace as far as possible
@@ -103,7 +103,7 @@ public class MergedStackTree {
             StackTraceElementPlus element = stackTrace.get(nextIndex);
             // check all child nodes
             boolean matchFound = false;
-            for (MergedStackTreeNode childNode : nextChildNodes) {
+            for (ProfileNode childNode : nextChildNodes) {
                 if (matches(element.getStackTraceElement(), childNode, nextIndex == 0,
                         threadState)) {
                     // match found, update lastMatchedNode and break out of the inner loop
@@ -131,12 +131,12 @@ public class MergedStackTree {
         // add remaining stack trace elements
         for (int i = nextIndex; i >= 0; i--) {
             StackTraceElementPlus element = stackTrace.get(i);
-            MergedStackTreeNode nextNode;
+            ProfileNode nextNode;
             if (i == 0) {
                 // leaf node
-                nextNode = MergedStackTreeNode.create(element.getStackTraceElement(), threadState);
+                nextNode = ProfileNode.create(element.getStackTraceElement(), threadState);
             } else {
-                nextNode = MergedStackTreeNode.create(element.getStackTraceElement(), null);
+                nextNode = ProfileNode.create(element.getStackTraceElement(), null);
             }
             nextNode.setMetricNames(element.getMetricNames());
             nextNode.incrementSampleCount(1);
@@ -206,7 +206,7 @@ public class MergedStackTree {
     }
 
     private static boolean matches(StackTraceElement stackTraceElement,
-            MergedStackTreeNode childNode, boolean leaf, State threadState) {
+            ProfileNode childNode, boolean leaf, State threadState) {
 
         State leafThreadState = childNode.getLeafThreadState();
         if (leafThreadState != null && leaf) {

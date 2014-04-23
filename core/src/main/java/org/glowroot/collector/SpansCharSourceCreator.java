@@ -34,8 +34,8 @@ import org.glowroot.api.internal.ExceptionInfo;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.markers.Static;
-import org.glowroot.trace.model.MergedStackTree;
-import org.glowroot.trace.model.MergedStackTree.StackTraceElementPlus;
+import org.glowroot.trace.model.Profile;
+import org.glowroot.trace.model.Profile.StackTraceElementPlus;
 import org.glowroot.trace.model.Span;
 
 /**
@@ -57,7 +57,7 @@ public class SpansCharSourceCreator {
             throws IOException {
         jw.writeStartArray();
         List<StackTraceElementPlus> elements =
-                MergedStackTree.stripSyntheticMetricMethods(stackTrace);
+                Profile.stripSyntheticMetricMethods(stackTrace);
         for (StackTraceElementPlus element : elements) {
             jw.writeString(element.getStackTraceElement().toString());
         }
