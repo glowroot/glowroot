@@ -38,7 +38,7 @@ import com.google.common.collect.Lists;
 // request is complete (e.g. tomcat does this) in order to reuse them, in which case this detail
 // would need to be captured synchronously at end of request anyways (although then it could be
 // captured only if trace met threshold for storage...)
-public class DetailCapture {
+class DetailCapture {
 
     static ImmutableMap<String, Object> captureRequestParameters(HttpServletRequest request) {
         Map<?, ?> requestParameters = request.getParameterMaps();

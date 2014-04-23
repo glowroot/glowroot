@@ -46,10 +46,6 @@ public class PluginConfig {
         this.version = version;
     }
 
-    public String getId() {
-        return id;
-    }
-
     public boolean isEnabled() {
         return enabled;
     }

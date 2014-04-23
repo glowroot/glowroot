@@ -120,7 +120,7 @@ public class DynamicAdviceGenerator {
         adviceTypeName = "org/glowroot/dynamicadvice/GeneratedAdvice" + counter.incrementAndGet();
     }
 
-    public Class<?> generate() throws ReflectiveException {
+    private Class<?> generate() throws ReflectiveException {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         String[] interfaces = null;
         if (!pointcutConfig.getEnabledProperty().isEmpty()

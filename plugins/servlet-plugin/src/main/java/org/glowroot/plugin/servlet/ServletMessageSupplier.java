@@ -167,12 +167,6 @@ class ServletMessageSupplier extends MessageSupplier {
         responseHeaders.addHeader(name, value);
     }
 
-    void updateResponseContentType() {
-        // this requires at least Servlet 2.4 (e.g. Tomcat 5.5.x)
-
-        responseHeaders.setHeader("Content-Type", "");
-    }
-
     void setSessionIdUpdatedValue(String sessionId) {
         this.sessionIdUpdatedValue = sessionId;
     }

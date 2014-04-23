@@ -29,7 +29,7 @@ public interface MetricTimerExtended extends MetricTimer {
 
     @ThreadSafe
     static class NopMetricTimerExtended implements MetricTimerExtended {
-        public static final NopMetricTimerExtended INSTANCE = new NopMetricTimerExtended();
+        static final NopMetricTimerExtended INSTANCE = new NopMetricTimerExtended();
         @Override
         public void stop() {}
         @Override

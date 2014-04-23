@@ -85,7 +85,7 @@ public class Snapshot {
         return id;
     }
 
-    public boolean isActive() {
+    boolean isActive() {
         return active;
     }
 
@@ -142,15 +142,15 @@ public class Snapshot {
         return jvmInfo;
     }
 
-    public Existence getSpansExistence() {
+    Existence getSpansExistence() {
         return spansExistence;
     }
 
-    public Existence getCoarseProfileExistence() {
+    Existence getCoarseProfileExistence() {
         return coarseProfileExistence;
     }
 
-    public Existence getFineProfileExistence() {
+    Existence getFineProfileExistence() {
         return fineProfileExistence;
     }
 
@@ -231,7 +231,7 @@ public class Snapshot {
             return this;
         }
 
-        public Builder active(boolean active) {
+        Builder active(boolean active) {
             this.active = active;
             return this;
         }

@@ -101,7 +101,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         return pluginServices;
     }
 
-    PluginServicesImpl(TraceRegistry traceRegistry, TraceCollector traceCollector,
+    private PluginServicesImpl(TraceRegistry traceRegistry, TraceCollector traceCollector,
             ConfigService configService, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             FineProfileScheduler fineProfileScheduler, Ticker ticker, Clock clock,
             PluginDescriptorCache pluginDescriptorCache, @Nullable String pluginId) {

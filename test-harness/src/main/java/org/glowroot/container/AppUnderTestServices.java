@@ -15,13 +15,10 @@
  */
 package org.glowroot.container;
 
-import javax.annotation.Nullable;
-
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.PluginConfig;
 
 /**
@@ -36,14 +33,6 @@ public class AppUnderTestServices {
 
     private AppUnderTestServices() {}
 
-    public void setEnabled(boolean enabled) throws Exception {
-        ConfigService configService = getConfigService();
-        GeneralConfig base = configService.getGeneralConfig();
-        GeneralConfig.Overlay config = GeneralConfig.overlay(base);
-        config.setEnabled(enabled);
-        configService.updateGeneralConfig(config.build(), base.getVersion());
-    }
-
     public void setPluginEnabled(String pluginId, boolean enabled) throws Exception {
         ConfigService configService = getConfigService();
         PluginConfig base = configService.getPluginConfig(pluginId);
@@ -52,18 +41,6 @@ public class AppUnderTestServices {
         }
         PluginConfig.Builder config = PluginConfig.builder(base);
         config.enabled(enabled);
-        configService.updatePluginConfig(config.build(), base.getVersion());
-    }
-
-    public void setPluginProperty(String pluginId, String propertyName,
-            @Nullable Object propertyValue) throws Exception {
-        ConfigService configService = getConfigService();
-        PluginConfig base = configService.getPluginConfig(pluginId);
-        if (base == null) {
-            throw new IllegalStateException("Plugin not found for pluginId: " + pluginId);
-        }
-        PluginConfig.Builder config = PluginConfig.builder(base);
-        config.setProperty(propertyName, propertyValue);
         configService.updatePluginConfig(config.build(), base.getVersion());
     }
 

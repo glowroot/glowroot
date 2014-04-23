@@ -93,7 +93,7 @@ public class ParsedType {
         return methods;
     }
 
-    public Iterable<ParsedMethod> getMethodsIncludingNative() {
+    Iterable<ParsedMethod> getMethodsIncludingNative() {
         return Iterables.concat(methods, nativeMethods);
     }
 

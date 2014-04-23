@@ -30,6 +30,7 @@ import org.glowroot.markers.UsedByReflection;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@UsedByReflection
 public class PluginServicesRegistry {
 
     @Nullable

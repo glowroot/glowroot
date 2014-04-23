@@ -43,7 +43,7 @@ class ReaperScheduledRunnable extends ScheduledRunnable {
     protected void runInternal() {
         int traceExpirationHours =
                 configService.getStorageConfig().getTraceExpirationHours();
-        snapshotDao.deleteSnapshotsBefore(
+        snapshotDao.deleteBefore(
                 clock.currentTimeMillis() - HOURS.toMillis(traceExpirationHours));
     }
 }

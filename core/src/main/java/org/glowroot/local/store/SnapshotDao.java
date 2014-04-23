@@ -211,7 +211,7 @@ public class SnapshotDao implements SnapshotRepository {
         }
     }
 
-    public void deleteAllSnapshots() {
+    public void deleteAll() {
         try {
             dataSource.execute("truncate table snapshot_attribute");
             dataSource.execute("truncate table snapshot");
@@ -220,7 +220,7 @@ public class SnapshotDao implements SnapshotRepository {
         }
     }
 
-    void deleteSnapshotsBefore(long captureTime) {
+    void deleteBefore(long captureTime) {
         try {
             // delete 100 at a time, which is both faster than deleting all at once, and doesn't
             // lock the single jdbc connection for one large chunk of time

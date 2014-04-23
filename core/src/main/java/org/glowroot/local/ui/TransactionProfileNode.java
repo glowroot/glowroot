@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 
+import org.glowroot.markers.UsedByJsonBinding;
+
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
@@ -32,7 +34,8 @@ import static org.glowroot.common.ObjectMappers.nullToEmpty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TransactionProfileNode {
+@UsedByJsonBinding
+class TransactionProfileNode {
 
     // null for synthetic root only
     @Nullable
@@ -43,8 +46,9 @@ public class TransactionProfileNode {
     private List<String> metricNames;
     private final List<TransactionProfileNode> childNodes;
 
-    TransactionProfileNode(@Nullable String stackTraceElement, @Nullable String leafThreadState,
-            int sampleCount, List<String> metricNames, List<TransactionProfileNode> childNodes) {
+    private TransactionProfileNode(@Nullable String stackTraceElement,
+            @Nullable String leafThreadState, int sampleCount, List<String> metricNames,
+            List<TransactionProfileNode> childNodes) {
         this.stackTraceElement = stackTraceElement;
         this.leafThreadState = leafThreadState;
         this.sampleCount = sampleCount;
@@ -60,11 +64,11 @@ public class TransactionProfileNode {
         childNodes = Lists.newArrayList();
     }
 
-    public void setMetricNames(List<String> metricNames) {
+    void setMetricNames(List<String> metricNames) {
         this.metricNames = metricNames;
     }
 
-    public void incrementSampleCount(int num) {
+    void incrementSampleCount(int num) {
         sampleCount += num;
     }
 

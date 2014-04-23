@@ -84,7 +84,7 @@ public class Containers {
 
     public static Container getSharedLocalContainer() throws Exception {
         if (!SharedContainerRunListener.useSharedContainer()) {
-            return create(false);
+            return create(null, false, false);
         }
         LocalContainer container =
                 (LocalContainer) SharedContainerRunListener.getSharedLocalContainer();
@@ -97,16 +97,8 @@ public class Containers {
         return container;
     }
 
-    public static Container createWithFileDb() throws Exception {
-        return create(null, true, false);
-    }
-
     public static Container createWithFileDb(File dataDir) throws Exception {
         return create(dataDir, true, false);
-    }
-
-    public static Container create(boolean useFileDb) throws Exception {
-        return create(null, useFileDb, false);
     }
 
     // since dataDir is passed to the container, the container will not delete dataDir on close

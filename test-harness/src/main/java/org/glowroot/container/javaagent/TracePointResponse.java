@@ -86,21 +86,11 @@ class TracePointResponse {
         };
 
         private final long captureTime;
-        private final double durationSeconds;
         private final String id;
 
-        private RawPoint(long captureTime, double durationSeconds, String id) {
+        private RawPoint(long captureTime, String id) {
             this.captureTime = captureTime;
-            this.durationSeconds = durationSeconds;
             this.id = id;
-        }
-
-        long getCaptureTime() {
-            return captureTime;
-        }
-
-        double getDurationSeconds() {
-            return durationSeconds;
         }
 
         String getId() {
@@ -110,9 +100,9 @@ class TracePointResponse {
         @JsonCreator
         static RawPoint readValue(ArrayNode point) {
             long captureTime = point.get(0).asLong();
-            double durationSeconds = point.get(1).asDouble();
+            // duration which is point.get(1) is not needed here
             String id = point.get(2).asText();
-            return new RawPoint(captureTime, durationSeconds, id);
+            return new RawPoint(captureTime, id);
         }
     }
 }

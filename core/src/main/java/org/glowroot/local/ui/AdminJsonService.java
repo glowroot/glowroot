@@ -84,7 +84,7 @@ class AdminJsonService {
     void deleteAllData() {
         logger.debug("deleteAllData()");
         transactionPointDao.deleteAll();
-        snapshotDao.deleteAllSnapshots();
+        snapshotDao.deleteAll();
     }
 
     @POST("/backend/admin/pointcuts/reweave")

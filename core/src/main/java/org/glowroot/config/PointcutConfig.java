@@ -148,6 +148,7 @@ public class PointcutConfig {
         return version;
     }
 
+    // TODO this is unused because spans are currently not supported without an associated metric
     @JsonIgnore
     public boolean isMetric() {
         return !metricName.isEmpty();

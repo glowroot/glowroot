@@ -61,7 +61,7 @@ public class ProfileCharSourceCreator {
     }
 
     @Nullable
-    public static String createProfile(MergedStackTreeNode syntheticRootNode) {
+    static String createProfile(MergedStackTreeNode syntheticRootNode) {
         MergedStackTreeNode rootNode;
         if (syntheticRootNode.getChildNodes().size() == 0) {
             return null;

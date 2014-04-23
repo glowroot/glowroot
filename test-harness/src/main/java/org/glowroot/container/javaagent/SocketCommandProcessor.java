@@ -51,7 +51,6 @@ class SocketCommandProcessor implements Runnable {
     public static final String CLEAR_LOG_MESSAGES = "CLEAR_LOG_MESSAGES";
     public static final String EXCEPTION_RESPONSE = "EXCEPTION";
     public static final String SHUTDOWN = "SHUTDOWN";
-    public static final String SHUTDOWN_RESPONSE = "SHUTDOWN";
     public static final String KILL = "KILL";
     public static final String INTERRUPT = "INTERRUPT";
     public static final String STARTUP_FAILED = "STARTUP_FAILED";
@@ -166,7 +165,7 @@ class SocketCommandProcessor implements Runnable {
         Threads.preShutdownCheck(preExistingThreads);
         glowrootModule.close();
         Threads.postShutdownCheck(preExistingThreads);
-        respond(SHUTDOWN_RESPONSE, commandNum);
+        respond(null, commandNum);
     }
 
     private void interruptAppAndRespond(int commandNum) throws Exception {

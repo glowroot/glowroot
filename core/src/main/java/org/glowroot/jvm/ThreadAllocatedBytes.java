@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
-import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactory;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
 import org.glowroot.jvm.OptionalService.OptionalServiceFactoryHelper;
@@ -39,13 +38,10 @@ public class ThreadAllocatedBytes {
 
     private static final Logger logger = LoggerFactory.getLogger(ThreadAllocatedBytes.class);
 
-    private final Class<?> sunThreadMXBeanClass;
     private final Method getThreadAllocatedBytesMethod;
     private volatile boolean disabledDueToError;
 
-    private ThreadAllocatedBytes(Class<?> sunThreadMXBeanClass,
-            Method getThreadAllocatedBytesMethod) {
-        this.sunThreadMXBeanClass = sunThreadMXBeanClass;
+    private ThreadAllocatedBytes(Method getThreadAllocatedBytesMethod) {
         this.getThreadAllocatedBytesMethod = getThreadAllocatedBytesMethod;
     }
 
@@ -71,30 +67,6 @@ public class ThreadAllocatedBytes {
         }
     }
 
-    public Availability getAvailability() {
-        if (!isEnabled(sunThreadMXBeanClass)) {
-            return new Availability(false, "com.sun.management.ThreadMXBean"
-                    + ".isThreadAllocatedMemoryEnabled() returned false");
-        }
-        if (disabledDueToError) {
-            return new Availability(false, "Disabled due to error, see Glowroot log");
-        }
-        return new Availability(true, "");
-    }
-
-    private static boolean isEnabled(Class<?> sunThreadMXBeanClass) {
-        Method isEnabledMethod;
-        try {
-            isEnabledMethod = Reflections.getMethod(sunThreadMXBeanClass,
-                    "isThreadAllocatedMemoryEnabled");
-        } catch (ReflectiveException e) {
-            logger.error(e.getMessage(), e);
-            return false;
-        }
-        MethodWithNonNullReturn method = new MethodWithNonNullReturn(isEnabledMethod, false);
-        return (Boolean) method.invoke(ManagementFactory.getThreadMXBean());
-    }
-
     static class Factory implements OptionalServiceFactory<ThreadAllocatedBytes> {
         @Override
         public ThreadAllocatedBytes create() throws OptionalServiceFactoryException {
@@ -118,8 +90,7 @@ public class ThreadAllocatedBytes {
                 Method getThreadAllocatedBytesMethod =
                         OptionalServiceFactoryHelper.getMethod(sunThreadMXBeanClass,
                                 "getThreadAllocatedBytes", long.class);
-                return new ThreadAllocatedBytes(sunThreadMXBeanClass,
-                        getThreadAllocatedBytesMethod);
+                return new ThreadAllocatedBytes(getThreadAllocatedBytesMethod);
             }
             throw new OptionalServiceFactoryException("Method com.sun.management.ThreadMXBean"
                     + ".isThreadAllocatedMemorySupported() returned false");

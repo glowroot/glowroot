@@ -144,7 +144,7 @@ class LocalTraceService extends TraceService {
 
     @Override
     public void deleteAllSnapshots() {
-        snapshotDao.deleteAllSnapshots();
+        snapshotDao.deleteAll();
     }
 
     @Override

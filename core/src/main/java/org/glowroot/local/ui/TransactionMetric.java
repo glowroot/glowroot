@@ -31,9 +31,9 @@ import static org.glowroot.common.ObjectMappers.nullToEmpty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TransactionMetric {
+class TransactionMetric {
 
-    public static final TreeTraverser<TransactionMetric> TRAVERSER =
+    static final TreeTraverser<TransactionMetric> TRAVERSER =
             new TreeTraverser<TransactionMetric>() {
                 @Override
                 public Iterable<TransactionMetric> children(TransactionMetric root) {
@@ -55,19 +55,20 @@ public class TransactionMetric {
         this.nestedMetrics = nestedMetrics;
     }
 
-    public String getName() {
+    String getName() {
         return name;
     }
 
-    public long getTotalMicros() {
+    long getTotalMicros() {
         return totalMicros;
     }
 
-    public long getCount() {
+    // TODO this is currently unused
+    long getCount() {
         return count;
     }
 
-    public List<TransactionMetric> getNestedMetrics() {
+    List<TransactionMetric> getNestedMetrics() {
         return nestedMetrics;
     }
 

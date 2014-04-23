@@ -25,6 +25,7 @@ import org.glowroot.api.PluginServices.ConfigListener;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// this is public so it can be called from other plugins
 public class JdbcPluginProperties {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");

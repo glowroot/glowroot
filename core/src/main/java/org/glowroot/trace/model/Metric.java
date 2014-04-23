@@ -155,7 +155,7 @@ public class Metric implements MetricTimerExtended {
         end(ticker.read());
     }
 
-    public void start(long startTick) {
+    void start(long startTick) {
         this.startTick = startTick;
         // selfNestingLevel is incremented after updating startTick since selfNestingLevel is used
         // as a memory barrier so startTick will be visible to other threads in copyOf()

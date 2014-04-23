@@ -27,20 +27,16 @@ public class LoggerFactory {
 
     private LoggerFactory() {}
 
-    public static Logger getLogger(String name) {
-        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(name);
+    public static Logger getLogger(Class<?> type) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(type.getName());
         return new LoggerImpl(logger);
     }
 
-    public static Logger getLogger(Class<?> clazz) {
-        return getLogger(clazz.getName());
-    }
-
-    static class LoggerImpl implements Logger {
+    private static class LoggerImpl implements Logger {
 
         private final org.slf4j.Logger logger;
 
-        LoggerImpl(org.slf4j.Logger logger) {
+        private LoggerImpl(org.slf4j.Logger logger) {
             this.logger = logger;
         }
 

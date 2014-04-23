@@ -215,7 +215,7 @@ public class TraceCommonService {
         @Nullable
         private final CharSource fineProfile;
 
-        public TraceExport(Snapshot snapshot, String snapshotJson, @Nullable CharSource spans,
+        private TraceExport(Snapshot snapshot, String snapshotJson, @Nullable CharSource spans,
                 @Nullable CharSource coarseProfile, @Nullable CharSource fineProfile) {
             this.snapshot = snapshot;
             this.snapshotJson = snapshotJson;

@@ -230,7 +230,7 @@ public class MergedStackTree {
         public StackTraceElement getStackTraceElement() {
             return stackTraceElement;
         }
-        public ImmutableList<String> getMetricNames() {
+        private ImmutableList<String> getMetricNames() {
             return metricNames;
         }
     }

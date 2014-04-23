@@ -26,7 +26,6 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.CoarseProfilingConfig;
 import org.glowroot.container.config.FineProfilingConfig;
-import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.StorageConfig;
 import org.glowroot.container.javaagent.JavaagentContainer;
 import org.glowroot.container.local.LocalContainer;
@@ -63,10 +62,8 @@ public class UiSandboxMain {
             container = new LocalContainer(dataDir, true, false);
         }
         // set thresholds low so there will be lots of data to view
-        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        container.getConfigService().updateGeneralConfig(generalConfig);
-        CoarseProfilingConfig coarseProfilingConfig = container.getConfigService()
-                .getCoarseProfilingConfig();
+        CoarseProfilingConfig coarseProfilingConfig =
+                container.getConfigService().getCoarseProfilingConfig();
         coarseProfilingConfig.setInitialDelayMillis(500);
         coarseProfilingConfig.setIntervalMillis(500);
         coarseProfilingConfig.setTotalSeconds(2);

@@ -41,7 +41,7 @@ public class OptionalService<T> {
     private final T service;
     private final Availability availability;
 
-    public OptionalService(OptionalServiceFactory<T> factory) {
+    OptionalService(OptionalServiceFactory<T> factory) {
         T serviceLocal = null;
         Availability availabilityLocal = null;
         try {
@@ -83,10 +83,6 @@ public class OptionalService<T> {
 
         private OptionalServiceFactoryHelper() {}
 
-        static Class<?> classForName(String className) throws OptionalServiceFactoryException {
-            return classForName(className, OptionalServiceFactoryHelper.class.getClassLoader());
-        }
-
         static Class<?> classForName(String className, @Nullable ClassLoader classLoader)
                 throws OptionalServiceFactoryException {
             try {
@@ -108,33 +104,11 @@ public class OptionalService<T> {
             }
         }
 
-        static Method getDeclaredMethod(Class<?> type, String methodName,
-                Class<?>... parameterTypes) throws OptionalServiceFactoryException {
-            try {
-                return type.getDeclaredMethod(methodName, parameterTypes);
-            } catch (SecurityException e) {
-                throw new OptionalServiceFactoryException(e);
-            } catch (NoSuchMethodException e) {
-                throw new OptionalServiceFactoryException("Could not find method " + methodName
-                        + " on class " + type.getName());
-            }
-        }
-
         @Nullable
         static Object invoke(Method method, Object obj, Object... args)
                 throws OptionalServiceFactoryException {
             try {
                 return Reflections.invoke(method, obj, args);
-            } catch (ReflectiveException e) {
-                throw new OptionalServiceFactoryException(e);
-            }
-        }
-
-        @Nullable
-        static Object invokeStatic(Method method, Object... args)
-                throws OptionalServiceFactoryException {
-            try {
-                return Reflections.invokeStatic(method, args);
             } catch (ReflectiveException e) {
                 throw new OptionalServiceFactoryException(e);
             }

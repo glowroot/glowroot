@@ -45,7 +45,7 @@ public class HeapHistograms {
     private final Method heapHistoMethod;
     private final Method detachMethod;
 
-    public HeapHistograms(Method attachMethod, Method heapHistoMethod, Method detachMethod) {
+    private HeapHistograms(Method attachMethod, Method heapHistoMethod, Method detachMethod) {
         super();
         this.attachMethod = attachMethod;
         this.heapHistoMethod = heapHistoMethod;

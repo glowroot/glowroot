@@ -213,7 +213,7 @@ public class SnapshotDaoTest {
         CharSource spans = SnapshotTestData.createSpans();
         snapshotDao.store(snapshot, spans, null, null);
         // when
-        snapshotDao.deleteSnapshotsBefore(100);
+        snapshotDao.deleteBefore(100);
         // then
         assertThat(snapshotDao.count()).isEqualTo(0);
     }

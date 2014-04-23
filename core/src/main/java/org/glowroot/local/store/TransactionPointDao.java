@@ -226,6 +226,8 @@ public class TransactionPointDao implements TransactionPointRepository {
         }
     }
 
+    // TODO this is currently unused
+    // TODO delete 100 at a time similar to SnapshotDao.deleteBefore()
     void deleteBefore(long captureTime) {
         try {
             dataSource.update("delete from overall_point where capture_time < ?", captureTime);

@@ -125,7 +125,7 @@ public abstract class PropertyDescriptor {
                 type, defaultValue);
     }
 
-    public enum PropertyType {
+    enum PropertyType {
         STRING, BOOLEAN, DOUBLE
     }
 

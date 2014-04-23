@@ -78,6 +78,7 @@ public class DiagnosticOptions {
 
     public static class VMOption {
 
+        // TODO this is currently unused, check if options are ordered in UI
         public static final Ordering<VMOption> orderingByName = new Ordering<VMOption>() {
             @Override
             public int compare(@Nullable VMOption left, @Nullable VMOption right) {

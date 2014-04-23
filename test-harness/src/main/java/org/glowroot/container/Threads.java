@@ -184,21 +184,21 @@ public class Threads {
     }
 
     @SuppressWarnings("serial")
-    public static class RogueThreadsException extends ThreadsException {
+    private static class RogueThreadsException extends ThreadsException {
         private RogueThreadsException(Collection<Thread> threads) {
             super(threads);
         }
     }
 
     @SuppressWarnings("serial")
-    public static class TooManyThreadsException extends ThreadsException {
+    private static class TooManyThreadsException extends ThreadsException {
         private TooManyThreadsException(Collection<Thread> threads) {
             super(threads);
         }
     }
 
     @SuppressWarnings("serial")
-    public static class ThreadsException extends RuntimeException {
+    private static class ThreadsException extends RuntimeException {
         private final Collection<Thread> threads;
         private ThreadsException(Collection<Thread> threads) {
             this.threads = threads;

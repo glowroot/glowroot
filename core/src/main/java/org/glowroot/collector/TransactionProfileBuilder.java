@@ -30,7 +30,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TransactionProfileBuilder {
+class TransactionProfileBuilder {
 
     private final Object lock = new Object();
     @GuardedBy("lock")

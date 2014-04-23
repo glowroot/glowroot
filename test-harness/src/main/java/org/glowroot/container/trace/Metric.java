@@ -42,7 +42,7 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 @Immutable
 public class Metric {
 
-    static final Ordering<Metric> orderingByTotal = new Ordering<Metric>() {
+    private static final Ordering<Metric> orderingByTotal = new Ordering<Metric>() {
         @Override
         public int compare(@Nullable Metric left, @Nullable Metric right) {
             checkNotNull(left);

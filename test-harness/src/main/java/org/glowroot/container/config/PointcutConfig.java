@@ -20,7 +20,6 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
@@ -185,13 +184,6 @@ public class PointcutConfig {
 
     public void setSpanEnabledProperty(@Nullable String spanEnabledProperty) {
         this.spanEnabledProperty = spanEnabledProperty;
-    }
-
-    // JsonIgnore so it won't get sent to the server
-    @JsonIgnore
-    @Nullable
-    public String getVersion() {
-        return version;
     }
 
     /*@Pure*/

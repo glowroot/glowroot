@@ -23,6 +23,8 @@ import javax.annotation.concurrent.Immutable;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
+import org.glowroot.markers.UsedByReflection;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -121,6 +123,7 @@ public class ExpensiveCall {
         expensive();
     }
 
+    @UsedByReflection
     public String getSpanText() {
         return getSpanText(random.nextInt(5) > 0);
     }

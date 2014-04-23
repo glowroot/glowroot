@@ -36,7 +36,7 @@ import org.glowroot.api.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class ResponseHeaders {
+class ResponseHeaders {
 
     private static final Logger logger = LoggerFactory.getLogger(ServletMessageSupplier.class);
 

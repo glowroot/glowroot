@@ -19,7 +19,7 @@ package org.glowroot.plugin.logger;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class LoggerPlugin {
+class LoggerPlugin {
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     static final ThreadLocal<Boolean> inAdvice = new ThreadLocal<Boolean>() {

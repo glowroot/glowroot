@@ -68,10 +68,6 @@ class PreparedStatementMirror extends StatementMirror {
         }
     }
 
-    public boolean isUsingBatchedParameters() {
-        return batchedParameters != null;
-    }
-
     public List</*@Nullable*/Object> getParametersCopy() {
         // cannot return ImmutableList.copyOf() since ImmutableList does not allow null elements
         return Lists.newArrayList(parameters);

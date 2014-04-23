@@ -61,7 +61,7 @@ public class PluginDescriptorCache {
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
 
-    public static PluginDescriptorCache create() {
+    static PluginDescriptorCache create() {
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
         try {
             pluginDescriptors.addAll(readClasspathPluginDescriptors());
@@ -92,7 +92,7 @@ public class PluginDescriptorCache {
         return new PluginDescriptorCache(pluginDescriptors, mixinTypes, advisors);
     }
 
-    public static PluginDescriptorCache createInViewerMode() {
+    static PluginDescriptorCache createInViewerMode() {
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
         try {
             pluginDescriptors.addAll(readClasspathPluginDescriptorsViewerMode());

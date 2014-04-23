@@ -264,11 +264,11 @@ public class Advice {
 
     @SuppressWarnings("serial")
     public static class AdviceConstructionException extends Exception {
-        AdviceConstructionException(@Nullable String message) {
-            super(message);
-        }
         AdviceConstructionException(Throwable cause) {
             super(cause);
+        }
+        private AdviceConstructionException(@Nullable String message) {
+            super(message);
         }
     }
 

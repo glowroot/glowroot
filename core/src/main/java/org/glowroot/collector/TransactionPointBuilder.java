@@ -37,7 +37,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 // must be used under an appropriate lock
 @NotThreadSafe
-public class TransactionPointBuilder {
+class TransactionPointBuilder {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
 
@@ -123,7 +123,7 @@ public class TransactionPointBuilder {
         jg.writeEndObject();
     }
 
-    static class TransactionMetric {
+    private static class TransactionMetric {
         private final String name;
         // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
         private long totalMicros;

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * @since 0.5
  */
 @ThreadSafe
-public class Plugins {
+class Plugins {
 
     private static final Logger logger = LoggerFactory.getLogger(Plugins.class);
 

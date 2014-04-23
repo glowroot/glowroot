@@ -82,10 +82,6 @@ public class JavaagentContainer implements Container {
     private final JavaagentTraceService traceService;
     private final Thread shutdownHook;
 
-    public static JavaagentContainer create() throws Exception {
-        return new JavaagentContainer(null, false, false, false, ImmutableList.<String>of());
-    }
-
     public static JavaagentContainer createWithFileDb() throws Exception {
         return new JavaagentContainer(null, true, false, false, ImmutableList.<String>of());
     }
