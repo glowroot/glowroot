@@ -31,7 +31,7 @@ glowroot.factory('traceModal', [
       var $modalContent = $('#modalContent');
       $modalContent.data('vanishPoint', modalVanishPoint);
 
-      var tracePromise = $http.get('backend/trace/summary/' + traceId);
+      var tracePromise = $http.get('backend/trace/header/' + traceId);
 
       var $modal = $('#modal');
       // need to focus on something inside the modal, otherwise keyboard events won't be captured,

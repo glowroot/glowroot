@@ -294,7 +294,7 @@ public abstract class PluginServices {
      * 
      * The user is used in a few ways:
      * <ul>
-     * <li>The user is displayed when viewing a trace summary on the trace explorer page
+     * <li>The user is displayed when viewing a trace on the trace explorer page
      * <li>Traces can be filtered by their user on the trace explorer page
      * <li>Glowroot can be configured (using the configuration page) to capture traces for a
      * specific user using a lower threshold than normal (e.g. threshold=0 to capture all requests
@@ -315,7 +315,7 @@ public abstract class PluginServices {
 
     /**
      * Adds an attribute on the current trace with the specified {@code name} and {@code value}. A
-     * trace's attributes are displayed when viewing a trace summary on the trace explorer page.
+     * trace's attributes are displayed when viewing a trace on the trace explorer page.
      * 
      * Subsequent calls to this method with the same {@code name} on the same trace will add an
      * additional attribute if there is not already an attribute with the same {@code name} and

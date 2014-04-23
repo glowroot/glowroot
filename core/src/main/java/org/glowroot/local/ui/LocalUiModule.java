@@ -111,8 +111,7 @@ public class LocalUiModule {
                 clock, ticker);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,
                 traceRegistry, traceCollector, ticker, clock);
-        TraceSummaryJsonService traceSummaryJsonService =
-                new TraceSummaryJsonService(traceCommonService);
+        TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
         TraceDetailHttpService traceDetailHttpService =
                 new TraceDetailHttpService(traceCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
@@ -134,7 +133,7 @@ public class LocalUiModule {
         jsonServices.add(layoutJsonService);
         jsonServices.add(homeJsonService);
         jsonServices.add(tracePointJsonService);
-        jsonServices.add(traceSummaryJsonService);
+        jsonServices.add(traceJsonService);
         jsonServices.add(errorJsonService);
         jsonServices.add(jvmJsonService);
         jsonServices.add(configJsonService);

@@ -31,8 +31,6 @@ glowroot.controller('TracesCtrl', [
 
     var plot;
 
-    var summaryItem;
-
     var currentRefreshId = 0;
     var currentZoomId = 0;
 
@@ -226,11 +224,11 @@ glowroot.controller('TracesCtrl', [
         plot.unhighlight();
         // TODO highlight with bolder or larger outline
         plot.highlight(item.series, item.datapoint);
-        showTraceDetailTooltip(item);
+        showTrace(item);
       }
     });
 
-    function showTraceDetailTooltip(item) {
+    function showTrace(item) {
       var x = item.pageX;
       var y = item.pageY;
       var traceId = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
@@ -247,15 +245,6 @@ glowroot.controller('TracesCtrl', [
     $('body').mousedown(function (e) {
       if ($(e.target).parents('.qtip').length === 0) {
         // click occurred outside of qtip
-        hideTooltip();
-      }
-    });
-
-    $(document).keyup(function (e) {
-      // esc key
-      if (e.keyCode === 27 && summaryItem) {
-        // the tooltips (spinny and summary) have hide events that set summaryItem = undefined
-        // so summaryItem must be checked before calling hideTooltip()
         hideTooltip();
       }
     });

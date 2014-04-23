@@ -25,26 +25,26 @@ import org.glowroot.collector.SnapshotWriter;
 import org.glowroot.markers.Singleton;
 
 /**
- * Json service to read trace summary data, bound under /backend/trace/summary.
+ * Json service to read trace data, bound under /backend/trace/header.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
 @JsonService
-class TraceSummaryJsonService {
+class TraceJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceSummaryJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(TraceJsonService.class);
 
     private final TraceCommonService traceCommonService;
 
-    TraceSummaryJsonService(TraceCommonService traceCommonService) {
+    TraceJsonService(TraceCommonService traceCommonService) {
         this.traceCommonService = traceCommonService;
     }
 
-    @GET("/backend/trace/summary/(.+)")
-    String getSummary(String id) throws IOException {
-        logger.debug("getSummary(): id={}", id);
+    @GET("/backend/trace/header/(.+)")
+    String getTrace(String id) throws IOException {
+        logger.debug("getTrace(): id={}", id);
         Snapshot snapshot = traceCommonService.getSnapshot(id);
         if (snapshot == null) {
             logger.debug("no trace found for id: {}", id);

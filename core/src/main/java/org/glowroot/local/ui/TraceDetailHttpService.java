@@ -63,9 +63,10 @@ class TraceDetailHttpService implements HttpService {
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();
         String traceComponent = path.substring(path.lastIndexOf('/') + 1);
-        List<String> traceIds = decoder.getParameters().get("traceId");
+        List<String> traceIds = decoder.getParameters().get("trace-id");
         if (traceIds == null) {
-            throw new IllegalStateException("Missing traceId in query string: " + request.getUri());
+            throw new IllegalStateException("Missing trace id in query string: "
+                    + request.getUri());
         }
         String traceId = traceIds.get(0);
         logger.debug("handleRequest(): traceComponent={}, traceId={}", traceComponent, traceId);

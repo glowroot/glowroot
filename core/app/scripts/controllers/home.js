@@ -203,7 +203,7 @@ glowroot.controller('HomeCtrl', [
       if (item) {
         var itemId = item.datapoint[0];
         if (itemId !== showingItemId) {
-          showTraceDetailTooltip(item);
+          showChartTooltip(item);
           showingItemId = itemId;
         }
       } else {
@@ -211,7 +211,7 @@ glowroot.controller('HomeCtrl', [
       }
     });
 
-    function showTraceDetailTooltip(item) {
+    function showChartTooltip(item) {
       var x = item.pageX;
       var y = item.pageY;
       var captureTime = item.datapoint[0];

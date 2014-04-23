@@ -84,7 +84,7 @@ class JavaagentTraceService extends TraceService {
             return null;
         }
         RawPoint mostRecentCapturedPoint = RawPoint.orderingByCaptureTime.max(points);
-        String traceContent = httpClient.get("/backend/trace/summary/"
+        String traceContent = httpClient.get("/backend/trace/header/"
                 + mostRecentCapturedPoint.getId());
         return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
     }
@@ -102,7 +102,7 @@ class JavaagentTraceService extends TraceService {
             throw new IllegalStateException("Unexpected number of active traces");
         } else {
             RawPoint point = response.getActivePoints().get(0);
-            String traceContent = httpClient.get("/backend/trace/summary/" + point.getId());
+            String traceContent = httpClient.get("/backend/trace/header/" + point.getId());
             return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
         }
     }
@@ -110,21 +110,21 @@ class JavaagentTraceService extends TraceService {
     @Override
     @Nullable
     public List<Span> getSpans(String traceId) throws Exception {
-        String content = httpClient.get("/backend/trace/spans?traceId=" + traceId);
+        String content = httpClient.get("/backend/trace/spans?trace-id=" + traceId);
         return mapper.readValue(content, new TypeReference<List<Span>>() {});
     }
 
     @Override
     @Nullable
     public ProfileNode getCoarseProfile(String traceId) throws Exception {
-        String content = httpClient.get("/backend/trace/coarse-profile?traceId=" + traceId);
+        String content = httpClient.get("/backend/trace/coarse-profile?trace-id=" + traceId);
         return mapper.readValue(content, ProfileNode.class);
     }
 
     @Override
     @Nullable
     public ProfileNode getFineProfile(String traceId) throws Exception {
-        String content = httpClient.get("/backend/trace/fine-profile?traceId=" + traceId);
+        String content = httpClient.get("/backend/trace/fine-profile?trace-id=" + traceId);
         return mapper.readValue(content, ProfileNode.class);
     }
 

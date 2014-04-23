@@ -89,7 +89,7 @@ glowroot.run([
     };
 
     // qtip adds some code to the beginning of jquery's cleanData function which causes the trace
-    // detail modal to close slowly when it has 5000 spans
+    // modal to close slowly when it has 5000 spans
     // this extra cleanup code is not needed anyways since cleanup is performed explicitly
     /* jshint -W106 */ // W106 is camelcase
     $.cleanData = $.cleanData_replacedByqTip;
@@ -201,8 +201,8 @@ Glowroot = (function () {
     $(document.body).append(modalDiv);
     $(document).ajaxError(function (e, jqxhr, settings, exception) {
       if (jqxhr.abort) {
-        // intentional abort (currently happens in firefox if open trace detail modal, detail takes
-        // long to load, hit escape key to close trace detail modal before detail request completes)
+        // intentional abort (currently happens in firefox if expand trace detail (e.g. spans), takes long to load,
+        // hit escape key to close modal before detail request completes)
         return;
       }
       var $ajaxError = $('#ajaxError');

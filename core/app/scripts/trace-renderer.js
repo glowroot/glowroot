@@ -258,7 +258,7 @@ TraceRenderer = (function () {
             spinner = Glowroot.showSpinner($button.parent().find('.trace-detail-spinner'));
           }
         }, 100);
-        $.get('backend/trace/spans?traceId=' + traceId)
+        $.get('backend/trace/spans?trace-id=' + traceId)
             .done(function (data) {
               // first time opening
               initSpanLineLength();
@@ -319,7 +319,7 @@ TraceRenderer = (function () {
             spinner = Glowroot.showSpinner($button.parent().find('.trace-detail-spinner'));
           }
         }, 100);
-        $.get(url + '?traceId=' + traceId)
+        $.get(url + '?trace-id=' + traceId)
             .done(function (data) {
               buildMergedStackTree(data, $selector);
               $selector.removeClass('hide');
@@ -585,7 +585,7 @@ TraceRenderer = (function () {
 
   return {
     render: function (trace, $selector) {
-      var html = JST['trace-summary'](trace) + '<br>' + JST['trace-detail'](trace);
+      var html = JST.trace(trace);
       $selector.html(html);
       $selector.addClass('trace-parent');
       $selector.data('traceId', trace.id);
