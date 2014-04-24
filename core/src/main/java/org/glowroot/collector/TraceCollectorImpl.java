@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigService;
+import org.glowroot.config.FineProfilingConfig;
 import org.glowroot.markers.Singleton;
 import org.glowroot.trace.TraceCollector;
 import org.glowroot.trace.model.Trace;
@@ -90,14 +91,21 @@ public class TraceCollectorImpl implements TraceCollector {
         if (trace.isFine()) {
             int fineStoreThresholdMillis =
                     configService.getFineProfilingConfig().getStoreThresholdMillis();
-            return trace.getDuration() >= MILLISECONDS.toNanos(fineStoreThresholdMillis);
+            if (fineStoreThresholdMillis != FineProfilingConfig.USE_GENERAL_STORE_THRESHOLD
+                    && trace.getDuration() >= MILLISECONDS.toNanos(fineStoreThresholdMillis)) {
+                return true;
+            }
+        }
+        // check if trace-specific store threshold was set
+        long traceStoreThresholdMillis = trace.getStoreThresholdMillisOverride();
+        if (traceStoreThresholdMillis != Trace.USE_GENERAL_STORE_THRESHOLD
+                && trace.getDuration() >= MILLISECONDS.toNanos(traceStoreThresholdMillis)) {
+            return true;
         }
         // fall back to general store threshold
-        long storeThresholdMillis = trace.getStoreThresholdMillisOverride();
-        if (storeThresholdMillis == -1) {
-            storeThresholdMillis = configService.getGeneralConfig().getStoreThresholdMillis();
-        }
-        return trace.getDuration() >= MILLISECONDS.toNanos(storeThresholdMillis);
+        long generalStoreThresholdMillis =
+                configService.getGeneralConfig().getStoreThresholdMillis();
+        return trace.getDuration() >= MILLISECONDS.toNanos(generalStoreThresholdMillis);
     }
 
     public Collection<Trace> getPendingCompleteTraces() {

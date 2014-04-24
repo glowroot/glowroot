@@ -33,6 +33,8 @@ import org.glowroot.markers.UsedByJsonBinding;
 @Immutable
 public class FineProfilingConfig {
 
+    public static final int USE_GENERAL_STORE_THRESHOLD = -1;
+
     // percentage of traces to apply fine profiling, between 0.0 and 100.0
     private final double tracePercentage;
     private final int intervalMillis;
@@ -48,7 +50,7 @@ public class FineProfilingConfig {
         final double tracePercentage = 0;
         final int intervalMillis = 50;
         final int totalSeconds = 30;
-        final int storeThresholdMillis = -1;
+        final int storeThresholdMillis = USE_GENERAL_STORE_THRESHOLD;
         return new FineProfilingConfig(tracePercentage, intervalMillis, totalSeconds,
                 storeThresholdMillis);
     }

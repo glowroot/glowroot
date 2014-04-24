@@ -58,6 +58,8 @@ public class Trace {
 
     private static final Logger logger = LoggerFactory.getLogger(Trace.class);
 
+    public static final int USE_GENERAL_STORE_THRESHOLD = -1;
+
     private static final long START_TICK_READ_TICKER = -1;
 
     // initial capacity is very important, see ThreadSafeCollectionOfTenBenchmark
@@ -113,7 +115,7 @@ public class Trace {
 
     // overrides general store threshold
     // -1 means don't override the general store threshold
-    private volatile int storeThresholdMillisOverride = -1;
+    private volatile int storeThresholdMillisOverride = USE_GENERAL_STORE_THRESHOLD;
 
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
