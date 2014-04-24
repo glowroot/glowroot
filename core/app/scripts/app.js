@@ -166,7 +166,8 @@ Glowroot = (function () {
   }
 
   function showSpinner(selector, opts) {
-    opts = opts || { lines: 10, width: 4, radius: 8 };
+    // z-index should be less than navbar (which is 1030)
+    opts = opts || { lines: 9, radius: 8, width: 5, zIndex: 1020 };
     var element = $(selector)[0];
     var spinner = new Spinner(opts);
 

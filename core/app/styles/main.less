@@ -132,7 +132,10 @@ body {
 }
 
 .inline-spinner {
+  // relative position needed for spinner
+  position: relative;
   display: inline-block;
+  margin-left: 32px;
   vertical-align: middle;
 }
 
@@ -142,10 +145,6 @@ body {
   padding-left: 30px;
   font-weight: bold;
   font-family: monospace;
-}
-
-.panel-overlay .spinner {
-  padding-top: 50px;
 }
 
 // margin at top of config pages pushes down entire sidebar

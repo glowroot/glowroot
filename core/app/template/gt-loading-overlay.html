@@ -1,6 +1,9 @@
 <div class="panel-overlay" ng-show="!loaded && !httpError">
-  <div gt-spinner
-       gt-show="!loaded && !httpError"
-       class="spinner">
+  <!-- this inner div is to position the spinner near top of panel, centering it could push spinner off screen -->
+  <div style="position: absolute; width: 100%; margin-top: 50px;">
+    <div gt-spinner
+         gt-show="!loaded && !httpError"
+         class="spinner">
+    </div>
   </div>
 </div>

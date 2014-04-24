@@ -72,7 +72,7 @@ glowroot.directive('gtButtonGroup', [
       template: '' +
           '<div class="clearfix">' +
           '  <div ng-transclude style="float: left;"></div>' +
-          '  <span class="button-spinner inline-block hide" style="float: left;"></span>' +
+          '  <span class="button-spinner hide" style="float: left;"></span>' +
         // this needs to be div, and it's child needs to be div, for formatting of multi-line messages
         // same as done in gt-button.html template
           '  <div style="overflow-x: hidden;">' +
@@ -309,7 +309,8 @@ glowroot.directive('gtSpinner', function () {
               if (iAttrs.gtSpinnerInline) {
                 left = 10;
               }
-              spinner = new Spinner({ lines: 10, radius: 8, width: 4, left: left });
+              // z-index should be less than navbar (which is 1030)
+              spinner = new Spinner({ lines: 9, radius: 8, width: 5, left: left, zIndex: 1020 });
             }
             // small delay so that if there is an immediate response the spinner doesn't blink
             timer = setTimeout(function () {
