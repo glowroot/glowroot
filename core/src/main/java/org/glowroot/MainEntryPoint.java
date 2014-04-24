@@ -88,6 +88,9 @@ public class MainEntryPoint {
     static void runViewer() throws StartupFailedException, InterruptedException {
         ImmutableMap<String, String> properties = getGlowrootProperties();
         File dataDir = DataDir.getDataDir(properties);
+        if (isShaded()) {
+            reconfigureLogging(dataDir);
+        }
         String version = Version.getVersion();
         try {
             glowrootModule = new GlowrootModule(dataDir, properties, null, version, true);
