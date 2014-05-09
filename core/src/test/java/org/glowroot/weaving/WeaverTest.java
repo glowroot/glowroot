@@ -784,7 +784,6 @@ public class WeaverTest {
     // ===================== constructor =====================
 
     @Test
-    // note: constructor pointcuts do not currently support @OnBefore
     public void shouldHandleConstructorPointcut() throws Exception {
         // given
         Misc test = newWovenObject(BasicMisc.class, Misc.class, BasicMiscConstructorAdvice.class);
@@ -794,13 +793,13 @@ public class WeaverTest {
         test.execute1();
         // then
         assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
         assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
         assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
     }
 
     @Test
-    // note: constructor pointcuts do not currently support @OnBefore
     public void shouldHandleConstructorOnInterfaceImplPointcut() throws Exception {
         // given
         Misc test = newWovenObject(BasicMisc.class, Misc.class,
@@ -811,9 +810,57 @@ public class WeaverTest {
         test.execute1();
         // then
         assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
         assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
         assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
+    }
+
+    // don't match super class constructors if it's not an "interface constructor"
+    //
+    // this is primarily because the advice for a constructor is applied after the
+    // super/this constructor is called (due to bytecode limitations, see ASM's
+    // AdviceAdapter) and so ignoreSameNested does not work to filter out nested
+    // constructors, and advice that tries to count "number of instantiations" (e.g.
+    // the basic glowroot metric) would not work either since advice cannot detect and
+    // filter out nested calls
+    @Test
+    public void shouldHandleSuperClassConstructorPointcut() throws Exception {
+        // given
+        Misc test =
+                newWovenObject(SubBasicMisc.class, Misc.class, BasicMiscConstructorAdvice.class);
+        // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
+        SomeAspect.resetThreadLocals();
+        // when
+        test.execute1();
+        // then
+        assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
+    }
+
+    // this is just a test to show the (undesirable) behavior of constructor advice not being nested
+    //
+    // see comment on above test and same comment in AdviceMatcher
+    @Test
+    public void shouldVerifyConstructorPointcutsAreNotNested() throws Exception {
+        // given
+        Misc test = newWovenObject(SubBasicMisc.class, Misc.class,
+                BasicMiscConstructorOnInterfaceImplAdvice.class);
+        // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
+        SomeAspect.resetThreadLocals();
+        // when
+        test.execute1();
+        // then
+        assertThat(SomeAspect.enabledCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(2);
+        assertThat(SomeAspect.orderedEvents.get()).containsExactly("isEnabled", "onBefore",
+                "onReturn", "onAfter", "isEnabled", "onBefore", "onReturn", "onAfter");
     }
 
     @Test

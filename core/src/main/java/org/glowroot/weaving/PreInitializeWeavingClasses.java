@@ -413,6 +413,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.ParsedTypeCache$1");
         types.add("org.glowroot.weaving.ParsedTypeCache$ParseContext");
         types.add("org.glowroot.weaving.ParsedTypeCache$ParsedTypeClassVisitor");
+        types.add("org.glowroot.weaving.PatchedAdviceAdapter");
         types.add("org.glowroot.weaving.TypeNames");
         types.add("org.glowroot.weaving.Weaver");
         types.add("org.glowroot.weaving.Weaver$ComputeFramesClassWriter");

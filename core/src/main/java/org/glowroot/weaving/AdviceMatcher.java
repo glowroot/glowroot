@@ -81,10 +81,21 @@ class AdviceMatcher {
         }
         // need to test return match and modifiers match against overridden method
         for (ParsedType type : preMatchedSuperTypes) {
-            if (type.isInterface() && parsedMethod.getName().equals("<init>")
-                    && isMethodModifiersMatch(parsedMethod.getModifiers())) {
-                // pointcut on interface "constructor"
-                return true;
+            if (parsedMethod.getName().equals("<init>")) {
+                // special rules for constructors
+                if (type.isInterface() && isMethodModifiersMatch(parsedMethod.getModifiers())) {
+                    // very special case for pointcut on "interface constructor"
+                    return true;
+                }
+                // don't match super class constructors if it's not an "interface constructor"
+                //
+                // this is primarily because the advice for a constructor is applied after the
+                // super/this constructor is called (due to bytecode limitations, see ASM's
+                // AdviceAdapter) and so ignoreSameNested does not work to filter out nested
+                // constructors, and advice that tries to count "number of instantiations" (e.g.
+                // the basic glowroot metric) would not work either since advice cannot detect and
+                // filter out nested calls
+                continue;
             }
             ParsedMethod overriddenParsedMethod = type.getMethod(parsedMethod);
             if (overriddenParsedMethod != null

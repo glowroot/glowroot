@@ -35,7 +35,7 @@ public @interface Pointcut {
      * starting and ending methodName with /.
      */
     // use "<init>" to weave constructors
-    // (note: patterns never match constructors, and @OnBefore is not supported for constructors)
+    // patterns never match constructors
     // static initializers ("<clinit>") are not supported
     String methodName();
     String[] methodArgs() default {};

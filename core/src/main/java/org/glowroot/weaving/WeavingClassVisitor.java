@@ -289,7 +289,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions,
             Iterable<Advice> matchingAdvisors) {
-        if (metricWrapperMethods) {
+        if (metricWrapperMethods && !name.equals("<init>")) {
             String innerWrappedName = wrapWithSyntheticMetricMarkerMethods(access, name, desc,
                     signature, exceptions, matchingAdvisors);
             String methodName = name;
@@ -492,6 +492,7 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
+    // this doesn't need ModifiedAdviceAdapter
     @Immutable
     private static class InitMixins extends AdviceAdapter {
 

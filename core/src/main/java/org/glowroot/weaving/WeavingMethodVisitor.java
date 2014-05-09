@@ -28,7 +28,6 @@ import com.google.common.collect.Maps;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +52,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class WeavingMethodVisitor extends AdviceAdapter {
+class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingMethodVisitor.class);
 

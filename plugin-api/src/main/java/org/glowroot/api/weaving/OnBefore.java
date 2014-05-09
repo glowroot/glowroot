@@ -39,9 +39,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@literal @}{@link OnReturn}, {@literal @}{@link OnThrow} and {@literal @}{@link OnAfter} methods
  * by annotating a parameter on any of these methods with {@literal @}{@link BindTraveler}.
  * 
- * Note: {@literal @}{@code OnBefore} is not supported on {@link Pointcut} classes that pick out
- * constructor executions ({@link Pointcut#methodName} = "<init>").
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */

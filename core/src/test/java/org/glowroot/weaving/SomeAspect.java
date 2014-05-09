@@ -15,7 +15,12 @@
  */
 package org.glowroot.weaving;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.annotation.Nullable;
+
+import com.google.common.collect.Lists;
 
 import org.glowroot.api.OptionalReturn;
 import org.glowroot.api.weaving.BindMethodArg;
@@ -54,6 +59,14 @@ public class SomeAspect {
     public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
     public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
 
+    public static final ThreadLocal<List<String>> orderedEvents =
+            new ThreadLocal<List<String>>() {
+                @Override
+                protected List<String> initialValue() {
+                    return Lists.newArrayList();
+                }
+            };
+
     public static void resetThreadLocals() {
         enabled.set(true);
         enabledCount.set(0);
@@ -61,6 +74,7 @@ public class SomeAspect {
         onReturnCount.set(0);
         onThrowCount.set(0);
         onAfterCount.set(0);
+        orderedEvents.set(new ArrayList<String>());
     }
 
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "execute1|execute2",
@@ -147,13 +161,16 @@ public class SomeAspect {
         }
     }
 
-    // note: constructor pointcuts do not currently support @OnBefore
     @Pointcut(typeName = "org.glowroot.weaving.BasicMisc", methodName = "<init>")
     public static class BasicMiscConstructorAdvice {
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
             return enabled.get();
+        }
+        @OnBefore
+        public static void onBefore() {
+            onBeforeCount.increment();
         }
         @OnReturn
         public static void onReturn() {
@@ -169,24 +186,32 @@ public class SomeAspect {
         }
     }
 
-    // note: constructor pointcuts do not currently support @OnBefore
     @Pointcut(typeName = "org.glowroot.weaving.Misc", methodName = "<init>")
     public static class BasicMiscConstructorOnInterfaceImplAdvice {
         @IsEnabled
         public static boolean isEnabled() {
+            orderedEvents.get().add("isEnabled");
             enabledCount.increment();
             return enabled.get();
         }
+        @OnBefore
+        public static void onBefore() {
+            orderedEvents.get().add("onBefore");
+            onBeforeCount.increment();
+        }
         @OnReturn
         public static void onReturn() {
+            orderedEvents.get().add("onReturn");
             onReturnCount.increment();
         }
         @OnThrow
         public static void onThrow() {
+            orderedEvents.get().add("onThrow");
             onThrowCount.increment();
         }
         @OnAfter
         public static void onAfter() {
+            orderedEvents.get().add("onAfter");
             onAfterCount.increment();
         }
     }
