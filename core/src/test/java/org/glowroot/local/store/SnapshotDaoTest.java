@@ -51,7 +51,7 @@ public class SnapshotDaoTest {
         if (dataSource.tableExists("snapshot")) {
             dataSource.execute("drop table snapshot");
         }
-        cappedFile = new File("glowroot.capped.db");
+        cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
         scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         cappedDatabase = new CappedDatabase(cappedFile, 1000000, scheduledExecutor,
                 Ticker.systemTicker());

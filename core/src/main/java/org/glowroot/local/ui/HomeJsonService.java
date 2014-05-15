@@ -32,6 +32,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,12 +166,15 @@ class HomeJsonService {
         if (transactionName == null) {
             throw new IllegalStateException("Required field missing: 'transactionName'");
         }
-        List<String> profiles = transactionPointDao.readProfiles("", transactionName,
+        List<CharSource> profiles = transactionPointDao.readProfiles("", transactionName,
                 request.getFrom(), request.getTo());
         TransactionProfileNode syntheticRootNode = new TransactionProfileNode();
-        for (String profile : profiles) {
-            TransactionProfileNode toBeMergedRootNode =
-                    ObjectMappers.readRequiredValue(mapper, profile, TransactionProfileNode.class);
+        for (CharSource profile : profiles) {
+            if (profile == null) {
+                continue;
+            }
+            TransactionProfileNode toBeMergedRootNode = ObjectMappers.readRequiredValue(mapper,
+                    profile.read(), TransactionProfileNode.class);
             if (toBeMergedRootNode.getStackTraceElement() == null) {
                 // to-be-merged root node is already synthetic
                 mergeMatchedNode(toBeMergedRootNode, syntheticRootNode);

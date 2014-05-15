@@ -71,7 +71,7 @@ public class StorageModule {
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
         snapshotDao = new SnapshotDao(dataSource, cappedDatabase);
-        transactionPointDao = new TransactionPointDao(dataSource);
+        transactionPointDao = new TransactionPointDao(dataSource, cappedDatabase);
         PreInitializeStorageShutdownClasses.preInitializeClasses(
                 StorageModule.class.getClassLoader());
 

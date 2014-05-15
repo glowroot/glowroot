@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,7 @@ import org.glowroot.collector.TransactionPointRepository;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.ResultSetExtractor;
 import org.glowroot.local.store.DataSource.RowMapper;
+import org.glowroot.local.store.FileBlock.InvalidBlockIdFormatException;
 import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.markers.Singleton;
@@ -64,7 +66,7 @@ public class TransactionPointDao implements TransactionPointRepository {
             new Column("error_count", Types.BIGINT),
             new Column("stored_trace_count", Types.BIGINT),
             new Column("metrics", Types.VARCHAR), // json data
-            new Column("profile", Types.VARCHAR)); // json data
+            new Column("profile_id", Types.VARCHAR)); // capped database id
 
     // this index includes all columns needed for the overall aggregate query so h2 can return
     // the result set directly from the index without having to reference the table for each row
@@ -80,9 +82,11 @@ public class TransactionPointDao implements TransactionPointRepository {
                     "stored_trace_count")));
 
     private final DataSource dataSource;
+    private final CappedDatabase cappedDatabase;
 
-    TransactionPointDao(DataSource dataSource) throws SQLException {
+    TransactionPointDao(DataSource dataSource, CappedDatabase cappedDatabase) throws SQLException {
         this.dataSource = dataSource;
+        this.cappedDatabase = cappedDatabase;
         dataSource.syncTable("overall_point", overallPointColumns);
         dataSource.syncIndexes("overall_point", overallPointIndexes);
         dataSource.syncTable("transaction_point", transactionPointColumns);
@@ -101,29 +105,34 @@ public class TransactionPointDao implements TransactionPointRepository {
                     overallPoint.getMetrics());
             dataSource.batchUpdate("insert into transaction_point (transaction_type,"
                     + " transaction_name, capture_time, total_micros, count, error_count,"
-                    + " stored_trace_count, metrics, profile) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    new BatchAdder() {
-                        @Override
-                        public void addBatches(PreparedStatement preparedStatement)
-                                throws SQLException {
-                            // ? extends String needed for checker framework, see issue #311
-                            for (Entry<? extends String, TransactionPoint> entry : transactionPoints
-                                    .entrySet()) {
-                                preparedStatement.setString(1, transactionType);
-                                preparedStatement.setString(2, entry.getKey());
-                                TransactionPoint transactionPoint = entry.getValue();
-                                preparedStatement.setLong(3, transactionPoint.getCaptureTime());
-                                preparedStatement.setLong(4, transactionPoint.getTotalMicros());
-                                preparedStatement.setLong(5, transactionPoint.getCount());
-                                preparedStatement.setLong(6, transactionPoint.getErrorCount());
-                                preparedStatement.setLong(7,
-                                        transactionPoint.getStoredTraceCount());
-                                preparedStatement.setString(8, transactionPoint.getMetrics());
-                                preparedStatement.setString(9, transactionPoint.getProfile());
-                                preparedStatement.addBatch();
-                            }
+                    + " stored_trace_count, metrics, profile_id) values"
+                    + " (?, ?, ?, ?, ?, ?, ?, ?, ?)", new BatchAdder() {
+                @Override
+                public void addBatches(PreparedStatement preparedStatement)
+                        throws SQLException {
+                    // ? extends String needed for checker framework, see issue #311
+                    for (Entry<? extends String, TransactionPoint> entry : transactionPoints
+                            .entrySet()) {
+                        TransactionPoint transactionPoint = entry.getValue();
+                        String profileId = null;
+                        String profile = transactionPoint.getProfile();
+                        if (profile != null) {
+                            profileId = cappedDatabase.write(CharSource.wrap(profile)).getId();
                         }
-                    });
+                        preparedStatement.setString(1, transactionType);
+                        preparedStatement.setString(2, entry.getKey());
+                        preparedStatement.setLong(3, transactionPoint.getCaptureTime());
+                        preparedStatement.setLong(4, transactionPoint.getTotalMicros());
+                        preparedStatement.setLong(5, transactionPoint.getCount());
+                        preparedStatement.setLong(6, transactionPoint.getErrorCount());
+                        preparedStatement.setLong(7,
+                                transactionPoint.getStoredTraceCount());
+                        preparedStatement.setString(8, transactionPoint.getMetrics());
+                        preparedStatement.setString(9, profileId);
+                        preparedStatement.addBatch();
+                    }
+                }
+            });
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -202,15 +211,27 @@ public class TransactionPointDao implements TransactionPointRepository {
         }
     }
 
-    public ImmutableList<String> readProfiles(String transactionType, String transactionName,
+    public ImmutableList<CharSource> readProfiles(String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) {
         try {
-            return dataSource.query("select profile from transaction_point where"
+            return dataSource.query("select profile_id from transaction_point where"
                     + " transaction_type = ? and transaction_name = ? and capture_time >= ?"
-                    + " and capture_time <= ? and profile is not null",
+                    + " and capture_time <= ? and profile_id is not null",
                     ImmutableList.of(transactionType, transactionName, captureTimeFrom,
                             captureTimeTo),
-                    new StringRowMapper());
+                    new RowMapper<CharSource>() {
+                        @Override
+                        public CharSource mapRow(ResultSet resultSet) throws SQLException {
+                            String profileId = resultSet.getString(1);
+                            FileBlock fileBlock;
+                            try {
+                                fileBlock = FileBlock.from(profileId);
+                            } catch (InvalidBlockIdFormatException e) {
+                                throw new SQLException(e);
+                            }
+                            return cappedDatabase.read(fileBlock, "{\"overwritten\":true}");
+                        }
+                    });
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
@@ -289,14 +310,6 @@ public class TransactionPointDao implements TransactionPointRepository {
             }
             return new TransactionPoint(captureTime, totalMicros, count, errorCount,
                     storedTraceCount, metrics, null);
-        }
-    }
-
-    @ThreadSafe
-    private static class StringRowMapper implements RowMapper<String> {
-        @Override
-        public String mapRow(ResultSet resultSet) throws SQLException {
-            return resultSet.getString(1);
         }
     }
 

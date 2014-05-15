@@ -15,9 +15,13 @@
  */
 package org.glowroot.local.store;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.common.base.Ticker;
 import com.google.common.collect.Maps;
 import org.junit.After;
 import org.junit.Before;
@@ -36,6 +40,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TransactionPointDaoTest {
 
     private DataSource dataSource;
+    private File cappedFile;
+    private ScheduledExecutorService scheduledExecutor;
+    private CappedDatabase cappedDatabase;
     private TransactionPointDao transactionPointDao;
 
     @Before
@@ -47,12 +54,19 @@ public class TransactionPointDaoTest {
         if (dataSource.tableExists("transaction_point")) {
             dataSource.execute("drop table transaction_point");
         }
-        transactionPointDao = new TransactionPointDao(dataSource);
+        cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        cappedDatabase = new CappedDatabase(cappedFile, 1000000, scheduledExecutor,
+                Ticker.systemTicker());
+        transactionPointDao = new TransactionPointDao(dataSource, cappedDatabase);
     }
 
     @After
     public void afterEachTest() throws Exception {
+        scheduledExecutor.shutdownNow();
         dataSource.close();
+        cappedDatabase.close();
+        cappedFile.delete();
     }
 
     @Test
