@@ -67,7 +67,7 @@ public class DataSourceCompactTest {
                 "not storing a trace because of an excessive backlog");
         container.executeAppUnderTest(GenerateLotsOfTraces.class);
         long preCompactionDbSize = dbFile.length();
-        container.getTraceService().deleteAllSnapshots();
+        container.getTraceService().deleteAll();
         container.getConfigService().compactData();
         // then
         assertThat(dbFile.length()).isLessThan(preCompactionDbSize);

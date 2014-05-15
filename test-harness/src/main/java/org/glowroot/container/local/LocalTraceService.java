@@ -40,6 +40,7 @@ import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceService;
 import org.glowroot.local.store.SnapshotDao;
+import org.glowroot.local.store.TransactionPointDao;
 import org.glowroot.local.ui.TraceCommonService;
 import org.glowroot.local.ui.TraceExportHttpService;
 import org.glowroot.trace.TraceRegistry;
@@ -57,6 +58,7 @@ class LocalTraceService extends TraceService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
+    private final TransactionPointDao transactionPointDao;
     private final SnapshotDao snapshotDao;
     private final TraceCommonService traceCommonService;
     private final TraceExportHttpService traceExportHttpService;
@@ -65,6 +67,7 @@ class LocalTraceService extends TraceService {
     private final Ticker ticker;
 
     LocalTraceService(GlowrootModule glowrootModule) {
+        transactionPointDao = glowrootModule.getStorageModule().getTransactionPointDao();
         snapshotDao = glowrootModule.getStorageModule().getSnapshotDao();
         traceCommonService = glowrootModule.getUiModule().getTraceCommonService();
         traceExportHttpService = glowrootModule.getUiModule().getTraceExportHttpService();
@@ -143,7 +146,8 @@ class LocalTraceService extends TraceService {
     }
 
     @Override
-    public void deleteAllSnapshots() {
+    public void deleteAll() {
+        transactionPointDao.deleteAll();
         snapshotDao.deleteAll();
     }
 

@@ -30,20 +30,23 @@ import static java.util.concurrent.TimeUnit.HOURS;
 class ReaperScheduledRunnable extends ScheduledRunnable {
 
     private final ConfigService configService;
+    private final TransactionPointDao transactionPointDao;
     private final SnapshotDao snapshotDao;
     private final Clock clock;
 
-    ReaperScheduledRunnable(ConfigService configService, SnapshotDao snapshotDao, Clock clock) {
+    ReaperScheduledRunnable(ConfigService configService, TransactionPointDao transactionPointDao,
+            SnapshotDao snapshotDao, Clock clock) {
         this.configService = configService;
+        this.transactionPointDao = transactionPointDao;
         this.snapshotDao = snapshotDao;
         this.clock = clock;
     }
 
     @Override
     protected void runInternal() {
-        int traceExpirationHours =
-                configService.getStorageConfig().getTraceExpirationHours();
-        snapshotDao.deleteBefore(
-                clock.currentTimeMillis() - HOURS.toMillis(traceExpirationHours));
+        int traceExpirationHours = configService.getStorageConfig().getTraceExpirationHours();
+        long captureTime = clock.currentTimeMillis() - HOURS.toMillis(traceExpirationHours);
+        transactionPointDao.deleteBefore(captureTime);
+        snapshotDao.deleteBefore(captureTime);
     }
 }

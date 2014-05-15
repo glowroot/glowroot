@@ -174,7 +174,7 @@ public class LocalContainer implements Container {
     @Override
     public void checkAndReset() throws Exception {
         traceService.assertNoActiveTraces();
-        traceService.deleteAllSnapshots();
+        traceService.deleteAll();
         configService.resetAllConfig();
         // storeThresholdMillis=0 is the default for testing
         configService.setStoreThresholdMillis(0);

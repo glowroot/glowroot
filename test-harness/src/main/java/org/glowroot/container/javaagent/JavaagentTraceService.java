@@ -129,7 +129,7 @@ class JavaagentTraceService extends TraceService {
     }
 
     @Override
-    public void deleteAllSnapshots() throws Exception {
+    public void deleteAll() throws Exception {
         httpClient.post("/backend/admin/data/delete-all", "");
     }
 

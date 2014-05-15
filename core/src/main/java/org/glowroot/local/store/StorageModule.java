@@ -51,10 +51,10 @@ public class StorageModule {
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
+    private final TransactionPointDao transactionPointDao;
     private final SnapshotDao snapshotDao;
     @Nullable
     private final ReaperScheduledRunnable reaperScheduledRunnable;
-    private final TransactionPointDao transactionPointDao;
 
     public StorageModule(File dataDir, Map<String, String> properties, Ticker ticker, Clock clock,
             ConfigModule configModule, ScheduledExecutorService scheduledExecutor,
@@ -70,16 +70,16 @@ public class StorageModule {
         int cappedDatabaseSizeMb = configService.getStorageConfig().getCappedDatabaseSizeMb();
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
-        snapshotDao = new SnapshotDao(dataSource, cappedDatabase);
         transactionPointDao = new TransactionPointDao(dataSource, cappedDatabase);
+        snapshotDao = new SnapshotDao(dataSource, cappedDatabase);
         PreInitializeStorageShutdownClasses.preInitializeClasses(
                 StorageModule.class.getClassLoader());
 
         if (snapshotReaperDisabled) {
             reaperScheduledRunnable = null;
         } else {
-            reaperScheduledRunnable =
-                    new ReaperScheduledRunnable(configService, snapshotDao, clock);
+            reaperScheduledRunnable = new ReaperScheduledRunnable(configService,
+                    transactionPointDao, snapshotDao, clock);
             reaperScheduledRunnable.scheduleAtFixedRate(scheduledExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }

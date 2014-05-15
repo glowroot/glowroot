@@ -69,5 +69,5 @@ public abstract class TraceService {
     @Nullable
     public abstract ProfileNode getFineProfile(String traceId) throws Exception;
 
-    public abstract void deleteAllSnapshots() throws Exception;
+    public abstract void deleteAll() throws Exception;
 }

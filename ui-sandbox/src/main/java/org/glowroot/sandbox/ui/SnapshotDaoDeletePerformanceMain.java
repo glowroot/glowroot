@@ -58,7 +58,7 @@ public class SnapshotDaoDeletePerformanceMain {
         long dbSize = dbFile.length();
         logger.info("glowroot.h2.db: {} bytes", dbSize);
         Stopwatch stopwatch = Stopwatch.createStarted();
-        container.getTraceService().deleteAllSnapshots();
+        container.getTraceService().deleteAll();
         logger.info("all traces deleted in: {} millis", stopwatch.elapsed(MILLISECONDS));
         logger.info("glowroot.h2.db: {} bytes", dbFile.length());
         container.close();
