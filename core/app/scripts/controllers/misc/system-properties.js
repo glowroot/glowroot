@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,16 @@
 
 /* global glowroot */
 
-glowroot.controller('JvmCtrl', [
+glowroot.controller('MiscSystemPropertiesCtrl', [
   '$scope',
-  '$state',
-  function ($scope, $state) {
-    // \u00b7 is &middot;
-    document.title = 'JVM \u00b7 Glowroot';
-    $scope.$parent.title = 'JVM';
-    $scope.$parent.activeNavbarItem = 'jvm';
-
-    $scope.isCurrentView = function (viewName) {
-      return $state.current.name === viewName;
-    };
+  '$http',
+  'httpErrors',
+  function ($scope, $http, httpErrors) {
+    $http.get('backend/misc/system-properties')
+        .success(function (data) {
+          $scope.loaded = true;
+          $scope.properties = data;
+        })
+        .error(httpErrors.handler($scope));
   }
 ]);

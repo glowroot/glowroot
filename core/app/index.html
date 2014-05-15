@@ -88,11 +88,6 @@
                  gt-url="#/errors">
             </div>
             <div gt-navbar-item
-                 gt-display="JVM"
-                 gt-item-name="jvm"
-                 gt-url="#/jvm/general">
-            </div>
-            <div gt-navbar-item
                  gt-display="Configuration"
                  gt-item-name="config"
                  gt-url="#/config/general">
@@ -102,6 +97,11 @@
                  gt-item-name="plugin"
                  gt-url="#/plugin/{{layout.plugins[0].id}}"
                  gt-show="layout.plugins.length">
+            </div>
+            <div gt-navbar-item
+                 gt-display="Misc"
+                 gt-item-name="misc"
+                 gt-url="#/misc/process">
             </div>
           </ul>
           <form class="navbar-form navbar-right ng-cloak"
@@ -187,15 +187,6 @@
   <script src="scripts/controllers/transaction-detail.js"></script>
   <script src="scripts/controllers/traces.js"></script>
   <script src="scripts/controllers/errors.js"></script>
-  <script src="scripts/controllers/jvm.js"></script>
-  <script src="scripts/controllers/jvm/general.js"></script>
-  <script src="scripts/controllers/jvm/system-properties.js"></script>
-  <script src="scripts/controllers/jvm/thread-dump.js"></script>
-  <script src="scripts/controllers/jvm/memory-overview.js"></script>
-  <script src="scripts/controllers/jvm/heap-histogram.js"></script>
-  <script src="scripts/controllers/jvm/heap-dump.js"></script>
-  <script src="scripts/controllers/jvm/diagnostic-options.js"></script>
-  <script src="scripts/controllers/jvm/capabilities.js"></script>
   <script src="scripts/controllers/config.js"></script>
   <script src="scripts/controllers/config/general.js"></script>
   <script src="scripts/controllers/config/coarse-profiling.js"></script>
@@ -208,6 +199,15 @@
   <script src="scripts/controllers/config/pointcut.js"></script>
   <script src="scripts/controllers/plugin.js"></script>
   <script src="scripts/controllers/plugin-x.js"></script>
+  <script src="scripts/controllers/misc.js"></script>
+  <script src="scripts/controllers/misc/process.js"></script>
+  <script src="scripts/controllers/misc/system-properties.js"></script>
+  <script src="scripts/controllers/misc/thread-dump.js"></script>
+  <script src="scripts/controllers/misc/heap-histogram.js"></script>
+  <script src="scripts/controllers/misc/heap-dump.js"></script>
+  <script src="scripts/controllers/misc/garbage-collectors.js"></script>
+  <script src="scripts/controllers/misc/diagnostic-options.js"></script>
+  <script src="scripts/controllers/misc/capabilities.js"></script>
   <script src="scripts/controllers/login.js"></script>
   <!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->
   <script src="scripts/generated/handlebars-templates.js"></script>

@@ -116,7 +116,7 @@ public class LocalUiModule {
                 new TraceDetailHttpService(traceCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
         ErrorJsonService errorJsonService = new ErrorJsonService(snapshotDao);
-        JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getThreadAllocatedBytes(),
+        MiscJsonService jvmJsonService = new MiscJsonService(jvmModule.getThreadAllocatedBytes(),
                 jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),
                 jvmModule.getDiagnosticOptions());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
@@ -223,9 +223,9 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/home$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/traces$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/errors$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/jvm/.*$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/config/.*$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/plugin/.*$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/misc/.*$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/login$"), resourceBase + "/index.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");

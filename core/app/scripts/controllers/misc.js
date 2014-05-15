@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,17 @@
 
 /* global glowroot */
 
-glowroot.controller('JvmCapabilitiesCtrl', [
+glowroot.controller('MiscCtrl', [
   '$scope',
-  '$http',
-  'httpErrors',
-  function ($scope, $http, httpErrors) {
-    $http.get('backend/jvm/capabilities')
-        .success(function (data) {
-          $scope.loaded = true;
-          $scope.capabilities = data;
-        })
-        .error(httpErrors.handler($scope));
+  '$state',
+  function ($scope, $state) {
+    // \u00b7 is &middot;
+    document.title = 'Misc \u00b7 Glowroot';
+    $scope.$parent.title = 'Misc JVM stuff';
+    $scope.$parent.activeNavbarItem = 'misc';
+
+    $scope.isCurrentView = function (viewName) {
+      return $state.current.name === viewName;
+    };
   }
 ]);

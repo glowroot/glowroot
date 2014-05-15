@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2013 the original author or authors.
+  Copyright 2012-2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 -->
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>Memory overview</h2>
+    <h2>Garbage collectors</h2>
   </div>
   <div class="panel-body memory-overview-panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
@@ -40,6 +40,32 @@
          style="clear: right; float: right;">
     </div>
     <br style="clear: both;">
+    <h3>Garbage collectors</h3>
+    <br>
+    <table class="table">
+      <thead>
+      <tr>
+        <th>Collector name</th>
+        <th>Collection count</th>
+        <th>Collection time<br>(milliseconds)</th>
+        <th>Memory pools</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr ng-repeat="garbageCollector in data.garbageCollectors">
+        <td>{{garbageCollector.name}}</td>
+        <td>{{garbageCollector.collectionCount}}</td>
+        <td>{{garbageCollector.collectionTime}}</td>
+        <td>
+          <span ng-repeat="name in garbageCollector.memoryPoolNames">
+            {{name}}<br>
+          </span>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+
+    <br>
     <h3>Heap memory</h3>
     <br>
     <table class="table memory-pool-table">
@@ -184,32 +210,6 @@
         <td>{{data.nonHeapUsage.max | gtBytes}}</td>
       </tr>
       </tfoot>
-    </table>
-
-    <br>
-    <h3>Garbage collectors</h3>
-    <br>
-    <table class="table">
-      <thead>
-      <tr>
-        <th>Collector name</th>
-        <th>Collection count</th>
-        <th>Collection time<br>(milliseconds)</th>
-        <th>Memory pools</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr ng-repeat="garbageCollector in data.garbageCollectors">
-        <td>{{garbageCollector.name}}</td>
-        <td>{{garbageCollector.collectionCount}}</td>
-        <td>{{garbageCollector.collectionTime}}</td>
-        <td>
-          <span ng-repeat="name in garbageCollector.memoryPoolNames">
-            {{name}}<br>
-          </span>
-        </td>
-      </tr>
-      </tbody>
     </table>
   </div>
 </div>

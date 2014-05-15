@@ -27,7 +27,7 @@
          name="formCtrl">
       <div ng-repeat="option in options">
         <div class="row">
-          <div class="checkbox jvm-diagnostic-option col-lg-offset-3 col-lg-9">
+          <div class="checkbox jvm-diagnostic-option col-lg-offset-1 col-lg-11">
             <label for="{{option.name}}">
               <input type="checkbox"
                      class="gt-form-checkbox"
@@ -45,13 +45,13 @@
         </div>
       </div>
       <div class="form-group" style="margin-bottom: 5px;">
-        <div class="col-lg-offset-3 col-lg-9 help-block">
+        <div class="col-lg-offset-1 col-lg-11 help-block">
           These options are updated in the running JVM only. To update options permanently, they
           must be added to the jvm args, e.g. <code>-XX:+PrintGCDetails</code>.
         </div>
       </div>
       <div class="form-group form-buttons">
-        <div class="col-lg-offset-3 col-lg-9">
+        <div class="col-lg-offset-1 col-lg-11">
           <div gt-button
                gt-label="Update JVM"
                gt-click="update(deferred)"

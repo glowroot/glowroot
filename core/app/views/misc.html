@@ -16,46 +16,46 @@
 <div class="panel panel-default gt-sidebar hidden-print">
   <ul class="list-group">
     <a class="list-group-item"
-       ng-class="{active: isCurrentView('jvm.general')}"
-       href="#/jvm/general">
-      General
+       ng-class="{active: isCurrentView('misc.process')}"
+       href="#/misc/process">
+      Process
     </a>
     <a class="list-group-item"
-       ng-class="{active: isCurrentView('jvm.systemProperties')}"
-       href="#/jvm/system-properties">
+       ng-class="{active: isCurrentView('misc.systemProperties')}"
+       href="#/misc/system-properties">
       System properties
     </a>
     <a class="list-group-item"
-       ng-class="{active: isCurrentView('jvm.threadDump')}"
-       href="#/jvm/thread-dump">
+       ng-class="{active: isCurrentView('misc.threadDump')}"
+       href="#/misc/thread-dump">
       Thread dump
     </a>
     <a class="list-group-item"
-       ng-class="{active: isCurrentView('jvm.memoryOverview')}"
-       href="#/jvm/memory-overview">
-      Memory overview
-    </a>
-    <a class="list-group-item"
-       ng-class="{active: isCurrentView('jvm.heapHistogram')}"
-       href="#/jvm/heap-histogram"
-       ng-show="layout.jvmHeapHistogram">
+       ng-class="{active: isCurrentView('misc.heapHistogram')}"
+       href="#/misc/heap-histogram"
+       ng-show="layout.miscHeapHistogram">
       Heap histogram
     </a>
     <a class="list-group-item"
-       ng-class="{active: isCurrentView('jvm.heapDump')}"
-       href="#/jvm/heap-dump"
-       ng-show="layout.jvmHeapDump">
+       ng-class="{active: isCurrentView('misc.heapDump')}"
+       href="#/misc/heap-dump"
+       ng-show="layout.miscHeapDump">
       Heap dump
     </a>
     <a class="list-group-item"
-       ng-class="{active: isCurrentView('jvm.diagnosticOptions')}"
-       href="#/jvm/diagnostic-options"
-       ng-show="layout.jvmDiagnosticOptions">
+       ng-class="{active: isCurrentView('misc.garbageCollectors')}"
+       href="#/misc/garbage-collectors">
+      Garbage collectors
+    </a>
+    <a class="list-group-item"
+       ng-class="{active: isCurrentView('misc.diagnosticOptions')}"
+       href="#/misc/diagnostic-options"
+       ng-show="layout.miscDiagnosticOptions">
       Diagnostic options
     </a>
     <a class="list-group-item"
-       ng-class="{active: isCurrentView('jvm.capabilities')}"
-       href="#/jvm/capabilities">
+       ng-class="{active: isCurrentView('misc.capabilities')}"
+       href="#/misc/capabilities">
       Capabilities
     </a>
   </ul>

@@ -16,7 +16,7 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('JvmDiagnosticOptionsCtrl', [
+glowroot.controller('MiscDiagnosticOptionsCtrl', [
   '$scope',
   '$http',
   'confirmIfHasChanges',
@@ -49,7 +49,7 @@ glowroot.controller('JvmDiagnosticOptionsCtrl', [
           postData[option.name] = updatedOptionValue;
         }
       });
-      $http.post('backend/jvm/update-diagnostic-options', postData)
+      $http.post('backend/misc/update-diagnostic-options', postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Updated');
@@ -57,7 +57,7 @@ glowroot.controller('JvmDiagnosticOptionsCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/jvm/diagnostic-options')
+    $http.get('backend/misc/diagnostic-options')
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 /* global glowroot */
 
-glowroot.controller('JvmMemoryOverviewCtrl', [
+glowroot.controller('MiscGarbageCollectorsCtrl', [
   '$scope',
   '$http',
   '$q',
@@ -24,7 +24,7 @@ glowroot.controller('JvmMemoryOverviewCtrl', [
   function ($scope, $http, $q, httpErrors) {
 
     $scope.performGC = function (deferred) {
-      $http.post('backend/jvm/perform-gc')
+      $http.post('backend/misc/perform-gc')
           .success(function (data) {
             $scope.loaded = true;
             $scope.data = data;
@@ -34,7 +34,7 @@ glowroot.controller('JvmMemoryOverviewCtrl', [
     };
 
     $scope.resetPeakUsage = function (deferred) {
-      $http.post('backend/jvm/reset-peak-memory-usage')
+      $http.post('backend/misc/reset-peak-memory-usage')
           .success(function (data) {
             $scope.loaded = true;
             $scope.data = data;
@@ -44,7 +44,7 @@ glowroot.controller('JvmMemoryOverviewCtrl', [
     };
 
     $scope.refresh = function (deferred) {
-      $http.get('backend/jvm/memory-overview')
+      $http.get('backend/misc/memory-overview')
           .success(function (data) {
             $scope.loaded = true;
             $scope.data = data;

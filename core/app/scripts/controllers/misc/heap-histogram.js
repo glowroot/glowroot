@@ -16,7 +16,7 @@
 
 /* global glowroot, angular, $ */
 
-glowroot.controller('JvmHeapHistogramCtrl', [
+glowroot.controller('MiscHeapHistogramCtrl', [
   '$scope',
   '$http',
   '$q',
@@ -63,7 +63,7 @@ glowroot.controller('JvmHeapHistogramCtrl', [
     };
 
     $scope.refresh = function (deferred) {
-      $http.get('backend/jvm/heap-histogram')
+      $http.get('backend/misc/heap-histogram')
           .success(function (data) {
             $scope.loaded = true;
             $scope.histogram = data;

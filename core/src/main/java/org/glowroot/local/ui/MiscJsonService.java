@@ -71,16 +71,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
 /**
- * Json service to read jvm info, bound to /backend/jvm.
+ * Json service to read misc info, bound to /backend/misc.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
 @JsonService
-class JvmJsonService {
+class MiscJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(JvmJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(MiscJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final Ordering<ThreadInfo> orderingByStackSize = new Ordering<ThreadInfo>() {
@@ -97,7 +97,7 @@ class JvmJsonService {
     private final OptionalService<HeapDumps> heapDumps;
     private final OptionalService<DiagnosticOptions> diagnosticOptions;
 
-    JvmJsonService(OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
+    MiscJsonService(OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
             OptionalService<HeapHistograms> heapHistograms, OptionalService<HeapDumps> heapDumps,
             OptionalService<DiagnosticOptions> diagnosticOptions) {
         this.threadAllocatedBytes = threadAllocatedBytes;
@@ -106,9 +106,9 @@ class JvmJsonService {
         this.diagnosticOptions = diagnosticOptions;
     }
 
-    @GET("/backend/jvm/general")
-    String getGeneralInfo() throws IOException, JMException {
-        logger.debug("getGeneralInfo()");
+    @GET("/backend/misc/process")
+    String getProcess() throws IOException, JMException {
+        logger.debug("getProcess()");
         String pid = ProcessId.getPid();
         String command = System.getProperty("sun.java.command");
         String mainClass = null;
@@ -148,7 +148,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/jvm/system-properties")
+    @GET("/backend/misc/system-properties")
     String getSystemProperties() throws IOException {
         logger.debug("getSystemProperties()");
         Properties properties = System.getProperties();
@@ -179,7 +179,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/jvm/thread-dump")
+    @GET("/backend/misc/thread-dump")
     String getThreadDump() throws IOException {
         logger.debug("getThreadDump()");
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
@@ -214,7 +214,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/jvm/memory-overview")
+    @GET("/backend/misc/memory-overview")
     String getMemoryOverview() throws IOException {
         logger.debug("getMemoryOverview()");
         MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
@@ -269,14 +269,14 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @POST("/backend/jvm/perform-gc")
+    @POST("/backend/misc/perform-gc")
     String performGC() throws IOException {
         logger.debug("performGC()");
         System.gc();
         return getMemoryOverview();
     }
 
-    @POST("/backend/jvm/reset-peak-memory-usage")
+    @POST("/backend/misc/reset-peak-memory-usage")
     String resetPeakMemoryUsage() throws IOException {
         logger.debug("resetPeakMemoryUsage()");
         for (MemoryPoolMXBean memoryPoolMXBean : ManagementFactory.getMemoryPoolMXBeans()) {
@@ -285,14 +285,14 @@ class JvmJsonService {
         return getMemoryOverview();
     }
 
-    @GET("/backend/jvm/heap-histogram")
+    @GET("/backend/misc/heap-histogram")
     String getHeapHistogram() throws HeapHistogramException {
         logger.debug("getHeapHistogram()");
         HeapHistograms service = OptionalJsonServices.validateAvailability(heapHistograms);
         return service.heapHistogramJson();
     }
 
-    @GET("/backend/jvm/heap-dump-defaults")
+    @GET("/backend/misc/heap-dump-defaults")
     String getHeapDumpDefaults() throws IOException, JMException {
         logger.debug("getHeapDumpDefaults()");
         String heapDumpPath = null;
@@ -316,7 +316,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @POST("/backend/jvm/check-disk-space")
+    @POST("/backend/misc/check-disk-space")
     String checkDiskSpace(String content) throws IOException {
         logger.debug("checkDiskSpace(): content={}", content);
         RequestWithDirectory request =
@@ -332,7 +332,7 @@ class JvmJsonService {
         return Long.toString(diskSpace);
     }
 
-    @POST("/backend/jvm/dump-heap")
+    @POST("/backend/misc/dump-heap")
     String dumpHeap(String content) throws IOException, JMException {
         logger.debug("dumpHeap(): content={}", content);
         HeapDumps service = OptionalJsonServices.validateAvailability(heapDumps);
@@ -365,7 +365,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/jvm/diagnostic-options")
+    @GET("/backend/misc/diagnostic-options")
     String getDiagnosticOptions() throws IOException, JMException {
         logger.debug("getDiagnosticOptions()");
         DiagnosticOptions service =
@@ -394,7 +394,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @POST("/backend/jvm/update-diagnostic-options")
+    @POST("/backend/misc/update-diagnostic-options")
     String updateDiagnosticOptions(String content) throws IOException, JMException {
         logger.debug("updateDiagnosticOptions(): content={}", content);
         DiagnosticOptions service =
@@ -408,7 +408,7 @@ class JvmJsonService {
         return getDiagnosticOptions();
     }
 
-    @GET("/backend/jvm/capabilities")
+    @GET("/backend/misc/capabilities")
     String getCapabilities() throws IOException {
         logger.debug("getCapabilities()");
         StringBuilder sb = new StringBuilder();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 /* global glowroot, $, Handlebars, JST */
 
-glowroot.controller('JvmThreadDumpCtrl', [
+glowroot.controller('MiscThreadDumpCtrl', [
   '$scope',
   '$http',
   '$q',
@@ -48,7 +48,7 @@ glowroot.controller('JvmThreadDumpCtrl', [
     };
 
     $scope.refresh = function (deferred) {
-      $http.get('backend/jvm/thread-dump')
+      $http.get('backend/misc/thread-dump')
           .success(function (data) {
             $scope.loaded = true;
             // $.trim() is needed because this template is sensitive to surrounding spaces

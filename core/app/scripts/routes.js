@@ -62,51 +62,6 @@ glowroot.config([
       templateUrl: 'views/traces.html',
       controller: 'TracesCtrl'
     });
-    $stateProvider.state('jvm', {
-      url: '/jvm',
-      templateUrl: 'views/jvm.html',
-      controller: 'JvmCtrl'
-    });
-    $stateProvider.state('jvm.general', {
-      url: '/general',
-      templateUrl: 'views/jvm/general.html',
-      controller: 'JvmGeneralCtrl'
-    });
-    $stateProvider.state('jvm.systemProperties', {
-      url: '/system-properties',
-      templateUrl: 'views/jvm/system-properties.html',
-      controller: 'JvmSystemPropertiesCtrl'
-    });
-    $stateProvider.state('jvm.threadDump', {
-      url: '/thread-dump',
-      templateUrl: 'views/jvm/thread-dump.html',
-      controller: 'JvmThreadDumpCtrl'
-    });
-    $stateProvider.state('jvm.memoryOverview', {
-      url: '/memory-overview',
-      templateUrl: 'views/jvm/memory-overview.html',
-      controller: 'JvmMemoryOverviewCtrl'
-    });
-    $stateProvider.state('jvm.heapHistogram', {
-      url: '/heap-histogram',
-      templateUrl: 'views/jvm/heap-histogram.html',
-      controller: 'JvmHeapHistogramCtrl'
-    });
-    $stateProvider.state('jvm.heapDump', {
-      url: '/heap-dump',
-      templateUrl: 'views/jvm/heap-dump.html',
-      controller: 'JvmHeapDumpCtrl'
-    });
-    $stateProvider.state('jvm.diagnosticOptions', {
-      url: '/diagnostic-options',
-      templateUrl: 'views/jvm/diagnostic-options.html',
-      controller: 'JvmDiagnosticOptionsCtrl'
-    });
-    $stateProvider.state('jvm.capabilities', {
-      url: '/capabilities',
-      templateUrl: 'views/jvm/capabilities.html',
-      controller: 'JvmCapabilitiesCtrl'
-    });
     $stateProvider.state('config', {
       url: '/config',
       templateUrl: 'views/config.html',
@@ -166,6 +121,51 @@ glowroot.config([
       url: '/login',
       templateUrl: 'views/login.html',
       controller: 'LoginCtrl'
+    });
+    $stateProvider.state('misc', {
+      url: '/misc',
+      templateUrl: 'views/misc.html',
+      controller: 'MiscCtrl'
+    });
+    $stateProvider.state('misc.process', {
+      url: '/process',
+      templateUrl: 'views/misc/process.html',
+      controller: 'MiscProcessCtrl'
+    });
+    $stateProvider.state('misc.systemProperties', {
+      url: '/system-properties',
+      templateUrl: 'views/misc/system-properties.html',
+      controller: 'MiscSystemPropertiesCtrl'
+    });
+    $stateProvider.state('misc.threadDump', {
+      url: '/thread-dump',
+      templateUrl: 'views/misc/thread-dump.html',
+      controller: 'MiscThreadDumpCtrl'
+    });
+    $stateProvider.state('misc.garbageCollectors', {
+      url: '/garbage-collectors',
+      templateUrl: 'views/misc/garbage-collectors.html',
+      controller: 'MiscGarbageCollectorsCtrl'
+    });
+    $stateProvider.state('misc.heapHistogram', {
+      url: '/heap-histogram',
+      templateUrl: 'views/misc/heap-histogram.html',
+      controller: 'MiscHeapHistogramCtrl'
+    });
+    $stateProvider.state('misc.heapDump', {
+      url: '/heap-dump',
+      templateUrl: 'views/misc/heap-dump.html',
+      controller: 'MiscHeapDumpCtrl'
+    });
+    $stateProvider.state('misc.diagnosticOptions', {
+      url: '/diagnostic-options',
+      templateUrl: 'views/misc/diagnostic-options.html',
+      controller: 'MiscDiagnosticOptionsCtrl'
+    });
+    $stateProvider.state('misc.capabilities', {
+      url: '/capabilities',
+      templateUrl: 'views/misc/capabilities.html',
+      controller: 'MiscCapabilitiesCtrl'
     });
   }
 ]);

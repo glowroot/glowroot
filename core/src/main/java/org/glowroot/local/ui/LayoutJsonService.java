@@ -82,9 +82,9 @@ class LayoutJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeBooleanField("jvmHeapHistogram", heapHistograms != null);
-        jg.writeBooleanField("jvmHeapDump", heapDumps != null);
-        jg.writeBooleanField("jvmDiagnosticOptions", diagnosticOptions != null);
+        jg.writeBooleanField("miscHeapHistogram", heapHistograms != null);
+        jg.writeBooleanField("miscHeapDump", heapDumps != null);
+        jg.writeBooleanField("miscDiagnosticOptions", diagnosticOptions != null);
         jg.writeStringField("footerMessage", "version " + version);
         jg.writeBooleanField("passwordEnabled",
                 configService.getUserInterfaceConfig().isPasswordEnabled());
