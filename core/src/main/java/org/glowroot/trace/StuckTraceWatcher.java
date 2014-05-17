@@ -84,8 +84,11 @@ class StuckTraceWatcher extends ScheduledRunnable {
                                 - NANOSECONDS.toMillis(trace.getDuration())));
                 ScheduledRunnable stuckTraceScheduledRunnable =
                         new StuckTraceScheduledRunnable(trace, traceCollector);
-                stuckTraceScheduledRunnable.schedule(scheduledExecutor,
-                        initialDelayMillis, MILLISECONDS);
+                // repeat at minimum every 60 seconds (in case stuck threshold is set very small)
+                long repeatingIntervalSeconds = Math.max(60, config.getStuckThresholdSeconds());
+                stuckTraceScheduledRunnable.scheduleWithFixedDelay(scheduledExecutor,
+                        initialDelayMillis, SECONDS.toMillis(repeatingIntervalSeconds),
+                        MILLISECONDS);
                 trace.setStuckScheduledRunnable(stuckTraceScheduledRunnable);
             }
         }

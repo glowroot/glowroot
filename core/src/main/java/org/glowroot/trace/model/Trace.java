@@ -283,9 +283,8 @@ public class Trace {
         return stuckScheduledRunnable;
     }
 
-    // returns previous value
-    public boolean setStuck() {
-        return stuck.getAndSet(true);
+    public void setStuck() {
+        stuck.getAndSet(true);
     }
 
     public void setTransactionName(String transactionName) {

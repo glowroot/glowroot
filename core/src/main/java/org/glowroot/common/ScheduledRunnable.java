@@ -33,14 +33,6 @@ public abstract class ScheduledRunnable implements Runnable {
     /*@MonotonicNonNull*/
     private volatile ScheduledFuture<?> future;
 
-    public void schedule(ScheduledExecutorService scheduledExecutor, long delay, TimeUnit unit) {
-        if (future != null) {
-            logger.error("command has already been scheduled: {}", this);
-            return;
-        }
-        future = scheduledExecutor.schedule(this, delay, unit);
-    }
-
     public void scheduleWithFixedDelay(ScheduledExecutorService scheduledExecutor,
             long initialDelay, long period, TimeUnit unit) {
         if (future != null) {

@@ -61,10 +61,7 @@ class StuckTraceScheduledRunnable extends ScheduledRunnable {
                 return;
             }
         }
-        if (trace.setStuck()) {
-            // already marked as stuck
-            return;
-        }
+        trace.setStuck();
         traceCollector.onStuckTrace(trace);
     }
 
