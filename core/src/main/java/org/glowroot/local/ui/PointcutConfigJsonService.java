@@ -123,14 +123,14 @@ class PointcutConfigJsonService {
             for (String argTypeName : parsedMethod.getArgTypeNames()) {
                 argTypeNames.add(argTypeName);
             }
-            matchingMethod.put("argTypeNames", argTypeNames);
+            matchingMethod.set("argTypeNames", argTypeNames);
             matchingMethod.put("returnTypeName", parsedMethod.getReturnTypeName());
             ArrayNode modifiers = mapper.createArrayNode();
             String modifierNames = Modifier.toString(parsedMethod.getModifiers());
             for (String modifier : splitter.split(modifierNames)) {
                 modifiers.add(modifier.toLowerCase(Locale.ENGLISH));
             }
-            matchingMethod.put("modifiers", modifiers);
+            matchingMethod.set("modifiers", modifiers);
             matchingMethods.add(matchingMethod);
         }
         return mapper.writeValueAsString(matchingMethods);
