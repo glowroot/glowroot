@@ -67,7 +67,8 @@ class HeapHistogram {
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeArrayFieldStart("items");
-        List<ClassInfo> sortedClassInfos = ClassInfo.byBytesDesc.sortedCopy(classInfos.values());
+        List<ClassInfo> sortedClassInfos =
+                ClassInfo.orderingByBytes.sortedCopy(classInfos.values());
         for (ClassInfo classInfo : sortedClassInfos) {
             jg.writeStartObject();
             jg.writeStringField("className", classInfo.getClassName());
@@ -85,7 +86,7 @@ class HeapHistogram {
 
     private static class ClassInfo {
 
-        private static final Ordering<ClassInfo> byBytesDesc = new Ordering<ClassInfo>() {
+        private static final Ordering<ClassInfo> orderingByBytes = new Ordering<ClassInfo>() {
             @Override
             public int compare(@Nullable ClassInfo left, @Nullable ClassInfo right) {
                 checkNotNull(left);

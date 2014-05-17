@@ -120,7 +120,10 @@ class ConfigMapper {
         writer.writeValue(jg, config.getAdvancedConfig());
 
         jg.writeArrayFieldStart(PLUGINS);
-        for (PluginConfig pluginConfig : config.getPluginConfigs()) {
+        // write out plugin ordered by plugin id
+        List<PluginConfig> orderedPluginConfigs =
+                PluginConfig.orderingByName.sortedCopy(config.getPluginConfigs());
+        for (PluginConfig pluginConfig : orderedPluginConfigs) {
             writer.writeValue(jg, pluginConfig);
         }
         jg.writeEndArray();

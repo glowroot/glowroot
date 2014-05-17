@@ -16,6 +16,7 @@
 package org.glowroot.config;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -31,6 +32,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import org.slf4j.Logger;
@@ -44,6 +46,8 @@ import org.glowroot.config.PropertyDescriptor.PropertyType;
 import org.glowroot.config.PropertyDescriptor.StringPropertyDescriptor;
 import org.glowroot.markers.OnlyUsedByTests;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * Immutable structure to hold the current config for a plugin.
  * 
@@ -53,6 +57,15 @@ import org.glowroot.markers.OnlyUsedByTests;
 @JsonPropertyOrder({"id"})
 @Immutable
 public class PluginConfig {
+
+    static final Ordering<PluginConfig> orderingByName = new Ordering<PluginConfig>() {
+        @Override
+        public int compare(@Nullable PluginConfig left, @Nullable PluginConfig right) {
+            checkNotNull(left);
+            checkNotNull(right);
+            return left.pluginDescriptor.getId().compareTo(right.pluginDescriptor.getId());
+        }
+    };
 
     private static final Logger logger = LoggerFactory.getLogger(PluginConfig.class);
 
@@ -129,8 +142,11 @@ public class PluginConfig {
 
     // used by json serialization
     public Map<String, /*@Nullable*/Object> getProperties() {
-        Map<String, /*@Nullable*/Object> properties = Maps.newHashMap();
-        for (PropertyDescriptor propertyDescriptor : pluginDescriptor.getProperties()) {
+        Map<String, /*@Nullable*/Object> properties = Maps.newLinkedHashMap();
+        // properties are ordered for writing them out to config.json file
+        List<PropertyDescriptor> orderedProperties =
+                PropertyDescriptor.orderingByName.sortedCopy(pluginDescriptor.getProperties());
+        for (PropertyDescriptor propertyDescriptor : orderedProperties) {
             if (propertyDescriptor.isHidden()) {
                 // don't want hidden fields to be written to config file
                 // (and they aren't needed in ui either)

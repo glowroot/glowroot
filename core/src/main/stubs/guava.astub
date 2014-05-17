@@ -35,4 +35,6 @@ public class Lists {
 public class Maps {
     public static <K extends @Nullable Object, V extends @Nullable Object>
             HashMap<K, V> newHashMap();
+    public static <K extends @Nullable Object, V extends @Nullable Object>
+            LinkedHashMap<K, V> newLinkedHashMap();
 }

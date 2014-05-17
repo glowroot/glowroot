@@ -22,11 +22,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import com.google.common.collect.Ordering;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.UsedByJsonBinding;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
 /**
@@ -38,6 +40,15 @@ import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 public abstract class PropertyDescriptor {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertyDescriptor.class);
+
+    static final Ordering<PropertyDescriptor> orderingByName = new Ordering<PropertyDescriptor>() {
+        @Override
+        public int compare(@Nullable PropertyDescriptor left, @Nullable PropertyDescriptor right) {
+            checkNotNull(left);
+            checkNotNull(right);
+            return left.name.compareTo(right.name);
+        }
+    };
 
     private final String name;
     private final boolean hidden;
