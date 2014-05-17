@@ -57,7 +57,7 @@ class ProfilerScheduledRunnable extends ScheduledRunnable {
             // plus, should a stop-the-world gc occur in this small window, even two command
             // executions can fire one right after the other in the small window (assuming the first
             // didn't throw an exception which it does now), since this command is scheduled using
-            // ScheduledExecutorService.scheduleAtFixedRate()
+            // ScheduledExecutorService.scheduleWithFixedDelay()
             throw new TerminateSubsequentExecutionsException();
         }
         super.run();

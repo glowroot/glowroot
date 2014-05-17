@@ -82,7 +82,7 @@ class FineProfileScheduler {
                 new ProfilerScheduledRunnable(trace, endTick, true, ticker);
         long initialDelay = Math.max(0,
                 config.getIntervalMillis() - NANOSECONDS.toMillis(trace.getDuration()));
-        profilerScheduledRunnable.scheduleAtFixedRate(scheduledExecutor, initialDelay,
+        profilerScheduledRunnable.scheduleWithFixedDelay(scheduledExecutor, initialDelay,
                 config.getIntervalMillis(), MILLISECONDS);
         trace.setFineProfilerScheduledRunnable(profilerScheduledRunnable);
     }

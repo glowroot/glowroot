@@ -101,9 +101,9 @@ public class TraceModule {
                 traceCollector, configService, ticker);
         coarseProfilerWatcher =
                 new CoarseProfilerWatcher(scheduledExecutor, traceRegistry, configService, ticker);
-        stuckTraceWatcher.scheduleAtFixedRate(scheduledExecutor, 0,
+        stuckTraceWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
                 StuckTraceWatcher.PERIOD_MILLIS, MILLISECONDS);
-        coarseProfilerWatcher.scheduleAtFixedRate(scheduledExecutor, 0,
+        coarseProfilerWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
                 CoarseProfilerWatcher.PERIOD_MILLIS, MILLISECONDS);
         final FineProfileScheduler fineProfileScheduler =
                 new FineProfileScheduler(scheduledExecutor, configService, ticker, new Random());

@@ -80,7 +80,7 @@ public class StorageModule {
         } else {
             reaperScheduledRunnable = new ReaperScheduledRunnable(configService,
                     transactionPointDao, snapshotDao, clock);
-            reaperScheduledRunnable.scheduleAtFixedRate(scheduledExecutor, 0,
+            reaperScheduledRunnable.scheduleWithFixedDelay(scheduledExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
     }

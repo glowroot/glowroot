@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ class CoarseProfilerWatcher extends ScheduledRunnable {
         for (Trace trace : traceRegistry.getTraces()) {
             // if the trace will exceed the stack trace initial delay threshold before the next
             // scheduled execution of this repeating Runnable (in other words, it is within
-            // COMMAND_INTERVAL_MILLIS from exceeding the threshold) and the stack trace capture
+            // PERIOD_MILLIS from exceeding the threshold) and the stack trace capture
             // hasn't already been scheduled then schedule it
             if (!Nanoseconds.lessThan(trace.getStartTick(), stackTraceThresholdTime)) {
                 // since the list of traces are "nearly" ordered by start time, if this trace didn't
@@ -98,7 +98,7 @@ class CoarseProfilerWatcher extends ScheduledRunnable {
                 new ProfilerScheduledRunnable(trace, endTick, false, ticker);
         long initialDelayRemainingMillis = getInitialDelayForCommand(trace.getStartTick(),
                 currentTick, config);
-        profilerScheduledRunnable.scheduleAtFixedRate(scheduledExecutor,
+        profilerScheduledRunnable.scheduleWithFixedDelay(scheduledExecutor,
                 initialDelayRemainingMillis, config.getIntervalMillis(), MILLISECONDS);
         trace.setCoarseProfilerScheduledRunnable(profilerScheduledRunnable);
     }
