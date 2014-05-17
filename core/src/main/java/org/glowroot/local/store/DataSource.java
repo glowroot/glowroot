@@ -337,7 +337,9 @@ public class DataSource {
             throw new SQLException(e);
         }
         if (dbFile == null) {
-            return DriverManager.getConnection("jdbc:h2:mem:", new Properties());
+            // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
+            return DriverManager.getConnection("jdbc:h2:mem:;db_close_on_exit=false",
+                    new Properties());
         } else {
             String dbPath = dbFile.getPath();
             dbPath = dbPath.replaceFirst(".h2.db$", "");
