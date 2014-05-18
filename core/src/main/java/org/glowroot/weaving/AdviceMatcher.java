@@ -63,15 +63,15 @@ class AdviceMatcher {
     boolean isMethodLevelMatch(int access, ParsedMethod parsedMethod,
             @Nullable String exactTargetTypeOverride) {
         if (!isMethodNameMatch(parsedMethod.getName())
-                || !isMethodArgTypesMatch(parsedMethod.getArgTypeNames())) {
+                || !isMethodArgTypesMatch(parsedMethod.getArgTypes())) {
             return false;
         }
         if (exactTargetTypeOverride != null) {
             return isTypeMatch(exactTargetTypeOverride, advice)
-                    && isMethodReturnMatch(parsedMethod.getReturnTypeName())
+                    && isMethodReturnMatch(parsedMethod.getReturnType())
                     && isMethodModifiersMatch(parsedMethod.getModifiers());
         }
-        if (targetTypeMatch && isMethodReturnMatch(parsedMethod.getReturnTypeName())
+        if (targetTypeMatch && isMethodReturnMatch(parsedMethod.getReturnType())
                 && isMethodModifiersMatch(parsedMethod.getModifiers())) {
             return true;
         }
@@ -99,7 +99,7 @@ class AdviceMatcher {
             }
             ParsedMethod overriddenParsedMethod = type.getMethod(parsedMethod);
             if (overriddenParsedMethod != null
-                    && isMethodReturnMatch(overriddenParsedMethod.getReturnTypeName())
+                    && isMethodReturnMatch(overriddenParsedMethod.getReturnType())
                     && isMethodModifiersMatch(overriddenParsedMethod.getModifiers())) {
                 // found overridden method in a matching super type, and the overridden method
                 // has matching return type and modifiers
@@ -130,35 +130,35 @@ class AdviceMatcher {
         }
     }
 
-    private boolean isMethodArgTypesMatch(ImmutableList<String> argTypeNames) {
-        String[] pointcutMethodArgs = advice.getPointcut().methodArgs();
+    private boolean isMethodArgTypesMatch(ImmutableList<String> argTypes) {
+        String[] pointcutMethodArgs = advice.getPointcut().methodArgTypes();
         for (int i = 0; i < pointcutMethodArgs.length; i++) {
             if (pointcutMethodArgs[i].equals("..")) {
                 if (i != pointcutMethodArgs.length - 1) {
-                    logger.warn("'..' can only be used at the end of methodArgs");
+                    logger.warn("'..' can only be used at the end of methodArgTypes");
                     return false;
                 } else {
                     // ".." matches everything after this
                     return true;
                 }
             }
-            if (argTypeNames.size() == i) {
+            if (argTypes.size() == i) {
                 // have run out of argument types to match
                 return false;
             }
             // only supporting * at this point
             if (!pointcutMethodArgs[i].equals("*")
-                    && !pointcutMethodArgs[i].equals(argTypeNames.get(i))) {
+                    && !pointcutMethodArgs[i].equals(argTypes.get(i))) {
                 return false;
             }
         }
         // need this final test since argumentTypes may still have unmatched elements
-        return argTypeNames.size() == pointcutMethodArgs.length;
+        return argTypes.size() == pointcutMethodArgs.length;
     }
 
-    private boolean isMethodReturnMatch(String returnTypeName) {
-        String pointcutMethodReturn = advice.getPointcut().methodReturn();
-        return pointcutMethodReturn.isEmpty() || pointcutMethodReturn.equals(returnTypeName);
+    private boolean isMethodReturnMatch(String returnType) {
+        String pointcutMethodReturn = advice.getPointcut().methodReturnType();
+        return pointcutMethodReturn.isEmpty() || pointcutMethodReturn.equals(returnType);
     }
 
     private boolean isMethodModifiersMatch(int modifiers) {
@@ -210,7 +210,7 @@ class AdviceMatcher {
     private static boolean isTypeMatch(String typeName, Advice advice) {
         Pattern pointcutTypePattern = advice.getPointcutTypePattern();
         if (pointcutTypePattern == null) {
-            return advice.getPointcut().typeName().equals(typeName);
+            return advice.getPointcut().type().equals(typeName);
         } else {
             return pointcutTypePattern.matcher(typeName).matches();
         }

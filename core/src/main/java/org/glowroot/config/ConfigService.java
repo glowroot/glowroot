@@ -98,6 +98,10 @@ public class ConfigService {
         return config.getUserInterfaceConfig();
     }
 
+    public ImmutableList<PointcutConfig> getAdhocPointcutConfigs() {
+        return config.getAdhocPointcutConfigs();
+    }
+
     public AdvancedConfig getAdvancedConfig() {
         return config.getAdvancedConfig();
     }
@@ -222,6 +226,70 @@ public class ConfigService {
         return userInterfaceConfig.getVersion();
     }
 
+    public String insertAdhocPointcutConfig(PointcutConfig pointcutConfig) throws IOException {
+        synchronized (writeLock) {
+            List<PointcutConfig> pointcutConfigs =
+                    Lists.newArrayList(config.getAdhocPointcutConfigs());
+            pointcutConfigs.add(pointcutConfig);
+            Config updatedConfig = Config.builder(config)
+                    .adhocPointcutConfigs(pointcutConfigs)
+                    .build();
+            ConfigMapper.writeValue(configFile, updatedConfig);
+            config = updatedConfig;
+        }
+        return pointcutConfig.getVersion();
+    }
+
+    public String updateAdhocPointcutConfig(String priorVersion, PointcutConfig pointcutConfig)
+            throws IOException {
+        synchronized (writeLock) {
+            List<PointcutConfig> pointcutConfigs =
+                    Lists.newArrayList(config.getAdhocPointcutConfigs());
+            boolean found = false;
+            for (ListIterator<PointcutConfig> i = pointcutConfigs.listIterator(); i.hasNext();) {
+                if (priorVersion.equals(i.next().getVersion())) {
+                    i.set(pointcutConfig);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                logger.warn("pointcut config unique hash not found: {}", priorVersion);
+                return priorVersion;
+            }
+            Config updatedConfig = Config.builder(config)
+                    .adhocPointcutConfigs(pointcutConfigs)
+                    .build();
+            ConfigMapper.writeValue(configFile, updatedConfig);
+            config = updatedConfig;
+        }
+        return pointcutConfig.getVersion();
+    }
+
+    public void deleteAdhocPointcutConfig(String version) throws IOException {
+        synchronized (writeLock) {
+            List<PointcutConfig> pointcutConfigs =
+                    Lists.newArrayList(config.getAdhocPointcutConfigs());
+            boolean found = false;
+            for (ListIterator<PointcutConfig> i = pointcutConfigs.listIterator(); i.hasNext();) {
+                if (version.equals(i.next().getVersion())) {
+                    i.remove();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                logger.warn("pointcut config version not found: {}", version);
+                return;
+            }
+            Config updatedConfig = Config.builder(config)
+                    .adhocPointcutConfigs(pointcutConfigs)
+                    .build();
+            ConfigMapper.writeValue(configFile, updatedConfig);
+            config = updatedConfig;
+        }
+    }
+
     public String updateAdvancedConfig(AdvancedConfig advancedConfig, String priorVersion)
             throws OptimisticLockException, IOException {
         synchronized (writeLock) {
@@ -259,76 +327,6 @@ public class ConfigService {
         }
         notifyPluginConfigListeners(pluginConfig.getId());
         return pluginConfig.getVersion();
-    }
-
-    public ImmutableList<PointcutConfig> getPointcutConfigs() {
-        return config.getPointcutConfigs();
-    }
-
-    public String insertPointcutConfig(PointcutConfig pointcutConfig) throws IOException {
-        synchronized (writeLock) {
-            List<PointcutConfig> pointcutConfigs =
-                    Lists.newArrayList(config.getPointcutConfigs());
-            pointcutConfigs.add(pointcutConfig);
-            Config updatedConfig = Config.builder(config)
-                    .pointcutConfigs(pointcutConfigs)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
-            config = updatedConfig;
-        }
-        return pointcutConfig.getVersion();
-    }
-
-    public String updatePointcutConfig(String priorVersion, PointcutConfig pointcutConfig)
-            throws IOException {
-        synchronized (writeLock) {
-            List<PointcutConfig> pointcutConfigs =
-                    Lists.newArrayList(config.getPointcutConfigs());
-            boolean found = false;
-            for (ListIterator<PointcutConfig> i = pointcutConfigs
-                    .listIterator(); i.hasNext();) {
-                if (priorVersion.equals(i.next().getVersion())) {
-                    i.set(pointcutConfig);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                logger.warn("pointcut config unique hash not found: {}", priorVersion);
-                return priorVersion;
-            }
-            Config updatedConfig = Config.builder(config)
-                    .pointcutConfigs(pointcutConfigs)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
-            config = updatedConfig;
-        }
-        return pointcutConfig.getVersion();
-    }
-
-    public void deletePointcutConfig(String version) throws IOException {
-        synchronized (writeLock) {
-            List<PointcutConfig> pointcutConfigs =
-                    Lists.newArrayList(config.getPointcutConfigs());
-            boolean found = false;
-            for (ListIterator<PointcutConfig> i = pointcutConfigs
-                    .listIterator(); i.hasNext();) {
-                if (version.equals(i.next().getVersion())) {
-                    i.remove();
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                logger.warn("pointcut config version not found: {}", version);
-                return;
-            }
-            Config updatedConfig = Config.builder(config)
-                    .pointcutConfigs(pointcutConfigs)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
-            config = updatedConfig;
-        }
     }
 
     // the updated config is not passed to the listeners to avoid the race condition of multiple

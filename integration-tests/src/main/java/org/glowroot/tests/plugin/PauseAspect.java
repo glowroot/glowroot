@@ -16,9 +16,9 @@
 package org.glowroot.tests.plugin;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
+import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -37,11 +37,12 @@ public class PauseAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
 
-    @Pointcut(typeName = "org.glowroot.tests.Pause", methodName = "pauseOneMillisecond",
-            methodArgs = {}, metricName = "pause")
+    @Pointcut(type = "org.glowroot.tests.Pause", methodName = "pauseOneMillisecond",
+            methodArgTypes = {}, traceMetric = "pause")
     public static class PauseAdvice {
 
-        private static final MetricName metricName = MetricName.get(LogErrorAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(LogErrorAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -50,8 +51,8 @@ public class PauseAspect {
 
         @OnBefore
         public static Span onBefore() {
-            return pluginServices.startSpan(
-                    MessageSupplier.from("Pause.pauseOneMillisecond()"), metricName);
+            return pluginServices.startSpan(MessageSupplier.from("Pause.pauseOneMillisecond()"),
+                    traceMetricName);
         }
 
         @OnAfter
@@ -66,7 +67,7 @@ public class PauseAspect {
 
     // this is just to generate an additional $glowroot$ method to test that consecutive
     // $glowroot$ methods in a span stack trace are stripped out correctly
-    @Pointcut(typeName = "org.glowroot.tests.LogError", methodName = "pause", methodArgs = {"int"},
-            metricName = "pause 2")
+    @Pointcut(type = "org.glowroot.tests.LogError", methodName = "pause", methodArgTypes = {"int"},
+            traceMetric = "pause 2")
     public static class PauseAdvice2 {}
 }

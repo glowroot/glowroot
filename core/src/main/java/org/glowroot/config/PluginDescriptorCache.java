@@ -112,7 +112,9 @@ public class PluginDescriptorCache {
 
     private PluginDescriptorCache(List<PluginDescriptor> pluginDescriptors,
             List<MixinType> mixinTypes, List<Advice> advisors) {
-        this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
+        // sorted for display to console during startup and for plugin config sidebar menu
+        this.pluginDescriptors =
+                PluginDescriptor.specialOrderingByName.immutableSortedCopy(pluginDescriptors);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.advisors = ImmutableList.copyOf(advisors);
     }

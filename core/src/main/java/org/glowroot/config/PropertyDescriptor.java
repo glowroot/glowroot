@@ -46,7 +46,7 @@ public abstract class PropertyDescriptor {
         public int compare(@Nullable PropertyDescriptor left, @Nullable PropertyDescriptor right) {
             checkNotNull(left);
             checkNotNull(right);
-            return left.name.compareTo(right.name);
+            return left.name.compareToIgnoreCase(right.name);
         }
     };
 

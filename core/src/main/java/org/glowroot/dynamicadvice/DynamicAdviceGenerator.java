@@ -154,18 +154,18 @@ public class DynamicAdviceGenerator {
     private void addClassAnnotation(ClassVisitor cv) {
         AnnotationVisitor annotationVisitor =
                 cv.visitAnnotation("Lorg/glowroot/api/weaving/Pointcut;", true);
-        annotationVisitor.visit("typeName", pointcutConfig.getTypeName());
+        annotationVisitor.visit("type", pointcutConfig.getType());
         annotationVisitor.visit("methodName", pointcutConfig.getMethodName());
-        AnnotationVisitor argVisitor = annotationVisitor.visitArray("methodArgs");
-        for (String methodArgTypeName : pointcutConfig.getMethodArgTypeNames()) {
+        AnnotationVisitor argVisitor = annotationVisitor.visitArray("methodArgTypes");
+        for (String methodArgTypeName : pointcutConfig.getMethodArgTypes()) {
             argVisitor.visit(null, methodArgTypeName);
         }
         argVisitor.visitEnd();
-        String metricName = pointcutConfig.getMetricName();
-        if (metricName == null) {
-            annotationVisitor.visit("metricName", "<no metric name provided>");
+        String traceMetric = pointcutConfig.getTraceMetric();
+        if (traceMetric == null) {
+            annotationVisitor.visit("traceMetric", "<no trace metric provided>");
         } else {
-            annotationVisitor.visit("metricName", metricName);
+            annotationVisitor.visit("traceMetric", traceMetric);
         }
         if (pointcutConfig.isSpan() && pointcutConfig.isSpanIgnoreSameNested()) {
             annotationVisitor.visit("ignoreSameNested", true);
@@ -177,8 +177,8 @@ public class DynamicAdviceGenerator {
         cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;", null, null)
                 .visitEnd();
-        cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "metric",
-                "Lorg/glowroot/api/MetricName;", null, null)
+        cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "traceMetricName",
+                "Lorg/glowroot/api/TraceMetricName;", null, null)
                 .visitEnd();
         if (pointcutConfig.isSpan()) {
             cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "spanText",
@@ -216,9 +216,10 @@ public class DynamicAdviceGenerator {
         mv.visitFieldInsn(GETSTATIC, adviceTypeName, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;");
         mv.visitLdcInsn(Type.getType("L" + adviceTypeName + ";"));
-        mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/api/MetricName", "get",
-                "(Ljava/lang/Class;)Lorg/glowroot/api/MetricName;", false);
-        mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "metric", "Lorg/glowroot/api/MetricName;");
+        mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", "getTraceMetricName",
+                "(Ljava/lang/Class;)Lorg/glowroot/api/TraceMetricName;", false);
+        mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "traceMetricName",
+                "Lorg/glowroot/api/TraceMetricName;");
         if (pointcutConfig.isSpan()) {
             String spanText = pointcutConfig.getSpanText();
             if (spanText == null) {
@@ -323,10 +324,12 @@ public class DynamicAdviceGenerator {
             // spanEnabled is false, collect metric only
             mv.visitFieldInsn(GETSTATIC, adviceTypeName, "pluginServices",
                     "Lorg/glowroot/api/PluginServices;");
-            mv.visitFieldInsn(GETSTATIC, adviceTypeName, "metric", "Lorg/glowroot/api/MetricName;");
+            mv.visitFieldInsn(GETSTATIC, adviceTypeName, "traceMetricName",
+                    "Lorg/glowroot/api/TraceMetricName;");
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices",
-                    "startMetricTimer",
-                    "(Lorg/glowroot/api/MetricName;)Lorg/glowroot/api/MetricTimer;", false);
+                    "startTraceMetric",
+                    "(Lorg/glowroot/api/TraceMetricName;)Lorg/glowroot/api/TraceMetricTimer;",
+                    false);
             mv.visitInsn(ARETURN);
             mv.visitLabel(label);
             mv.visitFrame(F_SAME, 0, null, 0, null);
@@ -358,34 +361,37 @@ public class DynamicAdviceGenerator {
                 "(Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;"
                         + "Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;)"
                         + "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageSupplier;", false);
-        mv.visitFieldInsn(GETSTATIC, adviceTypeName, "metric", "Lorg/glowroot/api/MetricName;");
+        mv.visitFieldInsn(GETSTATIC, adviceTypeName, "traceMetricName",
+                "Lorg/glowroot/api/TraceMetricName;");
         if (pointcutConfig.isTrace()) {
             String methodName = pointcutConfig.isBackground() ? "startBackgroundTrace"
                     : "startTrace";
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", methodName,
                     "(Ljava/lang/String;Lorg/glowroot/api/MessageSupplier;"
-                            + "Lorg/glowroot/api/MetricName;)Lorg/glowroot/api/Span;", false);
+                            + "Lorg/glowroot/api/TraceMetricName;)Lorg/glowroot/api/Span;", false);
         } else {
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", "startSpan",
-                    "(Lorg/glowroot/api/MessageSupplier;Lorg/glowroot/api/MetricName;)"
+                    "(Lorg/glowroot/api/MessageSupplier;Lorg/glowroot/api/TraceMetricName;)"
                             + "Lorg/glowroot/api/Span;", false);
         }
         mv.visitInsn(ARETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
     }
+
     private void addOnBeforeMethodMetricOnly(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
-                "()Lorg/glowroot/api/MetricTimer;", null, null);
+                "()Lorg/glowroot/api/TraceMetricTimer;", null, null);
         checkNotNull(mv);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnBefore;", true)
                 .visitEnd();
         mv.visitCode();
         mv.visitFieldInsn(GETSTATIC, adviceTypeName, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;");
-        mv.visitFieldInsn(GETSTATIC, adviceTypeName, "metric", "Lorg/glowroot/api/MetricName;");
-        mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", "startMetricTimer",
-                "(Lorg/glowroot/api/MetricName;)Lorg/glowroot/api/MetricTimer;", false);
+        mv.visitFieldInsn(GETSTATIC, adviceTypeName, "traceMetricName",
+                "Lorg/glowroot/api/TraceMetricName;");
+        mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", "startTraceMetric",
+                "(Lorg/glowroot/api/TraceMetricName;)Lorg/glowroot/api/TraceMetricTimer;", false);
         mv.visitInsn(ARETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
@@ -393,7 +399,7 @@ public class DynamicAdviceGenerator {
 
     private void addOnAfterMethodMetricOnly(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onAfter",
-                "(Lorg/glowroot/api/MetricTimer;)V", null, null);
+                "(Lorg/glowroot/api/TraceMetricTimer;)V", null, null);
         checkNotNull(mv);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnAfter;", true)
                 .visitEnd();
@@ -401,7 +407,8 @@ public class DynamicAdviceGenerator {
                 .visitEnd();
         mv.visitCode();
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/MetricTimer", "stop", "()V", true);
+        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/TraceMetricTimer", "stop", "()V",
+                true);
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
@@ -412,7 +419,7 @@ public class DynamicAdviceGenerator {
         String travelerType = spanOrTimer ? "Ljava/lang/Object;" : "Lorg/glowroot/api/Span;";
         MethodVisitor mv;
         int travelerParamIndex;
-        if (pointcutConfig.getMethodReturnTypeName().isEmpty()) {
+        if (pointcutConfig.getMethodReturnType().isEmpty()) {
             mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
                     "(Lorg/glowroot/api/OptionalReturn;" + travelerType + ")V", null, null);
             checkNotNull(mv);
@@ -421,7 +428,7 @@ public class DynamicAdviceGenerator {
             mv.visitParameterAnnotation(1, "Lorg/glowroot/api/weaving/BindTraveler;", true)
                     .visitEnd();
             travelerParamIndex = 1;
-        } else if (pointcutConfig.getMethodReturnTypeName().equals("void")) {
+        } else if (pointcutConfig.getMethodReturnType().equals("void")) {
             mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn", "(" + travelerType + ")V",
                     null, null);
             checkNotNull(mv);
@@ -443,18 +450,18 @@ public class DynamicAdviceGenerator {
         mv.visitCode();
         if (!pointcutConfig.getSpanEnabledProperty().isEmpty()) {
             mv.visitVarInsn(ALOAD, travelerParamIndex);
-            mv.visitTypeInsn(INSTANCEOF, "org/glowroot/api/MetricTimer");
+            mv.visitTypeInsn(INSTANCEOF, "org/glowroot/api/TraceMetricTimer");
             Label label = new Label();
             mv.visitJumpInsn(IFEQ, label);
             mv.visitVarInsn(ALOAD, travelerParamIndex);
-            mv.visitTypeInsn(CHECKCAST, "org/glowroot/api/MetricTimer");
-            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/MetricTimer", "stop", "()V",
+            mv.visitTypeInsn(CHECKCAST, "org/glowroot/api/TraceMetricTimer");
+            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/TraceMetricTimer", "stop", "()V",
                     true);
             mv.visitInsn(RETURN);
             mv.visitLabel(label);
             mv.visitFrame(F_SAME, 0, null, 0, null);
         }
-        if (pointcutConfig.getMethodReturnTypeName().isEmpty()) {
+        if (pointcutConfig.getMethodReturnType().isEmpty()) {
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 0);
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/OptionalReturn", "isVoid", "()Z",
@@ -472,7 +479,7 @@ public class DynamicAdviceGenerator {
             mv.visitMethodInsn(INVOKESTATIC,
                     "org/glowroot/dynamicadvice/DynamicAdviceMessageSupplier",
                     "updateWithReturnValue", "(Lorg/glowroot/api/Span;Ljava/lang/Object;)V", false);
-        } else if (!pointcutConfig.getMethodReturnTypeName().equals("void")) {
+        } else if (!pointcutConfig.getMethodReturnType().equals("void")) {
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 0);
             mv.visitMethodInsn(INVOKESTATIC,

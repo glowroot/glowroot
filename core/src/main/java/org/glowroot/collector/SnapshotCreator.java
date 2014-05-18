@@ -29,7 +29,7 @@ import com.google.common.io.CharStreams;
 
 import org.glowroot.collector.Snapshot.Existence;
 import org.glowroot.markers.Static;
-import org.glowroot.trace.model.Metric;
+import org.glowroot.trace.model.TraceMetric;
 import org.glowroot.trace.model.Trace;
 
 /**
@@ -76,7 +76,7 @@ public class SnapshotCreator {
         builder.user(trace.getUser());
         builder.attributes(writeAttributesAsString(trace.getAttributes()));
         builder.attributesForIndexing(trace.getAttributes());
-        builder.metrics(writeMetricsAsString(trace.getRootMetric()));
+        builder.traceMetrics(writeMetricsAsString(trace.getRootMetric()));
         builder.jvmInfo(trace.getJvmInfoJson());
         builder.spansExistence(Existence.YES);
         if (trace.getCoarseProfile() == null) {
@@ -127,7 +127,7 @@ public class SnapshotCreator {
     }
 
     @Nullable
-    private static String writeMetricsAsString(Metric rootMetric) throws IOException {
+    private static String writeMetricsAsString(TraceMetric rootMetric) throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         rootMetric.writeValue(jg);

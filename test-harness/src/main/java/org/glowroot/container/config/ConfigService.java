@@ -53,6 +53,14 @@ public interface ConfigService {
     // throws CurrentPasswordIncorrectException
     void updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception;
 
+    List<PointcutConfig> getAdhocPointcutConfigs() throws Exception;
+
+    String addAdhocPointcutConfig(PointcutConfig pointcutConfig) throws Exception;
+
+    void updateAdhocPointcutConfig(String version, PointcutConfig pointcutConfig) throws Exception;
+
+    void removeAdhocPointcutConfig(String version) throws Exception;
+
     AdvancedConfig getAdvancedConfig() throws Exception;
 
     void updateAdvancedConfig(AdvancedConfig config) throws Exception;
@@ -62,16 +70,7 @@ public interface ConfigService {
 
     void updatePluginConfig(String pluginId, PluginConfig config) throws Exception;
 
-    List<PointcutConfig> getPointcutConfigs() throws Exception;
-
-    String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception;
-
-    void updatePointcutConfig(String version, PointcutConfig pointcutConfig)
-            throws Exception;
-
-    void removePointcutConfig(String version) throws Exception;
-
-    int reweavePointcutConfigs() throws Exception;
+    int reweaveAdhocPointcuts() throws Exception;
 
     // TODO move to TraceService
     void compactData() throws Exception;

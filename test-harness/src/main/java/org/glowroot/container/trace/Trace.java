@@ -44,24 +44,24 @@ public class Trace {
     private final long captureTime;
     private final long duration;
     private final boolean background;
-    private final String headline;
     private final String transactionName;
+    private final String headline;
     @Nullable
     private final String error;
     @Nullable
     private final String user;
     private final ImmutableSetMultimap<String, String> attributes;
-    private final Metric rootMetric;
+    private final TraceMetric rootTraceMetric;
     private final JvmInfo jvmInfo;
     private final Existence spansExistence;
     private final Existence coarseProfileExistence;
     private final Existence fineProfileExistence;
 
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
-            long duration, boolean background, String headline, String transactionName,
+            long duration, boolean background, String transactionName, String headline,
             @Nullable String error, @Nullable String user,
-            ImmutableSetMultimap<String, String> attributes, Metric rootMetric, JvmInfo jvmInfo,
-            Existence spansExistence, Existence coarseProfileExistence,
+            ImmutableSetMultimap<String, String> attributes, TraceMetric rootTraceMetric,
+            JvmInfo jvmInfo, Existence spansExistence, Existence coarseProfileExistence,
             Existence fineProfileExistence) {
         this.id = id;
         this.active = active;
@@ -70,12 +70,12 @@ public class Trace {
         this.captureTime = captureTime;
         this.duration = duration;
         this.background = background;
-        this.headline = headline;
         this.transactionName = transactionName;
+        this.headline = headline;
         this.error = error;
         this.user = user;
         this.attributes = attributes;
-        this.rootMetric = rootMetric;
+        this.rootTraceMetric = rootTraceMetric;
         this.jvmInfo = jvmInfo;
         this.spansExistence = spansExistence;
         this.coarseProfileExistence = coarseProfileExistence;
@@ -110,12 +110,12 @@ public class Trace {
         return background;
     }
 
-    public String getHeadline() {
-        return headline;
-    }
-
     public String getTransactionName() {
         return transactionName;
+    }
+
+    public String getHeadline() {
+        return headline;
     }
 
     @Nullable
@@ -132,8 +132,8 @@ public class Trace {
         return attributes;
     }
 
-    public Metric getRootMetric() {
-        return rootMetric;
+    public TraceMetric getRootTraceMetric() {
+        return rootTraceMetric;
     }
 
     public JvmInfo getJvmInfo() {
@@ -163,12 +163,12 @@ public class Trace {
                 .add("captureTime", captureTime)
                 .add("duration", duration)
                 .add("background", background)
-                .add("headline", headline)
                 .add("transactionName", transactionName)
+                .add("headline", headline)
                 .add("error", error)
                 .add("user", user)
                 .add("attributes", attributes)
-                .add("rootMetric", rootMetric)
+                .add("rootTraceMetric", rootTraceMetric)
                 .add("jvmInfo", jvmInfo)
                 .add("spansExistence", spansExistence)
                 .add("coarseProfileExistence", coarseProfileExistence)
@@ -185,12 +185,12 @@ public class Trace {
             @JsonProperty("captureTime") @Nullable Long captureTime,
             @JsonProperty("duration") @Nullable Long duration,
             @JsonProperty("background") @Nullable Boolean background,
-            @JsonProperty("headline") @Nullable String headline,
             @JsonProperty("transactionName") @Nullable String transactionName,
+            @JsonProperty("headline") @Nullable String headline,
             @JsonProperty("error") @Nullable String error,
             @JsonProperty("user") @Nullable String user,
             @JsonProperty("attributes") @Nullable Map<String, List<String>> attributes,
-            @JsonProperty("metrics") @Nullable Metric rootMetric,
+            @JsonProperty("traceMetrics") @Nullable TraceMetric rootTraceMetric,
             @JsonProperty("jvmInfo") @Nullable JvmInfo jvmInfo,
             @JsonProperty("spansExistence") @Nullable Existence spansExistence,
             @JsonProperty("coarseProfileExistence") @Nullable Existence coarseProfileExistence,
@@ -203,9 +203,9 @@ public class Trace {
         checkRequiredProperty(captureTime, "captureTime");
         checkRequiredProperty(duration, "duration");
         checkRequiredProperty(background, "background");
-        checkRequiredProperty(headline, "headline");
         checkRequiredProperty(transactionName, "transactionName");
-        checkRequiredProperty(rootMetric, "rootMetric");
+        checkRequiredProperty(headline, "headline");
+        checkRequiredProperty(rootTraceMetric, "rootTraceMetric");
         checkRequiredProperty(jvmInfo, "jvmInfo");
         checkRequiredProperty(spansExistence, "spansExistence");
         checkRequiredProperty(coarseProfileExistence, "coarseProfileExistence");
@@ -217,9 +217,9 @@ public class Trace {
                 theAttributes.putAll(entry.getKey(), entry.getValue());
             }
         }
-        return new Trace(id, active, stuck, startTime, captureTime, duration, background, headline,
-                transactionName, error, user, theAttributes.build(), rootMetric, jvmInfo,
-                spansExistence, coarseProfileExistence, fineProfileExistence);
+        return new Trace(id, active, stuck, startTime, captureTime, duration, background,
+                transactionName, headline, error, user, theAttributes.build(), rootTraceMetric,
+                jvmInfo, spansExistence, coarseProfileExistence, fineProfileExistence);
     }
 
     public enum Existence {

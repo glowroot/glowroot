@@ -1,0 +1,182 @@
+<!--
+  Copyright 2013-2014 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="chart-container"
+     style="position: relative;">
+  <div gt-spinner
+       gt-show="showChartSpinner"
+       class="spinner"
+       id="chartSpinner"
+       style="position: absolute; width: 100%; height: 100%;">
+  </div>
+  <div class="chart-dimensions" id="chart"></div>
+  <div class="chart-error" ng-show="refreshChartError">
+    <strong>{{refreshChartError}}</strong>
+  </div>
+</div>
+<br>
+<div class="col-xs-12 col-sm-4" style="float: right; margin: 10px auto 0;">
+  <div class="chart-help">
+    <div style="margin-top: 10px;"><strong>Chart navigation</strong></div>
+    <ul>
+      <li>use the mouse scroll wheel to zoom in and out</li>
+      <li>drag over a region to zoom in</li>
+      <li>double click to zoom in</li>
+      <li>
+        <button class="flat-btn glowroot-link-color" id="zoomOut"
+                style="margin-left: -4px; padding: 0 4px;">
+          click here to zoom out
+        </button>
+        (if no scroll wheel)
+      </li>
+    </ul>
+  </div>
+</div>
+<div ng-form
+     gt-form-with-primary-button
+     class="col-xs-12 col-sm-8 form-horizontal"
+     style="float: left; margin: 20px auto 0 auto;">
+  <div class="form-group">
+    <label class="col-lg-4 control-label" for="filterDate">Date</label>
+    <div class="col-lg-8">
+      <div gt-datepicker
+           gt-model="filterDate"
+           gt-id="filterDate">
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-lg-offset-4 col-lg-8">
+      <div gt-button
+           gt-label="Refresh"
+           gt-click="refreshButtonClick(deferred)">
+      </div>
+    </div>
+  </div>
+</div>
+<button class="btn btn-primary"
+        ng-click="viewTransactionDetail()"
+        ng-show="selectedTransactionName">
+  View Transaction Detail
+</button>
+<div style="clear: both; position: relative; padding-top: 20px;">
+  <div class="panel-overlay" ng-show="showTableOverlay">
+    <!-- this inner div is to position the spinner near top of panel since panel can be very tall pushing spinner
+         offscreen -->
+    <div style="position: absolute; width: 100%; margin-top: 50px;">
+      <!-- don't show spinner on refresh button since that has its own spinner -->
+      <div gt-spinner
+           gt-show="showTableSpinner"
+           class="spinner"
+           style="margin-top: 40px; width: 100%;">
+      </div>
+    </div>
+  </div>
+  <table class="table">
+    <thead>
+    <tr>
+      <th width="50%">
+        <a href="" ng-click="sort('total')" class="sortable-table-header">
+          Transaction name
+          <span ng-class="sortIconClass('total')"
+                ng-show="sortAttribute === 'total'">
+          </span>
+        </a>
+      </th>
+      <th width="10%">
+        <a href="" ng-click="sort('average')" class="sortable-table-header">
+          Average
+          <span ng-class="sortIconClass('average')"
+                ng-show="sortAttribute === 'average'">
+          </span>
+        </a>
+      </th>
+      <th width="10%">
+        <a href="" ng-click="sort('count')" class="sortable-table-header">
+          Count
+          <span ng-class="sortIconClass('count')"
+                ng-show="sortAttribute === 'count'">
+          </span>
+        </a>
+      </th>
+      <th width="10%">
+        <a href="" ng-click="sort('errorCount')" class="sortable-table-header">
+          Errors
+          <span ng-class="sortIconClass('errorCount')"
+                ng-show="sortAttribute === 'errorCount'">
+          </span>
+        </a>
+      </th>
+      <th width="20%">
+        <a href="" ng-click="sort('storedTraceCount')" class="sortable-table-header">
+          Stored traces
+          <span ng-class="sortIconClass('storedTraceCount')"
+                ng-show="sortAttribute === 'storedTraceCount'">
+          </span>
+        </a>
+      </th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-class="{'transaction-row-selected': !selectedTransactionName}">
+      <td style="cursor: pointer;" ng-click="clickTransactionName(null)">All Transactions</td>
+      <td>{{overallAverage()}}</td>
+      <td>{{overall.count}}</td>
+      <td>{{overall.errorCount}}</td>
+      <td>
+        <a ng-show="overall.storedTraceCount"
+           ng-href="#/traces?{{tracesQueryString(null)}}">
+          see {{overall.storedTraceCount}} stored traces
+        </a>
+      </td>
+    </tr>
+    <tr ng-repeat="transaction in transactions"
+        ng-class="{'transaction-row-selected': transaction.name === selectedTransactionName}">
+      <td style="padding: 0;">
+        <!-- cannot apply relative positioning to td elements in firefox
+         see https://bugzilla.mozilla.org/show_bug.cgi?id=35168 -->
+        <div style="position: relative;">
+          <div style="position: absolute; height: 100%; background-color: #eee;"
+               ng-style="{width: transactionBarWidth(transaction.totalMicros)}">
+          </div>
+          <div style="position: relative; padding: 8px; cursor: pointer; word-break: break-all;"
+               ng-click="clickTransactionName(transaction.name)">
+            {{transaction.name}}
+          </div>
+        </div>
+      </td>
+      <td>{{((transaction.totalMicros / transaction.count) / 1000000).toFixed(2)}}</td>
+      <td>{{transaction.count}}</td>
+      <td>{{transaction.errorCount}}</td>
+      <td>
+        <a ng-show="transaction.storedTraceCount"
+           ng-href="#/traces?{{tracesQueryString(transaction.name)}}"
+           ng-style="transactionRowStyle(transaction.name)">
+          see {{transaction.storedTraceCount}} stored traces
+        </a>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+  <div ng-show="moreAvailable"
+       style="vertical-align: middle; padding: 20px 0 0 30px;">
+    <div gt-button
+         gt-btn-class="btn-default"
+         gt-label="Show more"
+         gt-click="showMore(deferred)">
+    </div>
+  </div>
+</div>
+<span class="qtip-border-color-0 offscreen" id="offscreenNormalColor"></span>

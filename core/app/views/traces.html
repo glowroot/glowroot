@@ -88,7 +88,7 @@
   </div>
   <div class="form-group">
     <label class="col-lg-3 control-label"
-           for="{{filterDurationComparator !== 'less' ? 'filterLow' : 'filterHigh'}}">
+           for="{{filterDurationComparator !== 'less' ? 'filterDurationLow' : 'filterDurationHigh'}}">
       Duration
     </label>
     <div class="col-lg-9">
@@ -102,19 +102,19 @@
              gt-class="input-group-btn-fix">
         </div>
         <input type="text"
-               ng-model="filter.low"
+               ng-model="filter.durationLow"
                ng-show="filterDurationComparator !== 'less'"
                class="form-control"
-               id="filterLow">
+               id="filterDurationLow">
         <span ng-show="filterDurationComparator === 'between'"
               class="input-group-addon">
           and
         </span>
         <input type="text"
-               ng-model="filter.high"
+               ng-model="filter.durationHigh"
                ng-show="filterDurationComparator !== 'greater'"
                class="form-control"
-               id="filterHigh">
+               id="filterDurationHigh">
         <span class="input-group-addon">
           seconds
         </span>
@@ -139,25 +139,6 @@
   </div>
   <div class="form-group">
     <label class="col-lg-3 control-label"
-           for="filterHeadline">
-      Headline/URL
-    </label>
-    <div class="col-lg-9">
-      <div class="input-group"
-           style="width: 25em;">
-        <div gt-input-group-dropdown
-             gt-model="filter.headlineComparator"
-             gt-items="filterTextComparatorOptions">
-        </div>
-        <input type="text"
-               ng-model="filter.headline"
-               class="form-control"
-               id="filterHeadline">
-      </div>
-    </div>
-  </div>
-  <div class="form-group">
-    <label class="col-lg-3 control-label"
            for="filterTransactionName">
       Transaction name
     </label>
@@ -172,6 +153,25 @@
                ng-model="filter.transactionName"
                class="form-control"
                id="filterTransactionName">
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label"
+           for="filterHeadline">
+      Headline/URL
+    </label>
+    <div class="col-lg-9">
+      <div class="input-group"
+           style="width: 25em;">
+        <div gt-input-group-dropdown
+             gt-model="filter.headlineComparator"
+             gt-items="filterTextComparatorOptions">
+        </div>
+        <input type="text"
+               ng-model="filter.headline"
+               class="form-control"
+               id="filterHeadline">
       </div>
     </div>
   </div>

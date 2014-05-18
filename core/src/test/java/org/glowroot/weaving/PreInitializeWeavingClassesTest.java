@@ -36,16 +36,17 @@ public class PreInitializeWeavingClassesTest {
     @Test
     public void shouldCheckHardcodedListAgainstReality() throws IOException {
         GlobalCollector globalCollector = new GlobalCollector();
-        // register WeavingMetricImpl since the WeavingClassFileTransformer constructor accepts the
-        // WeavingMetricName interface and so WeavingMetricNameImpl would otherwise co unseen
-        globalCollector.registerType("org/glowroot/trace/MetricTimerServiceImpl");
+        // register WeavingTimerServiceImpl since the WeavingClassFileTransformer constructor
+        // accepts the WeavingTimerService interface and so WeavingTimerServiceImpl would otherwise
+        // go unseen
+        globalCollector.registerType("org/glowroot/trace/WeavingTimerServiceImpl");
         // "call" WeavingClassFileTransformer constructor to capture types used by its weavers
         // LoadingCache (so these types will be in the list of possible subtypes later on)
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/glowroot/weaving/WeavingClassFileTransformer", "<init>",
                 "(Ljava/util/List;Ljava/util/List;Lcom/google/common/base/Supplier;"
                         + "Lorg/glowroot/weaving/ParsedTypeCache;"
-                        + "Lorg/glowroot/weaving/MetricTimerService;Z)V"));
+                        + "Lorg/glowroot/weaving/WeavingTimerService;Z)V"));
         // "call" WeavingClassFileTransformer.transform()
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/glowroot/weaving/WeavingClassFileTransformer", "transform",

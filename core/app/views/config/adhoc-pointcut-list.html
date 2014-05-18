@@ -1,0 +1,294 @@
+<!--
+  Copyright 2012-2014 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div gt-spinner
+     gt-show="!loaded && !httpError"
+     class="plugin-list-spinner">
+</div>
+<div ng-include src="'template/gt-http-error.html'"></div>
+<div ng-repeat="adhocPointcut in adhocPointcuts"
+     ng-controller="AdhocPointcutCtrl"
+     class="panel panel-default">
+  <div class="panel-heading">
+    <h2>{{heading}}</h2>
+  </div>
+  <div class="panel-body">
+    <div ng-form
+         gt-form-with-primary-button
+         class="form-horizontal"
+         name="formCtrl">
+      <div class="form-group"
+           ng-class="{'has-error': formCtrl.type.$invalid}">
+        <label class="col-lg-2 control-label"
+               for="type{{$id}}">
+          Type
+        </label>
+        <div class="col-lg-10">
+          <input type="text"
+                 class="form-control"
+                 ng-model="config.type"
+                 ng-required="true"
+                 typeahead="suggestion for suggestion in types($viewValue)"
+                 typeahead-on-select="onSelectType()"
+                 typeahead-loading="typesLoading"
+                 name="type"
+                 id="type{{$id}}"
+                 gt-set-focus="isFocus"
+                 style="max-width: 40em; display: inline-block">
+          <div gt-spinner
+               gt-spinner-inline="true"
+               gt-show="typesLoading"
+               class="inline-spinner">
+          </div>
+        </div>
+      </div>
+      <div class="form-group"
+           ng-class="{'has-error': formCtrl.methodName.$invalid}">
+        <label class="col-lg-2 control-label"
+               for="methodName{{$id}}">
+          Method name
+        </label>
+        <div class="col-lg-10">
+          <input type="text"
+                 class="form-control"
+                 ng-model="config.methodName"
+                 ng-required="true"
+                 typeahead="suggestion for suggestion in methodNames($viewValue)"
+                 typeahead-on-select="onSelectMethodName()"
+                 typeahead-loading="methodNamesLoading"
+                 gt-typeahead-open-on-empty
+                 ng-blur="onSelectMethodName()"
+                 name="methodName"
+                 id="methodName{{$id}}"
+                 style="max-width: 40em; display: inline-block;">
+          <div gt-spinner
+               gt-spinner-inline="true"
+               gt-show="methodNamesLoading"
+               class="inline-spinner">
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-lg-2 control-label">
+          Method signature
+        </label>
+        <div class="col-lg-10">
+          <div gt-spinner
+               gt-show="methodSignaturesLoading && !httpError"
+               class="inline-spinner hide"
+               style="height: 50px;">
+          </div>
+          <div ng-repeat="methodSignature in methodSignatures">
+            <div class="radio">
+              <label>
+                <!-- need $parent.selectedSignature since ng-repeat creates a new scope
+                  see https://github.com/angular/angular.js/issues/1100 -->
+                <input type="radio"
+                       ng-model="$parent.selectedMethodSignature"
+                       ng-value="methodSignature">
+                {{methodSignatureText(methodSignature)}}
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group"
+           ng-class="{'has-error': formCtrl.traceMetric.$invalid}">
+        <label class="col-lg-2 control-label"
+               for="traceMetric{{$id}}">
+          Trace metric
+        </label>
+        <div class="col-lg-10">
+          <input type="text"
+                 class="form-control"
+                 ng-model="config.traceMetric"
+                 ng-required="true"
+                 ng-pattern="/^[a-zA-Z0-9 ]*$/"
+                 name="traceMetric"
+                 id="traceMetric{{$id}}"
+                 style="max-width: 20em;">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-lg-2 control-label">
+          Span definition
+        </label>
+        <div class="col-lg-10"
+             style="padding-top: 1px;">
+          <div class="checkbox"
+               style="padding-top: 6px !important;">
+            <label>
+              <input type="checkbox"
+                     ng-model="spanDefinition"
+                     style="margin-top: 3px;">
+              Capture a span when this pointcut is called
+            </label>
+          </div>
+          <div ng-show="spanDefinition"
+               style="margin-left: 3em;">
+            <div ng-class="{'has-error': formCtrl.spanText.$invalid}">
+              <label class="control-label"
+                     style="margin-top: 15px;">
+                Span text
+              </label>
+              <textarea class="form-control"
+                        ng-model="config.spanText"
+                        ng-required="spanDefinition"
+                        name="spanText"
+                        id="spanText{{$id}}"
+                        rows="2"
+                        style="max-width: 37em; vertical-align: top;">
+              </textarea>
+            </div>
+            <div ng-class="{'has-error': formCtrl.spanStackTraceThresholdMillis.$invalid}">
+              <label class="control-label"
+                     style="margin-top: 15px;">
+                Stack trace threshold
+              </label>
+              <div class="input-group">
+                <input type="text"
+                       class="form-control"
+                       ng-model="spanStackTraceThresholdMillis"
+                       ng-pattern="pattern.integer"
+                       name="spanStackTraceThresholdMillis"
+                       id="spanStackTraceThresholdMillis{{$id}}"
+                       style="width: 7em;">
+                <span class="input-group-addon">
+                  milliseconds
+                </span>
+              </div>
+              <div class="help-block">
+                Any span that exceeds this threshold will have a stack trace captured and attached to it.
+                Empty means never capture a stack trace.
+              </div>
+            </div>
+            <div>
+              <label class="control-label"
+                     style="margin-top: 15px;">
+                Ignore self nesting
+              </label>
+              <div class="checkbox"
+                   style="padding-top: 0;">
+                <label>
+                  <input type="checkbox"
+                         ng-model="config.spanIgnoreSameNested">
+                  Ignore if this occurs anywhere under a span for the same pointcut
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group" ng-class="{'gt-disabled': !spanDefinition}">
+        <label class="col-lg-2 control-label">
+          Trace definition
+        </label>
+        <div class="col-lg-10"
+             style="padding-top: 1px;">
+          <div class="checkbox"
+               style="padding-top: 6px !important;">
+            <label>
+              <input type="checkbox"
+                     ng-model="traceDefinition"
+                     ng-disabled="!spanDefinition"
+                     style="margin-top: 3px;">
+              Start a new trace when this pointcut is called outside an existing trace
+            </label>
+            <p>
+              (The span definition above will be used to define the root span)
+            </p>
+          </div>
+          <div ng-show="traceDefinition"
+               style="margin-left: 3em;">
+            <div ng-class="{'has-error': formCtrl.transactionName.$invalid}">
+              <label class="control-label"
+                     style="margin-top: 15px;">
+                Transaction name
+              </label>
+              <textarea class="form-control"
+                        ng-model="config.transactionName"
+                        ng-required="traceDefinition"
+                        name="transactionName"
+                        id="transactionName{{$id}}"
+                        rows="2"
+                        style="max-width: 37em; vertical-align: top;">
+              </textarea>
+              <div class="help-block">
+                The transaction name is used for aggregation.
+              </div>
+            </div>
+            <div>
+              <label class="control-label"
+                     style="margin-top: 15px;">
+                Background
+              </label>
+              <div class="checkbox"
+                   style="padding-top: 0;">
+                <label>
+                  <input type="checkbox"
+                         ng-model="config.background">
+                  Mark as background transaction
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group form-buttons">
+        <div class="col-lg-offset-2 col-lg-10">
+          <div gt-button-group>
+            <div gt-button
+                 gt-label="{{config.version ? 'Save' : 'Add'}}"
+                 gt-click="save(deferred)"
+                 gt-disabled="!hasChanges() || formCtrl.$invalid"
+                 class="inline-block">
+            </div>
+            <div gt-button
+                 gt-label="Delete"
+                 gt-click="delete(deferred)"
+                 gt-btn-class="btn-default"
+                 class="inline-block"
+                 style="margin-left: 5px;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ng-show="loaded" is used to jitter of seeing this section very briefly
+     before it gets pushed down by existing adhoc pointcut sections -->
+<div class="panel panel-default" ng-show="loaded">
+  <div class="panel-heading">
+    <h2>Add adhoc pointcut</h2>
+  </div>
+  <!-- override .panel-body min-height: 150px, not needed anyway since no loading spinner in this panel -->
+  <div class="panel-body" style="min-height: 0;">
+    <button type="button" class="btn btn-primary" ng-click="addAdhocPointcut()">
+      Add adhoc pointcut
+    </button>
+  </div>
+</div>
+<br>
+<div ng-show="jvmRetransformClassesSupported">
+  <div gt-button
+       gt-label="Apply changes to running JVM"
+       gt-click="retransformClasses(deferred)"
+       gt-show="page.dirty">
+  </div>
+</div>
+<div ng-show="!jvmRetransformClassesSupported && page.dirty">
+  JVM restart is required to apply changes
+</div>

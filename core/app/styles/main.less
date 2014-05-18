@@ -16,53 +16,57 @@
 
 @import (less) "../bower_components/qtip2/jquery.qtip.css";
 
-@import "../bower_components/bootstrap-datepicker/less/datepicker3.less";
+@import "../bower_components/bootstrap-datepicker/less/datepicker3";
 
-@import "../bower_components/bootstrap/less/variables.less";
-@import "../bower_components/bootstrap/less/mixins.less";
+@import "../bower_components/bootstrap/less/variables";
+@import "../bower_components/bootstrap/less/mixins";
 
-@import "../bower_components/bootstrap/less/buttons.less";
+@import "../bower_components/bootstrap/less/buttons";
 // close is used by trace modal
-@import "../bower_components/bootstrap/less/close.less";
+@import "../bower_components/bootstrap/less/close";
 // component-animations is used by mobile navbar expanding/collapsing
-@import "../bower_components/bootstrap/less/component-animations.less";
+@import "../bower_components/bootstrap/less/component-animations";
 // dropdowns is used by the trace search form (e.g. begins with / equals / ends with / contains)
-@import "../bower_components/bootstrap/less/dropdowns.less";
-@import "../bower_components/bootstrap/less/forms.less";
-@import "../bower_components/bootstrap/less/input-groups.less";
+@import "../bower_components/bootstrap/less/dropdowns";
+@import "../bower_components/bootstrap/less/forms";
+@import "../bower_components/bootstrap/less/input-groups";
 // list-group is used by configuration sidebar
-@import "../bower_components/bootstrap/less/list-group.less";
-@import "../bower_components/bootstrap/less/modals.less";
+@import "../bower_components/bootstrap/less/list-group";
+@import "../bower_components/bootstrap/less/modals";
 // navs import needs to be before navbar import, othewise navbar is messed up
-@import "../bower_components/bootstrap/less/navs.less";
-@import "../bower_components/bootstrap/less/navbar.less";
+@import "../bower_components/bootstrap/less/navs";
+@import "../bower_components/bootstrap/less/navbar";
 // panels are used by config views
-@import "../bower_components/bootstrap/less/panels.less";
+@import "../bower_components/bootstrap/less/panels";
 // panels are used by heapdump view
-@import "../bower_components/bootstrap/less/wells.less";
+@import "../bower_components/bootstrap/less/wells";
 
 // basic bootstrap foundation
-@import "../bower_components/bootstrap/less/grid.less";
-@import "../bower_components/bootstrap/less/normalize.less";
-@import "../bower_components/bootstrap/less/scaffolding.less";
-@import "../bower_components/bootstrap/less/type.less";
-@import "../bower_components/bootstrap/less/utilities.less";
-@import "../bower_components/bootstrap/less/responsive-utilities.less";
+@import "../bower_components/bootstrap/less/grid";
+@import "../bower_components/bootstrap/less/normalize";
+@import "../bower_components/bootstrap/less/scaffolding";
+@import "../bower_components/bootstrap/less/type";
+@import "../bower_components/bootstrap/less/utilities";
+@import "../bower_components/bootstrap/less/responsive-utilities";
 // tables are used on misc/heap-histogram
-@import "../bower_components/bootstrap/less/tables.less";
+@import "../bower_components/bootstrap/less/tables";
 
-@import "common-trace.less";
-@import "chart.less";
-@import "home.less";
-@import "search.less";
-@import "config.less";
-@import "jvm.less";
-@import "sidebar.less";
-@import "thread-dump.less";
-@import "common.less";
-@import "sticky-footer.less";
+// fontawesome currently only used for gear icon in top right of navbar
+@import "../bower_components/fontawesome/less/font-awesome";
+@fa-font-path: "fonts";
 
-@import "variables.less";
+@import "common-trace";
+@import "chart";
+@import "transactions";
+@import "search";
+@import "config";
+@import "system";
+@import "sidebar";
+@import "thread-dump";
+@import "common";
+@import "sticky-footer";
+
+@import "variables";
 
 // lighten text to better fit with @glowroot-primary-color
 @text-color: #444;
@@ -70,7 +74,7 @@
 @navbar-height: 50px;
 @navbar-inverse-bg: @glowroot-primary-color;
 @navbar-inverse-link-active-bg: darken(@navbar-inverse-bg, 5%);
-@navbar-inverse-link-color: #ccc;
+@navbar-inverse-link-color: #ddd;
 
 @input-border-focus: @glowroot-blue;
 
@@ -135,7 +139,8 @@ body {
   // relative position needed for spinner
   position: relative;
   display: inline-block;
-  margin-left: 32px;
+  // using padding-left because margin-left works in chrome and IE but not firefox
+  padding-left: 32px;
   vertical-align: middle;
 }
 
@@ -197,11 +202,8 @@ body {
   padding: 30px;
 }
 
-.btn-signout {
-  background-color: #edeae4;
-  color: #555;
-}
-
-.btn-signout:hover {
-  background-color: lighten(#edeae4, 4%);
+.sortable-table-header {
+  text-decoration: none !important;
+  display: inline-block;
+  white-space: nowrap;
 }

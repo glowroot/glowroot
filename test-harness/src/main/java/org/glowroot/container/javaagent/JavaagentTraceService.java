@@ -74,7 +74,7 @@ class JavaagentTraceService extends TraceService {
     @Nullable
     public Trace getLastTrace() throws Exception {
         String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
-                + "&low=0&high=" + Long.MAX_VALUE + "&limit=1000");
+                + "&duration-low=0&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         List<RawPoint> points = Lists.newArrayList();
@@ -93,7 +93,7 @@ class JavaagentTraceService extends TraceService {
     @Nullable
     protected Trace getActiveTrace() throws Exception {
         String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
-                + "&low=0&high=" + Long.MAX_VALUE + "&limit=1000");
+                + "&duration-low=0&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         if (response.getActivePoints().isEmpty()) {
@@ -130,7 +130,7 @@ class JavaagentTraceService extends TraceService {
 
     @Override
     public void deleteAll() throws Exception {
-        httpClient.post("/backend/admin/data/delete-all", "");
+        httpClient.post("/backend/admin/delete-all-data", "");
     }
 
     void assertNoActiveTraces() throws Exception {

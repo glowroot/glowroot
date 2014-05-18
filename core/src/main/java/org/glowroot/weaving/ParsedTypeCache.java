@@ -484,8 +484,8 @@ public class ParsedTypeCache {
             return ComparisonChain.start()
                     .compare(getAccessibility(left), getAccessibility(right))
                     .compare(left.getName(), right.getName())
-                    .compare(left.getArgTypeNames().size(), right.getArgTypeNames().size())
-                    .compare(left.getArgTypeNames().size(), right.getArgTypeNames().size())
+                    .compare(left.getArgTypes().size(), right.getArgTypes().size())
+                    .compare(left.getArgTypes().size(), right.getArgTypes().size())
                     .result();
         }
 

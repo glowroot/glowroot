@@ -21,7 +21,8 @@ glowroot.controller('ErrorsCtrl', [
   '$location',
   '$http',
   'queryStrings',
-  function ($scope, $location, $http, queryStrings) {
+  'httpErrors',
+  function ($scope, $location, $http, queryStrings, httpErrors) {
     // \u00b7 is &middot;
     document.title = 'Errors \u00b7 Glowroot';
     $scope.$parent.title = 'Captured errors';
@@ -34,37 +35,20 @@ glowroot.controller('ErrorsCtrl', [
     function updateAggregates(deferred) {
       var query = angular.copy(appliedFilter);
       delete query.error;
-      // +1 just to find out if there are more and to show "Show more" button, the extra (+1th) will not be displayed
-      query.limit++;
+      query.sortAttribute = $scope.sortAttribute;
+      query.sortDirection = $scope.sortDirection;
       $scope.showTableSpinner++;
       $http.get('backend/error/aggregates?' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.loaded = true;
             $scope.showTableSpinner--;
-            $scope.error = false;
-            if (data.length === query.limit) {
-              data.pop();
-              $scope.hasMoreAggregates = true;
-            } else {
-              $scope.hasMoreAggregates = false;
-            }
-            $scope.aggregates = data;
+            $scope.moreAvailable = data.moreAvailable;
+            $scope.aggregates = data.records;
             if (deferred) {
               deferred.resolve();
             }
           })
-          .error(function (data, status) {
-            $scope.loaded = true;
-            $scope.showTableSpinner--;
-            if (status === 0) {
-              $scope.error = 'Unable to connect to server';
-            } else {
-              $scope.error = 'An error occurred';
-            }
-            if (deferred) {
-              deferred.reject($scope.error);
-            }
-          });
+          .error(httpErrors.handler($scope, deferred));
     }
 
     function parseQuery(text) {
@@ -155,7 +139,7 @@ glowroot.controller('ErrorsCtrl', [
       });
     };
 
-    $scope.showMoreAggregates = function (deferred) {
+    $scope.showMore = function (deferred) {
       // double each time, but don't double $scope.filter.limit so that normal limit will be used on next search
       appliedFilter.limit *= 2;
       updateAggregates(deferred);
@@ -181,6 +165,9 @@ glowroot.controller('ErrorsCtrl', [
     appliedFilter.error = $location.search().error || '';
     appliedFilter.limit = 25;
 
+    $scope.sortAttribute = $location.search()['sort-attribute'] || 'count';
+    $scope.sortDirection = $location.search()['sort-direction'] || 'desc';
+
     $scope.filter = angular.copy(appliedFilter);
     // need to remove from and to so they aren't copied back during angular.extend(appliedFilter, $scope.filter)
     delete $scope.filter.from;
@@ -198,6 +185,33 @@ glowroot.controller('ErrorsCtrl', [
       }
     });
 
+    $scope.sort = function (attributeName) {
+      if ($scope.sortAttribute === attributeName) {
+        // switch direction
+        if ($scope.sortDirection === 'desc') {
+          $scope.sortDirection = 'asc';
+        } else {
+          $scope.sortDirection = 'desc';
+        }
+      } else {
+        $scope.sortAttribute = attributeName;
+        $scope.sortDirection = 'desc';
+      }
+      updateLocation();
+      updateAggregates();
+    };
+
+    $scope.sortIconClass = function (attributeName) {
+      if ($scope.sortAttribute !== attributeName) {
+        return '';
+      }
+      if ($scope.sortDirection === 'desc') {
+        return 'caret';
+      } else {
+        return 'caret transaction-caret-reversed';
+      }
+    };
+
     function updateLocation() {
       var query = {};
       if (!filterFromToDefault) {
@@ -206,6 +220,12 @@ glowroot.controller('ErrorsCtrl', [
       }
       if (appliedFilter.error) {
         query.error = appliedFilter.error;
+      }
+      if ($scope.sortAttribute !== 'count' || $scope.sortDirection !== 'desc') {
+        query['sort-attribute'] = $scope.sortAttribute;
+        if ($scope.sortDirection !== 'desc') {
+          query['sort-direction'] = $scope.sortDirection;
+        }
       }
       $location.search(query).replace();
     }

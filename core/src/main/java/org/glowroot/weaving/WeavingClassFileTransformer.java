@@ -45,7 +45,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     private final Supplier<ImmutableList<Advice>> pointcutConfigAdvisors;
 
     private final ParsedTypeCache parsedTypeCache;
-    private final MetricTimerService metricTimerService;
+    private final WeavingTimerService metricTimerService;
     private final boolean metricWrapperMethods;
 
     // it is important to only have a single weaver per class loader because storing state of each
@@ -77,20 +77,20 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // note: an exception is made for WeavingMetric, see PreInitializeClassesTest for explanation
     public WeavingClassFileTransformer(List<MixinType> mixinTypes, List<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
-            ParsedTypeCache parsedTypeCache, MetricTimerService metricTimerService,
+            ParsedTypeCache parsedTypeCache, WeavingTimerService weavingTimerService,
             boolean metricWrapperMethods) {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
         this.pointcutConfigAdvisors = pointcutConfigAdvisors;
         this.parsedTypeCache = parsedTypeCache;
-        this.metricTimerService = metricTimerService;
+        this.metricTimerService = weavingTimerService;
         this.metricWrapperMethods = metricWrapperMethods;
         if (isInBootstrapClassLoader()) {
             // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
             // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
             // the woven code will not be able to see glowroot classes (e.g. PluginServices)
             bootstrapLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors,
-                    this.pointcutConfigAdvisors, parsedTypeCache, metricTimerService,
+                    this.pointcutConfigAdvisors, parsedTypeCache, weavingTimerService,
                     metricWrapperMethods);
         } else {
             bootstrapLoaderWeaver = null;

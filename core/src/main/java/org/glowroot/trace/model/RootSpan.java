@@ -61,10 +61,11 @@ class RootSpan {
 
     private final Ticker ticker;
 
-    RootSpan(MessageSupplier messageSupplier, Metric metric, long startTick, Ticker ticker) {
+    RootSpan(MessageSupplier messageSupplier, TraceMetricTimerExt metricTimer, long startTick,
+            Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
-        rootSpan = new Span(messageSupplier, startTick, startTick, 0, metric);
+        rootSpan = new Span(messageSupplier, startTick, startTick, 0, metricTimer);
         spanStack.add(rootSpan);
         spans.add(rootSpan);
         size = 1;
@@ -99,7 +100,7 @@ class RootSpan {
         return endTick != 0;
     }
 
-    Span pushSpan(long startTick, MessageSupplier messageSupplier, MetricTimerExtended metric) {
+    Span pushSpan(long startTick, MessageSupplier messageSupplier, TraceMetricTimerExt metric) {
         Span span = createSpan(startTick, messageSupplier, null, metric, false);
         spanStack.add(span);
         spans.add(span);
@@ -141,7 +142,7 @@ class RootSpan {
     }
 
     private Span createSpan(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage, @Nullable MetricTimerExtended metric,
+            @Nullable ErrorMessage errorMessage, @Nullable TraceMetricTimerExt metricTimer,
             boolean limitBypassed) {
         if (spanLimitExceeded && !limitBypassed) {
             // just in case the spanLimit property is changed in the middle of a trace this resets
@@ -161,7 +162,7 @@ class RootSpan {
         } else {
             nestingLevel = currentSpan.getNestingLevel() + 1;
         }
-        Span span = new Span(messageSupplier, this.startTick, startTick, nestingLevel, metric);
+        Span span = new Span(messageSupplier, this.startTick, startTick, nestingLevel, metricTimer);
         span.setErrorMessage(errorMessage);
         return span;
     }

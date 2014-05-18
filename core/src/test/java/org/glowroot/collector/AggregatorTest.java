@@ -22,11 +22,9 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.glowroot.api.MetricName;
-import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.common.Clock;
-import org.glowroot.trace.model.Metric;
 import org.glowroot.trace.model.Trace;
+import org.glowroot.trace.model.TraceMetric;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,7 +54,7 @@ public class AggregatorTest {
         }).when(scheduledExecutorService).execute(any(Runnable.class));
         TransactionPointRepository transactionPointRepository =
                 mock(TransactionPointRepository.class);
-        new TransactionAggregator(scheduledExecutorService, transactionPointRepository,
+        new TransactionCollector(scheduledExecutorService, transactionPointRepository,
                 Clock.systemClock(), 1);
         // when
         Thread.sleep(2100);
@@ -78,20 +76,20 @@ public class AggregatorTest {
         }).when(scheduledExecutorService).execute(any(Runnable.class));
         MockTransactionPointRepository transactionPointRepository =
                 new MockTransactionPointRepository();
-        TransactionAggregator aggregator = new TransactionAggregator(scheduledExecutorService,
-                transactionPointRepository, Clock.systemClock(), 1);
+        TransactionCollector transactionCollector = new TransactionCollector(
+                scheduledExecutorService, transactionPointRepository, Clock.systemClock(), 1);
 
         Trace trace = mock(Trace.class);
-        Metric metric = mock(Metric.class);
-        when(metric.getMetricName()).thenReturn(MetricName.get(OnlyForThePointcutMetricName.class));
+        TraceMetric metric = mock(TraceMetric.class);
+        when(metric.getName()).thenReturn("test 123");
         when(trace.getDuration()).thenReturn(MILLISECONDS.toNanos(123));
         when(trace.getRootMetric()).thenReturn(metric);
         // when
         int count = 0;
-        long firstCaptureTime = aggregator.add(trace, false);
+        long firstCaptureTime = transactionCollector.add(trace, false);
         long aggregateCaptureTime = (long) Math.ceil(firstCaptureTime / 1000.0) * 1000;
         while (true) {
-            long captureTime = aggregator.add(trace, false);
+            long captureTime = transactionCollector.add(trace, false);
             count++;
             if (captureTime > aggregateCaptureTime) {
                 break;
@@ -107,7 +105,7 @@ public class AggregatorTest {
             }
         }
         assertThat(transactionPointRepository.getTotalMicros()).isEqualTo(count * 123 * 1000);
-        aggregator.close();
+        transactionCollector.close();
     }
 
     private static class MockTransactionPointRepository implements TransactionPointRepository {
@@ -128,7 +126,4 @@ public class AggregatorTest {
             return totalMicros;
         }
     }
-
-    @Pointcut(typeName = "", methodName = "", metricName = "glowroot weaving")
-    private static class OnlyForThePointcutMetricName {}
 }

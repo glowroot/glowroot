@@ -32,7 +32,7 @@
     "passwordHash" : ""
   },
   "advanced" : {
-    "metricWrapperMethodsDisabled" : false,
+    "traceMetricWrapperMethodsDisabled" : false,
     "warnOnSpanOutsideTrace" : false,
     "weavingDisabled" : false
   },
@@ -41,12 +41,12 @@
       "id" : "glowroot-integration-tests",
       "enabled" : true,
       "properties" : {
-        "levelFiveEnabled" : false,
-        "starredHeadline" : false,
         "alternateHeadline" : "",
+        "captureSpanStackTraces" : false,
         "hasDefaultVal" : "one",
+        "levelFiveEnabled" : false,
         "levelFiveSpanEnabled" : false,
-        "captureSpanStackTraces" : false
+        "starredHeadline" : false
       }
     },
     {
@@ -55,5 +55,5 @@
       "properties" : { }
     }
   ],
-  "pointcuts" : [ ]
+  "adhoc-pointcuts" : [ ]
 }

@@ -38,12 +38,12 @@ import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.local.store.TransactionPointDao;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
-import org.glowroot.trace.PointcutConfigAdviceCache;
+import org.glowroot.trace.AdhocAdviceCache;
 import org.glowroot.trace.TraceRegistry;
 import org.glowroot.weaving.ParsedTypeCache;
 
 /**
- * Json service for various admin tasks, bound to /backend/admin.
+ * Json service for various admin tasks.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -57,7 +57,7 @@ class AdminJsonService {
     private final TransactionPointDao transactionPointDao;
     private final SnapshotDao snapshotDao;
     private final ConfigService configService;
-    private final PointcutConfigAdviceCache pointcutConfigAdviceCache;
+    private final AdhocAdviceCache adhocAdviceCache;
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final Instrumentation instrumentation;
@@ -66,13 +66,13 @@ class AdminJsonService {
     private final TraceRegistry traceRegistry;
 
     AdminJsonService(TransactionPointDao transactionPointDao, SnapshotDao snapshotDao,
-            ConfigService configService, PointcutConfigAdviceCache pointcutConfigAdviceCache,
+            ConfigService configService, AdhocAdviceCache adhocAdviceCache,
             ParsedTypeCache parsedTypeCache, @Nullable Instrumentation instrumentation,
             TraceCollectorImpl traceCollector, DataSource dataSource, TraceRegistry traceRegistry) {
         this.transactionPointDao = transactionPointDao;
         this.snapshotDao = snapshotDao;
         this.configService = configService;
-        this.pointcutConfigAdviceCache = pointcutConfigAdviceCache;
+        this.adhocAdviceCache = adhocAdviceCache;
         this.parsedTypeCache = parsedTypeCache;
         this.instrumentation = instrumentation;
         this.traceCollector = traceCollector;
@@ -80,15 +80,15 @@ class AdminJsonService {
         this.traceRegistry = traceRegistry;
     }
 
-    @POST("/backend/admin/data/delete-all")
+    @POST("/backend/admin/delete-all-data")
     void deleteAllData() {
         logger.debug("deleteAllData()");
         transactionPointDao.deleteAll();
         snapshotDao.deleteAll();
     }
 
-    @POST("/backend/admin/pointcuts/reweave")
-    String reweavePointcutConfigs() throws UnmodifiableClassException {
+    @POST("/backend/admin/reweave-adhoc-pointcuts")
+    String reweaveAdhocPointcuts() throws UnmodifiableClassException {
         if (instrumentation == null) {
             logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
             return "{}";
@@ -97,11 +97,11 @@ class AdminJsonService {
             logger.warn("retransformClasses is not supported");
             return "{}";
         }
-        ImmutableList<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
-        pointcutConfigAdviceCache.updateAdvisors(pointcutConfigs);
+        ImmutableList<PointcutConfig> pointcutConfigs = configService.getAdhocPointcutConfigs();
+        adhocAdviceCache.updateAdvisors(pointcutConfigs);
         Set<String> typeNames = Sets.newHashSet();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
-            typeNames.add(pointcutConfig.getTypeName());
+            typeNames.add(pointcutConfig.getType());
         }
         Set<Class<?>> classes = Sets.newHashSet();
         List<Class<?>> existingReweavableClasses = parsedTypeCache.getClassesWithReweavableAdvice();
@@ -126,7 +126,7 @@ class AdminJsonService {
         return "{\"classes\":" + count + "}";
     }
 
-    @POST("/backend/admin/data/compact")
+    @POST("/backend/admin/compact-data")
     void compactData() {
         logger.debug("compactData()");
         try {
@@ -138,7 +138,7 @@ class AdminJsonService {
     }
 
     @OnlyUsedByTests
-    @POST("/backend/admin/config/reset-all")
+    @POST("/backend/admin/reset-all-config")
     void resetAllConfig() throws IOException {
         logger.debug("resetAllConfig()");
         configService.resetAllConfig();

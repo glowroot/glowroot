@@ -328,6 +328,7 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.util.concurrent.Uninterruptibles");
         return types;
     }
+
     private static List<String> getJacksonUsedTypes() {
         List<String> types = Lists.newArrayList();
         types.add("com.fasterxml.jackson.core.JsonFactory");
@@ -360,9 +361,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.api.ErrorMessage");
         types.add("org.glowroot.api.Message");
         types.add("org.glowroot.api.MessageSupplier");
-        types.add("org.glowroot.api.MetricName");
-        types.add("org.glowroot.api.MetricName$1");
-        types.add("org.glowroot.api.MetricTimer");
+        types.add("org.glowroot.api.TraceMetricName");
+        types.add("org.glowroot.api.TraceMetricTimer");
         types.add("org.glowroot.api.weaving.BindMethodArg");
         types.add("org.glowroot.api.weaving.BindMethodArgArray");
         types.add("org.glowroot.api.weaving.BindMethodName");
@@ -383,18 +383,20 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.common.Reflections$ReflectiveTargetException");
         types.add("org.glowroot.common.ScheduledRunnable");
         types.add("org.glowroot.common.ScheduledRunnable$TerminateSubsequentExecutionsException");
-        types.add("org.glowroot.trace.MetricTimerServiceImpl");
-        types.add("org.glowroot.trace.MetricTimerServiceImpl$NopMetricTimer");
         types.add("org.glowroot.trace.TraceRegistry");
+        types.add("org.glowroot.trace.WeavingTimerServiceImpl");
+        types.add("org.glowroot.trace.WeavingTimerServiceImpl$1");
+        types.add("org.glowroot.trace.WeavingTimerServiceImpl$NopWeavingTimer");
         types.add("org.glowroot.trace.model.JvmInfo");
-        types.add("org.glowroot.trace.model.Metric");
-        types.add("org.glowroot.trace.model.MetricTimerExtended");
-        types.add("org.glowroot.trace.model.MetricTimerExtended$NopMetricTimerExtended");
         types.add("org.glowroot.trace.model.Profile");
         types.add("org.glowroot.trace.model.ProfileNode");
         types.add("org.glowroot.trace.model.RootSpan");
         types.add("org.glowroot.trace.model.Span");
         types.add("org.glowroot.trace.model.Trace");
+        types.add("org.glowroot.trace.model.TraceMetric");
+        types.add("org.glowroot.trace.model.TraceMetricNameImpl");
+        types.add("org.glowroot.trace.model.TraceMetricTimerExt");
+        types.add("org.glowroot.trace.model.TraceMetricTimerExt$NopTraceMetricTimerExt");
         types.add("org.glowroot.trace.model.TraceUniqueId");
         types.add("org.glowroot.weaving.Advice");
         types.add("org.glowroot.weaving.Advice$AdviceParameter");
@@ -403,7 +405,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.AdviceFlowOuterHolder$1");
         types.add("org.glowroot.weaving.AdviceFlowOuterHolder$AdviceFlowHolder");
         types.add("org.glowroot.weaving.AdviceMatcher");
-        types.add("org.glowroot.weaving.MetricTimerService");
         types.add("org.glowroot.weaving.MixinMatcher");
         types.add("org.glowroot.weaving.MixinType");
         types.add("org.glowroot.weaving.ParsedMethod");
@@ -418,13 +419,14 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.Weaver");
         types.add("org.glowroot.weaving.Weaver$ComputeFramesClassWriter");
         types.add("org.glowroot.weaving.Weaver$JSRInlinerClassVisitor");
-        types.add("org.glowroot.weaving.Weaver$OnlyForThePointcutMetricName");
         types.add("org.glowroot.weaving.WeavingClassFileTransformer");
         types.add("org.glowroot.weaving.WeavingClassFileTransformer$1");
         types.add("org.glowroot.weaving.WeavingClassVisitor");
         types.add("org.glowroot.weaving.WeavingClassVisitor$InitMixins");
         types.add("org.glowroot.weaving.WeavingMethodVisitor");
         types.add("org.glowroot.weaving.WeavingMethodVisitor$MarkerException");
+        types.add("org.glowroot.weaving.WeavingTimerService");
+        types.add("org.glowroot.weaving.WeavingTimerService$WeavingTimer");
         return types;
     }
 

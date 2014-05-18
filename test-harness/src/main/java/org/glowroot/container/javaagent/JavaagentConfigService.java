@@ -137,6 +137,37 @@ class JavaagentConfigService implements ConfigService {
     }
 
     @Override
+    public List<PointcutConfig> getAdhocPointcutConfigs() throws Exception {
+        String response = httpClient.get("/backend/config/adhoc-pointcut");
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        JsonNode configsNode = ObjectMappers.getRequiredChildNode(rootNode, "configs");
+        return mapper.readValue(mapper.treeAsTokens(configsNode),
+                new TypeReference<List<PointcutConfig>>() {});
+    }
+
+    // returns new version
+    @Override
+    public String addAdhocPointcutConfig(PointcutConfig pointcutConfig) throws Exception {
+        String response = httpClient.post("/backend/config/adhoc-pointcut/+",
+                mapper.writeValueAsString(pointcutConfig));
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        JsonNode versionNode = ObjectMappers.getRequiredChildNode(rootNode, "version");
+        return versionNode.asText();
+    }
+
+    @Override
+    public void updateAdhocPointcutConfig(String version, PointcutConfig pointcutConfig)
+            throws Exception {
+        httpClient.post("/backend/config/adhoc-pointcut/" + version,
+                mapper.writeValueAsString(pointcutConfig));
+    }
+
+    @Override
+    public void removeAdhocPointcutConfig(String version) throws Exception {
+        httpClient.post("/backend/config/adhoc-pointcut/-", mapper.writeValueAsString(version));
+    }
+
+    @Override
     public AdvancedConfig getAdvancedConfig() throws Exception {
         return getConfig("/backend/config/advanced", AdvancedConfig.class);
     }
@@ -158,39 +189,8 @@ class JavaagentConfigService implements ConfigService {
     }
 
     @Override
-    public List<PointcutConfig> getPointcutConfigs() throws Exception {
-        String response = httpClient.get("/backend/config/pointcut");
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        JsonNode configsNode = ObjectMappers.getRequiredChildNode(rootNode, "configs");
-        return mapper.readValue(mapper.treeAsTokens(configsNode),
-                new TypeReference<List<PointcutConfig>>() {});
-    }
-
-    // returns new version
-    @Override
-    public String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception {
-        String response = httpClient.post("/backend/config/pointcut/+",
-                mapper.writeValueAsString(pointcutConfig));
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        JsonNode versionNode = ObjectMappers.getRequiredChildNode(rootNode, "version");
-        return versionNode.asText();
-    }
-
-    @Override
-    public void updatePointcutConfig(String version, PointcutConfig pointcutConfig)
-            throws Exception {
-        httpClient.post("/backend/config/pointcut/" + version,
-                mapper.writeValueAsString(pointcutConfig));
-    }
-
-    @Override
-    public void removePointcutConfig(String version) throws Exception {
-        httpClient.post("/backend/config/pointcut/-", mapper.writeValueAsString(version));
-    }
-
-    @Override
-    public int reweavePointcutConfigs() throws Exception {
-        String response = httpClient.post("/backend/admin/pointcuts/reweave", "");
+    public int reweaveAdhocPointcuts() throws Exception {
+        String response = httpClient.post("/backend/admin/reweave-adhoc-pointcuts", "");
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         JsonNode classesNode = ObjectMappers.getRequiredChildNode(rootNode, "classes");
         return classesNode.asInt();
@@ -198,11 +198,11 @@ class JavaagentConfigService implements ConfigService {
 
     @Override
     public void compactData() throws Exception {
-        httpClient.post("/backend/admin/data/compact", "");
+        httpClient.post("/backend/admin/compact-data", "");
     }
 
     void resetAllConfig() throws Exception {
-        httpClient.post("/backend/admin/config/reset-all", "");
+        httpClient.post("/backend/admin/reset-all-config", "");
         // storeThresholdMillis=0 is by far the most useful setting for testing
         setStoreThresholdMillis(0);
     }

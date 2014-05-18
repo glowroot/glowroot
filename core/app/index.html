@@ -73,14 +73,9 @@
         <nav class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
             <div gt-navbar-item
-                 gt-display="Home"
-                 gt-item-name="home"
-                 gt-url="#/home">
-            </div>
-            <div gt-navbar-item
-                 gt-display="Traces"
-                 gt-item-name="traces"
-                 gt-url="#/traces">
+                 gt-display="Transactions"
+                 gt-item-name="transactions"
+                 gt-url="#/transactions">
             </div>
             <div gt-navbar-item
                  gt-display="Errors"
@@ -88,29 +83,31 @@
                  gt-url="#/errors">
             </div>
             <div gt-navbar-item
-                 gt-display="Configuration"
-                 gt-item-name="config"
-                 gt-url="#/config/general">
+                 gt-display="Traces"
+                 gt-item-name="traces"
+                 gt-url="#/traces">
             </div>
             <div gt-navbar-item
-                 gt-display="Plugins"
-                 gt-item-name="plugin"
-                 gt-url="#/plugin/{{layout.plugins[0].id}}"
-                 gt-show="layout.plugins.length">
-            </div>
-            <div gt-navbar-item
-                 gt-display="Misc"
-                 gt-item-name="misc"
-                 gt-url="#/misc/process">
+                 gt-display="JVM"
+                 gt-item-name="jvm"
+                 gt-url="#/jvm/process">
             </div>
           </ul>
-          <form class="navbar-form navbar-right ng-cloak"
-                ng-show="showSignOutButton">
-            <button class="btn btn-default btn-signout"
-                    ng-click="signOut()">
-              Sign out
-            </button>
-          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li ng-class="{active: activeNavbarItem === 'config'}">
+              <a href="#/config/general"
+                 style="padding-top: 14px; padding-bottom: 0; height: 50px;">
+                <i title="Configuration" class="fa fa-gears" style="font-size: 24px;"></i>
+              </a>
+            </li>
+            <li class="ng-cloak" ng-show="showSignOutButton">
+              <a href="#"
+                 ng-click="signOut()"
+                 style="padding-top: 14px; padding-bottom: 0; height: 50px;">
+                <i title="Sign out" class="fa fa-sign-out" style="font-size: 24px;"></i>
+              </a>
+            </li>
+          </ul>
         </nav>
       </div>
     </div>
@@ -183,10 +180,17 @@
   <script src="scripts/services/login.js"></script>
   <script src="scripts/services/query-strings.js"></script>
   <script src="scripts/services/conversions.js"></script>
-  <script src="scripts/controllers/home.js"></script>
+  <script src="scripts/controllers/transactions.js"></script>
   <script src="scripts/controllers/transaction-detail.js"></script>
   <script src="scripts/controllers/traces.js"></script>
   <script src="scripts/controllers/errors.js"></script>
+  <script src="scripts/controllers/jvm.js"></script>
+  <script src="scripts/controllers/jvm/process.js"></script>
+  <script src="scripts/controllers/jvm/thread-dump.js"></script>
+  <script src="scripts/controllers/jvm/heap-dump.js"></script>
+  <script src="scripts/controllers/jvm/heap-histogram.js"></script>
+  <script src="scripts/controllers/jvm/system-properties.js"></script>
+  <script src="scripts/controllers/jvm/capabilities.js"></script>
   <script src="scripts/controllers/config.js"></script>
   <script src="scripts/controllers/config/general.js"></script>
   <script src="scripts/controllers/config/coarse-profiling.js"></script>
@@ -194,20 +198,10 @@
   <script src="scripts/controllers/config/user-overrides.js"></script>
   <script src="scripts/controllers/config/storage.js"></script>
   <script src="scripts/controllers/config/user-interface.js"></script>
+  <script src="scripts/controllers/config/adhoc-pointcut-list.js"></script>
+  <script src="scripts/controllers/config/adhoc-pointcut.js"></script>
   <script src="scripts/controllers/config/advanced.js"></script>
-  <script src="scripts/controllers/config/pointcut-list.js"></script>
-  <script src="scripts/controllers/config/pointcut.js"></script>
-  <script src="scripts/controllers/plugin.js"></script>
-  <script src="scripts/controllers/plugin-x.js"></script>
-  <script src="scripts/controllers/misc.js"></script>
-  <script src="scripts/controllers/misc/process.js"></script>
-  <script src="scripts/controllers/misc/system-properties.js"></script>
-  <script src="scripts/controllers/misc/thread-dump.js"></script>
-  <script src="scripts/controllers/misc/heap-histogram.js"></script>
-  <script src="scripts/controllers/misc/heap-dump.js"></script>
-  <script src="scripts/controllers/misc/garbage-collectors.js"></script>
-  <script src="scripts/controllers/misc/diagnostic-options.js"></script>
-  <script src="scripts/controllers/misc/capabilities.js"></script>
+  <script src="scripts/controllers/config/plugin.js"></script>
   <script src="scripts/controllers/login.js"></script>
   <!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->
   <script src="scripts/generated/handlebars-templates.js"></script>

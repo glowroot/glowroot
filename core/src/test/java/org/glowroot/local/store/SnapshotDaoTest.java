@@ -18,7 +18,6 @@ package org.glowroot.local.store;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -29,7 +28,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.collector.Snapshot;
-import org.glowroot.local.store.TracePointQuery.StringComparator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -75,8 +73,8 @@ public class SnapshotDaoTest {
         TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
                 null, null, null, null, null, null, null, null, null, null, null, 1);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(query);
-        Snapshot snapshot2 = snapshotDao.readSnapshot(points.get(0).getId());
+        QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
+        Snapshot snapshot2 = snapshotDao.readSnapshot(queryResult.getRecords().get(0).getId());
         // then
         assertThat(snapshot2.getId()).isEqualTo(snapshot.getId());
         assertThat(snapshot2.isStuck()).isEqualTo(snapshot.isStuck());
@@ -97,9 +95,9 @@ public class SnapshotDaoTest {
                 snapshot.getDuration(), false, false, false, null, null, null, null, null, null,
                 null, null, null, null, null, 1);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(query);
+        QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
-        assertThat(points).hasSize(1);
+        assertThat(queryResult.getRecords()).hasSize(1);
     }
 
     @Test
@@ -112,9 +110,9 @@ public class SnapshotDaoTest {
                 snapshot.getDuration() + 2, false, false, false, null, null, null, null, null,
                 null, null, null, null, null, null, 1);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(query);
+        QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
-        assertThat(points).isEmpty();
+        assertThat(queryResult.getRecords()).isEmpty();
     }
 
     @Test
@@ -127,9 +125,9 @@ public class SnapshotDaoTest {
                 snapshot.getDuration() - 1, false, false, false, null, null, null, null, null,
                 null, null, null, null, null, null, 1);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(query);
+        QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
-        assertThat(points).isEmpty();
+        assertThat(queryResult.getRecords()).isEmpty();
     }
 
     @Test
@@ -142,9 +140,9 @@ public class SnapshotDaoTest {
                 null, null, null, null, null, null, null, null, "abc", StringComparator.EQUALS,
                 "xyz", 1);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(query);
+        QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
-        assertThat(points).hasSize(1);
+        assertThat(queryResult.getRecords()).hasSize(1);
     }
 
     @Test
@@ -156,9 +154,9 @@ public class SnapshotDaoTest {
         TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
                 null, null, null, null, null, null, null, null, "abc", null, null, 1);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(query);
+        QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
-        assertThat(points).hasSize(1);
+        assertThat(queryResult.getRecords()).hasSize(1);
     }
 
     @Test
@@ -171,9 +169,9 @@ public class SnapshotDaoTest {
                 null, null, null, null, null, null, null, null, null, StringComparator.EQUALS,
                 "xyz", 1);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(query);
+        QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
-        assertThat(points).hasSize(1);
+        assertThat(queryResult.getRecords()).hasSize(1);
     }
 
     @Test
@@ -186,9 +184,9 @@ public class SnapshotDaoTest {
                 null, null, null, null, null, null, null, null, "abc", StringComparator.EQUALS,
                 "abc", 1);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(query);
+        QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
-        assertThat(points).isEmpty();
+        assertThat(queryResult.getRecords()).isEmpty();
     }
 
     @Test
@@ -201,9 +199,9 @@ public class SnapshotDaoTest {
                 null, null, null, null, null, null, null, null, null, StringComparator.EQUALS,
                 "xyz1", 1);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(query);
+        QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
-        assertThat(points).isEmpty();
+        assertThat(queryResult.getRecords()).isEmpty();
     }
 
     @Test

@@ -35,17 +35,17 @@ import org.glowroot.markers.UsedByJsonBinding;
 @Immutable
 public class AdvancedConfig {
 
-    private final boolean metricWrapperMethodsDisabled;
+    private final boolean traceMetricWrapperMethodsDisabled;
     private final boolean warnOnSpanOutsideTrace;
     private final boolean weavingDisabled;
 
     private final String version;
 
     static AdvancedConfig getDefault() {
-        final boolean metricWrapperMethodsDisabled = false;
+        final boolean traceMetricWrapperMethodsDisabled = false;
         final boolean warnOnSpanOutsideTrace = false;
         final boolean weavingDisabled = false;
-        return new AdvancedConfig(metricWrapperMethodsDisabled, warnOnSpanOutsideTrace,
+        return new AdvancedConfig(traceMetricWrapperMethodsDisabled, warnOnSpanOutsideTrace,
                 weavingDisabled);
     }
 
@@ -54,17 +54,17 @@ public class AdvancedConfig {
     }
 
     @VisibleForTesting
-    public AdvancedConfig(boolean metricWrapperMethodsDisabled, boolean warnOnSpanOutsideTrace,
-            boolean weavingDisabled) {
-        this.metricWrapperMethodsDisabled = metricWrapperMethodsDisabled;
+    public AdvancedConfig(boolean traceMetricWrapperMethodsDisabled,
+            boolean warnOnSpanOutsideTrace, boolean weavingDisabled) {
+        this.traceMetricWrapperMethodsDisabled = traceMetricWrapperMethodsDisabled;
         this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
         this.weavingDisabled = weavingDisabled;
-        this.version = VersionHashes.sha1(metricWrapperMethodsDisabled, warnOnSpanOutsideTrace,
-                weavingDisabled);
+        this.version = VersionHashes.sha1(traceMetricWrapperMethodsDisabled,
+                warnOnSpanOutsideTrace, weavingDisabled);
     }
 
-    public boolean isMetricWrapperMethodsDisabled() {
-        return metricWrapperMethodsDisabled;
+    public boolean isTraceMetricWrapperMethodsDisabled() {
+        return traceMetricWrapperMethodsDisabled;
     }
 
     public boolean isWarnOnSpanOutsideTrace() {
@@ -84,7 +84,7 @@ public class AdvancedConfig {
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("metricWrapperMethodsDisabled", metricWrapperMethodsDisabled)
+                .add("traceMetricWrapperMethodsDisabled", traceMetricWrapperMethodsDisabled)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
                 .add("weavingDisabled", weavingDisabled)
                 .add("version", version)
@@ -95,17 +95,18 @@ public class AdvancedConfig {
     @UsedByJsonBinding
     public static class Overlay {
 
-        private boolean metricWrapperMethodsDisabled;
+        private boolean traceMetricWrapperMethodsDisabled;
         private boolean warnOnSpanOutsideTrace;
         private boolean weavingDisabled;
 
         private Overlay(AdvancedConfig base) {
-            metricWrapperMethodsDisabled = base.metricWrapperMethodsDisabled;
+            traceMetricWrapperMethodsDisabled = base.traceMetricWrapperMethodsDisabled;
             warnOnSpanOutsideTrace = base.warnOnSpanOutsideTrace;
             weavingDisabled = base.weavingDisabled;
         }
-        public void setMetricWrapperMethodsDisabled(boolean metricWrapperMethodsDisabled) {
-            this.metricWrapperMethodsDisabled = metricWrapperMethodsDisabled;
+        public void setTraceMetricWrapperMethodsDisabled(
+                boolean traceMetricWrapperMethodsDisabled) {
+            this.traceMetricWrapperMethodsDisabled = traceMetricWrapperMethodsDisabled;
         }
         public void setWarnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
             this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
@@ -114,7 +115,7 @@ public class AdvancedConfig {
             this.weavingDisabled = weavingDisabled;
         }
         public AdvancedConfig build() {
-            return new AdvancedConfig(metricWrapperMethodsDisabled, warnOnSpanOutsideTrace,
+            return new AdvancedConfig(traceMetricWrapperMethodsDisabled, warnOnSpanOutsideTrace,
                     weavingDisabled);
         }
     }

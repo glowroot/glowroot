@@ -26,11 +26,11 @@ import javax.annotation.Nullable;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
-import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
+import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.TraceMetricTimer;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
@@ -103,19 +103,20 @@ public class StatementAspect {
     // ===================== Statement Preparation =====================
 
     // capture the sql used to create the PreparedStatement
-    @Pointcut(typeName = "java.sql.Connection", methodName = "prepare*",
-            methodArgs = {"java.lang.String", ".."}, ignoreSameNested = true,
-            metricName = "jdbc prepare")
+    @Pointcut(type = "java.sql.Connection", methodName = "prepare*",
+            methodArgTypes = {"java.lang.String", ".."}, ignoreSameNested = true,
+            traceMetric = "jdbc prepare")
     public static class PrepareAdvice {
-        private static final MetricName metricName = MetricName.get(PrepareAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(PrepareAdvice.class);
         @OnBefore
         @Nullable
-        public static MetricTimer onBefore() {
+        public static TraceMetricTimer onBefore() {
             // don't capture if implementation detail of a DatabaseMetaData method
             // (can't use @IsEnabled since need @OnReturn to always execute)
             if (pluginServices.isEnabled()
                     && !DatabaseMetaDataAspect.isCurrentlyExecuting()) {
-                return pluginServices.startMetricTimer(metricName);
+                return pluginServices.startTraceMetric(traceMetricName);
             } else {
                 return null;
             }
@@ -127,7 +128,7 @@ public class StatementAspect {
                     .setGlowrootStatementMirror(new PreparedStatementMirror(sql));
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable MetricTimer metricTimer) {
+        public static void onAfter(@BindTraveler @Nullable TraceMetricTimer metricTimer) {
             if (metricTimer != null) {
                 metricTimer.stop();
             }
@@ -139,8 +140,8 @@ public class StatementAspect {
     // capture the parameters that are bound to the PreparedStatement except
     // parameters bound via setNull(..)
     // see special case below to handle setNull()
-    @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "/(?!setNull$)set.*/",
-            methodArgs = {"int", "*", ".."}, ignoreSameNested = true)
+    @Pointcut(type = "java.sql.PreparedStatement", methodName = "/(?!setNull$)set.*/",
+            methodArgTypes = {"int", "*", ".."}, ignoreSameNested = true)
     public static class SetXAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver PreparedStatement preparedStatement,
@@ -159,8 +160,8 @@ public class StatementAspect {
         }
     }
 
-    @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "setNull",
-            methodArgs = {"int", "int", ".."}, ignoreSameNested = true)
+    @Pointcut(type = "java.sql.PreparedStatement", methodName = "setNull",
+            methodArgTypes = {"int", "int", ".."}, ignoreSameNested = true)
     public static class SetNullAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver PreparedStatement preparedStatement,
@@ -172,8 +173,8 @@ public class StatementAspect {
 
     // ================== Statement Batching ==================
 
-    @Pointcut(typeName = "java.sql.Statement", methodName = "addBatch",
-            methodArgs = {"java.lang.String"}, ignoreSameNested = true)
+    @Pointcut(type = "java.sql.Statement", methodName = "addBatch",
+            methodArgTypes = {"java.lang.String"}, ignoreSameNested = true)
     public static class StatementAddBatchAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver Statement statement,
@@ -182,7 +183,7 @@ public class StatementAspect {
         }
     }
 
-    @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "addBatch",
+    @Pointcut(type = "java.sql.PreparedStatement", methodName = "addBatch",
             ignoreSameNested = true)
     public static class PreparedStatementAddBatchAdvice {
         @OnReturn
@@ -193,7 +194,7 @@ public class StatementAspect {
 
     // Statement.clearBatch() can be used to re-initiate a prepared statement
     // that has been cached from a previous usage
-    @Pointcut(typeName = "java.sql.Statement", methodName = "clearBatch")
+    @Pointcut(type = "java.sql.Statement", methodName = "clearBatch")
     public static class ClearBatchAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver Statement statement) {
@@ -204,11 +205,12 @@ public class StatementAspect {
 
     // =================== Statement Execution ===================
 
-    @Pointcut(typeName = "java.sql.Statement", methodName = "execute*",
-            methodArgs = {"java.lang.String", ".."}, ignoreSameNested = true,
-            metricName = "jdbc execute")
+    @Pointcut(type = "java.sql.Statement", methodName = "execute*",
+            methodArgTypes = {"java.lang.String", ".."}, ignoreSameNested = true,
+            traceMetric = "jdbc execute")
     public static class StatementExecuteAdvice {
-        private static final MetricName metricName = MetricName.get(StatementExecuteAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(StatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -222,7 +224,7 @@ public class StatementAspect {
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.create(sql);
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startSpan(jdbcMessageSupplier, metricName);
+                return pluginServices.startSpan(jdbcMessageSupplier, traceMetricName);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
@@ -247,12 +249,12 @@ public class StatementAspect {
     }
 
     // executeBatch is not included since it is handled separately (below)
-    @Pointcut(typeName = "java.sql.PreparedStatement",
+    @Pointcut(type = "java.sql.PreparedStatement",
             methodName = "execute|executeQuery|executeUpdate", ignoreSameNested = true,
-            metricName = "jdbc execute")
+            traceMetric = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
-        private static final MetricName metricName =
-                MetricName.get(PreparedStatementExecuteAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(PreparedStatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -270,7 +272,7 @@ public class StatementAspect {
                     jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
                 }
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startSpan(jdbcMessageSupplier, metricName);
+                return pluginServices.startSpan(jdbcMessageSupplier, traceMetricName);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
@@ -294,11 +296,11 @@ public class StatementAspect {
         }
     }
 
-    @Pointcut(typeName = "java.sql.Statement", methodName = "executeBatch", ignoreSameNested = true,
-            metricName = "jdbc execute")
+    @Pointcut(type = "java.sql.Statement", methodName = "executeBatch", ignoreSameNested = true,
+            traceMetric = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
-        private static final MetricName metricName =
-                MetricName.get(StatementExecuteBatchAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(StatementExecuteBatchAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -319,7 +321,7 @@ public class StatementAspect {
                         jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
                     }
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                    return pluginServices.startSpan(jdbcMessageSupplier, metricName);
+                    return pluginServices.startSpan(jdbcMessageSupplier, traceMetricName);
                 } else {
                     // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
                     // plugin is re-enabled in the middle of iterating over a different result set
@@ -332,7 +334,7 @@ public class StatementAspect {
                     JdbcMessageSupplier jdbcMessageSupplier =
                             JdbcMessageSupplier.createWithBatchedSqls(mirror);
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                    return pluginServices.startSpan(jdbcMessageSupplier, metricName);
+                    return pluginServices.startSpan(jdbcMessageSupplier, traceMetricName);
                 } else {
                     // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
                     // plugin is re-enabled in the middle of iterating over a different result set
@@ -359,10 +361,11 @@ public class StatementAspect {
 
     // ================== Statement Closing ==================
 
-    @Pointcut(typeName = "java.sql.Statement", methodName = "close", ignoreSameNested = true,
-            metricName = "jdbc statement close")
+    @Pointcut(type = "java.sql.Statement", methodName = "close", ignoreSameNested = true,
+            traceMetric = "jdbc statement close")
     public static class CloseAdvice {
-        private static final MetricName metricName = MetricName.get(CloseAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -370,15 +373,15 @@ public class StatementAspect {
                     && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
-        public static MetricTimer onBefore(@BindReceiver Statement statement) {
+        public static TraceMetricTimer onBefore(@BindReceiver Statement statement) {
             // help out gc a little by clearing the weak reference, don't want to solely rely on
             // this (and use strong reference) in case a jdbc driver implementation closes
             // statements in finalize by calling an internal method and not calling public close()
             getStatementMirror(statement).setLastJdbcMessageSupplier(null);
-            return pluginServices.startMetricTimer(metricName);
+            return pluginServices.startTraceMetric(traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
+        public static void onAfter(@BindTraveler TraceMetricTimer metricTimer) {
             metricTimer.stop();
         }
     }

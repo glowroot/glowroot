@@ -232,7 +232,7 @@ public class ProfilingTest {
 
     private static void assertThatTreeDoesNotContainSyntheticMetricMethods(
             ProfileNode profileNode) {
-        if (profileNode.getStackTraceElement().contains("$glowroot$metric$")) {
+        if (profileNode.getStackTraceElement().contains("$glowroot$trace$metric$")) {
             throw new AssertionError("Not expecting synthetic metric methods but found: "
                     + profileNode.getStackTraceElement());
         }

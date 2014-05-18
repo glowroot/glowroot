@@ -37,10 +37,8 @@ import org.objectweb.asm.util.CheckClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
-import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.weaving.ParsedTypeCache.ParseContext;
+import org.glowroot.weaving.WeavingTimerService.WeavingTimer;
 
 import static org.objectweb.asm.Opcodes.ASM5;
 
@@ -62,43 +60,40 @@ class Weaver {
     private final ImmutableList<Advice> pluginAdvisors;
     private final Supplier<ImmutableList<Advice>> pointcutConfigAdvisors;
     private final ParsedTypeCache parsedTypeCache;
-    private final MetricTimerService metricTimerService;
+    private final WeavingTimerService weavingTimerService;
     private final boolean metricWrapperMethods;
-
-    private final MetricName weavingMetricName;
 
     Weaver(List<MixinType> mixinTypes, List<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
-            ParsedTypeCache parsedTypeCache, MetricTimerService metricTimerService,
+            ParsedTypeCache parsedTypeCache, WeavingTimerService weavingTimerService,
             boolean metricWrapperMethods) {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
         this.pointcutConfigAdvisors = pointcutConfigAdvisors;
         this.parsedTypeCache = parsedTypeCache;
-        this.metricTimerService = metricTimerService;
+        this.weavingTimerService = weavingTimerService;
         this.metricWrapperMethods = metricWrapperMethods;
-        weavingMetricName = MetricName.get(OnlyForThePointcutMetricName.class);
     }
 
     byte/*@Nullable*/[] weave(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         if (metricWrapperMethods) {
-            return weave$glowroot$metric$glowroot$weaving$0(classBytes, className, codeSource,
-                    loader);
+            return weave$glowroot$trace$metric$glowroot$weaving$0(classBytes, className,
+                    codeSource, loader);
         } else {
             return weaveInternal(classBytes, className, codeSource, loader);
         }
     }
 
     // weird method name is following "metric marker" method naming
-    private byte/*@Nullable*/[] weave$glowroot$metric$glowroot$weaving$0(byte[] classBytes,
+    private byte/*@Nullable*/[] weave$glowroot$trace$metric$glowroot$weaving$0(byte[] classBytes,
             String className, @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         return weaveInternal(classBytes, className, codeSource, loader);
     }
 
     private byte/*@Nullable*/[] weaveInternal(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
-        MetricTimer metricTimer = metricTimerService.startMetricTimer(weavingMetricName);
+        WeavingTimer weavingTimer = weavingTimerService.start();
         try {
             // from http://www.oracle.com/technetwork/java/javase/compatibility-417013.html:
             //
@@ -137,7 +132,7 @@ class Weaver {
                 return wovenBytes;
             }
         } finally {
-            metricTimer.stop();
+            weavingTimer.stop();
         }
     }
 
@@ -307,7 +302,4 @@ class Weaver {
             }
         }
     }
-
-    @Pointcut(typeName = "", methodName = "", metricName = "glowroot weaving")
-    private static class OnlyForThePointcutMetricName {}
 }

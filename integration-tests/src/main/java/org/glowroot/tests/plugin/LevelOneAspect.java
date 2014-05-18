@@ -22,10 +22,10 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
+import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -44,11 +44,12 @@ public class LevelOneAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
 
-    @Pointcut(typeName = "org.glowroot.tests.LevelOne", methodName = "call",
-            methodArgs = {"java.lang.String", "java.lang.String"}, metricName = "level one")
+    @Pointcut(type = "org.glowroot.tests.LevelOne", methodName = "call",
+            methodArgTypes = {"java.lang.String", "java.lang.String"}, traceMetric = "level one")
     public static class LevelOneAdvice {
 
-        private static final MetricName metricName = MetricName.get(LevelOneAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(LevelOneAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -80,8 +81,7 @@ public class LevelOneAspect {
                     return Message.withDetail(headlineFinal, detail);
                 }
             };
-            Span span = pluginServices.startTrace("basic test",
-                    messageSupplier, metricName);
+            Span span = pluginServices.startTrace("basic test", messageSupplier, traceMetricName);
             // several trace attributes to test ordering
             pluginServices.addTraceAttribute("Zee One", arg2);
             pluginServices.addTraceAttribute("Yee Two", "yy3");

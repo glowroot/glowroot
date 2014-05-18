@@ -1,0 +1,49 @@
+/*
+ * Copyright 2013-2014 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@import "variables";
+@import "../bower_components/bootstrap/less/close";
+@import "../bower_components/bootstrap/less/mixins";
+
+.transaction-tooltip-label {
+  display: inline-block;
+  width: 5em;
+}
+
+/* override some bootstrap .close attributes */
+.transaction-display-filter-close {
+  .close;
+  float: none !important;
+  vertical-align: -2px;
+  margin-left: 5px;
+  // without reducing line-height, it expands the container vertically a bit and doesn't match with All Transactions
+  line-height: 0.5;
+  .opacity(.3);
+}
+
+.font-weight-normal {
+  font-weight: normal;
+}
+
+.caret.transaction-caret-reversed {
+  border-top-width: 0;
+  border-bottom: 4px solid #000000;
+}
+
+.transaction-row-selected {
+  color: @trace-point-normal;
+  font-weight: bold;
+}

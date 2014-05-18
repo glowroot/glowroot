@@ -314,7 +314,7 @@ public class Advice {
 
         private Advice build() throws AdviceConstructionException {
             adviceType = Type.getType(adviceClass);
-            pointcutTypePattern = buildPattern(pointcut.typeName());
+            pointcutTypePattern = buildPattern(pointcut.type());
             pointcutMethodPattern = buildPattern(pointcut.methodName());
             for (java.lang.reflect.Method method : adviceClass.getMethods()) {
                 if (method.isAnnotationPresent(IsEnabled.class)) {

@@ -34,15 +34,15 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 public class PointcutConfig {
 
     @Nullable
-    private String typeName;
+    private String type;
     @Nullable
     private String methodName;
-    private ImmutableList<String> methodArgTypeNames;
+    private ImmutableList<String> methodArgTypes;
     @Nullable
-    private String methodReturnTypeName;
+    private String methodReturnType;
     private ImmutableList<MethodModifier> methodModifiers;
     @Nullable
-    private String metricName;
+    private String traceMetric;
     @Nullable
     private String spanText;
     @Nullable
@@ -62,24 +62,24 @@ public class PointcutConfig {
 
     // used to create new PointcutConfig records that haven't been sent to server yet
     public PointcutConfig() {
-        methodArgTypeNames = ImmutableList.of();
+        methodArgTypes = ImmutableList.of();
         methodModifiers = ImmutableList.of();
         version = null;
     }
 
     public PointcutConfig(String version) {
-        methodArgTypeNames = ImmutableList.of();
+        methodArgTypes = ImmutableList.of();
         methodModifiers = ImmutableList.of();
         this.version = version;
     }
 
     @Nullable
-    public String getTypeName() {
-        return typeName;
+    public String getType() {
+        return type;
     }
 
-    public void setTypeName(String typeName) {
-        this.typeName = typeName;
+    public void setType(String type) {
+        this.type = type;
     }
 
     @Nullable
@@ -91,21 +91,21 @@ public class PointcutConfig {
         this.methodName = methodName;
     }
 
-    public ImmutableList<String> getMethodArgTypeNames() {
-        return methodArgTypeNames;
+    public ImmutableList<String> getMethodArgTypes() {
+        return methodArgTypes;
     }
 
-    public void setMethodArgTypeNames(List<String> methodArgTypeNames) {
-        this.methodArgTypeNames = ImmutableList.copyOf(methodArgTypeNames);
+    public void setMethodArgTypes(List<String> methodArgTypes) {
+        this.methodArgTypes = ImmutableList.copyOf(methodArgTypes);
     }
 
     @Nullable
-    public String getMethodReturnTypeName() {
-        return methodReturnTypeName;
+    public String getMethodReturnType() {
+        return methodReturnType;
     }
 
-    public void setMethodReturnTypeName(String methodReturnTypeName) {
-        this.methodReturnTypeName = methodReturnTypeName;
+    public void setMethodReturnType(String methodReturnType) {
+        this.methodReturnType = methodReturnType;
     }
 
     public ImmutableList<MethodModifier> getMethodModifiers() {
@@ -117,12 +117,12 @@ public class PointcutConfig {
     }
 
     @Nullable
-    public String getMetricName() {
-        return metricName;
+    public String getTraceMetric() {
+        return traceMetric;
     }
 
-    public void setMetricName(@Nullable String metricName) {
-        this.metricName = metricName;
+    public void setTraceMetric(@Nullable String traceMetric) {
+        this.traceMetric = traceMetric;
     }
 
     @Nullable
@@ -194,12 +194,12 @@ public class PointcutConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(typeName, that.typeName)
+            return Objects.equal(type, that.type)
                     && Objects.equal(methodName, that.methodName)
-                    && Objects.equal(methodArgTypeNames, that.methodArgTypeNames)
-                    && Objects.equal(methodReturnTypeName, that.methodReturnTypeName)
+                    && Objects.equal(methodArgTypes, that.methodArgTypes)
+                    && Objects.equal(methodReturnType, that.methodReturnType)
                     && Objects.equal(methodModifiers, that.methodModifiers)
-                    && Objects.equal(metricName, that.metricName)
+                    && Objects.equal(traceMetric, that.traceMetric)
                     && Objects.equal(spanText, that.spanText)
                     && Objects.equal(spanStackTraceThresholdMillis,
                             that.spanStackTraceThresholdMillis)
@@ -218,8 +218,8 @@ public class PointcutConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(typeName, methodName, methodArgTypeNames, methodReturnTypeName,
-                methodModifiers, metricName, spanText, spanStackTraceThresholdMillis,
+        return Objects.hashCode(type, methodName, methodArgTypes, methodReturnType,
+                methodModifiers, traceMetric, spanText, spanStackTraceThresholdMillis,
                 spanIgnoreSameNested, transactionName, background, enabledProperty,
                 spanEnabledProperty);
     }
@@ -228,12 +228,12 @@ public class PointcutConfig {
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("typeName", typeName)
+                .add("type", type)
                 .add("methodName", methodName)
-                .add("methodArgTypeNames", methodArgTypeNames)
-                .add("methodReturnTypeName", methodReturnTypeName)
+                .add("methodArgTypes", methodArgTypes)
+                .add("methodReturnType", methodReturnType)
                 .add("methodModifiers", methodModifiers)
-                .add("metricName", metricName)
+                .add("traceMetric", traceMetric)
                 .add("spanText", spanText)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("spanIgnoreSameNested", spanIgnoreSameNested)
@@ -247,12 +247,12 @@ public class PointcutConfig {
 
     @JsonCreator
     static PointcutConfig readValue(
-            @JsonProperty("typeName") @Nullable String typeName,
+            @JsonProperty("type") @Nullable String type,
             @JsonProperty("methodName") @Nullable String methodName,
-            @JsonProperty("methodArgTypeNames") @Nullable List<String> methodArgTypeNames,
-            @JsonProperty("methodReturnTypeName") @Nullable String methodReturnTypeName,
+            @JsonProperty("methodArgTypes") @Nullable List<String> methodArgTypes,
+            @JsonProperty("methodReturnType") @Nullable String methodReturnType,
             @JsonProperty("methodModifiers") @Nullable List<MethodModifier> methodModifiers,
-            @JsonProperty("metricName") @Nullable String metricName,
+            @JsonProperty("traceMetric") @Nullable String traceMetric,
             @JsonProperty("spanText") @Nullable String spanText,
             @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
             @JsonProperty("spanIgnoreSameNested") @Nullable Boolean spanIgnoreSameNested,
@@ -261,12 +261,12 @@ public class PointcutConfig {
             @JsonProperty("enabledProperty") @Nullable String enabledProperty,
             @JsonProperty("spanEnabledProperty") @Nullable String spanEnabledProperty,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(typeName, "typeName");
+        checkRequiredProperty(type, "type");
         checkRequiredProperty(methodName, "methodName");
-        checkRequiredProperty(methodArgTypeNames, "methodArgTypeNames");
-        checkRequiredProperty(methodReturnTypeName, "methodReturnTypeName");
+        checkRequiredProperty(methodArgTypes, "methodArgTypes");
+        checkRequiredProperty(methodReturnType, "methodReturnType");
         checkRequiredProperty(methodModifiers, "methodModifiers");
-        checkRequiredProperty(metricName, "metricName");
+        checkRequiredProperty(traceMetric, "traceMetric");
         checkRequiredProperty(spanText, "spanText");
         checkRequiredProperty(spanIgnoreSameNested, "spanIgnoreSameNested");
         checkRequiredProperty(transactionName, "transactionName");
@@ -275,12 +275,12 @@ public class PointcutConfig {
         checkRequiredProperty(spanEnabledProperty, "spanEnabledProperty");
         checkRequiredProperty(version, "version");
         PointcutConfig config = new PointcutConfig(version);
-        config.setTypeName(typeName);
+        config.setType(type);
         config.setMethodName(methodName);
-        config.setMethodArgTypeNames(methodArgTypeNames);
-        config.setMethodReturnTypeName(methodReturnTypeName);
+        config.setMethodArgTypes(methodArgTypes);
+        config.setMethodReturnType(methodReturnType);
         config.setMethodModifiers(methodModifiers);
-        config.setMetricName(metricName);
+        config.setTraceMetric(traceMetric);
         config.setSpanText(spanText);
         config.setSpanStackTraceThresholdMillis(spanStackTraceThresholdMillis);
         config.setSpanIgnoreSameNested(spanIgnoreSameNested);

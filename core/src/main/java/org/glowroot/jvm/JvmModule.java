@@ -27,15 +27,12 @@ public class JvmModule {
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapHistograms> heapHistograms;
     private final OptionalService<HeapDumps> heapDumps;
-    private final OptionalService<DiagnosticOptions> diagnosticOptions;
 
     public JvmModule() {
         threadAllocatedBytes = new OptionalService<ThreadAllocatedBytes>(
                 new ThreadAllocatedBytes.Factory());
         heapHistograms = new OptionalService<HeapHistograms>(new HeapHistograms.Factory());
         heapDumps = new OptionalService<HeapDumps>(new HeapDumps.Factory());
-        diagnosticOptions =
-                new OptionalService<DiagnosticOptions>(new DiagnosticOptions.Factory());
     }
 
     public OptionalService<ThreadAllocatedBytes> getThreadAllocatedBytes() {
@@ -48,9 +45,5 @@ public class JvmModule {
 
     public OptionalService<HeapDumps> getHeapDumps() {
         return heapDumps;
-    }
-
-    public OptionalService<DiagnosticOptions> getDiagnosticOptions() {
-        return diagnosticOptions;
     }
 }

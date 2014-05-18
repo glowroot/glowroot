@@ -54,30 +54,30 @@
   ],
   "pointcuts" : [
     {
-      "typeName" : "org.glowroot.tests.LevelFour",
+      "type" : "org.glowroot.tests.LevelFour",
       "methodName" : "call",
-      "methodArgTypeNames" : [
+      "methodArgTypes" : [
         "java.lang.String",
         "java.lang.String"
       ],
-      "methodReturnTypeName" : "void",
+      "methodReturnType" : "void",
       "methodModifiers" : [ ],
-      "metricName" : "level four",
+      "traceMetric" : "level four",
       "spanText" : "Level Four: {{0}}, {{1}}",
       "transactionName" : "",
       "enabledProperty": "",
       "spanEnabledProperty": ""
     },
     {
-      "typeName" : "org.glowroot.tests.LevelFive",
+      "type" : "org.glowroot.tests.LevelFive",
       "methodName" : "call",
-      "methodArgTypeNames" : [
+      "methodArgTypes" : [
         "java.lang.String",
         "java.lang.String"
       ],
-      "methodReturnTypeName" : "void",
+      "methodReturnType" : "void",
       "methodModifiers" : [ ],
-      "metricName" : "level five",
+      "traceMetric" : "level five",
       "spanText" : "Level Five: {{0}}, {{1}}",
       "transactionName" : "",
       "enabledProperty": "levelFiveEnabled",

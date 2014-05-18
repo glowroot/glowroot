@@ -38,8 +38,8 @@ import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
 public class ParsedMethod {
 
     private final String name;
-    private final ImmutableList<String> argTypeNames;
-    private final String returnTypeName;
+    private final ImmutableList<String> argTypes;
+    private final String returnType;
     private final int modifiers;
 
     // fields below are needed for public methods in case they end up fulfilling an interface in a
@@ -61,12 +61,11 @@ public class ParsedMethod {
                 signature, exceptions);
     }
 
-    private ParsedMethod(String name, List<String> argTypeNames, String returnTypeName,
-            int modifiers, String desc, @Nullable String signature,
-            List<String> exceptions) {
+    private ParsedMethod(String name, List<String> argTypes, String returnType, int modifiers,
+            String desc, @Nullable String signature, List<String> exceptions) {
         this.name = name;
-        this.argTypeNames = ImmutableList.copyOf(argTypeNames);
-        this.returnTypeName = returnTypeName;
+        this.argTypes = ImmutableList.copyOf(argTypes);
+        this.returnType = returnType;
         // remove final and synchronized modifiers from the parsed method model
         this.modifiers = modifiers & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
         // but still need to keep track of whether method is final
@@ -81,12 +80,12 @@ public class ParsedMethod {
     }
 
     // these are class names, e.g.
-    public ImmutableList<String> getArgTypeNames() {
-        return argTypeNames;
+    public ImmutableList<String> getArgTypes() {
+        return argTypes;
     }
 
-    public String getReturnTypeName() {
-        return returnTypeName;
+    public String getReturnType() {
+        return returnType;
     }
 
     public int getModifiers() {
@@ -110,7 +109,7 @@ public class ParsedMethod {
         return exceptions;
     }
 
-    // equals and hashCode are only defined in terms of name and argTypeNames since those uniquely
+    // equals and hashCode are only defined in terms of name and argTypes since those uniquely
     // identify a method within a given class
     /*@Pure*/
     @Override
@@ -120,17 +119,17 @@ public class ParsedMethod {
         }
         if (obj instanceof ParsedMethod) {
             ParsedMethod that = (ParsedMethod) obj;
-            return Objects.equal(name, that.name) && Objects.equal(argTypeNames, that.argTypeNames);
+            return Objects.equal(name, that.name) && Objects.equal(argTypes, that.argTypes);
         }
         return false;
     }
 
-    // equals and hashCode are only defined in terms of name and argTypeNames since those uniquely
+    // equals and hashCode are only defined in terms of name and argTypes since those uniquely
     // identify a method within a given class
     /*@Pure*/
     @Override
     public int hashCode() {
-        return Objects.hashCode(name, argTypeNames);
+        return Objects.hashCode(name, argTypes);
     }
 
     /*@Pure*/
@@ -138,8 +137,8 @@ public class ParsedMethod {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)
-                .add("argTypeNames", argTypeNames)
-                .add("returnTypeName", returnTypeName)
+                .add("argTypes", argTypes)
+                .add("returnType", returnType)
                 .add("modifiers", modifiers)
                 .toString();
     }

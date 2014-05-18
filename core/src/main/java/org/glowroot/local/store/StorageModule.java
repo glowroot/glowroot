@@ -58,7 +58,7 @@ public class StorageModule {
 
     public StorageModule(File dataDir, Map<String, String> properties, Ticker ticker, Clock clock,
             ConfigModule configModule, ScheduledExecutorService scheduledExecutor,
-            boolean snapshotReaperDisabled) throws SQLException, IOException {
+            boolean viewerModeEnabled) throws SQLException, IOException {
         // mem db is only used for testing (by glowroot-test-container)
         String h2MemDb = properties.get("internal.h2.memdb");
         if (Boolean.parseBoolean(h2MemDb)) {
@@ -75,7 +75,7 @@ public class StorageModule {
         PreInitializeStorageShutdownClasses.preInitializeClasses(
                 StorageModule.class.getClassLoader());
 
-        if (snapshotReaperDisabled) {
+        if (viewerModeEnabled) {
             reaperScheduledRunnable = null;
         } else {
             reaperScheduledRunnable = new ReaperScheduledRunnable(configService,

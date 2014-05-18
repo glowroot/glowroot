@@ -49,8 +49,8 @@ public class ResponseHeaderAspect {
         }
     };
 
-    @Pointcut(typeName = "javax.servlet.ServletResponse", methodName = "setContentLength",
-            methodArgs = {"int"}, ignoreSameNested = true)
+    @Pointcut(type = "javax.servlet.ServletResponse", methodName = "setContentLength",
+            methodArgTypes = {"int"}, ignoreSameNested = true)
     public static class SetContentLengthAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -73,8 +73,8 @@ public class ResponseHeaderAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.ServletResponse", methodName = "setContentType",
-            methodArgs = {"java.lang.String"}, ignoreSameNested = true)
+    @Pointcut(type = "javax.servlet.ServletResponse", methodName = "setContentType",
+            methodArgTypes = {"java.lang.String"}, ignoreSameNested = true)
     public static class SetContentTypeAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -104,8 +104,8 @@ public class ResponseHeaderAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.ServletResponse", methodName = "setCharacterEncoding",
-            methodArgs = {"java.lang.String"}, ignoreSameNested = true)
+    @Pointcut(type = "javax.servlet.ServletResponse", methodName = "setCharacterEncoding",
+            methodArgTypes = {"java.lang.String"}, ignoreSameNested = true)
     public static class SetCharacterEncodingAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -132,8 +132,8 @@ public class ResponseHeaderAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.ServletResponse", methodName = "setLocale",
-            methodArgs = {"java.util.Locale"}, ignoreSameNested = true)
+    @Pointcut(type = "javax.servlet.ServletResponse", methodName = "setLocale",
+            methodArgTypes = {"java.util.Locale"}, ignoreSameNested = true)
     public static class SetLocaleAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -167,8 +167,8 @@ public class ResponseHeaderAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "setHeader",
-            methodArgs = {"java.lang.String", "java.lang.String"}, ignoreSameNested = true)
+    @Pointcut(type = "javax.servlet.http.HttpServletResponse", methodName = "setHeader",
+            methodArgTypes = {"java.lang.String", "java.lang.String"}, ignoreSameNested = true)
     public static class SetHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -191,8 +191,8 @@ public class ResponseHeaderAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "setDateHeader",
-            methodArgs = {"java.lang.String", "long"}, ignoreSameNested = true)
+    @Pointcut(type = "javax.servlet.http.HttpServletResponse", methodName = "setDateHeader",
+            methodArgTypes = {"java.lang.String", "long"}, ignoreSameNested = true)
     public static class SetDateHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -215,8 +215,8 @@ public class ResponseHeaderAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "setIntHeader",
-            methodArgs = {"java.lang.String", "int"}, ignoreSameNested = true)
+    @Pointcut(type = "javax.servlet.http.HttpServletResponse", methodName = "setIntHeader",
+            methodArgTypes = {"java.lang.String", "int"}, ignoreSameNested = true)
     public static class SetIntHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -239,8 +239,8 @@ public class ResponseHeaderAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "addHeader",
-            methodArgs = {"java.lang.String", "java.lang.String"}, ignoreSameNested = true)
+    @Pointcut(type = "javax.servlet.http.HttpServletResponse", methodName = "addHeader",
+            methodArgTypes = {"java.lang.String", "java.lang.String"}, ignoreSameNested = true)
     public static class AddHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -263,8 +263,8 @@ public class ResponseHeaderAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "addDateHeader",
-            methodArgs = {"java.lang.String", "long"}, ignoreSameNested = true)
+    @Pointcut(type = "javax.servlet.http.HttpServletResponse", methodName = "addDateHeader",
+            methodArgTypes = {"java.lang.String", "long"}, ignoreSameNested = true)
     public static class AddDateHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -287,8 +287,8 @@ public class ResponseHeaderAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "addIntHeader",
-            methodArgs = {"java.lang.String", "int"}, ignoreSameNested = true)
+    @Pointcut(type = "javax.servlet.http.HttpServletResponse", methodName = "addIntHeader",
+            methodArgTypes = {"java.lang.String", "int"}, ignoreSameNested = true)
     public static class AddIntHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {

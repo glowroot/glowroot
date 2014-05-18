@@ -1,0 +1,53 @@
+<!--
+  Copyright 2013-2014 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="panel panel-default gt-sidebar hidden-print">
+  <ul class="list-group">
+    <a class="list-group-item selectable-list-group-item"
+       ng-class="{active: isCurrentView('jvm.process')}"
+       href="#/jvm/process">
+      Process
+    </a>
+    <a class="list-group-item selectable-list-group-item"
+       ng-class="{active: isCurrentView('jvm.threadDump')}"
+       href="#/jvm/thread-dump">
+      Thread dump
+    </a>
+    <a class="list-group-item selectable-list-group-item"
+       ng-class="{active: isCurrentView('jvm.heapDump')}"
+       href="#/jvm/heap-dump"
+       ng-show="layout.jvmHeapDump">
+      Heap dump
+    </a>
+    <a class="list-group-item selectable-list-group-item"
+       ng-class="{active: isCurrentView('jvm.heapHistogram')}"
+       href="#/jvm/heap-histogram"
+       ng-show="layout.jvmHeapHistogram">
+      Heap histogram
+    </a>
+    <a class="list-group-item selectable-list-group-item"
+       ng-class="{active: isCurrentView('jvm.systemProperties')}"
+       href="#/jvm/system-properties">
+      System properties
+    </a>
+    <a class="list-group-item selectable-list-group-item"
+       ng-class="{active: isCurrentView('jvm.capabilities')}"
+       href="#/jvm/capabilities">
+      Capabilities
+    </a>
+  </ul>
+</div>
+<div ui-view autoscroll="false" class="gt-main-column">
+</div>

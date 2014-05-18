@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.glowroot.collector.TraceCollectorImpl;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.local.store.TracePoint;
 import org.glowroot.local.store.TracePointQuery;
@@ -65,8 +66,8 @@ public class TracePointJsonServiceTest {
         List<Trace> pendingTraces = Lists.newArrayList();
         List<TracePoint> points = Lists.newArrayList();
         points.add(mockPoint("id1", 123, 500));
-        TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
-                pendingTraces, points);
+        TracePointJsonService tracePointJsonService =
+                buildTracePointJsonService(activeTraces, pendingTraces, points);
         // when
         String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
@@ -83,8 +84,8 @@ public class TracePointJsonServiceTest {
         List<Trace> pendingTraces = Lists.newArrayList();
         pendingTraces.add(mockPendingTrace("id1", 500));
         List<TracePoint> points = Lists.newArrayList();
-        TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
-                pendingTraces, points);
+        TracePointJsonService tracePointJsonService =
+                buildTracePointJsonService(activeTraces, pendingTraces, points);
         // when
         String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
@@ -129,8 +130,8 @@ public class TracePointJsonServiceTest {
         for (int i = 200; i < 300; i++) {
             points.add(mockPoint("id" + i, 1, random.nextInt(1000)));
         }
-        TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
-                pendingTraces, points);
+        TracePointJsonService tracePointJsonService =
+                buildTracePointJsonService(activeTraces, pendingTraces, points);
         // when
         String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":1000}");
         // then
@@ -185,6 +186,7 @@ public class TracePointJsonServiceTest {
                 });
 
         ImmutableList<TracePoint> orderedPoints = durationDescOrdering.immutableSortedCopy(points);
+        QueryResult<TracePoint> queryResult = new QueryResult<TracePoint>(orderedPoints, false);
 
         SnapshotDao snapshotDao = mock(SnapshotDao.class);
         TraceRegistry traceRegistry = mock(TraceRegistry.class);
@@ -192,7 +194,7 @@ public class TracePointJsonServiceTest {
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
 
-        when(snapshotDao.readPoints(any(TracePointQuery.class))).thenReturn(orderedPoints);
+        when(snapshotDao.readPoints(any(TracePointQuery.class))).thenReturn(queryResult);
         when(traceRegistry.getTraces()).thenReturn(activeTraces);
         // for now, assume all active traces will be stored
         when(traceCollector.shouldStore(any(Trace.class))).thenReturn(true);

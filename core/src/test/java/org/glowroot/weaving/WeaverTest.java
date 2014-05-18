@@ -19,8 +19,6 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
 import org.glowroot.api.OptionalReturn;
 import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.Pointcut;
@@ -75,6 +73,7 @@ import org.glowroot.weaving.SomeAspect.StaticAdvice;
 import org.glowroot.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
 import org.glowroot.weaving.SomeAspect.TypeNamePatternAdvice;
 import org.glowroot.weaving.SomeAspect.WildMethodAdvice;
+import org.glowroot.weaving.WeavingTimerService.WeavingTimer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -626,7 +625,7 @@ public class WeaverTest {
         // then
         assertThat(methodName).isNotNull();
         assertThat(methodName.toString())
-                .matches("executeWithReturn\\$glowroot\\$metric\\$abc\\$xyz\\$\\d+");
+                .matches("executeWithReturn\\$glowroot\\$trace\\$metric\\$abc\\$xyz\\$\\d+");
     }
 
     // ===================== static pointcuts =====================
@@ -1091,7 +1090,7 @@ public class WeaverTest {
         if (mixin != null) {
             loader.setMixinTypes(ImmutableList.of(MixinType.from(mixin, adviceClass)));
         }
-        loader.setMetricTimerService(NopMetricTimerService.INSTANCE);
+        loader.setMetricTimerService(NopWeavingTimerService.INSTANCE);
         // adviceClass is passed as bridgeable so that the static threadlocals will be accessible
         // for test verification
         loader.addBridgeClasses(bridgeClass, adviceClass);
@@ -1099,16 +1098,16 @@ public class WeaverTest {
         return loader.build().newInstance(implClass, bridgeClass);
     }
 
-    private static class NopMetricTimerService implements MetricTimerService {
-        private static final NopMetricTimerService INSTANCE = new NopMetricTimerService();
+    private static class NopWeavingTimerService implements WeavingTimerService {
+        private static final NopWeavingTimerService INSTANCE = new NopWeavingTimerService();
         @Override
-        public MetricTimer startMetricTimer(MetricName metricName) {
-            return NopMetricTimer.INSTANCE;
+        public WeavingTimer start() {
+            return NopWeavingTimer.INSTANCE;
         }
     }
 
-    private static class NopMetricTimer implements MetricTimer {
-        private static final NopMetricTimer INSTANCE = new NopMetricTimer();
+    private static class NopWeavingTimer implements WeavingTimer {
+        private static final NopWeavingTimer INSTANCE = new NopWeavingTimer();
         @Override
         public void stop() {}
     }

@@ -26,10 +26,10 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
+import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.UnresolvedMethod;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindTraveler;
@@ -57,10 +57,11 @@ public class ExpensiveCallAspect {
     private static final Exception cause = new IllegalStateException(
             "a cause with a different stack trace", nestedCause);
 
-    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute0",
-            metricName = "expensive 0")
+    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute0",
+            traceMetric = "expensive 0")
     public static class ExpensiveCallAdvice0 {
-        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice0.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ExpensiveCallAdvice0.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -68,7 +69,8 @@ public class ExpensiveCallAspect {
         @OnBefore
         public static Span onBefore(@BindReceiver Object expensive) {
             // not delegating to onBeforeInternal(), this span returns message supplier with detail
-            return pluginServices.startSpan(getMessageSupplierWithDetail(expensive), metricName);
+            return pluginServices.startSpan(getMessageSupplierWithDetail(expensive),
+                    traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
@@ -82,10 +84,11 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute1",
-            metricName = "expensive 1")
+    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute1",
+            traceMetric = "expensive 1")
     public static class ExpensiveCallAdvice1 {
-        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice1.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ExpensiveCallAdvice1.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -93,7 +96,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, metricName);
+            return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Span span) {
@@ -107,10 +110,11 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute2",
-            metricName = "expensive 2")
+    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute2",
+            traceMetric = "expensive 2")
     public static class ExpensiveCallAdvice2 {
-        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice2.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ExpensiveCallAdvice2.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -118,7 +122,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, metricName);
+            return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Span span) {
@@ -132,10 +136,11 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute3",
-            metricName = "expensive 3")
+    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute3",
+            traceMetric = "expensive 3")
     public static class ExpensiveCallAdvice3 {
-        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice3.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ExpensiveCallAdvice3.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -143,7 +148,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, metricName);
+            return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Span span) {
@@ -157,10 +162,11 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute4",
-            metricName = "expensive 4")
+    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute4",
+            traceMetric = "expensive 4")
     public static class ExpensiveCallAdvice4 {
-        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice4.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ExpensiveCallAdvice4.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -168,7 +174,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, metricName);
+            return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Span span) {
@@ -182,10 +188,11 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute5",
-            metricName = "expensive 5")
+    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute5",
+            traceMetric = "expensive 5")
     public static class ExpensiveCallAdvice5 {
-        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice5.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ExpensiveCallAdvice5.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -193,7 +200,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, metricName);
+            return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Span span) {
@@ -207,10 +214,11 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute6",
-            metricName = "expensive 6")
+    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute6",
+            traceMetric = "expensive 6")
     public static class ExpensiveCallAdvice6 {
-        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice6.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ExpensiveCallAdvice6.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -218,7 +226,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, metricName);
+            return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Span span) {
@@ -232,10 +240,11 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute7",
-            metricName = "expensive 7")
+    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute7",
+            traceMetric = "expensive 7")
     public static class ExpensiveCallAdvice7 {
-        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice7.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ExpensiveCallAdvice7.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -243,7 +252,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, metricName);
+            return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Span span) {
@@ -257,10 +266,11 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute8",
-            metricName = "expensive 8")
+    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute8",
+            traceMetric = "expensive 8")
     public static class ExpensiveCallAdvice8 {
-        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice8.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ExpensiveCallAdvice8.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -268,7 +278,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, metricName);
+            return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Span span) {
@@ -282,10 +292,11 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute9",
-            metricName = "expensive 9 really long to test wrapping")
+    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute9",
+            traceMetric = "expensive 9 really long to test wrapping")
     public static class ExpensiveCallAdvice9 {
-        private static final MetricName metricName = MetricName.get(ExpensiveCallAdvice9.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ExpensiveCallAdvice9.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -293,7 +304,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, metricName);
+            return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Span span) {
@@ -308,7 +319,7 @@ public class ExpensiveCallAspect {
     }
 
     @Nullable
-    private static Span onBeforeInternal(Object expensive, MetricName metric) {
+    private static Span onBeforeInternal(Object expensive, TraceMetricName metric) {
         if (random.nextDouble() < 0.05) {
             return null;
         }

@@ -82,7 +82,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     }
 
     private IsolatedWeavingClassLoader(List<MixinType> mixinTypes, List<Advice> advisors,
-            MetricTimerService metricTimerService, List<Class<?>> bridgeClasses,
+            WeavingTimerService metricTimerService, List<Class<?>> bridgeClasses,
             List<String> excludePackages, boolean weavingDisabled,
             boolean metricWrapperMethods) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
@@ -230,7 +230,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         private List<MixinType> mixinTypes = Lists.newArrayList();
         private List<Advice> advisors = Lists.newArrayList();
         /*@MonotonicNonNull*/
-        private MetricTimerService metricTimerService;
+        private WeavingTimerService metricTimerService;
         private boolean weavingDisabled;
         private boolean metricWrapperMethods = true;
         private final List<Class<?>> bridgeClasses = Lists.newArrayList();
@@ -247,7 +247,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         }
 
         /*@EnsuresNonNull("metricTimerService")*/
-        public void setMetricTimerService(MetricTimerService metricTimerService) {
+        public void setMetricTimerService(WeavingTimerService metricTimerService) {
             this.metricTimerService = metricTimerService;
         }
 

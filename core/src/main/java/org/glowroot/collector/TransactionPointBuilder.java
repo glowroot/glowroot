@@ -26,8 +26,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 
-import org.glowroot.trace.model.Metric;
 import org.glowroot.trace.model.Profile;
+import org.glowroot.trace.model.TraceMetric;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -46,7 +46,7 @@ class TransactionPointBuilder {
     private long count;
     private long errorCount;
     private long storedTraceCount;
-    private final TransactionMetric syntheticRootTransactionMetric = new TransactionMetric("");
+    private final SimpleTraceMetric syntheticRootTransactionMetric = new SimpleTraceMetric("");
     private final TransactionProfileBuilder transactionProfile = new TransactionProfileBuilder();
 
     TransactionPointBuilder() {}
@@ -64,8 +64,8 @@ class TransactionPointBuilder {
         storedTraceCount++;
     }
 
-    void addToMetrics(Metric rootMetric) {
-        addToMetrics(rootMetric, syntheticRootTransactionMetric);
+    void addToTraceMetrics(TraceMetric rootTraceMetric) {
+        addToTraceMetrics(rootTraceMetric, syntheticRootTransactionMetric);
     }
 
     void addToProfile(Profile profile) {
@@ -74,27 +74,28 @@ class TransactionPointBuilder {
 
     TransactionPoint build(long captureTime) throws IOException {
         return new TransactionPoint(captureTime, totalMicros, count, errorCount, storedTraceCount,
-                getMetricsJson(), getProfileJson());
+                getTraceMetricsJson(), getProfileJson());
     }
 
-    private void addToMetrics(Metric metric, TransactionMetric parentTransactionMetric) {
-        String name = metric.getMetricName().getName();
-        TransactionMetric transactionMetric = parentTransactionMetric.nestedMetrics.get(name);
+    private void addToTraceMetrics(TraceMetric traceMetric,
+            SimpleTraceMetric parentTransactionMetric) {
+        String name = traceMetric.getName();
+        SimpleTraceMetric transactionMetric = parentTransactionMetric.nestedTraceMetrics.get(name);
         if (transactionMetric == null) {
-            transactionMetric = new TransactionMetric(name);
-            parentTransactionMetric.nestedMetrics.put(name, transactionMetric);
+            transactionMetric = new SimpleTraceMetric(name);
+            parentTransactionMetric.nestedTraceMetrics.put(name, transactionMetric);
         }
-        transactionMetric.totalMicros += NANOSECONDS.toMicros(metric.getTotal());
-        transactionMetric.count += metric.getCount();
-        for (Metric nestedMetric : metric.getNestedMetrics()) {
-            addToMetrics(nestedMetric, transactionMetric);
+        transactionMetric.totalMicros += NANOSECONDS.toMicros(traceMetric.getTotal());
+        transactionMetric.count += traceMetric.getCount();
+        for (TraceMetric nestedMetric : traceMetric.getNestedTraceMetrics()) {
+            addToTraceMetrics(nestedMetric, transactionMetric);
         }
     }
 
-    private String getMetricsJson() throws IOException {
+    private String getTraceMetricsJson() throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        writeTransactionMetric(jg, syntheticRootTransactionMetric);
+        writeTraceMetric(jg, syntheticRootTransactionMetric);
         jg.close();
         return sb.toString();
     }
@@ -107,29 +108,29 @@ class TransactionPointBuilder {
         }
     }
 
-    private void writeTransactionMetric(JsonGenerator jg, TransactionMetric metric)
+    private void writeTraceMetric(JsonGenerator jg, SimpleTraceMetric metric)
             throws IOException {
         jg.writeStartObject();
         jg.writeStringField("name", metric.name);
         jg.writeNumberField("totalMicros", metric.totalMicros);
         jg.writeNumberField("count", metric.count);
-        if (!metric.nestedMetrics.isEmpty()) {
-            jg.writeArrayFieldStart("nestedMetrics");
-            for (TransactionMetric nestedMetric : metric.nestedMetrics.values()) {
-                writeTransactionMetric(jg, nestedMetric);
+        if (!metric.nestedTraceMetrics.isEmpty()) {
+            jg.writeArrayFieldStart("nestedTraceMetrics");
+            for (SimpleTraceMetric nestedMetric : metric.nestedTraceMetrics.values()) {
+                writeTraceMetric(jg, nestedMetric);
             }
             jg.writeEndArray();
         }
         jg.writeEndObject();
     }
 
-    private static class TransactionMetric {
+    private static class SimpleTraceMetric {
         private final String name;
         // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
         private long totalMicros;
         private long count;
-        private final Map<String, TransactionMetric> nestedMetrics = Maps.newHashMap();
-        private TransactionMetric(String name) {
+        private final Map<String, SimpleTraceMetric> nestedTraceMetrics = Maps.newHashMap();
+        private SimpleTraceMetric(String name) {
             this.name = name;
         }
     }

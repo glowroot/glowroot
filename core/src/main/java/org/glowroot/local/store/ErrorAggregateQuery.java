@@ -16,10 +16,19 @@
 package org.glowroot.local.store;
 
 import java.util.List;
-import java.util.Locale;
 
+import javax.annotation.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
+
+import org.glowroot.markers.UsedByJsonBinding;
+
+import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
 /**
  * @author Trask Stalnaker
@@ -27,50 +36,102 @@ import com.google.common.collect.Lists;
  */
 public class ErrorAggregateQuery {
 
-    private final long captureTimeFrom;
-    private final long captureTimeTo;
+    private final long from;
+    private final long to;
     private final List<String> includes;
     private final List<String> excludes;
+    private final ErrorAggregateSortAttribute sortAttribute;
+    private final SortDirection sortDirection;
     private final int limit;
 
-    public ErrorAggregateQuery(long captureTimeFrom, long captureTimeTo, List<String> includes,
-            List<String> excludes, int limit) {
-        this.captureTimeFrom = captureTimeFrom;
-        this.captureTimeTo = captureTimeTo;
+    @VisibleForTesting
+    ErrorAggregateQuery(long from, long to, List<String> includes, List<String> excludes,
+            ErrorAggregateSortAttribute sortAttribute, SortDirection sortDirection, int limit) {
+        this.from = from;
+        this.to = to;
         this.includes = includes;
         this.excludes = excludes;
+        this.sortAttribute = sortAttribute;
+        this.sortDirection = sortDirection;
         this.limit = limit;
     }
 
-    ParameterizedSql getParameterizedSql() {
-        String sql = "select transaction_name, error_message, count(*) from snapshot where"
-                + " error = ? and capture_time >= ? and capture_time <= ?";
-        List<Object> args = Lists.newArrayList();
-        args.add(true);
-        args.add(captureTimeFrom);
-        args.add(captureTimeTo);
-        for (String include : includes) {
-            sql += " and upper(error_message) like ?";
-            args.add('%' + include.toUpperCase(Locale.ENGLISH) + '%');
-        }
-        for (String exclude : excludes) {
-            sql += " and upper(error_message) not like ?";
-            args.add('%' + exclude.toUpperCase(Locale.ENGLISH) + '%');
-        }
-        sql += " group by transaction_name, error_message order by count(*) desc limit ?";
-        args.add(limit);
-        return new ParameterizedSql(sql, args);
+    long getFrom() {
+        return from;
+    }
+
+    long getTo() {
+        return to;
+    }
+
+    List<String> getIncludes() {
+        return includes;
+    }
+
+    List<String> getExcludes() {
+        return excludes;
+    }
+
+    ErrorAggregateSortAttribute getSortAttribute() {
+        return sortAttribute;
+    }
+
+    SortDirection getSortDirection() {
+        return sortDirection;
+    }
+
+    int getLimit() {
+        return limit;
     }
 
     /*@Pure*/
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("captureTimeFrom", captureTimeFrom)
-                .add("captureTimeTo", captureTimeTo)
+                .add("from", from)
+                .add("to", to)
                 .add("includes", includes)
                 .add("excludes", excludes)
+                .add("sortAttribute", sortAttribute)
+                .add("sortDirection", sortDirection)
                 .add("limit", limit)
                 .toString();
+    }
+
+    @JsonCreator
+    static ErrorAggregateQuery readValue(@JsonProperty("from") @Nullable Long from,
+            @JsonProperty("to") @Nullable Long to,
+            @JsonProperty("includes") @Nullable List<String> includes,
+            @JsonProperty("excludes") @Nullable List<String> excludes,
+            @JsonProperty("sortAttribute") @Nullable ErrorAggregateSortAttribute sortAttribute,
+            @JsonProperty("sortDirection") @Nullable SortDirection sortDirection,
+            @JsonProperty("limit") @Nullable Integer limit)
+            throws JsonMappingException {
+        checkRequiredProperty(from, "from");
+        checkRequiredProperty(to, "to");
+        checkRequiredProperty(sortAttribute, "sortAttribute");
+        checkRequiredProperty(sortDirection, "sortDirection");
+        checkRequiredProperty(limit, "limit");
+        return new ErrorAggregateQuery(from, to, nullToEmpty(includes), nullToEmpty(excludes),
+                sortAttribute, sortDirection, limit);
+    }
+
+    @UsedByJsonBinding
+    public static enum ErrorAggregateSortAttribute implements SortAttribute {
+
+        TRANSACTION_NAME("upper(transaction_name)"),
+        ERROR("upper(error_message)"),
+        COUNT("count(*)");
+
+        private final String column;
+
+        private ErrorAggregateSortAttribute(String column) {
+            this.column = column;
+        }
+
+        @Override
+        public String getColumn() {
+            return column;
+        }
     }
 }

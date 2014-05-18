@@ -23,10 +23,10 @@ import javax.annotation.Nullable;
 
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
-import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.TraceMetricTimer;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindTraveler;
@@ -47,11 +47,12 @@ public class ResultSetAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    @Pointcut(typeName = "java.sql.ResultSet",
-            methodName = "next|previous|relative|absolute|first|last", methodArgs = "..",
-            ignoreSameNested = true, metricName = "jdbc resultset navigate")
+    @Pointcut(type = "java.sql.ResultSet",
+            methodName = "next|previous|relative|absolute|first|last", methodArgTypes = "..",
+            ignoreSameNested = true, traceMetric = "jdbc resultset navigate")
     public static class NavigateAdvice {
-        private static final MetricName metricName = MetricName.get(NavigateAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(NavigateAdvice.class);
         private static volatile boolean pluginEnabled;
         // plugin configuration property captureResultSetNext is cached to limit map lookups
         private static volatile boolean metricEnabled;
@@ -75,9 +76,9 @@ public class ResultSetAspect {
         }
         @OnBefore
         @Nullable
-        public static MetricTimer onBefore() {
+        public static TraceMetricTimer onBefore() {
             if (metricEnabled) {
-                return pluginServices.startMetricTimer(metricName);
+                return pluginServices.startTraceMetric(traceMetricName);
             } else {
                 return null;
             }
@@ -108,17 +109,18 @@ public class ResultSetAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable MetricTimer metricTimer) {
+        public static void onAfter(@BindTraveler @Nullable TraceMetricTimer metricTimer) {
             if (metricTimer != null) {
                 metricTimer.stop();
             }
         }
     }
 
-    @Pointcut(typeName = "java.sql.ResultSet", methodName = "get*", methodArgs = {"int", ".."},
-            metricName = "jdbc resultset value")
+    @Pointcut(type = "java.sql.ResultSet", methodName = "get*", methodArgTypes = {"int", ".."},
+            traceMetric = "jdbc resultset value")
     public static class ValueAdvice {
-        private static final MetricName metricName = MetricName.get(ValueAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ValueAdvice.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
         private static volatile boolean metricEnabled;
         static {
@@ -138,19 +140,20 @@ public class ResultSetAspect {
             return metricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
-        public static MetricTimer onBefore() {
-            return pluginServices.startMetricTimer(metricName);
+        public static TraceMetricTimer onBefore() {
+            return pluginServices.startTraceMetric(traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
+        public static void onAfter(@BindTraveler TraceMetricTimer metricTimer) {
             metricTimer.stop();
         }
     }
 
-    @Pointcut(typeName = "java.sql.ResultSet", methodName = "get*",
-            methodArgs = {"java.lang.String", ".."}, metricName = "jdbc resultset value")
+    @Pointcut(type = "java.sql.ResultSet", methodName = "get*",
+            methodArgTypes = {"java.lang.String", ".."}, traceMetric = "jdbc resultset value")
     public static class ValueAdvice2 {
-        private static final MetricName metricName = MetricName.get(ValueAdvice2.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ValueAdvice2.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
         private static volatile boolean metricEnabled;
         static {
@@ -170,11 +173,11 @@ public class ResultSetAspect {
             return metricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
-        public static MetricTimer onBefore() {
-            return pluginServices.startMetricTimer(metricName);
+        public static TraceMetricTimer onBefore() {
+            return pluginServices.startTraceMetric(traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
+        public static void onAfter(@BindTraveler TraceMetricTimer metricTimer) {
             metricTimer.stop();
         }
     }

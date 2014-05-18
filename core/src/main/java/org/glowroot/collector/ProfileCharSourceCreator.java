@@ -86,7 +86,7 @@ public class ProfileCharSourceCreator {
 
         private final List<Object> toVisit;
         private final JsonGenerator jg;
-        private final List<String> metricNameStack = Lists.newArrayList();
+        private final List<String> traceMetricStack = Lists.newArrayList();
 
         private ProfileWriter(ProfileNode rootNode, Writer writer)
                 throws IOException {
@@ -125,20 +125,20 @@ public class ProfileCharSourceCreator {
             } else if (curr == JsonGeneratorOp.END_OBJECT) {
                 jg.writeEndObject();
             } else if (curr == JsonGeneratorOp.POP_METRIC_NAME) {
-                metricNameStack.remove(metricNameStack.size() - 1);
+                traceMetricStack.remove(traceMetricStack.size() - 1);
             }
         }
 
         private void writeStackTraceElement(StackTraceElement stackTraceElement,
                 ProfileNode currNode) throws IOException {
             jg.writeStringField("stackTraceElement", stackTraceElement.toString());
-            List<String> currMetricNames = currNode.getMetricNames();
-            for (String currMetricName : currMetricNames) {
-                if (metricNameStack.isEmpty() || !currMetricName.equals(
-                        metricNameStack.get(metricNameStack.size() - 1))) {
+            List<String> currTraceMetrics = currNode.getTraceMetrics();
+            for (String currTraceMetric : currTraceMetrics) {
+                if (traceMetricStack.isEmpty() || !currTraceMetric.equals(
+                        traceMetricStack.get(traceMetricStack.size() - 1))) {
                     // filter out successive duplicates which are common from weaving groups
                     // of overloaded methods
-                    metricNameStack.add(currMetricName);
+                    traceMetricStack.add(currTraceMetric);
                     toVisit.add(JsonGeneratorOp.POP_METRIC_NAME);
                 }
             }
@@ -151,9 +151,9 @@ public class ProfileCharSourceCreator {
 
         private void writeLeaf(State leafThreadState) throws IOException {
             jg.writeStringField("leafThreadState", leafThreadState.name());
-            jg.writeArrayFieldStart("metricNames");
-            for (String metricName : metricNameStack) {
-                jg.writeString(metricName);
+            jg.writeArrayFieldStart("traceMetrics");
+            for (String traceMetric : traceMetricStack) {
+                jg.writeString(traceMetric);
             }
             jg.writeEndArray();
         }

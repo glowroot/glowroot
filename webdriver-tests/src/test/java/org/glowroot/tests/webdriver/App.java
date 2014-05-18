@@ -37,7 +37,7 @@ class App {
         this.baseUrl = baseUrl;
     }
 
-    void openHomePage() throws IOException {
+    void open() throws IOException {
         driver.get(baseUrl);
         addBindPolyfillIfNecessary();
     }

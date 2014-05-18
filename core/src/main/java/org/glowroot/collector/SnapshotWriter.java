@@ -50,10 +50,10 @@ public class SnapshotWriter {
             jg.writeFieldName("attributes");
             jg.writeRawValue(attributes);
         }
-        String metrics = snapshot.getMetrics();
-        if (metrics != null) {
-            jg.writeFieldName("metrics");
-            jg.writeRawValue(metrics);
+        String traceMetrics = snapshot.getTraceMetrics();
+        if (traceMetrics != null) {
+            jg.writeFieldName("traceMetrics");
+            jg.writeRawValue(traceMetrics);
         }
         String jvmInfo = snapshot.getJvmInfo();
         if (jvmInfo != null) {

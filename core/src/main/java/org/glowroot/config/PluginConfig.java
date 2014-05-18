@@ -63,7 +63,8 @@ public class PluginConfig {
         public int compare(@Nullable PluginConfig left, @Nullable PluginConfig right) {
             checkNotNull(left);
             checkNotNull(right);
-            return left.pluginDescriptor.getId().compareTo(right.pluginDescriptor.getId());
+            return left.pluginDescriptor.getId()
+                    .compareToIgnoreCase(right.pluginDescriptor.getId());
         }
     };
 

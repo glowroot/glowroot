@@ -19,9 +19,9 @@ import javax.annotation.Nullable;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
+import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -43,10 +43,11 @@ public class ServletInitAspect {
      * ================== Startup ==================
      */
 
-    @Pointcut(typeName = "javax.servlet.ServletContextListener", methodName = "contextInitialized",
-            methodArgs = {"javax.servlet.ServletContextEvent"}, metricName = "servlet startup")
+    @Pointcut(type = "javax.servlet.ServletContextListener", methodName = "contextInitialized",
+            methodArgTypes = {"javax.servlet.ServletContextEvent"}, traceMetric = "servlet startup")
     public static class ContextInitializedAdvice {
-        private static final MetricName metricName = MetricName.get(ContextInitializedAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ContextInitializedAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
@@ -58,7 +59,7 @@ public class ServletInitAspect {
                     "servlet context initialized / " + listener.getClass().getName();
             return pluginServices.startBackgroundTrace(transactionName,
                     MessageSupplier.from(listener.getClass().getName() + ".contextInitialized()"),
-                    metricName);
+                    traceMetricName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
@@ -70,10 +71,11 @@ public class ServletInitAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.Servlet", methodName = "init",
-            methodArgs = {"javax.servlet.ServletConfig"}, metricName = "servlet startup")
+    @Pointcut(type = "javax.servlet.Servlet", methodName = "init",
+            methodArgTypes = {"javax.servlet.ServletConfig"}, traceMetric = "servlet startup")
     public static class ServletInitAdvice {
-        private static final MetricName metricName = MetricName.get(ServletInitAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ServletInitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
@@ -81,8 +83,10 @@ public class ServletInitAspect {
         @OnBefore
         public static Span onBefore(@BindReceiver Object servlet) {
             String transactionName = "servlet init / " + servlet.getClass().getName();
-            return pluginServices.startBackgroundTrace(transactionName,
-                    MessageSupplier.from(servlet.getClass().getName() + ".init()"), metricName);
+            return pluginServices
+                    .startBackgroundTrace(transactionName,
+                            MessageSupplier.from(servlet.getClass().getName() + ".init()"),
+                            traceMetricName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
@@ -94,10 +98,11 @@ public class ServletInitAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.Filter", methodName = "init",
-            methodArgs = {"javax.servlet.FilterConfig"}, metricName = "servlet startup")
+    @Pointcut(type = "javax.servlet.Filter", methodName = "init",
+            methodArgTypes = {"javax.servlet.FilterConfig"}, traceMetric = "servlet startup")
     public static class FilterInitAdvice {
-        private static final MetricName metricName = MetricName.get(FilterInitAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(FilterInitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
@@ -106,7 +111,7 @@ public class ServletInitAspect {
         public static Span onBefore(@BindReceiver Object filter) {
             String transactionName = "filter init / " + filter.getClass().getName();
             return pluginServices.startBackgroundTrace(transactionName,
-                    MessageSupplier.from(filter.getClass().getName() + ".init()"), metricName);
+                    MessageSupplier.from(filter.getClass().getName() + ".init()"), traceMetricName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {

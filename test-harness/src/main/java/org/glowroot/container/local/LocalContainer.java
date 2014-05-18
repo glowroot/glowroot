@@ -40,7 +40,7 @@ import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.ConfigService;
 import org.glowroot.container.javaagent.JavaagentContainer;
 import org.glowroot.container.trace.TraceService;
-import org.glowroot.trace.PointcutConfigAdviceCache;
+import org.glowroot.trace.AdhocAdviceCache;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.IsolatedWeavingClassLoader;
 
@@ -99,18 +99,17 @@ public class LocalContainer implements Container {
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         PluginDescriptorCache pluginDescriptorCache =
                 glowrootModule.getConfigModule().getPluginDescriptorCache();
-        PointcutConfigAdviceCache pointcutConfigAdviceCache =
-                glowrootModule.getTraceModule().getPointcutConfigAdviceCache();
+        AdhocAdviceCache adhocAdviceCache = glowrootModule.getTraceModule().getAdhocAdviceCache();
         loader.setMixinTypes(pluginDescriptorCache.getMixinTypesNeverShaded());
         List<Advice> advisors = Lists.newArrayList();
         advisors.addAll(pluginDescriptorCache.getAdvisorsNeverShaded());
-        advisors.addAll(pointcutConfigAdviceCache.getAdvisors());
+        advisors.addAll(adhocAdviceCache.getAdvisors());
         loader.setAdvisors(advisors);
-        loader.setMetricTimerService(glowrootModule.getTraceModule().getMetricTimerService());
+        loader.setMetricTimerService(glowrootModule.getTraceModule().getWeavingTimerService());
         loader.setWeavingDisabled(glowrootModule.getConfigModule().getConfigService()
                 .getAdvancedConfig().isWeavingDisabled());
         loader.setMetricWrapperMethods(!glowrootModule.getConfigModule().getConfigService()
-                .getAdvancedConfig().isMetricWrapperMethodsDisabled());
+                .getAdvancedConfig().isTraceMetricWrapperMethodsDisabled());
         loader.addBridgeClasses(AppUnderTest.class, AppUnderTestServices.class);
         // TODO add hook to optionally exclude guava package which improves integration-test
         // performance

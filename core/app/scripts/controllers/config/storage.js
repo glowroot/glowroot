@@ -55,7 +55,7 @@ glowroot.controller('ConfigStorageCtrl', [
     };
 
     $scope.deleteAll = function (deferred) {
-      $http.post('backend/admin/data/delete-all')
+      $http.post('backend/admin/delete-all-data')
           .success(function () {
             deferred.resolve('Deleted');
           })

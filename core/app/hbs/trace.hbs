@@ -54,7 +54,7 @@
 <div>
   Breakdown (in milliseconds):
 </div>
-<table class="metrics-table indent2" style="border-spacing: 0;">
+<table class="trace-metrics-table indent2" style="border-spacing: 0;">
   <thead>
   <tr>
     <td></td>
@@ -65,10 +65,10 @@
   </tr>
   </thead>
   <tbody>
-  {{#eachMetricOrdered .}}
+  {{#eachTraceMetricOrdered .}}
     <tr class="align-top">
       <td style="text-align: left;">
-        <div style="margin-left: {{metricIndent .}}em;">
+        <div style="margin-left: {{traceMetricIndent .}}em;">
           <div class="second-line-indent">{{name}}</div>
         </div>
       </td>
@@ -77,7 +77,7 @@
       <td>{{nanosToMillis max}}{{#if maxActive}}..{{/if}}</td>
       <td>{{count}}</td>
     </tr>
-  {{/eachMetricOrdered}}
+  {{/eachTraceMetricOrdered}}
   </tbody>
 </table>
 {{#ifThreadInfo jvmInfo}}

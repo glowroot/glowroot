@@ -205,10 +205,36 @@ class LocalConfigService implements ConfigService {
     }
 
     @Override
+    public List<PointcutConfig> getAdhocPointcutConfigs() {
+        List<PointcutConfig> configs = Lists.newArrayList();
+        for (org.glowroot.config.PointcutConfig coreConfig : configService
+                .getAdhocPointcutConfigs()) {
+            configs.add(convertFromCore(coreConfig));
+        }
+        return configs;
+    }
+
+    @Override
+    public String addAdhocPointcutConfig(PointcutConfig config) throws Exception {
+        return configService.insertAdhocPointcutConfig(convertToCore(config));
+    }
+
+    @Override
+    public void updateAdhocPointcutConfig(String version, PointcutConfig config) throws Exception {
+        configService.updateAdhocPointcutConfig(version, convertToCore(config));
+    }
+
+    @Override
+    public void removeAdhocPointcutConfig(String version) throws Exception {
+        configService.deleteAdhocPointcutConfig(version);
+    }
+
+    @Override
     public AdvancedConfig getAdvancedConfig() {
         org.glowroot.config.AdvancedConfig coreConfig = configService.getAdvancedConfig();
         AdvancedConfig config = new AdvancedConfig(coreConfig.getVersion());
-        config.setMetricWrapperMethodsDisabled(coreConfig.isMetricWrapperMethodsDisabled());
+        config.setTraceMetricWrapperMethodsDisabled(
+                coreConfig.isTraceMetricWrapperMethodsDisabled());
         config.setWarnOnSpanOutsideTrace(coreConfig.isWarnOnSpanOutsideTrace());
         config.setWeavingDisabled(coreConfig.isWeavingDisabled());
         return config;
@@ -217,7 +243,8 @@ class LocalConfigService implements ConfigService {
     @Override
     public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
         org.glowroot.config.AdvancedConfig updatedConfig =
-                new org.glowroot.config.AdvancedConfig(config.isMetricWrapperMethodsDisabled(),
+                new org.glowroot.config.AdvancedConfig(
+                        config.isTraceMetricWrapperMethodsDisabled(),
                         config.isWarnOnSpanOutsideTrace(), config.isWeavingDisabled());
         configService.updateAdvancedConfig(updatedConfig, config.getVersion());
     }
@@ -260,33 +287,7 @@ class LocalConfigService implements ConfigService {
     }
 
     @Override
-    public List<PointcutConfig> getPointcutConfigs() {
-        List<PointcutConfig> configs = Lists.newArrayList();
-        for (org.glowroot.config.PointcutConfig coreConfig : configService
-                .getPointcutConfigs()) {
-            configs.add(convertToCore(coreConfig));
-        }
-        return configs;
-    }
-
-    @Override
-    public String addPointcutConfig(PointcutConfig config) throws Exception {
-        return configService.insertPointcutConfig(convertToCore(config));
-    }
-
-    @Override
-    public void updatePointcutConfig(String version, PointcutConfig config)
-            throws Exception {
-        configService.updatePointcutConfig(version, convertToCore(config));
-    }
-
-    @Override
-    public void removePointcutConfig(String version) throws Exception {
-        configService.deletePointcutConfig(version);
-    }
-
-    @Override
-    public int reweavePointcutConfigs() throws Exception {
+    public int reweaveAdhocPointcuts() throws Exception {
         throw new UnsupportedOperationException("Retransforming classes only works inside"
                 + " javaagent container");
     }
@@ -308,20 +309,19 @@ class LocalConfigService implements ConfigService {
         configService.updateGeneralConfig(overlay.build(), config.getVersion());
     }
 
-    private static PointcutConfig convertToCore(
-            org.glowroot.config.PointcutConfig coreConfig) {
+    private static PointcutConfig convertFromCore(org.glowroot.config.PointcutConfig coreConfig) {
         List<MethodModifier> methodModifiers = Lists.newArrayList();
         for (org.glowroot.api.weaving.MethodModifier methodModifier : coreConfig
                 .getMethodModifiers()) {
             methodModifiers.add(MethodModifier.valueOf(methodModifier.name()));
         }
         PointcutConfig config = new PointcutConfig(coreConfig.getVersion());
-        config.setTypeName(coreConfig.getTypeName());
+        config.setType(coreConfig.getType());
         config.setMethodName(coreConfig.getMethodName());
-        config.setMethodArgTypeNames(coreConfig.getMethodArgTypeNames());
-        config.setMethodReturnTypeName(coreConfig.getMethodReturnTypeName());
+        config.setMethodArgTypes(coreConfig.getMethodArgTypes());
+        config.setMethodReturnType(coreConfig.getMethodReturnType());
         config.setMethodModifiers(methodModifiers);
-        config.setMetricName(coreConfig.getMetricName());
+        config.setTraceMetric(coreConfig.getTraceMetric());
         config.setSpanText(coreConfig.getSpanText());
         config.setSpanStackTraceThresholdMillis(coreConfig.getSpanStackTraceThresholdMillis());
         config.setSpanIgnoreSameNested(coreConfig.isSpanIgnoreSameNested());
@@ -332,22 +332,21 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
-    private static org.glowroot.config.PointcutConfig convertToCore(
-            PointcutConfig config) {
+    private static org.glowroot.config.PointcutConfig convertToCore(PointcutConfig config) {
         List<org.glowroot.api.weaving.MethodModifier> methodModifiers = Lists.newArrayList();
         for (MethodModifier methodModifier : config.getMethodModifiers()) {
             methodModifiers.add(
                     org.glowroot.api.weaving.MethodModifier.valueOf(methodModifier.name()));
         }
-        String typeName = config.getTypeName();
+        String typeName = config.getType();
         String methodName = config.getMethodName();
-        String methodReturnTypeName = config.getMethodReturnTypeName();
+        String methodReturnTypeName = config.getMethodReturnType();
         checkNotNull(typeName, "PointcutConfig typeName is null");
         checkNotNull(methodName, "PointcutConfig methodName is null");
         checkNotNull(methodReturnTypeName, "PointcutConfig methodReturnTypeName is null");
         return new org.glowroot.config.PointcutConfig(typeName, methodName,
-                config.getMethodArgTypeNames(), methodReturnTypeName, methodModifiers,
-                nullToEmpty(config.getMetricName()), nullToEmpty(config.getSpanText()),
+                config.getMethodArgTypes(), methodReturnTypeName, methodModifiers,
+                nullToEmpty(config.getTraceMetric()), nullToEmpty(config.getSpanText()),
                 config.getSpanStackTraceThresholdMillis(), config.isSpanIgnoreSameNested(),
                 nullToEmpty(config.getTransactionName()), config.isBackground(),
                 nullToEmpty(config.getEnabledProperty()),

@@ -16,6 +16,7 @@
 package org.glowroot.config;
 
 import java.util.List;
+import java.util.Locale;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -25,9 +26,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
 
 import org.glowroot.markers.UsedByJsonBinding;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
@@ -38,6 +41,22 @@ import static org.glowroot.common.ObjectMappers.nullToEmpty;
 @Immutable
 @UsedByJsonBinding
 public class PluginDescriptor {
+
+    static final Ordering<PluginDescriptor> specialOrderingByName =
+            new Ordering<PluginDescriptor>() {
+                @Override
+                public int compare(@Nullable PluginDescriptor left,
+                        @Nullable PluginDescriptor right) {
+                    checkNotNull(left);
+                    checkNotNull(right);
+                    // conventionally plugin names ends with " Plugin", so strip this off when
+                    // comparing names so that, e.g., "Abc Plugin" will come before
+                    // "Abc Extra Plugin"
+                    String leftName = stripEndingIgnoreCase(left.name, " Plugin");
+                    String rightName = stripEndingIgnoreCase(right.name, " Plugin");
+                    return leftName.compareToIgnoreCase(rightName);
+                }
+            };
 
     private final String name;
     private final String id;
@@ -120,5 +139,13 @@ public class PluginDescriptor {
         checkRequiredProperty(version, "version");
         return new PluginDescriptor(name, id, version, nullToEmpty(traceAttributes),
                 nullToEmpty(properties), nullToEmpty(aspects), nullToEmpty(pointcuts));
+    }
+
+    private static String stripEndingIgnoreCase(String original, String ending) {
+        if (original.toUpperCase(Locale.ENGLISH).endsWith(ending.toUpperCase(Locale.ENGLISH))) {
+            return original.substring(0, original.length() - ending.length());
+        } else {
+            return original;
+        }
     }
 }

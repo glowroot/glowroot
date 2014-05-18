@@ -21,9 +21,9 @@ import com.google.common.base.Strings;
 
 import org.glowroot.api.CompletedSpan;
 import org.glowroot.api.ErrorMessage;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
+import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -62,11 +62,12 @@ public class ServletAspect {
     private static final ThreadLocal</*@Nullable*/ErrorMessage> sendError =
             new ThreadLocal</*@Nullable*/ErrorMessage>();
 
-    @Pointcut(typeName = "javax.servlet.Servlet", methodName = "service",
-            methodArgs = {"javax.servlet.ServletRequest", "javax.servlet.ServletResponse"},
-            metricName = "http request")
+    @Pointcut(type = "javax.servlet.Servlet", methodName = "service",
+            methodArgTypes = {"javax.servlet.ServletRequest", "javax.servlet.ServletResponse"},
+            traceMetric = "http request")
     public static class ServiceAdvice {
-        private static final MetricName metricName = MetricName.get(ServiceAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(ServiceAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // only enabled if it is not contained in another servlet or filter span
@@ -95,7 +96,7 @@ public class ServletAspect {
                         session.getId(), session.getSessionAttributes());
             }
             topLevel.set(messageSupplier);
-            Span span = pluginServices.startTrace(requestUri, messageSupplier, metricName);
+            Span span = pluginServices.startTrace(requestUri, messageSupplier, traceMetricName);
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction
             String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");
@@ -133,9 +134,9 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpServlet", methodName = "do*", methodArgs = {
+    @Pointcut(type = "javax.servlet.http.HttpServlet", methodName = "do*", methodArgTypes = {
             "javax.servlet.http.HttpServletRequest", "javax.servlet.http.HttpServletResponse"},
-            metricName = "http request")
+            traceMetric = "http request")
     public static class DoMethodsAdvice extends ServiceAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -155,9 +156,9 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.Filter", methodName = "doFilter", methodArgs = {
+    @Pointcut(type = "javax.servlet.Filter", methodName = "doFilter", methodArgTypes = {
             "javax.servlet.ServletRequest", "javax.servlet.ServletResponse",
-            "javax.servlet.FilterChain"}, metricName = "http request")
+            "javax.servlet.FilterChain"}, traceMetric = "http request")
     public static class DoFilterAdvice extends ServiceAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -177,8 +178,8 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "sendError",
-            methodArgs = {"int", ".."}, ignoreSameNested = true)
+    @Pointcut(type = "javax.servlet.http.HttpServletResponse", methodName = "sendError",
+            methodArgTypes = {"int", ".."}, ignoreSameNested = true)
     public static class SendErrorAdvice {
         @OnAfter
         public static void onAfter(@BindMethodArg Integer statusCode) {
@@ -193,8 +194,8 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "setStatus",
-            methodArgs = {"int", ".."}, ignoreSameNested = true)
+    @Pointcut(type = "javax.servlet.http.HttpServletResponse", methodName = "setStatus",
+            methodArgTypes = {"int", ".."}, ignoreSameNested = true)
     public static class SetStatusAdvice {
         @OnAfter
         public static void onAfter(@BindMethodArg Integer statusCode) {

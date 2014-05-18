@@ -52,10 +52,10 @@ public class PointcutConfigTest {
     public static void setUp() throws Exception {
         dataDir = TempDirs.createTempDir("glowroot-test-datadir");
         container = Containers.createWithFileDb(dataDir);
-        addPointcutConfigForExecute1();
-        addPointcutConfigForExecute1MetricOnly();
-        addPointcutConfigForExecuteWithReturn();
-        addPointcutConfigForExecuteWithArgs();
+        addAdhocPointcutForExecute1();
+        addAdhocPointcutForExecute1MetricOnly();
+        addAdhocPointcutForExecuteWithReturn();
+        addAdhocPointcutForExecuteWithArgs();
         // re-start now with pointcut configs
         container.close();
         container = Containers.createWithFileDb(dataDir);
@@ -81,10 +81,11 @@ public class PointcutConfigTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(spans).hasSize(2);
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getNestedMetricNames()).containsOnly("execute one");
-        assertThat(trace.getRootMetric().getNestedMetrics().get(0).getNestedMetricNames())
-                .containsOnly("execute one metric only");
+        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
+                .containsOnly("execute one");
+        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics().get(0)
+                .getNestedTraceMetricNames()).containsOnly("execute one metric only");
         assertThat(spans.get(1).getMessage().getText()).isEqualTo("execute1() => void");
         assertThat(spans.get(1).getStackTrace()).isNotNull();
     }
@@ -98,8 +99,8 @@ public class PointcutConfigTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(spans).hasSize(2);
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getNestedMetricNames())
+        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
                 .containsOnly("execute with return");
         assertThat(spans.get(1).getMessage().getText()).isEqualTo("executeWithReturn() => xyz");
     }
@@ -115,58 +116,58 @@ public class PointcutConfigTest {
         assertThat(trace.getHeadline()).isEqualTo("executeWithArgs(): abc, 123");
         assertThat(trace.getTransactionName()).isEqualTo("Misc / executeWithArgs");
         assertThat(spans).hasSize(1);
-        assertThat(trace.getRootMetric().getName()).isEqualTo("execute with args");
-        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
+        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("execute with args");
+        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics()).isEmpty();
         assertThat(spans.get(0).getMessage().getText()).isEqualTo("executeWithArgs(): abc, 123");
     }
 
-    protected static void addPointcutConfigForExecute1() throws Exception {
+    protected static void addAdhocPointcutForExecute1() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setTypeName("org.glowroot.tests.PointcutConfigTest$Misc");
+        config.setType("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("execute1");
-        config.setMethodArgTypeNames(ImmutableList.<String>of());
-        config.setMethodReturnTypeName("");
+        config.setMethodArgTypes(ImmutableList.<String>of());
+        config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setMetricName("execute one");
+        config.setTraceMetric("execute one");
         config.setSpanText("execute1() => {{ret}}");
         config.setSpanStackTraceThresholdMillis(0L);
-        container.getConfigService().addPointcutConfig(config);
+        container.getConfigService().addAdhocPointcutConfig(config);
     }
 
-    protected static void addPointcutConfigForExecute1MetricOnly() throws Exception {
+    protected static void addAdhocPointcutForExecute1MetricOnly() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setTypeName("org.glowroot.tests.PointcutConfigTest$Misc");
+        config.setType("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("execute1");
-        config.setMethodArgTypeNames(ImmutableList.<String>of());
-        config.setMethodReturnTypeName("");
+        config.setMethodArgTypes(ImmutableList.<String>of());
+        config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setMetricName("execute one metric only");
-        container.getConfigService().addPointcutConfig(config);
+        config.setTraceMetric("execute one metric only");
+        container.getConfigService().addAdhocPointcutConfig(config);
     }
 
-    protected static void addPointcutConfigForExecuteWithReturn() throws Exception {
+    protected static void addAdhocPointcutForExecuteWithReturn() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setTypeName("org.glowroot.tests.PointcutConfigTest$Misc");
+        config.setType("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("executeWithReturn");
-        config.setMethodArgTypeNames(ImmutableList.<String>of());
-        config.setMethodReturnTypeName("");
+        config.setMethodArgTypes(ImmutableList.<String>of());
+        config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setMetricName("execute with return");
+        config.setTraceMetric("execute with return");
         config.setSpanText("executeWithReturn() => {{ret}}");
-        container.getConfigService().addPointcutConfig(config);
+        container.getConfigService().addAdhocPointcutConfig(config);
     }
 
-    protected static void addPointcutConfigForExecuteWithArgs() throws Exception {
+    protected static void addAdhocPointcutForExecuteWithArgs() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setTypeName("org.glowroot.tests.PointcutConfigTest$Misc");
+        config.setType("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("executeWithArgs");
-        config.setMethodArgTypeNames(ImmutableList.of("java.lang.String", "int"));
-        config.setMethodReturnTypeName("void");
+        config.setMethodArgTypes(ImmutableList.of("java.lang.String", "int"));
+        config.setMethodReturnType("void");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setMetricName("execute with args");
+        config.setTraceMetric("execute with args");
         config.setSpanText("executeWithArgs(): {{0}}, {{1}}");
         config.setTransactionName("Misc / {{methodName}}");
-        container.getConfigService().addPointcutConfig(config);
+        container.getConfigService().addAdhocPointcutConfig(config);
     }
 
     public interface Misc {

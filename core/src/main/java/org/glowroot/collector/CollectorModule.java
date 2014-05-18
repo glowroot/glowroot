@@ -43,21 +43,23 @@ public class CollectorModule {
 
     private final TraceCollectorImpl traceCollector;
     @Nullable
-    private final TransactionAggregator aggregator;
+    private final TransactionCollector transactionCollector;
 
     public CollectorModule(Clock clock, Ticker ticker, ConfigModule configModule,
             SnapshotRepository snapshotRepository,
             TransactionPointRepository transactionPointRepository,
-            ScheduledExecutorService scheduledExecutor, boolean aggregatorDisabled) {
+            ScheduledExecutorService scheduledExecutor,
+            boolean viewerModeEnabled) {
         ConfigService configService = configModule.getConfigService();
-        if (aggregatorDisabled) {
-            aggregator = null;
+        if (viewerModeEnabled) {
+            transactionCollector = null;
         } else {
-            aggregator = new TransactionAggregator(scheduledExecutor, transactionPointRepository,
-                    clock, fixedAggregationIntervalSeconds);
+            transactionCollector = new TransactionCollector(scheduledExecutor,
+                    transactionPointRepository, clock, fixedAggregationIntervalSeconds);
         }
+        // TODO should be no need for trace collector in viewer mode
         traceCollector = new TraceCollectorImpl(scheduledExecutor, configService,
-                snapshotRepository, aggregator, clock, ticker);
+                snapshotRepository, transactionCollector, clock, ticker);
     }
 
     public TraceCollectorImpl getTraceCollector() {
@@ -70,8 +72,8 @@ public class CollectorModule {
 
     @OnlyUsedByTests
     public void close() {
-        if (aggregator != null) {
-            aggregator.close();
+        if (transactionCollector != null) {
+            transactionCollector.close();
         }
     }
 }

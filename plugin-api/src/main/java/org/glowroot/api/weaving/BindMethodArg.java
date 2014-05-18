@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * <p>
  * There cannot be more {@literal @}{@link BindMethodArg} parameters than the number of arguments
  * passed to the {@link Pointcut} method. If {@code ".."} is used at the end of
- * {@link Pointcut#methodArgs()} and the number of arguments is unknown, then
+ * {@link Pointcut#methodArgTypes()} and the number of arguments is unknown, then
  * {@link BindMethodArgArray} can be used to bind all arguments to a single parameter of type
  * {@code Object[]}.
  * 

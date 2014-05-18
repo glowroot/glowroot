@@ -31,7 +31,7 @@ import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.javaagent.JavaagentContainer;
-import org.glowroot.container.trace.Metric;
+import org.glowroot.container.trace.TraceMetric;
 import org.glowroot.container.trace.Trace;
 
 /**
@@ -81,9 +81,9 @@ public class JdbcPluginPerformanceMain {
         Container container = setUpContainer();
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
         Trace trace = container.getTraceService().getLastTrace();
-        System.out.format("%s %d %d%n", trace.getRootMetric().getName(),
-                trace.getRootMetric().getTotal(), trace.getRootMetric().getCount());
-        for (Metric metric : trace.getRootMetric().getNestedMetrics()) {
+        System.out.format("%s %d %d%n", trace.getRootTraceMetric().getName(),
+                trace.getRootTraceMetric().getTotal(), trace.getRootTraceMetric().getCount());
+        for (TraceMetric metric : trace.getRootTraceMetric().getNestedTraceMetrics()) {
             System.out.format("%s %d %d%n", metric.getName(), metric.getTotal(), metric.getCount());
         }
         container.close();

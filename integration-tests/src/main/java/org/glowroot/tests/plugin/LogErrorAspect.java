@@ -17,9 +17,9 @@ package org.glowroot.tests.plugin;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
+import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -36,11 +36,12 @@ public class LogErrorAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
 
-    @Pointcut(typeName = "org.glowroot.tests.LogError", methodName = "log",
-            methodArgs = {"java.lang.String"}, metricName = "log error")
+    @Pointcut(type = "org.glowroot.tests.LogError", methodName = "log",
+            methodArgTypes = {"java.lang.String"}, traceMetric = "log error")
     public static class LogErrorAdvice {
 
-        private static final MetricName metricName = MetricName.get(LogErrorAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(LogErrorAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -50,7 +51,7 @@ public class LogErrorAspect {
         @OnBefore
         public static Span onBefore(@BindMethodArg String message) {
             return pluginServices.startSpan(MessageSupplier.from("ERROR -- {}", message),
-                    metricName);
+                    traceMetricName);
 
         }
 
@@ -60,11 +61,12 @@ public class LogErrorAspect {
         }
     }
 
-    @Pointcut(typeName = "org.glowroot.tests.LogError", methodName = "addNestedErrorSpan",
-            metricName = "add nested error span")
+    @Pointcut(type = "org.glowroot.tests.LogError", methodName = "addNestedErrorSpan",
+            traceMetric = "add nested error span")
     public static class AddErrorSpanAdvice {
 
-        private static final MetricName metricName = MetricName.get(AddErrorSpanAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(AddErrorSpanAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -74,7 +76,8 @@ public class LogErrorAspect {
         @OnBefore
         public static Span onBefore() {
             Span span = pluginServices.startSpan(
-                    MessageSupplier.from("outer span to test nesting level"), metricName);
+                    MessageSupplier.from("outer span to test nesting level"),
+                    traceMetricName);
             pluginServices.addErrorSpan(ErrorMessage.from("test add nested error span message"));
             return span;
         }
@@ -87,7 +90,7 @@ public class LogErrorAspect {
 
     // this is just to generate an additional $glowroot$ method to test that consecutive
     // $glowroot$ methods in a span stack trace are stripped out correctly
-    @Pointcut(typeName = "org.glowroot.tests.LogError", methodName = "log",
-            methodArgs = {"java.lang.String"}, metricName = "log error 2")
+    @Pointcut(type = "org.glowroot.tests.LogError", methodName = "log",
+            methodArgTypes = {"java.lang.String"}, traceMetric = "log error 2")
     public static class LogErrorAdvice2 {}
 }

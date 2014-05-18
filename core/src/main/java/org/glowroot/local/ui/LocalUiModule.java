@@ -97,18 +97,17 @@ public class LocalUiModule {
         LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
                 pluginDescriptorCache, jvmModule.getHeapHistograms().getService(),
                 jvmModule.getHeapDumps().getService(),
-                jvmModule.getDiagnosticOptions().getService(),
                 collectorModule.getFixedAggregationIntervalSeconds());
-        HttpSessionManager httpSessionManager = new HttpSessionManager(configService, clock,
-                layoutJsonService);
+        HttpSessionManager httpSessionManager =
+                new HttpSessionManager(configService, clock, layoutJsonService);
         String baseHref = getBaseHref(properties);
         IndexHtmlService indexHtmlService =
                 new IndexHtmlService(baseHref, httpSessionManager, layoutJsonService);
-        HomeJsonService homeJsonService =
-                new HomeJsonService(storageModule.getTransactionPointDao(), clock,
+        TransactionJsonService transactionJsonService =
+                new TransactionJsonService(storageModule.getTransactionPointDao(), clock,
                         collectorModule.getFixedAggregationIntervalSeconds());
-        traceCommonService = new TraceCommonService(snapshotDao, traceRegistry, traceCollector,
-                clock, ticker);
+        traceCommonService =
+                new TraceCommonService(snapshotDao, traceRegistry, traceCollector, clock, ticker);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,
                 traceRegistry, traceCollector, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
@@ -116,28 +115,27 @@ public class LocalUiModule {
                 new TraceDetailHttpService(traceCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
         ErrorJsonService errorJsonService = new ErrorJsonService(snapshotDao);
-        MiscJsonService jvmJsonService = new MiscJsonService(jvmModule.getThreadAllocatedBytes(),
-                jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),
-                jvmModule.getDiagnosticOptions());
+        JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getThreadAllocatedBytes(),
+                jvmModule.getHeapHistograms(), jvmModule.getHeapDumps());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
-                pluginDescriptorCache, dataDir, traceModule.getPointcutConfigAdviceCache(),
+                pluginDescriptorCache, dataDir, traceModule.getAdhocAdviceCache(),
                 httpSessionManager, traceModule);
         ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
-        PointcutConfigJsonService pointcutConfigJsonService =
-                new PointcutConfigJsonService(parsedTypeCache, classpathCache);
+        AdhocPointcutJsonService adhocPointcutJsonService =
+                new AdhocPointcutJsonService(parsedTypeCache, classpathCache);
         AdminJsonService adminJsonService = new AdminJsonService(transactionPointDao, snapshotDao,
-                configService, traceModule.getPointcutConfigAdviceCache(), parsedTypeCache,
-                instrumentation, traceCollector, dataSource, traceRegistry);
+                configService, traceModule.getAdhocAdviceCache(), parsedTypeCache, instrumentation,
+                traceCollector, dataSource, traceRegistry);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(layoutJsonService);
-        jsonServices.add(homeJsonService);
+        jsonServices.add(transactionJsonService);
         jsonServices.add(tracePointJsonService);
         jsonServices.add(traceJsonService);
         jsonServices.add(errorJsonService);
         jsonServices.add(jvmJsonService);
         jsonServices.add(configJsonService);
-        jsonServices.add(pointcutConfigJsonService);
+        jsonServices.add(adhocPointcutJsonService);
         jsonServices.add(adminJsonService);
 
         // for now only a single http worker thread to keep # of threads down
@@ -220,12 +218,11 @@ public class LocalUiModule {
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
         uriMappings.put(Pattern.compile("^/$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/home$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/traces$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/transactions$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/errors$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/traces$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/jvm/.*$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/config/.*$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/plugin/.*$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/misc/.*$"), resourceBase + "/index.html");
         uriMappings.put(Pattern.compile("^/login$"), resourceBase + "/index.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");

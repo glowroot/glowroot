@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -110,6 +111,11 @@ public class ObjectMappers {
         return value == null ? false : value;
     }
 
+    // named after guava Strings.nullToEmpty
+    public static long nullToZero(@Nullable Long value) {
+        return value == null ? 0 : value;
+    }
+
     @SuppressWarnings("serial")
     private static class EnumModule extends SimpleModule {
         private static EnumModule create() {
@@ -159,7 +165,17 @@ public class ObjectMappers {
                     for (Object enumConstant : enumConstants) {
                         if (enumConstant instanceof Enum) {
                             Enum<?> constant = (Enum<?>) enumConstant;
-                            theEnumMap.put(constant.name().toLowerCase(Locale.ENGLISH), constant);
+                            // provide both options, e.g. StringComparator.NOT_CONTAINS is nice as
+                            // 'not_contains', while GcEventSortAttribute.COLLECTOR_NAME is nice as
+                            // 'collectorName'
+                            String lowerCamelName = CaseFormat.UPPER_UNDERSCORE.to(
+                                    CaseFormat.LOWER_CAMEL, constant.name());
+                            String lowerUnderscoreName = CaseFormat.UPPER_UNDERSCORE.to(
+                                    CaseFormat.LOWER_UNDERSCORE, constant.name());
+                            theEnumMap.put(lowerCamelName, constant);
+                            if (!lowerUnderscoreName.equals(lowerCamelName)) {
+                                theEnumMap.put(lowerUnderscoreName, constant);
+                            }
                         } else {
                             logger.error("unexpected constant class: {}", enumConstant.getClass());
                         }

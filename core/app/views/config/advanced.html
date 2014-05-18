@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013 the original author or authors.
+  Copyright 2013-2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -26,29 +26,29 @@
          class="form-horizontal"
          name="formCtrl">
       <div gt-form-group
-           gt-label="Disable metric name wrapper methods"
-           gt-model="config.metricWrapperMethodsDisabled"
+           gt-label="Disable trace metric name wrapper methods"
+           gt-model="config.traceMetricWrapperMethodsDisabled"
            gt-type="checkbox">
         <div class="help-block">
           <div class="glowroot-yellow"
-               ng-show="originalConfig.metricWrapperMethodsDisabled !== metricWrapperMethodsDisabledActive"
+               ng-show="originalConfig.traceMetricWrapperMethodsDisabled !== traceMetricWrapperMethodsDisabledActive"
                style="padding-bottom: 5px;">
-            Active value is <code>{{metricWrapperMethodsDisabledActive ? 'ON' : 'OFF'}}</code>. The newly configured
-            value will take effect on next JVM restart.
+            Active value is <code>{{traceMetricWrapperMethodsDisabledActive ? 'ON' : 'OFF'}}</code>. The newly
+            configured value will take effect on next JVM restart.
           </div>
           <p>
-            By default, methods that are woven for metric timing are renamed with suffix
-            <code>$glowroot$metric$&lt;metric name&gt;</code>
+            By default, methods that are woven for trace metric timing are renamed with suffix
+            <code>$glowroot$trace$metric$&lt;trace metric name&gt;</code>
             and a new method is generated in its place that simply calls the renamed method. The purpose of this is so
-            that stack traces gathered by the profiler can see what metric timings are active, and the resulting trace
-            profiles can be filtered in the UI by metric names. For example, a trace profile can be filtered to see only
-            the profile of code that is executing jdbc queries. Or, even more useful, filter to see only the profile of
-            code that has no metric timings, which helps to discover new bottlenecks that would be worth timing via
-            pointcuts.
+            that stack traces gathered by the profiler can see what trace metric timings are active, and the resulting
+            trace profiles can be filtered in the UI by trace metric names. For example, a trace profile can be filtered
+            to see only the profile of code that is executing jdbc queries. Or, even more useful, filter to see only the
+            profile of code that has no trace metric timings, which helps to discover new bottlenecks that would be
+            worth timing via pointcuts.
           </p>
           <p>
             When disabled, Glowroot will not generate these wrapper methods, and trace profiles cannot be filtered in
-            the UI by metric names. <em>Changes to this setting will take effect on next JVM restart.</em>
+            the UI by trace metric names. <em>Changes to this setting will take effect on next JVM restart.</em>
           </p>
         </div>
       </div>

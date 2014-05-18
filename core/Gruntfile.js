@@ -34,6 +34,10 @@ module.exports = function (grunt) {
         files: '<%= yeoman.app %>/hbs/*.hbs',
         tasks: 'handlebars'
       },
+      fontawesome: {
+        files: '<%= yeoman.app %>/bower_components/fontawesome/fonts/*',
+        tasks: 'copy:server'
+      },
       livereload: {
         options: {
           livereload: LIVERELOAD_PORT
@@ -71,12 +75,11 @@ module.exports = function (grunt) {
         }
       ],
       rules: [
-        { from: '^/home(\\?.*)?$', to: '/index.html' },
-        { from: '^/traces(\\?.*)?$', to: '/index.html' },
+        { from: '^/transactions(\\?.*)?$', to: '/index.html' },
         { from: '^/errors(\\?.*)?$', to: '/index.html' },
+        { from: '^/traces(\\?.*)?$', to: '/index.html' },
+        { from: '^/jvm/.*$', to: '/index.html' },
         { from: '^/config/.*$', to: '/index.html' },
-        { from: '^/plugin/.*$', to: '/index.html' },
-        { from: '^/misc/.*$', to: '/index.html' },
         { from: '^/login$', to: '/index.html' }
       ],
       livereload: {
@@ -315,9 +318,29 @@ module.exports = function (grunt) {
           },
           {
             expand: true,
+            cwd: '<%= yeoman.app %>/bower_components/fontawesome/fonts',
+            dest: '<%= yeoman.dist %>/styles/fonts',
+            src: [
+              '*'
+            ]
+          },
+          {
+            expand: true,
             cwd: '<%= yeoman.app %>',
             dest: '<%= yeoman.exportDist %>',
             src: 'export.html'
+          }
+        ]
+      },
+      server: {
+        files: [
+          {
+            expand: true,
+            cwd: '<%= yeoman.app %>/bower_components/fontawesome/fonts',
+            dest: '.tmp/styles/fonts',
+            src: [
+              '*'
+            ]
           }
         ]
       }
@@ -372,6 +395,7 @@ module.exports = function (grunt) {
     'clean:server',
     'less:server',
     'handlebars',
+    'copy:server',
     'configureRewriteRules',
     'configureProxies',
     'connect:livereload',
@@ -385,7 +409,7 @@ module.exports = function (grunt) {
     'useminPrepare',
     'ngtemplates',
     'handlebars',
-    'copy',
+    'copy:dist',
     'cssmin',
     'uglify',
     'replace',

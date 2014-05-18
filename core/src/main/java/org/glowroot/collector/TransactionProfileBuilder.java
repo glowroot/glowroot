@@ -58,13 +58,12 @@ class TransactionProfileBuilder {
         node.incrementSampleCount(toBeMergedNode.getSampleCount());
         // the metric names for a given stack element should always match, unless
         // the line numbers aren't available and overloaded methods are matched up, or
-        // the stack trace was captured while one of the synthetic $metric$ methods was
+        // the stack trace was captured while one of the synthetic $trace$metric$ methods was
         // executing in which case one of the metric names may be a subset of the other,
         // in which case, the superset wins:
-        List<String> metricNames = toBeMergedNode.getMetricNames();
-        if (metricNames != null
-                && metricNames.size() > node.getMetricNames().size()) {
-            node.setMetricNames(metricNames);
+        List<String> traceMetrics = toBeMergedNode.getTraceMetrics();
+        if (traceMetrics != null && traceMetrics.size() > node.getTraceMetrics().size()) {
+            node.setTraceMetrics(traceMetrics);
         }
         for (ProfileNode toBeMergedChildNode : toBeMergedNode.getChildNodes()) {
             // for each to-be-merged child node look for a match

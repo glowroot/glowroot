@@ -25,7 +25,7 @@ glowroot.controller('TransactionDetailCtrl', [
   'transactionQuery',
   function ($scope, $http, $modalInstance, queryStrings, httpErrors, transactionQuery) {
 
-    $http.get('backend/home/profile?' + queryStrings.encodeObject(transactionQuery))
+    $http.get('backend/transaction/profile?' + queryStrings.encodeObject(transactionQuery))
         .success(function (data) {
           TraceRenderer.renderProfile(data, $('#profile'));
           $scope.loaded = true;

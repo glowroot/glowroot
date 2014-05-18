@@ -50,7 +50,7 @@ import org.glowroot.config.UserOverridesConfig;
 import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.markers.Singleton;
-import org.glowroot.trace.PointcutConfigAdviceCache;
+import org.glowroot.trace.AdhocAdviceCache;
 import org.glowroot.trace.TraceModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -58,7 +58,7 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
 
 /**
- * Json service to read and update config data, bound to /backend/config.
+ * Json service to read and update config data.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -74,7 +74,7 @@ class ConfigJsonService {
     private final CappedDatabase cappedDatabase;
     private final PluginDescriptorCache pluginDescriptorCache;
     private final File dataDir;
-    private final PointcutConfigAdviceCache pointcutConfigAdviceCache;
+    private final AdhocAdviceCache adhocAdviceCache;
     private final HttpSessionManager httpSessionManager;
     private final TraceModule traceModule;
 
@@ -83,13 +83,13 @@ class ConfigJsonService {
 
     ConfigJsonService(ConfigService configService, CappedDatabase cappedDatabase,
             PluginDescriptorCache pluginDescriptorCache, File dataDir,
-            PointcutConfigAdviceCache pointcutConfigAdviceCache,
-            HttpSessionManager httpSessionManager, TraceModule traceModule) {
+            AdhocAdviceCache adhocAdviceCache, HttpSessionManager httpSessionManager,
+            TraceModule traceModule) {
         this.configService = configService;
         this.cappedDatabase = cappedDatabase;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.dataDir = dataDir;
-        this.pointcutConfigAdviceCache = pointcutConfigAdviceCache;
+        this.adhocAdviceCache = adhocAdviceCache;
         this.httpSessionManager = httpSessionManager;
         this.traceModule = traceModule;
     }
@@ -209,17 +209,17 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/config/pointcut")
-    String getPointcutConfig() throws IOException, SQLException {
-        logger.debug("getPointcutConfig()");
+    @GET("/backend/config/adhoc-pointcut")
+    String getAdhocPointcutConfig() throws IOException, SQLException {
+        logger.debug("getAdhocPointcutConfig()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
         jg.writeStartObject();
         jg.writeFieldName("configs");
-        writer.writeValue(jg, configService.getPointcutConfigs());
-        jg.writeBooleanField("jvmOutOfSync", pointcutConfigAdviceCache
-                .isPointcutConfigsOutOfSync(configService.getPointcutConfigs()));
+        writer.writeValue(jg, configService.getAdhocPointcutConfigs());
+        jg.writeBooleanField("jvmOutOfSync",
+                adhocAdviceCache.isOutOfSync(configService.getAdhocPointcutConfigs()));
         jg.writeBooleanField("jvmRetransformClassesSupported",
                 traceModule.isJvmRetransformClassesSupported());
         jg.writeEndObject();
@@ -236,8 +236,8 @@ class ConfigJsonService {
         jg.writeStartObject();
         jg.writeFieldName("config");
         writer.writeValue(jg, configService.getAdvancedConfig());
-        jg.writeBooleanField("metricWrapperMethodsDisabledActive",
-                traceModule.isMetricWrapperMethodsDisabled());
+        jg.writeBooleanField("traceMetricWrapperMethodsDisabledActive",
+                traceModule.isTraceMetricWrapperMethodsDisabled());
         jg.writeBooleanField("weavingDisabledActive", traceModule.isWeavingDisabled());
         jg.writeEndObject();
         jg.close();
@@ -367,17 +367,40 @@ class ConfigJsonService {
         return getUserInterface();
     }
 
-    /*@RequiresNonNull("httpServer")*/
-    private String getUserInterfaceWithPortChangeFailed() throws IOException {
+    @POST("/backend/config/adhoc-pointcut/+")
+    String addAdhocPointcutConfig(String content) throws IOException {
+        logger.debug("addAdhocPointcutConfig(): content={}", content);
+        PointcutConfig pointcutConfig =
+                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
+        configService.insertAdhocPointcutConfig(pointcutConfig);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        writeUserInterface(jg, writer);
-        jg.writeBooleanField("portChangeFailed", true);
-        jg.writeEndObject();
+        writer.writeValue(jg, pointcutConfig);
         jg.close();
         return sb.toString();
+    }
+
+    @POST("/backend/config/adhoc-pointcut/([0-9a-f]+)")
+    String updateAdhocPointcutConfig(String priorVersion, String content) throws IOException {
+        logger.debug("updateAdhocPointcutConfig(): priorVersion={}, content={}", priorVersion,
+                content);
+        PointcutConfig pointcutConfig =
+                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
+        configService.updateAdhocPointcutConfig(priorVersion, pointcutConfig);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
+        writer.writeValue(jg, pointcutConfig);
+        jg.close();
+        return sb.toString();
+    }
+
+    @POST("/backend/config/adhoc-pointcut/-")
+    void removeAdhocPointcutConfig(String content) throws IOException {
+        logger.debug("removeAdhocPointcutConfig(): content={}", content);
+        String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
+        configService.deleteAdhocPointcutConfig(version);
     }
 
     @POST("/backend/config/advanced")
@@ -417,40 +440,17 @@ class ConfigJsonService {
         return getPluginConfig(pluginId);
     }
 
-    @POST("/backend/config/pointcut/+")
-    String addPointcutConfig(String content) throws IOException {
-        logger.debug("addPointcutConfig(): content={}", content);
-        PointcutConfig pointcutConfig =
-                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
-        configService.insertPointcutConfig(pointcutConfig);
+    /*@RequiresNonNull("httpServer")*/
+    private String getUserInterfaceWithPortChangeFailed() throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
-        writer.writeValue(jg, pointcutConfig);
+        jg.writeStartObject();
+        writeUserInterface(jg, writer);
+        jg.writeBooleanField("portChangeFailed", true);
+        jg.writeEndObject();
         jg.close();
         return sb.toString();
-    }
-
-    @POST("/backend/config/pointcut/([0-9a-f]+)")
-    String updatePointcutConfig(String priorVersion, String content) throws IOException {
-        logger.debug("updatePointcutConfig(): priorVersion={}, content={}", priorVersion,
-                content);
-        PointcutConfig pointcutConfig =
-                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
-        configService.updatePointcutConfig(priorVersion, pointcutConfig);
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        writer.writeValue(jg, pointcutConfig);
-        jg.close();
-        return sb.toString();
-    }
-
-    @POST("/backend/config/pointcut/-")
-    void removePointcutConfig(String content) throws IOException {
-        logger.debug("removePointcutConfig(): content={}", content);
-        String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
-        configService.deletePointcutConfig(version);
     }
 
     private String getAndRemoveVersionNode(ObjectNode configNode) {

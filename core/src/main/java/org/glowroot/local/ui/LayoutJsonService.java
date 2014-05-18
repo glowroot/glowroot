@@ -29,7 +29,6 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PluginDescriptorCache;
-import org.glowroot.jvm.DiagnosticOptions;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.HeapHistograms;
 import org.glowroot.markers.Singleton;
@@ -55,22 +54,18 @@ class LayoutJsonService {
     private final HeapHistograms heapHistograms;
     @Nullable
     private final HeapDumps heapDumps;
-    @Nullable
-    private final DiagnosticOptions diagnosticOptions;
 
     private final long fixedAggregationIntervalSeconds;
 
     LayoutJsonService(String version, ConfigService configService,
             PluginDescriptorCache pluginDescriptorCache, @Nullable HeapHistograms heapHistograms,
             @Nullable HeapDumps heapDumps,
-            @Nullable DiagnosticOptions diagnosticOptions,
             long fixedAggregationIntervalSeconds) {
         this.version = version;
         this.configService = configService;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.heapHistograms = heapHistograms;
         this.heapDumps = heapDumps;
-        this.diagnosticOptions = diagnosticOptions;
         this.fixedAggregationIntervalSeconds = fixedAggregationIntervalSeconds;
     }
 
@@ -82,9 +77,8 @@ class LayoutJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeBooleanField("miscHeapHistogram", heapHistograms != null);
-        jg.writeBooleanField("miscHeapDump", heapDumps != null);
-        jg.writeBooleanField("miscDiagnosticOptions", diagnosticOptions != null);
+        jg.writeBooleanField("jvmHeapHistogram", heapHistograms != null);
+        jg.writeBooleanField("jvmHeapDump", heapDumps != null);
         jg.writeStringField("footerMessage", "version " + version);
         jg.writeBooleanField("passwordEnabled",
                 configService.getUserInterfaceConfig().isPasswordEnabled());

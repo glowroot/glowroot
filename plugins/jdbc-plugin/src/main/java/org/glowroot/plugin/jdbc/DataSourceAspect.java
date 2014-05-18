@@ -23,11 +23,11 @@ import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
+import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.TraceMetricTimer;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -68,10 +68,11 @@ public class DataSourceAspect {
         captureSetAutoCommitSpans = pluginServices.getBooleanProperty("captureSetAutoCommitSpans");
     }
 
-    @Pointcut(typeName = "javax.sql.DataSource", methodName = "getConnection",
-            methodArgs = {".."}, ignoreSameNested = true, metricName = "jdbc get connection")
+    @Pointcut(type = "javax.sql.DataSource", methodName = "getConnection",
+            methodArgTypes = {".."}, ignoreSameNested = true, traceMetric = "jdbc get connection")
     public static class CommitAdvice {
-        private static final MetricName metricName = MetricName.get(CommitAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(CommitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -79,9 +80,10 @@ public class DataSourceAspect {
         @OnBefore
         public static Object onBefore() {
             if (captureGetConnectionSpans) {
-                return pluginServices.startSpan(new GetConnectionMessageSupplier(), metricName);
+                return pluginServices.startSpan(new GetConnectionMessageSupplier(),
+                        traceMetricName);
             } else {
-                return pluginServices.startMetricTimer(metricName);
+                return pluginServices.startTraceMetric(traceMetricName);
             }
         }
         @OnReturn
@@ -107,7 +109,7 @@ public class DataSourceAspect {
                 span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                         MILLISECONDS);
             } else {
-                ((MetricTimer) spanOrTimer).stop();
+                ((TraceMetricTimer) spanOrTimer).stop();
             }
         }
         @OnThrow
@@ -115,7 +117,7 @@ public class DataSourceAspect {
             if (spanOrTimer instanceof Span) {
                 ((Span) spanOrTimer).endWithError(ErrorMessage.from(t));
             } else {
-                ((MetricTimer) spanOrTimer).stop();
+                ((TraceMetricTimer) spanOrTimer).stop();
             }
         }
     }

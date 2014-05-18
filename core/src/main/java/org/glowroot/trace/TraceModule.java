@@ -32,9 +32,9 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.trace.PluginServicesRegistry.PluginServicesFactory;
-import org.glowroot.weaving.MetricTimerService;
 import org.glowroot.weaving.ParsedTypeCache;
 import org.glowroot.weaving.PreInitializeWeavingClasses;
+import org.glowroot.weaving.WeavingTimerService;
 import org.glowroot.weaving.WeavingClassFileTransformer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -48,8 +48,8 @@ public class TraceModule {
 
     private final ParsedTypeCache parsedTypeCache;
     private final TraceRegistry traceRegistry;
-    private final PointcutConfigAdviceCache pointcutConfigAdviceCache;
-    private final MetricTimerService metricTimerService;
+    private final AdhocAdviceCache adhocAdviceCache;
+    private final WeavingTimerService weavingTimerService;
     @Nullable
     private final ThreadAllocatedBytes threadAllocatedBytes;
 
@@ -57,7 +57,7 @@ public class TraceModule {
     private final CoarseProfilerWatcher coarseProfilerWatcher;
 
     private final boolean weavingDisabled;
-    private final boolean metricWrapperMethodsDisabled;
+    private final boolean traceMetricWrapperMethodsDisabled;
     private final boolean jvmRetransformClassesSupported;
 
     private final PluginServicesFactory pluginServicesFactory;
@@ -70,21 +70,21 @@ public class TraceModule {
         ConfigService configService = configModule.getConfigService();
         parsedTypeCache = new ParsedTypeCache();
         traceRegistry = new TraceRegistry();
-        pointcutConfigAdviceCache =
-                new PointcutConfigAdviceCache(configService.getPointcutConfigs());
-        metricTimerService = new MetricTimerServiceImpl(traceRegistry);
+        adhocAdviceCache = new AdhocAdviceCache(configService.getAdhocPointcutConfigs());
+        final TraceMetricNameCache traceMetricNameCache = new TraceMetricNameCache();
+        weavingTimerService = new WeavingTimerServiceImpl(traceRegistry, traceMetricNameCache);
 
         weavingDisabled = configModule.getConfigService().getAdvancedConfig().isWeavingDisabled();
-        metricWrapperMethodsDisabled = configModule.getConfigService().getAdvancedConfig()
-                .isMetricWrapperMethodsDisabled();
+        traceMetricWrapperMethodsDisabled = configModule.getConfigService().getAdvancedConfig()
+                .isTraceMetricWrapperMethodsDisabled();
         // instrumentation is null when debugging with IsolatedWeavingClassLoader
         // instead of javaagent
         if (instrumentation != null && !weavingDisabled) {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
                     configModule.getPluginDescriptorCache().getMixinTypes(),
                     configModule.getPluginDescriptorCache().getAdvisors(),
-                    pointcutConfigAdviceCache.getAdvisorsSupplier(), parsedTypeCache,
-                    metricTimerService, !metricWrapperMethodsDisabled);
+                    adhocAdviceCache.getAdvisorsSupplier(), parsedTypeCache,
+                    weavingTimerService, !traceMetricWrapperMethodsDisabled);
             PreInitializeWeavingClasses.preInitializeClasses(TraceModule.class.getClassLoader());
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
@@ -115,8 +115,8 @@ public class TraceModule {
             @Override
             public PluginServices create(@Nullable String pluginId) {
                 return PluginServicesImpl.create(traceRegistry, traceCollector,
-                        configModule.getConfigService(), threadAllocatedBytes,
-                        fineProfileScheduler, ticker, clock,
+                        configModule.getConfigService(), traceMetricNameCache,
+                        threadAllocatedBytes, fineProfileScheduler, ticker, clock,
                         configModule.getPluginDescriptorCache(), pluginId);
             }
         };
@@ -131,20 +131,20 @@ public class TraceModule {
         return traceRegistry;
     }
 
-    public PointcutConfigAdviceCache getPointcutConfigAdviceCache() {
-        return pointcutConfigAdviceCache;
+    public AdhocAdviceCache getAdhocAdviceCache() {
+        return adhocAdviceCache;
     }
 
-    public MetricTimerService getMetricTimerService() {
-        return metricTimerService;
+    public WeavingTimerService getWeavingTimerService() {
+        return weavingTimerService;
     }
 
     public boolean isWeavingDisabled() {
         return weavingDisabled;
     }
 
-    public boolean isMetricWrapperMethodsDisabled() {
-        return metricWrapperMethodsDisabled;
+    public boolean isTraceMetricWrapperMethodsDisabled() {
+        return traceMetricWrapperMethodsDisabled;
     }
 
     public boolean isJvmRetransformClassesSupported() {

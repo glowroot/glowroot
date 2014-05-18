@@ -28,8 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.collector.TransactionPoint;
-import org.glowroot.local.store.TransactionPointDao.SortDirection;
-import org.glowroot.local.store.TransactionPointDao.TransactionSortColumn;
+import org.glowroot.local.store.TransactionSummaryQuery.TransactionSortAttribute;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -87,20 +86,22 @@ public class TransactionPointDaoTest {
         transactionPointDao.store("", overallPoint2, transactionPoints2);
         // when
         List<TransactionPoint> overallPoints = transactionPointDao.readOverallPoints("", 0, 100000);
-        List<Transaction> transactions = transactionPointDao.readTransactions("", 0,
-                100000, TransactionSortColumn.AVERAGE, SortDirection.DESC, 10);
+        TransactionSummaryQuery query = new TransactionSummaryQuery("", 0, 100000,
+                TransactionSortAttribute.AVERAGE, SortDirection.DESC, 10);
+        QueryResult<TransactionSummary> queryResult =
+                transactionPointDao.readTransactionSummaries(query);
         // then
         assertThat(overallPoints).hasSize(2);
-        assertThat(transactions).hasSize(3);
-        assertThat(transactions.get(0).getName()).isEqualTo("seven");
-        assertThat(transactions.get(0).getTotalMicros()).isEqualTo(2800000);
-        assertThat(transactions.get(0).getCount()).isEqualTo(14);
-        assertThat(transactions.get(1).getName()).isEqualTo("two");
-        assertThat(transactions.get(1).getTotalMicros()).isEqualTo(600000);
-        assertThat(transactions.get(1).getCount()).isEqualTo(4);
-        assertThat(transactions.get(2).getName()).isEqualTo("one");
-        assertThat(transactions.get(2).getTotalMicros()).isEqualTo(200000);
-        assertThat(transactions.get(2).getCount()).isEqualTo(2);
+        assertThat(queryResult.getRecords()).hasSize(3);
+        assertThat(queryResult.getRecords().get(0).getName()).isEqualTo("seven");
+        assertThat(queryResult.getRecords().get(0).getTotalMicros()).isEqualTo(2800000);
+        assertThat(queryResult.getRecords().get(0).getCount()).isEqualTo(14);
+        assertThat(queryResult.getRecords().get(1).getName()).isEqualTo("two");
+        assertThat(queryResult.getRecords().get(1).getTotalMicros()).isEqualTo(600000);
+        assertThat(queryResult.getRecords().get(1).getCount()).isEqualTo(4);
+        assertThat(queryResult.getRecords().get(2).getName()).isEqualTo("one");
+        assertThat(queryResult.getRecords().get(2).getTotalMicros()).isEqualTo(200000);
+        assertThat(queryResult.getRecords().get(2).getCount()).isEqualTo(2);
     }
 
     @Test
@@ -121,20 +122,21 @@ public class TransactionPointDaoTest {
         // when
         List<TransactionPoint> overallPoints =
                 transactionPointDao.readOverallPoints("bg", 0, 100000);
-        List<Transaction> transactions =
-                transactionPointDao.readTransactions("bg", 0, 100000,
-                        TransactionSortColumn.AVERAGE, SortDirection.DESC, 10);
+        TransactionSummaryQuery query = new TransactionSummaryQuery("bg", 0, 100000,
+                TransactionSortAttribute.AVERAGE, SortDirection.DESC, 10);
+        QueryResult<TransactionSummary> queryResult =
+                transactionPointDao.readTransactionSummaries(query);
         // then
         assertThat(overallPoints).hasSize(2);
-        assertThat(transactions).hasSize(3);
-        assertThat(transactions.get(0).getName()).isEqualTo("seven");
-        assertThat(transactions.get(0).getTotalMicros()).isEqualTo(2800000);
-        assertThat(transactions.get(0).getCount()).isEqualTo(14);
-        assertThat(transactions.get(1).getName()).isEqualTo("two");
-        assertThat(transactions.get(1).getTotalMicros()).isEqualTo(600000);
-        assertThat(transactions.get(1).getCount()).isEqualTo(4);
-        assertThat(transactions.get(2).getName()).isEqualTo("one");
-        assertThat(transactions.get(2).getTotalMicros()).isEqualTo(200000);
-        assertThat(transactions.get(2).getCount()).isEqualTo(2);
+        assertThat(queryResult.getRecords()).hasSize(3);
+        assertThat(queryResult.getRecords().get(0).getName()).isEqualTo("seven");
+        assertThat(queryResult.getRecords().get(0).getTotalMicros()).isEqualTo(2800000);
+        assertThat(queryResult.getRecords().get(0).getCount()).isEqualTo(14);
+        assertThat(queryResult.getRecords().get(1).getName()).isEqualTo("two");
+        assertThat(queryResult.getRecords().get(1).getTotalMicros()).isEqualTo(600000);
+        assertThat(queryResult.getRecords().get(1).getCount()).isEqualTo(4);
+        assertThat(queryResult.getRecords().get(2).getName()).isEqualTo("one");
+        assertThat(queryResult.getRecords().get(2).getTotalMicros()).isEqualTo(200000);
+        assertThat(queryResult.getRecords().get(2).getCount()).isEqualTo(2);
     }
 }

@@ -20,6 +20,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
@@ -27,6 +28,7 @@ import javax.annotation.Nullable;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +72,7 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("error_message", Types.VARCHAR),
             new Column("user", Types.VARCHAR),
             new Column("attributes", Types.VARCHAR), // json data
-            new Column("metrics", Types.VARCHAR), // json data
+            new Column("trace_metrics", Types.VARCHAR), // json data
             new Column("jvm_info", Types.VARCHAR), // json data
             new Column("spans_id", Types.VARCHAR), // capped database id
             new Column("coarse_profile_id", Types.VARCHAR), // capped database id
@@ -118,13 +120,13 @@ public class SnapshotDao implements SnapshotRepository {
         try {
             dataSource.update("merge into snapshot (id, stuck, start_time, capture_time, duration,"
                     + " background, error, fine, transaction_name, headline, error_message, user,"
-                    + " attributes, metrics, jvm_info, spans_id, coarse_profile_id,"
+                    + " attributes, trace_metrics, jvm_info, spans_id, coarse_profile_id,"
                     + " fine_profile_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
                     + " ?, ?)", snapshot.getId(), snapshot.isStuck(), snapshot.getStartTime(),
                     snapshot.getCaptureTime(), snapshot.getDuration(), snapshot.isBackground(),
                     snapshot.getError() != null, fineProfileId != null,
                     snapshot.getTransactionName(), snapshot.getHeadline(), snapshot.getError(),
-                    snapshot.getUser(), snapshot.getAttributes(), snapshot.getMetrics(),
+                    snapshot.getUser(), snapshot.getAttributes(), snapshot.getTraceMetrics(),
                     snapshot.getJvmInfo(), spansId, coarseProfileId, fineProfileId);
             final ImmutableSetMultimap<String, String> attributesForIndexing =
                     snapshot.getAttributesForIndexing();
@@ -153,14 +155,16 @@ public class SnapshotDao implements SnapshotRepository {
         }
     }
 
-    public ImmutableList<TracePoint> readPoints(TracePointQuery query) {
+    public QueryResult<TracePoint> readPoints(TracePointQuery query) {
         try {
-            ParameterizedSql parameterizedSql = query.getParameterizedSql();
-            return dataSource.query(parameterizedSql.getSql(), parameterizedSql.getArgs(),
-                    new PointRowMapper());
+            ParameterizedSql parameterizedSql = getParameterizedSql(query);
+            ImmutableList<TracePoint> points = dataSource.query(parameterizedSql.getSql(),
+                    parameterizedSql.getArgs(), new PointRowMapper());
+            // one extra record over the limit is fetched above to identify if the limit was hit
+            return QueryResult.from(points, query.getLimit());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
-            return ImmutableList.of();
+            return QueryResult.empty();
         }
     }
 
@@ -170,7 +174,7 @@ public class SnapshotDao implements SnapshotRepository {
         try {
             snapshots = dataSource.query("select id, stuck, start_time, capture_time, duration,"
                     + " background, transaction_name, headline, error_message, user, attributes,"
-                    + " metrics, jvm_info, spans_id, coarse_profile_id, fine_profile_id from "
+                    + " trace_metrics, jvm_info, spans_id, coarse_profile_id, fine_profile_id from"
                     + " snapshot where id = ?", ImmutableList.of(traceId), new SnapshotRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -200,14 +204,16 @@ public class SnapshotDao implements SnapshotRepository {
         return readFromCappedDatabase("fine_profile_id", traceId);
     }
 
-    public List<ErrorAggregate> readErrorAggregates(ErrorAggregateQuery query) {
+    public QueryResult<ErrorAggregate> readErrorAggregates(ErrorAggregateQuery query) {
         try {
-            ParameterizedSql parameterizedSql = query.getParameterizedSql();
-            return dataSource.query(parameterizedSql.getSql(), parameterizedSql.getArgs(),
-                    new ErrorAggregateRowMapper());
+            ParameterizedSql parameterizedSql = getParameterizedSql(query);
+            ImmutableList<ErrorAggregate> aggregates = dataSource.query(parameterizedSql.getSql(),
+                    parameterizedSql.getArgs(), new ErrorAggregateRowMapper());
+            // one extra record over the limit is fetched above to identify if the limit was hit
+            return QueryResult.from(aggregates, query.getLimit());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
-            return ImmutableList.of();
+            return QueryResult.empty();
         }
     }
 
@@ -290,6 +296,136 @@ public class SnapshotDao implements SnapshotRepository {
         }
     }
 
+    private static ParameterizedSql getParameterizedSql(TracePointQuery query) {
+        // TODO all of these columns are no longer in the same index (number of columns has grown)
+        // either update index or comment
+        //
+        // all of these columns should be in the same index so h2 can return result set directly
+        // from the index without having to reference the table for each row
+        //
+        // capture time lower bound is non-inclusive so that aggregate data intervals can be mapped
+        // to their trace points (aggregate data intervals are non-inclusive on lower bound and
+        // inclusive on upper bound)
+        String sql = "select snapshot.id, snapshot.capture_time, snapshot.duration, snapshot.error"
+                + " from snapshot";
+        List<Object> args = Lists.newArrayList();
+        ParameterizedSql attributeJoin = getSnapshotAttributeJoin(query);
+        if (attributeJoin != null) {
+            sql += attributeJoin.getSql();
+            args.addAll(attributeJoin.getArgs());
+        } else {
+            sql += " where";
+        }
+        sql += " snapshot.capture_time > ? and snapshot.capture_time <= ?";
+        args.add(query.getFrom());
+        args.add(query.getTo());
+        long durationLow = query.getDurationLow();
+        if (durationLow != 0) {
+            sql += " and snapshot.duration >= ?";
+            args.add(durationLow);
+        }
+        Long durationHigh = query.getDurationHigh();
+        if (durationHigh != null) {
+            sql += " and snapshot.duration <= ?";
+            args.add(durationHigh);
+        }
+        Boolean background = query.getBackground();
+        if (background != null) {
+            sql += " and snapshot.background = ?";
+            args.add(background);
+        }
+        if (query.isErrorOnly()) {
+            sql += " and snapshot.error = ?";
+            args.add(true);
+        }
+        if (query.isFineOnly()) {
+            sql += " and snapshot.fine = ?";
+            args.add(true);
+        }
+        StringComparator transactionNameComparator = query.getTransactionNameComparator();
+        String transactionName = query.getTransactionName();
+        if (transactionNameComparator != null && !Strings.isNullOrEmpty(transactionName)) {
+            sql += " and upper(snapshot.transaction_name) "
+                    + transactionNameComparator.getComparator() + " ?";
+            args.add(transactionNameComparator.formatParameter(transactionName
+                    .toUpperCase(Locale.ENGLISH)));
+        }
+        StringComparator headlineComparator = query.getHeadlineComparator();
+        String headline = query.getHeadline();
+        if (headlineComparator != null && !Strings.isNullOrEmpty(headline)) {
+            sql += " and upper(snapshot.headline) " + headlineComparator.getComparator() + " ?";
+            args.add(headlineComparator.formatParameter(headline.toUpperCase(Locale.ENGLISH)));
+        }
+        StringComparator errorComparator = query.getErrorComparator();
+        String error = query.getError();
+        if (errorComparator != null && !Strings.isNullOrEmpty(error)) {
+            sql += " and upper(snapshot.error_message) " + errorComparator.getComparator() + " ?";
+            args.add(errorComparator.formatParameter(error.toUpperCase(Locale.ENGLISH)));
+        }
+        StringComparator userComparator = query.getUserComparator();
+        String user = query.getUser();
+        if (userComparator != null && !Strings.isNullOrEmpty(user)) {
+            sql += " and upper(snapshot.user) " + userComparator.getComparator() + " ?";
+            args.add(userComparator.formatParameter(user.toUpperCase(Locale.ENGLISH)));
+        }
+        sql += " order by snapshot.duration desc limit ?";
+        // +1 is to identify if limit was exceeded
+        args.add(query.getLimit() + 1);
+        return new ParameterizedSql(sql, args);
+    }
+
+    @Nullable
+    private static ParameterizedSql getSnapshotAttributeJoin(TracePointQuery query) {
+        String criteria = "";
+        List<Object> criteriaArgs = Lists.newArrayList();
+        String attributeName = query.getAttributeName();
+        if (!Strings.isNullOrEmpty(attributeName)) {
+            criteria += " upper(attr.name) = ? and";
+            criteriaArgs.add(attributeName.toUpperCase(Locale.ENGLISH));
+        }
+        StringComparator attributeValueComparator = query.getAttributeValueComparator();
+        String attributeValue = query.getAttributeValue();
+        if (attributeValueComparator != null && !Strings.isNullOrEmpty(attributeValue)) {
+            criteria += " upper(attr.value) " + attributeValueComparator.getComparator() + " ? and";
+            criteriaArgs.add(attributeValueComparator.formatParameter(
+                    attributeValue.toUpperCase(Locale.ENGLISH)));
+        }
+        if (criteria.equals("")) {
+            return null;
+        } else {
+            String sql = ", snapshot_attribute attr where attr.snapshot_id = snapshot.id"
+                    + " and attr.capture_time > ? and attr.capture_time <= ? and" + criteria;
+            List<Object> args = Lists.newArrayList();
+            args.add(query.getFrom());
+            args.add(query.getTo());
+            args.addAll(criteriaArgs);
+            return new ParameterizedSql(sql, args);
+        }
+    }
+
+    private static ParameterizedSql getParameterizedSql(ErrorAggregateQuery query) {
+        String sql = "select transaction_name, error_message, count(*) from snapshot where"
+                + " error = ? and capture_time >= ? and capture_time <= ?";
+        List<Object> args = Lists.newArrayList();
+        args.add(true);
+        args.add(query.getFrom());
+        args.add(query.getTo());
+        for (String include : query.getIncludes()) {
+            sql += " and upper(error_message) like ?";
+            args.add('%' + include.toUpperCase(Locale.ENGLISH) + '%');
+        }
+        for (String exclude : query.getExcludes()) {
+            sql += " and upper(error_message) not like ?";
+            args.add('%' + exclude.toUpperCase(Locale.ENGLISH) + '%');
+        }
+        sql += " group by transaction_name, error_message ";
+        sql += query.getSortDirection().getOrderByClause(query.getSortAttribute());
+        sql += " limit ?";
+        // +1 is to identify if limit was exceeded
+        args.add(query.getLimit() + 1);
+        return new ParameterizedSql(sql, args);
+    }
+
     private static void upgradeSnapshotTable(DataSource dataSource) throws SQLException {
         if (!dataSource.tableExists("snapshot")) {
             return;
@@ -346,7 +482,7 @@ public class SnapshotDao implements SnapshotRepository {
             snapshot.error(resultSet.getString(9));
             snapshot.user(resultSet.getString(10));
             snapshot.attributes(resultSet.getString(11));
-            snapshot.metrics(resultSet.getString(12));
+            snapshot.traceMetrics(resultSet.getString(12));
             snapshot.jvmInfo(resultSet.getString(13));
             snapshot.spansExistence(getExistence(resultSet.getString(14)));
             snapshot.coarseProfileExistence(getExistence(resultSet.getString(15)));

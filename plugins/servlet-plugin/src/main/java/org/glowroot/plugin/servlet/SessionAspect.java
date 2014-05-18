@@ -42,8 +42,8 @@ public class SessionAspect {
      * ================== Http Session Attributes ==================
      */
 
-    @Pointcut(typeName = "javax.servlet.http.HttpServletRequest", methodName = "getSession",
-            methodArgs = {".."})
+    @Pointcut(type = "javax.servlet.http.HttpServletRequest", methodName = "getSession",
+            methodArgTypes = {".."})
     public static class GetSessionAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -66,7 +66,7 @@ public class SessionAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpSession", methodName = "invalidate")
+    @Pointcut(type = "javax.servlet.http.HttpSession", methodName = "invalidate")
     public static class InvalidateAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -82,8 +82,8 @@ public class SessionAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpSession", methodName = "setAttribute|putValue",
-            methodArgs = {"java.lang.String", "java.lang.Object"})
+    @Pointcut(type = "javax.servlet.http.HttpSession", methodName = "setAttribute|putValue",
+            methodArgTypes = {"java.lang.String", "java.lang.Object"})
     public static class SetAttributeAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -108,8 +108,8 @@ public class SessionAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpSession", methodName = "removeAttribute",
-            methodArgs = {"java.lang.String"})
+    @Pointcut(type = "javax.servlet.http.HttpSession", methodName = "removeAttribute",
+            methodArgTypes = {"java.lang.String"})
     public static class RemoveAttributeAdvice {
         @IsEnabled
         public static boolean isEnabled() {

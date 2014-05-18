@@ -30,7 +30,7 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
  */
 public class AdvancedConfig {
 
-    private boolean metricWrapperMethodsDisabled;
+    private boolean traceMetricWrapperMethodsDisabled;
     private boolean warnOnSpanOutsideTrace;
     private boolean weavingDisabled;
 
@@ -40,12 +40,12 @@ public class AdvancedConfig {
         this.version = version;
     }
 
-    public boolean isMetricWrapperMethodsDisabled() {
-        return metricWrapperMethodsDisabled;
+    public boolean isTraceMetricWrapperMethodsDisabled() {
+        return traceMetricWrapperMethodsDisabled;
     }
 
-    public void setMetricWrapperMethodsDisabled(boolean metricWrapperMethodsDisabled) {
-        this.metricWrapperMethodsDisabled = metricWrapperMethodsDisabled;
+    public void setTraceMetricWrapperMethodsDisabled(boolean traceMetricWrapperMethodsDisabled) {
+        this.traceMetricWrapperMethodsDisabled = traceMetricWrapperMethodsDisabled;
     }
 
     public boolean isWarnOnSpanOutsideTrace() {
@@ -76,7 +76,8 @@ public class AdvancedConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(metricWrapperMethodsDisabled, that.metricWrapperMethodsDisabled)
+            return Objects.equal(traceMetricWrapperMethodsDisabled,
+                    that.traceMetricWrapperMethodsDisabled)
                     && Objects.equal(warnOnSpanOutsideTrace, that.warnOnSpanOutsideTrace)
                     && Objects.equal(weavingDisabled, that.weavingDisabled);
         }
@@ -89,7 +90,7 @@ public class AdvancedConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(metricWrapperMethodsDisabled, warnOnSpanOutsideTrace,
+        return Objects.hashCode(traceMetricWrapperMethodsDisabled, warnOnSpanOutsideTrace,
                 weavingDisabled);
     }
 
@@ -97,7 +98,7 @@ public class AdvancedConfig {
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("metricWrapperMethodsDisabled", metricWrapperMethodsDisabled)
+                .add("traceMetricWrapperMethodsDisabled", traceMetricWrapperMethodsDisabled)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
                 .add("weavingDisabled", weavingDisabled)
                 .add("version", version)
@@ -106,16 +107,17 @@ public class AdvancedConfig {
 
     @JsonCreator
     static AdvancedConfig readValue(
-            @JsonProperty("metricWrapperMethodsDisabled") @Nullable Boolean metricWrapperMethodsDisabled,
+            @JsonProperty("traceMetricWrapperMethodsDisabled") @Nullable Boolean traceMetricWrapperMethodsDisabled,
             @JsonProperty("warnOnSpanOutsideTrace") @Nullable Boolean warnOnSpanOutsideTrace,
             @JsonProperty("weavingDisabled") @Nullable Boolean weavingDisabled,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(metricWrapperMethodsDisabled, "metricWrapperMethodsDisabled");
+        checkRequiredProperty(traceMetricWrapperMethodsDisabled,
+                "traceMetricWrapperMethodsDisabled");
         checkRequiredProperty(warnOnSpanOutsideTrace, "warnOnSpanOutsideTrace");
         checkRequiredProperty(weavingDisabled, "weavingDisabled");
         checkRequiredProperty(version, "version");
         AdvancedConfig config = new AdvancedConfig(version);
-        config.setMetricWrapperMethodsDisabled(metricWrapperMethodsDisabled);
+        config.setTraceMetricWrapperMethodsDisabled(traceMetricWrapperMethodsDisabled);
         config.setWarnOnSpanOutsideTrace(warnOnSpanOutsideTrace);
         config.setWeavingDisabled(weavingDisabled);
         return config;

@@ -44,24 +44,24 @@ TraceRenderer = (function () {
   });
 
 
-  Handlebars.registerHelper('eachMetricOrdered', function (trace, options) {
+  Handlebars.registerHelper('eachTraceMetricOrdered', function (trace, options) {
     var buffer = '';
 
-    function traverse(metric, nestingLevel) {
-      metric.nestingLevel = nestingLevel;
-      buffer += options.fn(metric);
-      if (metric.nestedMetrics) {
-        metric.nestedMetrics.sort(function (a, b) {
+    function traverse(traceMetric, nestingLevel) {
+      traceMetric.nestingLevel = nestingLevel;
+      buffer += options.fn(traceMetric);
+      if (traceMetric.nestedTraceMetrics) {
+        traceMetric.nestedTraceMetrics.sort(function (a, b) {
           return b.total - a.total;
         });
-        $.each(metric.nestedMetrics, function (index, metric) {
-          traverse(metric, nestingLevel + 1);
+        $.each(traceMetric.nestedTraceMetrics, function (index, traceMetric) {
+          traverse(traceMetric, nestingLevel + 1);
         });
       }
     }
 
     // add the root node
-    traverse(trace.metrics, 0);
+    traverse(trace.traceMetrics, 0);
     return buffer;
   });
 
@@ -178,8 +178,8 @@ TraceRenderer = (function () {
     return indent1 * (1 + span.nestingLevel);
   });
 
-  Handlebars.registerHelper('metricIndent', function (metric) {
-    return indent1 * metric.nestingLevel;
+  Handlebars.registerHelper('traceMetricIndent', function (traceMetric) {
+    return indent1 * traceMetric.nestingLevel;
   });
 
   Handlebars.registerHelper('firstPart', function (message) {
@@ -220,13 +220,15 @@ TraceRenderer = (function () {
     return html;
   });
 
+  // TODO register these handlers on trace modal each time one is opened instead of globally on $(document)
+  // TODO (and make sure it still works on export files)
   $(document).on('click', 'button.download-trace', function () {
     window.location = 'export/' + $(this).data('trace-id');
   });
-  var mousedownSpanPageX, mousedownSpanPageY;
+  var mousedownPageX, mousedownPageY;
   $(document).mousedown(function (e) {
-    mousedownSpanPageX = e.pageX;
-    mousedownSpanPageY = e.pageY;
+    mousedownPageX = e.pageX;
+    mousedownPageY = e.pageY;
   });
   $(document).on('click', '.unexpanded-content, .expanded-content', function (e, keyboard) {
     smartToggle($(this).parent(), e, keyboard);
@@ -399,7 +401,7 @@ TraceRenderer = (function () {
       basicToggle(parent);
       return;
     }
-    if (Math.abs(e.pageX - mousedownSpanPageX) > 5 || Math.abs(e.pageY - mousedownSpanPageY) > 5) {
+    if (Math.abs(e.pageX - mousedownPageX) > 5 || Math.abs(e.pageY - mousedownPageY) > 5) {
       // not a simple single click, probably highlighting text
       return;
     }
@@ -412,12 +414,12 @@ TraceRenderer = (function () {
       return html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    function curr(node, level, metricName) {
+    function curr(node, level, traceMetric) {
       var rootNodeSampleCount;
       var nodeSampleCount;
-      if (metricName) {
-        rootNodeSampleCount = rootNode.metricNameCounts[metricName] || 0;
-        nodeSampleCount = node.metricNameCounts[metricName] || 0;
+      if (traceMetric) {
+        rootNodeSampleCount = rootNode.traceMetricCounts[traceMetric] || 0;
+        nodeSampleCount = node.traceMetricCounts[traceMetric] || 0;
         if (nodeSampleCount === 0) {
           return '';
         }
@@ -448,14 +450,14 @@ TraceRenderer = (function () {
         var childNodes = node.childNodes;
         // order child nodes by sampleCount (descending)
         childNodes.sort(function (a, b) {
-          if (metricName) {
-            return (b.metricNameCounts[metricName] || 0) - (a.metricNameCounts[metricName] || 0);
+          if (traceMetric) {
+            return (b.traceMetricCounts[traceMetric] || 0) - (a.traceMetricCounts[traceMetric] || 0);
           }
           return b.sampleCount - a.sampleCount;
         });
         var i;
         for (i = 0; i < childNodes.length; i++) {
-          ret += curr(childNodes[i], level, metricName);
+          ret += curr(childNodes[i], level, traceMetric);
         }
       }
       return ret;
@@ -491,14 +493,14 @@ TraceRenderer = (function () {
     }
     $selector.find('.profile-interesting').html(interestingHtml);
 
-    var mergedCounts = calculateMetricNameCounts(rootNode);
+    var mergedCounts = calculateTraceMetricCounts(rootNode);
     if (!$.isEmptyObject(mergedCounts)) {
       // build tree
       var tree = { name: '', childNodes: {} };
-      $.each(rootNode.metricNameCounts, function (metricName) {
+      $.each(rootNode.traceMetricCounts, function (traceMetric) {
         // only really need to look at leafs (' / other') to hit all nodes
-        if (metricName.match(/ \/ other$/)) {
-          var parts = metricName.split(' / ');
+        if (traceMetric.match(/ \/ other$/)) {
+          var parts = traceMetric.split(' / ');
           var node = tree;
           var partialName = '';
           $.each(parts, function (i, part) {
@@ -521,7 +523,7 @@ TraceRenderer = (function () {
           childNodes.push(childNode);
         });
         childNodes.sort(function (a, b) {
-          return rootNode.metricNameCounts[b.name] - rootNode.metricNameCounts[a.name];
+          return rootNode.traceMetricCounts[b.name] - rootNode.traceMetricCounts[a.name];
         });
         if (childNodes.length === 1 && childNodes[0].name.match(/ \/ other$/)) {
           // skip if single 'other' node (in which case it will be represented by current node)
@@ -534,14 +536,14 @@ TraceRenderer = (function () {
       };
 
       var orderedNodes = nodesDepthFirst(tree);
-      // remove the root '' since all nodes are already under the single root span metric
+      // remove the root '' since all nodes are already under the single root trace metric
       orderedNodes.splice(0, 1);
       // build filter dropdown
       var $profileFilter = $selector.find('.profile-filter');
       $profileFilter.removeClass('hide');
       $.each(orderedNodes, function (i, node) {
         $profileFilter.append($('<option />').val(node.name)
-            .text(node.name + ' (' + rootNode.metricNameCounts[node.name] + ')'));
+            .text(node.name + ' (' + rootNode.traceMetricCounts[node.name] + ')'));
       });
       $profileFilter.change(function () {
         // update merged stack tree based on filter
@@ -551,15 +553,15 @@ TraceRenderer = (function () {
     }
   }
 
-  function calculateMetricNameCounts(node) {
+  function calculateTraceMetricCounts(node) {
     var mergedCounts = {};
-    if (node.leafThreadState && node.metricNames.length) {
+    if (node.leafThreadState && node.traceMetrics.length) {
       var partial = '';
-      $.each(node.metricNames, function (i, metricName) {
+      $.each(node.traceMetrics, function (i, traceMetric) {
         if (i > 0) {
           partial += ' / ';
         }
-        partial += metricName;
+        partial += traceMetric;
         mergedCounts[partial] = node.sampleCount;
       });
       mergedCounts[partial + ' / other'] = node.sampleCount;
@@ -567,19 +569,19 @@ TraceRenderer = (function () {
     if (node.childNodes) {
       var childNodes = node.childNodes;
       var i;
-      var processMetric = function (metricName, count) {
-        if (mergedCounts[metricName]) {
-          mergedCounts[metricName] += count;
+      var processTraceMetric = function (traceMetric, count) {
+        if (mergedCounts[traceMetric]) {
+          mergedCounts[traceMetric] += count;
         } else {
-          mergedCounts[metricName] = count;
+          mergedCounts[traceMetric] = count;
         }
       };
       for (i = 0; i < childNodes.length; i++) {
-        var metricNameCounts = calculateMetricNameCounts(childNodes[i]);
-        $.each(metricNameCounts, processMetric);
+        var traceMetricCounts = calculateTraceMetricCounts(childNodes[i]);
+        $.each(traceMetricCounts, processTraceMetric);
       }
     }
-    node.metricNameCounts = mergedCounts;
+    node.traceMetricCounts = mergedCounts;
     return mergedCounts;
   }
 

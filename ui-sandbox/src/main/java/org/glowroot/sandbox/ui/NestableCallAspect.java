@@ -26,10 +26,10 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
+import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -48,10 +48,11 @@ public class NestableCallAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
 
-    @Pointcut(typeName = "org.glowroot.sandbox.ui.NestableCall", methodName = "execute",
-            metricName = "nestable", ignoreSameNested = true)
+    @Pointcut(type = "org.glowroot.sandbox.ui.NestableCall", methodName = "execute",
+            traceMetric = "nestable", ignoreSameNested = true)
     public static class NestableCallAdvice {
-        private static final MetricName metricName = MetricName.get(NestableCallAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(NestableCallAdvice.class);
         private static final Random random = new Random();
         @IsEnabled
         public static boolean isEnabled() {
@@ -60,15 +61,16 @@ public class NestableCallAspect {
         @OnBefore
         public static Span onBefore() {
             int count = counter.getAndIncrement();
-            String headline;
             String transactionName;
+            String headline;
             if (random.nextBoolean()) {
+                transactionName = "Nestable with a very long trace headline";
                 headline = "Nestable with a very long trace headline to test wrapping"
                         + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz";
-                transactionName = "Nestable with a very long trace headline";
             } else {
-                headline = Strings.repeat(String.valueOf((char) ('a' + random.nextInt(26))), 40);
-                transactionName = headline;
+                transactionName =
+                        Strings.repeat(String.valueOf((char) ('a' + random.nextInt(26))), 40);
+                headline = transactionName;
             }
             if (random.nextInt(10) == 0) {
                 // create a long-tail of transaction names to simulate long-tail of urls
@@ -77,10 +79,10 @@ public class NestableCallAspect {
             Span span;
             if (count % 10 == 0) {
                 span = pluginServices.startBackgroundTrace(transactionName,
-                        getRootMessageSupplier(headline), metricName);
+                        getRootMessageSupplier(headline), traceMetricName);
             } else {
                 span = pluginServices.startTrace(transactionName, getRootMessageSupplier(headline),
-                        metricName);
+                        traceMetricName);
             }
             int index = count % (USERS.size() + 1);
             if (index < USERS.size()) {

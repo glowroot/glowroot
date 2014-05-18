@@ -45,7 +45,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class Profile {
 
     private static final Pattern metricMarkerMethodPattern =
-            Pattern.compile("^.*\\$glowroot\\$metric\\$(.*)\\$[0-9]+$");
+            Pattern.compile("^.*\\$glowroot\\$trace\\$metric\\$(.*)\\$[0-9]+$");
 
     private final Object lock = new Object();
     // optimized for trace captures which are never read
@@ -110,13 +110,13 @@ public class Profile {
                     childNode.incrementSampleCount(1);
                     // the metric names for a given stack element should always match, unless
                     // the line numbers aren't available and overloaded methods are matched up, or
-                    // the stack trace was captured while one of the synthetic $metric$ methods was
-                    // executing in which case one of the metric names may be a subset of the other,
-                    // in which case, the superset wins:
-                    List<String> metricNames = element.getMetricNames();
-                    if (metricNames != null
-                            && metricNames.size() > childNode.getMetricNames().size()) {
-                        childNode.setMetricNames(metricNames);
+                    // the stack trace was captured while one of the synthetic $trace$metric$
+                    // methods was executing in which case one of the metric names may be a subset
+                    // of the other, in which case, the superset wins:
+                    List<String> traceMetrics = element.getTraceMetrics();
+                    if (traceMetrics != null
+                            && traceMetrics.size() > childNode.getTraceMetrics().size()) {
+                        childNode.setTraceMetrics(traceMetrics);
                     }
                     lastMatchedNode = childNode;
                     nextChildNodes = lastMatchedNode.getChildNodes();
@@ -138,7 +138,7 @@ public class Profile {
             } else {
                 nextNode = ProfileNode.create(element.getStackTraceElement(), null);
             }
-            nextNode.setMetricNames(element.getMetricNames());
+            nextNode.setTraceMetrics(element.getTraceMetrics());
             nextNode.incrementSampleCount(1);
             lastMatchedNode.addChildNode(nextNode);
             lastMatchedNode = nextNode;
@@ -155,7 +155,7 @@ public class Profile {
                 .toString();
     }
 
-    // recreate the stack trace as it would have been without the synthetic $metric$ methods
+    // recreate the stack trace as it would have been without the synthetic $trace$metric$ methods
     public static List<StackTraceElementPlus> stripSyntheticMetricMethods(
             List<StackTraceElement> stackTrace) {
 
@@ -163,29 +163,30 @@ public class Profile {
                 stackTrace.size());
         for (Iterator<StackTraceElement> i = stackTrace.iterator(); i.hasNext();) {
             StackTraceElement element = i.next();
-            String metricName = getMetricName(element);
-            if (metricName != null) {
+            String traceMetric = getTraceMetric(element);
+            if (traceMetric != null) {
                 String originalMethodName = element.getMethodName();
-                List<String> metricNames = Lists.newArrayListWithCapacity(2);
-                metricNames.add(metricName);
-                // skip over successive $metric$ methods up to and including the "original" method
+                List<String> traceMetrics = Lists.newArrayListWithCapacity(2);
+                traceMetrics.add(traceMetric);
+                // skip over successive $trace$metric$ methods up to and including the "original"
+                // method
                 while (i.hasNext()) {
                     StackTraceElement skipElement = i.next();
-                    metricName = getMetricName(skipElement);
-                    if (metricName == null) {
-                        // loop should always terminate here since synthetic $metric$ methods should
-                        // never be the last element (the last element is the first element in the
-                        // call stack)
+                    traceMetric = getTraceMetric(skipElement);
+                    if (traceMetric == null) {
+                        // loop should always terminate here since synthetic $trace$metric$ methods
+                        // should never be the last element (the last element is the first element
+                        // in the call stack)
                         originalMethodName = skipElement.getMethodName();
                         break;
                     }
-                    metricNames.add(metricName);
+                    traceMetrics.add(traceMetric);
                 }
                 // "original" in the sense that this is what it would have been without the
-                // synthetic $metric$ methods
+                // synthetic $trace$metric$ methods
                 StackTraceElement originalElement = new StackTraceElement(element.getClassName(),
                         originalMethodName, element.getFileName(), element.getLineNumber());
-                stackTracePlus.add(new StackTraceElementPlus(originalElement, metricNames));
+                stackTracePlus.add(new StackTraceElementPlus(originalElement, traceMetrics));
             } else {
                 stackTracePlus.add(new StackTraceElementPlus(element, ImmutableList.<String>of()));
             }
@@ -194,7 +195,7 @@ public class Profile {
     }
 
     @Nullable
-    private static String getMetricName(StackTraceElement stackTraceElement) {
+    private static String getTraceMetric(StackTraceElement stackTraceElement) {
         Matcher matcher = metricMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
         if (matcher.matches()) {
             String group = matcher.group(1);
@@ -221,17 +222,17 @@ public class Profile {
 
     public static class StackTraceElementPlus {
         private final StackTraceElement stackTraceElement;
-        private final ImmutableList<String> metricNames;
+        private final ImmutableList<String> traceMetrics;
         private StackTraceElementPlus(StackTraceElement stackTraceElement,
-                List<String> metricNames) {
+                List<String> traceMetrics) {
             this.stackTraceElement = stackTraceElement;
-            this.metricNames = ImmutableList.copyOf(metricNames);
+            this.traceMetrics = ImmutableList.copyOf(traceMetrics);
         }
         public StackTraceElement getStackTraceElement() {
             return stackTraceElement;
         }
-        private ImmutableList<String> getMetricNames() {
-            return metricNames;
+        private ImmutableList<String> getTraceMetrics() {
+            return traceMetrics;
         }
     }
 }

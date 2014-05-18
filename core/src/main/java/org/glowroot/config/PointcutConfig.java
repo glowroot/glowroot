@@ -46,12 +46,12 @@ import static org.glowroot.common.ObjectMappers.nullToFalse;
 @Immutable
 public class PointcutConfig {
 
-    private final String typeName;
+    private final String type;
     private final String methodName;
-    private final ImmutableList<String> methodArgTypeNames;
-    private final String methodReturnTypeName;
+    private final ImmutableList<String> methodArgTypes;
+    private final String methodReturnType;
     private final ImmutableList<MethodModifier> methodModifiers;
-    private final String metricName;
+    private final String traceMetric;
     private final String spanText;
     @Nullable
     private final Long spanStackTraceThresholdMillis;
@@ -66,17 +66,17 @@ public class PointcutConfig {
     private final String version;
 
     @VisibleForTesting
-    public PointcutConfig(String typeName, String methodName, List<String> methodArgTypeNames,
-            String methodReturnTypeName, List<MethodModifier> methodModifiers, String metricName,
+    public PointcutConfig(String type, String methodName, List<String> methodArgTypes,
+            String methodReturnType, List<MethodModifier> methodModifiers, String traceMetric,
             String spanText, @Nullable Long spanStackTraceThresholdMillis,
             boolean spanIgnoreSameNested, String transactionName, boolean background,
             String enabledProperty, String spanEnabledProperty) {
-        this.typeName = typeName;
+        this.type = type;
         this.methodName = methodName;
-        this.methodArgTypeNames = ImmutableList.copyOf(methodArgTypeNames);
-        this.methodReturnTypeName = methodReturnTypeName;
+        this.methodArgTypes = ImmutableList.copyOf(methodArgTypes);
+        this.methodReturnType = methodReturnType;
         this.methodModifiers = ImmutableList.copyOf(methodModifiers);
-        this.metricName = metricName;
+        this.traceMetric = traceMetric;
         this.spanText = spanText;
         this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
         this.spanIgnoreSameNested = spanIgnoreSameNested;
@@ -84,34 +84,35 @@ public class PointcutConfig {
         this.background = background;
         this.enabledProperty = enabledProperty;
         this.spanEnabledProperty = spanEnabledProperty;
-        version = VersionHashes.sha1(typeName, methodName, methodArgTypeNames,
-                methodReturnTypeName, methodModifiers, metricName, spanText,
-                spanStackTraceThresholdMillis, spanIgnoreSameNested, transactionName, background,
-                enabledProperty, spanEnabledProperty);
+        version = VersionHashes.sha1(type, methodName, methodArgTypes, methodReturnType,
+                methodModifiers, traceMetric, spanText, spanStackTraceThresholdMillis,
+                spanIgnoreSameNested, transactionName, background, enabledProperty,
+                spanEnabledProperty);
     }
 
-    public String getTypeName() {
-        return typeName;
+    public String getType() {
+        return type;
     }
 
     public String getMethodName() {
         return methodName;
     }
 
-    public ImmutableList<String> getMethodArgTypeNames() {
-        return methodArgTypeNames;
+    public ImmutableList<String> getMethodArgTypes() {
+        return methodArgTypes;
     }
 
-    public String getMethodReturnTypeName() {
-        return methodReturnTypeName;
+    public String getMethodReturnType() {
+        return methodReturnType;
     }
 
+    // TODO this is unused
     public ImmutableList<MethodModifier> getMethodModifiers() {
         return methodModifiers;
     }
 
-    public String getMetricName() {
-        return metricName;
+    public String getTraceMetric() {
+        return traceMetric;
     }
 
     public String getSpanText() {
@@ -151,7 +152,7 @@ public class PointcutConfig {
     // TODO this is unused because spans are currently not supported without an associated metric
     @JsonIgnore
     public boolean isMetric() {
-        return !metricName.isEmpty();
+        return !traceMetric.isEmpty();
     }
 
     @JsonIgnore
@@ -166,12 +167,12 @@ public class PointcutConfig {
 
     @JsonCreator
     static PointcutConfig readValue(
-            @JsonProperty("typeName") @Nullable String typeName,
+            @JsonProperty("type") @Nullable String type,
             @JsonProperty("methodName") @Nullable String methodName,
-            @JsonProperty("methodArgTypeNames") @Nullable List<String> methodArgTypeNames,
-            @JsonProperty("methodReturnTypeName") @Nullable String methodReturnTypeName,
+            @JsonProperty("methodArgTypes") @Nullable List<String> methodArgTypes,
+            @JsonProperty("methodReturnType") @Nullable String methodReturnType,
             @JsonProperty("methodModifiers") @Nullable List<MethodModifier> methodModifiers,
-            @JsonProperty("metricName") @Nullable String metricName,
+            @JsonProperty("traceMetric") @Nullable String traceMetric,
             @JsonProperty("spanText") @Nullable String spanText,
             @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
             @JsonProperty("spanIgnoreSameNested") @Nullable Boolean spanIgnoreSameNested,
@@ -183,30 +184,29 @@ public class PointcutConfig {
             // this method in order to set the version field if it is included in the json being
             // deserialized (overwriting the hashed version that is calculated in the constructor)
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(typeName, "typeName");
+        checkRequiredProperty(type, "type");
         checkRequiredProperty(methodName, "methodName");
-        checkRequiredProperty(methodReturnTypeName, "methodReturnTypeName");
+        checkRequiredProperty(methodReturnType, "methodReturnType");
         if (version != null) {
             throw new JsonMappingException("Version field is not allowed for deserialization");
         }
-        return new PointcutConfig(typeName, methodName, nullToEmpty(methodArgTypeNames),
-                methodReturnTypeName, nullToEmpty(methodModifiers), nullToEmpty(metricName),
-                nullToEmpty(spanText), spanStackTraceThresholdMillis,
-                nullToFalse(spanIgnoreSameNested), nullToEmpty(transactionName),
-                nullToFalse(background), nullToEmpty(enabledProperty),
-                nullToEmpty(spanEnabledProperty));
+        return new PointcutConfig(type, methodName, nullToEmpty(methodArgTypes), methodReturnType,
+                nullToEmpty(methodModifiers), nullToEmpty(traceMetric), nullToEmpty(spanText),
+                spanStackTraceThresholdMillis, nullToFalse(spanIgnoreSameNested),
+                nullToEmpty(transactionName), nullToFalse(background),
+                nullToEmpty(enabledProperty), nullToEmpty(spanEnabledProperty));
     }
 
     /*@Pure*/
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("typeName", typeName)
+                .add("type", type)
                 .add("methodName", methodName)
-                .add("methodArgTypeNames", methodArgTypeNames)
-                .add("methodReturnTypeName", methodReturnTypeName)
+                .add("methodArgTypes", methodArgTypes)
+                .add("methodReturnType", methodReturnType)
                 .add("methodModifiers", methodModifiers)
-                .add("metricName", metricName)
+                .add("traceMetric", traceMetric)
                 .add("spanText", spanText)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("spanIgnoreSameNested", spanIgnoreSameNested)

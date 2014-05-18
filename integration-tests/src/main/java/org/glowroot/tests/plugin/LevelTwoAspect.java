@@ -19,9 +19,9 @@ import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
+import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -38,11 +38,12 @@ public class LevelTwoAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
 
-    @Pointcut(typeName = "org.glowroot.tests.LevelTwo", methodName = "call",
-            methodArgs = {"java.lang.String", "java.lang.String"}, metricName = "level two")
+    @Pointcut(type = "org.glowroot.tests.LevelTwo", methodName = "call",
+            methodArgTypes = {"java.lang.String", "java.lang.String"}, traceMetric = "level two")
     public static class LevelTwoAdvice {
 
-        private static final MetricName metricName = MetricName.get(LevelTwoAdvice.class);
+        private static final TraceMetricName traceMetricName =
+                pluginServices.getTraceMetricName(LevelTwoAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -58,7 +59,7 @@ public class LevelTwoAspect {
                     return Message.withDetail("Level Two",
                             ImmutableMap.of("arg1", arg1, "arg2", arg2));
                 }
-            }, metricName);
+            }, traceMetricName);
         }
 
         @OnAfter

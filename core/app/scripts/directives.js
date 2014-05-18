@@ -353,3 +353,27 @@ glowroot.directive('gtFormAutofocusOnFirstInput', function () {
     });
   };
 });
+
+glowroot.directive('gtSmartClick', function () {
+  return {
+    scope: {
+      gtSmartClick: '&'
+    },
+    link: function (scope, iElement, iAttrs) {
+      iElement.mousedown(function (e) {
+        scope.mousedownPageX = e.pageX;
+        scope.mousedownPageY = e.pageY;
+      });
+      iElement.click(function (event, keyboard) {
+        if (!keyboard && (Math.abs(event.pageX - scope.mousedownPageX) > 5 ||
+            Math.abs(event.pageY - scope.mousedownPageY) > 5)) {
+          // not a simple single click, probably highlighting text
+          return;
+        }
+        scope.$apply(function() {
+          scope.gtSmartClick({$event: event});
+        });
+      });
+    }
+  };
+});

@@ -13,49 +13,64 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default gt-sidebar hidden-print">
-  <ul class="list-group">
-    <a class="list-group-item"
-       ng-class="{active: isCurrentView('config.general')}"
-       href="#/config/general">
-      General
-    </a>
-    <a class="list-group-item"
-       ng-class="{active: isCurrentView('config.coarseProfiling')}"
-       href="#/config/coarse-grained-profiling">
-      Coarse-grained profiling
-    </a>
-    <a class="list-group-item"
-       ng-class="{active: isCurrentView('config.fineProfiling')}"
-       href="#/config/fine-grained-profiling">
-      Fine-grained profiling
-    </a>
-    <a class="list-group-item"
-       ng-class="{active: isCurrentView('config.userOverrides')}"
-       href="#/config/user-specific-overrides">
-      User specific overrides
-    </a>
-    <a class="list-group-item"
-       ng-class="{active: isCurrentView('config.storage')}"
-       href="#/config/storage">
-      Storage
-    </a>
-    <a class="list-group-item"
-       ng-class="{active: isCurrentView('config.userInterface')}"
-       href="#/config/user-interface">
-      User interface
-    </a>
-    <a class="list-group-item"
-       ng-class="{active: isCurrentView('config.pointcuts')}"
-       href="#/config/pointcuts">
-      Adhoc pointcuts
-    </a>
-    <a class="list-group-item"
-       ng-class="{active: isCurrentView('config.advanced')}"
-       href="#/config/advanced">
-      Advanced
-    </a>
-  </ul>
+<div class="gt-sidebar hidden-print">
+  <div class="panel panel-default">
+    <ul class="list-group">
+      <a class="list-group-item selectable-list-group-item"
+         ng-class="{active: isCurrentView('config.general')}"
+         href="#/config/general">
+        General
+      </a>
+      <a class="list-group-item selectable-list-group-item"
+         ng-class="{active: isCurrentView('config.coarseProfiling')}"
+         href="#/config/coarse-grained-profiling">
+        Coarse-grained profiling
+      </a>
+      <a class="list-group-item selectable-list-group-item"
+         ng-class="{active: isCurrentView('config.fineProfiling')}"
+         href="#/config/fine-grained-profiling">
+        Fine-grained profiling
+      </a>
+      <a class="list-group-item selectable-list-group-item"
+         ng-class="{active: isCurrentView('config.userOverrides')}"
+         href="#/config/user-specific-overrides">
+        User specific overrides
+      </a>
+      <a class="list-group-item selectable-list-group-item"
+         ng-class="{active: isCurrentView('config.storage')}"
+         href="#/config/storage">
+        Storage
+      </a>
+      <a class="list-group-item selectable-list-group-item"
+         ng-class="{active: isCurrentView('config.userInterface')}"
+         href="#/config/user-interface">
+        User interface
+      </a>
+      <a class="list-group-item selectable-list-group-item"
+         ng-class="{active: isCurrentView('config.adhocPointcuts')}"
+         href="#/config/adhoc-pointcuts">
+        Adhoc pointcuts
+      </a>
+      <a class="list-group-item selectable-list-group-item"
+         ng-class="{active: isCurrentView('config.advanced')}"
+         href="#/config/advanced">
+        Advanced
+      </a>
+    </ul>
+  </div>
+  <div class="panel panel-default">
+    <ul class="list-group">
+      <li class="list-group-item plugin-sidebar-name">
+        Plugins
+      </li>
+      <a ng-repeat="plugin in layout.plugins"
+         class="list-group-item selectable-list-group-item"
+         ng-class="{active: isCurrentPluginView(plugin.id)}"
+         ng-href="#/config/plugin/{{plugin.id}}">
+        {{plugin.name}}
+      </a>
+    </ul>
+  </div>
 </div>
 <div ui-view autoscroll="false" class="gt-main-column">
 </div>

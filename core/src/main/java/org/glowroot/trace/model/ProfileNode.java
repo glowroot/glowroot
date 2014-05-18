@@ -41,7 +41,7 @@ public class ProfileNode {
     // may contain duplicates (common from weaving groups of overloaded methods), these are filtered
     // out later when profile is written to json
     @Nullable
-    private ImmutableList<String> metricNames;
+    private ImmutableList<String> traceMetrics;
     // nodes mostly have a single child node, and rarely have more than two child nodes
     private final List<ProfileNode> childNodes = Lists.newArrayListWithCapacity(2);
 
@@ -65,8 +65,8 @@ public class ProfileNode {
     }
 
     // may contain duplicates
-    public void setMetricNames(List<String> metricNames) {
-        this.metricNames = ImmutableList.copyOf(metricNames);
+    public void setTraceMetrics(List<String> traceMetrics) {
+        this.traceMetrics = ImmutableList.copyOf(traceMetrics);
     }
 
     // sampleCount is volatile to ensure visibility, but this method still needs to be called under
@@ -91,11 +91,11 @@ public class ProfileNode {
     }
 
     // may contain duplicates
-    public ImmutableList<String> getMetricNames() {
-        if (metricNames == null) {
+    public ImmutableList<String> getTraceMetrics() {
+        if (traceMetrics == null) {
             return ImmutableList.of();
         } else {
-            return metricNames;
+            return traceMetrics;
         }
     }
 
@@ -110,7 +110,7 @@ public class ProfileNode {
                 .add("stackTraceElement", stackTraceElement)
                 .add("leafThreadState", leafThreadState)
                 .add("sampleCount", sampleCount)
-                .add("metricNames", metricNames)
+                .add("traceMetrics", traceMetrics)
                 .add("childNodes", childNodes)
                 .toString();
     }

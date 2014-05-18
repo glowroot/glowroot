@@ -194,6 +194,45 @@ public class ConfigTest {
     }
 
     @Test
+    public void shouldInsertAdhocPointcut() throws Exception {
+        // given
+        PointcutConfig config = createPointcutConfig();
+        // when
+        container.getConfigService().addAdhocPointcutConfig(config);
+        // then
+        List<PointcutConfig> configs = container.getConfigService().getAdhocPointcutConfigs();
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0)).isEqualTo(config);
+    }
+
+    @Test
+    public void shouldUpdateAdhocPointcut() throws Exception {
+        // given
+        PointcutConfig config = createPointcutConfig();
+        String version = container.getConfigService().addAdhocPointcutConfig(config);
+        // when
+        updateAllFields(config);
+        container.getConfigService().updateAdhocPointcutConfig(version, config);
+        // then
+        List<PointcutConfig> configs = container.getConfigService().getAdhocPointcutConfigs();
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0)).isEqualTo(config);
+    }
+
+    @Test
+    public void shouldDeleteAdhocPointcut() throws Exception {
+        // given
+        PointcutConfig config = createPointcutConfig();
+        String version = container.getConfigService().addAdhocPointcutConfig(config);
+        // when
+        container.getConfigService().removeAdhocPointcutConfig(version);
+        // then
+        List<? extends PointcutConfig> configs =
+                container.getConfigService().getAdhocPointcutConfigs();
+        assertThat(configs).isEmpty();
+    }
+
+    @Test
     public void shouldUpdateAdvancedConfig() throws Exception {
         // given
         AdvancedConfig config = container.getConfigService().getAdvancedConfig();
@@ -215,45 +254,6 @@ public class ConfigTest {
         // then
         PluginConfig updatedConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         assertThat(updatedConfig).isEqualTo(config);
-    }
-
-    @Test
-    public void shouldInsertPointcutConfig() throws Exception {
-        // given
-        PointcutConfig config = createPointcutConfig();
-        // when
-        container.getConfigService().addPointcutConfig(config);
-        // then
-        List<PointcutConfig> configs = container.getConfigService().getPointcutConfigs();
-        assertThat(configs).hasSize(1);
-        assertThat(configs.get(0)).isEqualTo(config);
-    }
-
-    @Test
-    public void shouldUpdatePointcutConfig() throws Exception {
-        // given
-        PointcutConfig config = createPointcutConfig();
-        String version = container.getConfigService().addPointcutConfig(config);
-        // when
-        updateAllFields(config);
-        container.getConfigService().updatePointcutConfig(version, config);
-        // then
-        List<PointcutConfig> configs = container.getConfigService().getPointcutConfigs();
-        assertThat(configs).hasSize(1);
-        assertThat(configs.get(0)).isEqualTo(config);
-    }
-
-    @Test
-    public void shouldDeletePointcutConfig() throws Exception {
-        // given
-        PointcutConfig config = createPointcutConfig();
-        String version = container.getConfigService().addPointcutConfig(config);
-        // when
-        container.getConfigService().removePointcutConfig(version);
-        // then
-        List<? extends PointcutConfig> configs =
-                container.getConfigService().getPointcutConfigs();
-        assertThat(configs).isEmpty();
     }
 
     private static void updateAllFields(GeneralConfig config) {
@@ -293,7 +293,7 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(AdvancedConfig config) {
-        config.setMetricWrapperMethodsDisabled(!config.isMetricWrapperMethodsDisabled());
+        config.setTraceMetricWrapperMethodsDisabled(!config.isTraceMetricWrapperMethodsDisabled());
         config.setWarnOnSpanOutsideTrace(!config.isWarnOnSpanOutsideTrace());
         config.setWeavingDisabled(!config.isWeavingDisabled());
     }
@@ -312,13 +312,13 @@ public class ConfigTest {
 
     private static PointcutConfig createPointcutConfig() {
         PointcutConfig config = new PointcutConfig();
-        config.setTypeName("java.util.Collections");
+        config.setType("java.util.Collections");
         config.setMethodName("yak");
-        config.setMethodArgTypeNames(Lists.newArrayList("java.lang.String", "java.util.List"));
-        config.setMethodReturnTypeName("void");
+        config.setMethodArgTypes(Lists.newArrayList("java.lang.String", "java.util.List"));
+        config.setMethodReturnType("void");
         config.setMethodModifiers(Lists
                 .newArrayList(MethodModifier.PUBLIC, MethodModifier.STATIC));
-        config.setMetricName("yako");
+        config.setTraceMetric("yako");
         config.setSpanText("yak(): {{0}}, {{1}} => {{?}}");
         config.setTransactionName("");
         config.setEnabledProperty("");
@@ -327,22 +327,22 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(PointcutConfig config) {
-        config.setTypeName(config.getTypeName() + "a");
+        config.setType(config.getType() + "a");
         config.setMethodName(config.getMethodName() + "b");
-        if (config.getMethodArgTypeNames().size() == 0) {
-            config.setMethodArgTypeNames(ImmutableList.of("java.lang.String"));
+        if (config.getMethodArgTypes().size() == 0) {
+            config.setMethodArgTypes(ImmutableList.of("java.lang.String"));
         } else {
-            config.setMethodArgTypeNames(ImmutableList.of(config.getMethodArgTypeNames().get(0)
+            config.setMethodArgTypes(ImmutableList.of(config.getMethodArgTypes().get(0)
                     + "c"));
         }
-        config.setMethodReturnTypeName(config.getMethodReturnTypeName() + "d");
+        config.setMethodReturnType(config.getMethodReturnType() + "d");
         if (config.getMethodModifiers().contains(MethodModifier.PUBLIC)) {
             config.setMethodModifiers(ImmutableList.of(MethodModifier.PRIVATE));
         } else {
             config.setMethodModifiers(ImmutableList
                     .of(MethodModifier.PUBLIC, MethodModifier.STATIC));
         }
-        config.setMetricName(config.getMetricName() + "e");
+        config.setTraceMetric(config.getTraceMetric() + "e");
         config.setSpanText(config.getSpanText() + "f");
         Long spanStackTraceThresholdMillis = config.getSpanStackTraceThresholdMillis();
         if (spanStackTraceThresholdMillis == null) {

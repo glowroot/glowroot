@@ -16,28 +16,21 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
-import java.util.List;
 
-import javax.annotation.Nullable;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.local.store.ErrorAggregate;
 import org.glowroot.local.store.ErrorAggregateQuery;
+import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.markers.Singleton;
 
-import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.common.ObjectMappers.nullToEmpty;
-
 /**
- * Json service to read error data, bound to /backend/error.
+ * Json service to read error data.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -59,57 +52,9 @@ class ErrorJsonService {
         logger.debug("getAggregates(): content={}", content);
         ObjectMapper mapper = ObjectMappers.create();
         mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-        ErrorAggregatesRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, ErrorAggregatesRequest.class);
-        ErrorAggregateQuery query = new ErrorAggregateQuery(request.getFrom(), request.getTo(),
-                request.getIncludes(), request.getExcludes(), request.getLimit());
-        return mapper.writeValueAsString(snapshotDao.readErrorAggregates(query));
-    }
-
-    private static class ErrorAggregatesRequest {
-
-        private final long from;
-        private final long to;
-        private final List<String> includes;
-        private final List<String> excludes;
-        private final int limit;
-
-        @JsonCreator
-        ErrorAggregatesRequest(
-                @JsonProperty("from") @Nullable Long from,
-                @JsonProperty("to") @Nullable Long to,
-                @JsonProperty("includes") @Nullable List<String> includes,
-                @JsonProperty("excludes") @Nullable List<String> excludes,
-                @JsonProperty("limit") @Nullable Integer limit)
-                throws JsonMappingException {
-            checkRequiredProperty(from, "from");
-            checkRequiredProperty(to, "to");
-            checkRequiredProperty(limit, "limit");
-            this.from = from;
-            this.to = to;
-            this.includes = nullToEmpty(includes);
-            this.excludes = nullToEmpty(excludes);
-            this.limit = limit;
-        }
-
-        private long getFrom() {
-            return from;
-        }
-
-        private long getTo() {
-            return to;
-        }
-
-        private List<String> getIncludes() {
-            return includes;
-        }
-
-        private List<String> getExcludes() {
-            return excludes;
-        }
-
-        private int getLimit() {
-            return limit;
-        }
+        ErrorAggregateQuery query =
+                ObjectMappers.readRequiredValue(mapper, content, ErrorAggregateQuery.class);
+        QueryResult<ErrorAggregate> queryResult = snapshotDao.readErrorAggregates(query);
+        return mapper.writeValueAsString(queryResult);
     }
 }

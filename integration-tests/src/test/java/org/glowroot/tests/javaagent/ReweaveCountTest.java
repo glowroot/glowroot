@@ -49,23 +49,23 @@ public class ReweaveCountTest {
     @After
     public void afterEachTest() throws Exception {
         container.checkAndReset();
-        container.getConfigService().reweavePointcutConfigs();
+        container.getConfigService().reweaveAdhocPointcuts();
     }
 
     @Test
     public void shouldCalculateCorrectReweaveCount() throws Exception {
         container.executeAppUnderTest(ShouldLoadClassesForWeaving.class);
         PointcutConfig config = new PointcutConfig();
-        config.setTypeName("org.glowroot.tests.javaagent.ReweaveCountTest$AAA");
+        config.setType("org.glowroot.tests.javaagent.ReweaveCountTest$AAA");
         config.setMethodName("x");
-        config.setMethodArgTypeNames(ImmutableList.<String>of());
-        config.setMethodReturnTypeName("");
-        config.setMetricName("x");
-        String configVersion = container.getConfigService().addPointcutConfig(config);
-        int reweaveCount = container.getConfigService().reweavePointcutConfigs();
+        config.setMethodArgTypes(ImmutableList.<String>of());
+        config.setMethodReturnType("");
+        config.setTraceMetric("x");
+        String configVersion = container.getConfigService().addAdhocPointcutConfig(config);
+        int reweaveCount = container.getConfigService().reweaveAdhocPointcuts();
         assertThat(reweaveCount).isEqualTo(2);
-        container.getConfigService().removePointcutConfig(configVersion);
-        reweaveCount = container.getConfigService().reweavePointcutConfigs();
+        container.getConfigService().removeAdhocPointcutConfig(configVersion);
+        reweaveCount = container.getConfigService().reweaveAdhocPointcuts();
         assertThat(reweaveCount).isEqualTo(2);
     }
 

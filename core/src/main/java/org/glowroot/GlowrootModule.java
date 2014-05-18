@@ -65,7 +65,7 @@ public class GlowrootModule {
     private final File dataDir;
 
     GlowrootModule(File dataDir, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, String version, boolean viewerMode)
+            @Nullable Instrumentation instrumentation, String version, boolean viewerModeEnabled)
             throws StartupFailedException {
         Ticker ticker = Ticker.systemTicker();
         Clock clock = Clock.systemClock();
@@ -75,7 +75,7 @@ public class GlowrootModule {
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
         JvmModule jvmModule = new JvmModule();
         try {
-            configModule = new ConfigModule(instrumentation, dataDir, viewerMode);
+            configModule = new ConfigModule(instrumentation, dataDir, viewerModeEnabled);
         } catch (IOException e) {
             throw new StartupFailedException(e);
         } catch (URISyntaxException e) {
@@ -92,7 +92,7 @@ public class GlowrootModule {
                 scheduledExecutor);
         try {
             storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
-                    scheduledExecutor, viewerMode);
+                    scheduledExecutor, viewerModeEnabled);
         } catch (DataSourceLockedException e) {
             throw new StartupFailedException(e, true);
         } catch (SQLException e) {
@@ -102,7 +102,8 @@ public class GlowrootModule {
         }
         collectorModule = new CollectorModule(clock, ticker, configModule,
                 storageModule.getSnapshotRepository(),
-                storageModule.getTransactionPointRepository(), scheduledExecutor, viewerMode);
+                storageModule.getTransactionPointRepository(), scheduledExecutor,
+                viewerModeEnabled);
         // now inject the real TraceCollector into the proxy
         traceCollectorProxy.setInstance(collectorModule.getTraceCollector());
         uiModule = new LocalUiModule(ticker, clock, dataDir, jvmModule, configModule,
