@@ -72,6 +72,11 @@ glowroot.config([
       templateUrl: 'views/jvm/process.html',
       controller: 'JvmProcessCtrl'
     });
+    $stateProvider.state('jvm.mbeans', {
+      url: '/mbeans',
+      templateUrl: 'views/jvm/mbeans.html',
+      controller: 'JvmMBeansCtrl'
+    });
     $stateProvider.state('jvm.threadDump', {
       url: '/thread-dump',
       templateUrl: 'views/jvm/thread-dump.html',

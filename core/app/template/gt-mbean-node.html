@@ -1,0 +1,41 @@
+<div>
+  <div ng-if="node.childNodes">
+    {{node.nodeName}}
+    <div ng-repeat="node in node.childNodes"
+         ng-include="'template/gt-mbean-node.html'"
+         style="margin-left: 30px;">
+    </div>
+  </div>
+  <div ng-if="node.objectName">
+    <span class="inline-block mbean-unexpanded-content glowroot-link-color"
+          style="margin-left: -10px;"
+          ng-hide="node.expanded"
+          gt-smart-click="toggleMBean(node)">
+      {{node.nodeName}}
+    </span>
+    <div class="inline-block mbean-expanded-content"
+         style="margin-left: -10px;"
+         ng-show="node.expanded"
+         gt-smart-click="toggleMBean(node)">
+      <span style="font-weight: bold;">{{node.nodeName}}</span>
+      <br>
+      <div gt-spinner
+           gt-show="node.loading && !httpError">
+      </div>
+      <table>
+        <tr ng-repeat="(key, value) in node.attributeMap">
+          <td valign="top">{{key}}</td>
+          <td style="padding-left: 10px;">
+            <div ng-show="isSimpleValue(value)"
+                 class="break-word">
+              {{value}}
+            </div>
+            <div ng-hide="isSimpleValue(value)">
+              <pre class="mbean-value-pre break-word">{{indentedJson(value)}}</pre>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>

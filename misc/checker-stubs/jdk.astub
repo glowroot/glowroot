@@ -36,3 +36,10 @@ package java.util;
 public class Arrays {
     public static <T extends @Nullable Object> List<T> asList(T... a);
 }
+
+/* ========================================================================== */
+package javax.management;
+
+public interface MBeanServer {
+    public Set<ObjectName> queryNames(@Nullable ObjectName name, @Nullable QueryExp query);
+}

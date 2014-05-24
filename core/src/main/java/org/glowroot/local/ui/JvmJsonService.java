@@ -21,6 +21,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
@@ -28,14 +29,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
+import java.util.TreeMap;
 
 import javax.management.JMException;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanInfo;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.management.openmbean.CompositeData;
+import javax.management.openmbean.TabularData;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
@@ -62,6 +73,7 @@ import org.glowroot.markers.UsedByJsonBinding;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
 /**
  * Json service to read jvm info.
@@ -142,8 +154,10 @@ class JvmJsonService {
     String getSystemProperties() throws IOException {
         logger.debug("getSystemProperties()");
         Properties properties = System.getProperties();
+        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
+        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
         Map<String, String> sortedProperties =
-                Maps.<String, String, String>newTreeMap(String.CASE_INSENSITIVE_ORDER);
+                new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
         for (Enumeration<?> e = properties.propertyNames(); e.hasMoreElements();) {
             Object obj = e.nextElement();
             if (obj instanceof String) {
@@ -166,6 +180,62 @@ class JvmJsonService {
         jg.writeEndArray();
         jg.close();
         return sb.toString();
+    }
+
+    @GET("/backend/jvm/mbean-tree")
+    String getMBeanTree(String content) throws IOException, JMException {
+        logger.debug("getMBeanTree(): {}", content);
+        // ACCEPT_SINGLE_VALUE_AS_ARRAY needed to map expanded whether it is single value or array
+        ObjectMapper mapper =
+                new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+        MBeanTreeRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, MBeanTreeRequest.class);
+        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+        Set<ObjectName> objectNames = platformMBeanServer.queryNames(null, null);
+        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
+        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
+        Map<String, MBeanTreeInnerNode> sortedRootNodes =
+                new TreeMap<String, MBeanTreeInnerNode>(String.CASE_INSENSITIVE_ORDER);
+        for (ObjectName objectName : objectNames) {
+            String domain = objectName.getDomain();
+            MBeanTreeInnerNode node = sortedRootNodes.get(domain);
+            if (node == null) {
+                node = new MBeanTreeInnerNode(domain);
+                sortedRootNodes.put(domain, node);
+            }
+            List<String> keyValuePairs =
+                    Splitter.on(',').splitToList(objectName.getKeyPropertyListString());
+            for (int i = 0; i < keyValuePairs.size(); i++) {
+                String keyValuePair = keyValuePairs.get(i);
+                int separator = keyValuePair.indexOf('=');
+                String value = keyValuePair.substring(separator + 1);
+                if (i == keyValuePairs.size() - 1) {
+                    String name =
+                            objectName.getDomain() + ":" + objectName.getKeyPropertyListString();
+                    if (request.getExpanded().contains(name)) {
+                        Map<String, /*@Nullable*/Object> sortedAttributeMap =
+                                getMBeanSortedAttributeMap(objectName);
+                        node.addLeafNode(
+                                new MBeanTreeLeafNode(value, name, true, sortedAttributeMap));
+                    } else {
+                        node.addLeafNode(new MBeanTreeLeafNode(value, name, false, null));
+                    }
+                } else {
+                    node = node.getOrCreateNode(value);
+                }
+            }
+        }
+        return mapper.writeValueAsString(sortedRootNodes);
+    }
+
+    @GET("/backend/jvm/mbean-attribute-map")
+    String getMBeanAttributeMap(String content) throws IOException, JMException {
+        logger.debug("getMBeanAttributeMap(): content={}", content);
+        MBeanAttributeMapRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, MBeanAttributeMapRequest.class);
+        ObjectName objectName = ObjectName.getInstance(request.getObjectName());
+        Map<String, /*@Nullable*/Object> attributeMap = getMBeanSortedAttributeMap(objectName);
+        return mapper.writeValueAsString(attributeMap);
     }
 
     @POST("/backend/jvm/perform-gc")
@@ -341,6 +411,91 @@ class JvmJsonService {
         return null;
     }
 
+    private Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(ObjectName objectName)
+            throws JMException {
+        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+        MBeanInfo mBeanInfo = platformMBeanServer.getMBeanInfo(objectName);
+        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
+        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
+        Map<String, /*@Nullable*/Object> sortedAttributeMap =
+                new TreeMap<String, /*@Nullable*/Object>(String.CASE_INSENSITIVE_ORDER);
+        for (MBeanAttributeInfo attribute : mBeanInfo.getAttributes()) {
+            Object value;
+            try {
+                value = platformMBeanServer.getAttribute(objectName, attribute.getName());
+            } catch (Exception e) {
+                // log exception at debug level
+                logger.debug(e.getMessage(), e);
+                Throwable rootCause = getRootCause(e);
+                value = "<Unavailable due to " + rootCause.getClass().getName() + ": "
+                        + rootCause.getMessage() + ">";
+            }
+            sortedAttributeMap.put(attribute.getName(), getMBeanAttributeValue(value));
+        }
+        return sortedAttributeMap;
+    }
+
+    private Throwable getRootCause(Throwable t) {
+        Throwable cause = t.getCause();
+        if (cause == null) {
+            return t;
+        } else {
+            return getRootCause(cause);
+        }
+    }
+
+    // see list of allowed attribute value types:
+    // http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/OpenType.html
+    // #ALLOWED_CLASSNAMES_LIST
+    //
+    // TODO some of the above attribute value types are not handled yet
+    @Nullable
+    private Object getMBeanAttributeValue(@Nullable Object value) {
+        if (value == null) {
+            return null;
+        } else if (value instanceof CompositeData) {
+            CompositeData compositeData = (CompositeData) value;
+            // linked hash map used to preserve attribute ordering
+            Map<String, /*@Nullable*/Object> valueMap = Maps.newLinkedHashMap();
+            for (String key : compositeData.getCompositeType().keySet()) {
+                valueMap.put(key, getMBeanAttributeValue(compositeData.get(key)));
+            }
+            return valueMap;
+        } else if (value instanceof TabularData) {
+            TabularData tabularData = (TabularData) value;
+            // linked hash map used to preserve row ordering
+            Map<String, Map<String, /*@Nullable*/Object>> rowMap = Maps.newLinkedHashMap();
+            Set<String> attributeNames = tabularData.getTabularType().getRowType().keySet();
+            for (Object key : tabularData.keySet()) {
+                // TabularData.keySet() returns "Set<List<?>> but is declared Set<?> for
+                // compatibility reasons" (see javadocs) so safe to cast to List<?>
+                List<?> keyList = (List<?>) key;
+                String keyString = Joiner.on(", ").join(keyList);
+                CompositeData compositeData = tabularData.get(keyList.toArray());
+                // linked hash map used to preserve attribute ordering
+                Map<String, /*@Nullable*/Object> valueMap = Maps.newLinkedHashMap();
+                for (String attributeName : attributeNames) {
+                    valueMap.put(attributeName,
+                            getMBeanAttributeValue(compositeData.get(attributeName)));
+                }
+                rowMap.put(keyString, valueMap);
+            }
+            return rowMap;
+        } else if (value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            List</*@Nullable*/Object> valueList = Lists.newArrayListWithCapacity(length);
+            for (int i = 0; i < length; i++) {
+                Object val = Array.get(value, i);
+                valueList.add(getMBeanAttributeValue(val));
+            }
+            return valueList;
+        } else if (value instanceof Number) {
+            return value;
+        } else {
+            return value.toString();
+        }
+    }
+
     @UsedByJsonBinding
     static class RequestWithDirectory {
 
@@ -355,6 +510,128 @@ class JvmJsonService {
 
         private String getDirectory() {
             return directory;
+        }
+    }
+
+    interface MBeanTreeNode {
+
+        static final Ordering<MBeanTreeNode> ordering = new Ordering<MBeanTreeNode>() {
+            @Override
+            public int compare(@Nullable MBeanTreeNode left, @Nullable MBeanTreeNode right) {
+                checkNotNull(left);
+                checkNotNull(right);
+                return left.getNodeName().compareToIgnoreCase(right.getNodeName());
+            }
+        };
+
+        String getNodeName();
+    }
+
+    @UsedByJsonBinding
+    static class MBeanTreeInnerNode implements MBeanTreeNode {
+
+        private final String name;
+
+        // not using Map here since its possible for multiple leafs with same name
+        // e.g. d:type=Foo,name=Bar and d:type=Foo,nonsense=Bar
+        // both translate to a leaf named Bar under d/Foo
+        private final List<MBeanTreeNode> childNodes = Lists.newArrayList();
+
+        private final Map<String, MBeanTreeInnerNode> innerNodes = Maps.newHashMap();
+
+        private MBeanTreeInnerNode(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String getNodeName() {
+            return name;
+        }
+
+        public List<MBeanTreeNode> getChildNodes() {
+            return MBeanTreeNode.ordering.sortedCopy(childNodes);
+        }
+
+        private MBeanTreeInnerNode getOrCreateNode(String name) {
+            MBeanTreeInnerNode innerNode = innerNodes.get(name);
+            if (innerNode == null) {
+                innerNode = new MBeanTreeInnerNode(name);
+                innerNodes.put(name, innerNode);
+                childNodes.add(innerNode);
+            }
+            return innerNode;
+        }
+
+        private void addLeafNode(MBeanTreeLeafNode leafNode) {
+            childNodes.add(leafNode);
+        }
+    }
+
+    @UsedByJsonBinding
+    static class MBeanTreeLeafNode implements MBeanTreeNode {
+
+        // nodeName may not be unique
+        private final String nodeName;
+        private final String objectName;
+        private final boolean expanded;
+        @Nullable
+        private final Map<String, /*@Nullable*/Object> attributeMap;
+
+        private MBeanTreeLeafNode(String nodeName, String objectName, boolean expanded,
+                @Nullable Map<String, /*@Nullable*/Object> attributeMap) {
+            this.nodeName = nodeName;
+            this.objectName = objectName;
+            this.expanded = expanded;
+            this.attributeMap = attributeMap;
+        }
+
+        @Override
+        public String getNodeName() {
+            return nodeName;
+        }
+
+        public String getObjectName() {
+            return objectName;
+        }
+
+        public boolean isExpanded() {
+            return expanded;
+        }
+
+        @Nullable
+        public Map<String, /*@Nullable*/Object> getAttributeMap() {
+            return attributeMap;
+        }
+    }
+
+    private static class MBeanTreeRequest {
+
+        private final List<String> expanded;
+
+        @JsonCreator
+        MBeanTreeRequest(@JsonProperty("expanded") @Nullable List<String> expanded)
+                throws JsonMappingException {
+            this.expanded = nullToEmpty(expanded);
+        }
+
+        public List<String> getExpanded() {
+            return expanded;
+        }
+    }
+
+    private static class MBeanAttributeMapRequest {
+
+        private final String objectName;
+
+        @JsonCreator
+        MBeanAttributeMapRequest(@JsonProperty("objectName") @Nullable String objectName)
+                throws JsonMappingException {
+            checkRequiredProperty(objectName, "objectName");
+            this.objectName = objectName;
+        }
+
+        private String getObjectName() {
+            return objectName;
         }
     }
 }

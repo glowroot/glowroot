@@ -37,4 +37,8 @@ public class Maps {
             HashMap<K, V> newHashMap();
     public static <K extends @Nullable Object, V extends @Nullable Object>
             LinkedHashMap<K, V> newLinkedHashMap();
+    // TreeMap with default comparator does not support null keys
+    public static <K, V extends @Nullable Object> TreeMap<K, V> newTreeMap();
+    public static <C extends @Nullable Object, K extends C, V extends @Nullable Object>
+            TreeMap<K, V> newTreeMap(@Nullable Comparator<C> comparator);
 }

@@ -77,3 +77,33 @@
     margin-top: 0px;
   }
 }
+
+.mbean-unexpanded-content,
+.mbean-expanded-content {
+  cursor: pointer;
+  // margin-right is used (instead of padding-right on the container) so that wide content which
+  // requires horizontal scrolling will still have padding to its right
+  margin-right: 20px;
+  border-radius: 4px;
+  padding: 2px 10px;
+}
+
+.mbean-unexpanded-content:hover,
+.mbean-unexpanded-content:focus,
+.mbean-expanded-content:hover,
+.mbean-expanded-content:focus {
+  background-color: #ddd;
+}
+
+.mbean-expanded-content {
+  background-color: #eee;
+  // margin for white space between successive expanded elements, at the bottom so that
+  // expanding doesn't create jitter/shift down of expanding section
+  margin-bottom: 4px;
+}
+
+.mbean-value-pre {
+  margin: 0;
+  font-family: inherit;
+  white-space: pre-wrap;
+}
