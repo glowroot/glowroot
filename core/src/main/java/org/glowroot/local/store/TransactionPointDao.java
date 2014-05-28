@@ -110,9 +110,7 @@ public class TransactionPointDao implements TransactionPointRepository {
                 @Override
                 public void addBatches(PreparedStatement preparedStatement)
                         throws SQLException {
-                    // ? extends String needed for checker framework, see issue #311
-                    for (Entry<? extends String, TransactionPoint> entry : transactionPoints
-                            .entrySet()) {
+                    for (Entry<String, TransactionPoint> entry : transactionPoints.entrySet()) {
                         TransactionPoint transactionPoint = entry.getValue();
                         String profileId = null;
                         String profile = transactionPoint.getProfile();

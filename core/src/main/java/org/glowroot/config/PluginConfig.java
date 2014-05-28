@@ -371,8 +371,7 @@ public class PluginConfig {
         private String buildVersion() {
             Hasher hasher = Hashing.sha1().newHasher();
             hasher.putBoolean(enabled);
-            // ? extends String needed for checker framework, see issue #311
-            for (Map.Entry<? extends String, String> property : stringProperties.entrySet()) {
+            for (Map.Entry<String, String> property : stringProperties.entrySet()) {
                 String name = property.getKey();
                 String value = property.getValue();
                 hasher.putString(name, Charsets.UTF_8);
@@ -380,17 +379,14 @@ public class PluginConfig {
                 hasher.putString(value, Charsets.UTF_8);
                 hasher.putInt(value.length());
             }
-            // ? extends String needed for checker framework, see issue #311
-            for (Map.Entry<? extends String, Boolean> property : booleanProperties.entrySet()) {
+            for (Map.Entry<String, Boolean> property : booleanProperties.entrySet()) {
                 String name = property.getKey();
                 Boolean value = property.getValue();
                 hasher.putString(name, Charsets.UTF_8);
                 hasher.putInt(name.length());
                 hasher.putBoolean(value);
             }
-            // ? extends String needed for checker framework, see issue #311
-            for (Map.Entry<? extends String, Optional<Double>> property : doubleProperties
-                    .entrySet()) {
+            for (Map.Entry<String, Optional<Double>> property : doubleProperties.entrySet()) {
                 String name = property.getKey();
                 Double value = property.getValue().orNull();
                 hasher.putString(name, Charsets.UTF_8);

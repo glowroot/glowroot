@@ -212,8 +212,7 @@ public class Trace {
         checkRequiredProperty(fineProfileExistence, "fineProfileExistence");
         ImmutableSetMultimap.Builder<String, String> theAttributes = ImmutableSetMultimap.builder();
         if (attributes != null) {
-            // ? extends String needed for checker framework, see issue #311
-            for (Entry<? extends String, List<String>> entry : attributes.entrySet()) {
+            for (Entry<String, List<String>> entry : attributes.entrySet()) {
                 theAttributes.putAll(entry.getKey(), entry.getValue());
             }
         }

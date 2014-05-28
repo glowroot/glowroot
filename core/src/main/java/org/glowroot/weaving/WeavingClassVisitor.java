@@ -435,8 +435,7 @@ class WeavingClassVisitor extends ClassVisitor {
                 }
             }
         }
-        // ? extends Object needed for checker framework, see issue #311
-        for (Entry<? extends ParsedMethod, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
+        for (Entry<ParsedMethod, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
             ParsedMethod inheritedMethod = entry.getKey();
             overrideAndWeaveInheritedMethod(parsedType, inheritedMethod, entry.getValue());
         }

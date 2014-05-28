@@ -81,8 +81,7 @@ class ClasspathCache {
         String partialTypeNameUpper = partialTypeName.toUpperCase(Locale.ENGLISH);
         Set<String> typeNames = Sets.newTreeSet();
         synchronized (typeNameUppers) {
-            // ? extends String needed for checker framework, see issue #311
-            for (Entry<? extends String, SortedSet<String>> entry : typeNameUppers.entrySet()) {
+            for (Entry<String, SortedSet<String>> entry : typeNameUppers.entrySet()) {
                 String typeNameUpper = entry.getKey();
                 if (typeNameUpper.contains(partialTypeNameUpper)) {
                     typeNames.addAll(entry.getValue());

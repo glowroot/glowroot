@@ -362,7 +362,7 @@
             <!-- running checker framework check requires jdk7 -->
             <groupId>org.checkerframework</groupId>
             <artifactId>checkerframework-maven-plugin</artifactId>
-            <version>1.8.0</version>
+            <version>1.8.1</version>
             <executions>
               <execution>
                 <phase>process-classes</phase>

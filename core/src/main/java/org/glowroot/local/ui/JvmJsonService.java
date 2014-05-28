@@ -156,8 +156,7 @@ class JvmJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartArray();
-        // ? extends String needed for checker framework, see issue #311
-        for (Entry<? extends String, String> entry : sortedProperties.entrySet()) {
+        for (Entry<String, String> entry : sortedProperties.entrySet()) {
             jg.writeStartObject();
             jg.writeStringField("name", entry.getKey());
             jg.writeStringField("value", entry.getValue());

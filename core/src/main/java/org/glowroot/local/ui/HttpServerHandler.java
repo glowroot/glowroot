@@ -477,8 +477,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             // create json message out of the query string
             // flatten map values from list to single element where possible
             Map<String, Object> parameters = Maps.newHashMap();
-            // ? extends String needed for checker framework, see issue #311
-            for (Entry<? extends String, List<String>> entry : decoder.getParameters().entrySet()) {
+            for (Entry<String, List<String>> entry : decoder.getParameters().entrySet()) {
                 String key = entry.getKey();
                 key = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, key);
                 if (entry.getValue().size() == 1) {

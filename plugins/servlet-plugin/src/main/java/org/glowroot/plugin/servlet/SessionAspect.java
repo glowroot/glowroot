@@ -202,9 +202,7 @@ public class SessionAspect {
             if (val == null) {
                 messageSupplier.putSessionAttributeChangedValue(capturePathBase, null);
             } else {
-                // ? extends String needed for checker framework, see issue #311
-                for (Entry<? extends String, String> entry : Beans.propertiesAsText(val)
-                        .entrySet()) {
+                for (Entry<String, String> entry : Beans.propertiesAsText(val).entrySet()) {
                     messageSupplier.putSessionAttributeChangedValue(
                             capturePathBase + "." + entry.getKey(), entry.getValue());
                 }

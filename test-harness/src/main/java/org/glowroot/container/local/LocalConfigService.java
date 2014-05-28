@@ -258,11 +258,7 @@ class LocalConfigService implements ConfigService {
         }
         PluginConfig config = new PluginConfig(coreConfig.getId(), coreConfig.getVersion());
         config.setEnabled(coreConfig.isEnabled());
-        // ? extends String and ? extends /*@Nullable*/Object needed for checker framework
-        // see issue #311
-        for (Entry<? extends String, ? extends /*@Nullable*/Object> entry : coreConfig
-                .getProperties()
-                .entrySet()) {
+        for (Entry<String, /*@Nullable*/Object> entry : coreConfig.getProperties().entrySet()) {
             config.setProperty(entry.getKey(), entry.getValue());
         }
         return config;
@@ -277,10 +273,7 @@ class LocalConfigService implements ConfigService {
         org.glowroot.config.PluginConfig.Builder updatedConfig =
                 org.glowroot.config.PluginConfig.builder(pluginConfig);
         updatedConfig.enabled(config.isEnabled());
-        // ? extends String and ? extends /*@Nullable*/Object needed for checker framework
-        // see issue #311
-        for (Entry<? extends String, ? extends /*@Nullable*/Object> entry : config.getProperties()
-                .entrySet()) {
+        for (Entry<String, /*@Nullable*/Object> entry : config.getProperties().entrySet()) {
             updatedConfig.setProperty(entry.getKey(), entry.getValue());
         }
         configService.updatePluginConfig(updatedConfig.build(), config.getVersion());
