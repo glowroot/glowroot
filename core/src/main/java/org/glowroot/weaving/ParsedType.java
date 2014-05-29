@@ -35,7 +35,7 @@ import static org.objectweb.asm.Opcodes.ACC_NATIVE;
  * @since 0.5
  */
 // a ParsedType is never created for Object.class
-// TODO intern all Strings in this class to minimize long term memory usage
+// Strings are interned to reduce memory footprint of ParsedTypeCache
 @Immutable
 public class ParsedType {
 
@@ -62,9 +62,9 @@ public class ParsedType {
             List<String> interfaceNames, List<ParsedMethod> methods,
             List<ParsedMethod> nativeMethods, boolean hasReweavableAdvice) {
         this.iface = iface;
-        this.name = name;
-        this.superName = superName;
-        this.interfaceNames = ImmutableList.copyOf(interfaceNames);
+        this.name = name.intern();
+        this.superName = superName == null ? null : superName.intern();
+        this.interfaceNames = ParsedMethod.internStringList(interfaceNames);
         this.methods = ImmutableList.copyOf(methods);
         this.nativeMethods = ImmutableList.copyOf(nativeMethods);
         this.hasReweavableAdvice = hasReweavableAdvice;
@@ -154,7 +154,7 @@ public class ParsedType {
                 @Nullable String signature, List<String> exceptions) {
             List<Type> argTypes = Arrays.asList(Type.getArgumentTypes(desc));
             ParsedMethod method = ParsedMethod.from(name, argTypes, Type.getReturnType(desc),
-                    access, desc, signature, exceptions);
+                    access, signature, exceptions);
             if ((access & ACC_NATIVE) == 0) {
                 methods.add(method);
             } else {

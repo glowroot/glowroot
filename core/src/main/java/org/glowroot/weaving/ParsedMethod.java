@@ -33,7 +33,7 @@ import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO intern all Strings in this class to minimize long term memory usage
+// Strings are interned to reduce memory footprint of ParsedTypeCache
 @Immutable
 public class ParsedMethod {
 
@@ -45,34 +45,33 @@ public class ParsedMethod {
     // fields below are needed for public methods in case they end up fulfilling an interface in a
     // subclass
     private final boolean isFinal;
-    private final String desc;
     @Nullable
     private final String signature;
     private final ImmutableList<String> exceptions;
 
     static ParsedMethod from(String name, List<Type> argTypes, Type returnType, int modifiers,
-            String desc, @Nullable String signature, List<String> exceptions) {
+            @Nullable String signature, List<String> exceptions) {
         List<String> argTypeNames = Lists.newArrayList();
         for (Type argType : argTypes) {
             argTypeNames.add(argType.getClassName());
         }
         String returnTypeName = returnType.getClassName();
-        return new ParsedMethod(name, argTypeNames, returnTypeName, modifiers, desc,
-                signature, exceptions);
+        return new ParsedMethod(name, argTypeNames, returnTypeName, modifiers, signature,
+                exceptions);
     }
 
+    // desc is only passed to validate calculation for now
     private ParsedMethod(String name, List<String> argTypes, String returnType, int modifiers,
-            String desc, @Nullable String signature, List<String> exceptions) {
-        this.name = name;
-        this.argTypes = ImmutableList.copyOf(argTypes);
-        this.returnType = returnType;
+            @Nullable String signature, List<String> exceptions) {
+        this.name = name.intern();
+        this.argTypes = internStringList(argTypes);
+        this.returnType = returnType.intern();
         // remove final and synchronized modifiers from the parsed method model
         this.modifiers = modifiers & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
         // but still need to keep track of whether method is final
         isFinal = Modifier.isFinal(modifiers);
-        this.desc = desc;
-        this.signature = signature;
-        this.exceptions = ImmutableList.copyOf(exceptions);
+        this.signature = signature == null ? null : signature.intern();
+        this.exceptions = internStringList(exceptions);
     }
 
     public String getName() {
@@ -96,17 +95,24 @@ public class ParsedMethod {
         return isFinal;
     }
 
-    String getDesc() {
-        return desc;
-    }
-
+    // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
     @Nullable
     String getSignature() {
         return signature;
     }
 
+    // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
     ImmutableList<String> getExceptions() {
         return exceptions;
+    }
+
+    // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
+    String getDesc() {
+        Type[] types = new Type[argTypes.size()];
+        for (int i = 0; i < argTypes.size(); i++) {
+            types[i] = getType(argTypes.get(i));
+        }
+        return Type.getMethodDescriptor(getType(returnType), types);
     }
 
     // equals and hashCode are only defined in terms of name and argTypes since those uniquely
@@ -141,5 +147,56 @@ public class ParsedMethod {
                 .add("returnType", returnType)
                 .add("modifiers", modifiers)
                 .toString();
+    }
+
+    static ImmutableList<String> internStringList(List<String> strings) {
+        List<String> internedStrings = Lists.newArrayListWithCapacity(strings.size());
+        for (String string : strings) {
+            internedStrings.add(string.intern());
+        }
+        return ImmutableList.copyOf(internedStrings);
+    }
+
+    // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
+    private static Type getType(String type) {
+        if (type.equals(Void.TYPE.getName())) {
+            return Type.VOID_TYPE;
+        }
+        if (type.equals(Boolean.TYPE.getName())) {
+            return Type.BOOLEAN_TYPE;
+        }
+        if (type.equals(Character.TYPE.getName())) {
+            return Type.CHAR_TYPE;
+        }
+        if (type.equals(Byte.TYPE.getName())) {
+            return Type.BYTE_TYPE;
+        }
+        if (type.equals(Short.TYPE.getName())) {
+            return Type.SHORT_TYPE;
+        }
+        if (type.equals(Integer.TYPE.getName())) {
+            return Type.INT_TYPE;
+        }
+        if (type.equals(Float.TYPE.getName())) {
+            return Type.FLOAT_TYPE;
+        }
+        if (type.equals(Long.TYPE.getName())) {
+            return Type.LONG_TYPE;
+        }
+        if (type.equals(Double.TYPE.getName())) {
+            return Type.DOUBLE_TYPE;
+        }
+        if (type.endsWith("[]")) {
+            StringBuilder sb = new StringBuilder();
+            String remaining = type;
+            while (remaining.endsWith("[]")) {
+                sb.append("[");
+                remaining = remaining.substring(0, remaining.length() - 2);
+            }
+            Type elementType = getType(remaining);
+            sb.append(elementType.getDescriptor());
+            return Type.getType(sb.toString());
+        }
+        return Type.getType('L' + type.replace('.', '/') + ';');
     }
 }

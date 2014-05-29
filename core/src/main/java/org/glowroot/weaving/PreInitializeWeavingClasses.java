@@ -225,6 +225,9 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.ByFunctionOrdering");
         types.add("com.google.common.collect.CollectPreconditions");
         types.add("com.google.common.collect.Collections2");
+        types.add("com.google.common.collect.ComparisonChain");
+        types.add("com.google.common.collect.ComparisonChain$1");
+        types.add("com.google.common.collect.ComparisonChain$InactiveComparisonChain");
         types.add("com.google.common.collect.EmptyImmutableBiMap");
         types.add("com.google.common.collect.EmptyImmutableSet");
         types.add("com.google.common.collect.FluentIterable");
@@ -414,6 +417,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.ParsedTypeCache$1");
         types.add("org.glowroot.weaving.ParsedTypeCache$ParseContext");
         types.add("org.glowroot.weaving.ParsedTypeCache$ParsedTypeClassVisitor");
+        types.add("org.glowroot.weaving.ParsedTypeCache$TypeNameWithUpper");
         types.add("org.glowroot.weaving.PatchedAdviceAdapter");
         types.add("org.glowroot.weaving.TypeNames");
         types.add("org.glowroot.weaving.Weaver");

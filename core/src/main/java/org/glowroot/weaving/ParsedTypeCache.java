@@ -26,7 +26,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -42,7 +41,6 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
@@ -112,7 +110,7 @@ public class ParsedTypeCache {
             new ConcurrentHashMap<String, ParsedType>();
 
     @GuardedBy("typeNameUppers")
-    private final SortedMap<String, SortedSet<String>> typeNameUppers = Maps.newTreeMap();
+    private final SortedSet<TypeNameWithUpper> typeNameWithUppers = Sets.newTreeSet();
 
     private final ParsedType javaLangObjectParsedType;
 
@@ -123,11 +121,10 @@ public class ParsedTypeCache {
     public List<String> getMatchingTypeNames(String partialTypeName, int limit) {
         String partialTypeNameUpper = partialTypeName.toUpperCase(Locale.ENGLISH);
         Set<String> typeNames = Sets.newTreeSet();
-        synchronized (typeNameUppers) {
-            for (Entry<String, SortedSet<String>> entry : typeNameUppers.entrySet()) {
-                String typeNameUpper = entry.getKey();
-                if (typeNameUpper.contains(partialTypeNameUpper)) {
-                    typeNames.addAll(entry.getValue());
+        synchronized (typeNameWithUppers) {
+            for (TypeNameWithUpper typeNameWithUpper : typeNameWithUppers) {
+                if (typeNameWithUpper.getTypeNameUpper().contains(partialTypeNameUpper)) {
+                    typeNames.add(typeNameWithUpper.getTypeName());
                     if (typeNames.size() >= limit) {
                         return Lists.newArrayList(typeNames).subList(0, limit);
                     }
@@ -250,7 +247,8 @@ public class ParsedTypeCache {
                 // (rare) concurrent ParsedType creation, use the one that made it into the map
                 parsedType = storedParsedType;
             }
-            addTypeNameUpper(typeName);
+            // use interned type name from ParsedType instead of typeName method arg
+            addTypeNameUpper(parsedType.getName());
         }
         return parsedType;
     }
@@ -391,14 +389,8 @@ public class ParsedTypeCache {
     }
 
     private void addTypeNameUpper(String typeName) {
-        String typeNameUpper = typeName.toUpperCase(Locale.ENGLISH);
-        synchronized (typeNameUppers) {
-            SortedSet<String> typeNames = typeNameUppers.get(typeNameUpper);
-            if (typeNames == null) {
-                typeNames = Sets.newTreeSet();
-                typeNameUppers.put(typeNameUpper, typeNames);
-            }
-            typeNames.add(typeName);
+        synchronized (typeNameWithUppers) {
+            typeNameWithUppers.add(new TypeNameWithUpper(typeName));
         }
     }
 
@@ -425,13 +417,12 @@ public class ParsedTypeCache {
                 argTypes.add(Type.getType(parameterType));
             }
             Type returnType = Type.getType(method.getReturnType());
-            String desc = Type.getMethodDescriptor(method);
             List<String> exceptions = Lists.newArrayList();
             for (Class<?> exceptionType : method.getExceptionTypes()) {
                 exceptions.add(Type.getInternalName(exceptionType));
             }
             ParsedMethod parsedMethod = ParsedMethod.from(method.getName(), argTypes, returnType,
-                    method.getModifiers(), desc, null, exceptions);
+                    method.getModifiers(), null, exceptions);
             if (Modifier.isNative(method.getModifiers())) {
                 nativeParsedMethods.add(parsedMethod);
             } else {
@@ -532,6 +523,54 @@ public class ParsedTypeCache {
         public ParsedType build() {
             checkNotNull(parsedTypeBuilder, "Call to visit() is required");
             return parsedTypeBuilder.build();
+        }
+    }
+
+    private static class TypeNameWithUpper implements Comparable<TypeNameWithUpper> {
+
+        private final String typeName;
+        private final String typeNameUpper;
+
+        private TypeNameWithUpper(String typeName) {
+            this.typeName = typeName;
+            this.typeNameUpper = typeName.toUpperCase(Locale.ENGLISH);
+        }
+
+        private String getTypeName() {
+            return typeName;
+        }
+
+        private String getTypeNameUpper() {
+            return typeNameUpper;
+        }
+
+        /*@Pure*/
+        @Override
+        public int compareTo(TypeNameWithUpper o) {
+            // sort case-insensitive (using upper), and fallback to case-sensitive sort when
+            // uppers are equal
+            return ComparisonChain.start()
+                    .compare(typeNameUpper, o.typeNameUpper)
+                    .compare(typeName, o.typeName)
+                    .result();
+        }
+
+        // equals is defined only in terms of typeName since typeNameUpper is just a cached value
+        /*@Pure*/
+        @Override
+        public boolean equals(@Nullable Object obj) {
+            if (obj instanceof TypeNameWithUpper) {
+                TypeNameWithUpper that = (TypeNameWithUpper) obj;
+                return typeName.equals(that.typeName);
+            }
+            return false;
+        }
+
+        // hashCode is defined only in terms of typeName since typeNameUpper is just a cached value
+        /*@Pure*/
+        @Override
+        public int hashCode() {
+            return typeName.hashCode();
         }
     }
 }
