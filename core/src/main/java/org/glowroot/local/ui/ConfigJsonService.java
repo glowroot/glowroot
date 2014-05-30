@@ -42,7 +42,6 @@ import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptorCache;
-import org.glowroot.config.PointcutConfig;
 import org.glowroot.config.StorageConfig;
 import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.config.UserInterfaceConfig.CurrentPasswordIncorrectException;
@@ -50,7 +49,6 @@ import org.glowroot.config.UserOverridesConfig;
 import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.markers.Singleton;
-import org.glowroot.trace.AdhocAdviceCache;
 import org.glowroot.trace.TraceModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -74,7 +72,6 @@ class ConfigJsonService {
     private final CappedDatabase cappedDatabase;
     private final PluginDescriptorCache pluginDescriptorCache;
     private final File dataDir;
-    private final AdhocAdviceCache adhocAdviceCache;
     private final HttpSessionManager httpSessionManager;
     private final TraceModule traceModule;
 
@@ -83,13 +80,11 @@ class ConfigJsonService {
 
     ConfigJsonService(ConfigService configService, CappedDatabase cappedDatabase,
             PluginDescriptorCache pluginDescriptorCache, File dataDir,
-            AdhocAdviceCache adhocAdviceCache, HttpSessionManager httpSessionManager,
-            TraceModule traceModule) {
+            HttpSessionManager httpSessionManager, TraceModule traceModule) {
         this.configService = configService;
         this.cappedDatabase = cappedDatabase;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.dataDir = dataDir;
-        this.adhocAdviceCache = adhocAdviceCache;
         this.httpSessionManager = httpSessionManager;
         this.traceModule = traceModule;
     }
@@ -204,24 +199,6 @@ class ConfigJsonService {
         writer.writeValue(jg, pluginDescriptorCache.getPluginDescriptor(pluginId));
         jg.writeFieldName("config");
         writer.writeValue(jg, configService.getPluginConfig(pluginId));
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
-    }
-
-    @GET("/backend/config/adhoc-pointcut")
-    String getAdhocPointcutConfig() throws IOException, SQLException {
-        logger.debug("getAdhocPointcutConfig()");
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        jg.writeFieldName("configs");
-        writer.writeValue(jg, configService.getAdhocPointcutConfigs());
-        jg.writeBooleanField("jvmOutOfSync",
-                adhocAdviceCache.isOutOfSync(configService.getAdhocPointcutConfigs()));
-        jg.writeBooleanField("jvmRetransformClassesSupported",
-                traceModule.isJvmRetransformClassesSupported());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -365,42 +342,6 @@ class ConfigJsonService {
             }
         }
         return getUserInterface();
-    }
-
-    @POST("/backend/config/adhoc-pointcut/+")
-    String addAdhocPointcutConfig(String content) throws IOException {
-        logger.debug("addAdhocPointcutConfig(): content={}", content);
-        PointcutConfig pointcutConfig =
-                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
-        configService.insertAdhocPointcutConfig(pointcutConfig);
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        writer.writeValue(jg, pointcutConfig);
-        jg.close();
-        return sb.toString();
-    }
-
-    @POST("/backend/config/adhoc-pointcut/([0-9a-f]+)")
-    String updateAdhocPointcutConfig(String priorVersion, String content) throws IOException {
-        logger.debug("updateAdhocPointcutConfig(): priorVersion={}, content={}", priorVersion,
-                content);
-        PointcutConfig pointcutConfig =
-                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
-        configService.updateAdhocPointcutConfig(priorVersion, pointcutConfig);
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        writer.writeValue(jg, pointcutConfig);
-        jg.close();
-        return sb.toString();
-    }
-
-    @POST("/backend/config/adhoc-pointcut/-")
-    void removeAdhocPointcutConfig(String content) throws IOException {
-        logger.debug("removeAdhocPointcutConfig(): content={}", content);
-        String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
-        configService.deleteAdhocPointcutConfig(version);
     }
 
     @POST("/backend/config/advanced")

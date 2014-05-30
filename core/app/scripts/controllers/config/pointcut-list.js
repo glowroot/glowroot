@@ -16,7 +16,7 @@
 
 /* global glowroot */
 
-glowroot.controller('AdhocPointcutListCtrl', [
+glowroot.controller('ConfigPointcutListCtrl', [
   '$scope',
   '$http',
   '$timeout',
@@ -25,40 +25,40 @@ glowroot.controller('AdhocPointcutListCtrl', [
     // initialize page binding object
     $scope.page = {};
 
-    $http.get('backend/config/adhoc-pointcut')
+    $http.get('backend/config/pointcut')
         .success(function (data) {
           $scope.loaded = true;
-          $scope.adhocPointcuts = [];
+          $scope.pointcuts = [];
           for (var i = 0; i < data.configs.length; i++) {
-            $scope.adhocPointcuts.push({
+            $scope.pointcuts.push({
               config: data.configs[i]
             });
           }
           // use object so dirty flag can be updated by child controllers
           $scope.page.dirty = data.jvmOutOfSync;
           $scope.jvmRetransformClassesSupported = data.jvmRetransformClassesSupported;
-          // pre-load cache for class name and method name auto completion
-          $http.get('backend/adhoc-pointcut/pre-load-auto-complete');
+          // preload cache for class name and method name auto completion
+          $http.get('backend/config/preload-classpath-cache');
         })
         .error(httpErrors.handler($scope));
 
-    $scope.addAdhocPointcut = function () {
-      $scope.adhocPointcuts.push({
+    $scope.addPointcut = function () {
+      $scope.pointcuts.push({
         config: {}
       });
     };
 
     // this is called by child controller
-    $scope.removeAdhocPointcut = function (adhocPointcut) {
+    $scope.removePointcut = function (pointcut) {
       // indexOf polyfill for IE8 is provided by es5-shim
-      var index = $scope.adhocPointcuts.indexOf(adhocPointcut);
+      var index = $scope.pointcuts.indexOf(pointcut);
       if (index !== -1) {
-        $scope.adhocPointcuts.splice(index, 1);
+        $scope.pointcuts.splice(index, 1);
       }
     };
 
     $scope.retransformClasses = function (deferred) {
-      $http.post('backend/admin/reweave-adhoc-pointcuts', '')
+      $http.post('backend/admin/reweave-pointcuts', '')
           .success(function (data) {
             $scope.page.dirty = false;
             if (data.classes) {

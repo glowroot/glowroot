@@ -48,7 +48,7 @@ public class TraceModule {
 
     private final ParsedTypeCache parsedTypeCache;
     private final TraceRegistry traceRegistry;
-    private final AdhocAdviceCache adhocAdviceCache;
+    private final ReweavableAdviceCache reweavableAdviceCache;
     private final WeavingTimerService weavingTimerService;
     @Nullable
     private final ThreadAllocatedBytes threadAllocatedBytes;
@@ -70,7 +70,7 @@ public class TraceModule {
         ConfigService configService = configModule.getConfigService();
         parsedTypeCache = new ParsedTypeCache();
         traceRegistry = new TraceRegistry();
-        adhocAdviceCache = new AdhocAdviceCache(configService.getAdhocPointcutConfigs());
+        reweavableAdviceCache = new ReweavableAdviceCache(configService.getPointcutConfigs());
         final TraceMetricNameCache traceMetricNameCache = new TraceMetricNameCache();
         weavingTimerService = new WeavingTimerServiceImpl(traceRegistry, traceMetricNameCache);
 
@@ -83,7 +83,7 @@ public class TraceModule {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
                     configModule.getPluginDescriptorCache().getMixinTypes(),
                     configModule.getPluginDescriptorCache().getAdvisors(),
-                    adhocAdviceCache.getAdvisorsSupplier(), parsedTypeCache,
+                    reweavableAdviceCache.getAdvisorsSupplier(), parsedTypeCache,
                     weavingTimerService, !traceMetricWrapperMethodsDisabled);
             PreInitializeWeavingClasses.preInitializeClasses(TraceModule.class.getClassLoader());
             if (instrumentation.isRetransformClassesSupported()) {
@@ -131,8 +131,8 @@ public class TraceModule {
         return traceRegistry;
     }
 
-    public AdhocAdviceCache getAdhocAdviceCache() {
-        return adhocAdviceCache;
+    public ReweavableAdviceCache getReweavableAdviceCache() {
+        return reweavableAdviceCache;
     }
 
     public WeavingTimerService getWeavingTimerService() {

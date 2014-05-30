@@ -26,21 +26,21 @@ import static org.openqa.selenium.By.xpath;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class AdhocPointcutPage {
+public class PointcutListPage {
 
     private final WebDriver driver;
 
-    public AdhocPointcutPage(WebDriver driver) {
+    public PointcutListPage(WebDriver driver) {
         this.driver = driver;
     }
 
     public WebElement getAddPointcutButton() {
-        return Utils.withWait(driver, xpath("//button[@ng-click='addAdhocPointcut()']"));
+        return Utils.withWait(driver, xpath("//button[@ng-click='addPointcut()']"));
     }
 
-    public AdhocPointcutSection getSection(int index) {
+    public PointcutSection getSection(int index) {
         WebElement form = Utils.withWait(driver,
                 xpath("(//div[@name='formCtrl'])[" + (index + 1) + "]"));
-        return new AdhocPointcutSection(driver, form);
+        return new PointcutSection(driver, form);
     }
 }

@@ -41,10 +41,10 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.UserInterfaceConfig;
-import org.glowroot.tests.webdriver.config.AdhocPointcutPage;
-import org.glowroot.tests.webdriver.config.AdhocPointcutSection;
 import org.glowroot.tests.webdriver.config.ConfigSidebar;
 import org.glowroot.tests.webdriver.config.GeneralPage;
+import org.glowroot.tests.webdriver.config.PointcutListPage;
+import org.glowroot.tests.webdriver.config.PointcutSection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -185,194 +185,194 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldAddAdhocPointcut() throws Exception {
+    public void shouldAddPointcut() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        AdhocPointcutPage adhocPointcutPage = new AdhocPointcutPage(driver);
+        PointcutListPage pointcutListPage = new PointcutListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
 
         // when
-        createAdhocPointcutConfig(adhocPointcutPage);
+        createPointcut(pointcutListPage);
 
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
-        AdhocPointcutSection adhocPointcutSection = adhocPointcutPage.getSection(0);
+        PointcutSection pointcutSection = pointcutListPage.getSection(0);
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(adhocPointcutSection.getTypeTextField().getAttribute("value"))
+        assertThat(pointcutSection.getTypeTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.AppUnderTest");
-        assertThat(adhocPointcutSection.getMethodNameTextField().getAttribute("value"))
+        assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(adhocPointcutSection.getTraceMetricTextField().getAttribute("value"))
+        assertThat(pointcutSection.getTraceMetricTextField().getAttribute("value"))
                 .isEqualTo("a metric");
-        assertThat(adhocPointcutSection.getSpanDefinitionCheckbox().isSelected()).isTrue();
-        assertThat(adhocPointcutSection.getSpanTextTextField().getAttribute("value"))
+        assertThat(pointcutSection.getSpanDefinitionCheckbox().isSelected()).isTrue();
+        assertThat(pointcutSection.getSpanTextTextField().getAttribute("value"))
                 .isEqualTo("a span");
-        assertThat(adhocPointcutSection.getSpanStackTraceThresholdTextTextField()
+        assertThat(pointcutSection.getSpanStackTraceThresholdTextTextField()
                 .getAttribute("value")).isEqualTo("");
-        assertThat(adhocPointcutSection.getTraceDefinitionCheckbox().isSelected()).isTrue();
-        assertThat(adhocPointcutSection.getTransactionNameTextField().getAttribute("value"))
+        assertThat(pointcutSection.getTraceDefinitionCheckbox().isSelected()).isTrue();
+        assertThat(pointcutSection.getTransactionNameTextField().getAttribute("value"))
                 .isEqualTo("a trace");
-        assertThat(adhocPointcutSection.getBackgroundCheckbox().isSelected()).isFalse();
+        assertThat(pointcutSection.getBackgroundCheckbox().isSelected()).isFalse();
     }
 
     @Test
-    public void shouldNotValidateOnDeleteAdhocPointcut() throws Exception {
+    public void shouldNotValidateOnDeletePointcut() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        AdhocPointcutPage adhocPointcutPage = new AdhocPointcutPage(driver);
+        PointcutListPage pointcutListPage = new PointcutListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
-        createAdhocPointcutConfig(adhocPointcutPage);
+        createPointcut(pointcutListPage);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
-        AdhocPointcutSection adhocPointcutSection = adhocPointcutPage.getSection(0);
-        WebElement typeNameTextField = adhocPointcutSection.getTypeTextField();
+        PointcutSection pointcutSection = pointcutListPage.getSection(0);
+        WebElement typeNameTextField = pointcutSection.getTypeTextField();
 
         // when
-        Utils.clearInput(adhocPointcutSection.getTraceMetricTextField());
-        adhocPointcutSection.getDeleteButton().click();
+        Utils.clearInput(pointcutSection.getTraceMetricTextField());
+        pointcutSection.getDeleteButton().click();
 
         // then
         new WebDriverWait(driver, 30).until(ExpectedConditions.stalenessOf(typeNameTextField));
     }
 
     @Test
-    public void shouldAddMetricOnlyAdhocPointcut() throws Exception {
+    public void shouldAddMetricOnlyPointcut() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        AdhocPointcutPage adhocPointcutPage = new AdhocPointcutPage(driver);
+        PointcutListPage pointcutPage = new PointcutListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
 
         // when
-        createMetricOnlyAdhocPointcutConfig(adhocPointcutPage);
+        createMetricOnlyPointcut(pointcutPage);
 
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
-        AdhocPointcutSection adhocPointcutSection = adhocPointcutPage.getSection(0);
+        PointcutSection pointcutSection = pointcutPage.getSection(0);
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(adhocPointcutSection.getTypeTextField().getAttribute("value"))
+        assertThat(pointcutSection.getTypeTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.AppUnderTest");
-        assertThat(adhocPointcutSection.getMethodNameTextField().getAttribute("value"))
+        assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(adhocPointcutSection.getTraceMetricTextField().getAttribute("value"))
+        assertThat(pointcutSection.getTraceMetricTextField().getAttribute("value"))
                 .isEqualTo("a metric");
-        assertThat(adhocPointcutSection.getSpanDefinitionCheckbox().isSelected()).isFalse();
-        assertThat(adhocPointcutSection.getSpanTextTextField().isDisplayed()).isFalse();
-        assertThat(adhocPointcutSection.getSpanStackTraceThresholdTextTextField().isDisplayed())
+        assertThat(pointcutSection.getSpanDefinitionCheckbox().isSelected()).isFalse();
+        assertThat(pointcutSection.getSpanTextTextField().isDisplayed()).isFalse();
+        assertThat(pointcutSection.getSpanStackTraceThresholdTextTextField().isDisplayed())
                 .isFalse();
-        assertThat(adhocPointcutSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
-        assertThat(adhocPointcutSection.getTransactionNameTextField().isDisplayed()).isFalse();
-        assertThat(adhocPointcutSection.getBackgroundCheckbox().isDisplayed()).isFalse();
+        assertThat(pointcutSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
+        assertThat(pointcutSection.getTransactionNameTextField().isDisplayed()).isFalse();
+        assertThat(pointcutSection.getBackgroundCheckbox().isDisplayed()).isFalse();
     }
 
     @Test
-    public void shouldAddMetricAndSpanOnlyAdhocPointcut() throws Exception {
+    public void shouldAddMetricAndSpanOnlyPointcut() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        AdhocPointcutPage adhocPointcutPage = new AdhocPointcutPage(driver);
+        PointcutListPage pointcutListPage = new PointcutListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
 
         // when
-        createMetricAndSpanOnlyAdhocPointcutConfig(adhocPointcutPage);
+        createMetricAndSpanOnlyPointcut(pointcutListPage);
 
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
-        AdhocPointcutSection adhocPointcutSection = adhocPointcutPage.getSection(0);
+        PointcutSection pointcutSection = pointcutListPage.getSection(0);
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(adhocPointcutSection.getTypeTextField().getAttribute("value"))
+        assertThat(pointcutSection.getTypeTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.AppUnderTest");
-        assertThat(adhocPointcutSection.getMethodNameTextField().getAttribute("value"))
+        assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(adhocPointcutSection.getTraceMetricTextField().getAttribute("value"))
+        assertThat(pointcutSection.getTraceMetricTextField().getAttribute("value"))
                 .isEqualTo("a metric");
-        assertThat(adhocPointcutSection.getSpanDefinitionCheckbox().isSelected()).isTrue();
-        assertThat(adhocPointcutSection.getSpanTextTextField().getAttribute("value"))
+        assertThat(pointcutSection.getSpanDefinitionCheckbox().isSelected()).isTrue();
+        assertThat(pointcutSection.getSpanTextTextField().getAttribute("value"))
                 .isEqualTo("a span");
-        assertThat(adhocPointcutSection.getSpanStackTraceThresholdTextTextField()
+        assertThat(pointcutSection.getSpanStackTraceThresholdTextTextField()
                 .getAttribute("value")).isEqualTo("");
-        assertThat(adhocPointcutSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
-        assertThat(adhocPointcutSection.getTransactionNameTextField().isDisplayed()).isFalse();
-        assertThat(adhocPointcutSection.getBackgroundCheckbox().isDisplayed()).isFalse();
+        assertThat(pointcutSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
+        assertThat(pointcutSection.getTransactionNameTextField().isDisplayed()).isFalse();
+        assertThat(pointcutSection.getBackgroundCheckbox().isDisplayed()).isFalse();
     }
 
-    private void createAdhocPointcutConfig(AdhocPointcutPage adhocPointcutPage) {
-        adhocPointcutPage.getAddPointcutButton().click();
-        AdhocPointcutSection adhocPointcutSection = adhocPointcutPage.getSection(0);
-        adhocPointcutSection.getTypeTextField().sendKeys("container.AppUnderTest");
-        adhocPointcutSection.clickTypeAutoCompleteItem("org.glowroot.container.AppUnderTest");
-        adhocPointcutSection.getMethodNameTextField().sendKeys("exec");
-        adhocPointcutSection.clickMethodNameAutoCompleteItem("executeApp");
-        adhocPointcutSection.getTraceMetricTextField().clear();
-        adhocPointcutSection.getTraceMetricTextField().sendKeys("a metric");
-        adhocPointcutSection.getSpanDefinitionCheckbox().click();
-        adhocPointcutSection.getSpanTextTextField().clear();
-        adhocPointcutSection.getSpanTextTextField().sendKeys("a span");
-        adhocPointcutSection.getTraceDefinitionCheckbox().click();
-        adhocPointcutSection.getTransactionNameTextField().clear();
-        adhocPointcutSection.getTransactionNameTextField().sendKeys("a trace");
-        adhocPointcutSection.getAddButton().click();
+    private void createPointcut(PointcutListPage pointcutListPage) {
+        pointcutListPage.getAddPointcutButton().click();
+        PointcutSection pointcutSection = pointcutListPage.getSection(0);
+        pointcutSection.getTypeTextField().sendKeys("container.AppUnderTest");
+        pointcutSection.clickTypeAutoCompleteItem("org.glowroot.container.AppUnderTest");
+        pointcutSection.getMethodNameTextField().sendKeys("exec");
+        pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
+        pointcutSection.getTraceMetricTextField().clear();
+        pointcutSection.getTraceMetricTextField().sendKeys("a metric");
+        pointcutSection.getSpanDefinitionCheckbox().click();
+        pointcutSection.getSpanTextTextField().clear();
+        pointcutSection.getSpanTextTextField().sendKeys("a span");
+        pointcutSection.getTraceDefinitionCheckbox().click();
+        pointcutSection.getTransactionNameTextField().clear();
+        pointcutSection.getTransactionNameTextField().sendKeys("a trace");
+        pointcutSection.getAddButton().click();
         // getSaveButton() waits for the Save button to become visible (after adding is successful)
-        adhocPointcutSection.getSaveButton();
+        pointcutSection.getSaveButton();
     }
 
-    private void createMetricOnlyAdhocPointcutConfig(AdhocPointcutPage adhocPointcutPage) {
-        adhocPointcutPage.getAddPointcutButton().click();
-        AdhocPointcutSection adhocPointcutSection = adhocPointcutPage.getSection(0);
-        adhocPointcutSection.getTypeTextField().sendKeys("container.AppUnderTest");
-        adhocPointcutSection.clickTypeAutoCompleteItem("org.glowroot.container.AppUnderTest");
-        adhocPointcutSection.getMethodNameTextField().sendKeys("exec");
-        adhocPointcutSection.clickMethodNameAutoCompleteItem("executeApp");
-        adhocPointcutSection.getTraceMetricTextField().clear();
-        adhocPointcutSection.getTraceMetricTextField().sendKeys("a metric");
-        adhocPointcutSection.getAddButton().click();
+    private void createMetricOnlyPointcut(PointcutListPage pointcutListPage) {
+        pointcutListPage.getAddPointcutButton().click();
+        PointcutSection pointcutSection = pointcutListPage.getSection(0);
+        pointcutSection.getTypeTextField().sendKeys("container.AppUnderTest");
+        pointcutSection.clickTypeAutoCompleteItem("org.glowroot.container.AppUnderTest");
+        pointcutSection.getMethodNameTextField().sendKeys("exec");
+        pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
+        pointcutSection.getTraceMetricTextField().clear();
+        pointcutSection.getTraceMetricTextField().sendKeys("a metric");
+        pointcutSection.getAddButton().click();
         // getSaveButton() waits for the Save button to become visible (after adding is successful)
-        adhocPointcutSection.getSaveButton();
+        pointcutSection.getSaveButton();
     }
 
-    private void createMetricAndSpanOnlyAdhocPointcutConfig(AdhocPointcutPage adhocPointcutPage) {
-        adhocPointcutPage.getAddPointcutButton().click();
-        AdhocPointcutSection adhocPointcutSection = adhocPointcutPage.getSection(0);
-        adhocPointcutSection.getTypeTextField().sendKeys("container.AppUnderTest");
-        adhocPointcutSection.clickTypeAutoCompleteItem("org.glowroot.container.AppUnderTest");
-        adhocPointcutSection.getMethodNameTextField().sendKeys("exec");
-        adhocPointcutSection.clickMethodNameAutoCompleteItem("executeApp");
-        adhocPointcutSection.getTraceMetricTextField().clear();
-        adhocPointcutSection.getTraceMetricTextField().sendKeys("a metric");
-        adhocPointcutSection.getSpanDefinitionCheckbox().click();
-        adhocPointcutSection.getSpanTextTextField().clear();
-        adhocPointcutSection.getSpanTextTextField().sendKeys("a span");
-        adhocPointcutSection.getAddButton().click();
+    private void createMetricAndSpanOnlyPointcut(PointcutListPage pointcutListPage) {
+        pointcutListPage.getAddPointcutButton().click();
+        PointcutSection pointcutSection = pointcutListPage.getSection(0);
+        pointcutSection.getTypeTextField().sendKeys("container.AppUnderTest");
+        pointcutSection.clickTypeAutoCompleteItem("org.glowroot.container.AppUnderTest");
+        pointcutSection.getMethodNameTextField().sendKeys("exec");
+        pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
+        pointcutSection.getTraceMetricTextField().clear();
+        pointcutSection.getTraceMetricTextField().sendKeys("a metric");
+        pointcutSection.getSpanDefinitionCheckbox().click();
+        pointcutSection.getSpanTextTextField().clear();
+        pointcutSection.getSpanTextTextField().sendKeys("a span");
+        pointcutSection.getAddButton().click();
         // getSaveButton() waits for the Save button to become visible (after adding is successful)
-        adhocPointcutSection.getSaveButton();
+        pointcutSection.getSaveButton();
     }
 }

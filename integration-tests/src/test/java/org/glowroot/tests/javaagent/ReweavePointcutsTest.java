@@ -27,24 +27,24 @@ import org.glowroot.tests.PointcutConfigTest;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class ReweaveAdhocPointcutsTest extends PointcutConfigTest {
+public class ReweavePointcutsTest extends PointcutConfigTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
         container = Containers.getSharedJavaagentContainer();
         container.executeAppUnderTest(ShouldExecute1.class);
-        addAdhocPointcutForExecute1();
-        addAdhocPointcutForExecute1MetricOnly();
-        addAdhocPointcutForExecuteWithReturn();
-        addAdhocPointcutForExecuteWithArgs();
-        container.getConfigService().reweaveAdhocPointcuts();
+        addPointcutConfigForExecute1();
+        addPointcutConfigForExecute1MetricOnly();
+        addPointcutConfigForExecuteWithReturn();
+        addPointcutConfigForExecuteWithArgs();
+        container.getConfigService().reweavePointcuts();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         // afterEachTest() will remove the pointcut configs, but still need to reweave here
         // in order to get back to square one
-        container.getConfigService().reweaveAdhocPointcuts();
+        container.getConfigService().reweavePointcuts();
         container.close();
     }
 

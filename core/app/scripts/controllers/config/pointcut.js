@@ -16,7 +16,7 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('AdhocPointcutCtrl', [
+glowroot.controller('ConfigPointcutCtrl', [
   '$scope',
   '$http',
   '$timeout',
@@ -25,7 +25,7 @@ glowroot.controller('AdhocPointcutCtrl', [
   'queryStrings',
   'conversions',
   function ($scope, $http, $timeout, confirmIfHasChanges, httpErrors, queryStrings, conversions) {
-    // don't initialize page binding object since it is inherited from adhoc-pointcut-list.js
+    // don't initialize page binding object since it is inherited from pointcut-list.js
 
     function onNewData(data) {
       $scope.config = data;
@@ -45,7 +45,7 @@ glowroot.controller('AdhocPointcutCtrl', [
         $scope.traceDefinition = Boolean(data.transactionName);
         $scope.spanStackTraceThresholdMillis = data.spanStackTraceThresholdMillis;
       } else {
-        $scope.heading = '<New adhoc pointcut>';
+        $scope.heading = '<New pointcut>';
         $scope.spanDefinition = false;
         $scope.traceDefinition = false;
         $timeout(function () {
@@ -55,7 +55,7 @@ glowroot.controller('AdhocPointcutCtrl', [
       }
     }
 
-    onNewData($scope.adhocPointcut.config);
+    onNewData($scope.pointcut.config);
 
     $scope.hasChanges = function () {
       return !angular.equals($scope.config, $scope.originalConfig);
@@ -68,7 +68,7 @@ glowroot.controller('AdhocPointcutCtrl', [
         limit: 10
       };
       // use 'then' method to return promise
-      return $http.get('backend/adhoc-pointcut/types?' + queryStrings.encodeObject(postData))
+      return $http.get('backend/config/matching-types?' + queryStrings.encodeObject(postData))
           .then(function (response) {
             return response.data;
           }, function () {
@@ -98,7 +98,7 @@ glowroot.controller('AdhocPointcutCtrl', [
         partialMethodName: suggestion,
         limit: 10
       };
-      return $http.get('backend/adhoc-pointcut/method-names?' + queryStrings.encodeObject(queryData))
+      return $http.get('backend/config/matching-method-names?' + queryStrings.encodeObject(queryData))
           .then(function (response) {
             return response.data;
           }, function () {
@@ -173,9 +173,9 @@ glowroot.controller('AdhocPointcutCtrl', [
       var url;
       var version = $scope.config.version;
       if (version) {
-        url = 'backend/config/adhoc-pointcut/' + version;
+        url = 'backend/config/pointcut/' + version;
       } else {
-        url = 'backend/config/adhoc-pointcut/+';
+        url = 'backend/config/pointcut/+';
       }
       $http.post(url, postData)
           .success(function (data) {
@@ -188,15 +188,15 @@ glowroot.controller('AdhocPointcutCtrl', [
 
     $scope.delete = function (deferred) {
       if ($scope.config.version) {
-        $http.post('backend/config/adhoc-pointcut/-', '"' + $scope.config.version + '"')
+        $http.post('backend/config/pointcut/-', '"' + $scope.config.version + '"')
             .success(function (data) {
-              $scope.$parent.removeAdhocPointcut($scope.adhocPointcut);
+              $scope.$parent.removePointcut($scope.pointcut);
               $scope.page.dirty = true;
               deferred.resolve('Deleted');
             })
             .error(httpErrors.handler($scope, deferred));
       } else {
-        $scope.$parent.removeAdhocPointcut($scope.adhocPointcut);
+        $scope.$parent.removePointcut($scope.pointcut);
         deferred.resolve('Deleted');
       }
     };
@@ -207,7 +207,7 @@ glowroot.controller('AdhocPointcutCtrl', [
         methodName: methodName
       };
       $scope.methodSignaturesLoading = true;
-      $http.get('backend/adhoc-pointcut/method-signatures?' + queryStrings.encodeObject(queryData))
+      $http.get('backend/config/method-signatures?' + queryStrings.encodeObject(queryData))
           .success(function (data) {
             $scope.methodSignaturesLoading = false;
             $scope.methodSignatures = data;

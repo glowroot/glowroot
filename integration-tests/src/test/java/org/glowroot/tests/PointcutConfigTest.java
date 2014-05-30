@@ -52,10 +52,10 @@ public class PointcutConfigTest {
     public static void setUp() throws Exception {
         dataDir = TempDirs.createTempDir("glowroot-test-datadir");
         container = Containers.createWithFileDb(dataDir);
-        addAdhocPointcutForExecute1();
-        addAdhocPointcutForExecute1MetricOnly();
-        addAdhocPointcutForExecuteWithReturn();
-        addAdhocPointcutForExecuteWithArgs();
+        addPointcutConfigForExecute1();
+        addPointcutConfigForExecute1MetricOnly();
+        addPointcutConfigForExecuteWithReturn();
+        addPointcutConfigForExecuteWithArgs();
         // re-start now with pointcut configs
         container.close();
         container = Containers.createWithFileDb(dataDir);
@@ -121,7 +121,7 @@ public class PointcutConfigTest {
         assertThat(spans.get(0).getMessage().getText()).isEqualTo("executeWithArgs(): abc, 123");
     }
 
-    protected static void addAdhocPointcutForExecute1() throws Exception {
+    protected static void addPointcutConfigForExecute1() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setType("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("execute1");
@@ -131,10 +131,10 @@ public class PointcutConfigTest {
         config.setTraceMetric("execute one");
         config.setSpanText("execute1() => {{ret}}");
         config.setSpanStackTraceThresholdMillis(0L);
-        container.getConfigService().addAdhocPointcutConfig(config);
+        container.getConfigService().addPointcutConfig(config);
     }
 
-    protected static void addAdhocPointcutForExecute1MetricOnly() throws Exception {
+    protected static void addPointcutConfigForExecute1MetricOnly() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setType("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("execute1");
@@ -142,10 +142,10 @@ public class PointcutConfigTest {
         config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setTraceMetric("execute one metric only");
-        container.getConfigService().addAdhocPointcutConfig(config);
+        container.getConfigService().addPointcutConfig(config);
     }
 
-    protected static void addAdhocPointcutForExecuteWithReturn() throws Exception {
+    protected static void addPointcutConfigForExecuteWithReturn() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setType("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("executeWithReturn");
@@ -154,10 +154,10 @@ public class PointcutConfigTest {
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setTraceMetric("execute with return");
         config.setSpanText("executeWithReturn() => {{ret}}");
-        container.getConfigService().addAdhocPointcutConfig(config);
+        container.getConfigService().addPointcutConfig(config);
     }
 
-    protected static void addAdhocPointcutForExecuteWithArgs() throws Exception {
+    protected static void addPointcutConfigForExecuteWithArgs() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setType("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("executeWithArgs");
@@ -167,7 +167,7 @@ public class PointcutConfigTest {
         config.setTraceMetric("execute with args");
         config.setSpanText("executeWithArgs(): {{0}}, {{1}}");
         config.setTransactionName("Misc / {{methodName}}");
-        container.getConfigService().addAdhocPointcutConfig(config);
+        container.getConfigService().addPointcutConfig(config);
     }
 
     public interface Misc {

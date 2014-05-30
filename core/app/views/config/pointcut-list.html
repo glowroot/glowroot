@@ -18,8 +18,8 @@
      class="plugin-list-spinner">
 </div>
 <div ng-include src="'template/gt-http-error.html'"></div>
-<div ng-repeat="adhocPointcut in adhocPointcuts"
-     ng-controller="AdhocPointcutCtrl"
+<div ng-repeat="pointcut in pointcuts"
+     ng-controller="ConfigPointcutCtrl"
      class="panel panel-default">
   <div class="panel-heading">
     <h2>{{heading}}</h2>
@@ -269,15 +269,15 @@
   </div>
 </div>
 <!-- ng-show="loaded" is used to jitter of seeing this section very briefly
-     before it gets pushed down by existing adhoc pointcut sections -->
+     before it gets pushed down by existing pointcut sections -->
 <div class="panel panel-default" ng-show="loaded">
   <div class="panel-heading">
-    <h2>Add adhoc pointcut</h2>
+    <h2>Add pointcut</h2>
   </div>
   <!-- override .panel-body min-height: 150px, not needed anyway since no loading spinner in this panel -->
   <div class="panel-body" style="min-height: 0;">
-    <button type="button" class="btn btn-primary" ng-click="addAdhocPointcut()">
-      Add adhoc pointcut
+    <button type="button" class="btn btn-primary" ng-click="addPointcut()">
+      Add pointcut
     </button>
   </div>
 </div>

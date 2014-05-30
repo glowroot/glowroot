@@ -102,8 +102,8 @@ public class DynamicAdviceGenerator {
                     logger.error("class was generated without @Pointcut annotation");
                     continue;
                 }
-                // only adhoc pointcuts (pluginId is null) are reweavable
-                Advice advice = Advice.from(pointcut, dynamicAdviceClass, pluginId == null);
+                boolean reweavable = pluginId == null;
+                Advice advice = Advice.from(pointcut, dynamicAdviceClass, reweavable);
                 advisors.add(advice);
             } catch (ReflectiveException e) {
                 logger.error("error creating advice for pointcut config: {}", pointcutConfig, e);

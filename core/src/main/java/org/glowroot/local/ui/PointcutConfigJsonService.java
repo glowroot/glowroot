@@ -17,6 +17,7 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -25,8 +26,10 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Splitter;
@@ -34,11 +37,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
+import com.google.common.io.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.config.ConfigService;
+import org.glowroot.config.JsonViews.UiView;
+import org.glowroot.config.PointcutConfig;
 import org.glowroot.markers.Singleton;
+import org.glowroot.trace.ReweavableAdviceCache;
+import org.glowroot.trace.TraceModule;
 import org.glowroot.weaving.ParsedMethod;
 import org.glowroot.weaving.ParsedType;
 import org.glowroot.weaving.ParsedTypeCache;
@@ -47,34 +56,59 @@ import org.glowroot.weaving.ParsedTypeCache.ParsedMethodOrdering;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
 /**
- * Json service to support adhoc pointcut configuration.
+ * Json service to support pointcut configurations.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
 @JsonService
-class AdhocPointcutJsonService {
+class PointcutConfigJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(AdhocPointcutJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(PointcutConfigJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
     private static final Splitter splitter = Splitter.on(' ').omitEmptyStrings();
 
+    private final ConfigService configService;
+    private final ReweavableAdviceCache reweavableAdviceCache;
+    private final TraceModule traceModule;
     private final ParsedTypeCache parsedTypeCache;
     private final ClasspathCache classpathCache;
 
-    AdhocPointcutJsonService(ParsedTypeCache parsedTypeCache,
-            ClasspathCache classpathTypeCache) {
+    PointcutConfigJsonService(ConfigService configService,
+            ReweavableAdviceCache reweavableAdviceCache, ParsedTypeCache parsedTypeCache,
+            ClasspathCache classpathTypeCache, TraceModule traceModule) {
+        this.configService = configService;
+        this.reweavableAdviceCache = reweavableAdviceCache;
         this.parsedTypeCache = parsedTypeCache;
         this.classpathCache = classpathTypeCache;
+        this.traceModule = traceModule;
+    }
+
+    @GET("/backend/config/pointcut")
+    String getPointcutConfig() throws IOException, SQLException {
+        logger.debug("getPointcutConfig()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
+        jg.writeStartObject();
+        jg.writeFieldName("configs");
+        writer.writeValue(jg, configService.getPointcutConfigs());
+        jg.writeBooleanField("jvmOutOfSync",
+                reweavableAdviceCache.isOutOfSync(configService.getPointcutConfigs()));
+        jg.writeBooleanField("jvmRetransformClassesSupported",
+                traceModule.isJvmRetransformClassesSupported());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
     }
 
     // this is marked as @GET so it can be used without update rights (e.g. demo instance)
-    @GET("/backend/adhoc-pointcut/pre-load-auto-complete")
-    void preLoadAutoComplete() throws IOException {
-        logger.debug("preLoadAutoComplete()");
+    @GET("/backend/config/preload-classpath-cache")
+    void preloadClasspathCache() throws IOException {
+        logger.debug("preloadClasspathCache()");
         // HttpServer is configured with a very small thread pool to keep number of threads down
-        // (currently only a single thread), so spawn a background thread to perform the pre-loading
+        // (currently only a single thread), so spawn a background thread to perform the preloading
         // so it doesn't block other http requests
         Thread thread = new Thread(new Runnable() {
             @Override
@@ -87,9 +121,9 @@ class AdhocPointcutJsonService {
         thread.start();
     }
 
-    @GET("/backend/adhoc-pointcut/types")
-    String getTypes(String content) throws IOException {
-        logger.debug("getTypes(): content={}", content);
+    @GET("/backend/config/matching-types")
+    String getMatchingTypes(String content) throws IOException {
+        logger.debug("getMatchingTypes(): content={}", content);
         TypesRequest request = ObjectMappers.readRequiredValue(mapper, content, TypesRequest.class);
         List<String> matchingTypeNames = getMatchingTypeNames(request.getPartialTypeName(),
                 request.getLimit());
@@ -97,9 +131,9 @@ class AdhocPointcutJsonService {
         return mapper.writeValueAsString(matchingTypeNames);
     }
 
-    @GET("/backend/adhoc-pointcut/method-names")
-    String getMethodNames(String content) throws IOException {
-        logger.debug("getMethodNames(): content={}", content);
+    @GET("/backend/config/matching-method-names")
+    String getMatchingMethodNames(String content) throws IOException {
+        logger.debug("getMatchingMethodNames(): content={}", content);
         MethodNamesRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, MethodNamesRequest.class);
         List<String> matchingMethodNames = getMatchingMethodNames(request.getType(),
@@ -107,7 +141,7 @@ class AdhocPointcutJsonService {
         return mapper.writeValueAsString(matchingMethodNames);
     }
 
-    @GET("/backend/adhoc-pointcut/method-signatures")
+    @GET("/backend/config/method-signatures")
     String getMethodSignatures(String content) throws IOException {
         logger.debug("getMethodSignatures(): content={}", content);
         MethodSignaturesRequest request =
@@ -133,6 +167,42 @@ class AdhocPointcutJsonService {
             matchingMethods.add(matchingMethod);
         }
         return mapper.writeValueAsString(matchingMethods);
+    }
+
+    @POST("/backend/config/pointcut/+")
+    String addPointcutConfig(String content) throws IOException {
+        logger.debug("addPointcutConfig(): content={}", content);
+        PointcutConfig pointcutConfig =
+                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
+        configService.insertPointcutConfig(pointcutConfig);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
+        writer.writeValue(jg, pointcutConfig);
+        jg.close();
+        return sb.toString();
+    }
+
+    @POST("/backend/config/pointcut/([0-9a-f]+)")
+    String updatePointcutConfig(String priorVersion, String content) throws IOException {
+        logger.debug("updatePointcutConfig(): priorVersion={}, content={}", priorVersion,
+                content);
+        PointcutConfig pointcutConfig =
+                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
+        configService.updatePointcutConfig(priorVersion, pointcutConfig);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
+        writer.writeValue(jg, pointcutConfig);
+        jg.close();
+        return sb.toString();
+    }
+
+    @POST("/backend/config/pointcut/-")
+    void removePointcutConfig(String content) throws IOException {
+        logger.debug("removePointcutConfig(): content={}", content);
+        String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
+        configService.deletePointcutConfig(version);
     }
 
     // returns the first <limit> matching type names, ordered alphabetically (case-insensitive)

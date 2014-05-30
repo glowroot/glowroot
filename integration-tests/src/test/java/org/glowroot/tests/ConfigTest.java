@@ -194,41 +194,41 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldInsertAdhocPointcut() throws Exception {
+    public void shouldInsertPointcutConfig() throws Exception {
         // given
         PointcutConfig config = createPointcutConfig();
         // when
-        container.getConfigService().addAdhocPointcutConfig(config);
+        container.getConfigService().addPointcutConfig(config);
         // then
-        List<PointcutConfig> configs = container.getConfigService().getAdhocPointcutConfigs();
+        List<PointcutConfig> configs = container.getConfigService().getPointcutConfigs();
         assertThat(configs).hasSize(1);
         assertThat(configs.get(0)).isEqualTo(config);
     }
 
     @Test
-    public void shouldUpdateAdhocPointcut() throws Exception {
+    public void shouldUpdatePointcutConfig() throws Exception {
         // given
         PointcutConfig config = createPointcutConfig();
-        String version = container.getConfigService().addAdhocPointcutConfig(config);
+        String version = container.getConfigService().addPointcutConfig(config);
         // when
         updateAllFields(config);
-        container.getConfigService().updateAdhocPointcutConfig(version, config);
+        container.getConfigService().updatePointcutConfig(version, config);
         // then
-        List<PointcutConfig> configs = container.getConfigService().getAdhocPointcutConfigs();
+        List<PointcutConfig> configs = container.getConfigService().getPointcutConfigs();
         assertThat(configs).hasSize(1);
         assertThat(configs.get(0)).isEqualTo(config);
     }
 
     @Test
-    public void shouldDeleteAdhocPointcut() throws Exception {
+    public void shouldDeletePointcutConfig() throws Exception {
         // given
         PointcutConfig config = createPointcutConfig();
-        String version = container.getConfigService().addAdhocPointcutConfig(config);
+        String version = container.getConfigService().addPointcutConfig(config);
         // when
-        container.getConfigService().removeAdhocPointcutConfig(version);
+        container.getConfigService().removePointcutConfig(version);
         // then
         List<? extends PointcutConfig> configs =
-                container.getConfigService().getAdhocPointcutConfigs();
+                container.getConfigService().getPointcutConfigs();
         assertThat(configs).isEmpty();
     }
 

@@ -34,13 +34,14 @@ import org.glowroot.weaving.Advice;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// only for pointcuts from config.json, not from plugins
 @ThreadSafe
-public class AdhocAdviceCache {
+public class ReweavableAdviceCache {
 
     private volatile ImmutableList<Advice> advisors;
     private volatile ImmutableSet<String> pointcutConfigVersions;
 
-    AdhocAdviceCache(ImmutableList<PointcutConfig> pointcutConfigs) {
+    ReweavableAdviceCache(ImmutableList<PointcutConfig> pointcutConfigs) {
         advisors =
                 ImmutableList.copyOf(DynamicAdviceGenerator.createAdvisors(pointcutConfigs, null));
         pointcutConfigVersions = ImmutableSet.copyOf(createVersionSet(pointcutConfigs));

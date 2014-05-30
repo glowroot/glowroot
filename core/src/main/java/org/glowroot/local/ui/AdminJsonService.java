@@ -38,7 +38,7 @@ import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.local.store.TransactionPointDao;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
-import org.glowroot.trace.AdhocAdviceCache;
+import org.glowroot.trace.ReweavableAdviceCache;
 import org.glowroot.trace.TraceRegistry;
 import org.glowroot.weaving.ParsedTypeCache;
 
@@ -57,7 +57,7 @@ class AdminJsonService {
     private final TransactionPointDao transactionPointDao;
     private final SnapshotDao snapshotDao;
     private final ConfigService configService;
-    private final AdhocAdviceCache adhocAdviceCache;
+    private final ReweavableAdviceCache reweavableAdviceCache;
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final Instrumentation instrumentation;
@@ -66,13 +66,13 @@ class AdminJsonService {
     private final TraceRegistry traceRegistry;
 
     AdminJsonService(TransactionPointDao transactionPointDao, SnapshotDao snapshotDao,
-            ConfigService configService, AdhocAdviceCache adhocAdviceCache,
+            ConfigService configService, ReweavableAdviceCache reweavableAdviceCache,
             ParsedTypeCache parsedTypeCache, @Nullable Instrumentation instrumentation,
             TraceCollectorImpl traceCollector, DataSource dataSource, TraceRegistry traceRegistry) {
         this.transactionPointDao = transactionPointDao;
         this.snapshotDao = snapshotDao;
         this.configService = configService;
-        this.adhocAdviceCache = adhocAdviceCache;
+        this.reweavableAdviceCache = reweavableAdviceCache;
         this.parsedTypeCache = parsedTypeCache;
         this.instrumentation = instrumentation;
         this.traceCollector = traceCollector;
@@ -87,8 +87,8 @@ class AdminJsonService {
         snapshotDao.deleteAll();
     }
 
-    @POST("/backend/admin/reweave-adhoc-pointcuts")
-    String reweaveAdhocPointcuts() throws UnmodifiableClassException {
+    @POST("/backend/admin/reweave-pointcuts")
+    String reweavePointcuts() throws UnmodifiableClassException {
         if (instrumentation == null) {
             logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
             return "{}";
@@ -97,8 +97,8 @@ class AdminJsonService {
             logger.warn("retransformClasses is not supported");
             return "{}";
         }
-        ImmutableList<PointcutConfig> pointcutConfigs = configService.getAdhocPointcutConfigs();
-        adhocAdviceCache.updateAdvisors(pointcutConfigs);
+        ImmutableList<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
+        reweavableAdviceCache.updateAdvisors(pointcutConfigs);
         Set<String> typeNames = Sets.newHashSet();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
             typeNames.add(pointcutConfig.getType());

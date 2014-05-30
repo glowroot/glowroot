@@ -40,7 +40,7 @@ import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.ConfigService;
 import org.glowroot.container.javaagent.JavaagentContainer;
 import org.glowroot.container.trace.TraceService;
-import org.glowroot.trace.AdhocAdviceCache;
+import org.glowroot.trace.ReweavableAdviceCache;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.IsolatedWeavingClassLoader;
 
@@ -99,11 +99,12 @@ public class LocalContainer implements Container {
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         PluginDescriptorCache pluginDescriptorCache =
                 glowrootModule.getConfigModule().getPluginDescriptorCache();
-        AdhocAdviceCache adhocAdviceCache = glowrootModule.getTraceModule().getAdhocAdviceCache();
+        ReweavableAdviceCache reweavableAdviceCache =
+                glowrootModule.getTraceModule().getReweavableAdviceCache();
         loader.setMixinTypes(pluginDescriptorCache.getMixinTypesNeverShaded());
         List<Advice> advisors = Lists.newArrayList();
         advisors.addAll(pluginDescriptorCache.getAdvisorsNeverShaded());
-        advisors.addAll(adhocAdviceCache.getAdvisors());
+        advisors.addAll(reweavableAdviceCache.getAdvisors());
         loader.setAdvisors(advisors);
         loader.setMetricTimerService(glowrootModule.getTraceModule().getWeavingTimerService());
         loader.setWeavingDisabled(glowrootModule.getConfigModule().getConfigService()

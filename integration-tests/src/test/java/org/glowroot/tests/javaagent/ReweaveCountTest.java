@@ -49,7 +49,7 @@ public class ReweaveCountTest {
     @After
     public void afterEachTest() throws Exception {
         container.checkAndReset();
-        container.getConfigService().reweaveAdhocPointcuts();
+        container.getConfigService().reweavePointcuts();
     }
 
     @Test
@@ -61,11 +61,11 @@ public class ReweaveCountTest {
         config.setMethodArgTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
         config.setTraceMetric("x");
-        String configVersion = container.getConfigService().addAdhocPointcutConfig(config);
-        int reweaveCount = container.getConfigService().reweaveAdhocPointcuts();
+        String configVersion = container.getConfigService().addPointcutConfig(config);
+        int reweaveCount = container.getConfigService().reweavePointcuts();
         assertThat(reweaveCount).isEqualTo(2);
-        container.getConfigService().removeAdhocPointcutConfig(configVersion);
-        reweaveCount = container.getConfigService().reweaveAdhocPointcuts();
+        container.getConfigService().removePointcutConfig(configVersion);
+        reweaveCount = container.getConfigService().reweavePointcuts();
         assertThat(reweaveCount).isEqualTo(2);
     }
 

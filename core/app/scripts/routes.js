@@ -132,10 +132,10 @@ glowroot.config([
       templateUrl: 'views/config/user-interface.html',
       controller: 'ConfigUserInterfaceCtrl'
     });
-    $stateProvider.state('config.adhocPointcuts', {
-      url: '/adhoc-pointcuts',
-      templateUrl: 'views/config/adhoc-pointcut-list.html',
-      controller: 'AdhocPointcutListCtrl'
+    $stateProvider.state('config.pointcuts', {
+      url: '/pointcuts',
+      templateUrl: 'views/config/pointcut-list.html',
+      controller: 'ConfigPointcutListCtrl'
     });
     $stateProvider.state('config.advanced', {
       url: '/advanced',

@@ -30,12 +30,12 @@ import static org.openqa.selenium.By.xpath;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class AdhocPointcutSection {
+public class PointcutSection {
 
     private final WebDriver driver;
     private final WebElement form;
 
-    AdhocPointcutSection(WebDriver driver, WebElement form) {
+    PointcutSection(WebDriver driver, WebElement form) {
         this.driver = driver;
         this.form = form;
     }

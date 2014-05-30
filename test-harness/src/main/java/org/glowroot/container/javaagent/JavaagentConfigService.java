@@ -137,8 +137,8 @@ class JavaagentConfigService implements ConfigService {
     }
 
     @Override
-    public List<PointcutConfig> getAdhocPointcutConfigs() throws Exception {
-        String response = httpClient.get("/backend/config/adhoc-pointcut");
+    public List<PointcutConfig> getPointcutConfigs() throws Exception {
+        String response = httpClient.get("/backend/config/pointcut");
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         JsonNode configsNode = ObjectMappers.getRequiredChildNode(rootNode, "configs");
         return mapper.readValue(mapper.treeAsTokens(configsNode),
@@ -147,8 +147,8 @@ class JavaagentConfigService implements ConfigService {
 
     // returns new version
     @Override
-    public String addAdhocPointcutConfig(PointcutConfig pointcutConfig) throws Exception {
-        String response = httpClient.post("/backend/config/adhoc-pointcut/+",
+    public String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception {
+        String response = httpClient.post("/backend/config/pointcut/+",
                 mapper.writeValueAsString(pointcutConfig));
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         JsonNode versionNode = ObjectMappers.getRequiredChildNode(rootNode, "version");
@@ -156,15 +156,15 @@ class JavaagentConfigService implements ConfigService {
     }
 
     @Override
-    public void updateAdhocPointcutConfig(String version, PointcutConfig pointcutConfig)
+    public void updatePointcutConfig(String version, PointcutConfig pointcutConfig)
             throws Exception {
-        httpClient.post("/backend/config/adhoc-pointcut/" + version,
+        httpClient.post("/backend/config/pointcut/" + version,
                 mapper.writeValueAsString(pointcutConfig));
     }
 
     @Override
-    public void removeAdhocPointcutConfig(String version) throws Exception {
-        httpClient.post("/backend/config/adhoc-pointcut/-", mapper.writeValueAsString(version));
+    public void removePointcutConfig(String version) throws Exception {
+        httpClient.post("/backend/config/pointcut/-", mapper.writeValueAsString(version));
     }
 
     @Override
@@ -189,8 +189,8 @@ class JavaagentConfigService implements ConfigService {
     }
 
     @Override
-    public int reweaveAdhocPointcuts() throws Exception {
-        String response = httpClient.post("/backend/admin/reweave-adhoc-pointcuts", "");
+    public int reweavePointcuts() throws Exception {
+        String response = httpClient.post("/backend/admin/reweave-pointcuts", "");
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         JsonNode classesNode = ObjectMappers.getRequiredChildNode(rootNode, "classes");
         return classesNode.asInt();

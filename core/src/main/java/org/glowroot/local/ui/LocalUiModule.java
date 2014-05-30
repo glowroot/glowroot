@@ -118,14 +118,14 @@ public class LocalUiModule {
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getThreadAllocatedBytes(),
                 jvmModule.getHeapHistograms(), jvmModule.getHeapDumps());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
-                pluginDescriptorCache, dataDir, traceModule.getAdhocAdviceCache(),
-                httpSessionManager, traceModule);
+                pluginDescriptorCache, dataDir, httpSessionManager, traceModule);
         ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
-        AdhocPointcutJsonService adhocPointcutJsonService =
-                new AdhocPointcutJsonService(parsedTypeCache, classpathCache);
+        PointcutConfigJsonService pointcutConfigJsonService = new PointcutConfigJsonService(
+                configService, traceModule.getReweavableAdviceCache(), parsedTypeCache,
+                classpathCache, traceModule);
         AdminJsonService adminJsonService = new AdminJsonService(transactionPointDao, snapshotDao,
-                configService, traceModule.getAdhocAdviceCache(), parsedTypeCache, instrumentation,
-                traceCollector, dataSource, traceRegistry);
+                configService, traceModule.getReweavableAdviceCache(), parsedTypeCache,
+                instrumentation, traceCollector, dataSource, traceRegistry);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(layoutJsonService);
@@ -135,7 +135,7 @@ public class LocalUiModule {
         jsonServices.add(errorJsonService);
         jsonServices.add(jvmJsonService);
         jsonServices.add(configJsonService);
-        jsonServices.add(adhocPointcutJsonService);
+        jsonServices.add(pointcutConfigJsonService);
         jsonServices.add(adminJsonService);
 
         // for now only a single http worker thread to keep # of threads down

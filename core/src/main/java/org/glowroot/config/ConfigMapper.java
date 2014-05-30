@@ -65,7 +65,7 @@ class ConfigMapper {
     private static final String USER_INTERFACE = "ui";
     private static final String ADVANCED = "advanced";
     private static final String PLUGINS = "plugins";
-    private static final String ADHOC_POINTCUTS = "adhoc-pointcuts";
+    private static final String POINTCUTS = "pointcuts";
 
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
 
@@ -81,13 +81,13 @@ class ConfigMapper {
         UserOverridesConfig userOverridesConfig = readUserNode(rootNode);
         StorageConfig storageConfig = readStorageNode(rootNode);
         UserInterfaceConfig userInterfaceConfig = readUserInterfaceNode(rootNode);
-        ImmutableList<PointcutConfig> adhocPointcutConfigs = createAdhocPointcutConfigs(rootNode);
+        ImmutableList<PointcutConfig> pointcutConfigs = createPointcutConfigs(rootNode);
         AdvancedConfig advancedConfig = readAdvancedNode(rootNode);
         ImmutableMap<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
         ImmutableList<PluginConfig> pluginConfigs =
                 createPluginConfigs(pluginNodes, pluginDescriptors);
         return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig,
-                userOverridesConfig, storageConfig, userInterfaceConfig, adhocPointcutConfigs,
+                userOverridesConfig, storageConfig, userInterfaceConfig, pointcutConfigs,
                 advancedConfig, pluginConfigs);
     }
 
@@ -127,8 +127,8 @@ class ConfigMapper {
             writer.writeValue(jg, pluginConfig);
         }
         jg.writeEndArray();
-        jg.writeArrayFieldStart(ADHOC_POINTCUTS);
-        for (PointcutConfig pointcutConfig : config.getAdhocPointcutConfigs()) {
+        jg.writeArrayFieldStart(POINTCUTS);
+        for (PointcutConfig pointcutConfig : config.getPointcutConfigs()) {
             writer.writeValue(jg, pointcutConfig);
         }
         jg.writeEndArray();
@@ -267,16 +267,16 @@ class ConfigMapper {
         return ImmutableList.copyOf(pluginConfigs);
     }
 
-    private static ImmutableList<PointcutConfig> createAdhocPointcutConfigs(ObjectNode rootNode)
+    private static ImmutableList<PointcutConfig> createPointcutConfigs(ObjectNode rootNode)
             throws JsonProcessingException {
-        JsonNode adhocPointcutsNode = rootNode.get(ADHOC_POINTCUTS);
-        if (adhocPointcutsNode == null) {
+        JsonNode pointcutsNode = rootNode.get(POINTCUTS);
+        if (pointcutsNode == null) {
             return ImmutableList.of();
         }
         List<PointcutConfig> pointcutConfigs = Lists.newArrayList();
-        for (JsonNode adhocPointcutNode : adhocPointcutsNode) {
-            PointcutConfig pointcutConfig = ObjectMappers.treeToRequiredValue(mapper,
-                    adhocPointcutNode, PointcutConfig.class);
+        for (JsonNode pointcutNode : pointcutsNode) {
+            PointcutConfig pointcutConfig =
+                    ObjectMappers.treeToRequiredValue(mapper, pointcutNode, PointcutConfig.class);
             pointcutConfigs.add(pointcutConfig);
         }
         return ImmutableList.copyOf(pointcutConfigs);

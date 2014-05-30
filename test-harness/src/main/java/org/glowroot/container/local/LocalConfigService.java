@@ -205,28 +205,28 @@ class LocalConfigService implements ConfigService {
     }
 
     @Override
-    public List<PointcutConfig> getAdhocPointcutConfigs() {
+    public List<PointcutConfig> getPointcutConfigs() {
         List<PointcutConfig> configs = Lists.newArrayList();
         for (org.glowroot.config.PointcutConfig coreConfig : configService
-                .getAdhocPointcutConfigs()) {
+                .getPointcutConfigs()) {
             configs.add(convertFromCore(coreConfig));
         }
         return configs;
     }
 
     @Override
-    public String addAdhocPointcutConfig(PointcutConfig config) throws Exception {
-        return configService.insertAdhocPointcutConfig(convertToCore(config));
+    public String addPointcutConfig(PointcutConfig config) throws Exception {
+        return configService.insertPointcutConfig(convertToCore(config));
     }
 
     @Override
-    public void updateAdhocPointcutConfig(String version, PointcutConfig config) throws Exception {
-        configService.updateAdhocPointcutConfig(version, convertToCore(config));
+    public void updatePointcutConfig(String version, PointcutConfig config) throws Exception {
+        configService.updatePointcutConfig(version, convertToCore(config));
     }
 
     @Override
-    public void removeAdhocPointcutConfig(String version) throws Exception {
-        configService.deleteAdhocPointcutConfig(version);
+    public void removePointcutConfig(String version) throws Exception {
+        configService.deletePointcutConfig(version);
     }
 
     @Override
@@ -287,7 +287,7 @@ class LocalConfigService implements ConfigService {
     }
 
     @Override
-    public int reweaveAdhocPointcuts() throws Exception {
+    public int reweavePointcuts() throws Exception {
         throw new UnsupportedOperationException("Retransforming classes only works inside"
                 + " javaagent container");
     }

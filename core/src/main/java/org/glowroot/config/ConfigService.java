@@ -98,8 +98,8 @@ public class ConfigService {
         return config.getUserInterfaceConfig();
     }
 
-    public ImmutableList<PointcutConfig> getAdhocPointcutConfigs() {
-        return config.getAdhocPointcutConfigs();
+    public ImmutableList<PointcutConfig> getPointcutConfigs() {
+        return config.getPointcutConfigs();
     }
 
     public AdvancedConfig getAdvancedConfig() {
@@ -226,13 +226,13 @@ public class ConfigService {
         return userInterfaceConfig.getVersion();
     }
 
-    public String insertAdhocPointcutConfig(PointcutConfig pointcutConfig) throws IOException {
+    public String insertPointcutConfig(PointcutConfig pointcutConfig) throws IOException {
         synchronized (writeLock) {
             List<PointcutConfig> pointcutConfigs =
-                    Lists.newArrayList(config.getAdhocPointcutConfigs());
+                    Lists.newArrayList(config.getPointcutConfigs());
             pointcutConfigs.add(pointcutConfig);
             Config updatedConfig = Config.builder(config)
-                    .adhocPointcutConfigs(pointcutConfigs)
+                    .pointcutConfigs(pointcutConfigs)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
@@ -240,11 +240,11 @@ public class ConfigService {
         return pointcutConfig.getVersion();
     }
 
-    public String updateAdhocPointcutConfig(String priorVersion, PointcutConfig pointcutConfig)
+    public String updatePointcutConfig(String priorVersion, PointcutConfig pointcutConfig)
             throws IOException {
         synchronized (writeLock) {
             List<PointcutConfig> pointcutConfigs =
-                    Lists.newArrayList(config.getAdhocPointcutConfigs());
+                    Lists.newArrayList(config.getPointcutConfigs());
             boolean found = false;
             for (ListIterator<PointcutConfig> i = pointcutConfigs.listIterator(); i.hasNext();) {
                 if (priorVersion.equals(i.next().getVersion())) {
@@ -258,7 +258,7 @@ public class ConfigService {
                 return priorVersion;
             }
             Config updatedConfig = Config.builder(config)
-                    .adhocPointcutConfigs(pointcutConfigs)
+                    .pointcutConfigs(pointcutConfigs)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
@@ -266,10 +266,10 @@ public class ConfigService {
         return pointcutConfig.getVersion();
     }
 
-    public void deleteAdhocPointcutConfig(String version) throws IOException {
+    public void deletePointcutConfig(String version) throws IOException {
         synchronized (writeLock) {
             List<PointcutConfig> pointcutConfigs =
-                    Lists.newArrayList(config.getAdhocPointcutConfigs());
+                    Lists.newArrayList(config.getPointcutConfigs());
             boolean found = false;
             for (ListIterator<PointcutConfig> i = pointcutConfigs.listIterator(); i.hasNext();) {
                 if (version.equals(i.next().getVersion())) {
@@ -283,7 +283,7 @@ public class ConfigService {
                 return;
             }
             Config updatedConfig = Config.builder(config)
-                    .adhocPointcutConfigs(pointcutConfigs)
+                    .pointcutConfigs(pointcutConfigs)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
