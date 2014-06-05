@@ -47,7 +47,7 @@ class ProfilerScheduledRunnable extends ScheduledRunnable {
     }
 
     @Override
-    public void run() {
+    public void runInternal() {
         if (ticker.read() >= endTick) {
             // throw marker exception to terminate subsequent scheduled executions
             throw new TerminateSubsequentExecutionsException();
@@ -60,11 +60,6 @@ class ProfilerScheduledRunnable extends ScheduledRunnable {
             // ScheduledExecutorService.scheduleWithFixedDelay()
             throw new TerminateSubsequentExecutionsException();
         }
-        super.run();
-    }
-
-    @Override
-    protected void runInternal() {
         trace.captureStackTrace(fine);
     }
 

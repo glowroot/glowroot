@@ -54,14 +54,13 @@ public abstract class ScheduledRunnable implements Runnable {
     public void run() {
         try {
             runInternal();
-        } catch (Exception e) {
-            // log and terminate successfully
-            logger.error(e.getMessage(), e);
-        } catch (Throwable t) {
-            // log and throw marker exception to terminate subsequent scheduled executions
-            // (see ScheduledExecutorService.scheduleAtFixedRate())
-            logger.error(t.getMessage(), t);
+        } catch (TerminateSubsequentExecutionsException e) {
+            // cancel this scheduled runnable
             throw new TerminateSubsequentExecutionsException();
+        } catch (Throwable t) {
+            // (e.g. could be temporary OOM or temporary disk error)
+            // log and return successfully so it will continue to run
+            logger.error(t.getMessage(), t);
         }
     }
 
@@ -73,6 +72,8 @@ public abstract class ScheduledRunnable implements Runnable {
 
     protected abstract void runInternal();
 
+    // marker exception used to terminate subsequent scheduled executions
+    // (see ScheduledExecutorService.scheduleWithFixedDelay())
     @SuppressWarnings("serial")
     public static class TerminateSubsequentExecutionsException extends RuntimeException {}
 }
