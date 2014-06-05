@@ -17,6 +17,7 @@ package org.glowroot.plugin.servlet;
 
 import java.util.Enumeration;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import javax.annotation.Nullable;
 
@@ -129,9 +130,8 @@ class HttpServletRequest {
         }
 
         @Override
-        @Nullable
         public String nextElement() {
-            return null;
+            throw new NoSuchElementException();
         }
     }
 }

@@ -277,7 +277,8 @@ public class SnapshotDao implements SnapshotRepository {
                 + " limit 1", ImmutableList.of(), new RowMapper<String>() {
             @Override
             public String mapRow(ResultSet resultSet) throws SQLException {
-                return resultSet.getString(1);
+                // this checkNotNull is safe since id is the primary key and cannot be null
+                return checkNotNull(resultSet.getString(1));
             }
         });
         if (ids.isEmpty()) {
@@ -446,14 +447,15 @@ public class SnapshotDao implements SnapshotRepository {
         }
     }
 
-    private class ErrorAggregateRowMapper implements RowMapper<ErrorAggregate> {
+    private static class ErrorAggregateRowMapper implements RowMapper<ErrorAggregate> {
 
         @Override
         public ErrorAggregate mapRow(ResultSet resultSet) throws SQLException {
             String transactionName = resultSet.getString(1);
             String error = resultSet.getString(2);
             long count = resultSet.getLong(3);
-            return new ErrorAggregate(transactionName, error, count);
+            return new ErrorAggregate(Strings.nullToEmpty(transactionName),
+                    Strings.nullToEmpty(error), count);
         }
     }
 
@@ -461,24 +463,33 @@ public class SnapshotDao implements SnapshotRepository {
 
         @Override
         public TracePoint mapRow(ResultSet resultSet) throws SQLException {
-            return TracePoint.from(resultSet.getString(1), resultSet.getLong(2),
+            String id = resultSet.getString(1);
+            // this checkNotNull is safe since id is the primary key and cannot be null
+            checkNotNull(id);
+            return TracePoint.from(id, resultSet.getLong(2),
                     resultSet.getLong(3), resultSet.getBoolean(4));
         }
     }
 
     private class SnapshotRowMapper implements RowMapper<Snapshot> {
 
+        // TODO figure out how to get checker framework to pass without suppress warnings
+        // seems to have broken in checker 1.8.2 (or maybe just became more strict)
         @Override
+        @SuppressWarnings("contracts.precondition.not.satisfied")
         public Snapshot mapRow(ResultSet resultSet) throws SQLException {
             Snapshot.Builder snapshot = Snapshot.builder();
-            snapshot.id(resultSet.getString(1));
+            String id = resultSet.getString(1);
+            // this checkNotNull is safe since id is the primary key and cannot be null
+            checkNotNull(id);
+            snapshot.id(id);
             snapshot.stuck(resultSet.getBoolean(2));
             snapshot.startTime(resultSet.getLong(3));
             snapshot.captureTime(resultSet.getLong(4));
             snapshot.duration(resultSet.getLong(5));
             snapshot.background(resultSet.getBoolean(6));
-            snapshot.transactionName(resultSet.getString(7));
-            snapshot.headline(resultSet.getString(8));
+            snapshot.transactionName(Strings.nullToEmpty(resultSet.getString(7)));
+            snapshot.headline(Strings.nullToEmpty(resultSet.getString(8)));
             snapshot.error(resultSet.getString(9));
             snapshot.user(resultSet.getString(10));
             snapshot.attributes(resultSet.getString(11));

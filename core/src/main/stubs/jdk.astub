@@ -4,50 +4,30 @@ import org.checkerframework.checker.nullness.qual.*;
 package java.lang;
 
 public class ClassLoader {
-    protected ClassLoader(@Nullable ClassLoader parent);
     protected Package definePackage(String name, @Nullable String specTitle,
             @Nullable String specVersion, @Nullable String specVendor, @Nullable String implTitle,
             @Nullable String implVersion, @Nullable String implVendor, @Nullable URL sealBase);
-    protected @Nullable Package getPackage(String name);
-}
-
-public class Thread {
-    public void setContextClassLoader(@Nullable ClassLoader cl);
 }
 
 /* ========================================================================== */
 package java.lang.instrument;
 
 public interface ClassFileTransformer {
-    byte @Nullable [] transform(@Nullable ClassLoader loader, String className,
-            Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
+    byte @Nullable [] transform(@Nullable ClassLoader loader, @Nullable String className,
+            @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] classfileBuffer);
-}
-
-/* ========================================================================== */
-package java.net;
-
-public class Socket {
-    public Socket(@Nullable String host, int port);
 }
 
 /* ========================================================================== */
 package java.sql;
 
-public interface DatabaseMetaData {
-    ResultSet getTables(@Nullable String catalog, @Nullable String schemaPattern,
-            @Nullable String tableNamePattern, String @Nullable [] types);
-    ResultSet getColumns(@Nullable String catalog, @Nullable String schemaPattern,
-            @Nullable String tableNamePattern, @Nullable String columnNamePattern);
-    ResultSet getPrimaryKeys(@Nullable String catalog, @Nullable String schema,
-            @Nullable String table);
-    ResultSet getIndexInfo(@Nullable String catalog, @Nullable String schema,
-            @Nullable String table, boolean unique, boolean approximate);
-}
-
 public interface PreparedStatement {
     void setString(int parameterIndex, @Nullable String x);
     void setObject(int parameterIndex, @Nullable Object x);
+}
+
+public interface ResultSet {
+    @Nullable String getString(int columnIndex);
 }
 
 /* ========================================================================== */
@@ -55,8 +35,4 @@ package java.util;
 
 public class Arrays {
     public static <T extends @Nullable Object> List<T> asList(T... a);
-}
-
-public interface Enumeration {
-    @Nullable String nextElement();
 }

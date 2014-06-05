@@ -215,17 +215,18 @@ public class Snapshot {
         private String traceMetrics;
         @Nullable
         private String jvmInfo;
-        @Nullable
+        /*@MonotonicNonNull*/
         private Existence spansExistence;
-        @Nullable
+        /*@MonotonicNonNull*/
         private Existence coarseProfileExistence;
-        @Nullable
+        /*@MonotonicNonNull*/
         private Existence fineProfileExistence;
         @Nullable
         private ImmutableSetMultimap<String, String> attributesForIndexing;
 
         private Builder() {}
 
+        /*@EnsuresNonNull("id")*/
         public Builder id(String id) {
             this.id = id;
             return this;
@@ -261,11 +262,13 @@ public class Snapshot {
             return this;
         }
 
+        /*@EnsuresNonNull("transactionName")*/
         public Builder transactionName(String transactionName) {
             this.transactionName = transactionName;
             return this;
         }
 
+        /*@EnsuresNonNull("headline")*/
         public Builder headline(String headline) {
             this.headline = headline;
             return this;
@@ -296,16 +299,19 @@ public class Snapshot {
             return this;
         }
 
+        /*@EnsuresNonNull("spansExistence")*/
         public Builder spansExistence(Existence spansExistence) {
             this.spansExistence = spansExistence;
             return this;
         }
 
+        /*@EnsuresNonNull("coarseProfileExistence")*/
         public Builder coarseProfileExistence(Existence coarseProfileExistence) {
             this.coarseProfileExistence = coarseProfileExistence;
             return this;
         }
 
+        /*@EnsuresNonNull("fineProfileExistence")*/
         public Builder fineProfileExistence(Existence fineProfileExistence) {
             this.fineProfileExistence = fineProfileExistence;
             return this;

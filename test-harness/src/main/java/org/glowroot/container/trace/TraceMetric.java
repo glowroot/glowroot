@@ -115,9 +115,6 @@ public class TraceMetric {
     // same GlowrootContainer for test speed, so test order affects whether any classes are
     // woven during the test or not
     // it's easiest to just ignore this metric completely
-    //
-    // suppress warning for checker framework issue #312
-    @SuppressWarnings("type.argument.type.incompatible")
     private ImmutableList<TraceMetric> getStableAndOrderedTraceMetrics() {
         List<TraceMetric> stableMetrics = Lists.newArrayList(nestedTraceMetrics);
         for (Iterator<TraceMetric> i = stableMetrics.iterator(); i.hasNext();) {

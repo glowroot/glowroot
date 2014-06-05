@@ -103,7 +103,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // so all exceptions must be caught and logged here or they will be lost
     @Override
     public byte/*@Nullable*/[] transform(@Nullable ClassLoader loader, @Nullable String className,
-            Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
+            @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] bytes) {
         if (className == null) {
             // internal subclasses of MethodHandle are passed in with null className

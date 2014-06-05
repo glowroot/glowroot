@@ -39,6 +39,8 @@ import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.markers.Singleton;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -224,6 +226,9 @@ public class TransactionPointDao implements TransactionPointRepository {
                         @Override
                         public CharSource mapRow(ResultSet resultSet) throws SQLException {
                             String profileId = resultSet.getString(1);
+                            // this checkNotNull is safe since the query above restricts the results
+                            // to those where profile_id is not null
+                            checkNotNull(profileId);
                             FileBlock fileBlock;
                             try {
                                 fileBlock = FileBlock.from(profileId);
@@ -271,7 +276,7 @@ public class TransactionPointDao implements TransactionPointRepository {
             if (traceMetrics == null) {
                 // transaction_name should never be null
                 // TODO provide better fallback here
-                throw new SQLException("Found null trace_metrics in transaction_point");
+                throw new SQLException("Found null trace_metrics in transaction_point table");
             }
             return new TransactionPoint(captureTime, totalMicros, count, errorCount,
                     storedTraceCount, traceMetrics, null);
