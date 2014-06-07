@@ -37,13 +37,11 @@ matrix:
     - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 8" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
     - jdk: oraclejdk8
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
+    - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
     - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=9
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=8
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows XP" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=8
 env:
   global:
     - SONATYPE_USERNAME=trask

@@ -50,7 +50,6 @@ glowroot.controller('ConfigPointcutListCtrl', [
 
     // this is called by child controller
     $scope.removePointcut = function (pointcut) {
-      // indexOf polyfill for IE8 is provided by es5-shim
       var index = $scope.pointcuts.indexOf(pointcut);
       if (index !== -1) {
         $scope.pointcuts.splice(index, 1);

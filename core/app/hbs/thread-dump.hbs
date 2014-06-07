@@ -1,1 +1,7 @@
-<!-- IE8 needs the <br> elements instead of newlines -->{{#each .}}"{{name}}"<br>java.lang.Thread.State: {{state}}<br>{{#ifBlocked state}} - blocked on {{lockName}}<br>{{/ifBlocked}}{{#ifWaiting state}}{{#if lockName}} - waiting on {{lockName}}<br>{{/if}}{{/ifWaiting}}{{#each stackTrace}} {{.}}<br>{{/each}}<br>{{/each}}
+{{#each .}}"{{name}}"
+&nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
+{{#ifBlocked state}}        - blocked on {{lockName}}
+{{/ifBlocked}}{{#ifWaiting state}}{{#if lockName}}        - waiting on {{lockName}}
+{{/if}}{{/ifWaiting}}{{#each stackTrace}}        {{.}}
+{{/each}}
+{{/each}}

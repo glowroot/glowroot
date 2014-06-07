@@ -89,7 +89,6 @@ glowroot.controller('ConfigPointcutCtrl', [
     };
 
     $scope.methodNames = function (suggestion) {
-      // indexOf polyfill for IE8 is provided by es5-shim
       if (suggestion.indexOf('*') !== -1) {
         return [ suggestion ];
       }
@@ -123,7 +122,6 @@ glowroot.controller('ConfigPointcutCtrl', [
           $scope.methodSignatures = [];
           $scope.selectedMethodSignature = undefined;
         } else if (methodName.indexOf('*') !== -1) {
-          // indexOf (used in conditional above) polyfill for IE8 is provided by es5-shim
           $scope.methodSignatures = [
             {
               name: methodName,

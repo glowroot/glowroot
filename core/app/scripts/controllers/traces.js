@@ -342,7 +342,7 @@ glowroot.controller('TracesCtrl', [
     appliedFilter.limit = Number($location.search().limit);
     if (!appliedFilter.limit) {
       filterLimitDefault = true;
-      appliedFilter.limit = $('html').hasClass('lt-ie9') ? 100 : 500;
+      appliedFilter.limit = 500;
     }
     appliedFilter.errorOnly = $location.search()['error-only'] === 'true';
     appliedFilter.fineOnly = $location.search()['fine-only'] === 'true';

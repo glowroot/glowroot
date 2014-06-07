@@ -148,15 +148,12 @@ glowroot.controller('JvmHeapHistogramCtrl', [
 
     function matchesFilter(className) {
       if ($scope.filterComparator === 'begins') {
-        // indexOf polyfill for IE8 is provided by es5-shim
         return className.indexOf($scope.filterValue) === 0;
       }
       if ($scope.filterComparator === 'ends') {
-        // indexOf polyfill for IE8 is provided by es5-shim
         return className.indexOf($scope.filterValue, className.length - $scope.filterValue.length) !== -1;
       }
       // filterComparator === 'contains'
-      // indexOf polyfill for IE8 is provided by es5-shim
       return className.indexOf($scope.filterValue) !== -1;
     }
 

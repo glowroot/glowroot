@@ -33,16 +33,6 @@ Copyright 2012 Stefan Petre, Improvements by Andrew Rowls
 https://github.com/eternicode/bootstrap-datepicker
 Apache License, Version 2.0
 
-es5-shim
-Copyright (C) 2009-2014 Kristopher Michael Kowal and contributors
-https://github.com/es-shims/es5-shim
-MIT License
-
-excanvas
-Copyright 2006 Google Inc.
-https://code.google.com/p/explorercanvas
-Apache License, Version 2.0
-
 Flot
 Copyright (c) 2007-2013 IOLA and Ole Laursen
 http://www.flotcharts.org
@@ -67,11 +57,6 @@ Eclipse Public License, Version 1.0
 handlebars
 Copyright (C) 2011 by Yehuda Katz
 http://handlebarsjs.com
-MIT License
-
-HTML5 Shiv
-@afarkas @jdalton @jon_neal @rem
-https://github.com/aFarkas/html5shiv
 MIT License
 
 Jackson
@@ -122,11 +107,6 @@ Apache License, Version 2.0
 qTip2
 Copyright (c) 2012 Craig Michael Thompson
 http://qtip2.com
-MIT License
-
-Respond.js
-Copyright (c) 2012 Scott Jehl
-https://github.com/scottjehl/Respond
 MIT License
 
 SLF4J

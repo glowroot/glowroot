@@ -14,10 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<!--[if lt IE 9]>
-<html class="lt-ie9"> <![endif]-->
-<!--[if gt IE 8]><!-->
-<html> <!--<![endif]-->
+<html>
 <head>
   <meta charset="utf-8">
   <!-- intentionally not using <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -30,28 +27,19 @@
   <base href="/">
   <link rel="stylesheet" href="styles/main.css"/>
 
-  <!--[if lt IE 9]>
-  <!-- build:js scripts/ie8.components.js -->
-  <!-- respond.js should be loaded as early as possible (after css) to avoid a flash of un-media'd content -->
-  <script src="bower_components/respond/dest/respond.src.js"></script>
-  <!-- html5shiv must be loaded in head -->
-  <script src="bower_components/html5shiv/dist/html5shiv.js"></script>
-  <!-- excanvas and es5-shim don't need to be loaded in head, just here to concat with other ie8 scripts -->
-  <script src="bower_components/flot/excanvas.js"></script>
-  <!-- es5-shim is needed at least for IE8, see https://github.com/angular-ui/bootstrap/issues/194 -->
-  <script src="bower_components/es5-shim/es5-shim.js"></script>
-  <!-- endbuild -->
-  <![endif]-->
-
   <!-- placeholder for server-side injected data, see IndexHtmlService.java -->
   <script></script>
 </head>
 <body ng-app="glowroot"
       id="ng-app">
-  <!--[if lt IE 8]>
-  <p class="browsehappy">
-    You are using an <strong>outdated</strong> browser.
-    Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.
+  <!--[if lt IE 9]>
+  <style>
+    body div {
+      display: none;
+    }
+  </style>
+  <p style="text-align: center; padding-top: 50px; font-size: 20px;">
+    Glowroot UI does not support IE8 or prior
   </p>
   <![endif]-->
   <header class="navbar navbar-inverse navbar-fixed-top">

@@ -86,15 +86,6 @@ public class SauceLabs {
             // webdriver capabilities
             capabilities.setBrowserName(browserName);
             capabilities.setVersion(browserVersion);
-            if (browserName.equals("iexplore") && browserVersion.equals("8")) {
-                // using elementScrollBehavior=1 scrolls elements to the bottom of the viewport
-                // (instead of to the top of the viewport) prior to interaction, which keeps them
-                // from getting hidden under glowroot's floating top navbar
-                //
-                // this is needed to make tests pass on IE8, but actually causes tests to fail on
-                // IE10 and IE11
-                capabilities.setCapability("elementScrollBehavior", 1);
-            }
         } else if (!Strings.isNullOrEmpty(deviceName)) {
             // appium capabilities
             capabilities.setCapability("device", deviceName);
