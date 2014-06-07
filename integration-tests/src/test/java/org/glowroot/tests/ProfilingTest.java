@@ -201,7 +201,7 @@ public class ProfilingTest {
             @Override
             @Nullable
             public Void call() throws Exception {
-                container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
+                container.executeAppUnderTest(ShouldWaitForInterrupt.class);
                 return null;
             }
         });
@@ -209,6 +209,7 @@ public class ProfilingTest {
         Trace trace = container.getTraceService().getActiveTrace(5, SECONDS);
         assertThat(trace).isNotNull();
         // cleanup
+        container.interruptAppUnderTest();
         future.get();
         executorService.shutdown();
     }
@@ -243,8 +244,24 @@ public class ProfilingTest {
         }
     }
 
-    public static class ShouldGenerateTraceWithProfile implements AppUnderTest,
-            TraceMarker {
+    public static class ShouldWaitForInterrupt implements AppUnderTest, TraceMarker {
+        @Override
+        public void executeApp() throws InterruptedException {
+            traceMarker();
+        }
+        @Override
+        public void traceMarker() throws InterruptedException {
+            while (true) {
+                try {
+                    Thread.sleep(5);
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+        }
+    }
+
+    public static class ShouldGenerateTraceWithProfile implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
