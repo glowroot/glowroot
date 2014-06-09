@@ -52,11 +52,11 @@ case "$1" in
                  #
                  # using local test harness since that falls back to javaagent for a few tests and
                  # hitting both harnesses gives the best code coverage
-                 mvn install -Pjacoco \
-                             -Dglowroot.shading.skip=true \
-                             -Dglowroot.test.harness=local \
-                             -Djacoco.destFile=$PWD/jacoco-combined.exec \
-                             -B
+                 mvn org.jacoco:jacoco-maven-plugin:prepare-agent clean install \
+                                 -Dglowroot.shading.skip=true \
+                                 -Dglowroot.test.harness=local \
+                                 -Djacoco.destFile=$PWD/jacoco-combined.exec \
+                                 -B
                  # re-using jacoco code coverage reports from above, but sonar still runs the tests
                  # to report on timings and failure rates
                  #
@@ -65,12 +65,11 @@ case "$1" in
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONARQUBE_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 mvn sonar:sonar -Dsonar.jdbc.url=jdbc:postgresql://sonarqube.glowroot.org/sonar \
+                 mvn sonar:sonar -pl .,plugin-api,core,plugins/jdbc-plugin,plugins/servlet-plugin,plugins/logger-plugin \
+                                 -Dsonar.jdbc.url=jdbc:postgresql://sonarqube.glowroot.org/sonar \
                                  -Dsonar.jdbc.username=sonar \
                                  -Dsonar.host.url=http://sonarqube.glowroot.org \
-                                 -Dsonar.dynamicAnalysis=reuseReports \
                                  -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
-                                 -Dsonar.skippedModules=glowroot-ui-sandbox \
                                  -Dglowroot.test.harness=local \
                                  -B
                else
