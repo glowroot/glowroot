@@ -30,6 +30,8 @@ public class SnapshotWriter {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
 
+    private SnapshotWriter() {}
+
     public static String toString(Snapshot snapshot) throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));

@@ -26,7 +26,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
-import org.objectweb.asm.Type;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -43,9 +42,6 @@ class HeapHistogram {
     private long totalCount;
 
     void addItem(String className, long bytes, long count) {
-        if (className.charAt(0) == '[') {
-            className = Type.getType(className).getClassName();
-        }
         ClassInfo classInfo = classInfos.get(className);
         if (classInfo == null) {
             classInfos.put(className, new ClassInfo(className, bytes, count));

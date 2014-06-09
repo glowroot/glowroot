@@ -17,7 +17,6 @@ package org.glowroot.collector;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
@@ -29,8 +28,8 @@ import com.google.common.io.CharStreams;
 
 import org.glowroot.collector.Snapshot.Existence;
 import org.glowroot.markers.Static;
-import org.glowroot.trace.model.TraceMetric;
 import org.glowroot.trace.model.Trace;
+import org.glowroot.trace.model.TraceMetric;
 
 /**
  * @author Trask Stalnaker
@@ -90,19 +89,6 @@ public class SnapshotCreator {
             builder.fineProfileExistence(Existence.YES);
         }
         return builder.build();
-    }
-
-    @Nullable
-    private static String writeErrorDetailAsString(
-            @Nullable Map<String, ? extends /*@Nullable*/Object> errorDetail) throws IOException {
-        if (errorDetail == null) {
-            return null;
-        }
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        new DetailMapWriter(jg).write(errorDetail);
-        jg.close();
-        return sb.toString();
     }
 
     @Nullable

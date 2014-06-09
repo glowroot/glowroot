@@ -30,10 +30,10 @@ import javax.annotation.concurrent.Immutable;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.io.Closer;
 import com.google.common.io.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -191,15 +191,24 @@ public class PluginDescriptorCache {
             throws IOException, URISyntaxException {
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
         for (File pluginJar : Plugins.getPluginJars()) {
+            // Closer is used to simulate Java 7 try-with-resources
+            Closer closer = Closer.create();
             JarFile jarFile = new JarFile(pluginJar);
-            JarEntry jarEntry = jarFile.getJarEntry("META-INF/glowroot.plugin.json");
-            if (jarEntry == null) {
-                continue;
+            closer.register(new JarFileCloseable(jarFile));
+            try {
+                JarEntry jarEntry = jarFile.getJarEntry("META-INF/glowroot.plugin.json");
+                if (jarEntry == null) {
+                    continue;
+                }
+                InputStream jarEntryIn = jarFile.getInputStream(jarEntry);
+                PluginDescriptor pluginDescriptor =
+                        mapper.readValue(jarEntryIn, PluginDescriptor.class);
+                pluginDescriptors.add(pluginDescriptor);
+            } catch (Throwable t) {
+                throw closer.rethrow(t);
+            } finally {
+                closer.close();
             }
-            InputStream jarEntryIn = jarFile.getInputStream(jarEntry);
-            PluginDescriptor pluginDescriptor =
-                    mapper.readValue(jarEntryIn, PluginDescriptor.class);
-            pluginDescriptors.add(pluginDescriptor);
         }
         return pluginDescriptors;
     }
@@ -239,24 +248,5 @@ public class PluginDescriptorCache {
                     ClassLoader.getSystemResources(resourceName)));
         }
         return ImmutableList.copyOf(Iterators.forEnumeration(loader.getResources(resourceName)));
-    }
-
-    @Nullable
-    private static URL getResource(String resourceName) throws IOException {
-        List<URL> urls = PluginDescriptorCache.getResources(resourceName);
-        if (urls.isEmpty()) {
-            return null;
-        }
-        if (urls.size() == 1) {
-            return urls.get(0);
-        }
-        List<String> resourcePaths = Lists.newArrayList();
-        for (URL url : urls) {
-            resourcePaths.add("'" + url.getPath() + "'");
-        }
-        logger.error("more than one resource found with name {}. This file is only supported"
-                + " inside of an glowroot packaged jar so there should be only one. Only using"
-                + " the first one of {}.", resourceName, Joiner.on(", ").join(resourcePaths));
-        return urls.get(0);
     }
 }

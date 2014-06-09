@@ -211,6 +211,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             Class<?> c = Class.forName(name, false, ClassLoader.getSystemClassLoader());
             return c.getClassLoader() == null;
         } catch (ClassNotFoundException e) {
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
             return false;
         }
     }

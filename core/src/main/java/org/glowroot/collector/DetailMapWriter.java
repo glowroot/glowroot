@@ -86,7 +86,7 @@ class DetailMapWriter {
             writeMap((Map<?, ?>) value);
         } else if (value instanceof List) {
             jg.writeStartArray();
-            for (Object v : ((List<?>) value)) {
+            for (Object v : (List<?>) value) {
                 writeValue(v);
             }
             jg.writeEndArray();

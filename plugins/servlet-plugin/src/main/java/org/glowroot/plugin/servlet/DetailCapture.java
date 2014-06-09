@@ -40,6 +40,8 @@ import com.google.common.collect.Lists;
 // captured only if trace met threshold for storage...)
 class DetailCapture {
 
+    private DetailCapture() {}
+
     static ImmutableMap<String, Object> captureRequestParameters(HttpServletRequest request) {
         Map<?, ?> requestParameters = request.getParameterMaps();
         ImmutableList<Pattern> capturePatterns = ServletPluginProperties.captureRequestParameters();

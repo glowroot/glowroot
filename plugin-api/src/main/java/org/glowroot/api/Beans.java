@@ -122,16 +122,16 @@ public class Beans {
             }
             return value(currItem, remaining);
         } catch (IllegalAccessException e) {
+            // log exception at debug level
             logger.debug(e.getMessage(), e);
-            // this is less ok
             return "<could not access>";
         } catch (IllegalArgumentException e) {
+            // log exception at debug level
             logger.debug(e.getMessage(), e);
-            // this is less ok
             return "<could not access>";
         } catch (InvocationTargetException e) {
+            // log exception at debug level
             logger.debug(e.getMessage(), e);
-            // this is less ok
             return "<could not access>";
         }
     }
@@ -148,12 +148,15 @@ public class Beans {
                     builder.put(entry.getKey(), value.toString());
                 }
             } catch (IllegalAccessException e) {
+                // log exception at debug level
                 logger.debug(e.getMessage(), e);
                 builder.put(entry.getKey(), "<could not access>");
             } catch (IllegalArgumentException e) {
+                // log exception at debug level
                 logger.debug(e.getMessage(), e);
                 builder.put(entry.getKey(), "<could not access>");
             } catch (InvocationTargetException e) {
+                // log exception at debug level
                 logger.debug(e.getMessage(), e);
                 builder.put(entry.getKey(), "<could not access>");
             }
@@ -179,23 +182,33 @@ public class Beans {
             // getDeclaredMethod() is that it will miss public methods in super classes
             return getMethod(type, "get" + capitalizedName);
         } catch (ReflectiveException e) {
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
             // fall back to "is" prefix
             try {
                 return getMethod(type, "is" + capitalizedName);
             } catch (ReflectiveException f) {
+                // log exception at debug level
+                logger.debug(f.getMessage(), f);
                 // fall back to no prefix
                 try {
                     return getMethod(type, name);
                 } catch (ReflectiveException g) {
+                    // log exception at debug level
+                    logger.debug(g.getMessage(), g);
                     // fall back to field access
                     try {
                         // TODO getDeclaredField will miss fields in super classes
                         return type.getDeclaredField(name);
                     } catch (NoSuchFieldException h) {
-                        logger.debug("no accessor found for {} in class {}", name, type.getName());
+                        // log exception at debug level
+                        logger.debug("no accessor found for {} in class {}", name, type.getName(),
+                                h);
                         return SENTINEL_METHOD;
                     } catch (SecurityException h) {
-                        logger.debug("no accessor found for {} in class {}", name, type.getName());
+                        // log exception at debug level
+                        logger.debug("no accessor found for {} in class {}", name, type.getName(),
+                                h);
                         return SENTINEL_METHOD;
                     }
                 }

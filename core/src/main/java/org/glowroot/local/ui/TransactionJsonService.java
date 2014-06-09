@@ -116,7 +116,7 @@ class TransactionJsonService {
                     dataSeries.add(transactionPoint.getCaptureTime(), 0);
                 } else {
                     dataSeries.add(transactionPoint.getCaptureTime(),
-                            totalMicros.longValue() / transactionPoint.getCount());
+                            totalMicros.longValue() / (double) transactionPoint.getCount());
                     totalOtherMicros -= totalMicros.longValue();
                 }
             }
@@ -124,7 +124,7 @@ class TransactionJsonService {
                 otherDataSeries.add(transactionPoint.getCaptureTime(), 0);
             } else {
                 otherDataSeries.add(transactionPoint.getCaptureTime(),
-                        totalOtherMicros / transactionPoint.getCount());
+                        totalOtherMicros / (double) transactionPoint.getCount());
             }
         }
         if (lastTransactionPoint != null) {
@@ -179,7 +179,7 @@ class TransactionJsonService {
                 mergeChildNodeIntoParent(toBeMergedRootNode, syntheticRootNode);
             }
         }
-        if (syntheticRootNode.getChildNodes().size() == 0) {
+        if (syntheticRootNode.getChildNodes().isEmpty()) {
             return "null"; // json null
         } else if (syntheticRootNode.getChildNodes().size() == 1) {
             // strip off synthetic root node since only one real root node

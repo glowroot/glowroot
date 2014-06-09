@@ -447,6 +447,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             method = Reflections.getDeclaredMethod(object.getClass(), methodName,
                     parameterTypes.toArray(new Class[parameterTypes.size()]));
         } catch (ReflectiveException e) {
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
             // try again with requestText
             parameterTypes.add(String.class);
             parameters.add(requestText);
@@ -454,6 +456,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                 method = Reflections.getDeclaredMethod(object.getClass(), methodName,
                         parameterTypes.toArray(new Class[parameterTypes.size()]));
             } catch (ReflectiveException f) {
+                // log exception at debug level
+                logger.debug(f.getMessage(), f);
                 // try again with response
                 parameterTypes.add(HttpResponse.class);
                 parameters.add(response);
@@ -461,6 +465,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                     method = Reflections.getDeclaredMethod(object.getClass(), methodName,
                             parameterTypes.toArray(new Class[parameterTypes.size()]));
                 } catch (ReflectiveException g) {
+                    // log exception at debug level
+                    logger.debug(g.getMessage(), g);
                     throw new ReflectiveException(new NoSuchMethodException());
                 }
             }

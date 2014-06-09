@@ -48,7 +48,9 @@ public abstract class ScheduledRunnable implements Runnable {
             runInternal();
         } catch (TerminateSubsequentExecutionsException e) {
             // cancel this scheduled runnable
-            throw new TerminateSubsequentExecutionsException();
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
+            throw e;
         } catch (Throwable t) {
             // (e.g. could be temporary OOM or temporary disk error)
             // log and return successfully so it will continue to run

@@ -26,7 +26,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Objects;
@@ -492,8 +491,6 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
-    // this doesn't need ModifiedAdviceAdapter
-    @Immutable
     private static class InitMixins extends AdviceAdapter {
 
         private final ImmutableList<MixinType> matchedMixinTypes;

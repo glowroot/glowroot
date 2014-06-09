@@ -157,7 +157,7 @@ class HttpSession {
 
     @Immutable
     private static class EmptyEnumeration implements Enumeration<Object> {
-        private static final EmptyEnumeration INSTANCE = new EmptyEnumeration();
+        private static final Enumeration<Object> INSTANCE = new EmptyEnumeration();
         @Override
         public boolean hasMoreElements() {
             return false;

@@ -26,9 +26,6 @@ import javax.management.ObjectName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.jvm.OptionalService.OptionalServiceFactory;
-import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -51,25 +48,23 @@ public class HeapDumps {
                 new Object[] {path, false}, new String[] {"java.lang.String", "boolean"});
     }
 
-    static class Factory implements OptionalServiceFactory<HeapDumps> {
-        @Override
-        public HeapDumps create() throws OptionalServiceFactoryException {
-            ObjectName objectName;
-            try {
-                objectName = ObjectName.getInstance(MBEAN_NAME);
-            } catch (MalformedObjectNameException e) {
-                throw new OptionalServiceFactoryException(e);
-            }
-            // verify that mbean exists
-            try {
-                ManagementFactory.getPlatformMBeanServer().getObjectInstance(objectName);
-            } catch (InstanceNotFoundException e) {
-                // log original exception at debug level
-                logger.debug(e.getMessage(), e);
-                throw new OptionalServiceFactoryException("No such MBean " + MBEAN_NAME
-                        + " (introduced in Oracle Java SE 6)");
-            }
-            return new HeapDumps(objectName);
+    static OptionalService<HeapDumps> create() {
+        ObjectName objectName;
+        try {
+            objectName = ObjectName.getInstance(MBEAN_NAME);
+        } catch (MalformedObjectNameException e) {
+            logger.error(e.getMessage(), e);
+            return OptionalService.unavailable("<see error log for detail>");
         }
+        // verify that mbean exists
+        try {
+            ManagementFactory.getPlatformMBeanServer().getObjectInstance(objectName);
+        } catch (InstanceNotFoundException e) {
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
+            return OptionalService.unavailable("No such MBean " + MBEAN_NAME
+                    + " (introduced in Oracle Java SE 6)");
+        }
+        return OptionalService.available(new HeapDumps(objectName));
     }
 }

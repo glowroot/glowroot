@@ -63,7 +63,7 @@ public class ProfileCharSourceCreator {
     @Nullable
     static String createProfileJson(ProfileNode syntheticRootNode) {
         ProfileNode rootNode;
-        if (syntheticRootNode.getChildNodes().size() == 0) {
+        if (syntheticRootNode.getChildNodes().isEmpty()) {
             return null;
         } else if (syntheticRootNode.getChildNodes().size() == 1) {
             // strip off synthetic root node since only one real root node

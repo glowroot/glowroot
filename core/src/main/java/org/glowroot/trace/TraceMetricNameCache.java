@@ -33,7 +33,7 @@ import org.glowroot.trace.model.TraceMetricNameImpl;
 // equality
 //
 // also used to ensure @Pointcut metric name matches metric name passed to PluginServices
-class TraceMetricNameCache implements TraceMetricName {
+class TraceMetricNameCache {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceMetricNameCache.class);
 

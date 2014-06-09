@@ -419,6 +419,7 @@ public abstract class PluginServices {
 
     private static class PluginServicesNop extends PluginServices {
         private static final PluginServicesNop INSTANCE = new PluginServicesNop();
+        private PluginServicesNop() {}
         @Override
         public boolean isEnabled() {
             return false;
@@ -485,6 +486,7 @@ public abstract class PluginServices {
 
         private static class NopTraceMetricName implements TraceMetricName {
             private static final NopTraceMetricName INSTANCE = new NopTraceMetricName();
+            private NopTraceMetricName() {}
         }
 
         private static class NopSpan implements Span {
@@ -511,12 +513,14 @@ public abstract class PluginServices {
 
         private static class NopMetricTimer implements TraceMetricTimer {
             private static final NopMetricTimer INSTANCE = new NopMetricTimer();
+            private NopMetricTimer() {}
             @Override
             public void stop() {}
         }
 
         private static class NopCompletedSpan implements CompletedSpan {
             private static final NopCompletedSpan INSTANCE = new NopCompletedSpan();
+            private NopCompletedSpan() {}
             @Override
             public void captureSpanStackTrace() {}
         }

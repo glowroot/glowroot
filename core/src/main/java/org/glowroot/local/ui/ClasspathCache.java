@@ -134,6 +134,8 @@ class ClasspathCache {
             // tomcat WebappClassLoader.getURLs() throws NullPointerException after stop() has been
             // called on the WebappClassLoader
             // (this happens, for example, after a webapp fails to load)
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
             return;
         }
         if (urls == null) {
@@ -144,6 +146,8 @@ class ClasspathCache {
             try {
                 uris.add(url.toURI());
             } catch (URISyntaxException e) {
+                // log exception at debug level
+                logger.debug(e.getMessage(), e);
             }
         }
         for (URI uri : uris) {

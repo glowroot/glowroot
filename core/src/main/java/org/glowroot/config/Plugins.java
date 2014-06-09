@@ -37,6 +37,8 @@ class Plugins {
 
     private static final Logger logger = LoggerFactory.getLogger(Plugins.class);
 
+    private Plugins() {}
+
     static ImmutableList<File> getPluginJars() throws URISyntaxException, IOException {
         File pluginsDir = getPluginsDir();
         if (pluginsDir == null) {
@@ -98,9 +100,12 @@ class Plugins {
 
     private static boolean isRunningDelegatingJavaagent() {
         try {
+            // TODO check javaagent arg instead of just checking if it is somewhere on the classpath
             Class.forName("org.glowroot.container.javaagent.DelegatingJavaagent");
             return true;
         } catch (ClassNotFoundException e) {
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
             return false;
         }
     }

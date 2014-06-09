@@ -29,10 +29,9 @@ public class JvmModule {
     private final OptionalService<HeapDumps> heapDumps;
 
     public JvmModule() {
-        threadAllocatedBytes = new OptionalService<ThreadAllocatedBytes>(
-                new ThreadAllocatedBytes.Factory());
-        heapHistograms = new OptionalService<HeapHistograms>(new HeapHistograms.Factory());
-        heapDumps = new OptionalService<HeapDumps>(new HeapDumps.Factory());
+        threadAllocatedBytes = ThreadAllocatedBytes.create();
+        heapHistograms = HeapHistograms.create();
+        heapDumps = HeapDumps.create();
     }
 
     public OptionalService<ThreadAllocatedBytes> getThreadAllocatedBytes() {

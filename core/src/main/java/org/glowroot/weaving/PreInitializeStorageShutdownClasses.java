@@ -63,6 +63,8 @@ public class PreInitializeStorageShutdownClasses {
             Class.forName(type, true, loader);
         } catch (ClassNotFoundException e) {
             logger.warn("class not found: {}", type);
+            // log stack trace at debug level
+            logger.debug(e.getMessage(), e);
         }
     }
 
@@ -358,6 +360,8 @@ public class PreInitializeStorageShutdownClasses {
             Class.forName(type);
             return true;
         } catch (ClassNotFoundException e) {
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
             return false;
         }
     }

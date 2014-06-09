@@ -27,12 +27,12 @@ import javax.tools.ToolProvider;
 
 import com.google.common.base.Splitter;
 import com.google.common.io.Closer;
+import org.objectweb.asm.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
-import org.glowroot.jvm.OptionalService.OptionalServiceFactory;
-import org.glowroot.jvm.OptionalService.OptionalServiceFactoryException;
-import org.glowroot.jvm.OptionalService.OptionalServiceFactoryHelper;
 
 /**
  * @author Trask Stalnaker
@@ -41,9 +41,45 @@ import org.glowroot.jvm.OptionalService.OptionalServiceFactoryHelper;
 @Immutable
 public class HeapHistograms {
 
+    private static final Logger logger = LoggerFactory.getLogger(HeapHistogram.class);
+
     private final Method attachMethod;
     private final Method heapHistoMethod;
     private final Method detachMethod;
+
+    static OptionalService<HeapHistograms> create() {
+        ClassLoader systemToolClassLoader = ToolProvider.getSystemToolClassLoader();
+        Class<?> virtualMachineClass;
+        try {
+            virtualMachineClass = Class.forName("com.sun.tools.attach.VirtualMachine", true,
+                    systemToolClassLoader);
+        } catch (ClassNotFoundException e) {
+            logger.error(e.getMessage(), e);
+            return OptionalService.unavailable("<see error log for detail>");
+        }
+        Class<?> hotSpotVirtualMachineClass;
+        try {
+            hotSpotVirtualMachineClass = Class.forName(
+                    "sun.tools.attach.HotSpotVirtualMachine", true, systemToolClassLoader);
+        } catch (ClassNotFoundException e) {
+            logger.error(e.getMessage(), e);
+            return OptionalService.unavailable("<see error log for detail>");
+        }
+        try {
+            Method attachMethod = virtualMachineClass.getMethod("attach", String.class);
+            Method detachMethod = virtualMachineClass.getMethod("detach");
+            Method heapHistoMethod =
+                    hotSpotVirtualMachineClass.getMethod("heapHisto", Object[].class);
+            return OptionalService.available(
+                    new HeapHistograms(attachMethod, heapHistoMethod, detachMethod));
+        } catch (SecurityException e) {
+            logger.error(e.getMessage(), e);
+            return OptionalService.unavailable("<see error log for detail>");
+        } catch (NoSuchMethodException e) {
+            logger.error(e.getMessage(), e);
+            return OptionalService.unavailable("<see error log for detail>");
+        }
+    }
 
     private HeapHistograms(Method attachMethod, Method heapHistoMethod, Method detachMethod) {
         super();
@@ -92,9 +128,14 @@ public class HeapHistograms {
             long count = Long.parseLong(parts.next());
             long bytes = Long.parseLong(parts.next());
             String className = parts.next();
+            // skipping PermGen objects
             if (className.charAt(0) != '<') {
-                // skipping PermGen objects
-                heapHistogram.addItem(className, bytes, count);
+                if (className.charAt(0) == '[') {
+                    className = Type.getType(className).getClassName();
+                    heapHistogram.addItem(className, bytes, count);
+                } else {
+                    heapHistogram.addItem(className, bytes, count);
+                }
                 totalBytes += bytes;
                 totalCount += count;
             }
@@ -139,24 +180,6 @@ public class HeapHistograms {
         }
         private HeapHistogramException(String message) {
             super(message);
-        }
-    }
-
-    static class Factory implements OptionalServiceFactory<HeapHistograms> {
-        @Override
-        public HeapHistograms create() throws OptionalServiceFactoryException {
-            ClassLoader systemToolClassLoader = ToolProvider.getSystemToolClassLoader();
-            Class<?> virtualMachineClass = OptionalServiceFactoryHelper.classForName(
-                    "com.sun.tools.attach.VirtualMachine", systemToolClassLoader);
-            Class<?> hotSpotVirtualMachineClass = OptionalServiceFactoryHelper.classForName(
-                    "sun.tools.attach.HotSpotVirtualMachine", systemToolClassLoader);
-            Method attachMethod = OptionalServiceFactoryHelper.getMethod(virtualMachineClass,
-                    "attach", String.class);
-            Method detachMethod = OptionalServiceFactoryHelper.getMethod(virtualMachineClass,
-                    "detach");
-            Method heapHistoMethod = OptionalServiceFactoryHelper.getMethod(
-                    hotSpotVirtualMachineClass, "heapHisto", Object[].class);
-            return new HeapHistograms(attachMethod, heapHistoMethod, detachMethod);
         }
     }
 }

@@ -67,7 +67,7 @@ class ResponseHeaders {
             Object value = responseHeader.getValue();
             if (value instanceof List) {
                 List<String> values = Lists.newArrayList();
-                for (Object v : ((List<?>) value)) {
+                for (Object v : (List<?>) value) {
                     values.add(headerValueString(v));
                 }
                 responseHeaderStrings.put(name, values);

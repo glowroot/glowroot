@@ -13,21 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.logger;
+package org.glowroot.config;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.jar.JarFile;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-class LoggerPlugin {
+class JarFileCloseable implements Closeable {
 
-    private LoggerPlugin() {}
+    private final JarFile jarFile;
 
-    @SuppressWarnings("nullness:type.argument.type.incompatible")
-    static final ThreadLocal<Boolean> inAdvice = new ThreadLocal<Boolean>() {
-        @Override
-        protected Boolean initialValue() {
-            return false;
-        }
-    };
+    JarFileCloseable(JarFile jarFile) {
+        this.jarFile = jarFile;
+    }
+
+    @Override
+    public void close() throws IOException {
+        jarFile.close();
+    }
 }

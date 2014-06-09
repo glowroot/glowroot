@@ -74,14 +74,16 @@ public class MainEntryPoint {
         }
         try {
             start(dataDir, properties, instrumentation);
-        } catch (Throwable t) {
-            if (t instanceof StartupFailedException
-                    && ((StartupFailedException) t).isDataSourceLocked()) {
+        } catch (StartupFailedException e) {
+            if (e.isDataSourceLocked()) {
                 logDataSourceLockedException(dataDir);
             } else {
                 // log error but don't re-throw which would prevent monitored app from starting
-                startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
+                startupLogger.error("Glowroot not started: {}", e.getMessage(), e);
             }
+        } catch (Throwable t) {
+            // log error but don't re-throw which would prevent monitored app from starting
+            startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
         }
     }
 
@@ -94,17 +96,19 @@ public class MainEntryPoint {
         String version = Version.getVersion();
         try {
             glowrootModule = new GlowrootModule(dataDir, properties, null, version, true);
-        } catch (Throwable t) {
-            if (t instanceof StartupFailedException
-                    && ((StartupFailedException) t).isDataSourceLocked()) {
+        } catch (StartupFailedException e) {
+            if (e.isDataSourceLocked()) {
                 // log nice message without stack trace for this common case
                 startupLogger.error("Viewer cannot start: database file {} is locked by another"
                         + " process.", dataDir.getAbsolutePath());
-                // log exception stack trace at debug level
-                startupLogger.debug(t.getMessage(), t);
+                // log stack trace at debug level
+                startupLogger.debug(e.getMessage(), e);
             } else {
-                startupLogger.error("Viewer cannot start: {}", t.getMessage(), t);
+                startupLogger.error("Viewer cannot start: {}", e.getMessage(), e);
             }
+            return;
+        } catch (Throwable t) {
+            startupLogger.error("Viewer cannot start: {}", t.getMessage(), t);
             return;
         }
         startupLogger.info("Viewer started (version {})", version);
@@ -194,6 +198,8 @@ public class MainEntryPoint {
             Class.forName("org.glowroot.shaded.slf4j.Logger");
             return true;
         } catch (ClassNotFoundException e) {
+            // log exception at debug level
+            startupLogger.debug(e.getMessage(), e);
             return false;
         }
     }

@@ -23,6 +23,8 @@ import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.Static;
 
@@ -35,6 +37,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 @Static
 public class Threads {
+
+    private static final Logger logger = LoggerFactory.getLogger(Threads.class);
 
     private Threads() {}
 
@@ -179,6 +183,8 @@ public class Threads {
             Class.forName("org.glowroot.shaded.slf4j.Logger");
             return true;
         } catch (ClassNotFoundException e) {
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
             return false;
         }
     }

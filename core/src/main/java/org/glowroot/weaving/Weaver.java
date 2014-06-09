@@ -257,7 +257,7 @@ class Weaver {
                     // log at debug level only since this code must not be getting used anyways, as
                     // it would fail on execution since the type doesn't exist
                     logger.debug("type {} not found while parsing type {}", superName,
-                            parseContext);
+                            parseContext, e);
                     return "java/lang/Object";
                 }
             }
@@ -281,7 +281,7 @@ class Weaver {
                     // log at debug level only since this code must not be getting used anyways, as
                     // it would fail on execution since the type doesn't exist
                     logger.debug("type {} not found while parsing type {}", interfaceName,
-                            parseContext);
+                            parseContext, e);
                 }
             }
             String superName = parsedType.getSuperName();
@@ -297,7 +297,7 @@ class Weaver {
             } catch (ClassNotFoundException e) {
                 // log at debug level only since this code must not be getting used anyways, as it
                 // would fail on execution since the type doesn't exist
-                logger.debug("type {} not found while parsing type {}", superName, parseContext);
+                logger.debug("type {} not found while parsing type {}", superName, parseContext, e);
                 return false;
             }
         }

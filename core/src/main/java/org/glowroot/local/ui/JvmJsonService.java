@@ -58,6 +58,7 @@ import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.ProcessId;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.Singleton;
+import org.glowroot.markers.UsedByJsonBinding;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
@@ -340,7 +341,8 @@ class JvmJsonService {
         return null;
     }
 
-    private static class RequestWithDirectory {
+    @UsedByJsonBinding
+    static class RequestWithDirectory {
 
         private final String directory;
 

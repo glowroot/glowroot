@@ -123,7 +123,7 @@ public class ObjectMappers {
             super.setupModule(context);
             context.addDeserializers(new Deserializers.Base() {
                 @Override
-                public JsonDeserializer<?> findEnumDeserializer(Class<?> type,
+                public EnumDeserializer findEnumDeserializer(Class<?> type,
                         DeserializationConfig config, BeanDescription beanDesc)
                         throws JsonMappingException {
                     return new EnumDeserializer(type);

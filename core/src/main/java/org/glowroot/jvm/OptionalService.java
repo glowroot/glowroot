@@ -15,19 +15,10 @@
  */
 package org.glowroot.jvm;
 
-import java.lang.reflect.Method;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.glowroot.common.Reflections;
-import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.UsedByJsonBinding;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker
@@ -35,98 +26,30 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class OptionalService<T> {
 
-    private static final Logger logger = LoggerFactory.getLogger(OptionalService.class);
-
+    private final Availability availability;
     @Nullable
     private final T service;
-    private final Availability availability;
 
-    OptionalService(OptionalServiceFactory<T> factory) {
-        T serviceLocal = null;
-        Availability availabilityLocal = null;
-        try {
-            serviceLocal = factory.create();
-            availabilityLocal = new Availability(true, "");
-        } catch (OptionalServiceFactoryException e) {
-            Throwable cause = e.getCause();
-            if (cause == null) {
-                // unavailable due to "expected" cause
-                String message = e.getMessage();
-                // OptionalServiceFactoryException can only be constructed with non-null cause or
-                // non-null message
-                checkNotNull(message);
-                availabilityLocal = new Availability(false, message);
-            } else {
-                logger.warn(e.getMessage(), e);
-                availabilityLocal = new Availability(false, "Unavailable due to error: "
-                        + cause.getMessage() + ", see Glowroot log for stack trace");
-            }
-        }
-        service = serviceLocal;
-        availability = availabilityLocal;
+    static <T> OptionalService<T> available(T service) {
+        return new OptionalService<T>(new Availability(true, ""), service);
     }
 
-    @Nullable
-    public T getService() {
-        return service;
+    static <T> OptionalService<T> unavailable(String reason) {
+        return new OptionalService<T>(new Availability(false, reason), null);
+    }
+
+    public OptionalService(Availability availability, @Nullable T service) {
+        this.availability = availability;
+        this.service = service;
     }
 
     public Availability getAvailability() {
         return availability;
     }
 
-    interface OptionalServiceFactory<T> {
-        T create() throws OptionalServiceFactoryException;
-    }
-
-    static class OptionalServiceFactoryHelper {
-
-        private OptionalServiceFactoryHelper() {}
-
-        static Class<?> classForName(String className, @Nullable ClassLoader classLoader)
-                throws OptionalServiceFactoryException {
-            try {
-                return Class.forName(className, true, classLoader);
-            } catch (ClassNotFoundException e) {
-                throw new OptionalServiceFactoryException("Could not find class " + className);
-            }
-        }
-
-        static Method getMethod(Class<?> type, String methodName, Class<?>... parameterTypes)
-                throws OptionalServiceFactoryException {
-            try {
-                return type.getMethod(methodName, parameterTypes);
-            } catch (SecurityException e) {
-                throw new OptionalServiceFactoryException(e);
-            } catch (NoSuchMethodException e) {
-                throw new OptionalServiceFactoryException("Could not find method " + methodName
-                        + " on class " + type.getName());
-            }
-        }
-
-        @Nullable
-        static Object invoke(Method method, Object obj, Object... args)
-                throws OptionalServiceFactoryException {
-            try {
-                return Reflections.invoke(method, obj, args);
-            } catch (ReflectiveException e) {
-                throw new OptionalServiceFactoryException(e);
-            }
-        }
-    }
-
-    @SuppressWarnings("serial")
-    static class OptionalServiceFactoryException extends Exception {
-
-        // "expected" reason, will not be logged
-        OptionalServiceFactoryException(String message) {
-            super(message);
-        }
-
-        // "unexpected" reason, will be logged as warning
-        OptionalServiceFactoryException(Exception e) {
-            super(e);
-        }
+    @Nullable
+    public T getService() {
+        return service;
     }
 
     @UsedByJsonBinding

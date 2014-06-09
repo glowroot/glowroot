@@ -103,13 +103,10 @@ class TransactionCollector {
                 } catch (InterruptedException e) {
                     // terminate successfully
                     return;
-                } catch (Exception e) {
+                } catch (Throwable e) {
+                    // (e.g. could be temporary OOM or temporary disk error)
                     // log and re-try
                     logger.error(e.getMessage(), e);
-                } catch (Throwable t) {
-                    // serious error, log and terminate
-                    logger.error(t.getMessage(), t);
-                    return;
                 }
             }
         }

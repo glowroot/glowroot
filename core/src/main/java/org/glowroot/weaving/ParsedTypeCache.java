@@ -220,7 +220,7 @@ public class ParsedTypeCache {
         } catch (ClassNotFoundException e) {
             // log at debug level only since the code referencing the class must not be getting used
             // anyways, as it would fail on execution since the type doesn't exist
-            logger.debug("type {} not found while parsing type {}", typeName, parseContext);
+            logger.debug("type {} not found while parsing type {}", typeName, parseContext, e);
             return ImmutableList.of();
         }
         List<ParsedType> superTypes = Lists.newArrayList();
