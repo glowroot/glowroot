@@ -134,23 +134,6 @@
       <version>2.5.0</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>com.google.caliper</groupId>
-      <artifactId>caliper</artifactId>
-      <version>1.0-beta-1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!-- this is a transitive dependency of caliper, but caliper currently depends on version 2.0
-        of this library which has dependencies on asm 3.1 artifacts which have different a groupId
-        from the asm 4.1 artifacts already used by glowroot, so need to pin the latest version
-        (2.1) which depends on asm 4.0 which has the same groupId as asm 4.1 and therefore does not
-        conflict -->
-      <groupId>com.google.code.java-allocation-instrumenter</groupId>
-      <artifactId>java-allocation-instrumenter</artifactId>
-      <version>2.1</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -260,14 +243,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <testExcludes>
-            <testExclude>org/glowroot/trace/ThreadSafeCollectionOfTenBenchmark.java</testExclude>
-          </testExcludes>
-        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
