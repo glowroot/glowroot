@@ -147,15 +147,9 @@
     </resources>
     <plugins>
       <plugin>
-        <!--
-          com.github.trask:exec-maven-plugin:1.2.1+patch.1 includes two patches on top of
-          org.codehaus.mojo:exec-maven-plugin:1.2.1
-          * http://jira.codehaus.org/browse/MEXEC-118
-          * http://jira.codehaus.org/browse/MEXEC-121
-        -->
-        <groupId>com.github.trask</groupId>
+        <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>1.2.1+patch.1-SNAPSHOT</version>
+        <version>1.3.1</version>
         <executions>
           <execution>
             <!-- could delete node_modules using maven-clean-plugin, but that adds unnecessary
@@ -182,10 +176,6 @@
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
               <executable>npm</executable>
-              <!-- executableOutputCharset UTF-8 is needed when running on windows, in order to
-                render a couple of special characters that npm uses when displaying the dependency
-                tree structure -->
-              <executableOutputCharset>UTF-8</executableOutputCharset>
               <arguments>
                 <argument>install</argument>
               </arguments>
@@ -208,8 +198,6 @@
             </configuration>
           </execution>
           <execution>
-            <!-- using 'bower update' instead of 'bower install' due to
-              https://github.com/bower/bower/issues/939 -->
             <id>bower-update</id>
             <phase>generate-sources</phase>
             <goals>
@@ -218,10 +206,6 @@
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
               <executable>bower</executable>
-              <!-- executableOutputCharset UTF-8 is needed when running on windows, in order to
-                render a couple of special characters that bower uses when displaying the dependency
-                tree structure -->
-              <executableOutputCharset>UTF-8</executableOutputCharset>
               <arguments>
                 <argument>update</argument>
               </arguments>

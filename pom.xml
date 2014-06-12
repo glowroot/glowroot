@@ -139,23 +139,6 @@
     </dependencies>
   </dependencyManagement>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <!-- this is needed temporarily until com.github.trask:exec-maven-plugin:1.2.1+patch.1
-        makes it into maven central, this cannot be pushed down into glowroot-core module,
-        otherwise maven deployAtEnd fails for strange reasons -->
-      <id>sonatype-nexus-snapshots</id>
-      <name>Sonatype Nexus Snapshots</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </pluginRepository>
-  </pluginRepositories>
-
   <build>
     <plugins>
       <plugin>
