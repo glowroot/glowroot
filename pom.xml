@@ -163,13 +163,14 @@
             </goals>
             <configuration>
               <rules>
+                <requireJavaVersion>
+                  <version>[1.6,)</version>
+                </requireJavaVersion>
                 <requireMavenVersion>
-                  <version>3.0</version>
+                  <version>[3.0,)</version>
                 </requireMavenVersion>
-                <requirePluginVersions>
-                  <!-- banSnapshots is overridden and set to true in release profile -->
-                  <banSnapshots>false</banSnapshots>
-                </requirePluginVersions>
+                <requirePluginVersions />
+                <requireUpperBoundDeps />
               </rules>
             </configuration>
           </execution>
@@ -316,17 +317,8 @@
             <artifactId>maven-enforcer-plugin</artifactId>
             <configuration>
               <rules>
-                <requirePluginVersions>
-                  <!-- overrides more lenient banShapshots=false allowed prior to release -->
-                  <banSnapshots>true</banSnapshots>
-                </requirePluginVersions>
-                <requireJavaVersion>
-                  <version>[1.6,1.7)</version>
-                </requireJavaVersion>
-                <requireNoRepositories />
                 <requireReleaseDeps />
                 <requireReleaseVersion />
-                <requireUpperBoundDeps />
               </rules>
             </configuration>
           </plugin>

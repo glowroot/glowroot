@@ -71,6 +71,14 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- pinning version since selenium-api uses org.json:json:20080701
+           and sauce_junit uses org.json:json:20090211 -->
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20090211</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <!-- currently not using due to https://github.com/detro/ghostdriver/issues/140 -->
       <groupId>com.github.detro.ghostdriver</groupId>
       <artifactId>phantomjsdriver</artifactId>
