@@ -17,7 +17,6 @@ package org.glowroot.jvm;
 
 import java.lang.management.ManagementFactory;
 
-import javax.annotation.concurrent.Immutable;
 import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.MalformedObjectNameException;
@@ -25,6 +24,8 @@ import javax.management.ObjectName;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.markers.Immutable;
 
 /**
  * @author Trask Stalnaker

@@ -30,6 +30,13 @@
       <artifactId>slf4j-api</artifactId>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>${checker.qual.group.id}</groupId>
+      <artifactId>${checker.qual.artifact.id}</artifactId>
+      <version>${checker.qual.version}</version>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
+    </dependency>
   </dependencies>
 
   <profiles>

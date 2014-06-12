@@ -18,15 +18,16 @@ package org.glowroot.weaving;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-import javax.annotation.concurrent.NotThreadSafe;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.Type;
+
+import org.glowroot.markers.Immutable;
+import org.glowroot.markers.NotThreadSafe;
 
 import static org.objectweb.asm.Opcodes.ACC_NATIVE;
 
@@ -111,8 +112,8 @@ public class ParsedType {
         return hasReweavableAdvice;
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("interface", iface)

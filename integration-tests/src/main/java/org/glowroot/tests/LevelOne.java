@@ -15,22 +15,19 @@
  */
 package org.glowroot.tests;
 
-import javax.annotation.Nullable;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 class LevelOne {
 
-    @Nullable
     private final RuntimeException exception;
 
     LevelOne() {
         this(null);
     }
 
-    LevelOne(@Nullable RuntimeException e) {
+    LevelOne(RuntimeException e) {
         this.exception = e;
     }
 

@@ -15,8 +15,7 @@
  */
 package org.glowroot.weaving;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
+import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.PartiallyThreadSafe;
 import org.glowroot.markers.UsedByGeneratedBytecode;
 

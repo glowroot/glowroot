@@ -15,17 +15,12 @@
  */
 package org.glowroot.sandbox.ui;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Immutable
 class NestableCall {
 
-    @Nullable
     private final NestableCall child;
     private final int numExpensiveCalls;
     private final int maxTimeMillis;

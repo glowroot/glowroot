@@ -22,8 +22,6 @@ import java.sql.Types;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharSource;
 import org.slf4j.Logger;
@@ -38,6 +36,7 @@ import org.glowroot.local.store.FileBlock.InvalidBlockIdFormatException;
 import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.markers.Singleton;
+import org.glowroot.markers.ThreadSafe;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

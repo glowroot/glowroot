@@ -23,14 +23,15 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+
+import org.glowroot.markers.GuardedBy;
+import org.glowroot.markers.ThreadSafe;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -145,8 +146,8 @@ public class Profile {
         }
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("unmergedStackTraces", unmergedStackTraces)

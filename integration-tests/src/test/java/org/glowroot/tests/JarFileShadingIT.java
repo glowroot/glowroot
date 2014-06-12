@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.Lists;
 import org.junit.Assume;
 import org.junit.Test;
@@ -75,7 +73,6 @@ public class JarFileShadingIT {
     }
 
     // try to cover the non-standard case when running from inside an IDE
-    @Nullable
     private static File getGlowrootCoreJarFileFromRelativePath() {
         String classesDir = MainEntryPoint.class.getProtectionDomain().getCodeSource()
                 .getLocation().getFile();

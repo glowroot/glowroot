@@ -18,8 +18,6 @@ package org.glowroot.tests;
 import java.io.File;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.junit.After;
@@ -172,7 +170,6 @@ public class PointcutConfigTest {
 
     public interface Misc {
         public void execute1();
-        @Nullable
         public CharSequence executeWithReturn();
         public void executeWithArgs(String one, int two);
     }

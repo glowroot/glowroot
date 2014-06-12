@@ -18,13 +18,14 @@ package org.glowroot.weaving;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.Type;
+
+import org.glowroot.markers.Immutable;
 
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
@@ -117,8 +118,8 @@ public class ParsedMethod {
 
     // equals and hashCode are only defined in terms of name and argTypes since those uniquely
     // identify a method within a given class
-    /*@Pure*/
     @Override
+    @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj == this) {
             return true;
@@ -132,14 +133,14 @@ public class ParsedMethod {
 
     // equals and hashCode are only defined in terms of name and argTypes since those uniquely
     // identify a method within a given class
-    /*@Pure*/
     @Override
+    @Pure
     public int hashCode() {
         return Objects.hashCode(name, argTypes);
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)

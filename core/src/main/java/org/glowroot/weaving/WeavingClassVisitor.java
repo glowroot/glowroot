@@ -25,8 +25,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
@@ -35,6 +33,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -88,11 +90,11 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private ImmutableList<AdviceMatcher> adviceMatchers = ImmutableList.of();
     private ImmutableList<MixinType> matchedMixinTypes = ImmutableList.of();
-    /*@MonotonicNonNull*/
+    @MonotonicNonNull
     private Type type;
-    /*@MonotonicNonNull*/
+    @MonotonicNonNull
     private List<ParsedType> superHierarchy;
-    /*@MonotonicNonNull*/
+    @MonotonicNonNull
     private List<ParsedType> interfaceHierarchy;
 
     private int innerMethodCounter;
@@ -205,7 +207,7 @@ class WeavingClassVisitor extends ClassVisitor {
         return nothingAtAllToWeave;
     }
 
-    /*@RequiresNonNull("type")*/
+    @RequiresNonNull("type")
     private List<ParsedType> getInterfaceHierarchy(String[] interfaceNames) {
         List<ParsedType> superTypes = Lists.newArrayList();
         ParseContext parseContext = new ParseContext(type.getClassName(), codeSource);
@@ -253,7 +255,7 @@ class WeavingClassVisitor extends ClassVisitor {
         return Iterables.toArray(interfacesIncludingMixins, String.class);
     }
 
-    /*@RequiresNonNull("parsedTypeBuilder")*/
+    @RequiresNonNull("parsedTypeBuilder")
     private List<Advice> getMatchingAdvisors(int access, ParsedMethod parsedMethod,
             @Nullable String exactTargetTypeOverride) {
         List<Advice> matchingAdvisors = Lists.newArrayList();
@@ -268,7 +270,7 @@ class WeavingClassVisitor extends ClassVisitor {
         return matchingAdvisors;
     }
 
-    /*@RequiresNonNull("type")*/
+    @RequiresNonNull("type")
     private MethodVisitor visitInitWithMixin(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions,
             List<Advice> matchingAdvisors) {
@@ -284,7 +286,7 @@ class WeavingClassVisitor extends ClassVisitor {
         return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors);
     }
 
-    /*@RequiresNonNull("type")*/
+    @RequiresNonNull("type")
     private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions,
             Iterable<Advice> matchingAdvisors) {
@@ -310,7 +312,7 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     // returns null if no synthetic metric marker methods were needed
-    /*@RequiresNonNull("type")*/
+    @RequiresNonNull("type")
     @Nullable
     private String wrapWithSyntheticMetricMarkerMethods(int outerAccess, String outerName,
             String desc, @Nullable String signature, String/*@Nullable*/[] exceptions,
@@ -349,7 +351,7 @@ class WeavingClassVisitor extends ClassVisitor {
         return first ? null : currMethodName;
     }
 
-    /*@RequiresNonNull("type")*/
+    @RequiresNonNull("type")
     private void addMixin(MixinType mixinType) {
         ClassReader cr;
         try {
@@ -385,7 +387,7 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
-    /*@RequiresNonNull({"type", "interfaceHierarchy", "superHierarchy", "parsedTypeBuilder"})*/
+    @RequiresNonNull({"type", "interfaceHierarchy", "superHierarchy", "parsedTypeBuilder"})
     private void handleInheritedMethodsThatNowFulfillAdvice(ParsedType parsedType) {
         Iterable<ParsedType> superHierarchyPlus = Iterables.concat(superHierarchy,
                 Arrays.asList(parsedTypeCache.getJavaLangObjectParsedType()));
@@ -440,7 +442,7 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
-    /*@RequiresNonNull({"type"})*/
+    @RequiresNonNull({"type"})
     private void overrideAndWeaveInheritedMethod(ParsedType parsedType,
             ParsedMethod inheritedMethod, Collection<Advice> matchingAdvisors) {
         String[] exceptions = Iterables.toArray(inheritedMethod.getExceptions(), String.class);
@@ -467,8 +469,8 @@ class WeavingClassVisitor extends ClassVisitor {
         mg.endMethod();
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         // not including fields that are just direct copies from Weaver
         ToStringHelper toStringHelper = Objects.toStringHelper(this)

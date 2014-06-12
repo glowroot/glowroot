@@ -17,14 +17,14 @@
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-plugin-api</artifactId>
+      <artifactId>glowroot-core</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-core</artifactId>
+      <artifactId>glowroot-plugin-api</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -76,14 +76,11 @@
       <artifactId>junit</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <!-- TODO this should be optional, but then eclipse marks an error in tests that use
-        test-harness (and don't have their own dependency on jsr305):
-        "The type javax.annotation.Nullable cannot be resolved. It is indirectly referenced from
-        required .class files"
-        this only occurs when test-harness is in eclipse also (it doesn't occur when test-harness is
-        just maven dependency) -->
+      <groupId>${checker.qual.group.id}</groupId>
+      <artifactId>${checker.qual.artifact.id}</artifactId>
+      <version>${checker.qual.version}</version>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
     </dependency>
   </dependencies>
 </project>

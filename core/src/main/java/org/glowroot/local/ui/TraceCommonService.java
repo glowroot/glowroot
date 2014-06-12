@@ -18,11 +18,10 @@ package org.glowroot.local.ui;
 import java.io.IOException;
 import java.sql.SQLException;
 
-import javax.annotation.Nullable;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.collector.ProfileCharSourceCreator;
 import org.glowroot.collector.Snapshot;

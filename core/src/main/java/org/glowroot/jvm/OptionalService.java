@@ -15,9 +15,9 @@
  */
 package org.glowroot.jvm;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
 
 /**

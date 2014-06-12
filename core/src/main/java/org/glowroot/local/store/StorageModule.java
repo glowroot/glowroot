@@ -21,10 +21,8 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.base.Ticker;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +32,7 @@ import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.PreInitializeStorageShutdownClasses;
 
 import static java.util.concurrent.TimeUnit.MINUTES;

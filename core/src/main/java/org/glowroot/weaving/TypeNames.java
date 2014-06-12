@@ -19,6 +19,7 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 
 import org.glowroot.markers.Static;
 
@@ -31,8 +32,8 @@ public class TypeNames {
 
     private TypeNames() {}
 
-    /*@PolyNull*/
-    public static String fromInternal(/*@PolyNull*/String typeName) {
+    @PolyNull
+    public static String fromInternal(@PolyNull String typeName) {
         if (typeName == null) {
             return null;
         } else {

@@ -17,9 +17,9 @@ package org.glowroot.plugin.jdbc;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
@@ -136,12 +136,12 @@ class JdbcMessageSupplier extends MessageSupplier {
         this.numRows = Math.max(this.numRows, currentRow);
     }
 
-    /*@EnsuresNonNullIf(expression = "parameters", result = true)*/
+    @EnsuresNonNullIf(expression = "parameters", result = true)
     private boolean isUsingParameters() {
         return parameters != null;
     }
 
-    /*@EnsuresNonNullIf(expression = "batchedParameters", result = true)*/
+    @EnsuresNonNullIf(expression = "batchedParameters", result = true)
     private boolean isUsingBatchedParameters() {
         return batchedParameters != null;
     }

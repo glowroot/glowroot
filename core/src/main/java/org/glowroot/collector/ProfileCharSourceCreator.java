@@ -21,12 +21,11 @@ import java.io.Writer;
 import java.lang.Thread.State;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

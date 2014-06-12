@@ -19,14 +19,12 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
@@ -50,7 +48,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
 public class LocalContainer implements Container {
 
     private final File dataDir;

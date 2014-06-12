@@ -18,6 +18,8 @@ package org.glowroot.plugin.jdbc;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
@@ -124,7 +126,7 @@ public class DataSourceAspect {
 
     private static class GetConnectionMessageSupplier extends MessageSupplier {
 
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private volatile String autoCommit;
 
         @Override

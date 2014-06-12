@@ -18,14 +18,13 @@ package org.glowroot.collector;
 import java.io.IOException;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.NotThreadSafe;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.trace.model.Profile;
 import org.glowroot.trace.model.TraceMetric;
 

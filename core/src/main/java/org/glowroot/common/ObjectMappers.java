@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -39,6 +37,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +89,7 @@ public class ObjectMappers {
         return value;
     }
 
-    /*@EnsuresNonNull("#1")*/
+    @EnsuresNonNull("#1")
     public static <T extends /*@Nullable*/Object> void checkRequiredProperty(T reference,
             String fieldName) throws JsonMappingException {
         if (reference == null) {

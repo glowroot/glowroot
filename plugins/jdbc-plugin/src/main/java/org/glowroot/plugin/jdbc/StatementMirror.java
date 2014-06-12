@@ -19,10 +19,9 @@ import java.lang.ref.WeakReference;
 import java.sql.Statement;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Used to capture and mirror the state of statements since the underlying {@link Statement} values

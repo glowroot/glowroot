@@ -18,9 +18,8 @@ package org.glowroot.weaving;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.OptionalReturn;
 import org.glowroot.api.weaving.BindMethodArg;

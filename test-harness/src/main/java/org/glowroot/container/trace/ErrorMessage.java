@@ -17,13 +17,12 @@ package org.glowroot.container.trace;
 
 import java.util.Map;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
@@ -31,7 +30,6 @@ import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Immutable
 public class ErrorMessage extends Message {
 
     @Nullable
@@ -48,8 +46,8 @@ public class ErrorMessage extends Message {
         return exception;
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("text", getText())

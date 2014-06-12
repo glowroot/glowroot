@@ -15,13 +15,13 @@
  */
 package org.glowroot.config;
 
-import javax.annotation.concurrent.Immutable;
-
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
+import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.config.JsonViews.UiView;
+import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
 
 /**
@@ -91,8 +91,8 @@ public class FineProfilingConfig {
         return version;
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("tracePercentage", tracePercentage)

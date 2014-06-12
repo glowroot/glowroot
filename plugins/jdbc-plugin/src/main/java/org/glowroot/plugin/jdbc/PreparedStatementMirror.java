@@ -19,12 +19,12 @@ import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.hash.HashCode;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * Used to capture and mirror the state of prepared statements since the underlying
@@ -103,8 +103,8 @@ class PreparedStatementMirror extends StatementMirror {
     }
 
     static class NullParameterValue {
-        /*@Pure*/
         @Override
+        @Pure
         public String toString() {
             return "NULL";
         }
@@ -122,8 +122,8 @@ class PreparedStatementMirror extends StatementMirror {
                 this.bytes = null;
             }
         }
-        /*@Pure*/
         @Override
+        @Pure
         public String toString() {
             if (bytes != null) {
                 return "0x" + HashCode.fromBytes(bytes).toString();
@@ -138,8 +138,8 @@ class PreparedStatementMirror extends StatementMirror {
         public StreamingParameterValue(Object o) {
             this.o = o;
         }
-        /*@Pure*/
         @Override
+        @Pure
         public String toString() {
             return "{stream:" + o.getClass().getSimpleName() + "}";
         }

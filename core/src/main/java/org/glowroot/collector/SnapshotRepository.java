@@ -15,9 +15,8 @@
  */
 package org.glowroot.collector;
 
-import javax.annotation.Nullable;
-
 import com.google.common.io.CharSource;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Interface for storing trace snapshots.

@@ -30,10 +30,6 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.base.Objects;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -44,6 +40,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -53,6 +51,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
+import org.glowroot.markers.GuardedBy;
+import org.glowroot.markers.Immutable;
 import org.glowroot.markers.Singleton;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -394,8 +394,8 @@ public class ParsedTypeCache {
         }
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("parsedTypes", parsedTypeCache)
@@ -448,8 +448,8 @@ public class ParsedTypeCache {
             this.className = className;
         }
         // toString() is used in logger warning construction
-        /*@Pure*/
         @Override
+        @Pure
         public String toString() {
             if (codeSource == null) {
                 return className;
@@ -544,8 +544,8 @@ public class ParsedTypeCache {
             return typeNameUpper;
         }
 
-        /*@Pure*/
         @Override
+        @Pure
         public int compareTo(TypeNameWithUpper o) {
             // sort case-insensitive (using upper), and fallback to case-sensitive sort when
             // uppers are equal
@@ -556,8 +556,8 @@ public class ParsedTypeCache {
         }
 
         // equals is defined only in terms of typeName since typeNameUpper is just a cached value
-        /*@Pure*/
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof TypeNameWithUpper) {
                 TypeNameWithUpper that = (TypeNameWithUpper) obj;
@@ -567,8 +567,8 @@ public class ParsedTypeCache {
         }
 
         // hashCode is defined only in terms of typeName since typeNameUpper is just a cached value
-        /*@Pure*/
         @Override
+        @Pure
         public int hashCode() {
             return typeName.hashCode();
         }

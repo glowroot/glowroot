@@ -22,12 +22,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
@@ -52,7 +51,7 @@ class ResponseHeaders {
 
     // map key is uppercase for case-insensitivity
     // implementation is LinkedHashMap to preserve insertion order
-    /*@MonotonicNonNull*/
+    @MonotonicNonNull
     private Map<String, ResponseHeader> responseHeaders;
 
     synchronized Map<String, Object> getMapOfStrings() {
@@ -129,7 +128,6 @@ class ResponseHeaders {
         }
     }
 
-    @ThreadSafe
     private static class ResponseHeader {
         private final String name;
         private volatile Object value;

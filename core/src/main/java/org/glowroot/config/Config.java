@@ -17,10 +17,10 @@ package org.glowroot.config;
 
 import java.util.List;
 
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
+import org.glowroot.markers.Immutable;
 
 /**
  * @author Trask Stalnaker

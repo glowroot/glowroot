@@ -17,9 +17,8 @@ package org.glowroot.trace;
 
 import java.util.Queue;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.Queues;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.markers.Singleton;
 import org.glowroot.trace.model.Trace;

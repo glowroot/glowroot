@@ -17,13 +17,11 @@ package org.glowroot.container.javaagent;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.config.AdvancedConfig;
@@ -41,7 +39,6 @@ import org.glowroot.container.config.UserOverridesConfig;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
 class JavaagentConfigService implements ConfigService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();

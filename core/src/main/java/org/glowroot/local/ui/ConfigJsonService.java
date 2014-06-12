@@ -20,14 +20,16 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.sql.SQLException;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.CharStreams;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +77,7 @@ class ConfigJsonService {
     private final HttpSessionManager httpSessionManager;
     private final TraceModule traceModule;
 
-    /*@MonotonicNonNull*/
+    @MonotonicNonNull
     private volatile HttpServer httpServer;
 
     ConfigJsonService(ConfigService configService, CappedDatabase cappedDatabase,
@@ -181,7 +183,7 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    /*@RequiresNonNull("httpServer")*/
+    @RequiresNonNull("httpServer")
     private void writeUserInterface(JsonGenerator jg, ObjectWriter writer) throws IOException {
         jg.writeFieldName("config");
         writer.writeValue(jg, configService.getUserInterfaceConfig());
@@ -381,7 +383,7 @@ class ConfigJsonService {
         return getPluginConfig(pluginId);
     }
 
-    /*@RequiresNonNull("httpServer")*/
+    @RequiresNonNull("httpServer")
     private String getUserInterfaceWithPortChangeFailed() throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -401,7 +403,7 @@ class ConfigJsonService {
         return versionNode.asText();
     }
 
-    /*@EnsuresNonNull("#1")*/
+    @EnsuresNonNull("#1")
     private void validateVersionNode(@Nullable JsonNode versionNode) {
         if (versionNode == null) {
             throw new JsonServiceException(BAD_REQUEST, "Version is missing");

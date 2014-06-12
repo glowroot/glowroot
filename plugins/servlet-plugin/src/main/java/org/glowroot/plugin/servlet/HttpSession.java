@@ -20,11 +20,9 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.Beans;
 import org.glowroot.api.Logger;
@@ -155,7 +153,6 @@ class HttpSession {
                 "<error calling HttpSession.getAttribute()>");
     }
 
-    @Immutable
     private static class EmptyEnumeration implements Enumeration<Object> {
         private static final Enumeration<Object> INSTANCE = new EmptyEnumeration();
         @Override

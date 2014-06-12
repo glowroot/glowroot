@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.annotation.Nullable;
-
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
@@ -33,6 +31,10 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +60,7 @@ public class MainEntryPoint {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     // this static field is only present for tests
-    /*@MonotonicNonNull*/
+    @MonotonicNonNull
     private static volatile GlowrootModule glowrootModule;
 
     private MainEntryPoint() {}
@@ -119,7 +121,7 @@ public class MainEntryPoint {
         Thread.sleep(Long.MAX_VALUE);
     }
 
-    /*@EnsuresNonNull("glowrootModule")*/
+    @EnsuresNonNull("glowrootModule")
     private static void start(File dataDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation) throws StartupFailedException {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
@@ -210,7 +212,7 @@ public class MainEntryPoint {
     }
 
     @OnlyUsedByTests
-    /*@EnsuresNonNull("glowrootModule")*/
+    @EnsuresNonNull("glowrootModule")
     public static void start(Map<String, String> properties)
             throws StartupFailedException {
         File dataDir = DataDir.getDataDir(properties);
@@ -218,7 +220,7 @@ public class MainEntryPoint {
     }
 
     @OnlyUsedByTests
-    /*@RequiresNonNull("glowrootModule")*/
+    @RequiresNonNull("glowrootModule")
     public static GlowrootModule getGlowrootModule() {
         return glowrootModule;
     }

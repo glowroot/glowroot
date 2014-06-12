@@ -26,11 +26,6 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.concurrent.ScheduledExecutorService;
 
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.Immutable;
-import javax.annotation.concurrent.NotThreadSafe;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
@@ -40,7 +35,11 @@ import com.ning.compress.lzf.LZFOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.markers.GuardedBy;
+import org.glowroot.markers.Immutable;
+import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

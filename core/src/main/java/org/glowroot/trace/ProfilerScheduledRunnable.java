@@ -15,12 +15,12 @@
  */
 package org.glowroot.trace;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
+import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.common.ScheduledRunnable;
+import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.model.Profile;
 import org.glowroot.trace.model.Trace;
 
@@ -63,8 +63,8 @@ class ProfilerScheduledRunnable extends ScheduledRunnable {
         trace.captureStackTrace(fine);
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("trace", trace)

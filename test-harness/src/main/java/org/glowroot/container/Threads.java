@@ -23,6 +23,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -209,8 +210,8 @@ public class Threads {
         private ThreadsException(Collection<Thread> threads) {
             this.threads = threads;
         }
-        /*@Pure*/
         @Override
+        @Pure
         public String getMessage() {
             StringBuilder sb = new StringBuilder();
             for (Thread thread : threads) {

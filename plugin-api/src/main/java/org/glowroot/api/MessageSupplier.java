@@ -15,7 +15,7 @@
  */
 package org.glowroot.api;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A (lazy) supplier of {@link Message} instances. Needs to be thread safe since trace thread

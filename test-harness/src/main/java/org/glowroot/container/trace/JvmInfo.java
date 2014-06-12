@@ -17,14 +17,13 @@ package org.glowroot.container.trace;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -32,7 +31,6 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Immutable
 public class JvmInfo {
 
     @Nullable
@@ -79,8 +77,8 @@ public class JvmInfo {
         return garbageCollectorInfos;
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("threadCpuTime", threadCpuTime)
@@ -104,7 +102,6 @@ public class JvmInfo {
                 threadAllocatedBytes, infos);
     }
 
-    @Immutable
     public static class GarbageCollectorInfo {
 
         private final String name;
@@ -129,8 +126,8 @@ public class JvmInfo {
             return collectionTime;
         }
 
-        /*@Pure*/
         @Override
+        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("name", name)

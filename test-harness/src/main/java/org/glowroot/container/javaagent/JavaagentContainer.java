@@ -30,15 +30,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +61,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
 public class JavaagentContainer implements Container {
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentContainer.class);
@@ -395,7 +392,6 @@ public class JavaagentContainer implements Container {
         }
     }
 
-    @ThreadSafe
     private static class ConsoleOutputPipe implements Runnable {
 
         private final InputStream in;

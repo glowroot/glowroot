@@ -18,8 +18,6 @@ package org.glowroot.trace;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -28,6 +26,7 @@ import com.google.common.collect.Sets;
 import org.glowroot.config.PointcutConfig;
 import org.glowroot.dynamicadvice.DynamicAdviceGenerator;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.Advice;
 
 /**

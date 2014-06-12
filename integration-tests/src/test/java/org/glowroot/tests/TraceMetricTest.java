@@ -20,8 +20,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import javax.annotation.Nullable;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -89,7 +87,6 @@ public class TraceMetricTest {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
             @Override
-            @Nullable
             public Void call() throws Exception {
                 container.executeAppUnderTest(ShouldGenerateActiveTraceWithTraceMetrics.class);
                 return null;

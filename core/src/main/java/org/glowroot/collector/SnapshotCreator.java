@@ -19,12 +19,11 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map.Entry;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharStreams;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.collector.Snapshot.Existence;
 import org.glowroot.markers.Static;

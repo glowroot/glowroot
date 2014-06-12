@@ -24,9 +24,6 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
@@ -35,6 +32,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.io.Closer;
 import com.google.common.io.Resources;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +40,7 @@ import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.dynamicadvice.DynamicAdviceGenerator;
+import org.glowroot.markers.Immutable;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.Advice.AdviceConstructionException;

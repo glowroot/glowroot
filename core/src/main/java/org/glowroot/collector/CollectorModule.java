@@ -17,15 +17,14 @@ package org.glowroot.collector;
 
 import java.util.concurrent.ScheduledExecutorService;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.base.Ticker;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

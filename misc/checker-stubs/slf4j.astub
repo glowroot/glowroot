@@ -31,3 +31,12 @@ public interface Logger {
     public void error(@Nullable String format, @Nullable Object... arguments);
     public void error(@Nullable String msg, @Nullable Throwable t);
 }
+
+/* ========================================================================== */
+package org.slf4j.helpers;
+
+public class FormattingTuple {
+    public @Nullable String getMessage();
+    public @Nullable Object @Nullable [] getArgArray();
+    public @Nullable Throwable getThrowable();
+}

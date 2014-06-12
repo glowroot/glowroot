@@ -20,8 +20,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Stopwatch;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -75,7 +73,6 @@ public class MaxSpansLimitTest {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit(new Callable<Void>() {
             @Override
-            @Nullable
             public Void call() throws Exception {
                 container.executeAppUnderTest(GenerateLotsOfSpans.class);
                 return null;

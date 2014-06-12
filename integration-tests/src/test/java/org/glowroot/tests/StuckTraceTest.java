@@ -20,8 +20,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Stopwatch;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -74,7 +72,6 @@ public class StuckTraceTest {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
             @Override
-            @Nullable
             public Void call() throws Exception {
                 container.executeAppUnderTest(ShouldGenerateStuckTrace.class);
                 return null;

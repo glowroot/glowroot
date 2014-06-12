@@ -19,17 +19,17 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.weaving.MethodModifier;
+import org.glowroot.markers.Immutable;
 
 /**
  * @author Trask Stalnaker
@@ -192,8 +192,8 @@ class AdviceMatcher {
         }
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         List<String> preMatchedSuperTypeNames = Lists.newArrayList();
         for (ParsedType preMatchedSuperType : preMatchedSuperTypes) {

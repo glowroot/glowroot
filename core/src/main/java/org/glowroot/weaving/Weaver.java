@@ -20,14 +20,13 @@ import java.io.PrintWriter;
 import java.security.CodeSource;
 import java.util.List;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -37,6 +36,7 @@ import org.objectweb.asm.util.CheckClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.ParsedTypeCache.ParseContext;
 import org.glowroot.weaving.WeavingTimerService.WeavingTimer;
 
@@ -136,8 +136,8 @@ class Weaver {
         }
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("mixinTypes", mixinTypes)

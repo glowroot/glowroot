@@ -79,12 +79,25 @@ case "$1" in
 
     "checker") # pipe through sed to format checker errors so the source file locations
                # turn into links when copied into eclipse's stack trace view
-               mvn clean process-classes -Pchecker \
-                                         -Dglowroot.shading.skip=true \
-                                         -Dglowroot.ui.skip=true \
-                                         -B \
-                                         | sed 's/\[ERROR\] .*[\/]\([^\/.]*\.java\):\[\([0-9]*\),\([0-9]*\)\]/[ERROR] (\1:\2) [column \3]/'
-               # preserve exit status from mvn
+               if [[ ! -d "$HOME/checker-framework" ]]
+               then
+                 # install checker framework
+                 curl http://types.cs.washington.edu/checker-framework/current/checker-framework.zip > $HOME/checker-framework.zip
+                 unzip $HOME/checker-framework.zip -d $HOME
+                 # strip version from directory name
+                 mv $HOME/checker-framework-* $HOME/checker-framework
+                 # remove @argfile from javac_maven since that requires adding argfile to each module directory
+                 sed -i 's/@argfile //' $HOME/checker-framework/checker/bin/javac_maven.bat
+                 sed -i 's/"\\@argfile" //' $HOME/checker-framework/checker/bin/javac_maven
+               fi
+               mvn clean compile -pl .,plugin-api,core,test-harness,plugins/jdbc-plugin,plugins/servlet-plugin,plugins/logger-plugin \
+                                 -Pchecker \
+                                 -Dchecker.install.dir=$HOME/checker-framework \
+                                 -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
+                                 -Dglowroot.ui.skip=true \
+                                 -B \
+                                 | sed 's/\[ERROR\] .*[\/]\([^\/.]*\.java\):\[\([0-9]*\),\([0-9]*\)\]/[ERROR] (\1:\2) [column \3]/'
+               # preserve exit status from mvn (needed because of pipe to sed)
                test ${PIPESTATUS[0]} -eq 0
                ;;
 

@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.concurrent.Immutable;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -44,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.JsonViews.FileView;
+import org.glowroot.markers.Immutable;
 
 /**
  * @author Trask Stalnaker

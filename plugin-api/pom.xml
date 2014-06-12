@@ -26,9 +26,10 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <!-- only annotations are used, so don't need this dependency at runtime -->
+      <groupId>${checker.qual.group.id}</groupId>
+      <artifactId>${checker.qual.artifact.id}</artifactId>
+      <version>${checker.qual.version}</version>
+      <!-- don't need this dependency at runtime since only annotations -->
       <optional>true</optional>
     </dependency>
     <dependency>

@@ -17,10 +17,9 @@ package org.glowroot.weaving.preinit;
 
 import java.util.concurrent.ConcurrentMap;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.collect.Maps;
 
+import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.TypeNames;
 
 /**

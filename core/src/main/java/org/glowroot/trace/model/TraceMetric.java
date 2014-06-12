@@ -19,14 +19,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.api.TraceMetricName;
 import org.glowroot.markers.PartiallyThreadSafe;
@@ -236,8 +236,8 @@ public class TraceMetric implements TraceMetricTimerExt {
         total += time;
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         ImmutableList<TraceMetric> copyOfNestedTraceMetrics = null;
         if (threadSafeNestedTraceMetrics != null) {

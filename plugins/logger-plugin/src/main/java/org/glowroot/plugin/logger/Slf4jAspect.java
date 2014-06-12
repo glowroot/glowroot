@@ -15,6 +15,7 @@
  */
 package org.glowroot.plugin.logger;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
@@ -50,7 +51,7 @@ public class Slf4jAspect {
 
     private static LogAdviceTraveler onBefore(FormattingTuple formattingTuple, String methodName,
             TraceMetricName traceMetricName) {
-        String formattedMessage = formattingTuple.getMessage();
+        String formattedMessage = nullToEmpty(formattingTuple.getMessage());
         Throwable throwable = formattingTuple.getThrowable();
         if (markTraceAsError(methodName.equals("warn"), throwable != null)) {
             pluginServices.setTraceError(formattedMessage);
@@ -191,11 +192,17 @@ public class Slf4jAspect {
         }
     }
 
+    private static String nullToEmpty(@Nullable String s) {
+        return s == null ? "" : s;
+    }
+
     private static class LogAdviceTraveler {
         private final Span span;
         private final String formattedMessage;
+        @Nullable
         private final Throwable throwable;
-        private LogAdviceTraveler(Span span, String formattedMessage, Throwable throwable) {
+        private LogAdviceTraveler(Span span, String formattedMessage,
+                @Nullable Throwable throwable) {
             this.span = span;
             this.formattedMessage = formattedMessage;
             this.throwable = throwable;

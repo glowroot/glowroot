@@ -15,9 +15,10 @@
  */
 package org.glowroot.local.store;
 
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.base.Objects;
+import org.checkerframework.dataflow.qual.Pure;
+
+import org.glowroot.markers.Immutable;
 
 /**
  * @author Trask Stalnaker
@@ -58,8 +59,8 @@ public class TracePoint {
         return error;
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)

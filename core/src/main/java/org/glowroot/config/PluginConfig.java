@@ -20,9 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -35,6 +32,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +43,7 @@ import org.glowroot.config.PropertyDescriptor.BooleanPropertyDescriptor;
 import org.glowroot.config.PropertyDescriptor.DoublePropertyDescriptor;
 import org.glowroot.config.PropertyDescriptor.PropertyType;
 import org.glowroot.config.PropertyDescriptor.StringPropertyDescriptor;
+import org.glowroot.markers.Immutable;
 import org.glowroot.markers.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -177,8 +177,8 @@ public class PluginConfig {
         return version;
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", pluginDescriptor.getId())

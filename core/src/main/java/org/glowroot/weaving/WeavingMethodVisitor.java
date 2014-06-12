@@ -19,12 +19,13 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
@@ -74,9 +75,9 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
 
     private boolean needsTryCatch;
-    /*@MonotonicNonNull*/
+    @MonotonicNonNull
     private Label methodStartLabel;
-    /*@MonotonicNonNull*/
+    @MonotonicNonNull
     private Label catchStartLabel;
     private boolean visitedLocalVariableThis;
 
@@ -622,8 +623,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         }
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("access", access)

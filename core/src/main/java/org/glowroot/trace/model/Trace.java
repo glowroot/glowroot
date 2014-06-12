@@ -20,9 +20,6 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
-
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
@@ -30,6 +27,9 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +40,7 @@ import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.jvm.ThreadAllocatedBytes;
+import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.PartiallyThreadSafe;
 import org.glowroot.trace.model.TraceMetricTimerExt.NopTraceMetricTimerExt;
 
@@ -87,7 +88,7 @@ public class Trace {
 
     // lazy loaded to reduce memory when attributes are not used
     @GuardedBy("attributes")
-    /*@MonotonicNonNull*/
+    @MonotonicNonNull
     private volatile SetMultimap<String, String> attributes;
 
     private final TraceMetric rootMetric;
@@ -104,10 +105,10 @@ public class Trace {
     private final RootSpan rootSpan;
 
     // stack trace data constructed from coarse-grained profiling
-    /*@MonotonicNonNull*/
+    @MonotonicNonNull
     private volatile Profile coarseProfile;
     // stack trace data constructed from fine-grained profiling
-    /*@MonotonicNonNull*/
+    @MonotonicNonNull
     private volatile Profile fineProfile;
 
     private final long threadId;
@@ -457,8 +458,8 @@ public class Trace {
         this.activeMetric = activeMetric;
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)

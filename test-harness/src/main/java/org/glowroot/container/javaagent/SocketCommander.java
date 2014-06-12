@@ -26,13 +26,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +38,6 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
 class SocketCommander {
 
     private static final Logger logger = LoggerFactory.getLogger(SocketCommander.class);
@@ -53,7 +50,7 @@ class SocketCommander {
 
     private final Object lock = new Object();
     // ObjectOutputStream is not thread safe so access is synchronized using lock
-    @GuardedBy("lock")
+    // guarded by lock
     private volatile ObjectOutputStream objectOut;
 
     private volatile boolean closing;
@@ -126,8 +123,8 @@ class SocketCommander {
         ImmutableList<Object> getArgs() {
             return args;
         }
-        /*@Pure*/
         @Override
+        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("commandNum", commandNum)
@@ -153,8 +150,8 @@ class SocketCommander {
         private Object getResponse() {
             return response;
         }
-        /*@Pure*/
         @Override
+        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("commandNum", commandNum)

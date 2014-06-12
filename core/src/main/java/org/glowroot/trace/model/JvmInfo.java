@@ -23,19 +23,19 @@ import java.lang.management.ThreadMXBean;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.jvm.ThreadAllocatedBytes;
+import org.glowroot.markers.GuardedBy;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -208,8 +208,8 @@ class JvmInfo {
         jg.writeEndObject();
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("threadId", threadId)
@@ -238,8 +238,8 @@ class JvmInfo {
             return collectionTimeStart;
         }
 
-        /*@Pure*/
         @Override
+        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("collectionCountStart", collectionCountStart)

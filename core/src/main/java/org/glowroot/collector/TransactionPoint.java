@@ -15,8 +15,9 @@
  */
 package org.glowroot.collector;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import org.glowroot.markers.Immutable;
 
 /**
  * @author Trask Stalnaker

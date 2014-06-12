@@ -15,9 +15,8 @@
  */
 package org.glowroot.local.ui;
 
-import javax.annotation.Nullable;
-
 import com.google.common.net.MediaType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.handler.codec.embedder.EncoderEmbedder;
 import org.jboss.netty.handler.codec.http.HttpContentCompressor;

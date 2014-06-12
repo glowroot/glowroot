@@ -18,8 +18,6 @@ package org.glowroot.sandbox.ui;
 import java.util.Map;
 import java.util.Random;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -94,12 +92,11 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -120,12 +117,11 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -146,12 +142,11 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -172,12 +167,11 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -198,12 +192,11 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -224,12 +217,11 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -250,12 +242,11 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -276,12 +267,11 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -302,12 +292,11 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        @Nullable
         public static Span onBefore(@BindReceiver Object expensive) {
             return onBeforeInternal(expensive, traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -318,7 +307,6 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Nullable
     private static Span onBeforeInternal(Object expensive, TraceMetricName metric) {
         if (random.nextDouble() < 0.05) {
             return null;
@@ -326,7 +314,7 @@ public class ExpensiveCallAspect {
         return pluginServices.startSpan(getMessageSupplier(expensive), metric);
     }
 
-    private static void onAfterInternal(@Nullable Span span, int num) {
+    private static void onAfterInternal(Span span, int num) {
         double value = random.nextDouble();
         if (span == null) {
             if (value < 0.33) {
@@ -384,7 +372,6 @@ public class ExpensiveCallAspect {
         };
     }
 
-    @Nullable
     private static Exception getRandomCause() {
         if (random.nextBoolean()) {
             return cause;

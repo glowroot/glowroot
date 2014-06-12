@@ -23,19 +23,21 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.reflect.Reflection;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.markers.ThreadSafe;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -155,7 +157,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return super.defineClass(name, bytes, 0, bytes.length);
     }
 
-    /*@RequiresNonNull("weaver")*/
+    @RequiresNonNull("weaver")
     private byte[] weaveClass(String name, byte[] bytes) throws ClassFormatError {
         if (inWeaving.get()) {
             return bytes;
@@ -231,7 +233,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
         private List<MixinType> mixinTypes = Lists.newArrayList();
         private List<Advice> advisors = Lists.newArrayList();
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private WeavingTimerService metricTimerService;
         private boolean weavingDisabled;
         private boolean metricWrapperMethods = true;
@@ -248,7 +250,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.advisors = advisors;
         }
 
-        /*@EnsuresNonNull("metricTimerService")*/
+        @EnsuresNonNull("metricTimerService")
         public void setMetricTimerService(WeavingTimerService metricTimerService) {
             this.metricTimerService = metricTimerService;
         }
@@ -269,7 +271,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.excludePackages.addAll(Arrays.asList(excludePackages));
         }
 
-        /*@RequiresNonNull("metricTimerService")*/
+        @RequiresNonNull("metricTimerService")
         public IsolatedWeavingClassLoader build() {
             return AccessController.doPrivileged(
                     new PrivilegedAction<IsolatedWeavingClassLoader>() {

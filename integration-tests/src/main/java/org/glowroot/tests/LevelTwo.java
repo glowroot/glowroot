@@ -15,22 +15,19 @@
  */
 package org.glowroot.tests;
 
-import javax.annotation.Nullable;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 class LevelTwo {
 
-    @Nullable
     private final RuntimeException exception;
 
     LevelTwo() {
         this(null);
     }
 
-    LevelTwo(@Nullable RuntimeException e) {
+    LevelTwo(RuntimeException e) {
         exception = e;
     }
 

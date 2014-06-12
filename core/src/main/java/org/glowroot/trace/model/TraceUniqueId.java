@@ -18,9 +18,10 @@ package org.glowroot.trace.model;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.base.Strings;
+import org.checkerframework.dataflow.qual.Pure;
+
+import org.glowroot.markers.Immutable;
 
 /**
  * The unique identifier for a trace. The string representation of the unique identifier is lazily
@@ -64,8 +65,8 @@ class TraceUniqueId {
         }
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return get();
     }

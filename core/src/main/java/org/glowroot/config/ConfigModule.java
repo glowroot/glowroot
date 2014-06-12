@@ -21,9 +21,9 @@ import java.lang.instrument.Instrumentation;
 import java.net.URISyntaxException;
 import java.util.jar.JarFile;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.WeavingClassFileTransformer;
 
 /**

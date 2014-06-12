@@ -20,10 +20,8 @@ import java.lang.instrument.Instrumentation;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.base.Ticker;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.PluginServices;
 import org.glowroot.common.Clock;
@@ -31,11 +29,12 @@ import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.PluginServicesRegistry.PluginServicesFactory;
 import org.glowroot.weaving.ParsedTypeCache;
 import org.glowroot.weaving.PreInitializeWeavingClasses;
-import org.glowroot.weaving.WeavingTimerService;
 import org.glowroot.weaving.WeavingClassFileTransformer;
+import org.glowroot.weaving.WeavingTimerService;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

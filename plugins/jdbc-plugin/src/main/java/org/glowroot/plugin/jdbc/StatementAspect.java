@@ -21,7 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Logger;

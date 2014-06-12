@@ -22,7 +22,6 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 
-import javax.annotation.concurrent.Immutable;
 import javax.tools.ToolProvider;
 
 import com.google.common.base.Splitter;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
+import org.glowroot.markers.Immutable;
 
 /**
  * @author Trask Stalnaker

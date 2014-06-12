@@ -19,8 +19,6 @@ import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import org.glowroot.markers.UsedByReflection;
@@ -29,7 +27,6 @@ import org.glowroot.markers.UsedByReflection;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Immutable
 public class ExpensiveCall {
 
     private static final Random random = new Random();

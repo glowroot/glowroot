@@ -18,13 +18,11 @@ package org.glowroot.container.javaagent;
 import java.io.InputStream;
 import java.util.List;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.javaagent.TracePointResponse.RawPoint;
@@ -41,7 +39,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 // even though this is thread safe, it is not useful for running tests in parallel since
 // getLastTrace() and others are not scoped to a particular test
-@ThreadSafe
 class JavaagentTraceService extends TraceService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();

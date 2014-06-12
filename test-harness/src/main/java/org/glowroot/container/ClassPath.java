@@ -17,7 +17,7 @@ package org.glowroot.container;
 
 import java.io.File;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * @author Trask Stalnaker

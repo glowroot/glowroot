@@ -19,14 +19,14 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -44,6 +44,7 @@ import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.markers.Immutable;
 
 /**
  * @author Trask Stalnaker
@@ -218,8 +219,8 @@ public class Advice {
         return reweavable;
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("pointcut", pointcut)
@@ -278,23 +279,23 @@ public class Advice {
         private final Class<?> adviceClass;
         private final boolean reweavable;
 
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private Type adviceType;
         @Nullable
         private Pattern pointcutTypePattern;
         @Nullable
         private Pattern pointcutMethodPattern;
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private Method isEnabledAdvice;
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private Method onBeforeAdvice;
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private Method onReturnAdvice;
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private Method onThrowAdvice;
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private Method onAfterAdvice;
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private Type travelerType;
 
         private List<AdviceParameter> isEnabledParameters = Lists.newArrayList();
@@ -303,7 +304,7 @@ public class Advice {
         private List<AdviceParameter> onThrowParameters = Lists.newArrayList();
         private List<AdviceParameter> onAfterParameters = Lists.newArrayList();
 
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private Class<?> generatedAdviceFlowClass;
 
         private Builder(Pointcut pointcut, Class<?> adviceClass, boolean reweavable) {

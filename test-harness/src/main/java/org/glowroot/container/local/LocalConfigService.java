@@ -18,10 +18,8 @@ package org.glowroot.container.local;
 import java.util.List;
 import java.util.Map.Entry;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.GlowrootModule;
 import org.glowroot.config.UserInterfaceConfig.Overlay;
@@ -46,7 +44,6 @@ import static com.google.common.base.Strings.nullToEmpty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
 class LocalConfigService implements ConfigService {
 
     private final org.glowroot.config.ConfigService configService;

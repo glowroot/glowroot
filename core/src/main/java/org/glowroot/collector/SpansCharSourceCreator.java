@@ -21,9 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.concurrent.Immutable;
-import javax.annotation.concurrent.NotThreadSafe;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.ImmutableList;
@@ -33,6 +30,8 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.internal.ExceptionInfo;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
+import org.glowroot.markers.Immutable;
+import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.Static;
 import org.glowroot.trace.model.Profile;
 import org.glowroot.trace.model.Profile.StackTraceElementPlus;

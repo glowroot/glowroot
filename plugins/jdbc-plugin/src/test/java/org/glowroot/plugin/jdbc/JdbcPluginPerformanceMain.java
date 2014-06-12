@@ -31,8 +31,8 @@ import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.javaagent.JavaagentContainer;
-import org.glowroot.container.trace.TraceMetric;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.container.trace.TraceMetric;
 
 /**
  * Performance test of the jdbc plugin.

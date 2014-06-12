@@ -18,9 +18,8 @@ package org.glowroot.local.store;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Throwables;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * @author Trask Stalnaker

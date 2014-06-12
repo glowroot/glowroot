@@ -17,9 +17,9 @@ package org.glowroot.local.store;
 
 import java.util.List;
 
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.collect.ImmutableList;
+
+import org.glowroot.markers.Immutable;
 
 /**
  * @author Trask Stalnaker

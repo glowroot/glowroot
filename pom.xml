@@ -35,6 +35,7 @@
   </prerequisites>
 
   <modules>
+    <module>misc/checker-qual-jdk6</module>
     <module>plugin-api</module>
     <module>core</module>
     <module>test-harness</module>
@@ -55,8 +56,13 @@
   </scm>
 
   <properties>
+    <!-- use custom-built jdk6 compatible checker framework annotations by default
+         except when actually running checker framework code quality tests -->
+    <checker.qual.group.id>org.glowroot</checker.qual.group.id>
+    <checker.qual.artifact.id>glowroot-checker-qual-jdk6</checker.qual.artifact.id>
+    <checker.qual.version>${project.version}</checker.qual.version>
     <!-- the sonar.jdbc.password system property is set here instead of on the command line so it is
-      not visible to ps -->
+         not visible to ps -->
     <sonar.jdbc.password>${env.SONARQUBE_DB_PASSWORD}</sonar.jdbc.password>
   </properties>
 
@@ -345,6 +351,11 @@
     <profile>
       <!-- use "travis-build/travis-build.sh checker" to execute this profile -->
       <id>checker</id>
+      <properties>
+        <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
+        <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
+        <checker.qual.version>1.8.2</checker.qual.version>
+      </properties>
       <dependencies>
         <dependency>
           <!-- guava uses these annotations but makes the dependency optional so
@@ -360,29 +371,21 @@
       <build>
         <plugins>
           <plugin>
-            <!-- running checker framework check requires jdk7 -->
-            <groupId>org.checkerframework</groupId>
-            <artifactId>checkerframework-maven-plugin</artifactId>
-            <version>1.8.2</version>
-            <executions>
-              <execution>
-                <phase>process-classes</phase>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-              </execution>
-            </executions>
+            <artifactId>maven-compiler-plugin</artifactId>
             <configuration>
-              <processors>
-                <processor>org.checkerframework.checker.nullness.NullnessChecker</processor>
-                <!--processor>org.checkerframework.checker.igj.IGJChecker</processor-->
-              </processors>
-              <procOnly>false</procOnly>
-              <!-- implicit imports for commented out uses of /*@Nullable*/, etc -->
-              <javaParams>
-                -Djsr308_imports=org.checkerframework.checker.nullness.qual.*${path.separator}org.checkerframework.dataflow.qual.*
-              </javaParams>
-              <javacParams>-Astubs=core/src/main/stubs</javacParams>
+              <source>1.8</source>
+              <target>1.8</target>
+              <verbose>true</verbose>
+              <fork>true</fork>
+              <executable>${checker.install.dir}/checker/bin/javac_maven</executable>
+              <compilerArgs>
+                <arg>-processor</arg>
+                <arg>org.checkerframework.checker.nullness.NullnessChecker</arg>
+                <!-- checker.stubs.dir needs to be absolute path since relative path will be
+                     interpreted from each module directory -->
+                <arg>-Astubs=${checker.stubs.dir}</arg>
+                <arg>-J-Djsr308.imports=org.checkerframework.checker.nullness.qual.*</arg>
+              </compilerArgs>
             </configuration>
           </plugin>
         </plugins>

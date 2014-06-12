@@ -19,6 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,7 @@ public abstract class ScheduledRunnable implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(ScheduledRunnable.class);
 
-    /*@MonotonicNonNull*/
+    @MonotonicNonNull
     private volatile ScheduledFuture<?> future;
 
     public void scheduleWithFixedDelay(ScheduledExecutorService scheduledExecutor,

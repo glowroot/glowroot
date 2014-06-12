@@ -15,9 +15,9 @@
  */
 package org.glowroot.common;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.base.Ticker;
+
+import org.glowroot.markers.ThreadSafe;
 
 /**
  * Modeled after Guava's {@link Ticker} class, but for currentTimeMillis.

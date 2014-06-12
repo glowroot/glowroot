@@ -17,9 +17,6 @@ package org.glowroot.container.javaagent;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -27,6 +24,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
@@ -35,7 +33,6 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Immutable
 class TracePointResponse {
 
     private final ImmutableList<RawPoint> normalPoints;
@@ -73,7 +70,6 @@ class TracePointResponse {
         return new TracePointResponse(normalPoints, errorPoints, activePoints);
     }
 
-    @Immutable
     static class RawPoint {
 
         static final Ordering<RawPoint> orderingByCaptureTime = new Ordering<RawPoint>() {

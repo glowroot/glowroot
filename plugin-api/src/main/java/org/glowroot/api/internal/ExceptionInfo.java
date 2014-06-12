@@ -19,10 +19,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * This class primarily exists because Exceptions are not thread safe.
@@ -30,7 +28,6 @@ import com.google.common.collect.ImmutableList;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Immutable
 public class ExceptionInfo {
 
     private final String display;

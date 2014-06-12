@@ -28,9 +28,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
@@ -41,9 +38,12 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.markers.Immutable;
 import org.glowroot.markers.Static;
 
 /**
@@ -321,8 +321,8 @@ class Schemas {
         }
         // equals/hashCode are used in Schema.syncIndexes() to diff list of indexes with list of
         // existing indexes
-        /*@Pure*/
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof Index) {
                 Index that = (Index) obj;
@@ -331,8 +331,8 @@ class Schemas {
             }
             return false;
         }
-        /*@Pure*/
         @Override
+        @Pure
         public int hashCode() {
             return Objects.hashCode(nameUpper, columnUppers);
         }

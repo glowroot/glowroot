@@ -25,12 +25,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +41,7 @@ import org.glowroot.local.store.DataSource.DataSourceLockedException;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.ui.LocalUiModule;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.TraceCollector;
 import org.glowroot.trace.TraceModule;
 import org.glowroot.trace.model.Trace;
@@ -174,7 +174,7 @@ public class GlowrootModule {
 
     private static class TraceCollectorProxy implements TraceCollector {
 
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private volatile TraceCollector instance;
 
         @Override

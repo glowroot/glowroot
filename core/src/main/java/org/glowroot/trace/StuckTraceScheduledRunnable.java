@@ -15,13 +15,13 @@
  */
 package org.glowroot.trace;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.google.common.base.Objects;
+import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ScheduledRunnable;
+import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.model.Trace;
 
 /**
@@ -65,8 +65,8 @@ class StuckTraceScheduledRunnable extends ScheduledRunnable {
         traceCollector.onStuckTrace(trace);
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("trace", trace)

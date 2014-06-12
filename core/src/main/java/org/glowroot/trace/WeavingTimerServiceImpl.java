@@ -15,10 +15,9 @@
  */
 package org.glowroot.trace;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.model.Trace;
 import org.glowroot.trace.model.TraceMetricTimerExt;
 import org.glowroot.weaving.WeavingTimerService;

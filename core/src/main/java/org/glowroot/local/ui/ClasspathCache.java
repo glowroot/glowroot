@@ -33,8 +33,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
-import javax.annotation.concurrent.GuardedBy;
-
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -46,6 +44,7 @@ import org.objectweb.asm.ClassReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.Singleton;
 import org.glowroot.weaving.ParsedType;
 import org.glowroot.weaving.ParsedTypeCache;

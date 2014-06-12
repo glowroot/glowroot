@@ -15,11 +15,15 @@
  */
 package org.glowroot.collector;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableSetMultimap;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.checkerframework.dataflow.qual.Pure;
+
+import org.glowroot.markers.Immutable;
 
 /**
  * Structure used as part of the response to "/backend/trace/detail".
@@ -159,8 +163,8 @@ public class Snapshot {
         return attributesForIndexing;
     }
 
-    /*@Pure*/
     @Override
+    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
@@ -193,7 +197,7 @@ public class Snapshot {
 
     public static class Builder {
 
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private String id;
         private boolean active;
         private boolean stuck;
@@ -201,9 +205,9 @@ public class Snapshot {
         private long captureTime;
         private long duration;
         private boolean background;
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private String transactionName;
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private String headline;
         @Nullable
         private String error;
@@ -215,18 +219,18 @@ public class Snapshot {
         private String traceMetrics;
         @Nullable
         private String jvmInfo;
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private Existence spansExistence;
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private Existence coarseProfileExistence;
-        /*@MonotonicNonNull*/
+        @MonotonicNonNull
         private Existence fineProfileExistence;
         @Nullable
         private ImmutableSetMultimap<String, String> attributesForIndexing;
 
         private Builder() {}
 
-        /*@EnsuresNonNull("id")*/
+        @EnsuresNonNull("id")
         public Builder id(String id) {
             this.id = id;
             return this;
@@ -262,13 +266,13 @@ public class Snapshot {
             return this;
         }
 
-        /*@EnsuresNonNull("transactionName")*/
+        @EnsuresNonNull("transactionName")
         public Builder transactionName(String transactionName) {
             this.transactionName = transactionName;
             return this;
         }
 
-        /*@EnsuresNonNull("headline")*/
+        @EnsuresNonNull("headline")
         public Builder headline(String headline) {
             this.headline = headline;
             return this;
@@ -299,19 +303,19 @@ public class Snapshot {
             return this;
         }
 
-        /*@EnsuresNonNull("spansExistence")*/
+        @EnsuresNonNull("spansExistence")
         public Builder spansExistence(Existence spansExistence) {
             this.spansExistence = spansExistence;
             return this;
         }
 
-        /*@EnsuresNonNull("coarseProfileExistence")*/
+        @EnsuresNonNull("coarseProfileExistence")
         public Builder coarseProfileExistence(Existence coarseProfileExistence) {
             this.coarseProfileExistence = coarseProfileExistence;
             return this;
         }
 
-        /*@EnsuresNonNull("fineProfileExistence")*/
+        @EnsuresNonNull("fineProfileExistence")
         public Builder fineProfileExistence(Existence fineProfileExistence) {
             this.fineProfileExistence = fineProfileExistence;
             return this;
@@ -323,8 +327,8 @@ public class Snapshot {
             return this;
         }
 
-        /*@RequiresNonNull({"id", "transactionName", "headline", "spansExistence",
-                "coarseProfileExistence", "fineProfileExistence"})*/
+        @RequiresNonNull({"id", "transactionName", "headline", "spansExistence",
+                "coarseProfileExistence", "fineProfileExistence"})
         public Snapshot build() {
             return new Snapshot(id, active, stuck, startTime, captureTime, duration, background,
                     transactionName, headline, error, user, attributes, traceMetrics, jvmInfo,
