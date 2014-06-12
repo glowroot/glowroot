@@ -35,6 +35,7 @@
   </prerequisites>
 
   <modules>
+    <module>misc/license-resource-bundle</module>
     <module>misc/checker-qual-jdk6</module>
     <module>plugin-api</module>
     <module>core</module>
@@ -314,7 +315,7 @@
                 <configuration>
                   <resourceBundles>
                     <resourceBundle>
-                      com.github.trask:apache-license-jar-bundle:1.0-SNAPSHOT
+                      org.glowroot:glowroot-license-resource-bundle:${project.version}
                     </resourceBundle>
                   </resourceBundles>
                 </configuration>

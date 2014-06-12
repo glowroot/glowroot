@@ -90,7 +90,7 @@ case "$1" in
                  sed -i 's/@argfile //' $HOME/checker-framework/checker/bin/javac_maven.bat
                  sed -i 's/"\\@argfile" //' $HOME/checker-framework/checker/bin/javac_maven
                fi
-               mvn clean compile -pl .,plugin-api,core,test-harness,plugins/jdbc-plugin,plugins/servlet-plugin,plugins/logger-plugin \
+               mvn clean compile -pl .,misc/license-resource-bundle,plugin-api,core,test-harness,plugins/jdbc-plugin,plugins/servlet-plugin,plugins/logger-plugin \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
