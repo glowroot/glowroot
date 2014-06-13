@@ -15,9 +15,9 @@
  */
 package org.glowroot.trace;
 
-import java.util.Queue;
+import java.util.Collection;
 
-import com.google.common.collect.Queues;
+import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.markers.Singleton;
@@ -35,7 +35,7 @@ public class TraceRegistry {
     // collection of active running traces, "nearly" ordered by start time
     // ordering is not completely guaranteed since there is no synchronization block around
     // trace instantiation and placement into the registry
-    private final Queue<Trace> traces = Queues.newConcurrentLinkedQueue();
+    private final Collection<Trace> traces = Sets.newConcurrentHashSet();
 
     // active running trace being executed by the current thread
     private final ThreadLocal</*@Nullable*/Trace> currentTraceHolder =
@@ -56,10 +56,7 @@ public class TraceRegistry {
         traces.remove(trace);
     }
 
-    // collection of active running traces, "nearly" ordered by start time
-    // ordering is not completely guaranteed since there is no synchronization block around
-    // trace instantiation and placement into the registry
-    public Iterable<Trace> getTraces() {
+    public Collection<Trace> getTraces() {
         return traces;
     }
 }

@@ -78,14 +78,8 @@ class CoarseProfilerWatcher extends ScheduledRunnable {
             // scheduled execution of this repeating Runnable (in other words, it is within
             // PERIOD_MILLIS from exceeding the threshold) and the stack trace capture
             // hasn't already been scheduled then schedule it
-            if (!Nanoseconds.lessThan(trace.getStartTick(), stackTraceThresholdTime)) {
-                // since the list of traces are "nearly" ordered by start time, if this trace didn't
-                // meet the threshold then no subsequent trace will exceed the threshold (or at
-                // least not by much given the "nearly" ordering in trace registry, which would at
-                // worst lead to a trace having its profiling start a smidge later than desired)
-                break;
-            }
-            if (trace.getCoarseProfilerScheduledRunnable() == null) {
+            if (Nanoseconds.lessThan(trace.getStartTick(), stackTraceThresholdTime)
+                    && trace.getCoarseProfilerScheduledRunnable() == null) {
                 scheduleProfiling(trace, currentTick, config);
             }
         }

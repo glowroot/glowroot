@@ -161,6 +161,6 @@ class AdminJsonService {
     @GET("/backend/admin/num-active-traces")
     String getNumActiveTraces() {
         logger.debug("getNumActiveTraces()");
-        return Integer.toString(Iterables.size(traceRegistry.getTraces()));
+        return Integer.toString(traceRegistry.getTraces().size());
     }
 }

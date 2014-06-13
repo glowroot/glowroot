@@ -23,7 +23,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -169,8 +168,7 @@ class LocalTraceService extends TraceService {
         // if interruptAppUnderTest() was used to terminate an active trace, it may take a few
         // milliseconds to interrupt the thread and end the active trace
         while (stopwatch.elapsed(SECONDS) < 2) {
-            int numActiveTraces = Iterables.size(traceRegistry.getTraces());
-            if (numActiveTraces == 0) {
+            if (traceRegistry.getTraces().isEmpty()) {
                 return;
             }
         }

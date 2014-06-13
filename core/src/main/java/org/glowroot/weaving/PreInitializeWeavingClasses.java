@@ -274,7 +274,6 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.ObjectArrays");
         types.add("com.google.common.collect.Ordering");
         types.add("com.google.common.collect.Platform");
-        types.add("com.google.common.collect.Queues");
         types.add("com.google.common.collect.RegularImmutableAsList");
         types.add("com.google.common.collect.RegularImmutableList");
         types.add("com.google.common.collect.RegularImmutableMap");

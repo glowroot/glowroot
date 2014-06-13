@@ -70,14 +70,8 @@ class StuckTraceWatcher extends ScheduledRunnable {
         for (Trace trace : traceRegistry.getTraces()) {
             // if the trace is within PERIOD_MILLIS from hitting the stuck thread threshold and
             // the stuck thread messaging hasn't already been scheduled then schedule it
-            if (Nanoseconds.lessThan(stuckThresholdTick, trace.getStartTick())) {
-                // since the list of traces are "nearly" ordered by start time, if this trace
-                // didn't meet the threshold then no subsequent trace will exceed the threshold
-                // (or at least not by much given the "nearly" ordering in trace registry, which
-                // would at worst lead to a stuck trace being collected a smidge later than desired)
-                break;
-            }
-            if (trace.getStuckScheduledRunnable() == null) {
+            if (Nanoseconds.lessThan(trace.getStartTick(), stuckThresholdTick)
+                    && trace.getStuckScheduledRunnable() == null) {
                 // schedule stuck thread
                 long initialDelayMillis = Math.max(0,
                         SECONDS.toMillis(config.getStuckThresholdSeconds()
