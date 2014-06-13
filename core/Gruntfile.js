@@ -66,12 +66,12 @@ module.exports = function (grunt) {
         {
           context: '/backend',
           host: 'localhost',
-          port: 4001
+          port: 4000
         },
         {
           context: '/export',
           host: 'localhost',
-          port: 4001
+          port: 4000
         }
       ],
       rules: [

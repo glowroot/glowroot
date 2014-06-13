@@ -30,7 +30,7 @@ Binary and source distributions are built under package/target.
 
 #### How to hack on it
 
-Run org.glowroot.testing.ui.UiTestingMain under a debugger inside your favorite IDE. It starts Glowroot and generates a variety of sample traces to give the UI something to display and to help with manual testing. Connect your browser to http://localhost:4001.
+Run org.glowroot.testing.ui.UiTestingMain under a debugger inside your favorite IDE. It starts Glowroot and generates a variety of sample traces to give the UI something to display and to help with manual testing. Connect your browser to http://localhost:4000.
 
 If you are working on the UI, you either need to run 'grunt' to re-build the web assets after each change, or (better) run:
 
@@ -38,7 +38,7 @@ If you are working on the UI, you either need to run 'grunt' to re-build the web
 
 and connect your browser to http://localhost:9000.  **Note:** 'grunt' and 'grunt serve' should be run from the [core](core) subdirectory.
 
-'grunt serve' serves up the Glowroot web assets to the browser without the concat/minify/rev step, which makes testing/debugging much easier. It reverse proxies non- static resource requests to http://localhost:4001 to be handled by Glowroot. It also watches for changes to the files and performs live-reload of the assets inside the browser.
+'grunt serve' serves up the Glowroot web assets to the browser without the concat/minify/rev step, which makes testing/debugging much easier. It reverse proxies non- static resource requests to http://localhost:4000 to be handled by Glowroot. It also watches for changes to the files and performs live-reload of the assets inside the browser.
 
 #### How to test it
 

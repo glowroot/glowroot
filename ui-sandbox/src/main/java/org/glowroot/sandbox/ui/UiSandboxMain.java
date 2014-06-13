@@ -39,7 +39,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class UiSandboxMain {
 
     private static final boolean useJavaagent = false;
-    private static final int INITIAL_UI_PORT = 4001;
     private static final boolean rollOverQuickly = false;
 
     static {
@@ -51,13 +50,14 @@ public class UiSandboxMain {
     public static void main(String... args) throws Exception {
         Container container;
         File dataDir = new File("target");
+        // create stub config.json, otherwise glowroot container uses port 0 (any available)
         File configFile = new File(dataDir, "config.json");
         if (!configFile.exists()) {
-            Files.write("{\"ui\":{\"port\":" + INITIAL_UI_PORT + "}}", configFile, Charsets.UTF_8);
+            Files.write("{}", configFile, Charsets.UTF_8);
         }
         if (useJavaagent) {
-            container =
-                    new JavaagentContainer(dataDir, true, false, false, ImmutableList.<String>of());
+            container = new JavaagentContainer(dataDir, true, false, false,
+                    ImmutableList.<String>of());
         } else {
             container = new LocalContainer(dataDir, true, false);
         }
