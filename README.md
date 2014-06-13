@@ -26,11 +26,11 @@ From now on, building is easy:
 
     mvn clean install
 
-Binary and source distributions are built under package/target.
+Binary and source distributions are built under distribution/target.
 
 #### How to hack on it
 
-Run org.glowroot.testing.ui.UiTestingMain under a debugger inside your favorite IDE. It starts Glowroot and generates a variety of sample traces to give the UI something to display and to help with manual testing. Connect your browser to http://localhost:4000.
+Run org.glowroot.sandbox.ui.UiSandboxMain under a debugger inside your favorite IDE. It starts Glowroot and generates a variety of sample traces to give the UI something to display and to help with manual testing. Connect your browser to http://localhost:4000.
 
 If you are working on the UI, you either need to run 'grunt' to re-build the web assets after each change, or (better) run:
 
@@ -48,19 +48,32 @@ All automated tests are run during the maven build:
 
 They can also be found in the following locations and run as standard JUnit tests inside your favorite IDE:
 
-* Unit tests are under [core/src/test/java](core/src/test/java)
-* Integration tests are under [integration-tests/src/test/java](integration-tests/src/test/java)
-* WebDriver tests are under [webdriver-tests/src/test/java](webdriver-tests/src/test/java)
-* Servlet plugin tests are under [plugins/servlet-plugin/src/test/java](plugins/servlet-plugin/src/test/java)
-* Jdbc plugin tests are under [plugins/jdbc-plugin/src/test/java](plugins/jdbc-plugin/src/test/java)
+* Unit tests are under [core](core)
+* Integration tests are under [testing/integration-tests](testing/integration-tests)
+* WebDriver tests are under [testing/webdriver-tests](testing/webdriver-tests)
+* Servlet plugin tests are under [plugins/servlet-plugin](plugins/servlet-plugin)
+* Jdbc plugin tests are under [plugins/jdbc-plugin](plugins/jdbc-plugin)
+* Logger plugin tests are under [plugins/logger-plugin-tests](plugins/logger-plugin-tests)
+
+Thanks to [Sauce Labs](https://saucelabs.com), the WebDriver tests run against Firefox (latest), Chrome (latest), Safari (5, 6, 7) and IE (9, 10, 11) as part of every Travis CI build (see the jobs with TARGET=saucelabs).
+
+## Microbenchmarks
+
+Microbenchmarks to analyze the monitoring overhead are written using the excellent [JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmark harness. They can be built and run using:
+
+    mvn clean package
+    java -jar target/microbenchmarks.jar -jvmArgs -javaagent:target/microbenchmarks.jar
+
+from the following locations:
+
+* [testing/microbenchmarks](testing/microbenchmarks)
+* [plugins/jdbc-plugin-microbenchmarks](testing/microbenchmarks)
 
 ## Code quality
 
 [SonarQube](http://www.sonarqube.org) is used to check Java coding conventions, code coverage, duplicate code, package cycles and much more. It is run as part of every Travis CI build (see the job with TARGET=sonarqube) and the analysis is reported to [http://sonarqube.glowroot.org](http://sonarqube.glowroot.org).
 
-[Checker Framework](http://types.cs.washington.edu/checker-framework/) is used to completely eradicate null pointer exceptions. It is run as part of every Travis CI build (see the job with TARGET=checker) and any violation fails the overall Travis CI build.
-
-[JSHint](http://www.jshint.com) is used for basic Javascript coding conventions. It is fast, so it runs on every maven build (both local and Travis CI builds) and any violation fails the build.
+[Checker Framework](http://types.cs.washington.edu/checker-framework/) is used to eliminate fear of `null` with its rigorous [Nullness Checker](http://types.cs.washington.edu/checker-framework/current/checker-framework-manual.html#nullness-checker). It is run as part of every Travis CI build (see the job with TARGET=checker) and any violation fails the build.
 
 ## License
 
