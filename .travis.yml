@@ -9,7 +9,7 @@ before_install:
   - "export DISPLAY=:99.0"
   - sh -e /etc/init.d/xvfb start
 install: true
-script: travis-build/travis-build.sh $TARGET
+script: misc/travis-build/travis-build.sh $TARGET
 matrix:
   include:
     - jdk: oraclejdk8

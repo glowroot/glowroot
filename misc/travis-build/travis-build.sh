@@ -26,7 +26,7 @@ case "$1" in
                                   -Dglowroot.ui.skip=true \
                                   -Dglowroot.test.harness=local \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
-                                  --settings travis-build/settings.xml \
+                                  --settings misc/travis-build/settings.xml \
                                   -B
                else
                  # simulate the deploy step from above
