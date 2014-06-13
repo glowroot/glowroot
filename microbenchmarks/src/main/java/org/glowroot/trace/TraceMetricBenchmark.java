@@ -16,42 +16,40 @@
 package org.glowroot.trace;
 
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.Setup;
 
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.Span;
-import org.glowroot.trace.model.Trace;
+import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.TraceMetricTimer;
+import org.glowroot.trace.model.TraceMetricNameImpl;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceRegistryBenchmark extends AbstractBenchmark {
+public class TraceMetricBenchmark extends AbstractBenchmark {
 
-    private Trace trace;
+    private Span rootSpan;
+
+    private TraceMetricName nestedTraceMetricName;
 
     @Override
-    @Setup
     public void setup() throws Exception {
         super.setup();
-        // fill up the registry a bit first
-        for (int i = 0; i < 10; i++) {
-            pluginServices.startTrace("", MessageSupplier.from(""), traceMetricName);
-        }
-        Span rootSpan = pluginServices.startTrace("", MessageSupplier.from(""), traceMetricName);
-        trace = traceRegistry.getCurrentTrace();
+        nestedTraceMetricName = new TraceMetricNameImpl("nested trace metric");
+        rootSpan = pluginServices.startTrace("micro trace", MessageSupplier.from("micro trace"),
+                traceMetricName);
+    }
+
+    @Override
+    public void tearDown() throws Exception {
         rootSpan.end();
+        super.tearDown();
     }
 
     @Benchmark
-    public void getCurrentTrace() {
-        traceRegistry.getCurrentTrace();
-    }
-
-    // helps to test this in pair, otherwise need to deal with keeping registry bounded
-    @Benchmark
-    public void addAndRemoveTrace() {
-        traceRegistry.addTrace(trace);
-        traceRegistry.removeTrace(trace);
+    public void traceMetric() {
+        TraceMetricTimer timer = pluginServices.startTraceMetric(nestedTraceMetricName);
+        timer.stop();
     }
 }

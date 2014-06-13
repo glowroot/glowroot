@@ -43,6 +43,7 @@
     <module>integration-tests</module>
     <module>webdriver-tests</module>
     <module>microbenchmarks</module>
+    <module>javaagent-microbenchmarks</module>
     <module>ui-sandbox</module>
     <module>plugins/servlet-plugin</module>
     <module>plugins/jdbc-plugin</module>

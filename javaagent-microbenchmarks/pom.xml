@@ -9,21 +9,17 @@
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>glowroot-microbenchmarks</artifactId>
+  <artifactId>glowroot-javaagent-microbenchmarks</artifactId>
 
-  <name>Glowroot Microbenchmarks</name>
-  <description>Glowroot Microbenchmarks</description>
+  <name>Glowroot Javaagent Microbenchmarks</name>
+  <description>Glowroot Javaagent Microbenchmarks</description>
 
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-core</artifactId>
+      <artifactId>glowroot-plugin-api</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-test-harness</artifactId>
-      <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.openjdk.jmh</groupId>
@@ -37,11 +33,16 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <!-- pinning version since mockito-core uses org.hamcrest:hamcrest-core:1.1
-           and junit (used via glowroot-test-harness) uses version 1.3 -->
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-core</artifactId>
-      <version>1.3</version>
+      <!-- included in shaded jar so it can be run with -javaagent:target/microbenchmarks.jar -->
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-core</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>runtime</scope>
     </dependency>
   </dependencies>
 
