@@ -21,7 +21,6 @@ import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Objects;
-import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -29,6 +28,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.api.TraceMetricName;
+import org.glowroot.common.Ticker;
 import org.glowroot.markers.PartiallyThreadSafe;
 
 /**

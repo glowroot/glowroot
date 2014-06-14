@@ -22,7 +22,6 @@ import java.util.List;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
-import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -31,6 +30,7 @@ import org.glowroot.collector.Snapshot;
 import org.glowroot.collector.SnapshotCreator;
 import org.glowroot.collector.SnapshotWriter;
 import org.glowroot.collector.TraceCollectorImpl;
+import org.glowroot.common.Ticker;
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Span;
@@ -69,8 +69,7 @@ class LocalTraceService extends TraceService {
         traceExportHttpService = glowrootModule.getUiModule().getTraceExportHttpService();
         traceCollector = glowrootModule.getCollectorModule().getTraceCollector();
         traceRegistry = glowrootModule.getTraceModule().getTraceRegistry();
-        // can't use ticker from Glowroot since it is shaded when run in mvn and unshaded in ide
-        ticker = Ticker.systemTicker();
+        ticker = glowrootModule.getTicker();
     }
 
     @Override

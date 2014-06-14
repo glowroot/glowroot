@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,24 +18,25 @@ package org.glowroot.common;
 import org.glowroot.markers.ThreadSafe;
 
 /**
- * Modeled after Guava's {@link com.google.common.base.Ticker} class, but for currentTimeMillis.
+ * Basically the same as Guava's {@link com.google.common.base.Ticker} class, but doesn't get shaded
+ * so it can be used from other modules (e.g. microbenchmarks).
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @ThreadSafe
-public abstract class Clock {
+public abstract class Ticker {
 
-    private static final Clock SYSTEM_CLOCK = new Clock() {
+    private static final Ticker SYSTEM_TICKER = new Ticker() {
         @Override
-        public long currentTimeMillis() {
-            return System.currentTimeMillis();
+        public long read() {
+            return System.nanoTime();
         }
     };
 
-    public abstract long currentTimeMillis();
+    public abstract long read();
 
-    public static Clock systemClock() {
-        return SYSTEM_CLOCK;
+    public static Ticker systemTicker() {
+        return SYSTEM_TICKER;
     }
 }

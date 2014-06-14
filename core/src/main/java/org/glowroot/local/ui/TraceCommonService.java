@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -30,6 +29,7 @@ import org.glowroot.collector.SnapshotWriter;
 import org.glowroot.collector.SpansCharSourceCreator;
 import org.glowroot.collector.TraceCollectorImpl;
 import org.glowroot.common.Clock;
+import org.glowroot.common.Ticker;
 import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;

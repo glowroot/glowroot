@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Queue;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -29,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.common.Ticker;
 import org.glowroot.markers.PartiallyThreadSafe;
 
 /**

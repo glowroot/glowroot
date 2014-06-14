@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
-import com.google.common.base.Ticker;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
@@ -39,6 +38,7 @@ import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.ScheduledRunnable;
+import org.glowroot.common.Ticker;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.PartiallyThreadSafe;

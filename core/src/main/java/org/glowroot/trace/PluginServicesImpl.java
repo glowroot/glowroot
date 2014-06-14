@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
@@ -37,6 +36,7 @@ import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.TraceMetricTimer;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ScheduledRunnable;
+import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.PluginConfig;

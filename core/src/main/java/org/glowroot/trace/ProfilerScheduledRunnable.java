@@ -16,10 +16,10 @@
 package org.glowroot.trace;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Ticker;
 import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.common.ScheduledRunnable;
+import org.glowroot.common.Ticker;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.model.Profile;
 import org.glowroot.trace.model.Trace;

@@ -26,7 +26,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Ticker;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -35,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.CollectorModule;
 import org.glowroot.common.Clock;
+import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.DataSource.DataSourceLockedException;
@@ -56,6 +56,7 @@ public class GlowrootModule {
 
     private static final Logger logger = LoggerFactory.getLogger(GlowrootModule.class);
 
+    private final Ticker ticker;
     private final ScheduledExecutorService scheduledExecutor;
     private final ConfigModule configModule;
     private final StorageModule storageModule;
@@ -67,7 +68,7 @@ public class GlowrootModule {
     GlowrootModule(File dataDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, String version, boolean viewerModeEnabled)
             throws StartupFailedException {
-        Ticker ticker = Ticker.systemTicker();
+        ticker = Ticker.systemTicker();
         Clock clock = Clock.systemClock();
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
@@ -109,6 +110,11 @@ public class GlowrootModule {
         uiModule = new LocalUiModule(ticker, clock, dataDir, jvmModule, configModule,
                 storageModule, collectorModule, traceModule, instrumentation, properties, version);
         this.dataDir = dataDir;
+    }
+
+    @OnlyUsedByTests
+    public Ticker getTicker() {
+        return ticker;
     }
 
     @OnlyUsedByTests

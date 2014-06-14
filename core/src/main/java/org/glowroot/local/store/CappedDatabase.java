@@ -27,7 +27,6 @@ import java.io.Writer;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
 import com.google.common.primitives.Longs;
 import com.ning.compress.lzf.LZFInputStream;
@@ -35,6 +34,7 @@ import com.ning.compress.lzf.LZFOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Ticker;
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.NotThreadSafe;

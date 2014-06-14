@@ -17,10 +17,9 @@ package org.glowroot.trace;
 
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.google.common.base.Ticker;
-
 import org.glowroot.collector.TraceCollectorImpl;
 import org.glowroot.common.ScheduledRunnable;
+import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GeneralConfig;
 import org.glowroot.markers.Singleton;

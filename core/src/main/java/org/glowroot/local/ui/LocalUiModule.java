@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Strings;
-import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.collector.CollectorModule;
 import org.glowroot.collector.TraceCollectorImpl;
 import org.glowroot.common.Clock;
+import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptorCache;

@@ -17,10 +17,10 @@ package org.glowroot.collector;
 
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.google.common.base.Ticker;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.Clock;
+import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.markers.OnlyUsedByTests;

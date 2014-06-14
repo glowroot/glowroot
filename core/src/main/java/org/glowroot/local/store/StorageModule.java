@@ -21,7 +21,6 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.google.common.base.Ticker;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.collector.SnapshotRepository;
 import org.glowroot.collector.TransactionPointRepository;
 import org.glowroot.common.Clock;
+import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.markers.OnlyUsedByTests;

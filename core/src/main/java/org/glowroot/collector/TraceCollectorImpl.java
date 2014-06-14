@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharSource;
 import com.google.common.util.concurrent.RateLimiter;
@@ -29,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
+import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.FineProfilingConfig;
 import org.glowroot.markers.GuardedBy;

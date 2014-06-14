@@ -20,12 +20,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Snapshot;
+import org.glowroot.common.Ticker;
 import org.glowroot.markers.Static;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

@@ -21,13 +21,13 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.google.common.base.Ticker;
 import com.google.common.collect.Maps;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.collector.TransactionPoint;
+import org.glowroot.common.Ticker;
 import org.glowroot.local.store.TransactionSummaryQuery.TransactionSortAttribute;
 
 import static org.assertj.core.api.Assertions.assertThat;
