@@ -37,18 +37,18 @@ import org.glowroot.markers.ThreadSafe;
 @ThreadSafe
 public class Span {
 
-    private static final Span limitExceededMarker = new Span(null, 0, 0, 0, null);
+    private static final Span limitExceededMarker = new Span(null, 0, 0, null);
 
-    private static final Span limitExtendedMarker = new Span(null, 0, 0, 0, null);
+    private static final Span limitExtendedMarker = new Span(null, 0, 0, null);
 
     @Nullable
     private final MessageSupplier messageSupplier;
     @Nullable
     private volatile ErrorMessage errorMessage;
 
-    private final long traceStartTick;
     private final long startTick;
-    private volatile long endTick;
+    @Nullable
+    private volatile Long endTick;
 
     private final int nestingLevel;
 
@@ -58,10 +58,9 @@ public class Span {
     @Nullable
     private volatile ImmutableList<StackTraceElement> stackTrace;
 
-    Span(@Nullable MessageSupplier messageSupplier, long traceStartTick, long startTick,
-            int nesting, @Nullable TraceMetricTimerExt metricTimer) {
+    Span(@Nullable MessageSupplier messageSupplier, long startTick, int nesting,
+            @Nullable TraceMetricTimerExt metricTimer) {
         this.messageSupplier = messageSupplier;
-        this.traceStartTick = traceStartTick;
         this.startTick = startTick;
         this.nestingLevel = nesting;
         this.metricTimer = metricTimer;
@@ -81,13 +80,9 @@ public class Span {
         return startTick;
     }
 
-    public long getEndTick() {
+    @Nullable
+    public Long getEndTick() {
         return endTick;
-    }
-
-    // offset in nanoseconds from beginning of trace
-    public long getOffset() {
-        return startTick - traceStartTick;
     }
 
     public int getNestingLevel() {
@@ -130,7 +125,6 @@ public class Span {
         return Objects.toStringHelper(this)
                 .add("message", messageSupplier == null ? null : messageSupplier.get())
                 .add("errorMessage", errorMessage)
-                .add("traceStartTick", traceStartTick)
                 .add("startTick", startTick)
                 .add("endTick", endTick)
                 .add("nestingLevel", nestingLevel)

@@ -230,6 +230,8 @@ public class PreInitializeStorageShutdownClasses {
         List<String> types = Lists.newArrayList();
         types.add("org.glowroot.common.ScheduledRunnable");
         types.add("org.glowroot.common.ScheduledRunnable$TerminateSubsequentExecutionsException");
+        types.add("org.glowroot.common.Ticker");
+        types.add("org.glowroot.common.Ticker$1");
         types.add("org.glowroot.local.store.CappedDatabase");
         types.add("org.glowroot.local.store.CappedDatabase$ShutdownHookThread");
         types.add("org.glowroot.local.store.CappedDatabaseOutputStream");

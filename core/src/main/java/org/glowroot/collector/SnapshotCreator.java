@@ -30,6 +30,8 @@ import org.glowroot.markers.Static;
 import org.glowroot.trace.model.Trace;
 import org.glowroot.trace.model.TraceMetric;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -52,7 +54,10 @@ public class SnapshotCreator {
     }
 
     static Snapshot createCompletedSnapshot(Trace trace, long captureTime) throws IOException {
-        return createSnapshot(trace, false, false, captureTime, trace.getEndTick());
+        Long endTick = trace.getEndTick();
+        // endTick is non-null since the trace is complete
+        checkNotNull(endTick);
+        return createSnapshot(trace, false, false, captureTime, endTick);
     }
 
     // timings for traces that are still active are normalized to the capture tick in order to

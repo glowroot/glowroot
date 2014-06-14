@@ -39,4 +39,11 @@ public abstract class Ticker {
     public static Ticker systemTicker() {
         return SYSTEM_TICKER;
     }
+
+    // Nano times roll over every 292 years, so it is important to test differences between nano
+    // times instead of direct comparison (e.g. nano2 - nano1 >= 0, not nano1 <= nano2)
+    // (see http://java.sun.com/javase/7/docs/api/java/lang/System.html#nanoTime())
+    public static boolean lessThanOrEqual(long tick1, long tick2) {
+        return tick2 - tick1 >= 0;
+    }
 }

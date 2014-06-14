@@ -185,8 +185,12 @@ public class TraceCollectorImpl implements TraceCollector {
     }
 
     private void store(Snapshot snapshot, Trace trace) throws IOException {
+        Long captureTick = trace.getEndTick();
+        if (captureTick == null) {
+            captureTick = ticker.read();
+        }
         CharSource spans = SpansCharSourceCreator
-                .createSpansCharSource(trace.getSpans(), trace.getEndTick());
+                .createSpansCharSource(trace.getSpans(), trace.getStartTick(), captureTick);
         CharSource coarseProfile = ProfileCharSourceCreator
                 .createProfileCharSource(trace.getCoarseProfile());
         CharSource fineProfile = ProfileCharSourceCreator

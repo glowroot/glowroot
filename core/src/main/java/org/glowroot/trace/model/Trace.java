@@ -162,7 +162,8 @@ public class Trace {
         return rootSpan.getStartTick();
     }
 
-    public long getEndTick() {
+    @Nullable
+    public Long getEndTick() {
         return rootSpan.getEndTick();
     }
 
@@ -374,7 +375,7 @@ public class Trace {
     public TraceMetricTimerExt startTraceMetric(TraceMetricName traceMetricName, long startTick) {
         if (activeMetric == null) {
             // this should only happen when trace is complete
-            logger.warn("startMetric() called with null activeMetric");
+            logger.warn("startTraceMetric() called with null activeMetric");
             return NopTraceMetricTimerExt.INSTANCE;
         }
         // metric names are guaranteed one instance per name so fast pointer equality can be used

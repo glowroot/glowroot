@@ -30,6 +30,7 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.internal.ExceptionInfo;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
+import org.glowroot.common.Ticker;
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.Static;
@@ -48,8 +49,9 @@ public class SpansCharSourceCreator {
 
     private SpansCharSourceCreator() {}
 
-    public static CharSource createSpansCharSource(Iterable<Span> spans, long captureTick) {
-        return new SpansCharSource(spans, captureTick);
+    public static CharSource createSpansCharSource(Iterable<Span> spans, long traceStartTick,
+            long captureTick) {
+        return new SpansCharSource(spans, traceStartTick, captureTick);
     }
 
     private static void writeStackTrace(List<StackTraceElement> stackTrace, JsonGenerator jw)
@@ -67,16 +69,18 @@ public class SpansCharSourceCreator {
     private static class SpansCharSource extends CharSource {
 
         private final Iterable<Span> spans;
+        private final long traceStartTick;
         private final long captureTick;
 
-        private SpansCharSource(Iterable<Span> spans, long captureTick) {
+        private SpansCharSource(Iterable<Span> spans, long traceStartTick, long captureTick) {
             this.spans = spans;
+            this.traceStartTick = traceStartTick;
             this.captureTick = captureTick;
         }
 
         @Override
         public Reader openStream() throws IOException {
-            return new SpansReader(spans.iterator(), captureTick);
+            return new SpansReader(spans.iterator(), traceStartTick, captureTick);
         }
     }
 
@@ -84,14 +88,17 @@ public class SpansCharSourceCreator {
     private static class SpansReader extends Reader {
 
         private final Iterator<Span> spans;
+        private final long traceStartTick;
         private final long captureTick;
         private final CharArrayWriter writer;
         private final JsonGenerator jg;
 
         private int writerIndex;
 
-        private SpansReader(Iterator<Span> spans, long captureTick) throws IOException {
+        private SpansReader(Iterator<Span> spans, long traceStartTick, long captureTick)
+                throws IOException {
             this.spans = spans;
+            this.traceStartTick = traceStartTick;
             this.captureTick = captureTick;
             writer = new CharArrayWriter();
             jg = jsonFactory.createGenerator(writer);
@@ -130,7 +137,7 @@ public class SpansCharSourceCreator {
         // *attempt* to present a picture of the trace at that exact tick
         // (without using synchronization to block updates to the trace while it is being read)
         private void writeSpan(Span span) throws IOException {
-            if (span.getStartTick() > captureTick) {
+            if (!Ticker.lessThanOrEqual(span.getStartTick(), captureTick)) {
                 // this span started after the capture tick
                 return;
             }
@@ -147,11 +154,11 @@ public class SpansCharSourceCreator {
                 return;
             }
             jg.writeStartObject();
-            jg.writeNumberField("offset", span.getOffset());
+            jg.writeNumberField("offset", span.getStartTick() - traceStartTick);
             jg.writeFieldName("duration");
-            long endTick = span.getEndTick();
-            if (endTick != 0 && endTick <= captureTick) {
-                jg.writeNumber(span.getEndTick() - span.getStartTick());
+            Long endTick = span.getEndTick();
+            if (endTick != null && Ticker.lessThanOrEqual(endTick, captureTick)) {
+                jg.writeNumber(endTick - span.getStartTick());
             } else {
                 jg.writeNumber(captureTick - span.getStartTick());
                 jg.writeBooleanField("active", true);
@@ -174,7 +181,6 @@ public class SpansCharSourceCreator {
             }
             jg.writeEndObject();
         }
-
         private void writeMessage(ReadableMessage message) throws IOException {
             jg.writeStartObject();
             jg.writeStringField("text", message.getText());

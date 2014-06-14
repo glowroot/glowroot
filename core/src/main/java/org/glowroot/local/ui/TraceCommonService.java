@@ -189,7 +189,7 @@ public class TraceCommonService {
 
     private CharSource createTraceSpans(Trace active) {
         return SpansCharSourceCreator.createSpansCharSource(active.getSpans(),
-                ticker.read());
+                active.getStartTick(), ticker.read());
     }
 
     @Nullable

@@ -48,7 +48,7 @@ class ProfilerScheduledRunnable extends ScheduledRunnable {
 
     @Override
     public void runInternal() {
-        if (ticker.read() >= endTick) {
+        if (Ticker.lessThanOrEqual(endTick, ticker.read())) {
             // throw marker exception to terminate subsequent scheduled executions
             throw new TerminateSubsequentExecutionsException();
         }

@@ -61,7 +61,7 @@ public class TraceModule {
 
     private final PluginServicesFactory pluginServicesFactory;
 
-    public TraceModule(final Ticker ticker, final Clock clock, final ConfigModule configModule,
+    public TraceModule(final Clock clock, final Ticker ticker, final ConfigModule configModule,
             final TraceCollector traceCollector,
             final @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             @Nullable Instrumentation instrumentation, ScheduledExecutorService scheduledExecutor) {

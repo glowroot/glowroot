@@ -30,6 +30,7 @@ import org.glowroot.collector.Snapshot;
 import org.glowroot.collector.SnapshotCreator;
 import org.glowroot.collector.SnapshotWriter;
 import org.glowroot.collector.TraceCollectorImpl;
+import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.trace.ProfileNode;
@@ -60,6 +61,7 @@ class LocalTraceService extends TraceService {
     private final TraceExportHttpService traceExportHttpService;
     private final TraceCollectorImpl traceCollector;
     private final TraceRegistry traceRegistry;
+    private final Clock clock;
     private final Ticker ticker;
 
     LocalTraceService(GlowrootModule glowrootModule) {
@@ -69,6 +71,7 @@ class LocalTraceService extends TraceService {
         traceExportHttpService = glowrootModule.getUiModule().getTraceExportHttpService();
         traceCollector = glowrootModule.getCollectorModule().getTraceCollector();
         traceRegistry = glowrootModule.getTraceModule().getTraceRegistry();
+        clock = glowrootModule.getClock();
         ticker = glowrootModule.getTicker();
     }
 
@@ -156,7 +159,7 @@ class LocalTraceService extends TraceService {
             throw new IllegalStateException("Unexpected number of active traces");
         } else {
             Snapshot snapshot = SnapshotCreator.createActiveSnapshot(traces.get(0),
-                    traces.get(0).getEndTick(), ticker.read());
+                    clock.currentTimeMillis(), ticker.read());
             return ObjectMappers.readRequiredValue(mapper, SnapshotWriter.toString(snapshot),
                     Trace.class);
         }

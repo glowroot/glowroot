@@ -386,6 +386,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.common.Reflections$ReflectiveTargetException");
         types.add("org.glowroot.common.ScheduledRunnable");
         types.add("org.glowroot.common.ScheduledRunnable$TerminateSubsequentExecutionsException");
+        types.add("org.glowroot.common.Ticker");
+        types.add("org.glowroot.common.Ticker$1");
         types.add("org.glowroot.trace.TraceRegistry");
         types.add("org.glowroot.trace.WeavingTimerServiceImpl");
         types.add("org.glowroot.trace.WeavingTimerServiceImpl$1");

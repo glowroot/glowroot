@@ -57,6 +57,7 @@ public class GlowrootModule {
     private static final Logger logger = LoggerFactory.getLogger(GlowrootModule.class);
 
     private final Ticker ticker;
+    private final Clock clock;
     private final ScheduledExecutorService scheduledExecutor;
     private final ConfigModule configModule;
     private final StorageModule storageModule;
@@ -69,7 +70,7 @@ public class GlowrootModule {
             @Nullable Instrumentation instrumentation, String version, boolean viewerModeEnabled)
             throws StartupFailedException {
         ticker = Ticker.systemTicker();
-        Clock clock = Clock.systemClock();
+        clock = Clock.systemClock();
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
                 .setNameFormat("Glowroot-Background-%d").build();
@@ -88,7 +89,7 @@ public class GlowrootModule {
         // loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
         // services/java.sql.Driver, and those drivers need to be woven
         TraceCollectorProxy traceCollectorProxy = new TraceCollectorProxy();
-        traceModule = new TraceModule(ticker, clock, configModule, traceCollectorProxy,
+        traceModule = new TraceModule(clock, ticker, configModule, traceCollectorProxy,
                 jvmModule.getThreadAllocatedBytes().getService(), instrumentation,
                 scheduledExecutor);
         try {
@@ -110,6 +111,11 @@ public class GlowrootModule {
         uiModule = new LocalUiModule(ticker, clock, dataDir, jvmModule, configModule,
                 storageModule, collectorModule, traceModule, instrumentation, properties, version);
         this.dataDir = dataDir;
+    }
+
+    @OnlyUsedByTests
+    public Clock getClock() {
+        return clock;
     }
 
     @OnlyUsedByTests

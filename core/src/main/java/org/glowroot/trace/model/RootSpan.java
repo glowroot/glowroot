@@ -49,7 +49,8 @@ class RootSpan {
     private final List<Span> spanStack = Lists.newArrayList();
 
     private final long startTick;
-    private volatile long endTick;
+    @Nullable
+    private volatile Long endTick;
 
     private final Span rootSpan;
     private final Queue<Span> spans = Queues.newConcurrentLinkedQueue();
@@ -65,7 +66,7 @@ class RootSpan {
             Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
-        rootSpan = new Span(messageSupplier, startTick, startTick, 0, metricTimer);
+        rootSpan = new Span(messageSupplier, startTick, 0, metricTimer);
         spanStack.add(rootSpan);
         spans.add(rootSpan);
         size = 1;
@@ -87,17 +88,18 @@ class RootSpan {
         return startTick;
     }
 
-    long getEndTick() {
+    @Nullable
+    Long getEndTick() {
         return endTick;
     }
 
     // duration of trace in nanoseconds
     long getDuration() {
-        return endTick == 0 ? ticker.read() - startTick : endTick - startTick;
+        return endTick == null ? ticker.read() - startTick : endTick - startTick;
     }
 
     boolean isCompleted() {
-        return endTick != 0;
+        return endTick != null;
     }
 
     Span pushSpan(long startTick, MessageSupplier messageSupplier, TraceMetricTimerExt metric) {
@@ -162,7 +164,7 @@ class RootSpan {
         } else {
             nestingLevel = currentSpan.getNestingLevel() + 1;
         }
-        Span span = new Span(messageSupplier, this.startTick, startTick, nestingLevel, metricTimer);
+        Span span = new Span(messageSupplier, startTick, nestingLevel, metricTimer);
         span.setErrorMessage(errorMessage);
         return span;
     }
