@@ -23,7 +23,6 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.internal.ReadableErrorMessage;
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * The "span" terminology is borrowed from <a
@@ -34,7 +33,6 @@ import org.glowroot.markers.ThreadSafe;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
 public class Span {
 
     private static final Span limitExceededMarker = new Span(null, 0, 0, null);
@@ -43,20 +41,23 @@ public class Span {
 
     @Nullable
     private final MessageSupplier messageSupplier;
+    // not volatile, so depends on memory barrier in Trace for visibility
     @Nullable
-    private volatile ErrorMessage errorMessage;
+    private ErrorMessage errorMessage;
 
     private final long startTick;
+    // not volatile, so depends on memory barrier in Trace for visibility
     @Nullable
-    private volatile Long endTick;
+    private Long endTick;
 
     private final int nestingLevel;
 
     // associated trace metric, stored here so it can be accessed in PluginServices.endSpan(Span)
     @Nullable
     private final TraceMetricTimerExt traceMetricTimer;
+    // not volatile, so depends on memory barrier in Trace for visibility
     @Nullable
-    private volatile ImmutableList<StackTraceElement> stackTrace;
+    private ImmutableList<StackTraceElement> stackTrace;
 
     Span(@Nullable MessageSupplier messageSupplier, long startTick, int nesting,
             @Nullable TraceMetricTimerExt traceMetricTimer) {

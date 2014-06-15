@@ -30,7 +30,6 @@ import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.api.TraceMetricName;
 import org.glowroot.common.Ticker;
-import org.glowroot.markers.PartiallyThreadSafe;
 
 /**
  * All timing data is in nanoseconds.
@@ -38,7 +37,21 @@ import org.glowroot.markers.PartiallyThreadSafe;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@PartiallyThreadSafe("writeValue() can be called from any thread")
+// instances are updated by a single thread, but can be read by other threads
+// memory visibility is therefore an issue for the reading threads
+//
+// memory visibility could be guaranteed by making selfNestingLevel volatile
+//
+// selfNestingLevel is written after other fields are written and it is read before
+// other fields are read, so it could be used to create a memory barrier and make the latest values
+// of the other fields visible to the reading thread
+//
+// but benchmarking shows making selfNestingLevel non-volatile reduces trace metric capture overhead
+// from 88 nanoseconds down to 41 nanoseconds, which is very good since System.nanoTime() takes 17
+// nanoseconds and each trace metric capture has to call it twice
+//
+// the down side is that the latest updates to trace metrics for snapshots that are captured
+// in-flight (e.g. stuck traces and active traces displayed in the UI) may not be visible
 public class TraceMetric implements TraceMetricTimerExt {
 
     private final TraceMetricNameImpl traceMetricName;
@@ -49,10 +62,7 @@ public class TraceMetric implements TraceMetricTimerExt {
     private long count;
 
     private long startTick;
-    // selfNestingLevel is written after any non-volatile fields are written and it is read before
-    // any non-volatile fields are read, creating a memory barrier and making the latest values of
-    // the non-volatile fields visible to the reading thread
-    private volatile int selfNestingLevel;
+    private int selfNestingLevel;
 
     // nestedTraceMetrics is only accessed by trace thread so no need for volatile or synchronized
     // access during trace metric capture which is important

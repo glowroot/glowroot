@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
@@ -118,6 +119,15 @@ public class Trace {
     @Nullable
     private volatile ScheduledRunnable stuckScheduledRunnable;
 
+    // memory barrier is used to ensure memory visibility of spans and trace metrics at key points,
+    // namely after each span
+    //
+    // benchmarking shows this is significantly faster than ensuring memory visibility of each
+    // trace metric update, the down side is that the latest updates to trace metrics for snapshots
+    // that are captured in-flight (e.g. stuck traces and active traces displayed in the UI) may not
+    // be visible
+    private volatile boolean memoryBarrier;
+
     public Trace(long startTime, boolean background, String transactionName,
             MessageSupplier messageSupplier, TraceMetric rootTraceMetric, long startTick,
             @Nullable TraceThreadInfo threadInfo, @Nullable TraceGcInfos gcInfo, Ticker ticker) {
@@ -212,8 +222,13 @@ public class Trace {
         return ImmutableSetMultimap.copyOf(orderedAttributes);
     }
 
+    public boolean readMemoryBarrier() {
+        return memoryBarrier;
+    }
+
     // this is called from a non-trace thread
     public TraceMetric getRootTraceMetric() {
+        readMemoryBarrier();
         return rootTraceMetric;
     }
 
@@ -243,8 +258,9 @@ public class Trace {
         return rootSpan.getSize();
     }
 
-    public Iterable<Span> getSpans() {
-        return rootSpan.getSpans();
+    public ImmutableList<Span> getSpansCopy() {
+        readMemoryBarrier();
+        return rootSpan.getSpansCopy();
     }
 
     public boolean isFine() {
@@ -358,11 +374,15 @@ public class Trace {
 
     public Span addSpan(long startTick, long endTick, @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage, boolean limitBypassed) {
-        return rootSpan.addSpan(startTick, endTick, messageSupplier, errorMessage, limitBypassed);
+        Span span = rootSpan.addSpan(startTick, endTick, messageSupplier, errorMessage,
+                limitBypassed);
+        memoryBarrier = true;
+        return span;
     }
 
     public void addSpanLimitExceededMarkerIfNeeded() {
         rootSpan.addSpanLimitExceededMarkerIfNeeded();
+        memoryBarrier = true;
     }
 
     // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
@@ -374,6 +394,7 @@ public class Trace {
         if (traceMetricTimer != null) {
             traceMetricTimer.end(endTick);
         }
+        memoryBarrier = true;
     }
 
     public void captureStackTrace(boolean fine) {

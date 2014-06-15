@@ -16,11 +16,10 @@
 package org.glowroot.trace.model;
 
 import java.util.List;
-import java.util.Queue;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Queues;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
@@ -29,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.common.Ticker;
-import org.glowroot.markers.PartiallyThreadSafe;
+import org.glowroot.markers.GuardedBy;
 
 /**
  * The "span" terminology is borrowed from <a
@@ -40,7 +39,6 @@ import org.glowroot.markers.PartiallyThreadSafe;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@PartiallyThreadSafe("pushSpan(), addSpan(), popSpan() can only be called from constructing thread")
 class RootSpan {
 
     private static final Logger logger = LoggerFactory.getLogger(RootSpan.class);
@@ -49,15 +47,17 @@ class RootSpan {
     private final List<Span> spanStack = Lists.newArrayList();
 
     private final long startTick;
+    // not volatile, so depends on memory barrier in Trace for visibility
     @Nullable
-    private volatile Long endTick;
+    private Long endTick;
 
     private final Span rootSpan;
-    private final Queue<Span> spans = Queues.newConcurrentLinkedQueue();
-    // tracking size of spans queue since ConcurrentLinkedQueue.size() is slow
-    private volatile int size;
+    // very little contention on spans, so synchronized ArrayList performs better than
+    // ConcurrentLinkedQueue
+    @GuardedBy("spans")
+    private final List<Span> spans = Lists.newArrayList();
 
-    // this doesn't need to be thread safe since it is only accessed by the trace thread
+    // this doesn't need to be volatile since it is only accessed by the trace thread
     private boolean spanLimitExceeded;
 
     private final Ticker ticker;
@@ -68,20 +68,25 @@ class RootSpan {
         this.ticker = ticker;
         rootSpan = new Span(messageSupplier, startTick, 0, traceMetricTimer);
         spanStack.add(rootSpan);
-        spans.add(rootSpan);
-        size = 1;
+        synchronized (spans) {
+            spans.add(rootSpan);
+        }
     }
 
     Span getRootSpan() {
         return rootSpan;
     }
 
-    Iterable<Span> getSpans() {
-        return spans;
+    ImmutableList<Span> getSpansCopy() {
+        synchronized (spans) {
+            return ImmutableList.copyOf(spans);
+        }
     }
 
     int getSize() {
-        return size;
+        synchronized (spans) {
+            return spans.size();
+        }
     }
 
     long getStartTick() {
@@ -106,9 +111,9 @@ class RootSpan {
             TraceMetricTimerExt traceMetric) {
         Span span = createSpan(startTick, messageSupplier, null, traceMetric, false);
         spanStack.add(span);
-        spans.add(span);
-        // increment doesn't need to be atomic since size is only modified by the trace thread
-        size++;
+        synchronized (spans) {
+            spans.add(span);
+        }
         return span;
     }
 
@@ -127,9 +132,9 @@ class RootSpan {
     Span addSpan(long startTick, long endTick, @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage, boolean limitBypassed) {
         Span span = createSpan(startTick, messageSupplier, errorMessage, null, limitBypassed);
-        spans.add(span);
-        // increment doesn't need to be atomic since size is only modified by the trace thread
-        size++;
+        synchronized (spans) {
+            spans.add(span);
+        }
         span.setEndTick(endTick);
         return span;
     }
@@ -139,9 +144,9 @@ class RootSpan {
             return;
         }
         spanLimitExceeded = true;
-        spans.add(Span.getLimitExceededMarker());
-        // increment doesn't need to be atomic since size is only modified by the trace thread
-        size++;
+        synchronized (spans) {
+            spans.add(Span.getLimitExceededMarker());
+        }
     }
 
     private Span createSpan(long startTick, @Nullable MessageSupplier messageSupplier,
@@ -153,9 +158,9 @@ class RootSpan {
             spanLimitExceeded = false;
             // also a different marker ("limit extended") is placed in the spans so that the ui can
             // display this scenario sensibly
-            spans.add(Span.getLimitExtendedMarker());
-            // increment doesn't need to be atomic since size is only modified by the trace thread
-            size++;
+            synchronized (spans) {
+                spans.add(Span.getLimitExtendedMarker());
+            }
         }
         Span currentSpan = spanStack.get(spanStack.size() - 1);
         int nestingLevel;
@@ -196,8 +201,7 @@ class RootSpan {
                 .add("startTick", startTick)
                 .add("endTick", endTick)
                 .add("rootSpan", rootSpan)
-                .add("spans", spans)
-                .add("size", size)
+                .add("spans", getSpansCopy())
                 .toString();
     }
 }

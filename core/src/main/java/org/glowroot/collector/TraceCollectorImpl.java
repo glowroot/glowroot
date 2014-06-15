@@ -203,7 +203,7 @@ public class TraceCollectorImpl implements TraceCollector {
             captureTick = ticker.read();
         }
         CharSource spans = SpansCharSourceCreator
-                .createSpansCharSource(trace.getSpans(), trace.getStartTick(), captureTick);
+                .createSpansCharSource(trace.getSpansCopy(), trace.getStartTick(), captureTick);
         CharSource coarseProfile = ProfileCharSourceCreator
                 .createProfileCharSource(trace.getCoarseProfile());
         CharSource fineProfile = ProfileCharSourceCreator

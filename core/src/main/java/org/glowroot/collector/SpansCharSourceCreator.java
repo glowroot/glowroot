@@ -49,7 +49,7 @@ public class SpansCharSourceCreator {
 
     private SpansCharSourceCreator() {}
 
-    public static CharSource createSpansCharSource(Iterable<Span> spans, long traceStartTick,
+    public static CharSource createSpansCharSource(List<Span> spans, long traceStartTick,
             long captureTick) {
         return new SpansCharSource(spans, traceStartTick, captureTick);
     }
@@ -68,11 +68,11 @@ public class SpansCharSourceCreator {
     @Immutable
     private static class SpansCharSource extends CharSource {
 
-        private final Iterable<Span> spans;
+        private final List<Span> spans;
         private final long traceStartTick;
         private final long captureTick;
 
-        private SpansCharSource(Iterable<Span> spans, long traceStartTick, long captureTick) {
+        private SpansCharSource(List<Span> spans, long traceStartTick, long captureTick) {
             this.spans = spans;
             this.traceStartTick = traceStartTick;
             this.captureTick = captureTick;
@@ -80,7 +80,7 @@ public class SpansCharSourceCreator {
 
         @Override
         public Reader openStream() throws IOException {
-            return new SpansReader(spans.iterator(), traceStartTick, captureTick);
+            return new SpansReader(spans, traceStartTick, captureTick);
         }
     }
 
@@ -95,9 +95,9 @@ public class SpansCharSourceCreator {
 
         private int writerIndex;
 
-        private SpansReader(Iterator<Span> spans, long traceStartTick, long captureTick)
+        private SpansReader(List<Span> spans, long traceStartTick, long captureTick)
                 throws IOException {
-            this.spans = spans;
+            this.spans = spans.iterator();
             this.traceStartTick = traceStartTick;
             this.captureTick = captureTick;
             writer = new CharArrayWriter();
