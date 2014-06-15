@@ -21,6 +21,7 @@ import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.markers.Singleton;
+import org.glowroot.trace.model.CurrentTraceMetricHolder;
 import org.glowroot.trace.model.Trace;
 
 /**
@@ -41,9 +42,23 @@ public class TraceRegistry {
     private final ThreadLocal</*@Nullable*/Trace> currentTraceHolder =
             new ThreadLocal</*@Nullable*/Trace>();
 
+    // active trace metric being executed by the current thread
+    @SuppressWarnings("nullness:type.argument.type.incompatible")
+    private final ThreadLocal<CurrentTraceMetricHolder> currentTraceMetricHolder =
+            new ThreadLocal<CurrentTraceMetricHolder>() {
+                @Override
+                protected CurrentTraceMetricHolder initialValue() {
+                    return new CurrentTraceMetricHolder();
+                }
+            };
+
     @Nullable
     Trace getCurrentTrace() {
         return currentTraceHolder.get();
+    }
+
+    CurrentTraceMetricHolder getCurrentTraceMetricHolder() {
+        return currentTraceMetricHolder.get();
     }
 
     void addTrace(Trace trace) {

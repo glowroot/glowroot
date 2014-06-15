@@ -71,7 +71,6 @@ public class PreInitializeWeavingClasses {
     @VisibleForTesting
     static List<String> usedTypes() {
         List<String> types = Lists.newArrayList();
-        types.addAll(getJacksonUsedTypes());
         types.addAll(getGuavaUsedTypes());
         types.addAll(getGlowrootUsedTypes());
         types.addAll(getAsmUsedTypes());
@@ -124,7 +123,6 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.base.Predicates$ObjectPredicate$4");
         types.add("com.google.common.base.Stopwatch");
         types.add("com.google.common.base.Stopwatch$1");
-        types.add("com.google.common.base.Strings");
         types.add("com.google.common.base.Supplier");
         types.add("com.google.common.base.Suppliers");
         types.add("com.google.common.base.Suppliers$SupplierOfInstance");
@@ -269,7 +267,6 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.Lists$ReverseList$1");
         types.add("com.google.common.collect.Maps");
         types.add("com.google.common.collect.Maps$1");
-        types.add("com.google.common.collect.Multimap");
         types.add("com.google.common.collect.NaturalOrdering");
         types.add("com.google.common.collect.ObjectArrays");
         types.add("com.google.common.collect.Ordering");
@@ -282,7 +279,6 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.RegularImmutableMap$NonTerminalMapEntry");
         types.add("com.google.common.collect.ReverseNaturalOrdering");
         types.add("com.google.common.collect.ReverseOrdering");
-        types.add("com.google.common.collect.SetMultimap");
         types.add("com.google.common.collect.Sets");
         types.add("com.google.common.collect.SingletonImmutableBiMap");
         types.add("com.google.common.collect.SingletonImmutableList");
@@ -332,38 +328,8 @@ public class PreInitializeWeavingClasses {
         return types;
     }
 
-    private static List<String> getJacksonUsedTypes() {
-        List<String> types = Lists.newArrayList();
-        types.add("com.fasterxml.jackson.core.JsonFactory");
-        types.add("com.fasterxml.jackson.core.JsonFactory$Feature");
-        types.add("com.fasterxml.jackson.core.JsonGenerator$Feature");
-        types.add("com.fasterxml.jackson.core.JsonParser$Feature");
-        types.add("com.fasterxml.jackson.core.ObjectCodec");
-        types.add("com.fasterxml.jackson.core.PrettyPrinter");
-        types.add("com.fasterxml.jackson.core.SerializableString");
-        types.add("com.fasterxml.jackson.core.TreeCodec");
-        types.add("com.fasterxml.jackson.core.Versioned");
-        types.add("com.fasterxml.jackson.core.io.SerializedString");
-        types.add("com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer");
-        types.add("com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer$Bucket");
-        types.add("com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer$TableInfo");
-        types.add("com.fasterxml.jackson.core.sym.CharsToNameCanonicalizer");
-        types.add("com.fasterxml.jackson.core.sym.CharsToNameCanonicalizer$Bucket");
-        types.add("com.fasterxml.jackson.core.sym.Name");
-        types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter");
-        types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter$FixedSpaceIndenter");
-        types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter$Indenter");
-        types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter$Lf2SpacesIndenter");
-        types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter$NopIndenter");
-        types.add("com.fasterxml.jackson.core.util.Instantiatable");
-        return types;
-    }
-
     private static List<String> getGlowrootUsedTypes() {
         List<String> types = Lists.newArrayList();
-        types.add("org.glowroot.api.ErrorMessage");
-        types.add("org.glowroot.api.Message");
-        types.add("org.glowroot.api.MessageSupplier");
         types.add("org.glowroot.api.TraceMetricName");
         types.add("org.glowroot.api.TraceMetricTimer");
         types.add("org.glowroot.api.weaving.BindMethodArg");
@@ -384,25 +350,17 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.common.Reflections");
         types.add("org.glowroot.common.Reflections$ReflectiveException");
         types.add("org.glowroot.common.Reflections$ReflectiveTargetException");
-        types.add("org.glowroot.common.ScheduledRunnable");
-        types.add("org.glowroot.common.ScheduledRunnable$TerminateSubsequentExecutionsException");
         types.add("org.glowroot.common.Ticker");
         types.add("org.glowroot.common.Ticker$1");
         types.add("org.glowroot.trace.TraceRegistry");
+        types.add("org.glowroot.trace.TraceRegistry$1");
         types.add("org.glowroot.trace.WeavingTimerServiceImpl");
         types.add("org.glowroot.trace.WeavingTimerServiceImpl$1");
         types.add("org.glowroot.trace.WeavingTimerServiceImpl$NopWeavingTimer");
-        types.add("org.glowroot.trace.model.JvmInfo");
-        types.add("org.glowroot.trace.model.Profile");
-        types.add("org.glowroot.trace.model.ProfileNode");
-        types.add("org.glowroot.trace.model.RootSpan");
-        types.add("org.glowroot.trace.model.Span");
-        types.add("org.glowroot.trace.model.Trace");
+        types.add("org.glowroot.trace.model.CurrentTraceMetricHolder");
         types.add("org.glowroot.trace.model.TraceMetric");
         types.add("org.glowroot.trace.model.TraceMetricNameImpl");
         types.add("org.glowroot.trace.model.TraceMetricTimerExt");
-        types.add("org.glowroot.trace.model.TraceMetricTimerExt$NopTraceMetricTimerExt");
-        types.add("org.glowroot.trace.model.TraceUniqueId");
         types.add("org.glowroot.weaving.Advice");
         types.add("org.glowroot.weaving.Advice$AdviceParameter");
         types.add("org.glowroot.weaving.Advice$ParameterKind");

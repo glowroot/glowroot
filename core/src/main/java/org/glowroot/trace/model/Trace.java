@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.ScheduledRunnable;
@@ -42,7 +41,6 @@ import org.glowroot.common.Ticker;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.PartiallyThreadSafe;
-import org.glowroot.trace.model.TraceMetricTimerExt.NopTraceMetricTimerExt;
 
 /**
  * Contains all data that has been captured for a given trace (e.g. a servlet request).
@@ -59,8 +57,6 @@ public class Trace {
     private static final Logger logger = LoggerFactory.getLogger(Trace.class);
 
     public static final int USE_GENERAL_STORE_THRESHOLD = -1;
-
-    private static final long START_TICK_READ_TICKER = -1;
 
     // initial capacity is very important, see ThreadSafeCollectionOfTenBenchmark
     private static final int ATTRIBUTE_KEYS_INITIAL_CAPACITY = 16;
@@ -93,12 +89,6 @@ public class Trace {
 
     private final TraceMetric rootMetric;
 
-    // this doesn't need to be thread safe as it is only accessed by the trace thread
-    //
-    // only nullable when trace is complete
-    @Nullable
-    private TraceMetric activeMetric;
-
     private final JvmInfo jvmInfo;
 
     // root span for this trace
@@ -126,27 +116,17 @@ public class Trace {
     @Nullable
     private volatile ScheduledRunnable stuckScheduledRunnable;
 
-    private final Ticker ticker;
-
-    // suppress initialization is for checker framework, passing uninitialized 'this' to Metric
-    // constructor below, which is ok since the Trace reference does not escape from there and is
-    // unused until after it is fully initialized
-    @SuppressWarnings("initialization")
     public Trace(long startTime, boolean background, String transactionName,
-            MessageSupplier messageSupplier, TraceMetricName traceMetricName,
+            MessageSupplier messageSupplier, TraceMetric rootTraceMetric, long startTick,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes, Ticker ticker) {
         this.startTime = startTime;
         this.background = background;
         this.transactionName = transactionName;
+        this.rootMetric = rootTraceMetric;
         id = new TraceUniqueId(startTime);
-        long startTick = ticker.read();
-        rootMetric = new TraceMetric(traceMetricName, this, null, ticker);
-        rootMetric.start(startTick);
-        activeMetric = rootMetric;
-        rootSpan = new RootSpan(messageSupplier, rootMetric, startTick, ticker);
+        rootSpan = new RootSpan(messageSupplier, rootTraceMetric, startTick, ticker);
         threadId = Thread.currentThread().getId();
         jvmInfo = new JvmInfo(threadAllocatedBytes);
-        this.ticker = ticker;
     }
 
     public long getStartTime() {
@@ -355,47 +335,8 @@ public class Trace {
         this.stuckScheduledRunnable = scheduledRunnable;
     }
 
-    // prefer this method when startTick is not already available, since it avoids a ticker.read()
-    // for nested trace metrics
-    public TraceMetricTimerExt startTraceMetric(TraceMetricName traceMetricName) {
-        return startTraceMetric(traceMetricName, START_TICK_READ_TICKER);
-    }
-
-    // this is only used for "glowroot weaving" metric since it can crop up during the trace
-    // completion process
-    //
-    // the only difference is that it doesn't log a warning when activeMetric is null
-    public TraceMetricTimerExt tryStartTraceMetric(TraceMetricName traceMetricName) {
-        if (activeMetric == null) {
-            return NopTraceMetricTimerExt.INSTANCE;
-        }
-        return startTraceMetric(traceMetricName, START_TICK_READ_TICKER);
-    }
-
-    public TraceMetricTimerExt startTraceMetric(TraceMetricName traceMetricName, long startTick) {
-        if (activeMetric == null) {
-            // this should only happen when trace is complete
-            logger.warn("startTraceMetric() called with null activeMetric");
-            return NopTraceMetricTimerExt.INSTANCE;
-        }
-        // metric names are guaranteed one instance per name so fast pointer equality can be used
-        if (activeMetric.getTraceMetricName() == traceMetricName) {
-            activeMetric.incrementSelfNestingLevel();
-            return activeMetric;
-        }
-        TraceMetric metric = activeMetric.getNestedMetric(traceMetricName, this);
-        if (startTick == START_TICK_READ_TICKER) {
-            metric.start(ticker.read());
-        } else {
-            metric.start(startTick);
-        }
-        activeMetric = metric;
-        return metric;
-    }
-
-    public Span pushSpan(TraceMetricName traceMetricName, long startTick,
-            MessageSupplier messageSupplier) {
-        TraceMetricTimerExt metricTimer = startTraceMetric(traceMetricName, startTick);
+    public Span pushSpan(long startTick, MessageSupplier messageSupplier,
+            TraceMetricTimerExt metricTimer) {
         return rootSpan.pushSpan(startTick, messageSupplier, metricTimer);
     }
 
@@ -455,10 +396,6 @@ public class Trace {
         jvmInfo.onTraceComplete();
     }
 
-    void setActiveMetric(@Nullable TraceMetric activeMetric) {
-        this.activeMetric = activeMetric;
-    }
-
     @Override
     @Pure
     public String toString() {
@@ -471,7 +408,6 @@ public class Trace {
                 .add("user", user)
                 .add("attributes", attributes)
                 .add("rootMetric", rootMetric)
-                .add("activeMetric", activeMetric)
                 .add("jvmInfo", jvmInfo)
                 .add("rootSpan", rootSpan)
                 .add("coarseProfile", coarseProfile)

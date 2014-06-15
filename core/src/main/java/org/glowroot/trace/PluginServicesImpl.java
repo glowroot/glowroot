@@ -45,7 +45,10 @@ import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.ThreadSafe;
+import org.glowroot.trace.model.CurrentTraceMetricHolder;
 import org.glowroot.trace.model.Trace;
+import org.glowroot.trace.model.TraceMetric;
+import org.glowroot.trace.model.TraceMetricNameImpl;
 import org.glowroot.trace.model.TraceMetricTimerExt;
 
 /**
@@ -217,8 +220,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
+            CurrentTraceMetricHolder currentTraceMetricHolder =
+                    traceRegistry.getCurrentTraceMetricHolder();
+            TraceMetric rootTraceMetric = new TraceMetric((TraceMetricNameImpl) traceMetricName,
+                    null, currentTraceMetricHolder, ticker);
+            long startTick = ticker.read();
+            rootTraceMetric.start(startTick);
             trace = new Trace(clock.currentTimeMillis(), background, transactionName,
-                    messageSupplier, traceMetricName, threadAllocatedBytes, ticker);
+                    messageSupplier, rootTraceMetric, startTick, threadAllocatedBytes, ticker);
             traceRegistry.addTrace(trace);
             fineProfileScheduler.maybeScheduleFineProfilingUsingPercentage(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
@@ -251,11 +260,27 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.error("startTimer(): argument 'traceMetricName' must be non-null");
             return NopTraceMetricTimer.INSTANCE;
         }
-        Trace trace = traceRegistry.getCurrentTrace();
-        if (trace == null) {
+        CurrentTraceMetricHolder currentTraceMetricHolder =
+                traceRegistry.getCurrentTraceMetricHolder();
+        TraceMetric currentTraceMetric = currentTraceMetricHolder.get();
+        if (currentTraceMetric == null) {
             return NopTraceMetricTimer.INSTANCE;
         }
-        return trace.startTraceMetric(traceMetricName);
+        return currentTraceMetric.startNestedTraceMetric(traceMetricName);
+    }
+
+    private TraceMetricTimerExt startTraceMetric(TraceMetricName traceMetricName, long startTick) {
+        if (traceMetricName == null) {
+            logger.error("startTimer(): argument 'traceMetricName' must be non-null");
+            return NopTraceMetricTimerExt.INSTANCE;
+        }
+        CurrentTraceMetricHolder currentTraceMetricHolder =
+                traceRegistry.getCurrentTraceMetricHolder();
+        TraceMetric currentTraceMetric = currentTraceMetricHolder.get();
+        if (currentTraceMetric == null) {
+            return NopTraceMetricTimerExt.INSTANCE;
+        }
+        return currentTraceMetric.startNestedTraceMetric(traceMetricName, startTick);
     }
 
     @Override
@@ -372,10 +397,13 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (trace.getSpanCount() >= maxSpans) {
             // the span limit has been exceeded for this trace
             trace.addSpanLimitExceededMarkerIfNeeded();
-            TraceMetricTimerExt metric = trace.startTraceMetric(traceMetricName, startTick);
-            return new TimerWrappedInSpan(metric, startTick, trace, messageSupplier);
+            TraceMetricTimerExt traceMetricTimer = startTraceMetric(traceMetricName, startTick);
+            return new TimerWrappedInSpan(traceMetricTimer, startTick, trace, messageSupplier);
         } else {
-            return new SpanImpl(trace.pushSpan(traceMetricName, startTick, messageSupplier), trace);
+            TraceMetricTimerExt traceMetricTimer = startTraceMetric(traceMetricName, startTick);
+            org.glowroot.trace.model.Span span =
+                    trace.pushSpan(startTick, messageSupplier, traceMetricTimer);
+            return new SpanImpl(span, trace);
         }
     }
 
@@ -558,6 +586,15 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         private static final NopTraceMetricTimer INSTANCE = new NopTraceMetricTimer();
         @Override
         public void stop() {}
+    }
+
+    @ThreadSafe
+    public static class NopTraceMetricTimerExt implements TraceMetricTimerExt {
+        public static final NopTraceMetricTimerExt INSTANCE = new NopTraceMetricTimerExt();
+        @Override
+        public void stop() {}
+        @Override
+        public void end(long endTick) {}
     }
 
     private static class NopCompletedSpan implements CompletedSpan {

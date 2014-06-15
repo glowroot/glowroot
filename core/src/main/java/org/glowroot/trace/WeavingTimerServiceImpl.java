@@ -18,7 +18,8 @@ package org.glowroot.trace;
 import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.markers.ThreadSafe;
-import org.glowroot.trace.model.Trace;
+import org.glowroot.trace.model.CurrentTraceMetricHolder;
+import org.glowroot.trace.model.TraceMetric;
 import org.glowroot.trace.model.TraceMetricTimerExt;
 import org.glowroot.weaving.WeavingTimerService;
 
@@ -39,11 +40,14 @@ class WeavingTimerServiceImpl implements WeavingTimerService {
 
     @Override
     public WeavingTimer start() {
-        Trace trace = traceRegistry.getCurrentTrace();
-        if (trace == null) {
+        CurrentTraceMetricHolder currentTraceMetricHolder =
+                traceRegistry.getCurrentTraceMetricHolder();
+        TraceMetric traceMetric = currentTraceMetricHolder.get();
+        if (traceMetric == null) {
             return NopWeavingTimer.INSTANCE;
         }
-        final TraceMetricTimerExt traceMetricTimer = trace.tryStartTraceMetric(traceMetricName);
+        final TraceMetricTimerExt traceMetricTimer =
+                traceMetric.startNestedTraceMetric(traceMetricName);
         return new WeavingTimer() {
             @Override
             public void stop() {

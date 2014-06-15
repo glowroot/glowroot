@@ -15,13 +15,23 @@
  */
 package org.glowroot.trace.model;
 
-import org.glowroot.api.TraceMetricTimer;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface TraceMetricTimerExt extends TraceMetricTimer {
+public class CurrentTraceMetricHolder {
 
-    void end(long endTick);
+    @Nullable
+    private TraceMetric currentTraceMetric;
+
+    @Nullable
+    public TraceMetric get() {
+        return currentTraceMetric;
+    }
+
+    public void set(@Nullable TraceMetric traceMetric) {
+        this.currentTraceMetric = traceMetric;
+    }
 }
