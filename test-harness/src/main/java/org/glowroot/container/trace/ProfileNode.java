@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
+import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
@@ -91,9 +92,13 @@ public class ProfileNode {
             @JsonProperty("stackTraceElement") @Nullable String stackTraceElement,
             @JsonProperty("leafThreadState") @Nullable String leafThreadState,
             @JsonProperty("sampleCount") @Nullable Integer sampleCount,
-            @JsonProperty("traceMetrics") @Nullable List<String> traceMetrics,
-            @JsonProperty("childNodes") @Nullable List<ProfileNode> childNodes)
+            @JsonProperty("traceMetrics") @Nullable List</*@Nullable*/String> uncheckedTraceMetrics,
+            @JsonProperty("childNodes") @Nullable List</*@Nullable*/ProfileNode> uncheckedChildNodes)
             throws JsonMappingException {
+        List<String> traceMetrics =
+                checkNotNullItemsForProperty(uncheckedTraceMetrics, "traceMetrics");
+        List<ProfileNode> childNodes =
+                checkNotNullItemsForProperty(uncheckedChildNodes, "childNodes");
         checkRequiredProperty(sampleCount, "sampleCount");
         return new ProfileNode(stackTraceElement, leafThreadState,
                 sampleCount, nullToEmpty(traceMetrics), nullToEmpty(childNodes));

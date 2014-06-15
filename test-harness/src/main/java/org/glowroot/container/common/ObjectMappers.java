@@ -38,6 +38,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,6 +86,22 @@ public class ObjectMappers {
         if (reference == null) {
             throw new JsonMappingException("Null value not allowed for field: " + fieldName);
         }
+    }
+
+    @PolyNull
+    @SuppressWarnings("return.type.incompatible")
+    public static <T extends /*@Nullable*/Object> List</*@NonNull*/T> checkNotNullItemsForProperty(
+            @PolyNull List<T> list, String fieldName) throws JsonMappingException {
+        if (list == null) {
+            return null;
+        }
+        for (T item : list) {
+            if (item == null) {
+                throw new JsonMappingException("Null items are not allowed in array field: "
+                        + fieldName);
+            }
+        }
+        return list;
     }
 
     // named after guava Strings.nullToEmpty

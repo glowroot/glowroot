@@ -33,6 +33,7 @@ import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.markers.Immutable;
 
 import static com.google.common.base.Strings.nullToEmpty;
+import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
 import static org.glowroot.common.ObjectMappers.nullToFalse;
@@ -169,9 +170,9 @@ public class PointcutConfig {
     static PointcutConfig readValue(
             @JsonProperty("type") @Nullable String type,
             @JsonProperty("methodName") @Nullable String methodName,
-            @JsonProperty("methodArgTypes") @Nullable List<String> methodArgTypes,
+            @JsonProperty("methodArgTypes") @Nullable List</*@Nullable*/String> uncheckedMethodArgTypes,
             @JsonProperty("methodReturnType") @Nullable String methodReturnType,
-            @JsonProperty("methodModifiers") @Nullable List<MethodModifier> methodModifiers,
+            @JsonProperty("methodModifiers") @Nullable List</*@Nullable*/MethodModifier> uncheckedMethodModifiers,
             @JsonProperty("traceMetric") @Nullable String traceMetric,
             @JsonProperty("spanText") @Nullable String spanText,
             @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
@@ -184,6 +185,10 @@ public class PointcutConfig {
             // this method in order to set the version field if it is included in the json being
             // deserialized (overwriting the hashed version that is calculated in the constructor)
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
+        List<String> methodArgTypes =
+                checkNotNullItemsForProperty(uncheckedMethodArgTypes, "methodArgTypes");
+        List<MethodModifier> methodModifiers =
+                checkNotNullItemsForProperty(uncheckedMethodModifiers, "methodModifiers");
         checkRequiredProperty(type, "type");
         checkRequiredProperty(methodName, "methodName");
         checkRequiredProperty(methodReturnType, "methodReturnType");

@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
+import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
@@ -249,9 +250,9 @@ public class PointcutConfig {
     static PointcutConfig readValue(
             @JsonProperty("type") @Nullable String type,
             @JsonProperty("methodName") @Nullable String methodName,
-            @JsonProperty("methodArgTypes") @Nullable List<String> methodArgTypes,
+            @JsonProperty("methodArgTypes") @Nullable List</*@Nullable*/String> uncheckedMethodArgTypes,
             @JsonProperty("methodReturnType") @Nullable String methodReturnType,
-            @JsonProperty("methodModifiers") @Nullable List<MethodModifier> methodModifiers,
+            @JsonProperty("methodModifiers") @Nullable List</*@Nullable*/MethodModifier> uncheckedMethodModifiers,
             @JsonProperty("traceMetric") @Nullable String traceMetric,
             @JsonProperty("spanText") @Nullable String spanText,
             @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
@@ -261,6 +262,10 @@ public class PointcutConfig {
             @JsonProperty("enabledProperty") @Nullable String enabledProperty,
             @JsonProperty("spanEnabledProperty") @Nullable String spanEnabledProperty,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
+        List<String> methodArgTypes =
+                checkNotNullItemsForProperty(uncheckedMethodArgTypes, "methodArgTypes");
+        List<MethodModifier> methodModifiers =
+                checkNotNullItemsForProperty(uncheckedMethodModifiers, "methodModifiers");
         checkRequiredProperty(type, "type");
         checkRequiredProperty(methodName, "methodName");
         checkRequiredProperty(methodArgTypes, "methodArgTypes");

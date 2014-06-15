@@ -27,6 +27,7 @@ import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.markers.UsedByJsonBinding;
 
+import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
@@ -101,12 +102,14 @@ public class ErrorAggregateQuery {
     @JsonCreator
     static ErrorAggregateQuery readValue(@JsonProperty("from") @Nullable Long from,
             @JsonProperty("to") @Nullable Long to,
-            @JsonProperty("includes") @Nullable List<String> includes,
-            @JsonProperty("excludes") @Nullable List<String> excludes,
+            @JsonProperty("includes") @Nullable List</*@Nullable*/String> uncheckedIncludes,
+            @JsonProperty("excludes") @Nullable List</*@Nullable*/String> uncheckedExcludes,
             @JsonProperty("sortAttribute") @Nullable ErrorAggregateSortAttribute sortAttribute,
             @JsonProperty("sortDirection") @Nullable SortDirection sortDirection,
             @JsonProperty("limit") @Nullable Integer limit)
             throws JsonMappingException {
+        List<String> includes = checkNotNullItemsForProperty(uncheckedIncludes, "includes");
+        List<String> excludes = checkNotNullItemsForProperty(uncheckedExcludes, "excludes");
         checkRequiredProperty(from, "from");
         checkRequiredProperty(to, "to");
         checkRequiredProperty(sortAttribute, "sortAttribute");

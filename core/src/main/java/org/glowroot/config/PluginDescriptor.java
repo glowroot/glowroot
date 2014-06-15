@@ -31,6 +31,7 @@ import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
@@ -126,14 +127,23 @@ public class PluginDescriptor {
     }
 
     @JsonCreator
-    static PluginDescriptor readValue(@JsonProperty("name") @Nullable String name,
+    static PluginDescriptor readValue(
+            @JsonProperty("name") @Nullable String name,
             @JsonProperty("id") @Nullable String id,
             @JsonProperty("version") @Nullable String version,
-            @JsonProperty("traceAttributes") @Nullable List<String> traceAttributes,
-            @JsonProperty("properties") @Nullable List<PropertyDescriptor> properties,
-            @JsonProperty("aspects") @Nullable List<String> aspects,
-            @JsonProperty("pointcuts") @Nullable List<PointcutConfig> pointcuts)
+            @JsonProperty("traceAttributes") @Nullable List</*@Nullable*/String> uncheckedTraceAttributes,
+            @JsonProperty("properties") @Nullable List</*@Nullable*/PropertyDescriptor> uncheckedProperties,
+            @JsonProperty("aspects") @Nullable List</*@Nullable*/String> uncheckedAspects,
+            @JsonProperty("pointcuts") @Nullable List</*@Nullable*/PointcutConfig> uncheckedPointcuts)
             throws JsonMappingException {
+        List<String> traceAttributes =
+                checkNotNullItemsForProperty(uncheckedTraceAttributes, "traceAttributes");
+        List<PropertyDescriptor> properties =
+                checkNotNullItemsForProperty(uncheckedProperties, "properties");
+        List<String> aspects =
+                checkNotNullItemsForProperty(uncheckedAspects, "aspects");
+        List<PointcutConfig> pointcuts =
+                checkNotNullItemsForProperty(uncheckedPointcuts, "pointcuts");
         checkRequiredProperty(name, "name");
         checkRequiredProperty(id, "id");
         checkRequiredProperty(version, "version");

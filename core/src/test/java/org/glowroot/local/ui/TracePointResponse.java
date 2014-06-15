@@ -19,7 +19,10 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+
+import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
 
 /**
  * @author Trask Stalnaker
@@ -32,9 +35,17 @@ class TracePointResponse {
     private final List<RawPoint> activePoints;
 
     @JsonCreator
-    private TracePointResponse(@JsonProperty("normalPoints") List<RawPoint> normalPoints,
-            @JsonProperty("errorPoints") List<RawPoint> errorPoints,
-            @JsonProperty("activePoints") List<RawPoint> activePoints) {
+    private TracePointResponse(
+            @JsonProperty("normalPoints") List</*@Nullable*/RawPoint> uncheckedNormalPoints,
+            @JsonProperty("errorPoints") List</*@Nullable*/RawPoint> uncheckedErrorPoints,
+            @JsonProperty("activePoints") List</*@Nullable*/RawPoint> uncheckedActivePoints)
+            throws JsonMappingException {
+        List<RawPoint> normalPoints =
+                checkNotNullItemsForProperty(uncheckedNormalPoints, "normalPoints");
+        List<RawPoint> errorPoints =
+                checkNotNullItemsForProperty(uncheckedErrorPoints, "errorPoints");
+        List<RawPoint> activePoints =
+                checkNotNullItemsForProperty(uncheckedActivePoints, "activePoints");
         this.normalPoints = normalPoints;
         this.errorPoints = errorPoints;
         this.activePoints = activePoints;

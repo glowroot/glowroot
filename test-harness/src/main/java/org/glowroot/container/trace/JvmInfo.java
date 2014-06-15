@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
+import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
@@ -95,8 +96,10 @@ public class JvmInfo {
             @JsonProperty("threadBlockedTime") @Nullable Long threadBlockedTime,
             @JsonProperty("threadWaitedTime") @Nullable Long threadWaitedTime,
             @JsonProperty("threadAllocatedBytes") @Nullable Long threadAllocatedBytes,
-            @JsonProperty("garbageCollectorInfos") @Nullable List<GarbageCollectorInfo> infos)
+            @JsonProperty("garbageCollectorInfos") @Nullable List</*@Nullable*/GarbageCollectorInfo> uncheckedInfos)
             throws JsonMappingException {
+        List<GarbageCollectorInfo> infos =
+                checkNotNullItemsForProperty(uncheckedInfos, "infos");
         checkRequiredProperty(infos, "garbageCollectorInfos");
         return new JvmInfo(threadCpuTime, threadBlockedTime, threadWaitedTime,
                 threadAllocatedBytes, infos);

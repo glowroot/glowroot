@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.collect.TreeTraverser;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
@@ -76,8 +77,10 @@ class SimpleTraceMetric {
             @JsonProperty("name") @Nullable String name,
             @JsonProperty("totalMicros") @Nullable Long totalMicros,
             @JsonProperty("count") @Nullable Long count,
-            @JsonProperty("nestedTraceMetrics") @Nullable List<SimpleTraceMetric> nestedTraceMetrics)
+            @JsonProperty("nestedTraceMetrics") @Nullable List</*@Nullable*/SimpleTraceMetric> uncheckedNestedTraceMetrics)
             throws JsonMappingException {
+        List<SimpleTraceMetric> nestedTraceMetrics =
+                checkNotNullItemsForProperty(uncheckedNestedTraceMetrics, "nestedTraceMetrics");
         checkRequiredProperty(name, "name");
         checkRequiredProperty(totalMicros, "totalMicros");
         checkRequiredProperty(count, "count");

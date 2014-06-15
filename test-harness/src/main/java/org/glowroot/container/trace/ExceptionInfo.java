@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
+import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
@@ -78,10 +79,12 @@ public class ExceptionInfo {
     @JsonCreator
     static ExceptionInfo readValue(
             @JsonProperty("display") @Nullable String display,
-            @JsonProperty("stackTrace") @Nullable List<String> stackTrace,
+            @JsonProperty("stackTrace") @Nullable List</*@Nullable*/String> uncheckedStackTrace,
             @JsonProperty("framesInCommonWithCaused") @Nullable Integer framesInCommonWithCaused,
             @JsonProperty("cause") @Nullable ExceptionInfo cause)
             throws JsonMappingException {
+        List<String> stackTrace =
+                checkNotNullItemsForProperty(uncheckedStackTrace, "stackTrace");
         checkRequiredProperty(display, "display");
         checkRequiredProperty(stackTrace, "stackTrace");
         checkRequiredProperty(framesInCommonWithCaused, "framesInCommonWithCaused");

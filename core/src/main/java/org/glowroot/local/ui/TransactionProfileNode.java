@@ -27,6 +27,7 @@ import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.markers.UsedByJsonBinding;
 
+import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
@@ -112,9 +113,13 @@ class TransactionProfileNode {
             @JsonProperty("stackTraceElement") @Nullable String stackTraceElement,
             @JsonProperty("leafThreadState") @Nullable String leafThreadState,
             @JsonProperty("sampleCount") @Nullable Integer sampleCount,
-            @JsonProperty("traceMetrics") @Nullable List<String> traceMetrics,
-            @JsonProperty("childNodes") @Nullable List<TransactionProfileNode> childNodes)
+            @JsonProperty("traceMetrics") @Nullable List</*@Nullable*/String> uncheckedTraceMetrics,
+            @JsonProperty("childNodes") @Nullable List</*@Nullable*/TransactionProfileNode> uncheckedChildNodes)
             throws JsonMappingException {
+        List<String> traceMetrics =
+                checkNotNullItemsForProperty(uncheckedTraceMetrics, "traceMetrics");
+        List<TransactionProfileNode> childNodes =
+                checkNotNullItemsForProperty(uncheckedChildNodes, "childNodes");
         checkRequiredProperty(sampleCount, "sampleCount");
         return new TransactionProfileNode(stackTraceElement, leafThreadState,
                 sampleCount, nullToEmpty(traceMetrics), nullToEmpty(childNodes));

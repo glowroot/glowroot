@@ -31,8 +31,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.common.ObjectMappers.nullToEmpty;
+import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
 /**
  * @author Trask Stalnaker
@@ -159,8 +160,10 @@ public class TraceMetric {
             @JsonProperty("active") @Nullable Boolean active,
             @JsonProperty("minActive") @Nullable Boolean minActive,
             @JsonProperty("maxActive") @Nullable Boolean maxActive,
-            @JsonProperty("nestedTraceMetrics") @Nullable List<TraceMetric> nestedTraceMetrics)
+            @JsonProperty("nestedTraceMetrics") @Nullable List</*@Nullable*/TraceMetric> uncheckedNestedTraceMetrics)
             throws JsonMappingException {
+        List<TraceMetric> nestedTraceMetrics =
+                checkNotNullItemsForProperty(uncheckedNestedTraceMetrics, "nestedTraceMetrics");
         checkRequiredProperty(name, "name");
         checkRequiredProperty(total, "total");
         checkRequiredProperty(min, "min");

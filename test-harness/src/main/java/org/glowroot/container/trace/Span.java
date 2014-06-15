@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
+import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.nullToFalse;
 
 /**
@@ -157,10 +158,12 @@ public class Span {
             @JsonProperty("nestingLevel") @Nullable Integer nestingLevel,
             @JsonProperty("message") @Nullable Message message,
             @JsonProperty("error") @Nullable ErrorMessage error,
-            @JsonProperty("stackTrace") @Nullable List<String> stackTrace,
+            @JsonProperty("stackTrace") @Nullable List</*@Nullable*/String> uncheckedStackTrace,
             @JsonProperty("limitExceededMarker") @Nullable Boolean limitExceededMarker,
             @JsonProperty("limitExtendedMarker") @Nullable Boolean limitExtendedMarker)
             throws JsonMappingException {
+        List<String> stackTrace =
+                checkNotNullItemsForProperty(uncheckedStackTrace, "stackTrace");
         return new Span(nullToZero(offset), nullToZero(duration), nullToFalse(active),
                 nullToZero(nestingLevel), message, error, stackTrace,
                 nullToFalse(limitExceededMarker), nullToFalse(limitExtendedMarker));

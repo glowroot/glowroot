@@ -27,6 +27,7 @@ import com.google.common.primitives.Longs;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
@@ -60,10 +61,16 @@ class TracePointResponse {
 
     @JsonCreator
     static TracePointResponse readValue(
-            @JsonProperty("normalPoints") @Nullable List<RawPoint> normalPoints,
-            @JsonProperty("errorPoints") @Nullable List<RawPoint> errorPoints,
-            @JsonProperty("activePoints") @Nullable List<RawPoint> activePoints)
+            @JsonProperty("normalPoints") @Nullable List</*@Nullable*/RawPoint> uncheckedNormalPoints,
+            @JsonProperty("errorPoints") @Nullable List</*@Nullable*/RawPoint> uncheckedErrorPoints,
+            @JsonProperty("activePoints") @Nullable List</*@Nullable*/RawPoint> uncheckedActivePoints)
             throws JsonMappingException {
+        List<RawPoint> normalPoints =
+                checkNotNullItemsForProperty(uncheckedNormalPoints, "normalPoints");
+        List<RawPoint> errorPoints =
+                checkNotNullItemsForProperty(uncheckedErrorPoints, "errorPoints");
+        List<RawPoint> activePoints =
+                checkNotNullItemsForProperty(uncheckedActivePoints, "activePoints");
         checkRequiredProperty(normalPoints, "normalPoints");
         checkRequiredProperty(errorPoints, "errorPoints");
         checkRequiredProperty(activePoints, "activePoints");

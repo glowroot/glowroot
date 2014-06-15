@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
+import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
@@ -187,7 +188,7 @@ public class Trace {
             @JsonProperty("headline") @Nullable String headline,
             @JsonProperty("error") @Nullable String error,
             @JsonProperty("user") @Nullable String user,
-            @JsonProperty("attributes") @Nullable Map<String, List<String>> attributes,
+            @JsonProperty("attributes") @Nullable Map<String, /*@Nullable*/List</*@Nullable*/String>> attributes,
             @JsonProperty("traceMetrics") @Nullable TraceMetric rootTraceMetric,
             @JsonProperty("jvmInfo") @Nullable JvmInfo jvmInfo,
             @JsonProperty("spansExistence") @Nullable Existence spansExistence,
@@ -210,8 +211,16 @@ public class Trace {
         checkRequiredProperty(fineProfileExistence, "fineProfileExistence");
         ImmutableSetMultimap.Builder<String, String> theAttributes = ImmutableSetMultimap.builder();
         if (attributes != null) {
-            for (Entry<String, List<String>> entry : attributes.entrySet()) {
-                theAttributes.putAll(entry.getKey(), entry.getValue());
+            for (Entry<String, /*@Nullable*/List</*@Nullable*/String>> entry : attributes
+                    .entrySet()) {
+                List</*@Nullable*/String> uncheckedValues = entry.getValue();
+                if (uncheckedValues == null) {
+                    throw new JsonMappingException(
+                            "Null value not allowed for attribute map value");
+                }
+                List<String> values =
+                        checkNotNullItemsForProperty(uncheckedValues, "traceAttributes");
+                theAttributes.putAll(entry.getKey(), values);
             }
         }
         return new Trace(id, active, stuck, startTime, captureTime, duration, background,
