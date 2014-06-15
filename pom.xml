@@ -40,11 +40,11 @@
     <module>plugin-api</module>
     <module>core</module>
     <module>test-harness</module>
-    <module>integration-tests</module>
-    <module>webdriver-tests</module>
-    <module>microbenchmarks</module>
-    <module>javaagent-microbenchmarks</module>
-    <module>ui-sandbox</module>
+    <module>testing/integration-tests</module>
+    <module>testing/webdriver-tests</module>
+    <module>testing/microbenchmarks</module>
+    <module>testing/javaagent-microbenchmarks</module>
+    <module>testing/ui-sandbox</module>
     <module>plugins/servlet-plugin</module>
     <module>plugins/jdbc-plugin</module>
     <module>plugins/logger-plugin</module>

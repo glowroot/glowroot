@@ -105,7 +105,7 @@ case "$1" in
                then
                  mvn clean install -DskipTests=true \
                                    -B
-                 cd webdriver-tests
+                 cd testing/webdriver-tests
                  mvn clean test -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
                                 -Dsaucelabs.browser.name=$SAUCELABS_BROWSER_NAME \
                                 -Dsaucelabs.browser.version=$SAUCELABS_BROWSER_VERSION \
