@@ -96,7 +96,7 @@ public class LocalUiModule {
         LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
                 pluginDescriptorCache, jvmModule.getHeapHistograms().getService(),
                 jvmModule.getHeapDumps().getService(),
-                collectorModule.getFixedAggregationIntervalSeconds());
+                collectorModule.getFixedTransactionPointIntervalSeconds());
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configService, clock, layoutJsonService);
         String baseHref = getBaseHref(properties);
@@ -104,7 +104,7 @@ public class LocalUiModule {
                 new IndexHtmlService(baseHref, httpSessionManager, layoutJsonService);
         TransactionJsonService transactionJsonService =
                 new TransactionJsonService(storageModule.getTransactionPointDao(), clock,
-                        collectorModule.getFixedAggregationIntervalSeconds());
+                        collectorModule.getFixedTransactionPointIntervalSeconds());
         traceCommonService =
                 new TraceCommonService(snapshotDao, traceRegistry, traceCollector, clock, ticker);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,

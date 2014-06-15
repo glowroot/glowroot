@@ -288,7 +288,7 @@ public class TransactionPointDao implements TransactionPointRepository {
         public Overall extractData(ResultSet resultSet) throws SQLException {
             if (!resultSet.next()) {
                 // this is an aggregate query so this should be impossible
-                logger.warn("overall aggregate query did not return any results");
+                logger.warn("aggregate query did not return any results");
                 return new Overall(0, 0, 0, 0);
             }
             long totalMicros = resultSet.getLong(1);

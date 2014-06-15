@@ -36,7 +36,7 @@ glowroot.controller('TransactionsCtrl', [
     // plotTransactionName is only updated when the plot is updated
     var plotTransactionName;
 
-    var fixedAggregationIntervalMillis = $scope.layout.fixedAggregationIntervalSeconds * 1000;
+    var fixedTransactionPointIntervalMillis = $scope.layout.fixedTransactionPointIntervalSeconds * 1000;
 
     var currentRefreshId = 0;
     var currentZoomId = 0;
@@ -212,7 +212,7 @@ glowroot.controller('TransactionsCtrl', [
       var x = item.pageX;
       var y = item.pageY;
       var captureTime = item.datapoint[0];
-      var from = $filter('date')(captureTime - fixedAggregationIntervalMillis, 'mediumTime');
+      var from = $filter('date')(captureTime - fixedTransactionPointIntervalMillis, 'mediumTime');
       var to = $filter('date')(captureTime, 'mediumTime');
       var traceCount = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
       var average;
@@ -387,8 +387,8 @@ glowroot.controller('TransactionsCtrl', [
     $scope.tracesQueryString = function (transactionName) {
       if (transactionName) {
         return queryStrings.encodeObject({
-          // from is adjusted because transactions are really aggregates of the interval before the transaction point
-          from: $scope.chartFrom - fixedAggregationIntervalMillis,
+          // from is adjusted because transaction points are aggregates of the interval before the transaction point
+          from: $scope.chartFrom - fixedTransactionPointIntervalMillis,
           to: $scope.chartTo,
           transactionName: transactionName,
           transactionNameComparator: 'equals',
@@ -396,8 +396,8 @@ glowroot.controller('TransactionsCtrl', [
         });
       } else {
         return queryStrings.encodeObject({
-          // from is adjusted because transactions are really aggregates of the interval before the transaction point
-          from: $scope.chartFrom - fixedAggregationIntervalMillis,
+          // from is adjusted because transaction points are aggregates of the interval before the transaction point
+          from: $scope.chartFrom - fixedTransactionPointIntervalMillis,
           to: $scope.chartTo,
           background: 'false'
         });
@@ -445,7 +445,7 @@ glowroot.controller('TransactionsCtrl', [
     $scope.chartTo = Number($location.search().to);
     // both from and to must be supplied or neither will take effect
     if ($scope.chartFrom && $scope.chartTo) {
-      $scope.chartFrom += fixedAggregationIntervalMillis;
+      $scope.chartFrom += fixedTransactionPointIntervalMillis;
       $scope.filterDate = new Date($scope.chartFrom);
       $scope.filterDate.setHours(0, 0, 0, 0);
     } else {
@@ -457,11 +457,11 @@ glowroot.controller('TransactionsCtrl', [
       // (e.g. if 'now' is 11:55pm)
       var now = new Date();
       now.setSeconds(0, 0);
-      var fixedAggregationIntervalMinutes = fixedAggregationIntervalMillis / (60 * 1000);
-      if (fixedAggregationIntervalMinutes > 1) {
-        // this is the normal case since default aggregation interval is 5 min
+      var fixedTransactionPointIntervalMinutes = fixedTransactionPointIntervalMillis / (60 * 1000);
+      if (fixedTransactionPointIntervalMinutes > 1) {
+        // this is the normal case since default transaction point interval is 5 min
         var minutesRoundedDownToNearestAggregationInterval =
-            fixedAggregationIntervalMinutes * Math.floor(now.getMinutes() / fixedAggregationIntervalMinutes);
+            fixedTransactionPointIntervalMinutes * Math.floor(now.getMinutes() / fixedTransactionPointIntervalMinutes);
         now.setMinutes(minutesRoundedDownToNearestAggregationInterval);
       }
       $scope.chartFrom = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
@@ -475,7 +475,7 @@ glowroot.controller('TransactionsCtrl', [
     function updateLocation() {
       var query = {};
       if (!chartFromToDefault) {
-        query.from = $scope.chartFrom - fixedAggregationIntervalMillis;
+        query.from = $scope.chartFrom - fixedTransactionPointIntervalMillis;
         query.to = $scope.chartTo;
       }
       if ($scope.selectedTransactionName) {
@@ -540,7 +540,7 @@ glowroot.controller('TransactionsCtrl', [
       };
       // render chart with no data points
       plot = $.plot($chart, [], options);
-      plot.getAxes().xaxis.options.borderGridLock = fixedAggregationIntervalMillis;
+      plot.getAxes().xaxis.options.borderGridLock = fixedTransactionPointIntervalMillis;
     })();
 
     plot.getAxes().yaxis.options.max = undefined;

@@ -54,18 +54,18 @@ class LayoutJsonService {
     @Nullable
     private final HeapDumps heapDumps;
 
-    private final long fixedAggregationIntervalSeconds;
+    private final long fixedTransactionPointIntervalSeconds;
 
     LayoutJsonService(String version, ConfigService configService,
             PluginDescriptorCache pluginDescriptorCache, @Nullable HeapHistograms heapHistograms,
             @Nullable HeapDumps heapDumps,
-            long fixedAggregationIntervalSeconds) {
+            long fixedTransactionPointIntervalSeconds) {
         this.version = version;
         this.configService = configService;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.heapHistograms = heapHistograms;
         this.heapDumps = heapDumps;
-        this.fixedAggregationIntervalSeconds = fixedAggregationIntervalSeconds;
+        this.fixedTransactionPointIntervalSeconds = fixedTransactionPointIntervalSeconds;
     }
 
     // this is only accessed from the url when running under 'grunt server' and is just to get back
@@ -103,7 +103,8 @@ class LayoutJsonService {
             }
         }
         jg.writeEndArray();
-        jg.writeNumberField("fixedAggregationIntervalSeconds", fixedAggregationIntervalSeconds);
+        jg.writeNumberField("fixedTransactionPointIntervalSeconds",
+                fixedTransactionPointIntervalSeconds);
         jg.writeEndObject();
         jg.close();
         return sb.toString();

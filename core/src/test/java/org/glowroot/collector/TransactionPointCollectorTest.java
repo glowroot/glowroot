@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class AggregatorTest {
+public class TransactionPointCollectorTest {
 
     @Test
     public void shouldNotFlushWithNoTraces() throws InterruptedException {
@@ -54,7 +54,7 @@ public class AggregatorTest {
         }).when(scheduledExecutorService).execute(any(Runnable.class));
         TransactionPointRepository transactionPointRepository =
                 mock(TransactionPointRepository.class);
-        new TransactionCollector(scheduledExecutorService, transactionPointRepository,
+        new TransactionPointCollector(scheduledExecutorService, transactionPointRepository,
                 Clock.systemClock(), 1);
         // when
         Thread.sleep(2100);
@@ -76,7 +76,7 @@ public class AggregatorTest {
         }).when(scheduledExecutorService).execute(any(Runnable.class));
         MockTransactionPointRepository transactionPointRepository =
                 new MockTransactionPointRepository();
-        TransactionCollector transactionCollector = new TransactionCollector(
+        TransactionPointCollector transactionPointCollector = new TransactionPointCollector(
                 scheduledExecutorService, transactionPointRepository, Clock.systemClock(), 1);
 
         Trace trace = mock(Trace.class);
@@ -86,10 +86,10 @@ public class AggregatorTest {
         when(trace.getRootTraceMetric()).thenReturn(traceMetric);
         // when
         int count = 0;
-        long firstCaptureTime = transactionCollector.add(trace, false);
+        long firstCaptureTime = transactionPointCollector.add(trace, false);
         long aggregateCaptureTime = (long) Math.ceil(firstCaptureTime / 1000.0) * 1000;
         while (true) {
-            long captureTime = transactionCollector.add(trace, false);
+            long captureTime = transactionPointCollector.add(trace, false);
             count++;
             if (captureTime > aggregateCaptureTime) {
                 break;
@@ -105,7 +105,7 @@ public class AggregatorTest {
             }
         }
         assertThat(transactionPointRepository.getTotalMicros()).isEqualTo(count * 123 * 1000);
-        transactionCollector.close();
+        transactionPointCollector.close();
     }
 
     private static class MockTransactionPointRepository implements TransactionPointRepository {

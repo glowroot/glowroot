@@ -41,7 +41,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 // TODO add JvmInfo aggregation
 @Singleton
-class TransactionCollector {
+class TransactionPointCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceProcessor.class);
 
@@ -53,25 +53,24 @@ class TransactionCollector {
     private final TransactionPointRepository transactionPointRepository;
     private final Clock clock;
 
-    private final long fixedAggregationIntervalMillis;
+    private final long fixedTransactionPointIntervalMillis;
 
-    private final BlockingQueue<PendingAggregation> pendingAggregationQueue =
-            Queues.newLinkedBlockingQueue();
+    private final BlockingQueue<PendingTrace> pendingTraceQueue = Queues.newLinkedBlockingQueue();
 
     private final Thread processingThread;
 
-    TransactionCollector(ScheduledExecutorService scheduledExecutor,
+    TransactionPointCollector(ScheduledExecutorService scheduledExecutor,
             TransactionPointRepository transactionPointRepository, Clock clock,
-            long fixedAggregationIntervalSeconds) {
+            long fixedTransactionPointIntervalSeconds) {
         this.scheduledExecutor = scheduledExecutor;
         this.transactionPointRepository = transactionPointRepository;
         this.clock = clock;
-        this.fixedAggregationIntervalMillis = fixedAggregationIntervalSeconds * 1000;
+        this.fixedTransactionPointIntervalMillis = fixedTransactionPointIntervalSeconds * 1000;
         currentAggregates = new Aggregates(clock.currentTimeMillis());
         // dedicated thread to processing aggregates
         processingThread = new Thread(new TraceProcessor());
         processingThread.setDaemon(true);
-        processingThread.setName("Glowroot-Aggregator");
+        processingThread.setName("Glowroot-Transaction-Point-Collector");
         processingThread.start();
     }
 
@@ -81,8 +80,7 @@ class TransactionCollector {
         // flush, then no new traces will come in with prior captureTime)
         synchronized (lock) {
             long captureTime = clock.currentTimeMillis();
-            pendingAggregationQueue.add(
-                    new PendingAggregation(captureTime, trace, traceWillBeStored));
+            pendingTraceQueue.add(new PendingTrace(captureTime, trace, traceWillBeStored));
             return captureTime;
         }
     }
@@ -113,8 +111,8 @@ class TransactionCollector {
         private void processOne() throws InterruptedException {
             long timeToAggregateCaptureTime =
                     Math.max(0, currentAggregates.captureTime - clock.currentTimeMillis());
-            PendingAggregation pendingAggregation =
-                    pendingAggregationQueue.poll(timeToAggregateCaptureTime + 1000, MILLISECONDS);
+            PendingTrace pendingAggregation =
+                    pendingTraceQueue.poll(timeToAggregateCaptureTime + 1000, MILLISECONDS);
             if (pendingAggregation == null) {
                 maybeEndOfAggregate();
                 return;
@@ -134,7 +132,7 @@ class TransactionCollector {
 
         private void maybeEndOfAggregate() {
             synchronized (lock) {
-                if (pendingAggregationQueue.peek() != null) {
+                if (pendingTraceQueue.peek() != null) {
                     // something just crept into the queue, possibly still something from
                     // current aggregate, it will get picked up right away and if it is in
                     // next aggregate interval it will force current aggregate to be flushed
@@ -197,8 +195,9 @@ class TransactionCollector {
         private final Map<String, TypeAggregates> typeAggregatesMap = Maps.newHashMap();
 
         private Aggregates(long currentTime) {
-            this.captureTime = (long) Math.ceil(currentTime
-                    / (double) fixedAggregationIntervalMillis) * fixedAggregationIntervalMillis;
+            this.captureTime =
+                    (long) Math.ceil(currentTime / (double) fixedTransactionPointIntervalMillis)
+                            * fixedTransactionPointIntervalMillis;
         }
 
         private void add(Trace trace, boolean traceWillBeStored) {
@@ -255,13 +254,13 @@ class TransactionCollector {
         }
     }
 
-    private static class PendingAggregation {
+    private static class PendingTrace {
 
         private final long captureTime;
         private final Trace trace;
         private final boolean traceWillBeStored;
 
-        private PendingAggregation(long captureTime, Trace trace, boolean traceWillBeStored) {
+        private PendingTrace(long captureTime, Trace trace, boolean traceWillBeStored) {
             this.captureTime = captureTime;
             this.trace = trace;
             this.traceWillBeStored = traceWillBeStored;

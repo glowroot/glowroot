@@ -42,7 +42,7 @@ public class UiSandboxMain {
     private static final boolean rollOverQuickly = false;
 
     static {
-        System.setProperty("glowroot.internal.collector.aggregationInterval", "15");
+        System.setProperty("glowroot.internal.collector.transactionPointInterval", "15");
     }
 
     private UiSandboxMain() {}

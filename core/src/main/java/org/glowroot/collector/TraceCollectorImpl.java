@@ -53,7 +53,7 @@ public class TraceCollectorImpl implements TraceCollector {
     private final ConfigService configService;
     private final SnapshotRepository snapshotRepository;
     @Nullable
-    private final TransactionCollector transactionCollector;
+    private final TransactionPointCollector transactionPointCollector;
     private final Clock clock;
     private final Ticker ticker;
     private final Set<Trace> pendingCompleteTraces = Sets.newCopyOnWriteArraySet();
@@ -64,11 +64,12 @@ public class TraceCollectorImpl implements TraceCollector {
 
     TraceCollectorImpl(ExecutorService executorService, ConfigService configService,
             SnapshotRepository snapshotRepository,
-            @Nullable TransactionCollector transactionCollector, Clock clock, Ticker ticker) {
+            @Nullable TransactionPointCollector transactionPointCollector, Clock clock,
+            Ticker ticker) {
         this.executorService = executorService;
         this.configService = configService;
         this.snapshotRepository = snapshotRepository;
-        this.transactionCollector = transactionCollector;
+        this.transactionPointCollector = transactionPointCollector;
         this.clock = clock;
         this.ticker = ticker;
     }
@@ -128,12 +129,12 @@ public class TraceCollectorImpl implements TraceCollector {
         // this is a reasonable place to get the capture time since this code is still being
         // executed by the trace thread
         final long captureTime;
-        if (transactionCollector == null) {
+        if (transactionPointCollector == null) {
             captureTime = clock.currentTimeMillis();
         } else {
             // there's a small window where something bad could happen and the snapshot is not
             // stored, and transaction point 'stored count' would be off by one
-            captureTime = transactionCollector.add(trace, store);
+            captureTime = transactionPointCollector.add(trace, store);
         }
         if (store) {
             // onCompleteAndShouldStore must be called by the trace thread

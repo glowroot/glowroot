@@ -206,10 +206,11 @@ public class SnapshotDao implements SnapshotRepository {
     public QueryResult<ErrorAggregate> readErrorAggregates(ErrorAggregateQuery query) {
         try {
             ParameterizedSql parameterizedSql = getParameterizedSql(query);
-            ImmutableList<ErrorAggregate> aggregates = dataSource.query(parameterizedSql.getSql(),
-                    parameterizedSql.getArgs(), new ErrorAggregateRowMapper());
+            ImmutableList<ErrorAggregate> errorAggregates =
+                    dataSource.query(parameterizedSql.getSql(), parameterizedSql.getArgs(),
+                            new ErrorAggregateRowMapper());
             // one extra record over the limit is fetched above to identify if the limit was hit
-            return QueryResult.from(aggregates, query.getLimit());
+            return QueryResult.from(errorAggregates, query.getLimit());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return QueryResult.empty();

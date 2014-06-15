@@ -48,8 +48,8 @@ class ErrorJsonService {
     }
 
     @GET("/backend/error/aggregates")
-    String getAggregates(String content) throws IOException {
-        logger.debug("getAggregates(): content={}", content);
+    String getErrorAggregates(String content) throws IOException {
+        logger.debug("getErrorAggregates(): content={}", content);
         ObjectMapper mapper = ObjectMappers.create();
         mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         ErrorAggregateQuery query =

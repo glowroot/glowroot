@@ -33,16 +33,16 @@ import org.glowroot.markers.ThreadSafe;
 @ThreadSafe
 public class CollectorModule {
 
-    private static final long fixedAggregationIntervalSeconds;
+    private static final long fixedTransactionPointIntervalSeconds;
 
     static {
-        fixedAggregationIntervalSeconds =
-                Long.getLong("glowroot.internal.collector.aggregationInterval", 300);
+        fixedTransactionPointIntervalSeconds =
+                Long.getLong("glowroot.internal.collector.transactionPointInterval", 300);
     }
 
     private final TraceCollectorImpl traceCollector;
     @Nullable
-    private final TransactionCollector transactionCollector;
+    private final TransactionPointCollector transactionPointCollector;
 
     public CollectorModule(Clock clock, Ticker ticker, ConfigModule configModule,
             SnapshotRepository snapshotRepository,
@@ -51,28 +51,28 @@ public class CollectorModule {
             boolean viewerModeEnabled) {
         ConfigService configService = configModule.getConfigService();
         if (viewerModeEnabled) {
-            transactionCollector = null;
+            transactionPointCollector = null;
         } else {
-            transactionCollector = new TransactionCollector(scheduledExecutor,
-                    transactionPointRepository, clock, fixedAggregationIntervalSeconds);
+            transactionPointCollector = new TransactionPointCollector(scheduledExecutor,
+                    transactionPointRepository, clock, fixedTransactionPointIntervalSeconds);
         }
         // TODO should be no need for trace collector in viewer mode
         traceCollector = new TraceCollectorImpl(scheduledExecutor, configService,
-                snapshotRepository, transactionCollector, clock, ticker);
+                snapshotRepository, transactionPointCollector, clock, ticker);
     }
 
     public TraceCollectorImpl getTraceCollector() {
         return traceCollector;
     }
 
-    public long getFixedAggregationIntervalSeconds() {
-        return fixedAggregationIntervalSeconds;
+    public long getFixedTransactionPointIntervalSeconds() {
+        return fixedTransactionPointIntervalSeconds;
     }
 
     @OnlyUsedByTests
     public void close() {
-        if (transactionCollector != null) {
-            transactionCollector.close();
+        if (transactionPointCollector != null) {
+            transactionPointCollector.close();
         }
     }
 }

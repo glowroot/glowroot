@@ -63,13 +63,13 @@ class TransactionJsonService {
 
     private final TransactionPointDao transactionPointDao;
     private final Clock clock;
-    private final long fixedAggregationIntervalMillis;
+    private final long fixedTransactionPointIntervalMillis;
 
     TransactionJsonService(TransactionPointDao transactionPointDao, Clock clock,
-            long fixedAggregationIntervalSeconds) {
+            long fixedTransactionPointIntervalSeconds) {
         this.transactionPointDao = transactionPointDao;
         this.clock = clock;
-        fixedAggregationIntervalMillis = fixedAggregationIntervalSeconds * 1000;
+        fixedTransactionPointIntervalMillis = fixedTransactionPointIntervalSeconds * 1000;
     }
 
     @GET("/backend/transaction/stacked")
@@ -216,23 +216,23 @@ class TransactionJsonService {
     private void addInitialUpslope(long requestFrom, TransactionPoint transactionPoint,
             List<DataSeries> dataSeriesList, DataSeries otherDataSeries) {
         long millisecondsFromEdge = transactionPoint.getCaptureTime() - requestFrom;
-        if (millisecondsFromEdge < fixedAggregationIntervalMillis / 2) {
+        if (millisecondsFromEdge < fixedTransactionPointIntervalMillis / 2) {
             return;
         }
         // bring up from zero
         for (DataSeries dataSeries : dataSeriesList) {
-            dataSeries.add(transactionPoint.getCaptureTime() - fixedAggregationIntervalMillis / 2,
-                    0);
+            dataSeries.add(transactionPoint.getCaptureTime()
+                    - fixedTransactionPointIntervalMillis / 2, 0);
         }
-        otherDataSeries.add(transactionPoint.getCaptureTime() - fixedAggregationIntervalMillis / 2,
-                0);
+        otherDataSeries.add(transactionPoint.getCaptureTime()
+                - fixedTransactionPointIntervalMillis / 2, 0);
     }
 
     private void addGap(TransactionPoint lastTransactionPoint, TransactionPoint transactionPoint,
             List<DataSeries> dataSeriesList, DataSeries otherDataSeries) {
         long millisecondsSinceLastPoint =
                 transactionPoint.getCaptureTime() - lastTransactionPoint.getCaptureTime();
-        if (millisecondsSinceLastPoint < fixedAggregationIntervalMillis * 1.5) {
+        if (millisecondsSinceLastPoint < fixedTransactionPointIntervalMillis * 1.5) {
             return;
         }
         // gap between points, bring down to zero and then back up from zero to show gap
@@ -245,10 +245,10 @@ class TransactionJsonService {
     private void addGap(DataSeries dataSeries, TransactionPoint lastTransactionPoint,
             TransactionPoint transactionPoint) {
         dataSeries.add(lastTransactionPoint.getCaptureTime()
-                + fixedAggregationIntervalMillis / 2, 0);
+                + fixedTransactionPointIntervalMillis / 2, 0);
         dataSeries.addNull();
         dataSeries.add(transactionPoint.getCaptureTime()
-                - fixedAggregationIntervalMillis / 2, 0);
+                - fixedTransactionPointIntervalMillis / 2, 0);
     }
 
     private void addFinalDownslope(RequestWithTransactionName request,
@@ -256,20 +256,20 @@ class TransactionJsonService {
             TransactionPoint lastTransactionPoint) {
         long millisecondsAgoFromNow =
                 clock.currentTimeMillis() - lastTransactionPoint.getCaptureTime();
-        if (millisecondsAgoFromNow < fixedAggregationIntervalMillis * 1.5) {
+        if (millisecondsAgoFromNow < fixedTransactionPointIntervalMillis * 1.5) {
             return;
         }
         long millisecondsFromEdge = request.getTo() - lastTransactionPoint.getCaptureTime();
-        if (millisecondsFromEdge < fixedAggregationIntervalMillis / 2) {
+        if (millisecondsFromEdge < fixedTransactionPointIntervalMillis / 2) {
             return;
         }
         // bring down to zero
         for (DataSeries dataSeries : dataSeriesList) {
             dataSeries.add(lastTransactionPoint.getCaptureTime()
-                    + fixedAggregationIntervalMillis / 2, 0);
+                    + fixedTransactionPointIntervalMillis / 2, 0);
         }
         otherDataSeries.add(lastTransactionPoint.getCaptureTime()
-                + fixedAggregationIntervalMillis / 2, 0);
+                + fixedTransactionPointIntervalMillis / 2, 0);
     }
 
     private void mergeMatchedNode(TransactionProfileNode toBeMergedNode,
