@@ -45,7 +45,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @ThreadSafe
 public class Profile {
 
-    private static final Pattern metricMarkerMethodPattern =
+    private static final Pattern traceMetricMarkerMethodPattern =
             Pattern.compile("^.*\\$glowroot\\$trace\\$metric\\$(.*)\\$[0-9]+$");
 
     private final Object lock = new Object();
@@ -85,7 +85,7 @@ public class Profile {
         for (int i = 0; i < unmergedStackTraces.size(); i++) {
             List<StackTraceElement> stackTrace = unmergedStackTraces.get(i);
             State threadState = unmergedStackTraceThreadStates.get(i);
-            addToStackTree(stripSyntheticMetricMethods(stackTrace), threadState);
+            addToStackTree(stripSyntheticTraceMetricMethods(stackTrace), threadState);
         }
         unmergedStackTraces.clear();
         unmergedStackTraceThreadStates.clear();
@@ -109,11 +109,11 @@ public class Profile {
                         threadState)) {
                     // match found, update lastMatchedNode and break out of the inner loop
                     childNode.incrementSampleCount(1);
-                    // the metric names for a given stack element should always match, unless
+                    // the trace metric names for a given stack element should always match, unless
                     // the line numbers aren't available and overloaded methods are matched up, or
                     // the stack trace was captured while one of the synthetic $trace$metric$
-                    // methods was executing in which case one of the metric names may be a subset
-                    // of the other, in which case, the superset wins:
+                    // methods was executing in which case one of the trace metric names may be a
+                    // subset of the other, in which case, the superset wins:
                     List<String> traceMetrics = element.getTraceMetrics();
                     if (traceMetrics != null
                             && traceMetrics.size() > childNode.getTraceMetrics().size()) {
@@ -157,7 +157,7 @@ public class Profile {
     }
 
     // recreate the stack trace as it would have been without the synthetic $trace$metric$ methods
-    public static List<StackTraceElementPlus> stripSyntheticMetricMethods(
+    public static List<StackTraceElementPlus> stripSyntheticTraceMetricMethods(
             List<StackTraceElement> stackTrace) {
 
         List<StackTraceElementPlus> stackTracePlus = Lists.newArrayListWithCapacity(
@@ -197,7 +197,7 @@ public class Profile {
 
     @Nullable
     private static String getTraceMetric(StackTraceElement stackTraceElement) {
-        Matcher matcher = metricMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
+        Matcher matcher = traceMetricMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
         if (matcher.matches()) {
             String group = matcher.group(1);
             checkNotNull(group);

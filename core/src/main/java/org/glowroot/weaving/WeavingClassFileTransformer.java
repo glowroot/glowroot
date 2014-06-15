@@ -45,8 +45,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     private final Supplier<ImmutableList<Advice>> pointcutConfigAdvisors;
 
     private final ParsedTypeCache parsedTypeCache;
-    private final WeavingTimerService metricTimerService;
-    private final boolean metricWrapperMethods;
+    private final WeavingTimerService traceMetricTimerService;
+    private final boolean traceMetricWrapperMethods;
 
     // it is important to only have a single weaver per class loader because storing state of each
     // previously parsed class in order to re-construct class hierarchy in case one or more .class
@@ -59,8 +59,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                         @Override
                         public Weaver load(ClassLoader loader) {
                             return new Weaver(mixinTypes, pluginAdvisors, pointcutConfigAdvisors,
-                                    parsedTypeCache, metricTimerService,
-                                    metricWrapperMethods);
+                                    parsedTypeCache, traceMetricTimerService,
+                                    traceMetricWrapperMethods);
                         }
                     });
     // the weaver for the bootstrap class loader (null) has to be stored separately since
@@ -72,26 +72,27 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // because of the crazy pre-initialization of javaagent classes (see
     // org.glowroot.core.weaving.PreInitializeClasses), all inputs into this class should be
     // concrete, non-subclassed types so that the correct set of used classes can be computed (see
-    // calculation in the test class org.glowroot.core.weaving.preinit.GlobalCollector, and
-    // hard-coded results in org.glowroot.core.weaving.PreInitializeClasses)
-    // note: an exception is made for WeavingMetric, see PreInitializeClassesTest for explanation
+    // calculation in the test class org.glowroot.weaving.preinit.GlobalCollector, and
+    // hard-coded results in org.glowroot.weaving.PreInitializeWeavingClassesTest)
+    // note: an exception is made for WeavingTimerService, see PreInitializeWeavingClassesTest for
+    // explanation
     public WeavingClassFileTransformer(List<MixinType> mixinTypes, List<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
             ParsedTypeCache parsedTypeCache, WeavingTimerService weavingTimerService,
-            boolean metricWrapperMethods) {
+            boolean traceMetricWrapperMethods) {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
         this.pointcutConfigAdvisors = pointcutConfigAdvisors;
         this.parsedTypeCache = parsedTypeCache;
-        this.metricTimerService = weavingTimerService;
-        this.metricWrapperMethods = metricWrapperMethods;
+        this.traceMetricTimerService = weavingTimerService;
+        this.traceMetricWrapperMethods = traceMetricWrapperMethods;
         if (isInBootstrapClassLoader()) {
             // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
             // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
             // the woven code will not be able to see glowroot classes (e.g. PluginServices)
             bootstrapLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors,
                     this.pointcutConfigAdvisors, parsedTypeCache, weavingTimerService,
-                    metricWrapperMethods);
+                    traceMetricWrapperMethods);
         } else {
             bootstrapLoaderWeaver = null;
         }

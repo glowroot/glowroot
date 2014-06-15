@@ -38,7 +38,7 @@ import org.glowroot.api.weaving.Pointcut;
  */
 public class Slf4jMarkerAspect {
 
-    private static final String METRIC_NAME = "logging";
+    private static final String TRACE_METRIC = "logging";
 
     private static final PluginServices pluginServices = PluginServices.get("logger");
 
@@ -72,7 +72,7 @@ public class Slf4jMarkerAspect {
     }
 
     @Pointcut(type = "org.slf4j.Logger", methodName = "warn|error",
-            methodArgTypes = {"org.slf4j.Marker", "java.lang.String"}, traceMetric = METRIC_NAME)
+            methodArgTypes = {"org.slf4j.Marker", "java.lang.String"}, traceMetric = TRACE_METRIC)
     public static class LogNoArgAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LogNoArgAdvice.class);
@@ -102,7 +102,7 @@ public class Slf4jMarkerAspect {
 
     @Pointcut(type = "org.slf4j.Logger", methodName = "warn|error",
             methodArgTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object"},
-            traceMetric = METRIC_NAME)
+            traceMetric = TRACE_METRIC)
     public static class LogOneArgAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LogOneArgAdvice.class);
@@ -128,7 +128,7 @@ public class Slf4jMarkerAspect {
 
     @Pointcut(type = "org.slf4j.Logger", methodName = "warn|error",
             methodArgTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Throwable"},
-            traceMetric = METRIC_NAME)
+            traceMetric = TRACE_METRIC)
     public static class LogOneArgThrowableAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LogOneArgThrowableAdvice.class);
@@ -154,7 +154,7 @@ public class Slf4jMarkerAspect {
 
     @Pointcut(type = "org.slf4j.Logger", methodName = "warn|error",
             methodArgTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object",
-                    "java.lang.Object"}, traceMetric = METRIC_NAME)
+                    "java.lang.Object"}, traceMetric = TRACE_METRIC)
     public static class LogTwoArgsAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LogTwoArgsAdvice.class);
@@ -180,7 +180,7 @@ public class Slf4jMarkerAspect {
 
     @Pointcut(type = "org.slf4j.Logger", methodName = "warn|error",
             methodArgTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object[]"},
-            traceMetric = METRIC_NAME)
+            traceMetric = TRACE_METRIC)
     public static class LogAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LogAdvice.class);

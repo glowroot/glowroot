@@ -280,8 +280,8 @@ public class JavaagentContainer implements Container {
         new Thread(new SocketCommandProcessor(objectIn, objectOut)).start();
         // spin a bit to so that caller can capture a trace with <multiple root nodes> if desired
         for (int i = 0; i < 1000; i++) {
-            metricOne();
-            metricTwo();
+            traceMetricOne();
+            traceMetricTwo();
             Thread.sleep(1);
         }
         // non-daemon threads started above keep jvm alive after main returns
@@ -305,11 +305,11 @@ public class JavaagentContainer implements Container {
         }
     }
 
-    private static void metricOne() throws InterruptedException {
+    private static void traceMetricOne() throws InterruptedException {
         Thread.sleep(1);
     }
 
-    private static void metricTwo() throws InterruptedException {
+    private static void traceMetricTwo() throws InterruptedException {
         Thread.sleep(1);
     }
 

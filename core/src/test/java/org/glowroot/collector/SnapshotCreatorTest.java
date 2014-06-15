@@ -48,7 +48,7 @@ public class SnapshotCreatorTest {
             stackTrace[i] = new StackTraceElement(SnapshotCreatorTest.class.getName(),
                     "method" + i, "TraceSnapshotsTest.java", 100 + 10 * i);
         }
-        profile.addToStackTree(Profile.stripSyntheticMetricMethods(Arrays.asList(stackTrace)),
+        profile.addToStackTree(Profile.stripSyntheticTraceMetricMethods(Arrays.asList(stackTrace)),
                 State.RUNNABLE);
         // when
         CharSource profileCharSource =

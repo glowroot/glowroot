@@ -244,8 +244,8 @@ class TransactionCollector {
                 overallPoint.addToStoredTraceCount();
                 transactionPoint.addToStoredTraceCount();
             }
-            overallPoint.addToTraceMetrics(trace.getRootMetric());
-            transactionPoint.addToTraceMetrics(trace.getRootMetric());
+            overallPoint.addToTraceMetrics(trace.getRootTraceMetric());
+            transactionPoint.addToTraceMetrics(trace.getRootTraceMetric());
             // only add profile to transaction, overall profile doesn't seem worth the overhead
             Profile profile = trace.getFineProfile();
             if (profile != null) {

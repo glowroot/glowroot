@@ -81,7 +81,7 @@ public class TraceMetricTest {
     }
 
     @Test
-    public void shouldReadActiveMetrics() throws Exception {
+    public void shouldReadActiveTraceMetrics() throws Exception {
         // given
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();

@@ -80,10 +80,10 @@ public class AggregatorTest {
                 scheduledExecutorService, transactionPointRepository, Clock.systemClock(), 1);
 
         Trace trace = mock(Trace.class);
-        TraceMetric metric = mock(TraceMetric.class);
-        when(metric.getName()).thenReturn("test 123");
+        TraceMetric traceMetric = mock(TraceMetric.class);
+        when(traceMetric.getName()).thenReturn("test 123");
         when(trace.getDuration()).thenReturn(MILLISECONDS.toNanos(123));
-        when(trace.getRootMetric()).thenReturn(metric);
+        when(trace.getRootTraceMetric()).thenReturn(traceMetric);
         // when
         int count = 0;
         long firstCaptureTime = transactionCollector.add(trace, false);

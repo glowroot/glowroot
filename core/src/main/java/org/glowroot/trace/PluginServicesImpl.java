@@ -493,26 +493,26 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @NotThreadSafe
     private class TimerWrappedInSpan implements Span {
-        private final TraceMetricTimerExt metric;
+        private final TraceMetricTimerExt traceMetric;
         private final long startTick;
         private final Trace trace;
         private final MessageSupplier messageSupplier;
-        public TimerWrappedInSpan(TraceMetricTimerExt metric, long startTick, Trace trace,
+        public TimerWrappedInSpan(TraceMetricTimerExt traceMetric, long startTick, Trace trace,
                 MessageSupplier messageSupplier) {
-            this.metric = metric;
+            this.traceMetric = traceMetric;
             this.startTick = startTick;
             this.trace = trace;
             this.messageSupplier = messageSupplier;
         }
         @Override
         public CompletedSpan end() {
-            metric.stop();
+            traceMetric.stop();
             return NopCompletedSpan.INSTANCE;
         }
         @Override
         public CompletedSpan endWithStackTrace(long threshold, TimeUnit unit) {
             long endTick = ticker.read();
-            metric.end(endTick);
+            traceMetric.end(endTick);
             // use higher span limit when adding slow spans, but still need some kind of cap
             if (endTick - startTick >= unit.toNanos(threshold)
                     && trace.getSpanCount() < 2 * maxSpans) {
@@ -533,7 +533,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 return end();
             }
             long endTick = ticker.read();
-            metric.end(endTick);
+            traceMetric.end(endTick);
             // use higher span limit when adding errors, but still need some kind of cap
             if (trace.getSpanCount() < 2 * maxSpans) {
                 // span won't be nested properly, but at least the error will get captured

@@ -572,7 +572,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     private void loadMethodName() {
         if (name.contains("$glowroot$trace$metric$")) {
-            // strip off internal metric identifier from method name
+            // strip off internal trace metric identifier from method name
             push(name.substring(0, name.indexOf("$glowroot$trace$metric$")));
         } else {
             push(name);

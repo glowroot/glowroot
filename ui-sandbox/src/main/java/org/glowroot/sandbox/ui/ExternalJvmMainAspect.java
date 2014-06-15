@@ -64,11 +64,11 @@ public class ExternalJvmMainAspect {
     }
 
     @Pointcut(type = "org.glowroot.container.javaagent.JavaagentContainer",
-            methodName = "metricOne", traceMetric = "metric one")
-    public static class MetricOneAdvice {
+            methodName = "traceMetricOne", traceMetric = "trace metric one")
+    public static class TraceMetricOneAdvice {
 
         private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(MetricOneAdvice.class);
+                pluginServices.getTraceMetricName(TraceMetricOneAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -81,17 +81,17 @@ public class ExternalJvmMainAspect {
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler TraceMetricTimer metricTimer) {
-            metricTimer.stop();
+        public static void onAfter(@BindTraveler TraceMetricTimer traceMetricTimer) {
+            traceMetricTimer.stop();
         }
     }
 
     @Pointcut(type = "org.glowroot.container.javaagent.JavaagentContainer",
-            methodName = "metricTwo", traceMetric = "metric two")
-    public static class MetricTwoAdvice {
+            methodName = "traceMetricTwo", traceMetric = "trace metric two")
+    public static class TraceMetricTwoAdvice {
 
         private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(MetricTwoAdvice.class);
+                pluginServices.getTraceMetricName(TraceMetricTwoAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -104,8 +104,8 @@ public class ExternalJvmMainAspect {
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler TraceMetricTimer metricTimer) {
-            metricTimer.stop();
+        public static void onAfter(@BindTraveler TraceMetricTimer traceMetricTimer) {
+            traceMetricTimer.stop();
         }
     }
 }

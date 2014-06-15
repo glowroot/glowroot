@@ -61,23 +61,23 @@ class Weaver {
     private final Supplier<ImmutableList<Advice>> pointcutConfigAdvisors;
     private final ParsedTypeCache parsedTypeCache;
     private final WeavingTimerService weavingTimerService;
-    private final boolean metricWrapperMethods;
+    private final boolean traceMetricWrapperMethods;
 
     Weaver(List<MixinType> mixinTypes, List<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
             ParsedTypeCache parsedTypeCache, WeavingTimerService weavingTimerService,
-            boolean metricWrapperMethods) {
+            boolean traceMetricWrapperMethods) {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
         this.pointcutConfigAdvisors = pointcutConfigAdvisors;
         this.parsedTypeCache = parsedTypeCache;
         this.weavingTimerService = weavingTimerService;
-        this.metricWrapperMethods = metricWrapperMethods;
+        this.traceMetricWrapperMethods = traceMetricWrapperMethods;
     }
 
     byte/*@Nullable*/[] weave(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
-        if (metricWrapperMethods) {
+        if (traceMetricWrapperMethods) {
             return weave$glowroot$trace$metric$glowroot$weaving$0(classBytes, className,
                     codeSource, loader);
         } else {
@@ -85,7 +85,7 @@ class Weaver {
         }
     }
 
-    // weird method name is following "metric marker" method naming
+    // weird method name is following "trace metric marker" method naming
     private byte/*@Nullable*/[] weave$glowroot$trace$metric$glowroot$weaving$0(byte[] classBytes,
             String className, @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         return weaveInternal(classBytes, className, codeSource, loader);
@@ -113,7 +113,7 @@ class Weaver {
             Iterable<Advice> advisors = Iterables.concat(pluginAdvisors,
                     pointcutConfigAdvisors.get());
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors, loader,
-                    parsedTypeCache, codeSource, metricWrapperMethods);
+                    parsedTypeCache, codeSource, traceMetricWrapperMethods);
             ClassReader cr = new ClassReader(classBytes);
             try {
                 cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);

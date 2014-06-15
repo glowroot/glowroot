@@ -34,7 +34,7 @@ public class ReweavePointcutsTest extends PointcutConfigTest {
         container = Containers.getSharedJavaagentContainer();
         container.executeAppUnderTest(ShouldExecute1.class);
         addPointcutConfigForExecute1();
-        addPointcutConfigForExecute1MetricOnly();
+        addPointcutConfigForExecute1TraceMetricOnly();
         addPointcutConfigForExecuteWithReturn();
         addPointcutConfigForExecuteWithArgs();
         container.getConfigService().reweavePointcuts();

@@ -51,7 +51,7 @@ public class PointcutConfigTest {
         dataDir = TempDirs.createTempDir("glowroot-test-datadir");
         container = Containers.createWithFileDb(dataDir);
         addPointcutConfigForExecute1();
-        addPointcutConfigForExecute1MetricOnly();
+        addPointcutConfigForExecute1TraceMetricOnly();
         addPointcutConfigForExecuteWithReturn();
         addPointcutConfigForExecuteWithArgs();
         // re-start now with pointcut configs
@@ -83,7 +83,7 @@ public class PointcutConfigTest {
         assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
                 .containsOnly("execute one");
         assertThat(trace.getRootTraceMetric().getNestedTraceMetrics().get(0)
-                .getNestedTraceMetricNames()).containsOnly("execute one metric only");
+                .getNestedTraceMetricNames()).containsOnly("execute one trace metric only");
         assertThat(spans.get(1).getMessage().getText()).isEqualTo("execute1() => void");
         assertThat(spans.get(1).getStackTrace()).isNotNull();
     }
@@ -132,14 +132,14 @@ public class PointcutConfigTest {
         container.getConfigService().addPointcutConfig(config);
     }
 
-    protected static void addPointcutConfigForExecute1MetricOnly() throws Exception {
+    protected static void addPointcutConfigForExecute1TraceMetricOnly() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setType("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("execute1");
         config.setMethodArgTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setTraceMetric("execute one metric only");
+        config.setTraceMetric("execute one trace metric only");
         container.getConfigService().addPointcutConfig(config);
     }
 

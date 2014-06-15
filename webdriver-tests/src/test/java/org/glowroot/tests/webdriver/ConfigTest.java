@@ -211,7 +211,7 @@ public class ConfigTest {
         assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
         assertThat(pointcutSection.getTraceMetricTextField().getAttribute("value"))
-                .isEqualTo("a metric");
+                .isEqualTo("a trace metric");
         assertThat(pointcutSection.getSpanDefinitionCheckbox().isSelected()).isTrue();
         assertThat(pointcutSection.getSpanTextTextField().getAttribute("value"))
                 .isEqualTo("a span");
@@ -251,7 +251,7 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldAddMetricOnlyPointcut() throws Exception {
+    public void shouldAddTraceMetricOnlyPointcut() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
@@ -263,7 +263,7 @@ public class ConfigTest {
         configSidebar.getPointcutsLink().click();
 
         // when
-        createMetricOnlyPointcut(pointcutPage);
+        createTraceMetricOnlyPointcut(pointcutPage);
 
         // then
         app.open();
@@ -277,7 +277,7 @@ public class ConfigTest {
         assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
         assertThat(pointcutSection.getTraceMetricTextField().getAttribute("value"))
-                .isEqualTo("a metric");
+                .isEqualTo("a trace metric");
         assertThat(pointcutSection.getSpanDefinitionCheckbox().isSelected()).isFalse();
         assertThat(pointcutSection.getSpanTextTextField().isDisplayed()).isFalse();
         assertThat(pointcutSection.getSpanStackTraceThresholdTextTextField().isDisplayed())
@@ -288,7 +288,7 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldAddMetricAndSpanOnlyPointcut() throws Exception {
+    public void shouldAddTraceMetricAndSpanOnlyPointcut() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
@@ -300,7 +300,7 @@ public class ConfigTest {
         configSidebar.getPointcutsLink().click();
 
         // when
-        createMetricAndSpanOnlyPointcut(pointcutListPage);
+        createTraceMetricAndSpanOnlyPointcut(pointcutListPage);
 
         // then
         app.open();
@@ -314,7 +314,7 @@ public class ConfigTest {
         assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
         assertThat(pointcutSection.getTraceMetricTextField().getAttribute("value"))
-                .isEqualTo("a metric");
+                .isEqualTo("a trace metric");
         assertThat(pointcutSection.getSpanDefinitionCheckbox().isSelected()).isTrue();
         assertThat(pointcutSection.getSpanTextTextField().getAttribute("value"))
                 .isEqualTo("a span");
@@ -333,7 +333,7 @@ public class ConfigTest {
         pointcutSection.getMethodNameTextField().sendKeys("exec");
         pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
         pointcutSection.getTraceMetricTextField().clear();
-        pointcutSection.getTraceMetricTextField().sendKeys("a metric");
+        pointcutSection.getTraceMetricTextField().sendKeys("a trace metric");
         pointcutSection.getSpanDefinitionCheckbox().click();
         pointcutSection.getSpanTextTextField().clear();
         pointcutSection.getSpanTextTextField().sendKeys("a span");
@@ -345,7 +345,7 @@ public class ConfigTest {
         pointcutSection.getSaveButton();
     }
 
-    private void createMetricOnlyPointcut(PointcutListPage pointcutListPage) {
+    private void createTraceMetricOnlyPointcut(PointcutListPage pointcutListPage) {
         pointcutListPage.getAddPointcutButton().click();
         PointcutSection pointcutSection = pointcutListPage.getSection(0);
         pointcutSection.getTypeTextField().sendKeys("container.AppUnderTest");
@@ -353,13 +353,13 @@ public class ConfigTest {
         pointcutSection.getMethodNameTextField().sendKeys("exec");
         pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
         pointcutSection.getTraceMetricTextField().clear();
-        pointcutSection.getTraceMetricTextField().sendKeys("a metric");
+        pointcutSection.getTraceMetricTextField().sendKeys("a trace metric");
         pointcutSection.getAddButton().click();
         // getSaveButton() waits for the Save button to become visible (after adding is successful)
         pointcutSection.getSaveButton();
     }
 
-    private void createMetricAndSpanOnlyPointcut(PointcutListPage pointcutListPage) {
+    private void createTraceMetricAndSpanOnlyPointcut(PointcutListPage pointcutListPage) {
         pointcutListPage.getAddPointcutButton().click();
         PointcutSection pointcutSection = pointcutListPage.getSection(0);
         pointcutSection.getTypeTextField().sendKeys("container.AppUnderTest");
@@ -367,7 +367,7 @@ public class ConfigTest {
         pointcutSection.getMethodNameTextField().sendKeys("exec");
         pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
         pointcutSection.getTraceMetricTextField().clear();
-        pointcutSection.getTraceMetricTextField().sendKeys("a metric");
+        pointcutSection.getTraceMetricTextField().sendKeys("a trace metric");
         pointcutSection.getSpanDefinitionCheckbox().click();
         pointcutSection.getSpanTextTextField().clear();
         pointcutSection.getSpanTextTextField().sendKeys("a span");

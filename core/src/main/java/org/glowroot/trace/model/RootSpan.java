@@ -62,11 +62,11 @@ class RootSpan {
 
     private final Ticker ticker;
 
-    RootSpan(MessageSupplier messageSupplier, TraceMetricTimerExt metricTimer, long startTick,
+    RootSpan(MessageSupplier messageSupplier, TraceMetricTimerExt traceMetricTimer, long startTick,
             Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
-        rootSpan = new Span(messageSupplier, startTick, 0, metricTimer);
+        rootSpan = new Span(messageSupplier, startTick, 0, traceMetricTimer);
         spanStack.add(rootSpan);
         spans.add(rootSpan);
         size = 1;
@@ -102,8 +102,9 @@ class RootSpan {
         return endTick != null;
     }
 
-    Span pushSpan(long startTick, MessageSupplier messageSupplier, TraceMetricTimerExt metric) {
-        Span span = createSpan(startTick, messageSupplier, null, metric, false);
+    Span pushSpan(long startTick, MessageSupplier messageSupplier,
+            TraceMetricTimerExt traceMetric) {
+        Span span = createSpan(startTick, messageSupplier, null, traceMetric, false);
         spanStack.add(span);
         spans.add(span);
         // increment doesn't need to be atomic since size is only modified by the trace thread
@@ -144,7 +145,7 @@ class RootSpan {
     }
 
     private Span createSpan(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage, @Nullable TraceMetricTimerExt metricTimer,
+            @Nullable ErrorMessage errorMessage, @Nullable TraceMetricTimerExt traceMetricTimer,
             boolean limitBypassed) {
         if (spanLimitExceeded && !limitBypassed) {
             // just in case the spanLimit property is changed in the middle of a trace this resets
@@ -164,7 +165,7 @@ class RootSpan {
         } else {
             nestingLevel = currentSpan.getNestingLevel() + 1;
         }
-        Span span = new Span(messageSupplier, startTick, nestingLevel, metricTimer);
+        Span span = new Span(messageSupplier, startTick, nestingLevel, traceMetricTimer);
         span.setErrorMessage(errorMessage);
         return span;
     }

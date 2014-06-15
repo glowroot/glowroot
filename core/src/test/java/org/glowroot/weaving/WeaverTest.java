@@ -821,7 +821,7 @@ public class WeaverTest {
     // super/this constructor is called (due to bytecode limitations, see ASM's
     // AdviceAdapter) and so ignoreSameNested does not work to filter out nested
     // constructors, and advice that tries to count "number of instantiations" (e.g.
-    // the basic glowroot metric) would not work either since advice cannot detect and
+    // the basic glowroot trace metric) would not work either since advice cannot detect and
     // filter out nested calls
     @Test
     public void shouldHandleSuperClassConstructorPointcut() throws Exception {
@@ -1090,7 +1090,7 @@ public class WeaverTest {
         if (mixin != null) {
             loader.setMixinTypes(ImmutableList.of(MixinType.from(mixin, adviceClass)));
         }
-        loader.setMetricTimerService(NopWeavingTimerService.INSTANCE);
+        loader.setWeavingTimerService(NopWeavingTimerService.INSTANCE);
         // adviceClass is passed as bridgeable so that the static threadlocals will be accessible
         // for test verification
         loader.addBridgeClasses(bridgeClass, adviceClass);

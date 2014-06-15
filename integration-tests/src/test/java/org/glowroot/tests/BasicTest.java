@@ -69,10 +69,10 @@ public class BasicTest {
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("level one");
         assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
                 .containsOnly("level two");
-        TraceMetric levelTwoMetric = trace.getRootTraceMetric().getNestedTraceMetrics().get(0);
-        assertThat(levelTwoMetric.getNestedTraceMetricNames()).containsOnly("level three");
-        TraceMetric levelThreeMetric = levelTwoMetric.getNestedTraceMetrics().get(0);
-        assertThat(levelThreeMetric.getNestedTraceMetricNames()).containsOnly("level four");
+        TraceMetric levelTwoTraceMetric = trace.getRootTraceMetric().getNestedTraceMetrics().get(0);
+        assertThat(levelTwoTraceMetric.getNestedTraceMetricNames()).containsOnly("level three");
+        TraceMetric levelThreeTraceMetric = levelTwoTraceMetric.getNestedTraceMetrics().get(0);
+        assertThat(levelThreeTraceMetric.getNestedTraceMetricNames()).containsOnly("level four");
         assertThat(spans).hasSize(4);
         Span span1 = spans.get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");
@@ -93,7 +93,7 @@ public class BasicTest {
     }
 
     @Test
-    public void shouldReadTracesWithEnabledFifthMetric() throws Exception {
+    public void shouldReadTracesWithEnabledFifthTraceMetric() throws Exception {
         // given
         container.getConfigService().setPluginProperty("glowroot-integration-tests",
                 "levelFiveEnabled", true);
@@ -107,12 +107,12 @@ public class BasicTest {
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("level one");
         assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
                 .containsOnly("level two");
-        TraceMetric levelTwoMetric = trace.getRootTraceMetric().getNestedTraceMetrics().get(0);
-        assertThat(levelTwoMetric.getNestedTraceMetricNames()).containsOnly("level three");
-        TraceMetric levelThreeMetric = levelTwoMetric.getNestedTraceMetrics().get(0);
-        assertThat(levelThreeMetric.getNestedTraceMetricNames()).containsOnly("level four");
-        TraceMetric levelFourMetric = levelThreeMetric.getNestedTraceMetrics().get(0);
-        assertThat(levelFourMetric.getNestedTraceMetricNames()).containsOnly("level five");
+        TraceMetric levelTwoTraceMetric = trace.getRootTraceMetric().getNestedTraceMetrics().get(0);
+        assertThat(levelTwoTraceMetric.getNestedTraceMetricNames()).containsOnly("level three");
+        TraceMetric levelThreeTraceMetric = levelTwoTraceMetric.getNestedTraceMetrics().get(0);
+        assertThat(levelThreeTraceMetric.getNestedTraceMetricNames()).containsOnly("level four");
+        TraceMetric levelFourTraceMetric = levelThreeTraceMetric.getNestedTraceMetrics().get(0);
+        assertThat(levelFourTraceMetric.getNestedTraceMetricNames()).containsOnly("level five");
         assertThat(spans).hasSize(4);
         Span span1 = spans.get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");
@@ -149,12 +149,12 @@ public class BasicTest {
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("level one");
         assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
                 .containsOnly("level two");
-        TraceMetric levelTwoMetric = trace.getRootTraceMetric().getNestedTraceMetrics().get(0);
-        assertThat(levelTwoMetric.getNestedTraceMetricNames()).containsOnly("level three");
-        TraceMetric levelThreeMetric = levelTwoMetric.getNestedTraceMetrics().get(0);
-        assertThat(levelThreeMetric.getNestedTraceMetricNames()).containsOnly("level four");
-        TraceMetric levelFourMetric = levelThreeMetric.getNestedTraceMetrics().get(0);
-        assertThat(levelFourMetric.getNestedTraceMetricNames()).containsOnly("level five");
+        TraceMetric levelTwoTraceMetric = trace.getRootTraceMetric().getNestedTraceMetrics().get(0);
+        assertThat(levelTwoTraceMetric.getNestedTraceMetricNames()).containsOnly("level three");
+        TraceMetric levelThreeTraceMetric = levelTwoTraceMetric.getNestedTraceMetrics().get(0);
+        assertThat(levelThreeTraceMetric.getNestedTraceMetricNames()).containsOnly("level four");
+        TraceMetric levelFourTraceMetric = levelThreeTraceMetric.getNestedTraceMetrics().get(0);
+        assertThat(levelFourTraceMetric.getNestedTraceMetricNames()).containsOnly("level five");
         assertThat(spans).hasSize(5);
         Span span1 = spans.get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");

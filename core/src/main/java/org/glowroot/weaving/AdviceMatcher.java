@@ -93,8 +93,8 @@ class AdviceMatcher {
                 // super/this constructor is called (due to bytecode limitations, see ASM's
                 // AdviceAdapter) and so ignoreSameNested does not work to filter out nested
                 // constructors, and advice that tries to count "number of instantiations" (e.g.
-                // the basic glowroot metric) would not work either since advice cannot detect and
-                // filter out nested calls
+                // the basic glowroot trace metric) would not work either since advice cannot detect
+                // and filter out nested calls
                 continue;
             }
             ParsedMethod overriddenParsedMethod = type.getMethod(parsedMethod);

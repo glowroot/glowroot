@@ -41,9 +41,10 @@ import org.glowroot.api.weaving.Pointcut;
  * 
  *     &#064;Pointcut(typeName = &quot;org.springframework.validation.Validator&quot;,
  *             methodName = &quot;validate&quot;, methodArgs = {&quot;..&quot;},
- *             metricName = &quot;spring validator&quot;)
+ *             traceMetric = &quot;spring validator&quot;)
  *     public static class ValidatorAdvice {
- *         private static final Metric metric = pluginServices.getMetric(ValidatorAdvice.class);
+ *         private static final TraceMetricName traceMetricName =
+ *                 pluginServices.getTraceMetricName(ValidatorAdvice.class);
  *         &#064;IsEnabled
  *         public static boolean isEnabled() {
  *             return pluginServices.isEnabled();
@@ -52,7 +53,7 @@ import org.glowroot.api.weaving.Pointcut;
  *         public static Span onBefore(@BindReceiver Object validator) {
  *             return pluginServices.startSpan(
  *                     MessageSupplier.from(&quot;spring validator: {}&quot;, validator.getClass().getName()),
- *                     metric);
+ *                     traceMetricName);
  *         }
  *         &#064;OnAfter
  *         public static void onAfter(@BindTraveler Span span) {
@@ -184,7 +185,7 @@ public abstract class PluginServices {
      * 
      * @param transactionName
      * @param messageSupplier
-     * @param metric
+     * @param traceMetricName
      * @return
      */
     public abstract Span startTrace(String transactionName, MessageSupplier messageSupplier,
@@ -200,26 +201,26 @@ public abstract class PluginServices {
      * 
      * @param transactionName
      * @param messageSupplier
-     * @param metric
+     * @param traceMetricName
      * @return
      */
     public abstract Span startBackgroundTrace(String transactionName,
             MessageSupplier messageSupplier, TraceMetricName traceMetricName);
 
     /**
-     * Creates and starts a span with the given {@code messageSupplier}. A metric timer for the
-     * specified metric is also started.
+     * Creates and starts a span with the given {@code messageSupplier}. A trace metric timer for
+     * the specified trace metric is also started.
      * 
      * Since spans can be expensive in great quantities, there is a {@code maxSpans} property on the
      * configuration page to limit the number of spans created for any given trace.
      * 
      * Once a trace has accumulated {@code maxSpans} spans, this method doesn't add new spans to the
-     * trace, but instead returns a dummy span. A metric timer for the specified metric is still
-     * started, since trace metrics are very cheap, even in great quantities. The dummy span adhere
-     * to the {@link Span} contract and return the specified {@link MessageSupplier} in response to
-     * {@link Span#getMessageSupplier()}. Calling {@link Span#end()} on the dummy span ends the
-     * metric timer. If {@link Span#endWithError(ErrorMessage)} is called on the dummy span, then
-     * the dummy span will be escalated to a real span. If
+     * trace, but instead returns a dummy span. A trace metric timer for the specified trace metric
+     * is still started, since trace metrics are very cheap, even in great quantities. The dummy
+     * span adhere to the {@link Span} contract and return the specified {@link MessageSupplier} in
+     * response to {@link Span#getMessageSupplier()}. Calling {@link Span#end()} on the dummy span
+     * ends the trace metric timer. If {@link Span#endWithError(ErrorMessage)} is called on the
+     * dummy span, then the dummy span will be escalated to a real span. If
      * {@link Span#endWithStackTrace(long, TimeUnit)} is called on the dummy span and the dummy span
      * duration exceeds the specified threshold, then the dummy span will be escalated to a real
      * span. If {@link Span#captureSpanStackTrace()} is called on the dummy span, then the dummy
@@ -237,9 +238,9 @@ public abstract class PluginServices {
             TraceMetricName traceMetricName);
 
     /**
-     * Starts a timer for the specified metric. If a timer is already running for the specified
-     * metric, it will keep an internal counter of the number of starts, and it will only end the
-     * timer after the corresponding number of ends.
+     * Starts a timer for the specified trace metric. If a timer is already running for the
+     * specified trace metric, it will keep an internal counter of the number of starts, and it will
+     * only end the timer after the corresponding number of ends.
      * 
      * If there is no current trace, this method does nothing, and returns a no-op instance of
      * {@link TraceMetricTimer}.
@@ -458,7 +459,7 @@ public abstract class PluginServices {
         }
         @Override
         public TraceMetricTimer startTraceMetric(TraceMetricName traceMetricName) {
-            return NopMetricTimer.INSTANCE;
+            return NopTraceMetricTimer.INSTANCE;
         }
         @Override
         public CompletedSpan addSpan(MessageSupplier messageSupplier) {
@@ -510,9 +511,9 @@ public abstract class PluginServices {
             }
         }
 
-        private static class NopMetricTimer implements TraceMetricTimer {
-            private static final NopMetricTimer INSTANCE = new NopMetricTimer();
-            private NopMetricTimer() {}
+        private static class NopTraceMetricTimer implements TraceMetricTimer {
+            private static final NopTraceMetricTimer INSTANCE = new NopTraceMetricTimer();
+            private NopTraceMetricTimer() {}
             @Override
             public void stop() {}
         }

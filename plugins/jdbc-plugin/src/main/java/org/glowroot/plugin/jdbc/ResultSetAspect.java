@@ -55,18 +55,18 @@ public class ResultSetAspect {
                 pluginServices.getTraceMetricName(NavigateAdvice.class);
         private static volatile boolean pluginEnabled;
         // plugin configuration property captureResultSetNext is cached to limit map lookups
-        private static volatile boolean metricEnabled;
+        private static volatile boolean traceMetricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
                 @Override
                 public void onChange() {
                     pluginEnabled = pluginServices.isEnabled();
-                    metricEnabled = pluginEnabled
+                    traceMetricEnabled = pluginEnabled
                             && pluginServices.getBooleanProperty("captureResultSetNext");
                 }
             });
             pluginEnabled = pluginServices.isEnabled();
-            metricEnabled = pluginEnabled
+            traceMetricEnabled = pluginEnabled
                     && pluginServices.getBooleanProperty("captureResultSetNext");
         }
         @IsEnabled
@@ -77,7 +77,7 @@ public class ResultSetAspect {
         @OnBefore
         @Nullable
         public static TraceMetricTimer onBefore() {
-            if (metricEnabled) {
+            if (traceMetricEnabled) {
                 return pluginServices.startTraceMetric(traceMetricName);
             } else {
                 return null;
@@ -109,9 +109,9 @@ public class ResultSetAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable TraceMetricTimer metricTimer) {
-            if (metricTimer != null) {
-                metricTimer.stop();
+        public static void onAfter(@BindTraveler @Nullable TraceMetricTimer traceMetricTimer) {
+            if (traceMetricTimer != null) {
+                traceMetricTimer.stop();
             }
         }
     }
@@ -122,30 +122,30 @@ public class ResultSetAspect {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(ValueAdvice.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
-        private static volatile boolean metricEnabled;
+        private static volatile boolean traceMetricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
                 @Override
                 public void onChange() {
-                    metricEnabled = pluginServices.isEnabled()
+                    traceMetricEnabled = pluginServices.isEnabled()
                             && pluginServices.getBooleanProperty("captureResultSetGet");
                 }
             });
-            metricEnabled = pluginServices.isEnabled()
+            traceMetricEnabled = pluginServices.isEnabled()
                     && pluginServices.getBooleanProperty("captureResultSetGet");
         }
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return metricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
+            return traceMetricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
         public static TraceMetricTimer onBefore() {
             return pluginServices.startTraceMetric(traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler TraceMetricTimer metricTimer) {
-            metricTimer.stop();
+        public static void onAfter(@BindTraveler TraceMetricTimer traceMetricTimer) {
+            traceMetricTimer.stop();
         }
     }
 
@@ -155,30 +155,30 @@ public class ResultSetAspect {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(ValueAdvice2.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
-        private static volatile boolean metricEnabled;
+        private static volatile boolean traceMetricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
                 @Override
                 public void onChange() {
-                    metricEnabled = pluginServices.isEnabled()
+                    traceMetricEnabled = pluginServices.isEnabled()
                             && pluginServices.getBooleanProperty("captureResultSetGet");
                 }
             });
-            metricEnabled = pluginServices.isEnabled()
+            traceMetricEnabled = pluginServices.isEnabled()
                     && pluginServices.getBooleanProperty("captureResultSetGet");
         }
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return metricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
+            return traceMetricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
         public static TraceMetricTimer onBefore() {
             return pluginServices.startTraceMetric(traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler TraceMetricTimer metricTimer) {
-            metricTimer.stop();
+        public static void onAfter(@BindTraveler TraceMetricTimer traceMetricTimer) {
+            traceMetricTimer.stop();
         }
     }
 

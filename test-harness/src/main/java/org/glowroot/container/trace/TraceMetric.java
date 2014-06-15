@@ -109,19 +109,19 @@ public class TraceMetric {
         return getStableAndOrderedTraceMetrics();
     }
 
-    // the glowroot weaving metric is a bit unpredictable since tests are often run inside the
+    // the glowroot weaving trace metric is a bit unpredictable since tests are often run inside the
     // same GlowrootContainer for test speed, so test order affects whether any classes are
     // woven during the test or not
-    // it's easiest to just ignore this metric completely
+    // it's easiest to just ignore this trace metric completely
     private ImmutableList<TraceMetric> getStableAndOrderedTraceMetrics() {
-        List<TraceMetric> stableMetrics = Lists.newArrayList(nestedTraceMetrics);
-        for (Iterator<TraceMetric> i = stableMetrics.iterator(); i.hasNext();) {
+        List<TraceMetric> stableTraceMetrics = Lists.newArrayList(nestedTraceMetrics);
+        for (Iterator<TraceMetric> i = stableTraceMetrics.iterator(); i.hasNext();) {
             if ("glowroot weaving".equals(i.next().getName())) {
                 i.remove();
             }
         }
         return ImmutableList.copyOf(
-                TraceMetric.orderingByTotal.reverse().sortedCopy(stableMetrics));
+                TraceMetric.orderingByTotal.reverse().sortedCopy(stableTraceMetrics));
     }
 
     @JsonIgnore

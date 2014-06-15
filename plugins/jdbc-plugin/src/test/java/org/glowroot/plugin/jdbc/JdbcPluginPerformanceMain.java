@@ -83,8 +83,9 @@ public class JdbcPluginPerformanceMain {
         Trace trace = container.getTraceService().getLastTrace();
         System.out.format("%s %d %d%n", trace.getRootTraceMetric().getName(),
                 trace.getRootTraceMetric().getTotal(), trace.getRootTraceMetric().getCount());
-        for (TraceMetric metric : trace.getRootTraceMetric().getNestedTraceMetrics()) {
-            System.out.format("%s %d %d%n", metric.getName(), metric.getTotal(), metric.getCount());
+        for (TraceMetric traceMetric : trace.getRootTraceMetric().getNestedTraceMetrics()) {
+            System.out.format("%s %d %d%n", traceMetric.getName(), traceMetric.getTotal(),
+                    traceMetric.getCount());
         }
         container.close();
     }
@@ -113,7 +114,7 @@ public class JdbcPluginPerformanceMain {
 
     @SuppressWarnings("unused")
     private static void testWithGlowrootResultSetNextDisabled() throws Exception {
-        System.out.print("with jdbc result set next metric disabled: ");
+        System.out.print("with jdbc result set next trace metric disabled: ");
         Container container = setUpContainer();
         PluginConfig config = container.getConfigService().getPluginConfig(PLUGIN_ID);
         config.setProperty("captureResultSetNext", false);

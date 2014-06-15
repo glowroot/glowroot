@@ -58,7 +58,7 @@ public class SpansCharSourceCreator {
             throws IOException {
         jw.writeStartArray();
         List<StackTraceElementPlus> elements =
-                Profile.stripSyntheticMetricMethods(stackTrace);
+                Profile.stripSyntheticTraceMetricMethods(stackTrace);
         for (StackTraceElementPlus element : elements) {
             jw.writeString(element.getStackTraceElement().toString());
         }

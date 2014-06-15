@@ -84,9 +84,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     }
 
     private IsolatedWeavingClassLoader(List<MixinType> mixinTypes, List<Advice> advisors,
-            WeavingTimerService metricTimerService, List<Class<?>> bridgeClasses,
+            WeavingTimerService weavingTimerService, List<Class<?>> bridgeClasses,
             List<String> excludePackages, boolean weavingDisabled,
-            boolean metricWrapperMethods) {
+            boolean traceMetricWrapperMethods) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
         this.bridgeClasses = ImmutableList.copyOf(bridgeClasses);
         this.excludePackages = ImmutableList.copyOf(excludePackages);
@@ -94,7 +94,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             weaver = null;
         } else {
             Weaver weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE,
-                    new ParsedTypeCache(), metricTimerService, metricWrapperMethods);
+                    new ParsedTypeCache(), weavingTimerService, traceMetricWrapperMethods);
             this.weaver = weaver;
         }
     }
@@ -234,9 +234,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         private List<MixinType> mixinTypes = Lists.newArrayList();
         private List<Advice> advisors = Lists.newArrayList();
         @MonotonicNonNull
-        private WeavingTimerService metricTimerService;
+        private WeavingTimerService weavingTimerService;
         private boolean weavingDisabled;
-        private boolean metricWrapperMethods = true;
+        private boolean traceMetricWrapperMethods = true;
         private final List<Class<?>> bridgeClasses = Lists.newArrayList();
         private final List<String> excludePackages = Lists.newArrayList();
 
@@ -250,17 +250,17 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.advisors = advisors;
         }
 
-        @EnsuresNonNull("metricTimerService")
-        public void setMetricTimerService(WeavingTimerService metricTimerService) {
-            this.metricTimerService = metricTimerService;
+        @EnsuresNonNull("weavingTimerService")
+        public void setWeavingTimerService(WeavingTimerService traceMetricTimerService) {
+            this.weavingTimerService = traceMetricTimerService;
         }
 
         public void setWeavingDisabled(boolean weavingDisabled) {
             this.weavingDisabled = weavingDisabled;
         }
 
-        public void setMetricWrapperMethods(boolean metricWrapperMethods) {
-            this.metricWrapperMethods = metricWrapperMethods;
+        public void setTraceMetricWrapperMethods(boolean traceMetricWrapperMethods) {
+            this.traceMetricWrapperMethods = traceMetricWrapperMethods;
         }
 
         public void addBridgeClasses(Class<?>... bridgeClasses) {
@@ -271,18 +271,19 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.excludePackages.addAll(Arrays.asList(excludePackages));
         }
 
-        @RequiresNonNull("metricTimerService")
+        @RequiresNonNull("weavingTimerService")
         public IsolatedWeavingClassLoader build() {
             return AccessController.doPrivileged(
                     new PrivilegedAction<IsolatedWeavingClassLoader>() {
                         @Override
                         public IsolatedWeavingClassLoader run() {
-                            // metricTimerService is non-null when outer method is called, and it is
+                            // weavingTimerService is non-null when outer method is called, and it
+                            // is
                             // @MonotonicNonNull, so it must be non-null here
-                            checkNotNull(metricTimerService);
+                            checkNotNull(weavingTimerService);
                             return new IsolatedWeavingClassLoader(mixinTypes, advisors,
-                                    metricTimerService, bridgeClasses, excludePackages,
-                                    weavingDisabled, metricWrapperMethods);
+                                    weavingTimerService, bridgeClasses, excludePackages,
+                                    weavingDisabled, traceMetricWrapperMethods);
                         }
                     });
         }

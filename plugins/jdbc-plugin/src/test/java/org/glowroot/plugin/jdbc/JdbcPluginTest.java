@@ -290,7 +290,7 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testResultSetValueMetric() throws Exception {
+    public void testResultSetValueTraceMetric() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
         // when
@@ -298,8 +298,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         boolean found = false;
-        for (TraceMetric metric : trace.getRootTraceMetric().getNestedTraceMetrics()) {
-            if (metric.getName().equals("jdbc resultset value")) {
+        for (TraceMetric traceMetric : trace.getRootTraceMetric().getNestedTraceMetrics()) {
+            if (traceMetric.getName().equals("jdbc resultset value")) {
                 found = true;
                 break;
             }
@@ -308,7 +308,7 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testMetadataMetricDisabledSpan() throws Exception {
+    public void testMetadataTraceMetricDisabledSpan() throws Exception {
         // given
         container.getConfigService()
                 .setPluginProperty(PLUGIN_ID, "captureDatabaseMetaDataSpans", false);
@@ -325,7 +325,7 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testMetadataMetricEnabledSpan() throws Exception {
+    public void testMetadataTraceMetricEnabledSpan() throws Exception {
         // given
         container.getConfigService()
                 .setPluginProperty(PLUGIN_ID, "captureDatabaseMetaDataSpans", true);

@@ -137,8 +137,8 @@ public class DynamicAdviceGenerator {
             addOnThrowMethod(cw);
             addOnReturnMethod(cw);
         } else {
-            addOnBeforeMethodMetricOnly(cw);
-            addOnAfterMethodMetricOnly(cw);
+            addOnBeforeMethodTraceMetricOnly(cw);
+            addOnAfterMethodTraceMetricOnly(cw);
         }
         if (!pointcutConfig.getEnabledProperty().isEmpty()
                 || !pointcutConfig.getSpanEnabledProperty().isEmpty()) {
@@ -320,7 +320,7 @@ public class DynamicAdviceGenerator {
             mv.visitFieldInsn(GETSTATIC, adviceTypeName, "spanEnabled", "Z");
             Label label = new Label();
             mv.visitJumpInsn(IFNE, label);
-            // spanEnabled is false, collect metric only
+            // spanEnabled is false, collect trace metric only
             mv.visitFieldInsn(GETSTATIC, adviceTypeName, "pluginServices",
                     "Lorg/glowroot/api/PluginServices;");
             mv.visitFieldInsn(GETSTATIC, adviceTypeName, "traceMetricName",
@@ -378,7 +378,7 @@ public class DynamicAdviceGenerator {
         mv.visitEnd();
     }
 
-    private void addOnBeforeMethodMetricOnly(ClassVisitor cv) {
+    private void addOnBeforeMethodTraceMetricOnly(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
                 "()Lorg/glowroot/api/TraceMetricTimer;", null, null);
         checkNotNull(mv);
@@ -396,7 +396,7 @@ public class DynamicAdviceGenerator {
         mv.visitEnd();
     }
 
-    private void addOnAfterMethodMetricOnly(ClassVisitor cv) {
+    private void addOnAfterMethodTraceMetricOnly(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onAfter",
                 "(Lorg/glowroot/api/TraceMetricTimer;)V", null, null);
         checkNotNull(mv);

@@ -149,9 +149,9 @@ public class PointcutConfig {
         return version;
     }
 
-    // TODO this is unused because spans are currently not supported without an associated metric
+    // TODO unused because spans are currently not supported without an associated trace metric
     @JsonIgnore
-    public boolean isMetric() {
+    public boolean isTraceMetric() {
         return !traceMetric.isEmpty();
     }
 

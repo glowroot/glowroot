@@ -123,7 +123,7 @@ public class ProfileCharSourceCreator {
                 jg.writeEndArray();
             } else if (curr == JsonGeneratorOp.END_OBJECT) {
                 jg.writeEndObject();
-            } else if (curr == JsonGeneratorOp.POP_METRIC_NAME) {
+            } else if (curr == JsonGeneratorOp.POP_TRACE_METRIC) {
                 traceMetricStack.remove(traceMetricStack.size() - 1);
             }
         }
@@ -138,7 +138,7 @@ public class ProfileCharSourceCreator {
                     // filter out successive duplicates which are common from weaving groups
                     // of overloaded methods
                     traceMetricStack.add(currTraceMetric);
-                    toVisit.add(JsonGeneratorOp.POP_METRIC_NAME);
+                    toVisit.add(JsonGeneratorOp.POP_TRACE_METRIC);
                 }
             }
             jg.writeNumberField("sampleCount", currNode.getSampleCount());
@@ -158,7 +158,7 @@ public class ProfileCharSourceCreator {
         }
 
         private static enum JsonGeneratorOp {
-            END_OBJECT, END_ARRAY, POP_METRIC_NAME
+            END_OBJECT, END_ARRAY, POP_TRACE_METRIC
         }
     }
 }

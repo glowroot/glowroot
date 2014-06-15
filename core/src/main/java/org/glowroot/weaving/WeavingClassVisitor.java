@@ -86,7 +86,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final CodeSource codeSource;
-    private final boolean metricWrapperMethods;
+    private final boolean traceMetricWrapperMethods;
 
     private ImmutableList<AdviceMatcher> adviceMatchers = ImmutableList.of();
     private ImmutableList<MixinType> matchedMixinTypes = ImmutableList.of();
@@ -105,7 +105,7 @@ class WeavingClassVisitor extends ClassVisitor {
     public WeavingClassVisitor(ClassVisitor cv, ImmutableList<MixinType> mixinTypes,
             Iterable<Advice> advisors, @Nullable ClassLoader loader,
             ParsedTypeCache parsedTypeCache, @Nullable CodeSource codeSource,
-            boolean metricWrapperMethods) {
+            boolean traceMetricWrapperMethods) {
         super(ASM5, cv);
         this.cv = cv;
         this.mixinTypes = mixinTypes;
@@ -113,7 +113,7 @@ class WeavingClassVisitor extends ClassVisitor {
         this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
         this.codeSource = codeSource;
-        this.metricWrapperMethods = metricWrapperMethods;
+        this.traceMetricWrapperMethods = traceMetricWrapperMethods;
     }
 
     @Override
@@ -290,8 +290,8 @@ class WeavingClassVisitor extends ClassVisitor {
     private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions,
             Iterable<Advice> matchingAdvisors) {
-        if (metricWrapperMethods && !name.equals("<init>")) {
-            String innerWrappedName = wrapWithSyntheticMetricMarkerMethods(access, name, desc,
+        if (traceMetricWrapperMethods && !name.equals("<init>")) {
+            String innerWrappedName = wrapWithSyntheticTraceMetricMarkerMethods(access, name, desc,
                     signature, exceptions, matchingAdvisors);
             String methodName = name;
             int methodAccess = access;
@@ -311,10 +311,10 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
-    // returns null if no synthetic metric marker methods were needed
+    // returns null if no synthetic trace metric marker methods were needed
     @RequiresNonNull("type")
     @Nullable
-    private String wrapWithSyntheticMetricMarkerMethods(int outerAccess, String outerName,
+    private String wrapWithSyntheticTraceMetricMarkerMethods(int outerAccess, String outerName,
             String desc, @Nullable String signature, String/*@Nullable*/[] exceptions,
             Iterable<Advice> matchingAdvisors) {
         int innerAccess = ACC_PRIVATE + ACC_FINAL + (outerAccess & ACC_STATIC);

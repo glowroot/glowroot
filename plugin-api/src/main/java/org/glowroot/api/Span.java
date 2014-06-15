@@ -25,7 +25,7 @@ import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
 
 /**
- * See {@link PluginServices#startSpan(MessageSupplier, MetricName)} for how to create and use
+ * See {@link PluginServices#startSpan(MessageSupplier, TraceMetricName)} for how to create and use
  * {@code Span} instances.
  * 
  * @author Trask Stalnaker

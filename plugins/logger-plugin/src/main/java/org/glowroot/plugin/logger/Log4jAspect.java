@@ -36,7 +36,7 @@ import org.glowroot.api.weaving.Pointcut;
  */
 public class Log4jAspect {
 
-    private static final String METRIC_NAME = "logging";
+    private static final String TRACE_METRIC = "logging";
 
     private static final PluginServices pluginServices = PluginServices.get("logger");
 
@@ -48,7 +48,7 @@ public class Log4jAspect {
     }
 
     @Pointcut(type = "org.apache.log4j.Category", methodName = "warn|error|fatal",
-            methodArgTypes = {"java.lang.Object"}, traceMetric = METRIC_NAME)
+            methodArgTypes = {"java.lang.Object"}, traceMetric = TRACE_METRIC)
     public static class LogAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LogAdvice.class);
@@ -75,7 +75,8 @@ public class Log4jAspect {
     }
 
     @Pointcut(type = "org.apache.log4j.Category", methodName = "warn|error|fatal",
-            methodArgTypes = {"java.lang.Object", "java.lang.Throwable"}, traceMetric = METRIC_NAME)
+            methodArgTypes = {"java.lang.Object", "java.lang.Throwable"},
+            traceMetric = TRACE_METRIC)
     public static class LogWithThrowableAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LogWithThrowableAdvice.class);
@@ -108,7 +109,7 @@ public class Log4jAspect {
 
     @Pointcut(type = "org.apache.log4j.Category", methodName = "log",
             methodArgTypes = {"org.apache.log4j.Priority", "java.lang.Object"},
-            traceMetric = METRIC_NAME)
+            traceMetric = TRACE_METRIC)
     public static class LogWithPriorityAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LogWithPriorityAdvice.class);
@@ -140,7 +141,7 @@ public class Log4jAspect {
 
     @Pointcut(type = "org.apache.log4j.Category", methodName = "log",
             methodArgTypes = {"org.apache.log4j.Priority", "java.lang.Object",
-                    "java.lang.Throwable"}, traceMetric = METRIC_NAME)
+                    "java.lang.Throwable"}, traceMetric = TRACE_METRIC)
     public static class LogWithPriorityAndThrowableAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LogWithPriorityAndThrowableAdvice.class);
@@ -179,7 +180,7 @@ public class Log4jAspect {
 
     @Pointcut(type = "org.apache.log4j.Category", methodName = "l7dlog",
             methodArgTypes = {"org.apache.log4j.Priority", "java.lang.String",
-                    "java.lang.Throwable"}, traceMetric = METRIC_NAME)
+                    "java.lang.Throwable"}, traceMetric = TRACE_METRIC)
     public static class LocalizedLogAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LocalizedLogAdvice.class);
@@ -216,7 +217,7 @@ public class Log4jAspect {
 
     @Pointcut(type = "org.apache.log4j.Category", methodName = "l7dlog",
             methodArgTypes = {"org.apache.log4j.Priority", "java.lang.String",
-                    "java.lang.Object[]", "java.lang.Throwable"}, traceMetric = METRIC_NAME)
+                    "java.lang.Object[]", "java.lang.Throwable"}, traceMetric = TRACE_METRIC)
     public static class LocalizedLogWithParametersAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LocalizedLogWithParametersAdvice.class);

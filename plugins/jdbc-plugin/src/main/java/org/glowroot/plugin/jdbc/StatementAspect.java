@@ -128,9 +128,9 @@ public class StatementAspect {
                     .setGlowrootStatementMirror(new PreparedStatementMirror(sql));
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable TraceMetricTimer metricTimer) {
-            if (metricTimer != null) {
-                metricTimer.stop();
+        public static void onAfter(@BindTraveler @Nullable TraceMetricTimer traceMetricTimer) {
+            if (traceMetricTimer != null) {
+                traceMetricTimer.stop();
             }
         }
     }
@@ -381,8 +381,8 @@ public class StatementAspect {
             return pluginServices.startTraceMetric(traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler TraceMetricTimer metricTimer) {
-            metricTimer.stop();
+        public static void onAfter(@BindTraveler TraceMetricTimer traceMetricTimer) {
+            traceMetricTimer.stop();
         }
     }
 

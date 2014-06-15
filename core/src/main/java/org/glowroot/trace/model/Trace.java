@@ -87,7 +87,7 @@ public class Trace {
     @MonotonicNonNull
     private volatile SetMultimap<String, String> attributes;
 
-    private final TraceMetric rootMetric;
+    private final TraceMetric rootTraceMetric;
 
     private final JvmInfo jvmInfo;
 
@@ -122,7 +122,7 @@ public class Trace {
         this.startTime = startTime;
         this.background = background;
         this.transactionName = transactionName;
-        this.rootMetric = rootTraceMetric;
+        this.rootTraceMetric = rootTraceMetric;
         id = new TraceUniqueId(startTime);
         rootSpan = new RootSpan(messageSupplier, rootTraceMetric, startTick, ticker);
         threadId = Thread.currentThread().getId();
@@ -210,8 +210,8 @@ public class Trace {
     }
 
     // this is called from a non-trace thread
-    public TraceMetric getRootMetric() {
-        return rootMetric;
+    public TraceMetric getRootTraceMetric() {
+        return rootTraceMetric;
     }
 
     // can be called from a non-trace thread
@@ -336,8 +336,8 @@ public class Trace {
     }
 
     public Span pushSpan(long startTick, MessageSupplier messageSupplier,
-            TraceMetricTimerExt metricTimer) {
-        return rootSpan.pushSpan(startTick, messageSupplier, metricTimer);
+            TraceMetricTimerExt traceMetricTimer) {
+        return rootSpan.pushSpan(startTick, messageSupplier, traceMetricTimer);
     }
 
     public Span addSpan(long startTick, long endTick, @Nullable MessageSupplier messageSupplier,
@@ -354,9 +354,9 @@ public class Trace {
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
     public void popSpan(Span span, long endTick, @Nullable ErrorMessage errorMessage) {
         rootSpan.popSpan(span, endTick, errorMessage);
-        TraceMetricTimerExt metricTimer = span.getMetricTimer();
-        if (metricTimer != null) {
-            metricTimer.end(endTick);
+        TraceMetricTimerExt traceMetricTimer = span.getTraceMetricTimer();
+        if (traceMetricTimer != null) {
+            traceMetricTimer.end(endTick);
         }
     }
 
@@ -407,7 +407,7 @@ public class Trace {
                 .add("error", error)
                 .add("user", user)
                 .add("attributes", attributes)
-                .add("rootMetric", rootMetric)
+                .add("rootTraceMetric", rootTraceMetric)
                 .add("jvmInfo", jvmInfo)
                 .add("rootSpan", rootSpan)
                 .add("coarseProfile", coarseProfile)

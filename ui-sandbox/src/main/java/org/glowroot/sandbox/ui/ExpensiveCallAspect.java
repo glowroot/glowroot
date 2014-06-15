@@ -307,11 +307,11 @@ public class ExpensiveCallAspect {
         }
     }
 
-    private static Span onBeforeInternal(Object expensive, TraceMetricName metric) {
+    private static Span onBeforeInternal(Object expensive, TraceMetricName traceMetricName) {
         if (random.nextDouble() < 0.05) {
             return null;
         }
-        return pluginServices.startSpan(getMessageSupplier(expensive), metric);
+        return pluginServices.startSpan(getMessageSupplier(expensive), traceMetricName);
     }
 
     private static void onAfterInternal(Span span, int num) {

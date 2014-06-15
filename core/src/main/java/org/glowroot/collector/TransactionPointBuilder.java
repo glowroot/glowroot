@@ -45,7 +45,7 @@ class TransactionPointBuilder {
     private long count;
     private long errorCount;
     private long storedTraceCount;
-    private final SimpleTraceMetric syntheticRootTransactionMetric = new SimpleTraceMetric("");
+    private final SimpleTraceMetric syntheticRootTraceMetric = new SimpleTraceMetric("");
     private final TransactionProfileBuilder transactionProfile = new TransactionProfileBuilder();
 
     TransactionPointBuilder() {}
@@ -64,7 +64,7 @@ class TransactionPointBuilder {
     }
 
     void addToTraceMetrics(TraceMetric rootTraceMetric) {
-        addToTraceMetrics(rootTraceMetric, syntheticRootTransactionMetric);
+        addToTraceMetrics(rootTraceMetric, syntheticRootTraceMetric);
     }
 
     void addToProfile(Profile profile) {
@@ -77,24 +77,24 @@ class TransactionPointBuilder {
     }
 
     private void addToTraceMetrics(TraceMetric traceMetric,
-            SimpleTraceMetric parentTransactionMetric) {
+            SimpleTraceMetric parentTraceMetric) {
         String name = traceMetric.getName();
-        SimpleTraceMetric transactionMetric = parentTransactionMetric.nestedTraceMetrics.get(name);
-        if (transactionMetric == null) {
-            transactionMetric = new SimpleTraceMetric(name);
-            parentTransactionMetric.nestedTraceMetrics.put(name, transactionMetric);
+        SimpleTraceMetric childTraceMetric = parentTraceMetric.nestedTraceMetrics.get(name);
+        if (childTraceMetric == null) {
+            childTraceMetric = new SimpleTraceMetric(name);
+            parentTraceMetric.nestedTraceMetrics.put(name, childTraceMetric);
         }
-        transactionMetric.totalMicros += NANOSECONDS.toMicros(traceMetric.getTotal());
-        transactionMetric.count += traceMetric.getCount();
-        for (TraceMetric nestedMetric : traceMetric.getNestedTraceMetrics()) {
-            addToTraceMetrics(nestedMetric, transactionMetric);
+        childTraceMetric.totalMicros += NANOSECONDS.toMicros(traceMetric.getTotal());
+        childTraceMetric.count += traceMetric.getCount();
+        for (TraceMetric nestedTraceMetric : traceMetric.getNestedTraceMetrics()) {
+            addToTraceMetrics(nestedTraceMetric, childTraceMetric);
         }
     }
 
     private String getTraceMetricsJson() throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        writeTraceMetric(jg, syntheticRootTransactionMetric);
+        writeTraceMetric(jg, syntheticRootTraceMetric);
         jg.close();
         return sb.toString();
     }
@@ -107,16 +107,16 @@ class TransactionPointBuilder {
         }
     }
 
-    private void writeTraceMetric(JsonGenerator jg, SimpleTraceMetric metric)
+    private void writeTraceMetric(JsonGenerator jg, SimpleTraceMetric traceMetric)
             throws IOException {
         jg.writeStartObject();
-        jg.writeStringField("name", metric.name);
-        jg.writeNumberField("totalMicros", metric.totalMicros);
-        jg.writeNumberField("count", metric.count);
-        if (!metric.nestedTraceMetrics.isEmpty()) {
+        jg.writeStringField("name", traceMetric.name);
+        jg.writeNumberField("totalMicros", traceMetric.totalMicros);
+        jg.writeNumberField("count", traceMetric.count);
+        if (!traceMetric.nestedTraceMetrics.isEmpty()) {
             jg.writeArrayFieldStart("nestedTraceMetrics");
-            for (SimpleTraceMetric nestedMetric : metric.nestedTraceMetrics.values()) {
-                writeTraceMetric(jg, nestedMetric);
+            for (SimpleTraceMetric nestedTraceMetric : traceMetric.nestedTraceMetrics.values()) {
+                writeTraceMetric(jg, nestedTraceMetric);
             }
             jg.writeEndArray();
         }

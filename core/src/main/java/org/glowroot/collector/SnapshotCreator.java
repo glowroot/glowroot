@@ -79,7 +79,7 @@ public class SnapshotCreator {
         builder.user(trace.getUser());
         builder.attributes(writeAttributesAsString(trace.getAttributes()));
         builder.attributesForIndexing(trace.getAttributes());
-        builder.traceMetrics(writeMetricsAsString(trace.getRootMetric()));
+        builder.traceMetrics(writeTraceMetricsAsString(trace.getRootTraceMetric()));
         builder.jvmInfo(trace.getJvmInfoJson());
         builder.spansExistence(Existence.YES);
         if (trace.getCoarseProfile() == null) {
@@ -117,10 +117,11 @@ public class SnapshotCreator {
     }
 
     @Nullable
-    private static String writeMetricsAsString(TraceMetric rootMetric) throws IOException {
+    private static String writeTraceMetricsAsString(TraceMetric rootTraceMetric)
+            throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        rootMetric.writeValue(jg);
+        rootTraceMetric.writeValue(jg);
         jg.close();
         return sb.toString();
     }

@@ -130,7 +130,7 @@ public class WeaverErrorHandlingTest {
         if (mixin != null) {
             loader.setMixinTypes(ImmutableList.of(MixinType.from(mixin, adviceClass)));
         }
-        loader.setMetricTimerService(NopWeavingTimerService.INSTANCE);
+        loader.setWeavingTimerService(NopWeavingTimerService.INSTANCE);
         // adviceClass is passed as bridgeable so that the static threadlocals will be accessible
         // for test verification
         loader.addBridgeClasses(bridgeClass, adviceClass);

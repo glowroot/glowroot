@@ -16,8 +16,8 @@
 package org.glowroot.api;
 
 /**
- * See {@link PluginServices#startTraceMetric(Metric)} for how to retrieve and use
- * {@code MetricTimer} instances.
+ * See {@link PluginServices#startTraceMetric(TraceMetricName)} for how to retrieve and use
+ * {@code TraceMetricTimer} instances.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -25,7 +25,7 @@ package org.glowroot.api;
 public interface TraceMetricTimer {
 
     /**
-     * Stop the {@code MetricTimer}.
+     * Stop the {@code TraceMetricTimer}.
      */
     void stop();
 }
