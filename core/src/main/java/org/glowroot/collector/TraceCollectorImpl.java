@@ -32,7 +32,9 @@ import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.FineProfilingConfig;
 import org.glowroot.markers.GuardedBy;
+import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
+import org.glowroot.markers.UsedByReflection;
 import org.glowroot.trace.TraceCollector;
 import org.glowroot.trace.model.Trace;
 
@@ -48,6 +50,11 @@ public class TraceCollectorImpl implements TraceCollector {
     private static final Logger logger = LoggerFactory.getLogger(TraceCollectorImpl.class);
 
     private static final int PENDING_LIMIT = 100;
+
+    // this is only used for benchmarking overhead of trace storage
+    @OnlyUsedByTests
+    @UsedByReflection
+    private static boolean useSynchronousStore;
 
     private final ExecutorService executorService;
     private final ConfigService configService;
@@ -139,7 +146,7 @@ public class TraceCollectorImpl implements TraceCollector {
         if (store) {
             // onCompleteAndShouldStore must be called by the trace thread
             trace.onCompleteAndShouldStore();
-            executorService.execute(new Runnable() {
+            Runnable command = new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -152,7 +159,12 @@ public class TraceCollectorImpl implements TraceCollector {
                         logger.error(t.getMessage(), t);
                     }
                 }
-            });
+            };
+            if (useSynchronousStore) {
+                command.run();
+            } else {
+                executorService.execute(command);
+            }
         }
     }
 

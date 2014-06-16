@@ -18,6 +18,7 @@ package org.glowroot.markers;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Target;
 
+import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 
@@ -29,5 +30,5 @@ import static java.lang.annotation.ElementType.TYPE;
  * @since 0.5
  */
 @Documented
-@Target({METHOD, TYPE})
+@Target({TYPE, METHOD, FIELD})
 public @interface UsedByReflection {}

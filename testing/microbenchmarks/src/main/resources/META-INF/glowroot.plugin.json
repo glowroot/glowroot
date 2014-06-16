@@ -1,0 +1,60 @@
+{
+  "name": "Microbenchmarks Plugin",
+  "id": "glowroot-microbenchmarks",
+  "version": "0.5-SNAPSHOT",
+  "aspects": [
+    "org.glowroot.microbenchmarks.core.support.TraceWorthyAspect",
+    "org.glowroot.microbenchmarks.core.support.SpanWorthyAspect",
+    "org.glowroot.microbenchmarks.core.support.TraceMetricWorthyAspect"
+  ],
+  "pointcuts": [
+    {
+      "type" : "org.glowroot.microbenchmarks.core.support.TraceWorthy",
+      "methodName" : "doSomethingTraceWorthy2",
+      "methodArgTypes" : [ ],
+      "methodReturnType" : "void",
+      "methodModifiers" : [ ],
+      "traceMetric" : "trace worthy",
+      "spanText" : "trace worthy",
+      "transactionName" : "trace worthy",
+      "enabledProperty": "",
+      "spanEnabledProperty": ""
+    },
+    {
+      "type" : "org.glowroot.microbenchmarks.core.support.SpanWorthy",
+      "methodName" : "doSomethingSpanWorthy2",
+      "methodArgTypes" : [ ],
+      "methodReturnType" : "void",
+      "methodModifiers" : [ ],
+      "traceMetric" : "span worthy",
+      "spanText" : "span worthy",
+      "transactionName" : "",
+      "enabledProperty": "",
+      "spanEnabledProperty": ""
+    },
+    {
+      "type" : "org.glowroot.microbenchmarks.core.support.TraceMetricWorthy",
+      "methodName" : "doSomethingTraceMetricWorthy2",
+      "methodArgTypes" : [ ],
+      "methodReturnType" : "void",
+      "methodModifiers" : [ ],
+      "traceMetric" : "trace metric worthy",
+      "spanText" : "",
+      "transactionName" : "",
+      "enabledProperty": "",
+      "spanEnabledProperty": ""
+    },
+    {
+      "type" : "org.glowroot.microbenchmarks.core.support.TraceMetricWorthy",
+      "methodName" : "doSomethingTraceMetricWorthy2B",
+      "methodArgTypes" : [ ],
+      "methodReturnType" : "void",
+      "methodModifiers" : [ ],
+      "traceMetric" : "trace metric worthy B",
+      "spanText" : "",
+      "transactionName" : "",
+      "enabledProperty": "",
+      "spanEnabledProperty": ""
+    }
+  ]
+}

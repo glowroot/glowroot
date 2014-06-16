@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.markers;
+package org.glowroot.microbenchmarks.api;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Target;
+import java.util.concurrent.TimeUnit;
 
-import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+
+import org.glowroot.api.Beans;
 
 /**
- * Marker to identify methods that are only used by tests.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Documented
-@Target({TYPE, METHOD, CONSTRUCTOR, FIELD})
-public @interface OnlyUsedByTests {}
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
+public class BeansBenchmark {
+
+    @Benchmark
+    public Object value() {
+        return Beans.value("", "toString");
+    }
+}
