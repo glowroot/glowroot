@@ -23,12 +23,14 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
 /**
  * @author Trask Stalnaker
@@ -51,7 +53,9 @@ public class Trace {
     private final String user;
     private final ImmutableSetMultimap<String, String> attributes;
     private final TraceMetric rootTraceMetric;
-    private final JvmInfo jvmInfo;
+    @Nullable
+    private final TraceThreadInfo threadInfo;
+    private final ImmutableList<TraceGcInfo> gcInfos;
     private final Existence spansExistence;
     private final Existence coarseProfileExistence;
     private final Existence fineProfileExistence;
@@ -60,7 +64,8 @@ public class Trace {
             long duration, boolean background, String transactionName, String headline,
             @Nullable String error, @Nullable String user,
             ImmutableSetMultimap<String, String> attributes, TraceMetric rootTraceMetric,
-            JvmInfo jvmInfo, Existence spansExistence, Existence coarseProfileExistence,
+            @Nullable TraceThreadInfo threadInfo, List<TraceGcInfo> gcInfos,
+            Existence spansExistence, Existence coarseProfileExistence,
             Existence fineProfileExistence) {
         this.id = id;
         this.active = active;
@@ -75,7 +80,8 @@ public class Trace {
         this.user = user;
         this.attributes = attributes;
         this.rootTraceMetric = rootTraceMetric;
-        this.jvmInfo = jvmInfo;
+        this.threadInfo = threadInfo;
+        this.gcInfos = ImmutableList.copyOf(gcInfos);
         this.spansExistence = spansExistence;
         this.coarseProfileExistence = coarseProfileExistence;
         this.fineProfileExistence = fineProfileExistence;
@@ -135,8 +141,13 @@ public class Trace {
         return rootTraceMetric;
     }
 
-    public JvmInfo getJvmInfo() {
-        return jvmInfo;
+    @Nullable
+    public TraceThreadInfo getThreadInfo() {
+        return threadInfo;
+    }
+
+    public ImmutableList<TraceGcInfo> getGcInfos() {
+        return gcInfos;
     }
 
     public Existence getSpansExistence() {
@@ -168,7 +179,8 @@ public class Trace {
                 .add("user", user)
                 .add("attributes", attributes)
                 .add("rootTraceMetric", rootTraceMetric)
-                .add("jvmInfo", jvmInfo)
+                .add("threadInfo", threadInfo)
+                .add("gcInfos", gcInfos)
                 .add("spansExistence", spansExistence)
                 .add("coarseProfileExistence", coarseProfileExistence)
                 .add("fineProfileExistence", fineProfileExistence)
@@ -190,11 +202,13 @@ public class Trace {
             @JsonProperty("user") @Nullable String user,
             @JsonProperty("attributes") @Nullable Map<String, /*@Nullable*/List</*@Nullable*/String>> attributes,
             @JsonProperty("traceMetrics") @Nullable TraceMetric rootTraceMetric,
-            @JsonProperty("jvmInfo") @Nullable JvmInfo jvmInfo,
+            @JsonProperty("threadInfo") @Nullable TraceThreadInfo threadInfo,
+            @JsonProperty("gcInfos") @Nullable List</*@Nullable*/TraceGcInfo> gcInfosUnchecked,
             @JsonProperty("spansExistence") @Nullable Existence spansExistence,
             @JsonProperty("coarseProfileExistence") @Nullable Existence coarseProfileExistence,
             @JsonProperty("fineProfileExistence") @Nullable Existence fineProfileExistence)
             throws JsonMappingException {
+        List<TraceGcInfo> gcInfos = checkNotNullItemsForProperty(gcInfosUnchecked, "gcInfos");
         checkRequiredProperty(id, "id");
         checkRequiredProperty(active, "active");
         checkRequiredProperty(stuck, "stuck");
@@ -205,7 +219,6 @@ public class Trace {
         checkRequiredProperty(transactionName, "transactionName");
         checkRequiredProperty(headline, "headline");
         checkRequiredProperty(rootTraceMetric, "rootTraceMetric");
-        checkRequiredProperty(jvmInfo, "jvmInfo");
         checkRequiredProperty(spansExistence, "spansExistence");
         checkRequiredProperty(coarseProfileExistence, "coarseProfileExistence");
         checkRequiredProperty(fineProfileExistence, "fineProfileExistence");
@@ -225,7 +238,8 @@ public class Trace {
         }
         return new Trace(id, active, stuck, startTime, captureTime, duration, background,
                 transactionName, headline, error, user, theAttributes.build(), rootTraceMetric,
-                jvmInfo, spansExistence, coarseProfileExistence, fineProfileExistence);
+                threadInfo, nullToEmpty(gcInfos), spansExistence, coarseProfileExistence,
+                fineProfileExistence);
     }
 
     public enum Existence {

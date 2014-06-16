@@ -80,7 +80,8 @@ public class SnapshotCreator {
         builder.attributes(writeAttributesAsString(trace.getAttributes()));
         builder.attributesForIndexing(trace.getAttributes());
         builder.traceMetrics(writeTraceMetricsAsString(trace.getRootTraceMetric()));
-        builder.jvmInfo(trace.getJvmInfoJson());
+        builder.threadInfo(trace.getThreadInfoJson());
+        builder.gcInfos(trace.getGcInfosJson());
         builder.spansExistence(Existence.YES);
         if (trace.getCoarseProfile() == null) {
             builder.coarseProfileExistence(Existence.NO);

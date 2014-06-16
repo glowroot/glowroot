@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013 the original author or authors.
+  Copyright 2013-2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -73,6 +73,23 @@
           operations).
           Also, the ui is not really optimized for viewing super large numbers of
           spans.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Thread info enabled"
+           gt-model="config.threadInfoEnabled"
+           gt-type="checkbox">
+        <div class="help-block">
+          Capture thread info per trace (CPU time, blocked time, waited time and allocated memory) if available.
+          See <a href="#/jvm/capabilities">JVM Capabilities</a>.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="GC info enabled"
+           gt-model="config.gcInfoEnabled"
+           gt-type="checkbox">
+        <div class="help-block">
+          Capture garbage collection info per trace.
         </div>
       </div>
       <div class="form-group form-buttons">

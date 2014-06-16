@@ -65,9 +65,10 @@ TraceRenderer = (function () {
     return buffer;
   });
 
-  Handlebars.registerHelper('ifThreadInfo', function (jvmInfo, options) {
-    if (jvmInfo.threadCpuTime || jvmInfo.threadBlockedTime || jvmInfo.threadWaitedTime ||
-        jvmInfo.threadAllocatedBytes) {
+  Handlebars.registerHelper('ifThreadInfo', function (threadInfo, options) {
+    if (threadInfo &&
+        (threadInfo.threadCpuTime || threadInfo.threadBlockedTime || threadInfo.threadWaitedTime ||
+            threadInfo.threadAllocatedBytes)) {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -86,7 +87,7 @@ TraceRenderer = (function () {
     return (bytes / Math.pow(1024, Math.floor(number))).toFixed(2) + ' ' + units[number];
   });
 
-  Handlebars.registerHelper('eachGarbageCollectorInfoOrdered', function (gcInfos, options) {
+  Handlebars.registerHelper('eachGcInfoOrdered', function (gcInfos, options) {
     // mutating original list seems fine here
     gcInfos.sort(function (a, b) {
       return b.collectionTime - a.collectionTime;

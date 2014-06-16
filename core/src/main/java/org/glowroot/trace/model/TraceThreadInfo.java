@@ -16,18 +16,13 @@
 package org.glowroot.trace.model;
 
 import java.io.IOException;
-import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.util.List;
-import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
@@ -43,9 +38,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class JvmInfo {
+public class TraceThreadInfo {
 
-    private static final Logger logger = LoggerFactory.getLogger(JvmInfo.class);
+    private static final Logger logger = LoggerFactory.getLogger(TraceThreadInfo.class);
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     private static final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
@@ -59,8 +54,6 @@ class JvmInfo {
     private final long threadWaitedTimeStart;
     private final long threadAllocatedBytesStart;
 
-    private final ImmutableMap<String, GarbageCollectorInfo> garbageCollectorInfos;
-
     @Nullable
     private final ThreadAllocatedBytes threadAllocatedBytes;
 
@@ -70,9 +63,9 @@ class JvmInfo {
 
     private final Object lock = new Object();
 
-    JvmInfo(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
+    public TraceThreadInfo(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
         threadId = Thread.currentThread().getId();
-        ThreadInfo threadInfo = ManagementFactory.getThreadMXBean().getThreadInfo(threadId, 0);
+        ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
         // thread info for current thread cannot be null
         checkNotNull(threadInfo);
         if (isThreadCpuTimeSupported) {
@@ -93,14 +86,6 @@ class JvmInfo {
         } else {
             threadAllocatedBytesStart = -1;
         }
-        List<GarbageCollectorMXBean> garbageCollectorBeans =
-                ManagementFactory.getGarbageCollectorMXBeans();
-        ImmutableMap.Builder<String, GarbageCollectorInfo> infos = ImmutableMap.builder();
-        for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
-            infos.put(garbageCollectorBean.getName(),
-                    new GarbageCollectorInfo(garbageCollectorBean));
-        }
-        this.garbageCollectorInfos = infos.build();
         this.threadAllocatedBytes = threadAllocatedBytes;
     }
 
@@ -135,7 +120,7 @@ class JvmInfo {
     }
 
     private void writeValue(JsonGenerator jg) throws IOException {
-        ThreadInfo threadInfo = ManagementFactory.getThreadMXBean().getThreadInfo(threadId, 0);
+        ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
         if (threadInfo == null) {
             // thread must have just recently terminated
             jg.writeStartObject();
@@ -174,37 +159,6 @@ class JvmInfo {
                         allocatedBytes - threadAllocatedBytesStart);
             }
         }
-        List<GarbageCollectorMXBean> garbageCollectorBeans =
-                ManagementFactory.getGarbageCollectorMXBeans();
-        Set<String> unmatchedNames = Sets.newHashSet(garbageCollectorInfos.keySet());
-        jg.writeFieldName("garbageCollectorInfos");
-        jg.writeStartArray();
-        for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
-            String name = garbageCollectorBean.getName();
-            GarbageCollectorInfo garbageCollectorInfo = garbageCollectorInfos.get(name);
-            if (garbageCollectorInfo == null) {
-                logger.warn("garbage collector bean {} did not exist at start of trace", name);
-                continue;
-            }
-            unmatchedNames.remove(name);
-            long collectionCountEnd = garbageCollectorBean.getCollectionCount();
-            long collectionTimeEnd = garbageCollectorBean.getCollectionTime();
-            if (collectionCountEnd == garbageCollectorInfo.getCollectionCountStart()) {
-                // no new collections, so don't write it out
-                continue;
-            }
-            jg.writeStartObject();
-            jg.writeStringField("name", name);
-            jg.writeNumberField("collectionCount",
-                    collectionCountEnd - garbageCollectorInfo.getCollectionCountStart());
-            jg.writeNumberField("collectionTime",
-                    collectionTimeEnd - garbageCollectorInfo.getCollectionTimeStart());
-            jg.writeEndObject();
-        }
-        for (String unmatchedName : unmatchedNames) {
-            logger.warn("garbage collector bean {} did not exist at end of trace", unmatchedName);
-        }
-        jg.writeEndArray();
         jg.writeEndObject();
     }
 
@@ -216,35 +170,6 @@ class JvmInfo {
                 .add("threadCpuTimeStart", threadCpuTimeStart)
                 .add("threadBlockedTimeStart", threadBlockedTimeStart)
                 .add("threadWaitedTimeStart", threadWaitedTimeStart)
-                .add("garbageCollectorInfos", garbageCollectorInfos)
                 .toString();
-    }
-
-    private static class GarbageCollectorInfo {
-
-        private final long collectionCountStart;
-        private final long collectionTimeStart;
-
-        private GarbageCollectorInfo(GarbageCollectorMXBean garbageCollectorBean) {
-            collectionCountStart = garbageCollectorBean.getCollectionCount();
-            collectionTimeStart = garbageCollectorBean.getCollectionTime();
-        }
-
-        private long getCollectionCountStart() {
-            return collectionCountStart;
-        }
-
-        private long getCollectionTimeStart() {
-            return collectionTimeStart;
-        }
-
-        @Override
-        @Pure
-        public String toString() {
-            return Objects.toStringHelper(this)
-                    .add("collectionCountStart", collectionCountStart)
-                    .add("collectionTimeStart", collectionTimeStart)
-                    .toString();
-        }
     }
 }

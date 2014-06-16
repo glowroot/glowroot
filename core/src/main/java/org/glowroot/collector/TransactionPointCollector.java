@@ -39,7 +39,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO add JvmInfo aggregation
+// TODO add thread info aggregation
 @Singleton
 class TransactionPointCollector {
 

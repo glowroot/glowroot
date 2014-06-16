@@ -80,41 +80,41 @@
   {{/eachTraceMetricOrdered}}
   </tbody>
 </table>
-{{#ifThreadInfo jvmInfo}}
+{{#ifThreadInfo threadInfo}}
   <div>
     Thread info
   </div>
-  {{#ifExists jvmInfo.threadCpuTime}}
+  {{#ifExists threadInfo.threadCpuTime}}
     <div class="indent2">
-      CPU time: {{nanosToMillis jvmInfo.threadCpuTime}} milliseconds
+      CPU time: {{nanosToMillis threadInfo.threadCpuTime}} milliseconds
     </div>
   {{/ifExists}}
-  {{#ifExists jvmInfo.threadBlockedTime}}
+  {{#ifExists threadInfo.threadBlockedTime}}
     <div class="indent2">
-      Blocked time: {{jvmInfo.threadBlockedTime}} milliseconds
+      Blocked time: {{threadInfo.threadBlockedTime}} milliseconds
     </div>
   {{/ifExists}}
-  {{#ifExists jvmInfo.threadWaitedTime}}
+  {{#ifExists threadInfo.threadWaitedTime}}
     <div class="indent2">
-      Waited time: {{jvmInfo.threadWaitedTime}} milliseconds
+      Waited time: {{threadInfo.threadWaitedTime}} milliseconds
     </div>
   {{/ifExists}}
-  {{#ifExists jvmInfo.threadAllocatedBytes}}
+  {{#ifExists threadInfo.threadAllocatedBytes}}
     <div class="indent2">
-      Allocated memory: {{formatAllocatedBytes jvmInfo.threadAllocatedBytes}}
+      Allocated memory: {{formatAllocatedBytes threadInfo.threadAllocatedBytes}}
     </div>
   {{/ifExists}}
 {{/ifThreadInfo}}
-{{#if jvmInfo.garbageCollectorInfos}}
+{{#if gcInfos}}
   <div>
     GC info
   </div>
-  {{#eachGarbageCollectorInfoOrdered jvmInfo.garbageCollectorInfos}}
+  {{#eachGcInfoOrdered gcInfos}}
     <div class="indent2">
       {{name}}: {{collectionTime}} milliseconds ({{collectionCount}}
       collection{{#ifMoreThanOne collectionCount}}s{{/ifMoreThanOne}})
     </div>
-  {{/eachGarbageCollectorInfoOrdered}}
+  {{/eachGcInfoOrdered}}
 {{/if}}
 <br>
 {{#ifExistenceYes spansExistence}}

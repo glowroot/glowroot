@@ -3,7 +3,9 @@
     "enabled" : true,
     "storeThresholdMillis" : 0,
     "stuckThresholdSeconds" : 180,
-    "maxSpans" : 2000
+    "maxSpans" : 2000,
+    "threadInfoEnabled" : false,
+    "gcInfoEnabled" : false
   },
   "coarse-profiling" : {
     "enabled" : true,
@@ -55,5 +57,5 @@
       "properties" : { }
     }
   ],
-  "adhoc-pointcuts" : [ ]
+  "pointcuts" : [ ]
 }

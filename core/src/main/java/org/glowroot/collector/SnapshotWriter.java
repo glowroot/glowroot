@@ -57,10 +57,15 @@ public class SnapshotWriter {
             jg.writeFieldName("traceMetrics");
             jg.writeRawValue(traceMetrics);
         }
-        String jvmInfo = snapshot.getJvmInfo();
-        if (jvmInfo != null) {
-            jg.writeFieldName("jvmInfo");
-            jg.writeRawValue(jvmInfo);
+        String threadInfo = snapshot.getThreadInfo();
+        if (threadInfo != null) {
+            jg.writeFieldName("threadInfo");
+            jg.writeRawValue(threadInfo);
+        }
+        String gcInfos = snapshot.getGcInfos();
+        if (gcInfos != null) {
+            jg.writeFieldName("gcInfos");
+            jg.writeRawValue(gcInfos);
         }
         jg.writeStringField("spansExistence",
                 snapshot.getSpansExistence().name().toLowerCase(Locale.ENGLISH));

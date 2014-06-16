@@ -492,7 +492,7 @@ public class PreInitializeWeavingClasses {
         // accessing the private constructor in an enclosed type
         // (see http://stackoverflow.com/questions/2883181)
         types.add("org.glowroot.common.Reflections$1");
-        types.add("org.glowroot.trace.model.JvmInfo$1");
+        types.add("org.glowroot.trace.model.TraceGcInfo$1");
         types.add("org.glowroot.weaving.ParsedType$1");
         types.add("org.glowroot.weaving.Weaver$1");
         types.add("org.glowroot.weaving.WeavingMethodVisitor$1");

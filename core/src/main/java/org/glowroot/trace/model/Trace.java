@@ -38,7 +38,6 @@ import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
-import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.PartiallyThreadSafe;
 
@@ -89,7 +88,10 @@ public class Trace {
 
     private final TraceMetric rootTraceMetric;
 
-    private final JvmInfo jvmInfo;
+    @Nullable
+    private final TraceThreadInfo threadInfo;
+    @Nullable
+    private final TraceGcInfos gcInfos;
 
     // root span for this trace
     private final RootSpan rootSpan;
@@ -118,7 +120,7 @@ public class Trace {
 
     public Trace(long startTime, boolean background, String transactionName,
             MessageSupplier messageSupplier, TraceMetric rootTraceMetric, long startTick,
-            @Nullable ThreadAllocatedBytes threadAllocatedBytes, Ticker ticker) {
+            @Nullable TraceThreadInfo threadInfo, @Nullable TraceGcInfos gcInfo, Ticker ticker) {
         this.startTime = startTime;
         this.background = background;
         this.transactionName = transactionName;
@@ -126,7 +128,8 @@ public class Trace {
         id = new TraceUniqueId(startTime);
         rootSpan = new RootSpan(messageSupplier, rootTraceMetric, startTick, ticker);
         threadId = Thread.currentThread().getId();
-        jvmInfo = new JvmInfo(threadAllocatedBytes);
+        this.threadInfo = threadInfo;
+        this.gcInfos = gcInfo;
     }
 
     public long getStartTime() {
@@ -215,8 +218,21 @@ public class Trace {
     }
 
     // can be called from a non-trace thread
-    public String getJvmInfoJson() {
-        return jvmInfo.writeValueAsString();
+    @Nullable
+    public String getThreadInfoJson() {
+        if (threadInfo == null) {
+            return null;
+        }
+        return threadInfo.writeValueAsString();
+    }
+
+    // can be called from a non-trace thread
+    @Nullable
+    public String getGcInfosJson() {
+        if (gcInfos == null) {
+            return null;
+        }
+        return gcInfos.writeValueAsString();
     }
 
     public Span getRootSpan() {
@@ -393,7 +409,12 @@ public class Trace {
 
     // called by the trace thread
     public void onCompleteAndShouldStore() {
-        jvmInfo.onTraceComplete();
+        if (threadInfo != null) {
+            threadInfo.onTraceComplete();
+        }
+        if (gcInfos != null) {
+            gcInfos.onTraceComplete();
+        }
     }
 
     @Override
@@ -408,7 +429,8 @@ public class Trace {
                 .add("user", user)
                 .add("attributes", attributes)
                 .add("rootTraceMetric", rootTraceMetric)
-                .add("jvmInfo", jvmInfo)
+                .add("threadInfo", threadInfo)
+                .add("gcInfos", gcInfos)
                 .add("rootSpan", rootSpan)
                 .add("coarseProfile", coarseProfile)
                 .add("fineProfile", fineProfile)

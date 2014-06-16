@@ -54,6 +54,8 @@ public class GeneralConfig {
     // used to limit memory requirement, also used to help limit trace capture size,
     // 0 means don't capture any spans, -1 means no limit
     private final int maxSpans;
+    private final boolean threadInfoEnabled;
+    private final boolean gcInfoEnabled;
 
     private final String version;
 
@@ -62,7 +64,10 @@ public class GeneralConfig {
         final int storeThresholdMillis = 3000;
         final int stuckThresholdSeconds = 180;
         final int maxSpans = 2000;
-        return new GeneralConfig(enabled, storeThresholdMillis, stuckThresholdSeconds, maxSpans);
+        final boolean threadInfoEnabled = false;
+        final boolean gcInfoEnabled = false;
+        return new GeneralConfig(enabled, storeThresholdMillis, stuckThresholdSeconds, maxSpans,
+                threadInfoEnabled, gcInfoEnabled);
     }
 
     public static Overlay overlay(GeneralConfig base) {
@@ -71,13 +76,15 @@ public class GeneralConfig {
 
     @VisibleForTesting
     public GeneralConfig(boolean enabled, int storeThresholdMillis, int stuckThresholdSeconds,
-            int maxSpans) {
+            int maxSpans, boolean threadInfoEnabled, boolean gcInfoEnabled) {
         this.enabled = enabled;
         this.storeThresholdMillis = storeThresholdMillis;
         this.stuckThresholdSeconds = stuckThresholdSeconds;
         this.maxSpans = maxSpans;
+        this.threadInfoEnabled = threadInfoEnabled;
+        this.gcInfoEnabled = gcInfoEnabled;
         this.version = VersionHashes.sha1(enabled, storeThresholdMillis, stuckThresholdSeconds,
-                maxSpans);
+                maxSpans, threadInfoEnabled, gcInfoEnabled);
     }
 
     public boolean isEnabled() {
@@ -96,6 +103,14 @@ public class GeneralConfig {
         return maxSpans;
     }
 
+    public boolean isThreadInfoEnabled() {
+        return threadInfoEnabled;
+    }
+
+    public boolean isGcInfoEnabled() {
+        return gcInfoEnabled;
+    }
+
     @JsonView(UiView.class)
     public String getVersion() {
         return version;
@@ -109,6 +124,8 @@ public class GeneralConfig {
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
                 .add("maxSpans", maxSpans)
+                .add("threadInfoEnabled", threadInfoEnabled)
+                .add("gcInfoEnabled", gcInfoEnabled)
                 .add("version", version)
                 .toString();
     }
@@ -121,12 +138,16 @@ public class GeneralConfig {
         private int storeThresholdMillis;
         private int stuckThresholdSeconds;
         private int maxSpans;
+        private boolean threadInfoEnabled;
+        private boolean gcInfoEnabled;
 
         private Overlay(GeneralConfig base) {
             enabled = base.enabled;
             storeThresholdMillis = base.storeThresholdMillis;
             stuckThresholdSeconds = base.stuckThresholdSeconds;
             maxSpans = base.maxSpans;
+            threadInfoEnabled = base.threadInfoEnabled;
+            gcInfoEnabled = base.gcInfoEnabled;
         }
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
@@ -140,9 +161,15 @@ public class GeneralConfig {
         public void setMaxSpans(int maxSpans) {
             this.maxSpans = maxSpans;
         }
+        public void setThreadInfoEnabled(boolean threadInfoEnabled) {
+            this.threadInfoEnabled = threadInfoEnabled;
+        }
+        public void setGcInfoEnabled(boolean gcInfoEnabled) {
+            this.gcInfoEnabled = gcInfoEnabled;
+        }
         public GeneralConfig build() {
             return new GeneralConfig(enabled, storeThresholdMillis, stuckThresholdSeconds,
-                    maxSpans);
+                    maxSpans, threadInfoEnabled, gcInfoEnabled);
         }
     }
 }

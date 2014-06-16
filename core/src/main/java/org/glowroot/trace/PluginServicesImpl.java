@@ -47,9 +47,11 @@ import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.model.CurrentTraceMetricHolder;
 import org.glowroot.trace.model.Trace;
+import org.glowroot.trace.model.TraceGcInfos;
 import org.glowroot.trace.model.TraceMetric;
 import org.glowroot.trace.model.TraceMetricNameImpl;
 import org.glowroot.trace.model.TraceMetricTimerExt;
+import org.glowroot.trace.model.TraceThreadInfo;
 
 /**
  * Implementation of PluginServices from the Plugin API. Each plugin gets its own instance so that
@@ -83,6 +85,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     // cache for fast read access
     private volatile boolean enabled;
     private volatile int maxSpans;
+    private volatile boolean threadInfoEnabled;
+    private volatile boolean gcInfoEnabled;
     @Nullable
     private volatile PluginConfig pluginConfig;
 
@@ -226,8 +230,16 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                     null, currentTraceMetricHolder, ticker);
             long startTick = ticker.read();
             rootTraceMetric.start(startTick);
+            TraceThreadInfo threadInfo = null;
+            TraceGcInfos gcInfo = null;
+            if (threadInfoEnabled) {
+                threadInfo = new TraceThreadInfo(threadAllocatedBytes);
+            }
+            if (gcInfoEnabled) {
+                gcInfo = new TraceGcInfos();
+            }
             trace = new Trace(clock.currentTimeMillis(), background, transactionName,
-                    messageSupplier, rootTraceMetric, startTick, threadAllocatedBytes, ticker);
+                    messageSupplier, rootTraceMetric, startTick, threadInfo, gcInfo, ticker);
             traceRegistry.addTrace(trace);
             fineProfileScheduler.maybeScheduleFineProfilingUsingPercentage(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
@@ -389,6 +401,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             this.pluginConfig = pluginConfig;
         }
         maxSpans = generalConfig.getMaxSpans();
+        threadInfoEnabled = generalConfig.isThreadInfoEnabled();
+        gcInfoEnabled = generalConfig.isGcInfoEnabled();
     }
 
     private Span startSpan(Trace trace, TraceMetricName traceMetricName,

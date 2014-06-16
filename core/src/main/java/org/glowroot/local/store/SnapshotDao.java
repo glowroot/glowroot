@@ -72,7 +72,8 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("user", Types.VARCHAR),
             new Column("attributes", Types.VARCHAR), // json data
             new Column("trace_metrics", Types.VARCHAR), // json data
-            new Column("jvm_info", Types.VARCHAR), // json data
+            new Column("thread_info", Types.VARCHAR), // json data
+            new Column("gc_infos", Types.VARCHAR), // json data
             new Column("spans_id", Types.VARCHAR), // capped database id
             new Column("coarse_profile_id", Types.VARCHAR), // capped database id
             new Column("fine_profile_id", Types.VARCHAR)); // capped database id
@@ -119,14 +120,15 @@ public class SnapshotDao implements SnapshotRepository {
         try {
             dataSource.update("merge into snapshot (id, stuck, start_time, capture_time, duration,"
                     + " background, error, fine, transaction_name, headline, error_message, user,"
-                    + " attributes, trace_metrics, jvm_info, spans_id, coarse_profile_id,"
-                    + " fine_profile_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
-                    + " ?, ?)", snapshot.getId(), snapshot.isStuck(), snapshot.getStartTime(),
-                    snapshot.getCaptureTime(), snapshot.getDuration(), snapshot.isBackground(),
-                    snapshot.getError() != null, fineProfileId != null,
+                    + " attributes, trace_metrics, thread_info, gc_infos, spans_id,"
+                    + " coarse_profile_id, fine_profile_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
+                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(), snapshot.isStuck(),
+                    snapshot.getStartTime(), snapshot.getCaptureTime(), snapshot.getDuration(),
+                    snapshot.isBackground(), snapshot.getError() != null, fineProfileId != null,
                     snapshot.getTransactionName(), snapshot.getHeadline(), snapshot.getError(),
                     snapshot.getUser(), snapshot.getAttributes(), snapshot.getTraceMetrics(),
-                    snapshot.getJvmInfo(), spansId, coarseProfileId, fineProfileId);
+                    snapshot.getThreadInfo(), snapshot.getGcInfos(), spansId, coarseProfileId,
+                    fineProfileId);
             final ImmutableSetMultimap<String, String> attributesForIndexing =
                     snapshot.getAttributesForIndexing();
             if (attributesForIndexing == null) {
@@ -173,8 +175,9 @@ public class SnapshotDao implements SnapshotRepository {
         try {
             snapshots = dataSource.query("select id, stuck, start_time, capture_time, duration,"
                     + " background, transaction_name, headline, error_message, user, attributes,"
-                    + " trace_metrics, jvm_info, spans_id, coarse_profile_id, fine_profile_id from"
-                    + " snapshot where id = ?", ImmutableList.of(traceId), new SnapshotRowMapper());
+                    + " trace_metrics, thread_info, gc_infos, spans_id, coarse_profile_id,"
+                    + " fine_profile_id from snapshot where id = ?", ImmutableList.of(traceId),
+                    new SnapshotRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -494,10 +497,11 @@ public class SnapshotDao implements SnapshotRepository {
             snapshot.user(resultSet.getString(10));
             snapshot.attributes(resultSet.getString(11));
             snapshot.traceMetrics(resultSet.getString(12));
-            snapshot.jvmInfo(resultSet.getString(13));
-            snapshot.spansExistence(getExistence(resultSet.getString(14)));
-            snapshot.coarseProfileExistence(getExistence(resultSet.getString(15)));
-            snapshot.fineProfileExistence(getExistence(resultSet.getString(16)));
+            snapshot.threadInfo(resultSet.getString(13));
+            snapshot.gcInfos(resultSet.getString(14));
+            snapshot.spansExistence(getExistence(resultSet.getString(15)));
+            snapshot.coarseProfileExistence(getExistence(resultSet.getString(16)));
+            snapshot.fineProfileExistence(getExistence(resultSet.getString(17)));
             return snapshot.build();
         }
 

@@ -52,7 +52,9 @@ public class Snapshot {
     @Nullable
     private final String traceMetrics; // json data
     @Nullable
-    private final String jvmInfo; // json data
+    private final String threadInfo; // json data
+    @Nullable
+    private final String gcInfos; // json data
     private final Existence spansExistence;
     private final Existence coarseProfileExistence;
     private final Existence fineProfileExistence;
@@ -62,8 +64,9 @@ public class Snapshot {
     private Snapshot(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, boolean background, String transactionName, String headline,
             @Nullable String error, @Nullable String user, @Nullable String attributes,
-            @Nullable String traceMetrics, @Nullable String jvmInfo, Existence spansExistence,
-            Existence coarseProfileExistence, Existence fineProfileExistence,
+            @Nullable String traceMetrics, @Nullable String threadInfo, @Nullable String gcInfos,
+            Existence spansExistence, Existence coarseProfileExistence,
+            Existence fineProfileExistence,
             @Nullable ImmutableSetMultimap<String, String> attributesForIndexing) {
         this.id = id;
         this.active = active;
@@ -78,7 +81,8 @@ public class Snapshot {
         this.user = user;
         this.attributes = attributes;
         this.traceMetrics = traceMetrics;
-        this.jvmInfo = jvmInfo;
+        this.threadInfo = threadInfo;
+        this.gcInfos = gcInfos;
         this.spansExistence = spansExistence;
         this.coarseProfileExistence = coarseProfileExistence;
         this.fineProfileExistence = fineProfileExistence;
@@ -142,8 +146,13 @@ public class Snapshot {
     }
 
     @Nullable
-    public String getJvmInfo() {
-        return jvmInfo;
+    public String getThreadInfo() {
+        return threadInfo;
+    }
+
+    @Nullable
+    public String getGcInfos() {
+        return gcInfos;
     }
 
     Existence getSpansExistence() {
@@ -180,7 +189,8 @@ public class Snapshot {
                 .add("user", user)
                 .add("attributes", attributes)
                 .add("traceMetrics", traceMetrics)
-                .add("jvmInfo", jvmInfo)
+                .add("threadInfo", threadInfo)
+                .add("gcInfos", gcInfos)
                 .add("spansExistence", spansExistence)
                 .add("coarseProfileExistence", coarseProfileExistence)
                 .add("fineProfileExistence", fineProfileExistence)
@@ -218,7 +228,9 @@ public class Snapshot {
         @Nullable
         private String traceMetrics;
         @Nullable
-        private String jvmInfo;
+        private String threadInfo;
+        @Nullable
+        private String gcInfos;
         @MonotonicNonNull
         private Existence spansExistence;
         @MonotonicNonNull
@@ -298,8 +310,13 @@ public class Snapshot {
             return this;
         }
 
-        public Builder jvmInfo(@Nullable String jvmInfo) {
-            this.jvmInfo = jvmInfo;
+        public Builder threadInfo(@Nullable String threadInfo) {
+            this.threadInfo = threadInfo;
+            return this;
+        }
+
+        public Builder gcInfos(@Nullable String gcInfos) {
+            this.gcInfos = gcInfos;
             return this;
         }
 
@@ -331,8 +348,8 @@ public class Snapshot {
                 "coarseProfileExistence", "fineProfileExistence"})
         public Snapshot build() {
             return new Snapshot(id, active, stuck, startTime, captureTime, duration, background,
-                    transactionName, headline, error, user, attributes, traceMetrics, jvmInfo,
-                    spansExistence, coarseProfileExistence, fineProfileExistence,
+                    transactionName, headline, error, user, attributes, traceMetrics, threadInfo,
+                    gcInfos, spansExistence, coarseProfileExistence, fineProfileExistence,
                     attributesForIndexing);
         }
     }

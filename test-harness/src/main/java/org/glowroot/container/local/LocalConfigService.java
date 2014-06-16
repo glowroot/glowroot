@@ -84,7 +84,9 @@ class LocalConfigService implements ConfigService {
                 new org.glowroot.config.GeneralConfig(config.isEnabled(),
                         config.getStoreThresholdMillis(),
                         config.getStuckThresholdSeconds(),
-                        config.getMaxSpans());
+                        config.getMaxSpans(),
+                        config.isThreadInfoEnabled(),
+                        config.isGcInfoEnabled());
         configService.updateGeneralConfig(updatedConfig, config.getVersion());
     }
 
