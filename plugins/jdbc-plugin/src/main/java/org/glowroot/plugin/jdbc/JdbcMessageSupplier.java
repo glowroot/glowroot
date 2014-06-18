@@ -25,26 +25,6 @@ import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
 
 /**
- * Objects in the parameter array, batchedParameters collections and batchedSqls collection aren't
- * necessarily thread safe so users of this class must adhere to the following contract:
- * 
- * 1. The arrays / collections should not be modified after construction.
- * 
- * 2. None of the elements in these arrays / collections should be modified after construction.
- * 
- * 3. There should be some kind of coordination between the threads to ensure visibility of the
- * objects in these arrays / collections. In Glowroot's case, one thread is putting the
- * JdbcMessageSupplier on to a concurrent queue (right after construction) and the only way another
- * thread can get access to it is by reading it from the queue. The concurrent queue stores the
- * instance in a volatile field and so the coordination of the first thread writing to that volatile
- * field and the second thread reading from that volatile field ensures a happens-before
- * relationship which guarantees that the second thread sees everything that was done to the objects
- * in the parameters array prior to the first thread putting the span into the concurrent queue.
- * 
- * numRows is marked volatile to ensure visibility to other threads since it is updated after
- * putting the JdbcMessageSupplier on to the concurrent queue and so these updates cannot piggyback
- * on the happens-before relationship created by the concurrent queue.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
@@ -67,7 +47,10 @@ class JdbcMessageSupplier extends MessageSupplier {
     @Nullable
     private final ImmutableList<String> batchedSqls;
 
-    private volatile int numRows = NEXT_HAS_NOT_BEEN_CALLED;
+    // intentionally not volatile for performance, but it does mean stuck and active trace captures
+    // may see stale value (but stuck and active trace captures use memory barrier in Trace to
+    // ensure the values are at least visible as of the end of the last span)
+    private int numRows = NEXT_HAS_NOT_BEEN_CALLED;
 
     static JdbcMessageSupplier create(String sql) {
         return new JdbcMessageSupplier(sql, null, null, null);
