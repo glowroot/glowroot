@@ -15,7 +15,6 @@
  */
 package org.glowroot.weaving;
 
-import java.lang.reflect.Modifier;
 import java.util.List;
 
 import com.google.common.base.Objects;
@@ -26,9 +25,6 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.Type;
 
 import org.glowroot.markers.Immutable;
-
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
-import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
 
 /**
  * @author Trask Stalnaker
@@ -45,7 +41,6 @@ public class ParsedMethod {
 
     // fields below are needed for public methods in case they end up fulfilling an interface in a
     // subclass
-    private final boolean isFinal;
     @Nullable
     private final String signature;
     private final ImmutableList<String> exceptions;
@@ -67,10 +62,7 @@ public class ParsedMethod {
         this.name = name.intern();
         this.argTypes = internStringList(argTypes);
         this.returnType = returnType.intern();
-        // remove final and synchronized modifiers from the parsed method model
-        this.modifiers = modifiers & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
-        // but still need to keep track of whether method is final
-        isFinal = Modifier.isFinal(modifiers);
+        this.modifiers = modifiers;
         this.signature = signature == null ? null : signature.intern();
         this.exceptions = internStringList(exceptions);
     }
@@ -79,7 +71,7 @@ public class ParsedMethod {
         return name;
     }
 
-    // these are class names, e.g.
+    // these are class names
     public ImmutableList<String> getArgTypes() {
         return argTypes;
     }
@@ -90,10 +82,6 @@ public class ParsedMethod {
 
     public int getModifiers() {
         return modifiers;
-    }
-
-    boolean isFinal() {
-        return isFinal;
     }
 
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
@@ -118,6 +106,7 @@ public class ParsedMethod {
 
     // equals and hashCode are only defined in terms of name and argTypes since those uniquely
     // identify a method within a given class
+    // this is currently important because ParsedMethod is used as a map key in WeavingClassVisitor
     @Override
     @Pure
     public boolean equals(@Nullable Object obj) {
@@ -133,6 +122,7 @@ public class ParsedMethod {
 
     // equals and hashCode are only defined in terms of name and argTypes since those uniquely
     // identify a method within a given class
+    // this is currently important because ParsedMethod is used as a map key in WeavingClassVisitor
     @Override
     @Pure
     public int hashCode() {
@@ -147,6 +137,8 @@ public class ParsedMethod {
                 .add("argTypes", argTypes)
                 .add("returnType", returnType)
                 .add("modifiers", modifiers)
+                .add("signature", signature)
+                .add("exceptions", exceptions)
                 .toString();
     }
 

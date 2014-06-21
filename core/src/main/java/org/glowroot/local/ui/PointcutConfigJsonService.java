@@ -53,6 +53,8 @@ import org.glowroot.weaving.ParsedTypeCache;
 import org.glowroot.weaving.ParsedTypeCache.ParsedMethodOrdering;
 
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
 
 /**
  * Json service to support pointcut configurations.
@@ -158,7 +160,10 @@ class PointcutConfigJsonService {
             matchingMethod.set("argTypes", argTypes);
             matchingMethod.put("returnType", parsedMethod.getReturnType());
             ArrayNode modifiers = mapper.createArrayNode();
-            String modifierNames = Modifier.toString(parsedMethod.getModifiers());
+            // strip final and synchronized from displayed modifiers since they have no impact on
+            // the weaver's method matching
+            int reducedModifiers = parsedMethod.getModifiers() & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
+            String modifierNames = Modifier.toString(reducedModifiers);
             for (String modifier : splitter.split(modifierNames)) {
                 modifiers.add(modifier.toLowerCase(Locale.ENGLISH));
             }

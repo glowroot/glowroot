@@ -97,7 +97,7 @@ class AdviceMatcher {
                 // and filter out nested calls
                 continue;
             }
-            ParsedMethod overriddenParsedMethod = type.getMethod(parsedMethod);
+            ParsedMethod overriddenParsedMethod = type.getMethodOverride(parsedMethod);
             if (overriddenParsedMethod != null
                     && isMethodReturnMatch(overriddenParsedMethod.getReturnType())
                     && isMethodModifiersMatch(overriddenParsedMethod.getModifiers())) {

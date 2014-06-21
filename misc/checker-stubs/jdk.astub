@@ -19,6 +19,13 @@ public interface ClassFileTransformer {
 }
 
 /* ========================================================================== */
+package java.net;
+
+public class URL {
+    public boolean equals(@Nullable Object obj);
+}
+
+/* ========================================================================== */
 package java.sql;
 
 public interface PreparedStatement {

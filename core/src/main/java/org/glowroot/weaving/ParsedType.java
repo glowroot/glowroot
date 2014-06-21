@@ -99,9 +99,10 @@ public class ParsedType {
     }
 
     @Nullable
-    ParsedMethod getMethod(ParsedMethod parsedMethod) {
+    ParsedMethod getMethodOverride(ParsedMethod inheritedMethod) {
         for (ParsedMethod method : methods) {
-            if (method.equals(parsedMethod)) {
+            if (method.getName().equals(inheritedMethod.getName())
+                    && method.getArgTypes().equals(inheritedMethod.getArgTypes())) {
                 return method;
             }
         }
@@ -110,6 +111,29 @@ public class ParsedType {
 
     boolean hasReweavableAdvice() {
         return hasReweavableAdvice;
+    }
+
+    @Override
+    @Pure
+    public boolean equals(@Nullable Object obj) {
+        if (obj instanceof ParsedType) {
+            ParsedType that = (ParsedType) obj;
+            return Objects.equal(iface, that.iface)
+                    && Objects.equal(name, that.name)
+                    && Objects.equal(superName, that.superName)
+                    && Objects.equal(interfaceNames, that.interfaceNames)
+                    && Objects.equal(methods, that.methods)
+                    && Objects.equal(nativeMethods, that.nativeMethods)
+                    && Objects.equal(hasReweavableAdvice, that.hasReweavableAdvice);
+        }
+        return false;
+    }
+
+    @Override
+    @Pure
+    public int hashCode() {
+        return Objects.hashCode(iface, name, superName, interfaceNames, methods, nativeMethods,
+                hasReweavableAdvice);
     }
 
     @Override

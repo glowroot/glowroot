@@ -402,7 +402,7 @@ class WeavingClassVisitor extends ClassVisitor {
                 continue;
             }
             for (ParsedMethod inheritedMethod : superType.getMethodsIncludingNative()) {
-                if (parsedType.getMethod(inheritedMethod) != null) {
+                if (parsedType.getMethodOverride(inheritedMethod) != null) {
                     continue;
                 }
                 if (Modifier.isAbstract(inheritedMethod.getModifiers())) {
@@ -411,7 +411,7 @@ class WeavingClassVisitor extends ClassVisitor {
                 if (Modifier.isStatic(inheritedMethod.getModifiers())) {
                     continue;
                 }
-                if (inheritedMethod.isFinal()) {
+                if (Modifier.isFinal(inheritedMethod.getModifiers())) {
                     continue;
                 }
                 for (ParsedType newSuperType : newSuperTypes) {

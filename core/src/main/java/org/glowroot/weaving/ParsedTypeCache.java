@@ -180,9 +180,9 @@ public class ParsedTypeCache {
     }
 
     void add(ParsedType parsedType, @Nullable ClassLoader loader) {
-        ConcurrentMap<String, ParsedType> parsedTypes = getParsedTypes(loader);
+        ConcurrentMap<String, ParsedType> loaderParsedTypes = getParsedTypes(loader);
         String typeName = parsedType.getName();
-        parsedTypes.put(typeName, parsedType);
+        loaderParsedTypes.put(typeName, parsedType);
         addTypeNameUpper(typeName);
     }
 
@@ -343,6 +343,29 @@ public class ParsedTypeCache {
             url = ClassLoader.getSystemResource(path);
         } else {
             url = loader.getResource(path);
+            if (url != null) {
+                ClassLoader tempLoader = loader;
+                while (tempLoader != null) {
+                    ClassLoader parentLoader = tempLoader.getParent();
+                    URL parentLoaderUrl;
+                    if (parentLoader == null) {
+                        parentLoaderUrl = ClassLoader.getSystemResource(path);
+                    } else {
+                        parentLoaderUrl = parentLoader.getResource(path);
+                    }
+                    if (url.equals(parentLoaderUrl)) {
+                        // reuse parent loader's ParsedType if available
+                        // this saves time here, and reduces memory footprint of ParsedTypeCache
+                        // which can be very noticeable when lots of ClassLoaders, e.g. groovy
+                        ParsedType parentLoaderParsedType =
+                                getParsedTypes(parentLoader).get(typeName);
+                        if (parentLoaderParsedType != null) {
+                            return parentLoaderParsedType;
+                        }
+                    }
+                    tempLoader = parentLoader;
+                }
+            }
         }
         if (url == null) {
             // what follows is just a best attempt in the sort-of-rare case when a custom class
