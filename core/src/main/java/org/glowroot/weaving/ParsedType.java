@@ -15,10 +15,12 @@
  */
 package org.glowroot.weaving;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -29,7 +31,7 @@ import org.objectweb.asm.Type;
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.NotThreadSafe;
 
-import static org.objectweb.asm.Opcodes.ACC_NATIVE;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker
@@ -48,26 +50,21 @@ public class ParsedType {
     private final String superName;
     private final ImmutableList<String> interfaceNames;
     private final ImmutableList<ParsedMethod> methods;
-    private final ImmutableList<ParsedMethod> nativeMethods;
     private final boolean hasReweavableAdvice;
 
     // interfaces that do not extend anything have null superClass
     static ParsedType from(boolean iface, String name, @Nullable String superName,
-            List<String> interfaceNames, List<ParsedMethod> methods,
-            List<ParsedMethod> nativeMethods) {
-        return new ParsedType(iface, name, superName, interfaceNames, methods, nativeMethods,
-                false);
+            List<String> interfaceNames, List<ParsedMethod> methods) {
+        return new ParsedType(iface, name, superName, interfaceNames, methods, false);
     }
 
     private ParsedType(boolean iface, String name, @Nullable String superName,
-            List<String> interfaceNames, List<ParsedMethod> methods,
-            List<ParsedMethod> nativeMethods, boolean hasReweavableAdvice) {
+            List<String> interfaceNames, List<ParsedMethod> methods, boolean hasReweavableAdvice) {
         this.iface = iface;
         this.name = name.intern();
         this.superName = superName == null ? null : superName.intern();
         this.interfaceNames = ParsedMethod.internStringList(interfaceNames);
         this.methods = ImmutableList.copyOf(methods);
-        this.nativeMethods = ImmutableList.copyOf(nativeMethods);
         this.hasReweavableAdvice = hasReweavableAdvice;
     }
 
@@ -90,12 +87,18 @@ public class ParsedType {
         return interfaceNames;
     }
 
-    public ImmutableList<ParsedMethod> getMethods() {
-        return methods;
+    public Iterable<ParsedMethod> getMethodsExcludingNative() {
+        return Iterables.filter(methods, new Predicate<ParsedMethod>() {
+            @Override
+            public boolean apply(@Nullable ParsedMethod parsedMethod) {
+                checkNotNull(parsedMethod);
+                return !Modifier.isNative(parsedMethod.getModifiers());
+            }
+        });
     }
 
     Iterable<ParsedMethod> getMethodsIncludingNative() {
-        return Iterables.concat(methods, nativeMethods);
+        return methods;
     }
 
     @Nullable
@@ -123,7 +126,6 @@ public class ParsedType {
                     && Objects.equal(superName, that.superName)
                     && Objects.equal(interfaceNames, that.interfaceNames)
                     && Objects.equal(methods, that.methods)
-                    && Objects.equal(nativeMethods, that.nativeMethods)
                     && Objects.equal(hasReweavableAdvice, that.hasReweavableAdvice);
         }
         return false;
@@ -132,7 +134,7 @@ public class ParsedType {
     @Override
     @Pure
     public int hashCode() {
-        return Objects.hashCode(iface, name, superName, interfaceNames, methods, nativeMethods,
+        return Objects.hashCode(iface, name, superName, interfaceNames, methods,
                 hasReweavableAdvice);
     }
 
@@ -145,7 +147,6 @@ public class ParsedType {
                 .add("superName", superName)
                 .add("interfaceNames", interfaceNames)
                 .add("methods", methods)
-                .add("nativeMethods", nativeMethods)
                 .add("hasReweavableAdvice", hasReweavableAdvice)
                 .toString();
     }
@@ -164,7 +165,6 @@ public class ParsedType {
         private final String superName;
         private final List<String> interfaceNames;
         private final List<ParsedMethod> methods = Lists.newArrayList();
-        private final List<ParsedMethod> nativeMethods = Lists.newArrayList();
         private boolean hasReweavableAdvice;
 
         private Builder(boolean iface, String name, @Nullable String superName,
@@ -180,19 +180,16 @@ public class ParsedType {
             List<Type> argTypes = Arrays.asList(Type.getArgumentTypes(desc));
             ParsedMethod method = ParsedMethod.from(name, argTypes, Type.getReturnType(desc),
                     access, signature, exceptions);
-            if ((access & ACC_NATIVE) == 0) {
-                methods.add(method);
-            } else {
-                nativeMethods.add(method);
-            }
+            methods.add(method);
             return method;
         }
+
         void setHasReweavableAdvice(boolean hasReweavableAdvice) {
             this.hasReweavableAdvice = hasReweavableAdvice;
         }
 
         ParsedType build() {
-            return new ParsedType(iface, name, superName, interfaceNames, methods, nativeMethods,
+            return new ParsedType(iface, name, superName, interfaceNames, methods,
                     hasReweavableAdvice);
         }
     }

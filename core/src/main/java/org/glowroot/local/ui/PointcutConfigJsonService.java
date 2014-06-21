@@ -229,7 +229,7 @@ class PointcutConfigJsonService {
         String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
         Set<String> methodNames = Sets.newHashSet();
         for (ParsedType parsedType : getParsedTypes(typeName)) {
-            for (ParsedMethod parsedMethod : parsedType.getMethods()) {
+            for (ParsedMethod parsedMethod : parsedType.getMethodsExcludingNative()) {
                 String methodName = parsedMethod.getName();
                 if (methodName.equals("<init>") || methodName.equals("<clinit>")) {
                     // static initializers are not supported by weaver
@@ -256,7 +256,7 @@ class PointcutConfigJsonService {
         // use set to remove duplicate methods (e.g. same type loaded by multiple class loaders)
         Set<ParsedMethod> parsedMethods = Sets.newHashSet();
         for (ParsedType parsedType : parsedTypes) {
-            for (ParsedMethod parsedMethod : parsedType.getMethods()) {
+            for (ParsedMethod parsedMethod : parsedType.getMethodsExcludingNative()) {
                 if (parsedMethod.getName().equals(methodName)) {
                     parsedMethods.add(parsedMethod);
                 }

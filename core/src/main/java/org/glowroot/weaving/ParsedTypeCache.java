@@ -429,7 +429,6 @@ public class ParsedTypeCache {
     // now that the type has been loaded anyways, build the parsed type via reflection
     private static ParsedType createParsedTypePlanC(String typeName, Class<?> type) {
         List<ParsedMethod> parsedMethods = Lists.newArrayList();
-        List<ParsedMethod> nativeParsedMethods = Lists.newArrayList();
         for (Method method : type.getDeclaredMethods()) {
             if (method.isSynthetic()) {
                 // don't add synthetic methods to the parsed type model
@@ -446,11 +445,7 @@ public class ParsedTypeCache {
             }
             ParsedMethod parsedMethod = ParsedMethod.from(method.getName(), argTypes, returnType,
                     method.getModifiers(), null, exceptions);
-            if (Modifier.isNative(method.getModifiers())) {
-                nativeParsedMethods.add(parsedMethod);
-            } else {
-                parsedMethods.add(parsedMethod);
-            }
+            parsedMethods.add(parsedMethod);
         }
         List<String> interfaceNames = Lists.newArrayList();
         for (Class<?> interfaceClass : type.getInterfaces()) {
@@ -459,7 +454,7 @@ public class ParsedTypeCache {
         Class<?> superclass = type.getSuperclass();
         String superName = superclass == null ? null : superclass.getName();
         return ParsedType.from(type.isInterface(), TypeNames.fromInternal(typeName), superName,
-                interfaceNames, parsedMethods, nativeParsedMethods);
+                interfaceNames, parsedMethods);
     }
 
     static class ParseContext {
