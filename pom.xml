@@ -61,7 +61,7 @@
   <properties>
     <!-- use custom-built jdk6 compatible checker framework annotations by default
          except when actually running checker framework code quality tests -->
-    <checker.qual.group.id>org.glowroot</checker.qual.group.id>
+    <checker.qual.group.id>org.glowroot.misc</checker.qual.group.id>
     <checker.qual.artifact.id>glowroot-checker-qual-jdk6</checker.qual.artifact.id>
     <checker.qual.version>${project.version}</checker.qual.version>
     <!-- the sonar.jdbc.password system property is set here instead of on the command line so it is
@@ -300,7 +300,7 @@
                 <configuration>
                   <resourceBundles>
                     <resourceBundle>
-                      org.glowroot:glowroot-license-resource-bundle:${project.version}
+                      org.glowroot.misc:glowroot-license-resource-bundle:${project.version}
                     </resourceBundle>
                   </resourceBundles>
                 </configuration>

@@ -10,6 +10,7 @@
     <relativePath>../..</relativePath>
   </parent>
 
+  <groupId>org.glowroot.misc</groupId>
   <artifactId>glowroot-checker-qual-jdk6</artifactId>
 
   <name>Glowroot Checker Annotations for JDK 6</name>
