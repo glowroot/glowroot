@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -55,14 +55,6 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     private static final Logger logger = LoggerFactory.getLogger(IsolatedWeavingClassLoader.class);
 
-    private static final Supplier<ImmutableList<Advice>> SUPPLIER_OF_NONE =
-            new Supplier<ImmutableList<Advice>>() {
-                @Override
-                public ImmutableList<Advice> get() {
-                    return ImmutableList.of();
-                }
-            };
-
     // bridge classes can be either interfaces or base classes
     private final ImmutableList<Class<?>> bridgeClasses;
     private final ImmutableList<String> excludePackages;
@@ -93,8 +85,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         if (weavingDisabled) {
             weaver = null;
         } else {
-            Weaver weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE,
-                    new ParsedTypeCache(), weavingTimerService, traceMetricWrapperMethods);
+            Weaver weaver = new Weaver(mixinTypes,
+                    Suppliers.ofInstance(ImmutableList.copyOf(advisors)), new ParsedTypeCache(),
+                    weavingTimerService, traceMetricWrapperMethods);
             this.weaver = weaver;
         }
     }

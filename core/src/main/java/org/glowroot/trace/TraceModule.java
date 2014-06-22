@@ -47,7 +47,7 @@ public class TraceModule {
 
     private final ParsedTypeCache parsedTypeCache;
     private final TraceRegistry traceRegistry;
-    private final ReweavableAdviceCache reweavableAdviceCache;
+    private final AdviceCache adviceCache;
     private final WeavingTimerService weavingTimerService;
     @Nullable
     private final ThreadAllocatedBytes threadAllocatedBytes;
@@ -69,7 +69,8 @@ public class TraceModule {
         ConfigService configService = configModule.getConfigService();
         parsedTypeCache = new ParsedTypeCache();
         traceRegistry = new TraceRegistry();
-        reweavableAdviceCache = new ReweavableAdviceCache(configService.getPointcutConfigs());
+        adviceCache = new AdviceCache(configModule.getPluginDescriptorCache().getAdvisors(),
+                configService.getPointcutConfigs());
         final TraceMetricNameCache traceMetricNameCache = new TraceMetricNameCache();
         weavingTimerService = new WeavingTimerServiceImpl(traceRegistry, traceMetricNameCache);
 
@@ -81,8 +82,7 @@ public class TraceModule {
         if (instrumentation != null && !weavingDisabled) {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
                     configModule.getPluginDescriptorCache().getMixinTypes(),
-                    configModule.getPluginDescriptorCache().getAdvisors(),
-                    reweavableAdviceCache.getAdvisorsSupplier(), parsedTypeCache,
+                    adviceCache.getAdvisorsSupplier(), parsedTypeCache,
                     weavingTimerService, !traceMetricWrapperMethodsDisabled);
             PreInitializeWeavingClasses.preInitializeClasses(TraceModule.class.getClassLoader());
             if (instrumentation.isRetransformClassesSupported()) {
@@ -130,8 +130,8 @@ public class TraceModule {
         return traceRegistry;
     }
 
-    public ReweavableAdviceCache getReweavableAdviceCache() {
-        return reweavableAdviceCache;
+    public AdviceCache getAdviceCache() {
+        return adviceCache;
     }
 
     public WeavingTimerService getWeavingTimerService() {

@@ -37,7 +37,7 @@ import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.local.store.TransactionPointDao;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
-import org.glowroot.trace.ReweavableAdviceCache;
+import org.glowroot.trace.AdviceCache;
 import org.glowroot.trace.TraceRegistry;
 import org.glowroot.weaving.ParsedTypeCache;
 
@@ -56,7 +56,7 @@ class AdminJsonService {
     private final TransactionPointDao transactionPointDao;
     private final SnapshotDao snapshotDao;
     private final ConfigService configService;
-    private final ReweavableAdviceCache reweavableAdviceCache;
+    private final AdviceCache adviceCache;
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final Instrumentation instrumentation;
@@ -65,13 +65,13 @@ class AdminJsonService {
     private final TraceRegistry traceRegistry;
 
     AdminJsonService(TransactionPointDao transactionPointDao, SnapshotDao snapshotDao,
-            ConfigService configService, ReweavableAdviceCache reweavableAdviceCache,
-            ParsedTypeCache parsedTypeCache, @Nullable Instrumentation instrumentation,
-            TraceCollectorImpl traceCollector, DataSource dataSource, TraceRegistry traceRegistry) {
+            ConfigService configService, AdviceCache adviceCache, ParsedTypeCache parsedTypeCache,
+            @Nullable Instrumentation instrumentation, TraceCollectorImpl traceCollector,
+            DataSource dataSource, TraceRegistry traceRegistry) {
         this.transactionPointDao = transactionPointDao;
         this.snapshotDao = snapshotDao;
         this.configService = configService;
-        this.reweavableAdviceCache = reweavableAdviceCache;
+        this.adviceCache = adviceCache;
         this.parsedTypeCache = parsedTypeCache;
         this.instrumentation = instrumentation;
         this.traceCollector = traceCollector;
@@ -97,7 +97,7 @@ class AdminJsonService {
             return "{}";
         }
         ImmutableList<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
-        reweavableAdviceCache.updateAdvisors(pointcutConfigs);
+        adviceCache.updateAdvisors(pointcutConfigs);
         Set<String> typeNames = Sets.newHashSet();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
             typeNames.add(pointcutConfig.getType());

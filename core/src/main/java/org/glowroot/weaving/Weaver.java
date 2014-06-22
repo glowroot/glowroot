@@ -24,7 +24,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.ClassReader;
@@ -57,19 +56,16 @@ class Weaver {
             Boolean.valueOf(System.getProperty("glowroot.internal.weaving.verify"));
 
     private final ImmutableList<MixinType> mixinTypes;
-    private final ImmutableList<Advice> pluginAdvisors;
-    private final Supplier<ImmutableList<Advice>> pointcutConfigAdvisors;
+    private final Supplier<ImmutableList<Advice>> advisors;
     private final ParsedTypeCache parsedTypeCache;
     private final WeavingTimerService weavingTimerService;
     private final boolean traceMetricWrapperMethods;
 
-    Weaver(List<MixinType> mixinTypes, List<Advice> pluginAdvisors,
-            Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
+    Weaver(List<MixinType> mixinTypes, Supplier<ImmutableList<Advice>> advisors,
             ParsedTypeCache parsedTypeCache, WeavingTimerService weavingTimerService,
             boolean traceMetricWrapperMethods) {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
-        this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
-        this.pointcutConfigAdvisors = pointcutConfigAdvisors;
+        this.advisors = advisors;
         this.parsedTypeCache = parsedTypeCache;
         this.weavingTimerService = weavingTimerService;
         this.traceMetricWrapperMethods = traceMetricWrapperMethods;
@@ -110,10 +106,8 @@ class Weaver {
             ClassWriter cw = new ComputeFramesClassWriter(
                     ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES,
                     parsedTypeCache, loader, codeSource, className);
-            Iterable<Advice> advisors = Iterables.concat(pluginAdvisors,
-                    pointcutConfigAdvisors.get());
-            WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors, loader,
-                    parsedTypeCache, codeSource, traceMetricWrapperMethods);
+            WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors.get(),
+                    loader, parsedTypeCache, codeSource, traceMetricWrapperMethods);
             ClassReader cr = new ClassReader(classBytes);
             try {
                 cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
@@ -141,9 +135,10 @@ class Weaver {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("mixinTypes", mixinTypes)
-                .add("pluginAdvisors", pluginAdvisors)
-                .add("pointcutConfigAdvisors", pointcutConfigAdvisors)
+                .add("advisors", advisors)
                 .add("parsedTypeCache", parsedTypeCache)
+                .add("weavingTimerService", weavingTimerService)
+                .add("traceMetricWrapperMethods", traceMetricWrapperMethods)
                 .toString();
     }
 

@@ -89,8 +89,8 @@ public class DynamicAdviceGenerator {
     private final String pluginId;
     private final String adviceTypeName;
 
-    public static List<Advice> createAdvisors(ImmutableList<PointcutConfig> pointcutConfigs,
-            @Nullable String pluginId) {
+    public static ImmutableList<Advice> createAdvisors(
+            ImmutableList<PointcutConfig> pointcutConfigs, @Nullable String pluginId) {
         List<Advice> advisors = Lists.newArrayList();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
             try {
@@ -110,7 +110,7 @@ public class DynamicAdviceGenerator {
                 logger.error("error creating advice for pointcut config: {}", pointcutConfig, e);
             }
         }
-        return advisors;
+        return ImmutableList.copyOf(advisors);
     }
 
     private DynamicAdviceGenerator(PointcutConfig pointcutConfig, @Nullable String pluginId) {

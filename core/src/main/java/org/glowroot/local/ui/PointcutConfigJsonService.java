@@ -45,7 +45,7 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.config.PointcutConfig;
 import org.glowroot.markers.Singleton;
-import org.glowroot.trace.ReweavableAdviceCache;
+import org.glowroot.trace.AdviceCache;
 import org.glowroot.trace.TraceModule;
 import org.glowroot.weaving.ParsedMethod;
 import org.glowroot.weaving.ParsedType;
@@ -71,16 +71,16 @@ class PointcutConfigJsonService {
     private static final Splitter splitter = Splitter.on(' ').omitEmptyStrings();
 
     private final ConfigService configService;
-    private final ReweavableAdviceCache reweavableAdviceCache;
+    private final AdviceCache adviceCache;
     private final TraceModule traceModule;
     private final ParsedTypeCache parsedTypeCache;
     private final ClasspathCache classpathCache;
 
-    PointcutConfigJsonService(ConfigService configService,
-            ReweavableAdviceCache reweavableAdviceCache, ParsedTypeCache parsedTypeCache,
-            ClasspathCache classpathTypeCache, TraceModule traceModule) {
+    PointcutConfigJsonService(ConfigService configService, AdviceCache adviceCache,
+            ParsedTypeCache parsedTypeCache, ClasspathCache classpathTypeCache,
+            TraceModule traceModule) {
         this.configService = configService;
-        this.reweavableAdviceCache = reweavableAdviceCache;
+        this.adviceCache = adviceCache;
         this.parsedTypeCache = parsedTypeCache;
         this.classpathCache = classpathTypeCache;
         this.traceModule = traceModule;
@@ -96,7 +96,7 @@ class PointcutConfigJsonService {
         jg.writeFieldName("configs");
         writer.writeValue(jg, configService.getPointcutConfigs());
         jg.writeBooleanField("jvmOutOfSync",
-                reweavableAdviceCache.isOutOfSync(configService.getPointcutConfigs()));
+                adviceCache.isOutOfSync(configService.getPointcutConfigs()));
         jg.writeBooleanField("jvmRetransformClassesSupported",
                 traceModule.isJvmRetransformClassesSupported());
         jg.writeEndObject();

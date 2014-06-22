@@ -120,10 +120,10 @@ public class LocalUiModule {
                 pluginDescriptorCache, dataDir, httpSessionManager, traceModule);
         ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
         PointcutConfigJsonService pointcutConfigJsonService = new PointcutConfigJsonService(
-                configService, traceModule.getReweavableAdviceCache(), parsedTypeCache,
+                configService, traceModule.getAdviceCache(), parsedTypeCache,
                 classpathCache, traceModule);
         AdminJsonService adminJsonService = new AdminJsonService(transactionPointDao, snapshotDao,
-                configService, traceModule.getReweavableAdviceCache(), parsedTypeCache,
+                configService, traceModule.getAdviceCache(), parsedTypeCache,
                 instrumentation, traceCollector, dataSource, traceRegistry);
 
         List<Object> jsonServices = Lists.newArrayList();
