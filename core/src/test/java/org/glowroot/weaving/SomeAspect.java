@@ -108,9 +108,9 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.BasicMisc", methodName = "hashCode",
-            traceMetric = "hashcode")
-    public static class HashCodeAdvice {
+    @Pointcut(type = "org.glowroot.weaving.SuperBasicMisc", methodName = "superBasic",
+            traceMetric = "superbasic")
+    public static class SuperBasicAdvice {
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -134,9 +134,9 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "java.lang.Exception", methodName = "toString",
-            traceMetric = "etostring")
-    public static class ExceptionToStringAdvice {
+    @Pointcut(type = "java.lang.Throwable", methodName = "toString",
+            traceMetric = "throwable to string")
+    public static class ThrowableToStringAdvice {
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -185,8 +185,9 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "<init>")
-    public static class BasicMiscConstructorOnInterfaceImplAdvice {
+    @Pointcut(type = "org.glowroot.weaving.BasicMisc", methodName = "<init>",
+            methodArgTypes = {".."})
+    public static class BasicMiscAllConstructorAdvice {
         @IsEnabled
         public static boolean isEnabled() {
             orderedEvents.get().add("isEnabled");
@@ -967,6 +968,18 @@ public class SomeAspect {
 
     @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class InterfaceAppearsTwiceInHierarchyAdvice {
+        @OnBefore
+        public static void onBefore() {
+            onBeforeCount.increment();
+        }
+        public static void resetThreadLocals() {
+            onBeforeCount.set(0);
+        }
+    }
+
+    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
+            methodArgTypes = {".."})
+    public static class FinalMethodAdvice {
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();

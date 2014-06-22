@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,11 @@
  */
 package org.glowroot.weaving;
 
-import org.glowroot.markers.Static;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Static
-class MixinMatcher {
+public interface SuperBasic {
 
-    private MixinMatcher() {}
-
-    static boolean isTypeMatch(MixinType mixinType, String className) {
-        // currently only exact matching is supported
-        return mixinType.getTargets().contains(className);
-    }
+    public void callSuperBasic();
 }

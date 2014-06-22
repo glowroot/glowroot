@@ -15,6 +15,7 @@
  */
 package org.glowroot.weaving;
 
+import java.lang.reflect.Modifier;
 import java.util.List;
 
 import com.google.common.base.Objects;
@@ -45,26 +46,28 @@ public class ParsedMethod {
     private final String signature;
     private final ImmutableList<String> exceptions;
 
+    private final ImmutableList<Advice> advisors;
+
     static ParsedMethod from(String name, List<Type> argTypes, Type returnType, int modifiers,
-            @Nullable String signature, List<String> exceptions) {
+            @Nullable String signature, List<String> exceptions, List<Advice> advisors) {
         List<String> argTypeNames = Lists.newArrayList();
         for (Type argType : argTypes) {
             argTypeNames.add(argType.getClassName());
         }
         String returnTypeName = returnType.getClassName();
         return new ParsedMethod(name, argTypeNames, returnTypeName, modifiers, signature,
-                exceptions);
+                exceptions, advisors);
     }
 
-    // desc is only passed to validate calculation for now
     private ParsedMethod(String name, List<String> argTypes, String returnType, int modifiers,
-            @Nullable String signature, List<String> exceptions) {
+            @Nullable String signature, List<String> exceptions, List<Advice> advisors) {
         this.name = name.intern();
         this.argTypes = internStringList(argTypes);
         this.returnType = returnType.intern();
         this.modifiers = modifiers;
         this.signature = signature == null ? null : signature.intern();
         this.exceptions = internStringList(exceptions);
+        this.advisors = ImmutableList.copyOf(advisors);
     }
 
     public String getName() {
@@ -102,6 +105,28 @@ public class ParsedMethod {
             types[i] = getType(argTypes.get(i));
         }
         return Type.getMethodDescriptor(getType(returnType), types);
+    }
+
+    ImmutableList<Advice> getAdvisors() {
+        return advisors;
+    }
+
+    boolean isOverriddenBy(String methodName, List<Type> argTypes) {
+        if (Modifier.isPrivate(this.modifiers)) {
+            return false;
+        }
+        if (!methodName.equals(name)) {
+            return false;
+        }
+        if (argTypes.size() != this.argTypes.size()) {
+            return false;
+        }
+        for (int i = 0; i < argTypes.size(); i++) {
+            if (!argTypes.get(i).getClassName().equals(this.argTypes.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // equals and hashCode are only defined in terms of name and argTypes since those uniquely

@@ -55,7 +55,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             ParsedTypeCache parsedTypeCache, WeavingTimerService weavingTimerService,
             boolean traceMetricWrapperMethods) {
         this.traceMetricTimerService = weavingTimerService;
-        weaver = new Weaver(mixinTypes, advisors, parsedTypeCache, traceMetricTimerService,
+        weaver = new Weaver(advisors, mixinTypes, parsedTypeCache, traceMetricTimerService,
                 traceMetricWrapperMethods);
         // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
         // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since

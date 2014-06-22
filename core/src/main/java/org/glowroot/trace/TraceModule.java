@@ -67,10 +67,11 @@ public class TraceModule {
             @Nullable Instrumentation instrumentation, ScheduledExecutorService scheduledExecutor) {
         this.threadAllocatedBytes = threadAllocatedBytes;
         ConfigService configService = configModule.getConfigService();
-        parsedTypeCache = new ParsedTypeCache();
         traceRegistry = new TraceRegistry();
         adviceCache = new AdviceCache(configModule.getPluginDescriptorCache().getAdvisors(),
                 configService.getPointcutConfigs());
+        parsedTypeCache = new ParsedTypeCache(adviceCache.getAdvisorsSupplier(), configModule
+                .getPluginDescriptorCache().getMixinTypes());
         final TraceMetricNameCache traceMetricNameCache = new TraceMetricNameCache();
         weavingTimerService = new WeavingTimerServiceImpl(traceRegistry, traceMetricNameCache);
 
@@ -82,8 +83,8 @@ public class TraceModule {
         if (instrumentation != null && !weavingDisabled) {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
                     configModule.getPluginDescriptorCache().getMixinTypes(),
-                    adviceCache.getAdvisorsSupplier(), parsedTypeCache,
-                    weavingTimerService, !traceMetricWrapperMethodsDisabled);
+                    adviceCache.getAdvisorsSupplier(), parsedTypeCache, weavingTimerService,
+                    !traceMetricWrapperMethodsDisabled);
             PreInitializeWeavingClasses.preInitializeClasses(TraceModule.class.getClassLoader());
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);

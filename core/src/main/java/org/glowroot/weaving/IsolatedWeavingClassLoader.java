@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -75,7 +76,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return new Builder();
     }
 
-    private IsolatedWeavingClassLoader(List<MixinType> mixinTypes, List<Advice> advisors,
+    private IsolatedWeavingClassLoader(List<Advice> advisors, List<MixinType> mixinTypes,
             WeavingTimerService weavingTimerService, List<Class<?>> bridgeClasses,
             List<String> excludePackages, boolean weavingDisabled,
             boolean traceMetricWrapperMethods) {
@@ -85,9 +86,11 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         if (weavingDisabled) {
             weaver = null;
         } else {
-            Weaver weaver = new Weaver(mixinTypes,
-                    Suppliers.ofInstance(ImmutableList.copyOf(advisors)), new ParsedTypeCache(),
-                    weavingTimerService, traceMetricWrapperMethods);
+            Supplier<ImmutableList<Advice>> advisorsSupplier =
+                    Suppliers.ofInstance(ImmutableList.copyOf(advisors));
+            Weaver weaver = new Weaver(advisorsSupplier, mixinTypes,
+                    new ParsedTypeCache(advisorsSupplier, mixinTypes), weavingTimerService,
+                    traceMetricWrapperMethods);
             this.weaver = weaver;
         }
     }
@@ -274,7 +277,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                             // is
                             // @MonotonicNonNull, so it must be non-null here
                             checkNotNull(weavingTimerService);
-                            return new IsolatedWeavingClassLoader(mixinTypes, advisors,
+                            return new IsolatedWeavingClassLoader(advisors, mixinTypes,
                                     weavingTimerService, bridgeClasses, excludePackages,
                                     weavingDisabled, traceMetricWrapperMethods);
                         }

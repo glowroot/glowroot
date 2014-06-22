@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.ParsedTypeCache.ParseContext;
+import org.glowroot.weaving.WeavingClassVisitor.AbortWeavingException;
 import org.glowroot.weaving.WeavingTimerService.WeavingTimer;
 
 import static org.objectweb.asm.Opcodes.ASM5;
@@ -55,17 +56,17 @@ class Weaver {
     private static final boolean verifyWeaving =
             Boolean.valueOf(System.getProperty("glowroot.internal.weaving.verify"));
 
-    private final ImmutableList<MixinType> mixinTypes;
     private final Supplier<ImmutableList<Advice>> advisors;
+    private final ImmutableList<MixinType> mixinTypes;
     private final ParsedTypeCache parsedTypeCache;
     private final WeavingTimerService weavingTimerService;
     private final boolean traceMetricWrapperMethods;
 
-    Weaver(List<MixinType> mixinTypes, Supplier<ImmutableList<Advice>> advisors,
+    Weaver(Supplier<ImmutableList<Advice>> advisors, List<MixinType> mixinTypes,
             ParsedTypeCache parsedTypeCache, WeavingTimerService weavingTimerService,
             boolean traceMetricWrapperMethods) {
-        this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.advisors = advisors;
+        this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.parsedTypeCache = parsedTypeCache;
         this.weavingTimerService = weavingTimerService;
         this.traceMetricWrapperMethods = traceMetricWrapperMethods;
@@ -106,11 +107,13 @@ class Weaver {
             ClassWriter cw = new ComputeFramesClassWriter(
                     ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES,
                     parsedTypeCache, loader, codeSource, className);
-            WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors.get(),
+            WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors.get(), mixinTypes,
                     loader, parsedTypeCache, codeSource, traceMetricWrapperMethods);
             ClassReader cr = new ClassReader(classBytes);
             try {
                 cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
+            } catch (AbortWeavingException e) {
+                // ok
             } catch (ClassCircularityError e) {
                 logger.error(e.getMessage(), e);
                 return null;
@@ -134,8 +137,8 @@ class Weaver {
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("mixinTypes", mixinTypes)
                 .add("advisors", advisors)
+                .add("mixinTypes", mixinTypes)
                 .add("parsedTypeCache", parsedTypeCache)
                 .add("weavingTimerService", weavingTimerService)
                 .add("traceMetricWrapperMethods", traceMetricWrapperMethods)

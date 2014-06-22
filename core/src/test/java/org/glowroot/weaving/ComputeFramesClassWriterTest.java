@@ -15,6 +15,9 @@
  */
 package org.glowroot.weaving;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,8 +35,11 @@ public class ComputeFramesClassWriterTest {
 
     @Before
     public void beforeEachTest() {
-        cw = new ComputeFramesClassWriter(0, new ParsedTypeCache(), getClass().getClassLoader(),
-                null, ComputeFramesClassWriterTest.class.getName());
+        Supplier<ImmutableList<Advice>> advisors = Suppliers.ofInstance(ImmutableList.<Advice>of());
+        ParsedTypeCache parsedTypeCache =
+                new ParsedTypeCache(advisors, ImmutableList.<MixinType>of());
+        cw = new ComputeFramesClassWriter(0, parsedTypeCache, getClass().getClassLoader(), null,
+                ComputeFramesClassWriterTest.class.getName());
     }
 
     @Test

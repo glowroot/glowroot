@@ -16,7 +16,6 @@
 package org.glowroot.weaving;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.glowroot.api.OptionalReturn;
@@ -25,8 +24,8 @@ import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.weaving.AbstractMisc.ExtendsAbstractMisc;
 import org.glowroot.weaving.AbstractNotMisc.ExtendsAbstractNotMisc;
 import org.glowroot.weaving.SomeAspect.BasicAdvice;
+import org.glowroot.weaving.SomeAspect.BasicMiscAllConstructorAdvice;
 import org.glowroot.weaving.SomeAspect.BasicMiscConstructorAdvice;
-import org.glowroot.weaving.SomeAspect.BasicMiscConstructorOnInterfaceImplAdvice;
 import org.glowroot.weaving.SomeAspect.BasicWithInnerClassAdvice;
 import org.glowroot.weaving.SomeAspect.BasicWithInnerClassArgAdvice;
 import org.glowroot.weaving.SomeAspect.BindAutoboxedReturnAdvice;
@@ -46,12 +45,11 @@ import org.glowroot.weaving.SomeAspect.BindTravelerAdvice;
 import org.glowroot.weaving.SomeAspect.BrokenAdvice;
 import org.glowroot.weaving.SomeAspect.ChangeReturnAdvice;
 import org.glowroot.weaving.SomeAspect.CircularClassDependencyAdvice;
-import org.glowroot.weaving.SomeAspect.ExceptionToStringAdvice;
+import org.glowroot.weaving.SomeAspect.FinalMethodAdvice;
 import org.glowroot.weaving.SomeAspect.HasString;
 import org.glowroot.weaving.SomeAspect.HasStringClassMixin;
 import org.glowroot.weaving.SomeAspect.HasStringInterfaceMixin;
 import org.glowroot.weaving.SomeAspect.HasStringMultipleMixin;
-import org.glowroot.weaving.SomeAspect.HashCodeAdvice;
 import org.glowroot.weaving.SomeAspect.InnerMethodAdvice;
 import org.glowroot.weaving.SomeAspect.InterfaceAppearsTwiceInHierarchyAdvice;
 import org.glowroot.weaving.SomeAspect.MethodArgsDotDotAdvice1;
@@ -70,7 +68,9 @@ import org.glowroot.weaving.SomeAspect.PrimitiveAdvice;
 import org.glowroot.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
 import org.glowroot.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
 import org.glowroot.weaving.SomeAspect.StaticAdvice;
+import org.glowroot.weaving.SomeAspect.SuperBasicAdvice;
 import org.glowroot.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
+import org.glowroot.weaving.SomeAspect.ThrowableToStringAdvice;
 import org.glowroot.weaving.SomeAspect.TypeNamePatternAdvice;
 import org.glowroot.weaving.SomeAspect.WildMethodAdvice;
 import org.glowroot.weaving.WeavingTimerService.WeavingTimer;
@@ -798,56 +798,14 @@ public class WeaverTest {
         assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
     }
 
-    @Test
-    public void shouldHandleConstructorOnInterfaceImplPointcut() throws Exception {
-        // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                BasicMiscConstructorOnInterfaceImplAdvice.class);
-        // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
-        SomeAspect.resetThreadLocals();
-        // when
-        test.execute1();
-        // then
-        assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
-        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
-        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
-        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
-        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
-    }
-
-    // don't match super class constructors if it's not an "interface constructor"
-    //
-    // this is primarily because the advice for a constructor is applied after the
-    // super/this constructor is called (due to bytecode limitations, see ASM's
-    // AdviceAdapter) and so ignoreSameNested does not work to filter out nested
-    // constructors, and advice that tries to count "number of instantiations" (e.g.
-    // the basic glowroot trace metric) would not work either since advice cannot detect and
-    // filter out nested calls
-    @Test
-    public void shouldHandleSuperClassConstructorPointcut() throws Exception {
-        // given
-        Misc test =
-                newWovenObject(SubBasicMisc.class, Misc.class, BasicMiscConstructorAdvice.class);
-        // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
-        SomeAspect.resetThreadLocals();
-        // when
-        test.execute1();
-        // then
-        assertThat(SomeAspect.enabledCount.get()).isEqualTo(1);
-        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
-        assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
-        assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
-        assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
-    }
-
     // this is just a test to show the (undesirable) behavior of constructor advice not being nested
     //
     // see comment on above test and same comment in AdviceMatcher
     @Test
     public void shouldVerifyConstructorPointcutsAreNotNested() throws Exception {
         // given
-        Misc test = newWovenObject(SubBasicMisc.class, Misc.class,
-                BasicMiscConstructorOnInterfaceImplAdvice.class);
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                BasicMiscAllConstructorAdvice.class);
         // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
         SomeAspect.resetThreadLocals();
         // when
@@ -880,9 +838,9 @@ public class WeaverTest {
     public void shouldHandleInheritedMethod() throws Exception {
         // given
         SomeAspect.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, HashCodeAdvice.class);
+        SuperBasic test = newWovenObject(BasicMisc.class, SuperBasic.class, SuperBasicAdvice.class);
         // when
-        test.hashCode();
+        test.callSuperBasic();
         // then
         assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
         assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
@@ -908,9 +866,9 @@ public class WeaverTest {
     public void shouldHandleSubInheritedMethod() throws Exception {
         // given
         SomeAspect.resetThreadLocals();
-        Misc test = newWovenObject(SubBasicMisc.class, Misc.class, HashCodeAdvice.class);
+        SuperBasic test = newWovenObject(BasicMisc.class, SuperBasic.class, SuperBasicAdvice.class);
         // when
-        test.hashCode();
+        test.callSuperBasic();
         // then
         assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
         assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
@@ -918,18 +876,12 @@ public class WeaverTest {
         assertThat(SomeAspect.onAfterCount.get()).isEqualTo(1);
     }
 
-    // this is harder
-    // Exception doesn't define toString() method, instead just inheriting Throwable.toString()
-    // so normally a pointcut on Exception toString would add toString method to the Exception class
-    // but since Exception is in bootstrap classloader, it is not woven
-    // TODO ideally SubException toString would still be woven
-    @Ignore
     @Test
     public void shouldHandleSubInheritedFromClassInBootstrapClassLoader() throws Exception {
         // given
         SomeAspect.resetThreadLocals();
         Exception test =
-                newWovenObject(SubException.class, Exception.class, ExceptionToStringAdvice.class);
+                newWovenObject(SubException.class, Exception.class, ThrowableToStringAdvice.class);
         // when
         test.toString();
         // then
@@ -1066,6 +1018,17 @@ public class WeaverTest {
         Misc test = newWovenObject(SubBasicMisc.class, Misc.class,
                 InterfaceAppearsTwiceInHierarchyAdvice.class);
         test.execute1();
+        // then
+        assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldHandleFinalMethodAdvice() throws Exception {
+        // given
+        FinalMethodAdvice.resetThreadLocals();
+        // when
+        Misc test = newWovenObject(SubBasicMisc.class, Misc.class, FinalMethodAdvice.class);
+        test.executeWithArgs("one", 2);
         // then
         assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
     }

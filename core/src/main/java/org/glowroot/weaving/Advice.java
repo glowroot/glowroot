@@ -24,6 +24,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
@@ -46,12 +47,23 @@ import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.markers.Immutable;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Immutable
 public class Advice {
+
+    static final Ordering<Advice> orderingTraceMetric = new Ordering<Advice>() {
+        @Override
+        public int compare(@Nullable Advice left, @Nullable Advice right) {
+            checkNotNull(left);
+            checkNotNull(right);
+            return left.pointcut.traceMetric().compareToIgnoreCase(right.pointcut.traceMetric());
+        }
+    };
 
     private static final ImmutableList<Class<? extends Annotation>> isEnabledBindAnnotationTypes =
             ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,

@@ -22,6 +22,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -40,15 +41,20 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closer;
 import com.google.common.io.Resources;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.Singleton;
-import org.glowroot.weaving.ParsedType;
 import org.glowroot.weaving.ParsedTypeCache;
-import org.glowroot.weaving.ParsedTypeCache.ParsedTypeClassVisitor;
+
+import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
+import static org.objectweb.asm.Opcodes.ASM5;
 
 /**
  * @author Trask Stalnaker
@@ -93,22 +99,22 @@ class ClasspathCache {
         return Lists.newArrayList(typeNames);
     }
 
-    ImmutableList<ParsedType> getParsedTypes(String typeName) {
+    ImmutableList<UiParsedMethod> getParsedMethods(String typeName) {
         // update cache before proceeding
         updateCache();
-        List<ParsedType> parsedTypes = Lists.newArrayList();
+        List<UiParsedMethod> parsedMethods = Lists.newArrayList();
         Set<URI> uris = typeNames.get(typeName);
         if (uris == null) {
             return ImmutableList.of();
         }
         for (URI uri : uris) {
             try {
-                parsedTypes.add(createParsedType(uri));
+                parsedMethods.addAll(getParsedMethods(uri));
             } catch (IOException e) {
                 logger.warn(e.getMessage(), e);
             }
         }
-        return ImmutableList.copyOf(parsedTypes);
+        return ImmutableList.copyOf(parsedMethods);
     }
 
     void updateCache() {
@@ -117,12 +123,12 @@ class ClasspathCache {
         }
     }
 
-    private ParsedType createParsedType(URI uri) throws IOException {
+    private List<UiParsedMethod> getParsedMethods(URI uri) throws IOException {
         ParsedTypeClassVisitor cv = new ParsedTypeClassVisitor();
         byte[] bytes = Resources.toByteArray(uri.toURL());
         ClassReader cr = new ClassReader(bytes);
         cr.accept(cv, 0);
-        return cv.build();
+        return cv.getParsedMethods();
     }
 
     private void updateCache(URLClassLoader loader) {
@@ -278,6 +284,35 @@ class ClasspathCache {
                 typeNameUppers.put(typeNameUpper, typeNames);
             }
             typeNames.add(typeName);
+        }
+    }
+
+    private static class ParsedTypeClassVisitor extends ClassVisitor {
+
+        private final List<UiParsedMethod> parsedMethods = Lists.newArrayList();
+
+        private ParsedTypeClassVisitor() {
+            super(ASM5);
+        }
+
+        @Override
+        @Nullable
+        public MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String/*@Nullable*/[] exceptions) {
+            if ((access & ACC_SYNTHETIC) == 0) {
+                // don't add synthetic methods to the parsed type model
+                List<Type> argTypes = Arrays.asList(Type.getArgumentTypes(desc));
+                Type returnType = Type.getReturnType(desc);
+                List<String> exceptionList = exceptions == null ? ImmutableList.<String>of()
+                        : Arrays.asList(exceptions);
+                parsedMethods.add(UiParsedMethod.from(name, argTypes, returnType, access,
+                        signature, exceptionList));
+            }
+            return null;
+        }
+
+        private List<UiParsedMethod> getParsedMethods() {
+            return parsedMethods;
         }
     }
 }

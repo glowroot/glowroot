@@ -224,12 +224,8 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.ByFunctionOrdering");
         types.add("com.google.common.collect.CollectPreconditions");
         types.add("com.google.common.collect.Collections2");
-        types.add("com.google.common.collect.ComparisonChain");
-        types.add("com.google.common.collect.ComparisonChain$1");
-        types.add("com.google.common.collect.ComparisonChain$InactiveComparisonChain");
         types.add("com.google.common.collect.EmptyImmutableBiMap");
         types.add("com.google.common.collect.EmptyImmutableSet");
-        types.add("com.google.common.collect.FluentIterable");
         types.add("com.google.common.collect.Hashing");
         types.add("com.google.common.collect.ImmutableAsList");
         types.add("com.google.common.collect.ImmutableBiMap");
@@ -253,14 +249,11 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.ImmutableMapValues$1");
         types.add("com.google.common.collect.ImmutableSet");
         types.add("com.google.common.collect.Iterables");
-        types.add("com.google.common.collect.Iterables$2");
-        types.add("com.google.common.collect.Iterables$3");
         types.add("com.google.common.collect.Iterators");
         types.add("com.google.common.collect.Iterators$1");
         types.add("com.google.common.collect.Iterators$11");
         types.add("com.google.common.collect.Iterators$12");
         types.add("com.google.common.collect.Iterators$2");
-        types.add("com.google.common.collect.Iterators$5");
         types.add("com.google.common.collect.Lists");
         types.add("com.google.common.collect.Lists$RandomAccessReverseList");
         types.add("com.google.common.collect.Lists$ReverseList");
@@ -283,7 +276,6 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.SingletonImmutableBiMap");
         types.add("com.google.common.collect.SingletonImmutableList");
         types.add("com.google.common.collect.SingletonImmutableSet");
-        types.add("com.google.common.collect.TransformedIterator");
         types.add("com.google.common.collect.UnmodifiableIterator");
         types.add("com.google.common.collect.UnmodifiableListIterator");
         types.add("com.google.common.io.ByteSource");
@@ -362,6 +354,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.trace.model.TraceMetricNameImpl");
         types.add("org.glowroot.trace.model.TraceMetricTimerExt");
         types.add("org.glowroot.weaving.Advice");
+        types.add("org.glowroot.weaving.Advice$1");
         types.add("org.glowroot.weaving.Advice$AdviceParameter");
         types.add("org.glowroot.weaving.Advice$ParameterKind");
         types.add("org.glowroot.weaving.AdviceFlowOuterHolder");
@@ -376,8 +369,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.ParsedTypeCache");
         types.add("org.glowroot.weaving.ParsedTypeCache$1");
         types.add("org.glowroot.weaving.ParsedTypeCache$ParseContext");
-        types.add("org.glowroot.weaving.ParsedTypeCache$ParsedTypeClassVisitor");
-        types.add("org.glowroot.weaving.ParsedTypeCache$TypeNameWithUpper");
+        types.add("org.glowroot.weaving.ParsedTypeClassVisitor");
         types.add("org.glowroot.weaving.PatchedAdviceAdapter");
         types.add("org.glowroot.weaving.TypeNames");
         types.add("org.glowroot.weaving.Weaver");
@@ -385,6 +377,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.Weaver$JSRInlinerClassVisitor");
         types.add("org.glowroot.weaving.WeavingClassFileTransformer");
         types.add("org.glowroot.weaving.WeavingClassVisitor");
+        types.add("org.glowroot.weaving.WeavingClassVisitor$AbortWeavingException");
         types.add("org.glowroot.weaving.WeavingClassVisitor$InitMixins");
         types.add("org.glowroot.weaving.WeavingMethodVisitor");
         types.add("org.glowroot.weaving.WeavingMethodVisitor$MarkerException");

@@ -17,47 +17,36 @@ package org.glowroot.weaving;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.security.CodeSource;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Supplier;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
-import org.glowroot.markers.GuardedBy;
-import org.glowroot.markers.Immutable;
 import org.glowroot.markers.Singleton;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
-import static org.objectweb.asm.Opcodes.ASM5;
 
 /**
  * @author Trask Stalnaker
@@ -109,29 +98,15 @@ public class ParsedTypeCache {
     private final ConcurrentMap<String, ParsedType> bootstrapLoaderParsedTypeCache =
             new ConcurrentHashMap<String, ParsedType>();
 
-    @GuardedBy("typeNameUppers")
-    private final SortedSet<TypeNameWithUpper> typeNameWithUppers = Sets.newTreeSet();
+    private final Supplier<ImmutableList<Advice>> advisors;
+    private final ImmutableList<MixinType> mixinTypes;
 
     private final ParsedType javaLangObjectParsedType;
 
-    public ParsedTypeCache() {
-        javaLangObjectParsedType = createParsedTypePlanC("java/lang/Object", Object.class);
-    }
-
-    public List<String> getMatchingTypeNames(String partialTypeName, int limit) {
-        String partialTypeNameUpper = partialTypeName.toUpperCase(Locale.ENGLISH);
-        Set<String> typeNames = Sets.newTreeSet();
-        synchronized (typeNameWithUppers) {
-            for (TypeNameWithUpper typeNameWithUpper : typeNameWithUppers) {
-                if (typeNameWithUpper.getTypeNameUpper().contains(partialTypeNameUpper)) {
-                    typeNames.add(typeNameWithUpper.getTypeName());
-                    if (typeNames.size() >= limit) {
-                        return Lists.newArrayList(typeNames).subList(0, limit);
-                    }
-                }
-            }
-        }
-        return Lists.newArrayList(typeNames);
+    public ParsedTypeCache(Supplier<ImmutableList<Advice>> advisors, List<MixinType> mixinTypes) {
+        this.advisors = advisors;
+        this.mixinTypes = ImmutableList.copyOf(mixinTypes);
+        javaLangObjectParsedType = createParsedTypePlanC(Object.class, advisors.get());
     }
 
     public List<Class<?>> getClassesWithReweavableAdvice() {
@@ -149,6 +124,17 @@ public class ParsedTypeCache {
             }
         }
         return classes;
+    }
+
+    public void clearClassesBeforeReweaving(Iterable<Class<?>> classes) {
+        for (Class<?> clazz : classes) {
+            ClassLoader loader = clazz.getClassLoader();
+            if (loader == null) {
+                bootstrapLoaderParsedTypeCache.remove(clazz.getName());
+            } else {
+                parsedTypeCache.getUnchecked(loader).remove(clazz.getName());
+            }
+        }
     }
 
     public List<Class<?>> getExistingSubClasses(Set<String> rootTypeNames) {
@@ -183,14 +169,13 @@ public class ParsedTypeCache {
         ConcurrentMap<String, ParsedType> loaderParsedTypes = getParsedTypes(loader);
         String typeName = parsedType.getName();
         loaderParsedTypes.put(typeName, parsedType);
-        addTypeNameUpper(typeName);
     }
 
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
-    List<ParsedType> getTypeHierarchy(@Nullable String typeName,
-            @Nullable ClassLoader loader, ParseContext parseContext) {
+    List<ParsedType> getTypeHierarchy(@Nullable String typeName, @Nullable ClassLoader loader,
+            ParseContext parseContext) {
         if (typeName == null || typeName.equals("java.lang.Object")) {
             return ImmutableList.of();
         }
@@ -247,8 +232,6 @@ public class ParsedTypeCache {
                 // (rare) concurrent ParsedType creation, use the one that made it into the map
                 parsedType = storedParsedType;
             }
-            // use interned type name from ParsedType instead of typeName method arg
-            addTypeNameUpper(parsedType.getName());
         }
         return parsedType;
     }
@@ -335,7 +318,6 @@ public class ParsedTypeCache {
 
     private ParsedType createParsedType(String typeName, @Nullable ClassLoader loader)
             throws ClassNotFoundException, IOException {
-        ParsedTypeClassVisitor cv = new ParsedTypeClassVisitor();
         String path = TypeNames.toInternal(typeName) + ".class";
         URL url;
         if (loader == null) {
@@ -373,10 +355,14 @@ public class ParsedTypeCache {
             // org.codehaus.groovy.runtime.callsite.CallSiteClassLoader
             return createParsedTypePlanB(typeName, loader);
         }
+        ParsedTypeClassVisitor cv =
+                new ParsedTypeClassVisitor(advisors.get(), mixinTypes, loader, this, null);
         byte[] bytes = Resources.toByteArray(url);
         ClassReader cr = new ClassReader(bytes);
         cr.accept(cv, 0);
-        return cv.build();
+        ParsedType parsedType = cv.getParsedType();
+        checkNotNull(parsedType); // parsedType is non-null after visiting the class
+        return parsedType;
     }
 
     // plan B covers some class loaders like
@@ -396,7 +382,7 @@ public class ParsedTypeCache {
                     + " had to be loaded using Class.forName() during weaving of one of its"
                     + " subclasses, which means it was not woven itself since weaving is not"
                     + " re-entrant", TypeNames.toInternal(type.getName()), loader);
-            return createParsedTypePlanC(typeName, type);
+            return createParsedTypePlanC(type, advisors.get());
         } else {
             // the type was previously loaded so weaving was not bypassed, yay!
             return parsedType;
@@ -411,12 +397,6 @@ public class ParsedTypeCache {
         }
     }
 
-    private void addTypeNameUpper(String typeName) {
-        synchronized (typeNameWithUppers) {
-            typeNameWithUppers.add(new TypeNameWithUpper(typeName));
-        }
-    }
-
     @Override
     @Pure
     public String toString() {
@@ -427,7 +407,9 @@ public class ParsedTypeCache {
     }
 
     // now that the type has been loaded anyways, build the parsed type via reflection
-    private static ParsedType createParsedTypePlanC(String typeName, Class<?> type) {
+    private static ParsedType createParsedTypePlanC(Class<?> type, ImmutableList<Advice> advisors) {
+        List<AdviceMatcher> adviceMatchers =
+                AdviceMatcher.getAdviceMatchers(type.getName(), advisors);
         List<ParsedMethod> parsedMethods = Lists.newArrayList();
         for (Method method : type.getDeclaredMethods()) {
             if (method.isSynthetic()) {
@@ -439,13 +421,18 @@ public class ParsedTypeCache {
                 argTypes.add(Type.getType(parameterType));
             }
             Type returnType = Type.getType(method.getReturnType());
-            List<String> exceptions = Lists.newArrayList();
-            for (Class<?> exceptionType : method.getExceptionTypes()) {
-                exceptions.add(Type.getInternalName(exceptionType));
+            List<Advice> matchingAdvisors = getMatchingAdvisors(method.getModifiers(),
+                    method.getName(), argTypes, returnType, adviceMatchers);
+            if (!matchingAdvisors.isEmpty() && (method.getModifiers() & ACC_SYNTHETIC) == 0) {
+                // don't add synthetic methods to the parsed type model
+                List<String> exceptions = Lists.newArrayList();
+                for (Class<?> exceptionType : method.getExceptionTypes()) {
+                    exceptions.add(Type.getInternalName(exceptionType));
+                }
+                ParsedMethod parsedMethod = ParsedMethod.from(method.getName(), argTypes,
+                        returnType, method.getModifiers(), null, exceptions, matchingAdvisors);
+                parsedMethods.add(parsedMethod);
             }
-            ParsedMethod parsedMethod = ParsedMethod.from(method.getName(), argTypes, returnType,
-                    method.getModifiers(), null, exceptions);
-            parsedMethods.add(parsedMethod);
         }
         List<String> interfaceNames = Lists.newArrayList();
         for (Class<?> interfaceClass : type.getInterfaces()) {
@@ -453,8 +440,19 @@ public class ParsedTypeCache {
         }
         Class<?> superclass = type.getSuperclass();
         String superName = superclass == null ? null : superclass.getName();
-        return ParsedType.from(type.isInterface(), TypeNames.fromInternal(typeName), superName,
-                interfaceNames, parsedMethods);
+        return ParsedType.from(type.getModifiers(), type.getName(), superName, interfaceNames,
+                parsedMethods);
+    }
+
+    private static List<Advice> getMatchingAdvisors(int access, String name, List<Type> argTypes,
+            Type returnType, List<AdviceMatcher> adviceMatchers) {
+        List<Advice> matchingAdvisors = Lists.newArrayList();
+        for (AdviceMatcher adviceMatcher : adviceMatchers) {
+            if (adviceMatcher.isMethodLevelMatch(name, argTypes, returnType, access)) {
+                matchingAdvisors.add(adviceMatcher.getAdvice());
+            }
+        }
+        return matchingAdvisors;
     }
 
     static class ParseContext {
@@ -474,121 +472,6 @@ public class ParsedTypeCache {
             } else {
                 return className + " (" + codeSource.getLocation() + ")";
             }
-        }
-    }
-
-    @Immutable
-    public static class ParsedMethodOrdering extends Ordering<ParsedMethod> {
-
-        public static final ParsedMethodOrdering INSTANCE = new ParsedMethodOrdering();
-
-        @Override
-        public int compare(@Nullable ParsedMethod left, @Nullable ParsedMethod right) {
-            checkNotNull(left);
-            checkNotNull(right);
-            return ComparisonChain.start()
-                    .compare(getAccessibility(left), getAccessibility(right))
-                    .compare(left.getName(), right.getName())
-                    .compare(left.getArgTypes().size(), right.getArgTypes().size())
-                    .compare(left.getArgTypes().size(), right.getArgTypes().size())
-                    .result();
-        }
-
-        private static int getAccessibility(ParsedMethod parsedMethod) {
-            int modifiers = parsedMethod.getModifiers();
-            if (Modifier.isPublic(modifiers)) {
-                return 1;
-            } else if (Modifier.isProtected(modifiers)) {
-                return 2;
-            } else if (Modifier.isPrivate(modifiers)) {
-                return 4;
-            } else {
-                // package-private
-                return 3;
-            }
-        }
-    }
-
-    public static class ParsedTypeClassVisitor extends ClassVisitor {
-
-        private ParsedType./*@MonotonicNonNull*/Builder parsedTypeBuilder;
-
-        public ParsedTypeClassVisitor() {
-            super(ASM5);
-        }
-
-        @Override
-        public void visit(int version, int access, String name, @Nullable String signature,
-                @Nullable String superName, String/*@Nullable*/[] interfaceNames) {
-            parsedTypeBuilder = ParsedType.builder(Modifier.isInterface(access),
-                    TypeNames.fromInternal(name), TypeNames.fromInternal(superName),
-                    TypeNames.fromInternal(interfaceNames));
-        }
-
-        @Override
-        @Nullable
-        public MethodVisitor visitMethod(int access, String name, String desc,
-                @Nullable String signature, String/*@Nullable*/[] exceptions) {
-            checkNotNull(parsedTypeBuilder, "Call to visit() is required");
-            if ((access & ACC_SYNTHETIC) == 0) {
-                // don't add synthetic methods to the parsed type model
-                List<String> exceptionList = exceptions == null ? ImmutableList.<String>of()
-                        : Arrays.asList(exceptions);
-                parsedTypeBuilder.addParsedMethod(access, name, desc, signature, exceptionList);
-            }
-            return null;
-        }
-        public ParsedType build() {
-            checkNotNull(parsedTypeBuilder, "Call to visit() is required");
-            return parsedTypeBuilder.build();
-        }
-    }
-
-    private static class TypeNameWithUpper implements Comparable<TypeNameWithUpper> {
-
-        private final String typeName;
-        private final String typeNameUpper;
-
-        private TypeNameWithUpper(String typeName) {
-            this.typeName = typeName;
-            this.typeNameUpper = typeName.toUpperCase(Locale.ENGLISH);
-        }
-
-        private String getTypeName() {
-            return typeName;
-        }
-
-        private String getTypeNameUpper() {
-            return typeNameUpper;
-        }
-
-        @Override
-        @Pure
-        public int compareTo(TypeNameWithUpper o) {
-            // sort case-insensitive (using upper), and fallback to case-sensitive sort when
-            // uppers are equal
-            return ComparisonChain.start()
-                    .compare(typeNameUpper, o.typeNameUpper)
-                    .compare(typeName, o.typeName)
-                    .result();
-        }
-
-        // equals is defined only in terms of typeName since typeNameUpper is just a cached value
-        @Override
-        @Pure
-        public boolean equals(@Nullable Object obj) {
-            if (obj instanceof TypeNameWithUpper) {
-                TypeNameWithUpper that = (TypeNameWithUpper) obj;
-                return typeName.equals(that.typeName);
-            }
-            return false;
-        }
-
-        // hashCode is defined only in terms of typeName since typeNameUpper is just a cached value
-        @Override
-        @Pure
-        public int hashCode() {
-            return typeName.hashCode();
         }
     }
 }

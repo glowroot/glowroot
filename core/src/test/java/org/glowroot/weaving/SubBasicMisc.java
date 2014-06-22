@@ -25,4 +25,7 @@ public class SubBasicMisc extends BasicMisc implements Misc {
     public void execute1() {
         new SubBasicMisc();
     }
+
+    @Override
+    void superBasic() {}
 }

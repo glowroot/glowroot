@@ -42,34 +42,41 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Immutable
 public class ParsedType {
 
-    private final boolean iface;
+    private final int modifiers;
     private final String name;
     // null superName means the super type is Object.class
     // (a ParsedType is never created for Object.class)
     @Nullable
     private final String superName;
     private final ImmutableList<String> interfaceNames;
-    private final ImmutableList<ParsedMethod> methods;
-    private final boolean hasReweavableAdvice;
+    private final ImmutableList<ParsedMethod> parsedMethods;
+
+    private final ImmutableList<MixinType> mixinTypes;
 
     // interfaces that do not extend anything have null superClass
-    static ParsedType from(boolean iface, String name, @Nullable String superName,
+    static ParsedType from(int modifiers, String name, @Nullable String superName,
             List<String> interfaceNames, List<ParsedMethod> methods) {
-        return new ParsedType(iface, name, superName, interfaceNames, methods, false);
+        return new ParsedType(modifiers, name, superName, interfaceNames, methods,
+                ImmutableList.<MixinType>of());
     }
 
-    private ParsedType(boolean iface, String name, @Nullable String superName,
-            List<String> interfaceNames, List<ParsedMethod> methods, boolean hasReweavableAdvice) {
-        this.iface = iface;
+    private ParsedType(int modifiers, String name, @Nullable String superName,
+            List<String> interfaceNames, List<ParsedMethod> parsedMethods,
+            List<MixinType> mixinTypes) {
+        this.modifiers = modifiers;
         this.name = name.intern();
         this.superName = superName == null ? null : superName.intern();
         this.interfaceNames = ParsedMethod.internStringList(interfaceNames);
-        this.methods = ImmutableList.copyOf(methods);
-        this.hasReweavableAdvice = hasReweavableAdvice;
+        this.parsedMethods = ImmutableList.copyOf(parsedMethods);
+        this.mixinTypes = ImmutableList.copyOf(mixinTypes);
     }
 
     boolean isInterface() {
-        return iface;
+        return Modifier.isInterface(modifiers);
+    }
+
+    boolean isAbstract() {
+        return Modifier.isAbstract(modifiers);
     }
 
     String getName() {
@@ -88,7 +95,7 @@ public class ParsedType {
     }
 
     public Iterable<ParsedMethod> getMethodsExcludingNative() {
-        return Iterables.filter(methods, new Predicate<ParsedMethod>() {
+        return Iterables.filter(parsedMethods, new Predicate<ParsedMethod>() {
             @Override
             public boolean apply(@Nullable ParsedMethod parsedMethod) {
                 checkNotNull(parsedMethod);
@@ -97,23 +104,23 @@ public class ParsedType {
         });
     }
 
-    Iterable<ParsedMethod> getMethodsIncludingNative() {
-        return methods;
+    List<ParsedMethod> getParsedMethods() {
+        return parsedMethods;
     }
 
-    @Nullable
-    ParsedMethod getMethodOverride(ParsedMethod inheritedMethod) {
-        for (ParsedMethod method : methods) {
-            if (method.getName().equals(inheritedMethod.getName())
-                    && method.getArgTypes().equals(inheritedMethod.getArgTypes())) {
-                return method;
-            }
-        }
-        return null;
+    ImmutableList<MixinType> getMixinTypes() {
+        return mixinTypes;
     }
 
     boolean hasReweavableAdvice() {
-        return hasReweavableAdvice;
+        for (ParsedMethod parsedMethod : parsedMethods) {
+            for (Advice advice : parsedMethod.getAdvisors()) {
+                if (advice.isReweavable()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
@@ -121,12 +128,11 @@ public class ParsedType {
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof ParsedType) {
             ParsedType that = (ParsedType) obj;
-            return Objects.equal(iface, that.iface)
+            return Objects.equal(modifiers, that.modifiers)
                     && Objects.equal(name, that.name)
                     && Objects.equal(superName, that.superName)
                     && Objects.equal(interfaceNames, that.interfaceNames)
-                    && Objects.equal(methods, that.methods)
-                    && Objects.equal(hasReweavableAdvice, that.hasReweavableAdvice);
+                    && Objects.equal(parsedMethods, that.parsedMethods);
         }
         return false;
     }
@@ -134,63 +140,64 @@ public class ParsedType {
     @Override
     @Pure
     public int hashCode() {
-        return Objects.hashCode(iface, name, superName, interfaceNames, methods,
-                hasReweavableAdvice);
+        return Objects.hashCode(modifiers, name, superName, interfaceNames, parsedMethods);
     }
 
     @Override
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("interface", iface)
+                .add("modifiers", modifiers)
                 .add("name", name)
                 .add("superName", superName)
                 .add("interfaceNames", interfaceNames)
-                .add("methods", methods)
-                .add("hasReweavableAdvice", hasReweavableAdvice)
+                .add("methods", parsedMethods)
                 .toString();
     }
 
-    static Builder builder(boolean iface, String name, @Nullable String superName,
+    static Builder builder(int modifiers, String name, @Nullable String superName,
             ImmutableList<String> interfaceNames) {
-        return new Builder(iface, name, superName, interfaceNames);
+        return new Builder(modifiers, name, superName, interfaceNames);
     }
 
     @NotThreadSafe
     static class Builder {
 
-        private final boolean iface;
+        private final int modifiers;
         private final String name;
         @Nullable
         private final String superName;
         private final List<String> interfaceNames;
         private final List<ParsedMethod> methods = Lists.newArrayList();
-        private boolean hasReweavableAdvice;
+        private final List<MixinType> mixinTypes = Lists.newArrayList();
 
-        private Builder(boolean iface, String name, @Nullable String superName,
+        private Builder(int modifiers, String name, @Nullable String superName,
                 ImmutableList<String> interfaceNames) {
-            this.iface = iface;
+            this.modifiers = modifiers;
             this.name = name;
             this.superName = superName;
             this.interfaceNames = interfaceNames;
         }
 
         ParsedMethod addParsedMethod(int access, String name, String desc,
-                @Nullable String signature, List<String> exceptions) {
+                @Nullable String signature, List<String> exceptions, List<Advice> advisors) {
             List<Type> argTypes = Arrays.asList(Type.getArgumentTypes(desc));
             ParsedMethod method = ParsedMethod.from(name, argTypes, Type.getReturnType(desc),
-                    access, signature, exceptions);
+                    access, signature, exceptions, advisors);
             methods.add(method);
             return method;
         }
 
-        void setHasReweavableAdvice(boolean hasReweavableAdvice) {
-            this.hasReweavableAdvice = hasReweavableAdvice;
+        void addMixinType(MixinType mixinType) {
+            mixinTypes.add(mixinType);
+        }
+
+        void addMixinTypes(List<MixinType> mixinTypes) {
+            this.mixinTypes.addAll(mixinTypes);
         }
 
         ParsedType build() {
-            return new ParsedType(iface, name, superName, interfaceNames, methods,
-                    hasReweavableAdvice);
+            return new ParsedType(modifiers, name, superName, interfaceNames, methods, mixinTypes);
         }
     }
 }

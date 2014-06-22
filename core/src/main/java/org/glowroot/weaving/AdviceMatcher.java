@@ -22,7 +22,6 @@ import java.util.regex.Pattern;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
@@ -41,72 +40,27 @@ class AdviceMatcher {
     private static final Logger logger = LoggerFactory.getLogger(AdviceMatcher.class);
 
     private final Advice advice;
-    private final boolean targetTypeMatch;
-    private final ImmutableList<ParsedType> preMatchedSuperTypes;
 
-    AdviceMatcher(Advice advice, Type targetType, Iterable<ParsedType> superTypes) {
+    static ImmutableList<AdviceMatcher> getAdviceMatchers(String className, List<Advice> advisors) {
+        List<AdviceMatcher> adviceMatchers = Lists.newArrayList();
+        for (Advice advice : advisors) {
+            if (AdviceMatcher.isTypeMatch(className, advice)) {
+                adviceMatchers.add(new AdviceMatcher(advice));
+            }
+        }
+        return ImmutableList.copyOf(adviceMatchers);
+    }
+
+    private AdviceMatcher(Advice advice) {
         this.advice = advice;
-        targetTypeMatch = isTypeMatch(targetType.getClassName(), advice);
-        List<ParsedType> preMatchedSuperTypes = Lists.newArrayList();
-        for (ParsedType superType : superTypes) {
-            if (isTypeMatch(superType.getName(), advice)) {
-                preMatchedSuperTypes.add(superType);
-            }
-        }
-        this.preMatchedSuperTypes = ImmutableList.copyOf(preMatchedSuperTypes);
     }
 
-    boolean isClassLevelMatch() {
-        return targetTypeMatch || !preMatchedSuperTypes.isEmpty();
-    }
-
-    boolean isMethodLevelMatch(int access, ParsedMethod parsedMethod,
-            @Nullable String exactTargetTypeOverride) {
-        if (!isMethodNameMatch(parsedMethod.getName())
-                || !isMethodArgTypesMatch(parsedMethod.getArgTypes())) {
+    boolean isMethodLevelMatch(String methodName, List<Type> argTypes, Type returnType,
+            int modifiers) {
+        if (!isMethodNameMatch(methodName) || !isMethodArgTypesMatch(argTypes)) {
             return false;
         }
-        if (exactTargetTypeOverride != null) {
-            return isTypeMatch(exactTargetTypeOverride, advice)
-                    && isMethodReturnMatch(parsedMethod.getReturnType())
-                    && isMethodModifiersMatch(parsedMethod.getModifiers());
-        }
-        if (targetTypeMatch && isMethodReturnMatch(parsedMethod.getReturnType())
-                && isMethodModifiersMatch(parsedMethod.getModifiers())) {
-            return true;
-        }
-        if (Modifier.isStatic(access)) {
-            // non-static methods do not need to be tested against matching super types
-            return false;
-        }
-        // need to test return match and modifiers match against overridden method
-        for (ParsedType type : preMatchedSuperTypes) {
-            if (parsedMethod.getName().equals("<init>")) {
-                // special rules for constructors
-                if (type.isInterface() && isMethodModifiersMatch(parsedMethod.getModifiers())) {
-                    // very special case for pointcut on "interface constructor"
-                    return true;
-                }
-                // don't match super class constructors if it's not an "interface constructor"
-                //
-                // this is primarily because the advice for a constructor is applied after the
-                // super/this constructor is called (due to bytecode limitations, see ASM's
-                // AdviceAdapter) and so ignoreSameNested does not work to filter out nested
-                // constructors, and advice that tries to count "number of instantiations" (e.g.
-                // the basic glowroot trace metric) would not work either since advice cannot detect
-                // and filter out nested calls
-                continue;
-            }
-            ParsedMethod overriddenParsedMethod = type.getMethodOverride(parsedMethod);
-            if (overriddenParsedMethod != null
-                    && isMethodReturnMatch(overriddenParsedMethod.getReturnType())
-                    && isMethodModifiersMatch(overriddenParsedMethod.getModifiers())) {
-                // found overridden method in a matching super type, and the overridden method
-                // has matching return type and modifiers
-                return true;
-            }
-        }
-        return false;
+        return isMethodReturnMatch(returnType) && isMethodModifiersMatch(modifiers);
     }
 
     Advice getAdvice() {
@@ -130,7 +84,7 @@ class AdviceMatcher {
         }
     }
 
-    private boolean isMethodArgTypesMatch(ImmutableList<String> argTypes) {
+    private boolean isMethodArgTypesMatch(List<Type> argTypes) {
         String[] pointcutMethodArgs = advice.getPointcut().methodArgTypes();
         for (int i = 0; i < pointcutMethodArgs.length; i++) {
             if (pointcutMethodArgs[i].equals("..")) {
@@ -148,7 +102,7 @@ class AdviceMatcher {
             }
             // only supporting * at this point
             if (!pointcutMethodArgs[i].equals("*")
-                    && !pointcutMethodArgs[i].equals(argTypes.get(i))) {
+                    && !pointcutMethodArgs[i].equals(argTypes.get(i).getClassName())) {
                 return false;
             }
         }
@@ -156,9 +110,10 @@ class AdviceMatcher {
         return argTypes.size() == pointcutMethodArgs.length;
     }
 
-    private boolean isMethodReturnMatch(String returnType) {
+    private boolean isMethodReturnMatch(Type returnType) {
         String pointcutMethodReturn = advice.getPointcut().methodReturnType();
-        return pointcutMethodReturn.isEmpty() || pointcutMethodReturn.equals(returnType);
+        return pointcutMethodReturn.isEmpty()
+                || pointcutMethodReturn.equals(returnType.getClassName());
     }
 
     private boolean isMethodModifiersMatch(int modifiers) {
@@ -195,24 +150,17 @@ class AdviceMatcher {
     @Override
     @Pure
     public String toString() {
-        List<String> preMatchedSuperTypeNames = Lists.newArrayList();
-        for (ParsedType preMatchedSuperType : preMatchedSuperTypes) {
-            preMatchedSuperTypeNames.add(preMatchedSuperType.getName());
-        }
         return Objects.toStringHelper(this)
                 .add("advice", advice)
-                .add("targetTypeMatch", targetTypeMatch)
-                // shallow display of parsed types
-                .add("preMatchedSuperTypes", preMatchedSuperTypeNames)
                 .toString();
     }
 
-    private static boolean isTypeMatch(String typeName, Advice advice) {
+    static boolean isTypeMatch(String className, Advice advice) {
         Pattern pointcutTypePattern = advice.getPointcutTypePattern();
         if (pointcutTypePattern == null) {
-            return advice.getPointcut().type().equals(typeName);
+            return advice.getPointcut().type().equals(className);
         } else {
-            return pointcutTypePattern.matcher(typeName).matches();
+            return pointcutTypePattern.matcher(className).matches();
         }
     }
 }

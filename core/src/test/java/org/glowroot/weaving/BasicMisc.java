@@ -21,7 +21,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class BasicMisc implements Misc, Misc2, Misc3 {
+public class BasicMisc extends SuperBasicMisc implements Misc, Misc2, Misc3 {
 
     // the cascading constructor is for testing that MixinInit is called exactly once
     public BasicMisc() {
@@ -44,7 +44,7 @@ public class BasicMisc implements Misc, Misc2, Misc3 {
     }
 
     @Override
-    public void executeWithArgs(String one, int two) {}
+    public final void executeWithArgs(String one, int two) {}
 
     // Misc2 implementation
     @Override
@@ -55,6 +55,9 @@ public class BasicMisc implements Misc, Misc2, Misc3 {
     public BasicMisc identity(BasicMisc misc) {
         return misc;
     }
+
+    @Override
+    void superBasic() {}
 
     private void withInnerArg(@SuppressWarnings("unused") @Nullable Inner inner) {}
 

@@ -32,7 +32,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
@@ -44,13 +43,10 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.config.PointcutConfig;
+import org.glowroot.local.ui.UiParsedMethod.UiParsedMethodOrdering;
 import org.glowroot.markers.Singleton;
 import org.glowroot.trace.AdviceCache;
 import org.glowroot.trace.TraceModule;
-import org.glowroot.weaving.ParsedMethod;
-import org.glowroot.weaving.ParsedType;
-import org.glowroot.weaving.ParsedTypeCache;
-import org.glowroot.weaving.ParsedTypeCache.ParsedMethodOrdering;
 
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
@@ -73,15 +69,12 @@ class PointcutConfigJsonService {
     private final ConfigService configService;
     private final AdviceCache adviceCache;
     private final TraceModule traceModule;
-    private final ParsedTypeCache parsedTypeCache;
     private final ClasspathCache classpathCache;
 
     PointcutConfigJsonService(ConfigService configService, AdviceCache adviceCache,
-            ParsedTypeCache parsedTypeCache, ClasspathCache classpathTypeCache,
-            TraceModule traceModule) {
+            ClasspathCache classpathTypeCache, TraceModule traceModule) {
         this.configService = configService;
         this.adviceCache = adviceCache;
-        this.parsedTypeCache = parsedTypeCache;
         this.classpathCache = classpathTypeCache;
         this.traceModule = traceModule;
     }
@@ -147,10 +140,10 @@ class PointcutConfigJsonService {
         logger.debug("getMethodSignatures(): content={}", content);
         MethodSignaturesRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, MethodSignaturesRequest.class);
-        List<ParsedMethod> parsedMethods = getParsedMethods(request.getType(),
-                request.getMethodName());
+        List<UiParsedMethod> parsedMethods =
+                getParsedMethods(request.getType(), request.getMethodName());
         ArrayNode matchingMethods = mapper.createArrayNode();
-        for (ParsedMethod parsedMethod : parsedMethods) {
+        for (UiParsedMethod parsedMethod : parsedMethods) {
             ObjectNode matchingMethod = mapper.createObjectNode();
             matchingMethod.put("name", parsedMethod.getName());
             ArrayNode argTypes = mapper.createArrayNode();
@@ -212,7 +205,6 @@ class PointcutConfigJsonService {
     // returns the first <limit> matching type names, ordered alphabetically (case-insensitive)
     private ImmutableList<String> getMatchingTypeNames(String partialTypeName, int limit) {
         Set<String> typeNames = Sets.newHashSet();
-        typeNames.addAll(parsedTypeCache.getMatchingTypeNames(partialTypeName, limit));
         typeNames.addAll(classpathCache.getMatchingTypeNames(partialTypeName, limit));
         ImmutableList<String> sortedTypeNames =
                 Ordering.from(String.CASE_INSENSITIVE_ORDER).immutableSortedCopy(typeNames);
@@ -228,18 +220,19 @@ class PointcutConfigJsonService {
             int limit) {
         String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
         Set<String> methodNames = Sets.newHashSet();
-        for (ParsedType parsedType : getParsedTypes(typeName)) {
-            for (ParsedMethod parsedMethod : parsedType.getMethodsExcludingNative()) {
-                String methodName = parsedMethod.getName();
-                if (methodName.equals("<init>") || methodName.equals("<clinit>")) {
-                    // static initializers are not supported by weaver
-                    // (see AdviceMatcher.isMethodNameMatch())
-                    // and constructors do not support @OnBefore advice at this time
-                    continue;
-                }
-                if (methodName.toUpperCase(Locale.ENGLISH).contains(partialMethodNameUpper)) {
-                    methodNames.add(methodName);
-                }
+        for (UiParsedMethod parsedMethod : classpathCache.getParsedMethods(typeName)) {
+            if (Modifier.isNative(parsedMethod.getModifiers())) {
+                continue;
+            }
+            String methodName = parsedMethod.getName();
+            if (methodName.equals("<init>") || methodName.equals("<clinit>")) {
+                // static initializers are not supported by weaver
+                // (see AdviceMatcher.isMethodNameMatch())
+                // and constructors do not support @OnBefore advice at this time
+                continue;
+            }
+            if (methodName.toUpperCase(Locale.ENGLISH).contains(partialMethodNameUpper)) {
+                methodNames.add(methodName);
             }
         }
         ImmutableList<String> sortedMethodNames =
@@ -251,26 +244,19 @@ class PointcutConfigJsonService {
         }
     }
 
-    private List<ParsedMethod> getParsedMethods(String typeName, String methodName) {
-        List<ParsedType> parsedTypes = getParsedTypes(typeName);
+    private List<UiParsedMethod> getParsedMethods(String typeName, String methodName) {
         // use set to remove duplicate methods (e.g. same type loaded by multiple class loaders)
-        Set<ParsedMethod> parsedMethods = Sets.newHashSet();
-        for (ParsedType parsedType : parsedTypes) {
-            for (ParsedMethod parsedMethod : parsedType.getMethodsExcludingNative()) {
-                if (parsedMethod.getName().equals(methodName)) {
-                    parsedMethods.add(parsedMethod);
-                }
+        Set<UiParsedMethod> parsedMethods = Sets.newHashSet();
+        for (UiParsedMethod parsedMethod : classpathCache.getParsedMethods(typeName)) {
+            if (Modifier.isNative(parsedMethod.getModifiers())) {
+                continue;
+            }
+            if (parsedMethod.getName().equals(methodName)) {
+                parsedMethods.add(parsedMethod);
             }
         }
         // order methods by accessibility, then by name, then by number of args
-        return ParsedMethodOrdering.INSTANCE.sortedCopy(parsedMethods);
-    }
-
-    private List<ParsedType> getParsedTypes(String typeName) {
-        List<ParsedType> parsedTypes = Lists.newArrayList();
-        parsedTypes.addAll(parsedTypeCache.getParsedTypes(typeName));
-        parsedTypes.addAll(classpathCache.getParsedTypes(typeName));
-        return parsedTypes;
+        return UiParsedMethodOrdering.INSTANCE.sortedCopy(parsedMethods);
     }
 
     private static class TypesRequest {

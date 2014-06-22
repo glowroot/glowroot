@@ -111,6 +111,10 @@ class AdminJsonService {
         if (classes.isEmpty()) {
             return "{\"classes\":0}";
         }
+        // need to clear these classes from ParsedTypeCache, otherwise if a subclass and its parent
+        // class are both in the list and the subclass is re-transformed first, it will use the
+        // old cached ParsedType for its parent which will have the old ParsedMethod advisors
+        parsedTypeCache.clearClassesBeforeReweaving(classes);
         instrumentation.retransformClasses(Iterables.toArray(classes, Class.class));
         List<Class<?>> updatedReweavableClasses = parsedTypeCache.getClassesWithReweavableAdvice();
         // all existing reweavable classes were woven
