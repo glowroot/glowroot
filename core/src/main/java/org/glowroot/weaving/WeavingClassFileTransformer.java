@@ -21,9 +21,6 @@ import java.security.ProtectionDomain;
 import java.util.List;
 
 import com.google.common.base.Supplier;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -40,34 +37,11 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassFileTransformer.class);
 
-    private final ImmutableList<MixinType> mixinTypes;
-    private final ImmutableList<Advice> pluginAdvisors;
-    private final Supplier<ImmutableList<Advice>> pointcutConfigAdvisors;
-
-    private final ParsedTypeCache parsedTypeCache;
     private final WeavingTimerService traceMetricTimerService;
-    private final boolean traceMetricWrapperMethods;
 
-    // it is important to only have a single weaver per class loader because storing state of each
-    // previously parsed class in order to re-construct class hierarchy in case one or more .class
-    // files aren't available via ClassLoader.getResource()
-    //
-    // weak keys to prevent retention of class loaders
-    private final LoadingCache<ClassLoader, Weaver> weavers =
-            CacheBuilder.newBuilder().weakKeys()
-                    .build(new CacheLoader<ClassLoader, Weaver>() {
-                        @Override
-                        public Weaver load(ClassLoader loader) {
-                            return new Weaver(mixinTypes, pluginAdvisors, pointcutConfigAdvisors,
-                                    parsedTypeCache, traceMetricTimerService,
-                                    traceMetricWrapperMethods);
-                        }
-                    });
-    // the weaver for the bootstrap class loader (null) has to be stored separately since
-    // LoadingCache doesn't accept null keys, and using an Optional<ClassLoader> for the key makes
-    // the weakness on the Optional instance instead of on the ClassLoader instance
-    @Nullable
-    private final Weaver bootstrapLoaderWeaver;
+    private final Weaver weaver;
+
+    private final boolean weaveBootstrapClassLoader;
 
     // because of the crazy pre-initialization of javaagent classes (see
     // org.glowroot.core.weaving.PreInitializeClasses), all inputs into this class should be
@@ -80,22 +54,13 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             Supplier<ImmutableList<Advice>> pointcutConfigAdvisors,
             ParsedTypeCache parsedTypeCache, WeavingTimerService weavingTimerService,
             boolean traceMetricWrapperMethods) {
-        this.mixinTypes = ImmutableList.copyOf(mixinTypes);
-        this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
-        this.pointcutConfigAdvisors = pointcutConfigAdvisors;
-        this.parsedTypeCache = parsedTypeCache;
         this.traceMetricTimerService = weavingTimerService;
-        this.traceMetricWrapperMethods = traceMetricWrapperMethods;
-        if (isInBootstrapClassLoader()) {
-            // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
-            // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
-            // the woven code will not be able to see glowroot classes (e.g. PluginServices)
-            bootstrapLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors,
-                    this.pointcutConfigAdvisors, parsedTypeCache, weavingTimerService,
-                    traceMetricWrapperMethods);
-        } else {
-            bootstrapLoaderWeaver = null;
-        }
+        weaver = new Weaver(mixinTypes, pluginAdvisors, pointcutConfigAdvisors, parsedTypeCache,
+                traceMetricTimerService, traceMetricWrapperMethods);
+        // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
+        // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
+        // the woven code will not be able to see glowroot classes (e.g. PluginServices)
+        weaveBootstrapClassLoader = isInBootstrapClassLoader();
     }
 
     // From the javadoc on ClassFileTransformer.transform():
@@ -141,8 +106,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             // sun/reflect/GeneratedMethodAccessor..
             return null;
         }
-        Weaver weaver = getWeaver(loader);
-        if (weaver == null) {
+        if (loader == null && !weaveBootstrapClassLoader) {
             // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
             // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
             // the woven code will not be able to see glowroot classes (e.g. PluginServices)
@@ -155,15 +119,6 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             logger.debug("transform(): transformed {}", className);
         }
         return transformedBytes;
-    }
-
-    @Nullable
-    private Weaver getWeaver(@Nullable ClassLoader loader) {
-        if (loader == null) {
-            return bootstrapLoaderWeaver;
-        } else {
-            return weavers.getUnchecked(loader);
-        }
     }
 
     public static boolean isInBootstrapClassLoader() {

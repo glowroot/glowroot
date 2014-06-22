@@ -384,7 +384,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.Weaver$ComputeFramesClassWriter");
         types.add("org.glowroot.weaving.Weaver$JSRInlinerClassVisitor");
         types.add("org.glowroot.weaving.WeavingClassFileTransformer");
-        types.add("org.glowroot.weaving.WeavingClassFileTransformer$1");
         types.add("org.glowroot.weaving.WeavingClassVisitor");
         types.add("org.glowroot.weaving.WeavingClassVisitor$InitMixins");
         types.add("org.glowroot.weaving.WeavingMethodVisitor");
