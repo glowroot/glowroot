@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.OptionalReturn;
+import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindMethodArgArray;
 import org.glowroot.api.weaving.BindMethodName;
@@ -516,6 +517,48 @@ public class SomeAspect {
         }
     }
 
+    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1")
+    public static class BindClassMetaAdvice {
+        public static final ThreadLocal<TestClassMeta> isEnabledClassMeta =
+                new ThreadLocal<TestClassMeta>();
+        public static final ThreadLocal<TestClassMeta> onBeforeClassMeta =
+                new ThreadLocal<TestClassMeta>();
+        public static final ThreadLocal<TestClassMeta> onReturnClassMeta =
+                new ThreadLocal<TestClassMeta>();
+        public static final ThreadLocal<TestClassMeta> onThrowClassMeta =
+                new ThreadLocal<TestClassMeta>();
+        public static final ThreadLocal<TestClassMeta> onAfterClassMeta =
+                new ThreadLocal<TestClassMeta>();
+        @IsEnabled
+        public static boolean isEnabled(@BindClassMeta TestClassMeta traveler) {
+            isEnabledClassMeta.set(traveler);
+            return true;
+        }
+        @OnBefore
+        public static void onBefore(@BindClassMeta TestClassMeta traveler) {
+            onBeforeClassMeta.set(traveler);
+        }
+        @OnReturn
+        public static void onReturn(@BindClassMeta TestClassMeta traveler) {
+            onReturnClassMeta.set(traveler);
+        }
+        @OnThrow
+        public static void onThrow(@BindClassMeta TestClassMeta traveler) {
+            onThrowClassMeta.set(traveler);
+        }
+        @OnAfter
+        public static void onAfter(@BindClassMeta TestClassMeta traveler) {
+            onAfterClassMeta.set(traveler);
+        }
+        public static void resetThreadLocals() {
+            isEnabledClassMeta.remove();
+            onBeforeClassMeta.remove();
+            onReturnClassMeta.remove();
+            onThrowClassMeta.remove();
+            onAfterClassMeta.remove();
+        }
+    }
+
     @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
     public static class BindReturnAdvice {
         public static final ThreadLocal<String> returnValue = new ThreadLocal<String>();
@@ -1001,6 +1044,19 @@ public class SomeAspect {
         }
         private void increment() {
             set(get() + 1);
+        }
+    }
+
+    public static class TestClassMeta {
+
+        private final Class<?> clazz;
+
+        public TestClassMeta(Class<?> clazz) {
+            this.clazz = clazz;
+        }
+
+        public String getClazzName() {
+            return clazz.getName();
         }
     }
 }

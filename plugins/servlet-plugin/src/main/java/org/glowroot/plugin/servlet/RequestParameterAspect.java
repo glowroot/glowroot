@@ -16,6 +16,7 @@
 package org.glowroot.plugin.servlet;
 
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -37,16 +38,16 @@ public class RequestParameterAspect {
             return pluginServices.isEnabled();
         }
         @OnAfter
-        public static void onAfter(@BindReceiver Object realRequest) {
+        public static void onAfter(@BindReceiver Object request,
+                @BindClassMeta RequestInvoker requestInvoker) {
             // only now is it safe to get parameters (if parameters are retrieved before this, it
             // could prevent a servlet from choosing to read the underlying stream instead of using
             // the getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
             ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
             if (messageSupplier != null && !messageSupplier.isRequestParametersCaptured()) {
                 // the request is being traced and the parameter map hasn't been captured yet
-                HttpServletRequest request = HttpServletRequest.from(realRequest);
-                messageSupplier.setCaptureRequestParameters(
-                        DetailCapture.captureRequestParameters(request));
+                messageSupplier.setCaptureRequestParameters(DetailCapture
+                        .captureRequestParameters(requestInvoker.getParameterMap(request)));
             }
         }
     }

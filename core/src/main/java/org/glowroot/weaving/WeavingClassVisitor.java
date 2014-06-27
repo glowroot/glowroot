@@ -35,6 +35,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
@@ -55,6 +56,12 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.NEW;
+import static org.objectweb.asm.Opcodes.PUTSTATIC;
+import static org.objectweb.asm.Opcodes.RETURN;
 
 /**
  * @author Trask Stalnaker
@@ -83,6 +90,12 @@ class WeavingClassVisitor extends ClassVisitor {
     private boolean nothingAtAllToWeave;
 
     private int innerMethodCounter;
+
+    // these are for handling class metas
+    private boolean maybeHasClassMetas;
+    @MonotonicNonNull
+    private MethodVisitor clinitMethodVisitor;
+    private final Set<Class<?>> classMetas = Sets.newHashSet();
 
     public WeavingClassVisitor(ClassVisitor cv, ImmutableList<Advice> advisors,
             ImmutableList<MixinType> mixinTypes, @Nullable ClassLoader loader,
@@ -113,6 +126,24 @@ class WeavingClassVisitor extends ClassVisitor {
         if (nothingAtAllToWeave) {
             return;
         }
+        for (AdviceMatcher adviceMatcher : parsedTypeClassVisitor.getAdviceMatchers()) {
+            if (!adviceMatcher.getAdvice().getClassMetas().isEmpty()) {
+                maybeHasClassMetas = true;
+                break;
+            }
+        }
+        if (!maybeHasClassMetas) {
+            outer: for (ParsedType parsedType : parsedTypeClassVisitor.getSuperParsedTypes()) {
+                for (ParsedMethod parsedMethod : parsedType.getParsedMethods()) {
+                    for (Advice advice : parsedMethod.getAdvisors()) {
+                        if (!advice.getClassMetas().isEmpty()) {
+                            maybeHasClassMetas = true;
+                            break outer;
+                        }
+                    }
+                }
+            }
+        }
         type = Type.getObjectType(name);
         String/*@Nullable*/[] interfacesIncludingMixins =
                 getInterfacesIncludingMixins(interfaceNamesNullable,
@@ -135,6 +166,16 @@ class WeavingClassVisitor extends ClassVisitor {
             // don't try to weave abstract, native and synthetic methods
             return cv.visitMethod(access, name, desc, signature, exceptions);
         }
+        if (name.equals("<clinit>") && maybeHasClassMetas) {
+            clinitMethodVisitor =
+                    checkNotNull(cv.visitMethod(access, name, desc, signature, exceptions));
+            clinitMethodVisitor.visitMethodInsn(INVOKESTATIC, type.getInternalName(),
+                    "original$clinit$glowroot", desc, false);
+            return cv.visitMethod(access, "original$clinit$glowroot", desc, signature, exceptions);
+        }
+        for (Advice matchingAdvice : matchingAdvisors) {
+            classMetas.addAll(matchingAdvice.getClassMetas());
+        }
         if (name.equals("<init>") && !parsedTypeClassVisitor.getMatchedMixinTypes().isEmpty()) {
             return visitInitWithMixin(access, name, desc, signature, exceptions, matchingAdvisors);
         }
@@ -155,6 +196,36 @@ class WeavingClassVisitor extends ClassVisitor {
             addMixin(mixinType);
         }
         handleInheritedMethodsThatNowFulfillAdvice(parsedType);
+        // handle static initializer at end, since handleInheritedMethodsThatNowFulfillAdvice()
+        // above could add new classMetas
+        if (!classMetas.isEmpty()) {
+            if (clinitMethodVisitor == null) {
+                clinitMethodVisitor =
+                        checkNotNull(cv.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null));
+            }
+            clinitMethodVisitor.visitCode();
+            for (Class<?> classMeta : classMetas) {
+                String classMetaInternalName = Type.getInternalName(classMeta);
+                String classMetaFieldName =
+                        "glowroot$class$meta$" + classMetaInternalName.replace('/', '$');
+                FieldVisitor fv = cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC,
+                        classMetaFieldName, "L" + classMetaInternalName + ";", null, null);
+                fv.visitEnd();
+                clinitMethodVisitor.visitTypeInsn(NEW, classMetaInternalName);
+                clinitMethodVisitor.visitInsn(DUP);
+                clinitMethodVisitor.visitLdcInsn(type);
+                clinitMethodVisitor.visitMethodInsn(INVOKESPECIAL, classMetaInternalName,
+                        "<init>", "(Ljava/lang/Class;)V", false);
+                clinitMethodVisitor.visitFieldInsn(PUTSTATIC, type.getInternalName(),
+                        classMetaFieldName, "L" + classMetaInternalName + ";");
+            }
+        }
+        if (clinitMethodVisitor != null) {
+            clinitMethodVisitor.visitInsn(RETURN);
+            clinitMethodVisitor.visitMaxs(0, 0);
+            clinitMethodVisitor.visitEnd();
+        }
+        cv.visitEnd();
     }
 
     boolean isNothingAtAllToWeave() {

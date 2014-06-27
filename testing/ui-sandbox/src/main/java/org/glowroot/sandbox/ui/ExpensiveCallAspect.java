@@ -28,7 +28,7 @@ import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
 import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.UnresolvedMethod;
+import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -46,9 +46,6 @@ public class ExpensiveCallAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
 
-    private static final UnresolvedMethod getSpanText =
-            UnresolvedMethod.from("org.glowroot.sandbox.ui.ExpensiveCall", "getSpanText");
-
     private static final Random random = new Random();
     private static final Exception nestedCause = new IllegalArgumentException(
             "a cause with a different stack trace");
@@ -65,10 +62,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensive) {
+        public static Span onBefore(@BindReceiver Object expensiveCall,
+                @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
             // not delegating to onBeforeInternal(), this span returns message supplier with detail
-            return pluginServices.startSpan(getMessageSupplierWithDetail(expensive),
-                    traceMetricName);
+            MessageSupplier messageSupplier =
+                    getMessageSupplierWithDetail(expensiveCall, expensiveCallInvoker);
+            return pluginServices.startSpan(messageSupplier, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
@@ -92,8 +91,9 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, traceMetricName);
+        public static Span onBefore(@BindReceiver Object expensiveCall,
+                @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
@@ -117,8 +117,9 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, traceMetricName);
+        public static Span onBefore(@BindReceiver Object expensiveCall,
+                @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
@@ -142,8 +143,9 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, traceMetricName);
+        public static Span onBefore(@BindReceiver Object expensiveCall,
+                @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
@@ -167,8 +169,9 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, traceMetricName);
+        public static Span onBefore(@BindReceiver Object expensiveCall,
+                @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
@@ -192,8 +195,9 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, traceMetricName);
+        public static Span onBefore(@BindReceiver Object expensiveCall,
+                @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
@@ -217,8 +221,9 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, traceMetricName);
+        public static Span onBefore(@BindReceiver Object expensiveCall,
+                @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
@@ -242,8 +247,9 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, traceMetricName);
+        public static Span onBefore(@BindReceiver Object expensiveCall,
+                @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
@@ -267,8 +273,9 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, traceMetricName);
+        public static Span onBefore(@BindReceiver Object expensiveCall,
+                @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
@@ -292,8 +299,9 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensive) {
-            return onBeforeInternal(expensive, traceMetricName);
+        public static Span onBefore(@BindReceiver Object expensiveCall,
+                @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, traceMetricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
@@ -307,11 +315,14 @@ public class ExpensiveCallAspect {
         }
     }
 
-    private static Span onBeforeInternal(Object expensive, TraceMetricName traceMetricName) {
+    private static Span onBeforeInternal(Object expensiveCall,
+            ExpensiveCallInvoker expensiveCallInvoker, TraceMetricName traceMetricName) {
         if (random.nextDouble() < 0.05) {
             return null;
         }
-        return pluginServices.startSpan(getMessageSupplier(expensive), traceMetricName);
+        MessageSupplier messageSupplier =
+                MessageSupplier.from(expensiveCallInvoker.getSpanText(expensiveCall));
+        return pluginServices.startSpan(messageSupplier, traceMetricName);
     }
 
     private static void onAfterInternal(Span span, int num) {
@@ -351,13 +362,8 @@ public class ExpensiveCallAspect {
         }
     }
 
-    private static MessageSupplier getMessageSupplier(Object expensive) {
-        String spanText = (String) getSpanText.invoke(expensive,
-                "<error calling ExpensiveCall.getSpanText()>");
-        return MessageSupplier.from(spanText);
-    }
-
-    private static MessageSupplier getMessageSupplierWithDetail(final Object expensive) {
+    private static MessageSupplier getMessageSupplierWithDetail(final Object expensiveCall,
+            final ExpensiveCallInvoker expensiveCallInvoker) {
         return new MessageSupplier() {
             @Override
             public Message get() {
@@ -365,8 +371,7 @@ public class ExpensiveCallAspect {
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", ImmutableList.of("v311aa", "v311bb")),
                                 "attr32", "value32", "attr33", "value33"));
-                String spanText = (String) getSpanText.invoke(expensive,
-                        "<error calling ExpensiveCall.getSpanText()>");
+                String spanText = expensiveCallInvoker.getSpanText(expensiveCall);
                 return Message.withDetail(spanText, detail);
             }
         };

@@ -15,7 +15,7 @@
  */
 package org.glowroot.plugin.servlet;
 
-import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.CompletedSpan;
@@ -23,6 +23,7 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
 import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -73,32 +74,36 @@ public class ServletAspect {
             return pluginServices.isEnabled() && topLevel.get() == null;
         }
         @OnBefore
-        public static Span onBefore(@BindMethodArg Object realRequest) {
-            HttpServletRequest request = HttpServletRequest.from(realRequest);
+        public static Span onBefore(@BindMethodArg Object request,
+                @BindClassMeta RequestInvoker requestInvoker,
+                @BindClassMeta SessionInvoker sessionInvoker) {
             // request parameter map is collected in GetParameterAdvice
             // session info is collected here if the request already has a session
             ServletMessageSupplier messageSupplier;
-            // passing "false" so it won't create a session if the request doesn't already have one
-            HttpSession session = request.getSession(false);
-            String requestUri = Strings.nullToEmpty(request.getRequestURI());
+            Object session = requestInvoker.getSession(request);
+            String requestUri = requestInvoker.getRequestURI(request);
             // don't convert null to empty, since null means no query string, while empty means
             // url ended with ? but nothing after that
-            String requestQueryString = request.getQueryString();
-            String requestMethod = Strings.nullToEmpty(request.getMethod());
+            String requestQueryString = requestInvoker.getQueryString(request);
+            String requestMethod = requestInvoker.getMethod(request);
+            ImmutableMap<String, Object> requestHeaders =
+                    DetailCapture.captureRequestHeaders(request, requestInvoker);
             if (session == null) {
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
-                        requestQueryString, DetailCapture.captureRequestHeaders(request), null,
-                        null);
+                        requestQueryString, requestHeaders, null, null);
             } else {
+                ImmutableMap<String, String> sessionAttributes =
+                        HttpSessions.getSessionAttributes(session, sessionInvoker);
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
-                        requestQueryString, DetailCapture.captureRequestHeaders(request),
-                        session.getId(), session.getSessionAttributes());
+                        requestQueryString, requestHeaders, sessionInvoker.getId(session),
+                        sessionAttributes);
             }
             topLevel.set(messageSupplier);
             Span span = pluginServices.startTrace(requestUri, messageSupplier, traceMetricName);
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction
-            String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");
+            String transactionNameOverride =
+                    requestInvoker.getHeader(request, "Glowroot-Transaction-Name");
             if (transactionNameOverride != null) {
                 pluginServices.setTransactionName(transactionNameOverride);
             }
@@ -107,7 +112,8 @@ public class ServletAspect {
                         ServletPluginProperties.sessionUserAttributePath();
                 if (!sessionUserAttributePath.isEmpty()) {
                     // capture user now, don't use a lazy supplier
-                    String user = session.getSessionAttributeTextValue(sessionUserAttributePath);
+                    String user = HttpSessions.getSessionAttributeTextValue(session,
+                            sessionUserAttributePath, sessionInvoker);
                     pluginServices.setTraceUser(user);
                 }
             }
@@ -142,8 +148,10 @@ public class ServletAspect {
             return ServiceAdvice.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindMethodArg Object realRequest) {
-            return ServiceAdvice.onBefore(realRequest);
+        public static Span onBefore(@BindMethodArg Object request,
+                @BindClassMeta RequestInvoker requestInvoker,
+                @BindClassMeta SessionInvoker sessionInvoker) {
+            return ServiceAdvice.onBefore(request, requestInvoker, sessionInvoker);
         }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
@@ -164,8 +172,10 @@ public class ServletAspect {
             return ServiceAdvice.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindMethodArg Object realRequest) {
-            return ServiceAdvice.onBefore(realRequest);
+        public static Span onBefore(@BindMethodArg Object request,
+                @BindClassMeta RequestInvoker requestInvoker,
+                @BindClassMeta SessionInvoker sessionInvoker) {
+            return ServiceAdvice.onBefore(request, requestInvoker, sessionInvoker);
         }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {

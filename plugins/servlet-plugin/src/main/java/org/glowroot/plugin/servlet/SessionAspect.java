@@ -21,6 +21,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.Beans;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
@@ -50,18 +51,18 @@ public class SessionAspect {
             return pluginServices.isEnabled();
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable Object realSession) {
-            if (realSession == null) {
+        public static void onReturn(@BindReturn @Nullable Object session,
+                @BindClassMeta SessionInvoker sessionInvoker) {
+            if (session == null) {
                 return;
             }
-            HttpSession session = HttpSession.from(realSession);
             // either getSession(), getSession(true) or getSession(false) has triggered this
             // pointcut
             // after calls to the first two (no-arg, and passing true), a new session may have been
             // created (the third one -- passing false -- could be ignored but is harmless)
             ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
-            if (messageSupplier != null && session.isNew()) {
-                messageSupplier.setSessionIdUpdatedValue(session.getId());
+            if (messageSupplier != null && sessionInvoker.isNew(session)) {
+                messageSupplier.setSessionIdUpdatedValue(sessionInvoker.getId(session));
             }
         }
     }
@@ -73,9 +74,10 @@ public class SessionAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static void onBefore(@BindReceiver Object realSession) {
-            HttpSession session = HttpSession.from(realSession);
-            ServletMessageSupplier messageSupplier = getServletMessageSupplier(session);
+        public static void onBefore(@BindReceiver Object session,
+                @BindClassMeta SessionInvoker sessionInvoker) {
+            String sessionId = sessionInvoker.getId(session);
+            ServletMessageSupplier messageSupplier = getServletMessageSupplier(sessionId);
             if (messageSupplier != null) {
                 messageSupplier.setSessionIdUpdatedValue("");
             }
@@ -90,20 +92,21 @@ public class SessionAspect {
             return pluginServices.isEnabled();
         }
         @OnAfter
-        public static void onAfter(@BindReceiver Object realSession,
-                @BindMethodArg @Nullable String name,
-                @BindMethodArg @Nullable Object value) {
+        public static void onAfter(@BindReceiver Object session,
+                @BindMethodArg @Nullable String name, @BindMethodArg @Nullable Object value,
+                @BindClassMeta SessionInvoker sessionInvoker) {
             if (name == null) {
                 // theoretically possible, so just ignore
                 return;
             }
-            HttpSession session = HttpSession.from(realSession);
             // name is non-null per HttpSession.setAttribute() javadoc, but value may be null
             // (which per the javadoc is the same as calling removeAttribute())
-            ServletMessageSupplier messageSupplier = getServletMessageSupplier(session);
+            String sessionId = sessionInvoker.getId(session);
+            ServletMessageSupplier messageSupplier = getServletMessageSupplier(sessionId);
             if (messageSupplier != null) {
-                updateUserIfApplicable(name, value, session);
-                updateSessionAttributesIfApplicable(messageSupplier, name, value, session);
+                updateUserIfApplicable(name, value, session, sessionInvoker);
+                updateSessionAttributesIfApplicable(messageSupplier, name, value, session,
+                        sessionInvoker);
             }
         }
     }
@@ -117,28 +120,29 @@ public class SessionAspect {
         }
         @OnAfter
         public static void onAfter(@BindReceiver Object realSession,
-                @BindMethodArg @Nullable String name) {
+                @BindMethodArg @Nullable String name,
+                @BindClassMeta SessionInvoker sessionInvoker) {
             // calling HttpSession.setAttribute() with null value is the same as calling
             // removeAttribute(), per the setAttribute() javadoc
-            SetAttributeAdvice.onAfter(realSession, name, null);
+            SetAttributeAdvice.onAfter(realSession, name, null, sessionInvoker);
         }
     }
 
     @Nullable
-    private static ServletMessageSupplier getServletMessageSupplier(HttpSession session) {
+    private static ServletMessageSupplier getServletMessageSupplier(String sessionId) {
         ServletMessageSupplier servletMessageSupplier = ServletAspect.getServletMessageSupplier();
         if (servletMessageSupplier == null) {
             // this thread is not executing a servlet request, e.g. this could be a background
             // thread that is updating http session attributes
             return null;
         }
-        String sessionId;
+        String supplierSessionId;
         if (servletMessageSupplier.getSessionIdUpdatedValue() != null) {
-            sessionId = servletMessageSupplier.getSessionIdUpdatedValue();
+            supplierSessionId = servletMessageSupplier.getSessionIdUpdatedValue();
         } else {
-            sessionId = servletMessageSupplier.getSessionIdInitialValue();
+            supplierSessionId = servletMessageSupplier.getSessionIdInitialValue();
         }
-        if (session.getId().equals(sessionId)) {
+        if (sessionId.equals(supplierSessionId)) {
             return servletMessageSupplier;
         } else {
             // the target session for this pointcut is not the same as the thread's
@@ -149,7 +153,7 @@ public class SessionAspect {
     }
 
     private static void updateUserIfApplicable(String name, @Nullable Object value,
-            HttpSession session) {
+            Object session, SessionInvoker sessionInvoker) {
         if (value == null) {
             // if user value is set to null, don't clear it
             return;
@@ -160,7 +164,8 @@ public class SessionAspect {
             if (sessionUserAttributePath.equals(name)) {
                 pluginServices.setTraceUser(value.toString());
             } else if (sessionUserAttributePath.startsWith(name + ".")) {
-                String user = session.getSessionAttributeTextValue(sessionUserAttributePath);
+                String user = HttpSessions.getSessionAttributeTextValue(session,
+                        sessionUserAttributePath, sessionInvoker);
                 if (user != null) {
                     // if user is null, don't clear it by setting Suppliers.ofInstance(null)
                     pluginServices.setTraceUser(user);
@@ -170,7 +175,7 @@ public class SessionAspect {
     }
 
     private static void updateSessionAttributesIfApplicable(ServletMessageSupplier messageSupplier,
-            String name, @Nullable Object value, HttpSession session) {
+            String name, @Nullable Object value, Object session, SessionInvoker sessionInvoker) {
         if (ServletPluginProperties.captureSessionAttributeNames().contains(name)
                 || ServletPluginProperties.captureSessionAttributeNames().contains("*")) {
             // update all session attributes (possibly nested) at or under the set attribute
@@ -179,7 +184,7 @@ public class SessionAspect {
                     updateSessionAttribute(messageSupplier, name, value);
                 } else if (capturePath.startsWith(name + ".")) {
                     updateNestedSessionAttributes(messageSupplier, capturePath, value,
-                            session);
+                            session, sessionInvoker);
                 }
             }
         }
@@ -195,10 +200,11 @@ public class SessionAspect {
     }
 
     private static void updateNestedSessionAttributes(ServletMessageSupplier messageSupplier,
-            String capturePath, @Nullable Object value, HttpSession session) {
+            String capturePath, @Nullable Object value, Object session,
+            SessionInvoker sessionInvoker) {
         if (capturePath.endsWith(".*")) {
             String capturePathBase = capturePath.substring(0, capturePath.length() - 2);
-            Object val = session.getSessionAttribute(capturePathBase);
+            Object val = HttpSessions.getSessionAttribute(session, capturePathBase, sessionInvoker);
             if (val == null) {
                 messageSupplier.putSessionAttributeChangedValue(capturePathBase, null);
             } else {
@@ -211,7 +217,8 @@ public class SessionAspect {
             // no need to navigate path since it will always be null
             messageSupplier.putSessionAttributeChangedValue(capturePath, null);
         } else {
-            String val = session.getSessionAttributeTextValue(capturePath);
+            String val = HttpSessions.getSessionAttributeTextValue(session, capturePath,
+                    sessionInvoker);
             messageSupplier.putSessionAttributeChangedValue(capturePath, val);
         }
     }

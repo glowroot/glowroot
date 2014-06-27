@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 import com.google.common.collect.ImmutableList;
 
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.UnresolvedMethod;
+import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.IsEnabled;
@@ -36,10 +36,6 @@ import org.glowroot.api.weaving.Pointcut;
 public class ResponseHeaderAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("servlet");
-
-    // this method only exists since Servlet 2.4 (e.g. since Tomcat 5.5.x)
-    private static final UnresolvedMethod getContentTypeMethod =
-            UnresolvedMethod.from("javax.servlet.ServletResponse", "getContentType");
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private static final ThreadLocal<Boolean> inAdvice = new ThreadLocal<Boolean>() {
@@ -85,14 +81,15 @@ public class ResponseHeaderAspect {
             inAdvice.set(true);
         }
         @OnAfter
-        public static void onAfter(@BindReceiver Object response, @BindMethodArg String value) {
+        public static void onAfter(@BindReceiver Object response, @BindMethodArg String value,
+                @BindClassMeta ResponseInvoker responseInvoker) {
             inAdvice.set(false);
             if (!captureResponseHeader("Content-Type")) {
                 return;
             }
             ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
             if (messageSupplier != null) {
-                String contentType = (String) getContentTypeMethod.invoke(response, null);
+                String contentType = responseInvoker.getContentType(response);
                 if (contentType == null) {
                     // Servlet 2.3 or prior
                     messageSupplier.setResponseHeader("Content-Type", value);
@@ -116,14 +113,15 @@ public class ResponseHeaderAspect {
             inAdvice.set(true);
         }
         @OnAfter
-        public static void onAfter(@BindReceiver Object response) {
+        public static void onAfter(@BindReceiver Object response,
+                @BindClassMeta ResponseInvoker responseInvoker) {
             inAdvice.set(false);
             if (!captureResponseHeader("Content-Type")) {
                 return;
             }
             ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
             if (messageSupplier != null) {
-                String contentType = (String) getContentTypeMethod.invoke(response, null);
+                String contentType = responseInvoker.getContentType(response);
                 if (contentType != null) {
                     // Servlet 2.4 or later
                     messageSupplier.setResponseHeader("Content-Type", contentType);
@@ -144,7 +142,8 @@ public class ResponseHeaderAspect {
             inAdvice.set(true);
         }
         @OnAfter
-        public static void onAfter(@BindReceiver Object response, @BindMethodArg Locale locale) {
+        public static void onAfter(@BindReceiver Object response, @BindMethodArg Locale locale,
+                @BindClassMeta ResponseInvoker responseInvoker) {
             inAdvice.set(false);
             boolean captureContentLanguage = captureResponseHeader("Content-Language");
             boolean captureContentType = captureResponseHeader("Content-Type");
@@ -157,7 +156,7 @@ public class ResponseHeaderAspect {
                     messageSupplier.setResponseHeader("Content-Language", locale.toString());
                 }
                 if (captureContentType) {
-                    String contentType = (String) getContentTypeMethod.invoke(response, null);
+                    String contentType = responseInvoker.getContentType(response);
                     if (contentType != null) {
                         // Servlet 2.4 or later
                         messageSupplier.setResponseHeader("Content-Type", contentType);

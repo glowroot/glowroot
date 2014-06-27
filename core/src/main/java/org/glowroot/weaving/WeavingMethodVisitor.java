@@ -531,6 +531,9 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 case TRAVELER:
                     loadTraveler(travelerLocal, adviceType, annotationType, parameter);
                     break;
+                case CLASS_META:
+                    loadClassMeta(parameter);
+                    break;
                 default:
                     // this should have been caught during Advice construction, but just in case:
                     logger.warn("the @{} method in {} has an unexpected parameter kind {}"
@@ -589,6 +592,13 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         } else {
             loadLocal(travelerLocal);
         }
+    }
+
+    private void loadClassMeta(AdviceParameter parameter) {
+        Type classMetaFieldType = Type.getType(parameter.getType());
+        String classMetaFieldName = "glowroot$class$meta$"
+                + classMetaFieldType.getInternalName().replace('/', '$');
+        getStatic(owner, classMetaFieldName, classMetaFieldType);
     }
 
     private void pushDefault(Type type) {

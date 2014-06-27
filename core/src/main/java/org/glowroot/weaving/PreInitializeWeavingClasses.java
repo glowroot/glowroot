@@ -324,6 +324,7 @@ public class PreInitializeWeavingClasses {
         List<String> types = Lists.newArrayList();
         types.add("org.glowroot.api.TraceMetricName");
         types.add("org.glowroot.api.TraceMetricTimer");
+        types.add("org.glowroot.api.weaving.BindClassMeta");
         types.add("org.glowroot.api.weaving.BindMethodArg");
         types.add("org.glowroot.api.weaving.BindMethodArgArray");
         types.add("org.glowroot.api.weaving.BindMethodName");

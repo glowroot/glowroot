@@ -29,6 +29,7 @@ import org.glowroot.weaving.SomeAspect.BasicMiscConstructorAdvice;
 import org.glowroot.weaving.SomeAspect.BasicWithInnerClassAdvice;
 import org.glowroot.weaving.SomeAspect.BasicWithInnerClassArgAdvice;
 import org.glowroot.weaving.SomeAspect.BindAutoboxedReturnAdvice;
+import org.glowroot.weaving.SomeAspect.BindClassMetaAdvice;
 import org.glowroot.weaving.SomeAspect.BindMethodArgAdvice;
 import org.glowroot.weaving.SomeAspect.BindMethodArgArrayAdvice;
 import org.glowroot.weaving.SomeAspect.BindMethodNameAdvice;
@@ -69,6 +70,7 @@ import org.glowroot.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
 import org.glowroot.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
 import org.glowroot.weaving.SomeAspect.StaticAdvice;
 import org.glowroot.weaving.SomeAspect.SuperBasicAdvice;
+import org.glowroot.weaving.SomeAspect.TestClassMeta;
 import org.glowroot.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
 import org.glowroot.weaving.SomeAspect.ThrowableToStringAdvice;
 import org.glowroot.weaving.SomeAspect.TypeNamePatternAdvice;
@@ -315,6 +317,55 @@ public class WeaverTest {
         assertThat(BindTravelerAdvice.onReturnTraveler.get()).isNull();
         assertThat(BindTravelerAdvice.onThrowTraveler.get()).isEqualTo("a traveler");
         assertThat(BindTravelerAdvice.onAfterTraveler.get()).isEqualTo("a traveler");
+    }
+
+    // ===================== @BindClassMeta =====================
+
+    @Test
+    public void shouldBindClassMeta() throws Exception {
+        // given
+        BindClassMetaAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindClassMetaAdvice.class,
+                TestClassMeta.class);
+        // when
+        test.execute1();
+        // then
+        // can't compare Class objects directly since they are in different class loaders due to
+        // IsolatedWeavingClassLoader
+        assertThat(BindClassMetaAdvice.isEnabledClassMeta.get().getClazzName())
+                .isEqualTo(BasicMisc.class.getName());
+        assertThat(BindClassMetaAdvice.onBeforeClassMeta.get().getClazzName())
+                .isEqualTo(BasicMisc.class.getName());
+        assertThat(BindClassMetaAdvice.onReturnClassMeta.get().getClazzName())
+                .isEqualTo(BasicMisc.class.getName());
+        assertThat(BindClassMetaAdvice.onThrowClassMeta.get()).isNull();
+        assertThat(BindClassMetaAdvice.onAfterClassMeta.get().getClazzName())
+                .isEqualTo(BasicMisc.class.getName());
+    }
+
+    @Test
+    public void shouldBindClassMetaOnThrow() throws Exception {
+        // given
+        BindClassMetaAdvice.resetThreadLocals();
+        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, BindClassMetaAdvice.class,
+                TestClassMeta.class);
+        // when
+        try {
+            test.execute1();
+        } catch (Throwable t) {
+        }
+        // then
+        // can't compare Class objects directly since they are in different class loaders due to
+        // IsolatedWeavingClassLoader
+        assertThat(BindClassMetaAdvice.isEnabledClassMeta.get().getClazzName())
+                .isEqualTo(ThrowingMisc.class.getName());
+        assertThat(BindClassMetaAdvice.onBeforeClassMeta.get().getClazzName())
+                .isEqualTo(ThrowingMisc.class.getName());
+        assertThat(BindClassMetaAdvice.onReturnClassMeta.get()).isNull();
+        assertThat(BindClassMetaAdvice.onThrowClassMeta.get().getClazzName())
+                .isEqualTo(ThrowingMisc.class.getName());
+        assertThat(BindClassMetaAdvice.onAfterClassMeta.get().getClazzName())
+                .isEqualTo(ThrowingMisc.class.getName());
     }
 
     // ===================== @BindReturn =====================

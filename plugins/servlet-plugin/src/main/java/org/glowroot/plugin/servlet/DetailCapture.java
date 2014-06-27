@@ -42,13 +42,13 @@ class DetailCapture {
 
     private DetailCapture() {}
 
-    static ImmutableMap<String, Object> captureRequestParameters(HttpServletRequest request) {
-        Map<?, ?> requestParameters = request.getParameterMaps();
+    static ImmutableMap<String, Object> captureRequestParameters(
+            Map<String, String[]> requestParameters) {
         ImmutableList<Pattern> capturePatterns = ServletPluginProperties.captureRequestParameters();
         ImmutableList<Pattern> maskPatterns = ServletPluginProperties.maskRequestParameters();
         ImmutableMap.Builder<String, Object> map = ImmutableMap.builder();
-        for (Entry<?, ?> entry : requestParameters.entrySet()) {
-            String name = (String) entry.getKey();
+        for (Entry<String, String[]> entry : requestParameters.entrySet()) {
+            String name = entry.getKey();
             if (name == null) {
                 // null check just to be safe in case this is a very strange servlet container
                 continue;
@@ -62,7 +62,7 @@ class DetailCapture {
                 map.put(name, "****");
                 continue;
             }
-            String/*@Nullable*/[] values = (String/*@Nullable*/[]) entry.getValue();
+            String[] values = entry.getValue();
             if (values == null) {
                 // just to be safe since ImmutableMap won't accept nulls
                 map.put(name, "");
@@ -75,10 +75,11 @@ class DetailCapture {
         return map.build();
     }
 
-    static ImmutableMap<String, Object> captureRequestHeaders(HttpServletRequest request) {
+    static ImmutableMap<String, Object> captureRequestHeaders(Object request,
+            RequestInvoker requestInvoker) {
         ImmutableList<Pattern> capturePatterns = ServletPluginProperties.captureRequestHeaders();
         ImmutableMap.Builder<String, Object> map = ImmutableMap.builder();
-        Enumeration<String> headerNames = request.getHeaderNames();
+        Enumeration<String> headerNames = requestInvoker.getHeaderNames(request);
         if (headerNames == null) {
             // null check just to be safe in case this is a very strange servlet container
             return ImmutableMap.of();
@@ -94,7 +95,7 @@ class DetailCapture {
             if (!matchesOneOf(keyLowerCase, capturePatterns)) {
                 continue;
             }
-            Enumeration<String> values = request.getHeaders(name);
+            Enumeration<String> values = requestInvoker.getHeaders(request, name);
             if (values == null) {
                 // just to be safe since ImmutableMap won't accept nulls
                 map.put(name, "");
