@@ -66,6 +66,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private final ImmutableList<Advice> advisors;
     private final Type[] argumentTypes;
     private final Type returnType;
+    private final int methodMetaUniqueNum;
+    private final boolean needsTryCatch;
 
     private final Map<Advice, Integer> adviceFlowHolderLocals = Maps.newHashMap();
     // the adviceFlow stores the value in the holder at the beginning of the advice so the holder
@@ -74,7 +76,6 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private final Map<Advice, Integer> enabledLocals = Maps.newHashMap();
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
 
-    private boolean needsTryCatch;
     @MonotonicNonNull
     private Label methodStartLabel;
     @MonotonicNonNull
@@ -82,7 +83,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private boolean visitedLocalVariableThis;
 
     WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
-            Iterable<Advice> advisors) {
+            Iterable<Advice> advisors, int methodMetaUniqueNum) {
         super(ASM5, mv, access, name, desc);
         this.access = access;
         this.name = name;
@@ -90,6 +91,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         this.advisors = ImmutableList.copyOf(advisors);
         argumentTypes = Type.getArgumentTypes(desc);
         returnType = Type.getReturnType(desc);
+        this.methodMetaUniqueNum = methodMetaUniqueNum;
+        boolean needsTryCatch = false;
         for (Advice advice : advisors) {
             if (advice.getPointcut().ignoreSameNested() || advice.getOnThrowAdvice() != null
                     || advice.getOnAfterAdvice() != null) {
@@ -97,6 +100,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 break;
             }
         }
+        this.needsTryCatch = needsTryCatch;
     }
 
     @Override
@@ -534,6 +538,9 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 case CLASS_META:
                     loadClassMeta(parameter);
                     break;
+                case METHOD_META:
+                    loadMethodMeta(parameter);
+                    break;
                 default:
                     // this should have been caught during Advice construction, but just in case:
                     logger.warn("the @{} method in {} has an unexpected parameter kind {}"
@@ -599,6 +606,13 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         String classMetaFieldName = "glowroot$class$meta$"
                 + classMetaFieldType.getInternalName().replace('/', '$');
         getStatic(owner, classMetaFieldName, classMetaFieldType);
+    }
+
+    private void loadMethodMeta(AdviceParameter parameter) {
+        Type methodMetaFieldType = Type.getType(parameter.getType());
+        String methodMetaFieldName = "glowroot$method$meta$" + methodMetaUniqueNum + '$'
+                + methodMetaFieldType.getInternalName().replace('/', '$');
+        getStatic(owner, methodMetaFieldName, methodMetaFieldType);
     }
 
     private void pushDefault(Type type) {

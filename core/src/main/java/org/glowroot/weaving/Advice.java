@@ -37,6 +37,7 @@ import org.objectweb.asm.commons.Method;
 import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindMethodArgArray;
+import org.glowroot.api.weaving.BindMethodMeta;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindOptionalReturn;
 import org.glowroot.api.weaving.BindReceiver;
@@ -71,21 +72,22 @@ public class Advice {
 
     private static final ImmutableList<Class<? extends Annotation>> isEnabledBindAnnotationTypes =
             ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
-                    BindMethodName.class, BindClassMeta.class);
+                    BindMethodName.class, BindClassMeta.class, BindMethodMeta.class);
     private static final ImmutableList<Class<? extends Annotation>> onBeforeBindAnnotationTypes =
             ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
-                    BindMethodName.class, BindClassMeta.class);
+                    BindMethodName.class, BindClassMeta.class, BindMethodMeta.class);
     private static final ImmutableList<Class<? extends Annotation>> onReturnBindAnnotationTypes =
             ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
                     BindMethodName.class, BindReturn.class, BindOptionalReturn.class,
-                    BindTraveler.class, BindClassMeta.class);
+                    BindTraveler.class, BindClassMeta.class, BindMethodMeta.class);
     private static final ImmutableList<Class<? extends Annotation>> onThrowBindAnnotationTypes =
             ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
                     BindMethodName.class, BindThrowable.class, BindTraveler.class,
-                    BindClassMeta.class);
+                    BindClassMeta.class, BindMethodMeta.class);
     private static final ImmutableList<Class<? extends Annotation>> onAfterBindAnnotationTypes =
             ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
-                    BindMethodName.class, BindTraveler.class, BindClassMeta.class);
+                    BindMethodName.class, BindTraveler.class, BindClassMeta.class,
+                    BindMethodMeta.class);
 
     private static final ImmutableMap<Class<? extends Annotation>, ParameterKind> parameterKindMap =
             new ImmutableMap.Builder<Class<? extends Annotation>, ParameterKind>()
@@ -98,6 +100,7 @@ public class Advice {
                     .put(BindThrowable.class, ParameterKind.THROWABLE)
                     .put(BindTraveler.class, ParameterKind.TRAVELER)
                     .put(BindClassMeta.class, ParameterKind.CLASS_META)
+                    .put(BindMethodMeta.class, ParameterKind.METHOD_META)
                     .build();
 
     private final Pointcut pointcut;
@@ -129,6 +132,7 @@ public class Advice {
     private final boolean reweavable;
 
     private final ImmutableSet<Class<?>> classMetas;
+    private final ImmutableSet<Class<?>> methodMetas;
 
     public static Advice from(Pointcut pointcut, Class<?> adviceClass, boolean reweavable)
             throws AdviceConstructionException {
@@ -168,6 +172,13 @@ public class Advice {
         classMetas.addAll(getClassMetas(onThrowParameterKinds));
         classMetas.addAll(getClassMetas(onAfterParameterKinds));
         this.classMetas = ImmutableSet.copyOf(classMetas);
+        Set<Class<?>> methodMetas = Sets.newHashSet();
+        methodMetas.addAll(getMethodMetas(isEnabledParameters));
+        methodMetas.addAll(getMethodMetas(onBeforeParameters));
+        methodMetas.addAll(getMethodMetas(onReturnParameters));
+        methodMetas.addAll(getMethodMetas(onThrowParameterKinds));
+        methodMetas.addAll(getMethodMetas(onAfterParameterKinds));
+        this.methodMetas = ImmutableSet.copyOf(methodMetas);
     }
 
     Pointcut getPointcut() {
@@ -250,6 +261,10 @@ public class Advice {
         return classMetas;
     }
 
+    Set<Class<?>> getMethodMetas() {
+        return methodMetas;
+    }
+
     @Override
     @Pure
     public String toString() {
@@ -272,6 +287,7 @@ public class Advice {
                 .add("generatedAdviceFlowClass", generatedAdviceFlowClass)
                 .add("reweavable", reweavable)
                 .add("classMetas", classMetas)
+                .add("methodMetas", methodMetas)
                 .toString();
     }
 
@@ -279,6 +295,16 @@ public class Advice {
         Set<Class<?>> types = Sets.newHashSet();
         for (AdviceParameter parameter : parameters) {
             if (parameter.getKind() == ParameterKind.CLASS_META) {
+                types.add(parameter.getType());
+            }
+        }
+        return types;
+    }
+
+    private static Set<Class<?>> getMethodMetas(List<AdviceParameter> parameters) {
+        Set<Class<?>> types = Sets.newHashSet();
+        for (AdviceParameter parameter : parameters) {
+            if (parameter.getKind() == ParameterKind.METHOD_META) {
                 types.add(parameter.getType());
             }
         }
@@ -302,7 +328,7 @@ public class Advice {
 
     enum ParameterKind {
         RECEIVER, METHOD_ARG, METHOD_ARG_ARRAY, METHOD_NAME, RETURN, OPTIONAL_RETURN, THROWABLE,
-        TRAVELER, CLASS_META
+        TRAVELER, CLASS_META, METHOD_META
     }
 
     @SuppressWarnings("serial")

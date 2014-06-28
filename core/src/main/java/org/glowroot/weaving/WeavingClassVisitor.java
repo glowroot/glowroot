@@ -50,13 +50,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.objectweb.asm.Opcodes.AASTORE;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
+import static org.objectweb.asm.Opcodes.ANEWARRAY;
 import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.BIPUSH;
 import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.NEW;
@@ -91,11 +95,13 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private int innerMethodCounter;
 
-    // these are for handling class metas
-    private boolean maybeHasClassMetas;
+    // these are for handling class and method metas
+    private boolean maybeHasMetas;
     @MonotonicNonNull
     private MethodVisitor clinitMethodVisitor;
     private final Set<Class<?>> classMetas = Sets.newHashSet();
+    private final Set<MethodMetaInstance> methodMetaInstances = Sets.newHashSet();
+    private int methodMetaCounter;
 
     public WeavingClassVisitor(ClassVisitor cv, ImmutableList<Advice> advisors,
             ImmutableList<MixinType> mixinTypes, @Nullable ClassLoader loader,
@@ -127,17 +133,19 @@ class WeavingClassVisitor extends ClassVisitor {
             return;
         }
         for (AdviceMatcher adviceMatcher : parsedTypeClassVisitor.getAdviceMatchers()) {
-            if (!adviceMatcher.getAdvice().getClassMetas().isEmpty()) {
-                maybeHasClassMetas = true;
+            if (!adviceMatcher.getAdvice().getClassMetas().isEmpty()
+                    || !adviceMatcher.getAdvice().getMethodMetas().isEmpty()) {
+                maybeHasMetas = true;
                 break;
             }
         }
-        if (!maybeHasClassMetas) {
+        if (!maybeHasMetas) {
             outer: for (ParsedType parsedType : parsedTypeClassVisitor.getSuperParsedTypes()) {
                 for (ParsedMethod parsedMethod : parsedType.getParsedMethods()) {
                     for (Advice advice : parsedMethod.getAdvisors()) {
-                        if (!advice.getClassMetas().isEmpty()) {
-                            maybeHasClassMetas = true;
+                        if (!advice.getClassMetas().isEmpty()
+                                || !advice.getMethodMetas().isEmpty()) {
+                            maybeHasMetas = true;
                             break outer;
                         }
                     }
@@ -166,15 +174,12 @@ class WeavingClassVisitor extends ClassVisitor {
             // don't try to weave abstract, native and synthetic methods
             return cv.visitMethod(access, name, desc, signature, exceptions);
         }
-        if (name.equals("<clinit>") && maybeHasClassMetas) {
+        if (name.equals("<clinit>") && maybeHasMetas) {
             clinitMethodVisitor =
                     checkNotNull(cv.visitMethod(access, name, desc, signature, exceptions));
             clinitMethodVisitor.visitMethodInsn(INVOKESTATIC, type.getInternalName(),
                     "original$clinit$glowroot", desc, false);
             return cv.visitMethod(access, "original$clinit$glowroot", desc, signature, exceptions);
-        }
-        for (Advice matchingAdvice : matchingAdvisors) {
-            classMetas.addAll(matchingAdvice.getClassMetas());
         }
         if (name.equals("<init>") && !parsedTypeClassVisitor.getMatchedMixinTypes().isEmpty()) {
             return visitInitWithMixin(access, name, desc, signature, exceptions, matchingAdvisors);
@@ -198,7 +203,7 @@ class WeavingClassVisitor extends ClassVisitor {
         handleInheritedMethodsThatNowFulfillAdvice(parsedType);
         // handle static initializer at end, since handleInheritedMethodsThatNowFulfillAdvice()
         // above could add new classMetas
-        if (!classMetas.isEmpty()) {
+        if (!classMetas.isEmpty() || !methodMetaInstances.isEmpty()) {
             if (clinitMethodVisitor == null) {
                 clinitMethodVisitor =
                         checkNotNull(cv.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null));
@@ -219,6 +224,34 @@ class WeavingClassVisitor extends ClassVisitor {
                 clinitMethodVisitor.visitFieldInsn(PUTSTATIC, type.getInternalName(),
                         classMetaFieldName, "L" + classMetaInternalName + ";");
             }
+            for (MethodMetaInstance methodMetaInstance : methodMetaInstances) {
+                String methodMetaInternalName =
+                        Type.getInternalName(methodMetaInstance.getMethodMeta());
+                String methodMetaFieldName = "glowroot$method$meta$"
+                        + methodMetaInstance.getUniqueNum() + '$'
+                        + methodMetaInternalName.replace('/', '$');
+                FieldVisitor fv = cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC,
+                        methodMetaFieldName, "L" + methodMetaInternalName + ";", null, null);
+                fv.visitEnd();
+                clinitMethodVisitor.visitTypeInsn(NEW, methodMetaInternalName);
+                clinitMethodVisitor.visitInsn(DUP);
+                clinitMethodVisitor.visitLdcInsn(type);
+                loadType(clinitMethodVisitor, methodMetaInstance.getReturnType());
+
+                clinitMethodVisitor.visitIntInsn(BIPUSH, methodMetaInstance.getArgTypes().size());
+                clinitMethodVisitor.visitTypeInsn(ANEWARRAY, "java/lang/Class");
+                for (int i = 0; i < methodMetaInstance.getArgTypes().size(); i++) {
+                    clinitMethodVisitor.visitInsn(DUP);
+                    clinitMethodVisitor.visitIntInsn(BIPUSH, i);
+                    loadType(clinitMethodVisitor, methodMetaInstance.getArgTypes().get(i));
+                    clinitMethodVisitor.visitInsn(AASTORE);
+                }
+
+                clinitMethodVisitor.visitMethodInsn(INVOKESPECIAL, methodMetaInternalName,
+                        "<init>", "(Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;)V", false);
+                clinitMethodVisitor.visitFieldInsn(PUTSTATIC, type.getInternalName(),
+                        methodMetaFieldName, "L" + methodMetaInternalName + ";");
+            }
         }
         if (clinitMethodVisitor != null) {
             clinitMethodVisitor.visitInsn(RETURN);
@@ -230,6 +263,49 @@ class WeavingClassVisitor extends ClassVisitor {
 
     boolean isNothingAtAllToWeave() {
         return nothingAtAllToWeave;
+    }
+
+    private static void loadType(MethodVisitor clinitMethodVisitor, Type returnType) {
+        switch (returnType.getSort()) {
+            case Type.VOID:
+                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Void", "TYPE",
+                        "Ljava/lang/Class;");
+                break;
+            case Type.BOOLEAN:
+                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Boolean", "TYPE",
+                        "Ljava/lang/Class;");
+                break;
+            case Type.CHAR:
+                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Character", "TYPE",
+                        "Ljava/lang/Class;");
+                break;
+            case Type.BYTE:
+                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Byte", "TYPE",
+                        "Ljava/lang/Class;");
+                break;
+            case Type.SHORT:
+                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Short", "TYPE",
+                        "Ljava/lang/Class;");
+                break;
+            case Type.INT:
+                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Integer", "TYPE",
+                        "Ljava/lang/Class;");
+                break;
+            case Type.FLOAT:
+                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Float", "TYPE",
+                        "Ljava/lang/Class;");
+                break;
+            case Type.LONG:
+                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Long", "TYPE",
+                        "Ljava/lang/Class;");
+                break;
+            case Type.DOUBLE:
+                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Double", "TYPE",
+                        "Ljava/lang/Class;");
+                break;
+            default:
+                clinitMethodVisitor.visitLdcInsn(returnType);
+        }
     }
 
     private static String/*@Nullable*/[] getInterfacesIncludingMixins(
@@ -254,6 +330,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private MethodVisitor visitInitWithMixin(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions,
             List<Advice> matchingAdvisors) {
+        int methodMetaUniqueNum = collectClassAndMethodMetas(matchingAdvisors, desc);
         MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
         checkNotNull(mv);
         mv = new InitMixins(mv, access, name, desc, parsedTypeClassVisitor.getMatchedMixinTypes(),
@@ -264,13 +341,15 @@ class WeavingClassVisitor extends ClassVisitor {
                 break;
             }
         }
-        return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors);
+        return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
+                methodMetaUniqueNum);
     }
 
     @RequiresNonNull("type")
     private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions,
             Iterable<Advice> matchingAdvisors) {
+        int methodMetaUniqueNum = collectClassAndMethodMetas(matchingAdvisors, desc);
         if (traceMetricWrapperMethods && !name.equals("<init>")) {
             String innerWrappedName = wrapWithSyntheticTraceMetricMarkerMethods(access, name, desc,
                     signature, exceptions, matchingAdvisors);
@@ -284,12 +363,33 @@ class WeavingClassVisitor extends ClassVisitor {
                     cv.visitMethod(methodAccess, methodName, desc, signature, exceptions);
             checkNotNull(mv);
             return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type,
-                    matchingAdvisors);
+                    matchingAdvisors, methodMetaUniqueNum);
         } else {
             MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
             checkNotNull(mv);
-            return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors);
+            return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
+                    methodMetaUniqueNum);
         }
+    }
+
+    private int collectClassAndMethodMetas(Iterable<Advice> matchingAdvisors, String desc) {
+        Set<Class<?>> methodMetas = Sets.newHashSet();
+        for (Advice matchingAdvice : matchingAdvisors) {
+            classMetas.addAll(matchingAdvice.getClassMetas());
+            methodMetas.addAll(matchingAdvice.getMethodMetas());
+        }
+        int methodMetaUniqueNum = 0;
+        if (!methodMetas.isEmpty()) {
+            methodMetaUniqueNum = ++methodMetaCounter;
+            for (Class<?> methodMeta : methodMetas) {
+                List<Type> argTypes = Arrays.asList(Type.getArgumentTypes(desc));
+                Type returnType = Type.getReturnType(desc);
+                methodMetaInstances.add(new MethodMetaInstance(methodMeta, returnType, argTypes,
+                        methodMetaUniqueNum));
+            }
+
+        }
+        return methodMetaUniqueNum;
     }
 
     // returns null if no synthetic trace metric marker methods were needed
@@ -487,6 +587,38 @@ class WeavingClassVisitor extends ClassVisitor {
                     invokeVirtual(type, new Method(initMethodName, "()V"));
                 }
             }
+        }
+    }
+
+    private static class MethodMetaInstance {
+
+        private final Class<?> methodMeta;
+        private final Type returnType;
+        private final List<Type> argTypes;
+        private final int uniqueNum;
+
+        private MethodMetaInstance(Class<?> methodMeta, Type returnType, List<Type> argTypes,
+                int uniqueNum) {
+            this.methodMeta = methodMeta;
+            this.returnType = returnType;
+            this.argTypes = argTypes;
+            this.uniqueNum = uniqueNum;
+        }
+
+        private Class<?> getMethodMeta() {
+            return methodMeta;
+        }
+
+        private Type getReturnType() {
+            return returnType;
+        }
+
+        private List<Type> getArgTypes() {
+            return argTypes;
+        }
+
+        private int getUniqueNum() {
+            return uniqueNum;
         }
     }
 }

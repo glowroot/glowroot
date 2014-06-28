@@ -32,6 +32,7 @@ import org.glowroot.weaving.SomeAspect.BindAutoboxedReturnAdvice;
 import org.glowroot.weaving.SomeAspect.BindClassMetaAdvice;
 import org.glowroot.weaving.SomeAspect.BindMethodArgAdvice;
 import org.glowroot.weaving.SomeAspect.BindMethodArgArrayAdvice;
+import org.glowroot.weaving.SomeAspect.BindMethodMetaAdvice;
 import org.glowroot.weaving.SomeAspect.BindMethodNameAdvice;
 import org.glowroot.weaving.SomeAspect.BindOptionalPrimitiveReturnAdvice;
 import org.glowroot.weaving.SomeAspect.BindOptionalReturnAdvice;
@@ -72,6 +73,7 @@ import org.glowroot.weaving.SomeAspect.StaticAdvice;
 import org.glowroot.weaving.SomeAspect.SuperBasicAdvice;
 import org.glowroot.weaving.SomeAspect.TestClassMeta;
 import org.glowroot.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
+import org.glowroot.weaving.SomeAspect.TestMethodMeta;
 import org.glowroot.weaving.SomeAspect.ThrowableToStringAdvice;
 import org.glowroot.weaving.SomeAspect.TypeNamePatternAdvice;
 import org.glowroot.weaving.SomeAspect.WildMethodAdvice;
@@ -366,6 +368,63 @@ public class WeaverTest {
                 .isEqualTo(ThrowingMisc.class.getName());
         assertThat(BindClassMetaAdvice.onAfterClassMeta.get().getClazzName())
                 .isEqualTo(ThrowingMisc.class.getName());
+    }
+
+    // ===================== @BindMethodMeta =====================
+
+    @Test
+    public void shouldBindMethodMeta() throws Exception {
+        // given
+        BindMethodMetaAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindMethodMetaAdvice.class,
+                TestMethodMeta.class);
+        // when
+        test.executeWithArgs("one", 2);
+        // then
+        // can't compare Class objects directly since they are in different class loaders due to
+        // IsolatedWeavingClassLoader
+        assertThat(BindMethodMetaAdvice.isEnabledMethodMeta.get().getDeclaringClassName())
+                .isEqualTo(BasicMisc.class.getName());
+        assertThat(BindMethodMetaAdvice.isEnabledMethodMeta.get().getReturnTypeName())
+                .isEqualTo(void.class.getName());
+        assertThat(BindMethodMetaAdvice.isEnabledMethodMeta.get().getParameterTypeNames())
+                .containsExactly(String.class.getName(), int.class.getName());
+        assertThat(BindMethodMetaAdvice.onBeforeMethodMeta.get())
+                .isEqualTo(BindMethodMetaAdvice.isEnabledMethodMeta.get());
+        assertThat(BindMethodMetaAdvice.onReturnMethodMeta.get())
+                .isEqualTo(BindMethodMetaAdvice.isEnabledMethodMeta.get());
+        assertThat(BindMethodMetaAdvice.onThrowMethodMeta.get()).isNull();
+        assertThat(BindMethodMetaAdvice.onAfterMethodMeta.get())
+                .isEqualTo(BindMethodMetaAdvice.isEnabledMethodMeta.get());
+    }
+
+    @Test
+    public void shouldBindMethodMetaOnThrow() throws Exception {
+        // given
+        BindMethodMetaAdvice.resetThreadLocals();
+        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, BindMethodMetaAdvice.class,
+                TestMethodMeta.class);
+        // when
+        try {
+            test.executeWithArgs("one", 2);
+        } catch (Throwable t) {
+        }
+        // then
+        // can't compare Class objects directly since they are in different class loaders due to
+        // IsolatedWeavingClassLoader
+        assertThat(BindMethodMetaAdvice.isEnabledMethodMeta.get().getDeclaringClassName())
+                .isEqualTo(ThrowingMisc.class.getName());
+        assertThat(BindMethodMetaAdvice.isEnabledMethodMeta.get().getReturnTypeName())
+                .isEqualTo(void.class.getName());
+        assertThat(BindMethodMetaAdvice.isEnabledMethodMeta.get().getParameterTypeNames())
+                .containsExactly(String.class.getName(), int.class.getName());
+        assertThat(BindMethodMetaAdvice.onBeforeMethodMeta.get())
+                .isEqualTo(BindMethodMetaAdvice.isEnabledMethodMeta.get());
+        assertThat(BindMethodMetaAdvice.onReturnMethodMeta.get()).isNull();
+        assertThat(BindMethodMetaAdvice.onThrowMethodMeta.get())
+                .isEqualTo(BindMethodMetaAdvice.isEnabledMethodMeta.get());
+        assertThat(BindMethodMetaAdvice.onAfterMethodMeta.get())
+                .isEqualTo(BindMethodMetaAdvice.isEnabledMethodMeta.get());
     }
 
     // ===================== @BindReturn =====================

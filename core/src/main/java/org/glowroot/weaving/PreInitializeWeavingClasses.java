@@ -327,6 +327,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.api.weaving.BindClassMeta");
         types.add("org.glowroot.api.weaving.BindMethodArg");
         types.add("org.glowroot.api.weaving.BindMethodArgArray");
+        types.add("org.glowroot.api.weaving.BindMethodMeta");
         types.add("org.glowroot.api.weaving.BindMethodName");
         types.add("org.glowroot.api.weaving.BindOptionalReturn");
         types.add("org.glowroot.api.weaving.BindReceiver");
@@ -380,6 +381,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.WeavingClassVisitor");
         types.add("org.glowroot.weaving.WeavingClassVisitor$AbortWeavingException");
         types.add("org.glowroot.weaving.WeavingClassVisitor$InitMixins");
+        types.add("org.glowroot.weaving.WeavingClassVisitor$MethodMetaInstance");
         types.add("org.glowroot.weaving.WeavingMethodVisitor");
         types.add("org.glowroot.weaving.WeavingMethodVisitor$MarkerException");
         types.add("org.glowroot.weaving.WeavingTimerService");

@@ -25,6 +25,7 @@ import org.glowroot.api.OptionalReturn;
 import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindMethodArgArray;
+import org.glowroot.api.weaving.BindMethodMeta;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindOptionalReturn;
 import org.glowroot.api.weaving.BindReceiver;
@@ -530,25 +531,25 @@ public class SomeAspect {
         public static final ThreadLocal<TestClassMeta> onAfterClassMeta =
                 new ThreadLocal<TestClassMeta>();
         @IsEnabled
-        public static boolean isEnabled(@BindClassMeta TestClassMeta traveler) {
-            isEnabledClassMeta.set(traveler);
+        public static boolean isEnabled(@BindClassMeta TestClassMeta meta) {
+            isEnabledClassMeta.set(meta);
             return true;
         }
         @OnBefore
-        public static void onBefore(@BindClassMeta TestClassMeta traveler) {
-            onBeforeClassMeta.set(traveler);
+        public static void onBefore(@BindClassMeta TestClassMeta meta) {
+            onBeforeClassMeta.set(meta);
         }
         @OnReturn
-        public static void onReturn(@BindClassMeta TestClassMeta traveler) {
-            onReturnClassMeta.set(traveler);
+        public static void onReturn(@BindClassMeta TestClassMeta meta) {
+            onReturnClassMeta.set(meta);
         }
         @OnThrow
-        public static void onThrow(@BindClassMeta TestClassMeta traveler) {
-            onThrowClassMeta.set(traveler);
+        public static void onThrow(@BindClassMeta TestClassMeta meta) {
+            onThrowClassMeta.set(meta);
         }
         @OnAfter
-        public static void onAfter(@BindClassMeta TestClassMeta traveler) {
-            onAfterClassMeta.set(traveler);
+        public static void onAfter(@BindClassMeta TestClassMeta meta) {
+            onAfterClassMeta.set(meta);
         }
         public static void resetThreadLocals() {
             isEnabledClassMeta.remove();
@@ -556,6 +557,49 @@ public class SomeAspect {
             onReturnClassMeta.remove();
             onThrowClassMeta.remove();
             onAfterClassMeta.remove();
+        }
+    }
+
+    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
+            methodArgTypes = {".."})
+    public static class BindMethodMetaAdvice {
+        public static final ThreadLocal<TestMethodMeta> isEnabledMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        public static final ThreadLocal<TestMethodMeta> onBeforeMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        public static final ThreadLocal<TestMethodMeta> onReturnMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        public static final ThreadLocal<TestMethodMeta> onThrowMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        public static final ThreadLocal<TestMethodMeta> onAfterMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        @IsEnabled
+        public static boolean isEnabled(@BindMethodMeta TestMethodMeta meta) {
+            isEnabledMethodMeta.set(meta);
+            return true;
+        }
+        @OnBefore
+        public static void onBefore(@BindMethodMeta TestMethodMeta meta) {
+            onBeforeMethodMeta.set(meta);
+        }
+        @OnReturn
+        public static void onReturn(@BindMethodMeta TestMethodMeta meta) {
+            onReturnMethodMeta.set(meta);
+        }
+        @OnThrow
+        public static void onThrow(@BindMethodMeta TestMethodMeta meta) {
+            onThrowMethodMeta.set(meta);
+        }
+        @OnAfter
+        public static void onAfter(@BindMethodMeta TestMethodMeta meta) {
+            onAfterMethodMeta.set(meta);
+        }
+        public static void resetThreadLocals() {
+            isEnabledMethodMeta.remove();
+            onBeforeMethodMeta.remove();
+            onReturnMethodMeta.remove();
+            onThrowMethodMeta.remove();
+            onAfterMethodMeta.remove();
         }
     }
 
@@ -1057,6 +1101,36 @@ public class SomeAspect {
 
         public String getClazzName() {
             return clazz.getName();
+        }
+    }
+
+    public static class TestMethodMeta {
+
+        private final Class<?> declaringClass;
+        private final Class<?> returnType;
+        private final Class<?>[] parameterTypes;
+
+        public TestMethodMeta(Class<?> declaringClass, Class<?> returnType,
+                Class<?>... parameterTypes) {
+            this.declaringClass = declaringClass;
+            this.returnType = returnType;
+            this.parameterTypes = parameterTypes;
+        }
+
+        public String getDeclaringClassName() {
+            return declaringClass.getName();
+        }
+
+        public String getReturnTypeName() {
+            return returnType.getName();
+        }
+
+        public String[] getParameterTypeNames() {
+            String[] parameterTypeNames = new String[parameterTypes.length];
+            for (int i = 0; i < parameterTypes.length; i++) {
+                parameterTypeNames[i] = parameterTypes[i].getName();
+            }
+            return parameterTypeNames;
         }
     }
 }
