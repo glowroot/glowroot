@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -66,6 +67,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private final ImmutableList<Advice> advisors;
     private final Type[] argumentTypes;
     private final Type returnType;
+    @Nullable
+    private final String metaHolderName;
     private final int methodMetaUniqueNum;
     private final boolean needsTryCatch;
 
@@ -83,7 +86,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private boolean visitedLocalVariableThis;
 
     WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
-            Iterable<Advice> advisors, int methodMetaUniqueNum) {
+            Iterable<Advice> advisors, @Nullable String metaHolderName, int methodMetaUniqueNum) {
         super(ASM5, mv, access, name, desc);
         this.access = access;
         this.name = name;
@@ -91,6 +94,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         this.advisors = ImmutableList.copyOf(advisors);
         argumentTypes = Type.getArgumentTypes(desc);
         returnType = Type.getReturnType(desc);
+        this.metaHolderName = metaHolderName;
         this.methodMetaUniqueNum = methodMetaUniqueNum;
         boolean needsTryCatch = false;
         for (Advice advice : advisors) {
@@ -536,9 +540,11 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                     loadTraveler(travelerLocal, adviceType, annotationType, parameter);
                     break;
                 case CLASS_META:
+                    checkNotNull(metaHolderName);
                     loadClassMeta(parameter);
                     break;
                 case METHOD_META:
+                    checkNotNull(metaHolderName);
                     loadMethodMeta(parameter);
                     break;
                 default:
@@ -601,18 +607,20 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         }
     }
 
+    @RequiresNonNull("metaHolderName")
     private void loadClassMeta(AdviceParameter parameter) {
         Type classMetaFieldType = Type.getType(parameter.getType());
         String classMetaFieldName = "glowroot$class$meta$"
                 + classMetaFieldType.getInternalName().replace('/', '$');
-        getStatic(owner, classMetaFieldName, classMetaFieldType);
+        getStatic(Type.getType(metaHolderName), classMetaFieldName, classMetaFieldType);
     }
 
+    @RequiresNonNull("metaHolderName")
     private void loadMethodMeta(AdviceParameter parameter) {
         Type methodMetaFieldType = Type.getType(parameter.getType());
         String methodMetaFieldName = "glowroot$method$meta$" + methodMetaUniqueNum + '$'
                 + methodMetaFieldType.getInternalName().replace('/', '$');
-        getStatic(owner, methodMetaFieldName, methodMetaFieldType);
+        getStatic(Type.getType(metaHolderName), methodMetaFieldName, methodMetaFieldType);
     }
 
     private void pushDefault(Type type) {

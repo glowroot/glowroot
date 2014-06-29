@@ -17,6 +17,8 @@ package org.glowroot.jvm;
 
 import java.lang.reflect.Method;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.Static;
@@ -32,18 +34,18 @@ public class ClassLoaders {
 
     private ClassLoaders() {}
 
-    public static Class<?> defineClass(String name, byte[] bytes) throws ReflectiveException {
-        Method defineClassMethod = Reflections.getDeclaredMethod(ClassLoader.class, "defineClass",
-                String.class, byte[].class, int.class, int.class);
-        ClassLoader classLoader = ClassLoaders.class.getClassLoader();
-        if (classLoader == null) {
+    public static Class<?> defineClass(String name, byte[] bytes, @Nullable ClassLoader loader)
+            throws ReflectiveException {
+        if (loader == null) {
             // this can be handled if needed, by using a private ClassLoader to generate classes
             // and using interfaces to access the generated classes (since then the generated
             // classes will be in a child or sibling class loader and will no longer be directly
             // accessible)
             throw new AssertionError("Glowroot was loaded by JVM bootstrap class loader");
         }
-        Class<?> definedClass = (Class<?>) Reflections.invoke(defineClassMethod, classLoader, name,
+        Method defineClassMethod = Reflections.getDeclaredMethod(ClassLoader.class, "defineClass",
+                String.class, byte[].class, int.class, int.class);
+        Class<?> definedClass = (Class<?>) Reflections.invoke(defineClassMethod, loader, name,
                 bytes, 0, bytes.length);
         checkNotNull(definedClass);
         return definedClass;

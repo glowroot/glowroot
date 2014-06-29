@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
@@ -35,7 +36,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
@@ -49,23 +52,36 @@ import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Reflections.ReflectiveException;
+import org.glowroot.jvm.ClassLoaders;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.AASTORE;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
+import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
+import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ANEWARRAY;
 import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.ASTORE;
+import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.BIPUSH;
 import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.F_SAME;
+import static org.objectweb.asm.Opcodes.F_SAME1;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
+import static org.objectweb.asm.Opcodes.GOTO;
+import static org.objectweb.asm.Opcodes.ICONST_0;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 import static org.objectweb.asm.Opcodes.NEW;
 import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
+import static org.objectweb.asm.Opcodes.V1_5;
 
 /**
  * @author Trask Stalnaker
@@ -80,9 +96,14 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private static final Set<String> invalidTraceMetricSet = Sets.newConcurrentHashSet();
 
+    private static final AtomicLong metaHolderCounter = new AtomicLong();
+
     // this field is just a @NonNull version of the field with the same name in the super class to
     // help with null flow analysis
     private final ClassVisitor cv;
+
+    @Nullable
+    private final ClassLoader loader;
 
     private final ParsedTypeClassVisitor parsedTypeClassVisitor;
 
@@ -97,10 +118,10 @@ class WeavingClassVisitor extends ClassVisitor {
 
     // these are for handling class and method metas
     private boolean maybeHasMetas;
-    @MonotonicNonNull
-    private MethodVisitor clinitMethodVisitor;
     private final Set<Class<?>> classMetas = Sets.newHashSet();
     private final Set<MethodMetaInstance> methodMetaInstances = Sets.newHashSet();
+    @MonotonicNonNull
+    private String metaHolderName;
     private int methodMetaCounter;
 
     public WeavingClassVisitor(ClassVisitor cv, ImmutableList<Advice> advisors,
@@ -109,6 +130,7 @@ class WeavingClassVisitor extends ClassVisitor {
             boolean traceMetricWrapperMethods) {
         super(ASM5, cv);
         this.cv = cv;
+        this.loader = loader;
         parsedTypeClassVisitor = new ParsedTypeClassVisitor(advisors, mixinTypes, loader,
                 parsedTypeCache, codeSource);
         this.traceMetricWrapperMethods = traceMetricWrapperMethods;
@@ -174,13 +196,6 @@ class WeavingClassVisitor extends ClassVisitor {
             // don't try to weave abstract, native and synthetic methods
             return cv.visitMethod(access, name, desc, signature, exceptions);
         }
-        if (name.equals("<clinit>") && maybeHasMetas) {
-            clinitMethodVisitor =
-                    checkNotNull(cv.visitMethod(access, name, desc, signature, exceptions));
-            clinitMethodVisitor.visitMethodInsn(INVOKESTATIC, type.getInternalName(),
-                    "original$clinit$glowroot", desc, false);
-            return cv.visitMethod(access, "original$clinit$glowroot", desc, signature, exceptions);
-        }
         if (name.equals("<init>") && !parsedTypeClassVisitor.getMatchedMixinTypes().isEmpty()) {
             return visitInitWithMixin(access, name, desc, signature, exceptions, matchingAdvisors);
         }
@@ -201,62 +216,15 @@ class WeavingClassVisitor extends ClassVisitor {
             addMixin(mixinType);
         }
         handleInheritedMethodsThatNowFulfillAdvice(parsedType);
-        // handle static initializer at end, since handleInheritedMethodsThatNowFulfillAdvice()
-        // above could add new classMetas
-        if (!classMetas.isEmpty() || !methodMetaInstances.isEmpty()) {
-            if (clinitMethodVisitor == null) {
-                clinitMethodVisitor =
-                        checkNotNull(cv.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null));
+        // handle metas at end, since handleInheritedMethodsThatNowFulfillAdvice()
+        // above could add new metas
+        if (metaHolderName != null) {
+            try {
+                generateMetaHolder();
+            } catch (ReflectiveException e) {
+                logger.error(e.getMessage(), e);
+                throw new AbortWeavingException();
             }
-            clinitMethodVisitor.visitCode();
-            for (Class<?> classMeta : classMetas) {
-                String classMetaInternalName = Type.getInternalName(classMeta);
-                String classMetaFieldName =
-                        "glowroot$class$meta$" + classMetaInternalName.replace('/', '$');
-                FieldVisitor fv = cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC,
-                        classMetaFieldName, "L" + classMetaInternalName + ";", null, null);
-                fv.visitEnd();
-                clinitMethodVisitor.visitTypeInsn(NEW, classMetaInternalName);
-                clinitMethodVisitor.visitInsn(DUP);
-                clinitMethodVisitor.visitLdcInsn(type);
-                clinitMethodVisitor.visitMethodInsn(INVOKESPECIAL, classMetaInternalName,
-                        "<init>", "(Ljava/lang/Class;)V", false);
-                clinitMethodVisitor.visitFieldInsn(PUTSTATIC, type.getInternalName(),
-                        classMetaFieldName, "L" + classMetaInternalName + ";");
-            }
-            for (MethodMetaInstance methodMetaInstance : methodMetaInstances) {
-                String methodMetaInternalName =
-                        Type.getInternalName(methodMetaInstance.getMethodMeta());
-                String methodMetaFieldName = "glowroot$method$meta$"
-                        + methodMetaInstance.getUniqueNum() + '$'
-                        + methodMetaInternalName.replace('/', '$');
-                FieldVisitor fv = cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC,
-                        methodMetaFieldName, "L" + methodMetaInternalName + ";", null, null);
-                fv.visitEnd();
-                clinitMethodVisitor.visitTypeInsn(NEW, methodMetaInternalName);
-                clinitMethodVisitor.visitInsn(DUP);
-                clinitMethodVisitor.visitLdcInsn(type);
-                loadType(clinitMethodVisitor, methodMetaInstance.getReturnType());
-
-                clinitMethodVisitor.visitIntInsn(BIPUSH, methodMetaInstance.getArgTypes().size());
-                clinitMethodVisitor.visitTypeInsn(ANEWARRAY, "java/lang/Class");
-                for (int i = 0; i < methodMetaInstance.getArgTypes().size(); i++) {
-                    clinitMethodVisitor.visitInsn(DUP);
-                    clinitMethodVisitor.visitIntInsn(BIPUSH, i);
-                    loadType(clinitMethodVisitor, methodMetaInstance.getArgTypes().get(i));
-                    clinitMethodVisitor.visitInsn(AASTORE);
-                }
-
-                clinitMethodVisitor.visitMethodInsn(INVOKESPECIAL, methodMetaInternalName,
-                        "<init>", "(Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;)V", false);
-                clinitMethodVisitor.visitFieldInsn(PUTSTATIC, type.getInternalName(),
-                        methodMetaFieldName, "L" + methodMetaInternalName + ";");
-            }
-        }
-        if (clinitMethodVisitor != null) {
-            clinitMethodVisitor.visitInsn(RETURN);
-            clinitMethodVisitor.visitMaxs(0, 0);
-            clinitMethodVisitor.visitEnd();
         }
         cv.visitEnd();
     }
@@ -265,46 +233,124 @@ class WeavingClassVisitor extends ClassVisitor {
         return nothingAtAllToWeave;
     }
 
-    private static void loadType(MethodVisitor clinitMethodVisitor, Type returnType) {
-        switch (returnType.getSort()) {
+    @RequiresNonNull({"type", "metaHolderName"})
+    private void generateMetaHolder() throws ReflectiveException {
+        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
+        cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, metaHolderName, null, "java/lang/Object", null);
+        Type metaHolderType = Type.getType('L' + metaHolderName + ';');
+        MethodVisitor mv = cw.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
+        mv.visitCode();
+        Label l0 = new Label();
+        Label l1 = new Label();
+        Label l2 = new Label();
+        mv.visitTryCatchBlock(l0, l1, l2, "java/lang/ClassNotFoundException");
+        mv.visitLabel(l0);
+        for (Class<?> classMeta : classMetas) {
+            String classMetaInternalName = Type.getInternalName(classMeta);
+            String classMetaFieldName =
+                    "glowroot$class$meta$" + classMetaInternalName.replace('/', '$');
+            FieldVisitor fv = cw.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC,
+                    classMetaFieldName, "L" + classMetaInternalName + ";", null, null);
+            fv.visitEnd();
+            mv.visitTypeInsn(NEW, classMetaInternalName);
+            mv.visitInsn(DUP);
+            loadType(mv, type, metaHolderType);
+            mv.visitMethodInsn(INVOKESPECIAL, classMetaInternalName,
+                    "<init>", "(Ljava/lang/Class;)V", false);
+            mv.visitFieldInsn(PUTSTATIC, metaHolderName, classMetaFieldName,
+                    "L" + classMetaInternalName + ";");
+        }
+        for (MethodMetaInstance methodMetaInstance : methodMetaInstances) {
+            String methodMetaInternalName =
+                    Type.getInternalName(methodMetaInstance.getMethodMeta());
+            String methodMetaFieldName = "glowroot$method$meta$"
+                    + methodMetaInstance.getUniqueNum() + '$'
+                    + methodMetaInternalName.replace('/', '$');
+            FieldVisitor fv = cw.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC,
+                    methodMetaFieldName, "L" + methodMetaInternalName + ";", null, null);
+            fv.visitEnd();
+            mv.visitTypeInsn(NEW, methodMetaInternalName);
+            mv.visitInsn(DUP);
+            loadType(mv, type, metaHolderType);
+            loadType(mv, methodMetaInstance.getReturnType(), metaHolderType);
+
+            mv.visitIntInsn(BIPUSH, methodMetaInstance.getArgTypes().size());
+            mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
+            for (int i = 0; i < methodMetaInstance.getArgTypes().size(); i++) {
+                mv.visitInsn(DUP);
+                mv.visitIntInsn(BIPUSH, i);
+                loadType(mv, methodMetaInstance.getArgTypes().get(i), metaHolderType);
+                mv.visitInsn(AASTORE);
+            }
+
+            mv.visitMethodInsn(INVOKESPECIAL, methodMetaInternalName,
+                    "<init>", "(Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;)V", false);
+            mv.visitFieldInsn(PUTSTATIC, metaHolderName, methodMetaFieldName,
+                    "L" + methodMetaInternalName + ";");
+        }
+        // this is just try/catch ClassNotFoundException/re-throw AssertionError
+        mv.visitLabel(l1);
+        Label l3 = new Label();
+        mv.visitJumpInsn(GOTO, l3);
+        mv.visitLabel(l2);
+        mv.visitFrame(F_SAME1, 0, null, 1, new Object[] {"java/lang/ClassNotFoundException"});
+        mv.visitVarInsn(ASTORE, 0);
+        mv.visitTypeInsn(NEW, "java/lang/AssertionError");
+        mv.visitInsn(DUP);
+        mv.visitVarInsn(ALOAD, 0);
+        mv.visitMethodInsn(INVOKESPECIAL, "java/lang/AssertionError", "<init>",
+                "(Ljava/lang/Object;)V", false);
+        mv.visitInsn(ATHROW);
+        mv.visitLabel(l3);
+        mv.visitFrame(F_SAME, 0, null, 0, null);
+
+        mv.visitInsn(RETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+        cw.visitEnd();
+        byte[] bytes = cw.toByteArray();
+        ClassLoaders.defineClass(TypeNames.fromInternal(metaHolderName), bytes, loader);
+    }
+
+    private static void loadType(MethodVisitor mv, Type type, Type ownerType) {
+        switch (type.getSort()) {
             case Type.VOID:
-                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Void", "TYPE",
-                        "Ljava/lang/Class;");
+                mv.visitFieldInsn(GETSTATIC, "java/lang/Void", "TYPE", "Ljava/lang/Class;");
                 break;
             case Type.BOOLEAN:
-                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Boolean", "TYPE",
-                        "Ljava/lang/Class;");
+                mv.visitFieldInsn(GETSTATIC, "java/lang/Boolean", "TYPE", "Ljava/lang/Class;");
                 break;
             case Type.CHAR:
-                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Character", "TYPE",
-                        "Ljava/lang/Class;");
+                mv.visitFieldInsn(GETSTATIC, "java/lang/Character", "TYPE", "Ljava/lang/Class;");
                 break;
             case Type.BYTE:
-                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Byte", "TYPE",
-                        "Ljava/lang/Class;");
+                mv.visitFieldInsn(GETSTATIC, "java/lang/Byte", "TYPE", "Ljava/lang/Class;");
                 break;
             case Type.SHORT:
-                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Short", "TYPE",
-                        "Ljava/lang/Class;");
+                mv.visitFieldInsn(GETSTATIC, "java/lang/Short", "TYPE", "Ljava/lang/Class;");
                 break;
             case Type.INT:
-                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Integer", "TYPE",
-                        "Ljava/lang/Class;");
+                mv.visitFieldInsn(GETSTATIC, "java/lang/Integer", "TYPE", "Ljava/lang/Class;");
                 break;
             case Type.FLOAT:
-                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Float", "TYPE",
-                        "Ljava/lang/Class;");
+                mv.visitFieldInsn(GETSTATIC, "java/lang/Float", "TYPE", "Ljava/lang/Class;");
                 break;
             case Type.LONG:
-                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Long", "TYPE",
-                        "Ljava/lang/Class;");
+                mv.visitFieldInsn(GETSTATIC, "java/lang/Long", "TYPE", "Ljava/lang/Class;");
                 break;
             case Type.DOUBLE:
-                clinitMethodVisitor.visitFieldInsn(GETSTATIC, "java/lang/Double", "TYPE",
-                        "Ljava/lang/Class;");
+                mv.visitFieldInsn(GETSTATIC, "java/lang/Double", "TYPE", "Ljava/lang/Class;");
                 break;
             default:
-                clinitMethodVisitor.visitLdcInsn(returnType);
+                // may not have access to type in meta holder, so need to use Class.forName()
+                // instead of class constant (visitLdcInsn)
+                mv.visitLdcInsn(type.getClassName());
+                mv.visitInsn(ICONST_0);
+                mv.visitLdcInsn(ownerType);
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getClassLoader",
+                        "()Ljava/lang/ClassLoader;", false);
+                mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
+                        "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;", false);
         }
     }
 
@@ -342,7 +388,7 @@ class WeavingClassVisitor extends ClassVisitor {
             }
         }
         return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
-                methodMetaUniqueNum);
+                metaHolderName, methodMetaUniqueNum);
     }
 
     @RequiresNonNull("type")
@@ -363,12 +409,12 @@ class WeavingClassVisitor extends ClassVisitor {
                     cv.visitMethod(methodAccess, methodName, desc, signature, exceptions);
             checkNotNull(mv);
             return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type,
-                    matchingAdvisors, methodMetaUniqueNum);
+                    matchingAdvisors, metaHolderName, methodMetaUniqueNum);
         } else {
             MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
             checkNotNull(mv);
             return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
-                    methodMetaUniqueNum);
+                    metaHolderName, methodMetaUniqueNum);
         }
     }
 
@@ -387,7 +433,10 @@ class WeavingClassVisitor extends ClassVisitor {
                 methodMetaInstances.add(new MethodMetaInstance(methodMeta, returnType, argTypes,
                         methodMetaUniqueNum));
             }
-
+        }
+        if ((!classMetas.isEmpty() || !methodMetas.isEmpty()) && metaHolderName == null) {
+            metaHolderName = "org/glowroot/weaving/MetaHolder"
+                    + metaHolderCounter.incrementAndGet();
         }
         return methodMetaUniqueNum;
     }
@@ -468,7 +517,7 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
-    @RequiresNonNull({"type"})
+    @RequiresNonNull("type")
     private void handleInheritedMethodsThatNowFulfillAdvice(ParsedType parsedType) {
         if (parsedType.isInterface() || parsedType.isAbstract()) {
             return;
@@ -511,7 +560,7 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
-    @RequiresNonNull({"type"})
+    @RequiresNonNull("type")
     private void overrideAndWeaveInheritedMethod(ParsedType parsedType,
             ParsedMethod inheritedMethod, Collection<Advice> matchingAdvisors) {
         String[] exceptions = Iterables.toArray(inheritedMethod.getExceptions(), String.class);

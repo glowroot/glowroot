@@ -61,7 +61,7 @@ class AdviceFlowGenerator {
         writeThreadLocalInitialization(cw, generatedTypeName);
         try {
             return ClassLoaders.defineClass(TypeNames.fromInternal(generatedTypeName),
-                    cw.toByteArray());
+                    cw.toByteArray(), AdviceFlowGenerator.class.getClassLoader());
         } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
             throw new AdviceConstructionException(e);

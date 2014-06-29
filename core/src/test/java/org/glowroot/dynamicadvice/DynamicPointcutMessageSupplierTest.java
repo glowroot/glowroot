@@ -30,7 +30,8 @@ public class DynamicPointcutMessageSupplierTest {
 
     @Test
     public void shouldRenderConstant() {
-        DynamicAdviceMessageTemplate template = DynamicAdviceMessageTemplate.create("abc");
+        DynamicAdviceMessageTemplate template = DynamicAdviceMessageTemplate.create("abc",
+                TestReceiver.class, void.class, new Class<?>[] {HasName.class});
         Message message = DynamicAdviceMessageSupplier.create(template, new HasName(),
                 "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
@@ -40,31 +41,34 @@ public class DynamicPointcutMessageSupplierTest {
     @Test
     public void shouldRenderNormal() {
         DynamicAdviceMessageTemplate template = DynamicAdviceMessageTemplate
-                .create("{{this.class.name}}.{{methodName}}(): {{0.name}} => {{ret}}");
-        Message message = DynamicAdviceMessageSupplier.create(template, new HasName(),
+                .create("{{this.class.name}}.{{methodName}}(): {{0.name}} => {{ret}}",
+                        TestReceiver.class, void.class, new Class<?>[] {HasName.class});
+        Message message = DynamicAdviceMessageSupplier.create(template, new TestReceiver(),
                 "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
-        assertThat(text).isEqualTo(HasName.class.getName() + ".execute(): the name => ");
+        assertThat(text).isEqualTo(TestReceiver.class.getName() + ".execute(): the name => ");
     }
 
     @Test
     public void shouldRenderTrailingText() {
         DynamicAdviceMessageTemplate template = DynamicAdviceMessageTemplate
-                .create("{{this.class.name}}.{{methodName}}(): {{0.name}} trailing");
-        Message message = DynamicAdviceMessageSupplier.create(template, new HasName(),
+                .create("{{this.class.name}}.{{methodName}}(): {{0.name}} trailing",
+                        TestReceiver.class, void.class, new Class<?>[] {HasName.class});
+        Message message = DynamicAdviceMessageSupplier.create(template, new TestReceiver(),
                 "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
-        assertThat(text).isEqualTo(HasName.class.getName() + ".execute(): the name trailing");
+        assertThat(text).isEqualTo(TestReceiver.class.getName() + ".execute(): the name trailing");
     }
 
     @Test
     public void shouldRenderBadText() {
         DynamicAdviceMessageTemplate template = DynamicAdviceMessageTemplate
-                .create("{{this.class.name}}.{{methodName}}(): {{1.name}} trailing");
-        Message message = DynamicAdviceMessageSupplier.create(template, new HasName(),
+                .create("{{this.class.name}}.{{methodName}}(): {{1.name}} trailing",
+                        TestReceiver.class, void.class, new Class<?>[] {HasName.class});
+        Message message = DynamicAdviceMessageSupplier.create(template, new TestReceiver(),
                 "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
-        assertThat(text).isEqualTo(HasName.class.getName()
+        assertThat(text).isEqualTo(TestReceiver.class.getName()
                 + ".execute(): <requested arg index out of bounds: 1> trailing");
     }
 
@@ -72,5 +76,9 @@ public class DynamicPointcutMessageSupplierTest {
         public String getName() {
             return "the name";
         }
+    }
+
+    public static class TestReceiver {
+        public void execute(@SuppressWarnings("unused") HasName arg) {}
     }
 }

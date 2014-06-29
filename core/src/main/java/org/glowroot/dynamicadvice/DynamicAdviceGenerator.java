@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -39,7 +38,6 @@ import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.Advice.AdviceConstructionException;
 import org.glowroot.weaving.TypeNames;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
@@ -53,6 +51,7 @@ import static org.objectweb.asm.Opcodes.ASTORE;
 import static org.objectweb.asm.Opcodes.CHECKCAST;
 import static org.objectweb.asm.Opcodes.DUP;
 import static org.objectweb.asm.Opcodes.F_SAME;
+import static org.objectweb.asm.Opcodes.GETFIELD;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
 import static org.objectweb.asm.Opcodes.GOTO;
 import static org.objectweb.asm.Opcodes.ICONST_0;
@@ -67,6 +66,7 @@ import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 import static org.objectweb.asm.Opcodes.IRETURN;
 import static org.objectweb.asm.Opcodes.NEW;
+import static org.objectweb.asm.Opcodes.PUTFIELD;
 import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
 import static org.objectweb.asm.Opcodes.V1_5;
@@ -88,6 +88,7 @@ public class DynamicAdviceGenerator {
     @Nullable
     private final String pluginId;
     private final String adviceTypeName;
+    private final String methodMetaName;
 
     public static ImmutableList<Advice> createAdvisors(
             ImmutableList<PointcutConfig> pointcutConfigs, @Nullable String pluginId) {
@@ -116,10 +117,15 @@ public class DynamicAdviceGenerator {
     private DynamicAdviceGenerator(PointcutConfig pointcutConfig, @Nullable String pluginId) {
         this.pointcutConfig = pointcutConfig;
         this.pluginId = pluginId;
-        adviceTypeName = "org/glowroot/dynamicadvice/GeneratedAdvice" + counter.incrementAndGet();
+        int uniqueNum = counter.incrementAndGet();
+        adviceTypeName = "org/glowroot/dynamicadvice/GeneratedAdvice" + uniqueNum;
+        methodMetaName = "org/glowroot/dynamicadvice/GeneratedMethodMeta" + uniqueNum;
     }
 
     private Class<?> generate() throws ReflectiveException {
+        if (pointcutConfig.isSpan() || pointcutConfig.isTrace()) {
+            generateMethodMeta();
+        }
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         String[] interfaces = null;
         if (!pointcutConfig.getEnabledProperty().isEmpty()
@@ -147,12 +153,13 @@ public class DynamicAdviceGenerator {
         }
         cw.visitEnd();
         byte[] bytes = cw.toByteArray();
-        return ClassLoaders.defineClass(TypeNames.fromInternal(adviceTypeName), bytes);
+        return ClassLoaders.defineClass(TypeNames.fromInternal(adviceTypeName), bytes,
+                DynamicAdviceGenerator.class.getClassLoader());
     }
 
-    private void addClassAnnotation(ClassVisitor cv) {
+    private void addClassAnnotation(ClassWriter cw) {
         AnnotationVisitor annotationVisitor =
-                cv.visitAnnotation("Lorg/glowroot/api/weaving/Pointcut;", true);
+                cw.visitAnnotation("Lorg/glowroot/api/weaving/Pointcut;", true);
         annotationVisitor.visit("type", pointcutConfig.getType());
         annotationVisitor.visit("methodName", pointcutConfig.getMethodName());
         AnnotationVisitor argVisitor = annotationVisitor.visitArray("methodArgTypes");
@@ -172,36 +179,25 @@ public class DynamicAdviceGenerator {
         annotationVisitor.visitEnd();
     }
 
-    private void addStaticFields(ClassVisitor cv) {
-        cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "pluginServices",
+    private void addStaticFields(ClassWriter cw) {
+        cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;", null, null)
                 .visitEnd();
-        cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "traceMetricName",
+        cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "traceMetricName",
                 "Lorg/glowroot/api/TraceMetricName;", null, null)
                 .visitEnd();
-        if (pointcutConfig.isSpan()) {
-            cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "spanText",
-                    "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", null, null)
-                    .visitEnd();
-        }
-        if (pointcutConfig.isTrace()) {
-            cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "transactionName",
-                    "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", null, null)
-                    .visitEnd();
-        }
         if (!pointcutConfig.getEnabledProperty().isEmpty()) {
-            cv.visitField(ACC_PRIVATE + ACC_STATIC + ACC_VOLATILE, "enabled", "Z", null, null)
+            cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_VOLATILE, "enabled", "Z", null, null)
                     .visitEnd();
         }
         if (!pointcutConfig.getSpanEnabledProperty().isEmpty()) {
-            cv.visitField(ACC_PRIVATE + ACC_STATIC + ACC_VOLATILE, "spanEnabled", "Z", null, null)
+            cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_VOLATILE, "spanEnabled", "Z", null, null)
                     .visitEnd();
         }
     }
 
-    private void addStaticInitializer(ClassVisitor cv) {
-        MethodVisitor mv = cv.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
-        checkNotNull(mv);
+    private void addStaticInitializer(ClassWriter cw) {
+        MethodVisitor mv = cw.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
         mv.visitCode();
         if (pluginId == null) {
             mv.visitInsn(ACONST_NULL);
@@ -219,34 +215,6 @@ public class DynamicAdviceGenerator {
                 "(Ljava/lang/Class;)Lorg/glowroot/api/TraceMetricName;", false);
         mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "traceMetricName",
                 "Lorg/glowroot/api/TraceMetricName;");
-        if (pointcutConfig.isSpan()) {
-            String spanText = pointcutConfig.getSpanText();
-            if (spanText == null) {
-                mv.visitLdcInsn("<no span text provided>");
-            } else {
-                mv.visitLdcInsn(spanText);
-            }
-            mv.visitMethodInsn(INVOKESTATIC,
-                    "org/glowroot/dynamicadvice/DynamicAdviceMessageTemplate", "create",
-                    "(Ljava/lang/String;)"
-                            + "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", false);
-            mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "spanText",
-                    "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;");
-        }
-        if (pointcutConfig.isTrace()) {
-            String transactionName = pointcutConfig.getTransactionName();
-            if (Strings.isNullOrEmpty(transactionName)) {
-                mv.visitLdcInsn("<no transaction name provided>");
-            } else {
-                mv.visitLdcInsn(transactionName);
-            }
-            mv.visitMethodInsn(INVOKESTATIC,
-                    "org/glowroot/dynamicadvice/DynamicAdviceMessageTemplate", "create",
-                    "(Ljava/lang/String;)"
-                            + "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", false);
-            mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "transactionName",
-                    "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;");
-        }
         if (!pointcutConfig.getEnabledProperty().isEmpty()
                 || !pointcutConfig.getSpanEnabledProperty().isEmpty()) {
             mv.visitTypeInsn(NEW, adviceTypeName);
@@ -267,9 +235,8 @@ public class DynamicAdviceGenerator {
         mv.visitEnd();
     }
 
-    private void addIsEnabledMethod(ClassVisitor cv) {
-        MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "isEnabled", "()Z", null, null);
-        checkNotNull(mv);
+    private void addIsEnabledMethod(ClassWriter cw) {
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "isEnabled", "()Z", null, null);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/IsEnabled;", true)
                 .visitEnd();
         mv.visitCode();
@@ -293,11 +260,11 @@ public class DynamicAdviceGenerator {
         mv.visitEnd();
     }
 
-    private void addOnBeforeMethod(ClassVisitor cv) {
-        MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
-                "(Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;)Lorg/glowroot/api/Span;",
+    private void addOnBeforeMethod(ClassWriter cw) {
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
+                "(Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;L" + methodMetaName
+                        + ";)Lorg/glowroot/api/Span;",
                 null, null);
-        checkNotNull(mv);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnBefore;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindReceiver;", true)
@@ -305,6 +272,8 @@ public class DynamicAdviceGenerator {
         mv.visitParameterAnnotation(1, "Lorg/glowroot/api/weaving/BindMethodName;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(2, "Lorg/glowroot/api/weaving/BindMethodArgArray;", true)
+                .visitEnd();
+        mv.visitParameterAnnotation(3, "Lorg/glowroot/api/weaving/BindMethodMeta;", true)
                 .visitEnd();
         mv.visitCode();
         if (!pointcutConfig.getEnabledProperty().isEmpty()) {
@@ -336,8 +305,9 @@ public class DynamicAdviceGenerator {
         mv.visitFieldInsn(GETSTATIC, adviceTypeName, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;");
         if (pointcutConfig.isTrace()) {
-            mv.visitFieldInsn(GETSTATIC, adviceTypeName, "transactionName",
-                    "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;");
+            mv.visitVarInsn(ALOAD, 3);
+            mv.visitMethodInsn(INVOKEVIRTUAL, methodMetaName, "getTransactionNameTemplate",
+                    "()Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", false);
             mv.visitVarInsn(ALOAD, 0);
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 2);
@@ -350,8 +320,9 @@ public class DynamicAdviceGenerator {
                     "org/glowroot/dynamicadvice/DynamicAdviceMessageSupplier",
                     "getMessageText", "()Ljava/lang/String;", false);
         }
-        mv.visitFieldInsn(GETSTATIC, adviceTypeName, "spanText",
-                "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;");
+        mv.visitVarInsn(ALOAD, 3);
+        mv.visitMethodInsn(INVOKEVIRTUAL, methodMetaName, "getSpanTextTemplate",
+                "()Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", false);
         mv.visitVarInsn(ALOAD, 0);
         mv.visitVarInsn(ALOAD, 1);
         mv.visitVarInsn(ALOAD, 2);
@@ -378,10 +349,9 @@ public class DynamicAdviceGenerator {
         mv.visitEnd();
     }
 
-    private void addOnBeforeMethodTraceMetricOnly(ClassVisitor cv) {
-        MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
+    private void addOnBeforeMethodTraceMetricOnly(ClassWriter cw) {
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
                 "()Lorg/glowroot/api/TraceMetricTimer;", null, null);
-        checkNotNull(mv);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnBefore;", true)
                 .visitEnd();
         mv.visitCode();
@@ -396,10 +366,9 @@ public class DynamicAdviceGenerator {
         mv.visitEnd();
     }
 
-    private void addOnAfterMethodTraceMetricOnly(ClassVisitor cv) {
-        MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onAfter",
+    private void addOnAfterMethodTraceMetricOnly(ClassWriter cw) {
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onAfter",
                 "(Lorg/glowroot/api/TraceMetricTimer;)V", null, null);
-        checkNotNull(mv);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnAfter;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindTraveler;", true)
@@ -413,31 +382,28 @@ public class DynamicAdviceGenerator {
         mv.visitEnd();
     }
 
-    private void addOnReturnMethod(ClassVisitor cv) {
+    private void addOnReturnMethod(ClassWriter cw) {
         boolean spanOrTimer = !pointcutConfig.getSpanEnabledProperty().isEmpty();
         String travelerType = spanOrTimer ? "Ljava/lang/Object;" : "Lorg/glowroot/api/Span;";
         MethodVisitor mv;
         int travelerParamIndex;
         if (pointcutConfig.getMethodReturnType().isEmpty()) {
-            mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
+            mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
                     "(Lorg/glowroot/api/OptionalReturn;" + travelerType + ")V", null, null);
-            checkNotNull(mv);
             mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindOptionalReturn;", true)
                     .visitEnd();
             mv.visitParameterAnnotation(1, "Lorg/glowroot/api/weaving/BindTraveler;", true)
                     .visitEnd();
             travelerParamIndex = 1;
         } else if (pointcutConfig.getMethodReturnType().equals("void")) {
-            mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn", "(" + travelerType + ")V",
+            mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn", "(" + travelerType + ")V",
                     null, null);
-            checkNotNull(mv);
             mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindTraveler;", true)
                     .visitEnd();
             travelerParamIndex = 0;
         } else {
-            mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn", "(Ljava/lang/Object;"
+            mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn", "(Ljava/lang/Object;"
                     + travelerType + ")V", null, null);
-            checkNotNull(mv);
             mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindReturn;", true)
                     .visitEnd();
             mv.visitParameterAnnotation(1, "Lorg/glowroot/api/weaving/BindTraveler;", true)
@@ -502,10 +468,9 @@ public class DynamicAdviceGenerator {
         mv.visitEnd();
     }
 
-    private void addOnThrowMethod(ClassVisitor cv) {
-        MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onThrow",
+    private void addOnThrowMethod(ClassWriter cw) {
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onThrow",
                 "(Ljava/lang/Throwable;Lorg/glowroot/api/Span;)V", null, null);
-        checkNotNull(mv);
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnThrow;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindThrowable;", true)
@@ -532,9 +497,8 @@ public class DynamicAdviceGenerator {
         mv.visitEnd();
     }
 
-    private void addConstructor(ClassVisitor cv) {
-        MethodVisitor mv = cv.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
-        checkNotNull(mv);
+    private void addConstructor(ClassWriter cw) {
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
         mv.visitCode();
         mv.visitVarInsn(ALOAD, 0);
         mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
@@ -543,9 +507,8 @@ public class DynamicAdviceGenerator {
         mv.visitEnd();
     }
 
-    private void addOnChangeMethod(ClassVisitor cv) {
-        MethodVisitor mv = cv.visitMethod(ACC_PUBLIC, "onChange", "()V", null, null);
-        checkNotNull(mv);
+    private void addOnChangeMethod(ClassWriter cw) {
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "onChange", "()V", null, null);
         mv.visitCode();
         if (!pointcutConfig.getEnabledProperty().isEmpty()) {
             mv.visitFieldInsn(GETSTATIC, adviceTypeName, "pluginServices",
@@ -564,6 +527,88 @@ public class DynamicAdviceGenerator {
             mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "spanEnabled", "Z");
         }
         mv.visitInsn(RETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+    }
+
+    private void generateMethodMeta() throws ReflectiveException {
+        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
+        cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, methodMetaName, null, "java/lang/Object", null);
+        cw.visitField(ACC_PRIVATE + ACC_FINAL, "spanTextTemplate",
+                "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", null, null)
+                .visitEnd();
+        cw.visitField(ACC_PRIVATE + ACC_FINAL, "transactionNameTemplate",
+                "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", null, null)
+                .visitEnd();
+        generateMethodMetaConstructor(cw);
+        generateMethodMetaGetter(cw, "spanTextTemplate", "getSpanTextTemplate");
+        generateMethodMetaGetter(cw, "transactionNameTemplate", "getTransactionNameTemplate");
+        cw.visitEnd();
+        byte[] bytes = cw.toByteArray();
+        ClassLoaders.defineClass(TypeNames.fromInternal(methodMetaName), bytes,
+                DynamicAdviceGenerator.class.getClassLoader());
+    }
+
+    private void generateMethodMetaConstructor(ClassWriter cw) {
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "<init>",
+                "(Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;)V",
+                "(Ljava/lang/Class<*>;Ljava/lang/Class<*>;[Ljava/lang/Class<*>;)V", null);
+        mv.visitCode();
+        mv.visitVarInsn(ALOAD, 0);
+        mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+        mv.visitVarInsn(ALOAD, 0);
+        if (pointcutConfig.isSpan()) {
+            String spanText = pointcutConfig.getSpanText();
+            if (spanText == null) {
+                mv.visitLdcInsn("<no span text provided>");
+            } else {
+                mv.visitLdcInsn(spanText);
+            }
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitVarInsn(ALOAD, 2);
+            mv.visitVarInsn(ALOAD, 3);
+            mv.visitMethodInsn(INVOKESTATIC,
+                    "org/glowroot/dynamicadvice/DynamicAdviceMessageTemplate", "create",
+                    "(Ljava/lang/String;Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;)"
+                            + "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", false);
+        } else {
+            mv.visitInsn(ACONST_NULL);
+        }
+        mv.visitFieldInsn(PUTFIELD, methodMetaName, "spanTextTemplate",
+                "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;");
+        mv.visitVarInsn(ALOAD, 0);
+        if (pointcutConfig.isTrace()) {
+            String transactionName = pointcutConfig.getTransactionName();
+            if (Strings.isNullOrEmpty(transactionName)) {
+                mv.visitLdcInsn("<no transaction name provided>");
+            } else {
+                mv.visitLdcInsn(transactionName);
+            }
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitVarInsn(ALOAD, 2);
+            mv.visitVarInsn(ALOAD, 3);
+            mv.visitMethodInsn(INVOKESTATIC,
+                    "org/glowroot/dynamicadvice/DynamicAdviceMessageTemplate", "create",
+                    "(Ljava/lang/String;Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;)"
+                            + "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", false);
+        } else {
+            mv.visitInsn(ACONST_NULL);
+        }
+        mv.visitFieldInsn(PUTFIELD, methodMetaName, "transactionNameTemplate",
+                "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;");
+        mv.visitInsn(RETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+    }
+
+    private void generateMethodMetaGetter(ClassWriter cw, String fieldName, String methodName) {
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, methodName,
+                "()Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", null, null);
+        mv.visitCode();
+        mv.visitVarInsn(ALOAD, 0);
+        mv.visitFieldInsn(GETFIELD, methodMetaName, fieldName,
+                "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;");
+        mv.visitInsn(ARETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
     }

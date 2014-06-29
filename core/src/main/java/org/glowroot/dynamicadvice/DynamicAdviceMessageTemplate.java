@@ -15,6 +15,7 @@
  */
 package org.glowroot.dynamicadvice;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,7 +47,8 @@ public class DynamicAdviceMessageTemplate {
     private final ImmutableList<ValuePathPart> returnPathParts;
 
     @UsedByGeneratedBytecode
-    public static DynamicAdviceMessageTemplate create(String template) {
+    public static DynamicAdviceMessageTemplate create(String template, Class<?> declaringClass,
+            Class<?> returnType, Class<?>[] parameterTypes) {
         List<Part> allParts = Lists.newArrayList();
         List<ValuePathPart> thisPathParts = Lists.newArrayList();
         List<ArgPathPart> argPathParts = Lists.newArrayList();
@@ -71,16 +73,23 @@ public class DynamicAdviceMessageTemplate {
                 remaining = path.substring(index + 1);
             }
             if (base.equals("this")) {
-                ValuePathPart part = new ValuePathPart(PartType.THIS_PATH, remaining);
+                ValuePathPart part =
+                        new ValuePathPart(PartType.THIS_PATH, declaringClass, remaining);
                 allParts.add(part);
                 thisPathParts.add(part);
             } else if (base.matches("[0-9]+")) {
                 int argNumber = Integer.parseInt(base);
-                ArgPathPart part = new ArgPathPart(argNumber, remaining);
-                allParts.add(part);
-                argPathParts.add(part);
+                if (argNumber < parameterTypes.length) {
+                    ArgPathPart part =
+                            new ArgPathPart(parameterTypes[argNumber], remaining, argNumber);
+                    allParts.add(part);
+                    argPathParts.add(part);
+                } else {
+                    allParts.add(new ConstantPart("<requested arg index out of bounds: "
+                            + argNumber + ">"));
+                }
             } else if (base.equals("ret")) {
-                ValuePathPart part = new ValuePathPart(PartType.RETURN_PATH, remaining);
+                ValuePathPart part = new ValuePathPart(PartType.RETURN_PATH, returnType, remaining);
                 allParts.add(part);
                 returnPathParts.add(part);
             } else if (base.equals("methodName")) {
@@ -153,37 +162,42 @@ public class DynamicAdviceMessageTemplate {
         }
     }
 
-    static class ArgPathPart extends Part {
+    static class ValuePathPart extends Part {
+
+        private final PathEvaluator pathEvaluator;
+
+        private ValuePathPart(PartType partType, Class<?> valueClass, String propertyPath) {
+            super(partType);
+            this.pathEvaluator = new PathEvaluator(valueClass, propertyPath);
+        }
+
+        String evaluatePart(Object base) {
+            try {
+                return String.valueOf(pathEvaluator.evaluateOnBase(base));
+            } catch (IllegalArgumentException e) {
+                logger.debug(e.getMessage(), e);
+                return "<error evaluating: " + e.getMessage() + ">";
+            } catch (IllegalAccessException e) {
+                logger.debug(e.getMessage(), e);
+                return "<error evaluating: " + e.getMessage() + ">";
+            } catch (InvocationTargetException e) {
+                logger.debug(e.getMessage(), e);
+                return "<error evaluating: " + e.getMessage() + ">";
+            }
+        }
+    }
+
+    static class ArgPathPart extends ValuePathPart {
 
         private final int argNumber;
-        private final String propertyPath;
 
-        private ArgPathPart(int argNumber, String propertyPath) {
-            super(PartType.ARG_PATH);
+        private ArgPathPart(Class<?> argClass, String propertyPath, int argNumber) {
+            super(PartType.ARG_PATH, argClass, propertyPath);
             this.argNumber = argNumber;
-            this.propertyPath = propertyPath;
         }
 
         int getArgNumber() {
             return argNumber;
-        }
-
-        String getPropertyPath() {
-            return propertyPath;
-        }
-    }
-
-    static class ValuePathPart extends Part {
-
-        private final String propertyPath;
-
-        private ValuePathPart(PartType partType, String propertyPath) {
-            super(partType);
-            this.propertyPath = propertyPath;
-        }
-
-        String getPropertyPath() {
-            return propertyPath;
         }
     }
 }

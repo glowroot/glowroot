@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.api;
+package org.glowroot.dynamicadvice;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,25 +31,25 @@ public class BeansTest {
 
     @Test
     public void shouldCallGetterMethod() {
-        String value = (String) Beans.value(new SomeObject(), "one");
+        String value = (String) Beans.value(new SomeObject(), new String[] {"one"});
         assertThat(value).isEqualTo("1");
     }
 
     @Test
     public void shouldCallBooleanGetterMethod() {
-        boolean value = (Boolean) Beans.value(new SomeObject(), "two");
+        boolean value = (Boolean) Beans.value(new SomeObject(), new String[] {"two"});
         assertThat(value).isTrue();
     }
 
     @Test
     public void shouldCallNonGetterMethod() {
-        String value = (String) Beans.value(new SomeObject(), "three");
+        String value = (String) Beans.value(new SomeObject(), new String[] {"three"});
         assertThat(value).isEqualTo("3");
     }
 
     @Test
     public void shouldGetField() {
-        String value = (String) Beans.value(new SomeObject(), "four");
+        String value = (String) Beans.value(new SomeObject(), new String[] {"four"});
         assertThat(value).isEqualTo("4");
     }
 
@@ -57,7 +57,7 @@ public class BeansTest {
     public void shouldCallMethodOnPackagePrivateClass() {
         List<String> list = Lists.newArrayList();
         list = Collections.synchronizedList(list);
-        int size = (Integer) Beans.value(list, "size");
+        int size = (Integer) Beans.value(list, new String[] {"size"});
         assertThat(size).isEqualTo(0);
     }
 

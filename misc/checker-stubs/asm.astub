@@ -9,7 +9,7 @@ public class ClassVisitor {
             @Nullable String superName, String @Nullable [] interfaces);
     public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String @Nullable [] exceptions);
-    public FieldVisitor visitField(int access, String name, @Nullable String desc,
+    public @Nullable FieldVisitor visitField(int access, String name, @Nullable String desc,
             @Nullable String signature, @Nullable Object value);
 }
 
@@ -21,6 +21,10 @@ public class MethodVisitor {
 public class ClassWriter {
     public void visit(int version, int access, String name, @Nullable String signature,
             @Nullable String superName, String @Nullable [] interfaces);
+    public MethodVisitor visitMethod(int access, String name, String desc,
+            @Nullable String signature, String @Nullable [] exceptions);
+    public FieldVisitor visitField(int access, String name, @Nullable String desc,
+            @Nullable String signature, @Nullable Object value);
 }
 
 public class AnnotationVisitor {

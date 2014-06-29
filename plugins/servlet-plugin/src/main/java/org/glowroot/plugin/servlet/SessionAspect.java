@@ -19,7 +19,6 @@ import java.util.Map.Entry;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.api.Beans;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindMethodArg;

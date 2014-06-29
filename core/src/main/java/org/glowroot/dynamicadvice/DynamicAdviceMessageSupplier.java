@@ -15,7 +15,6 @@
  */
 package org.glowroot.dynamicadvice;
 
-import org.glowroot.api.Beans;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.Span;
@@ -46,8 +45,7 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
         String[] resolvedReceiverPathParts = new String[template.getThisPathParts().size()];
         int i = 0;
         for (ValuePathPart part : template.getThisPathParts()) {
-            resolvedReceiverPathParts[i++] =
-                    String.valueOf(Beans.value(receiver, part.getPropertyPath()));
+            resolvedReceiverPathParts[i++] = part.evaluatePart(receiver);
         }
         String[] resolvedArgPathParts = new String[template.getArgPathParts().size()];
         i = 0;
@@ -56,8 +54,7 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
                 resolvedArgPathParts[i++] =
                         "<requested arg index out of bounds: " + part.getArgNumber() + ">";
             } else {
-                resolvedArgPathParts[i++] = String.valueOf(
-                        Beans.value(args[part.getArgNumber()], part.getPropertyPath()));
+                resolvedArgPathParts[i++] = part.evaluatePart(args[part.getArgNumber()]);
             }
         }
         return new DynamicAdviceMessageSupplier(template, resolvedReceiverPathParts,
@@ -77,7 +74,7 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
         String[] parts = new String[template.getReturnPathParts().size()];
         int i = 0;
         for (ValuePathPart part : template.getReturnPathParts()) {
-            parts[i++] = String.valueOf(Beans.value(returnValue, part.getPropertyPath()));
+            parts[i++] = part.evaluatePart(returnValue);
         }
         this.resolvedReturnValuePathParts = parts;
     }
@@ -126,7 +123,7 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
                 (DynamicAdviceMessageSupplier) span.getMessageSupplier();
         if (messageSupplier != null) {
             // can be null if max spans was exceeded
-            messageSupplier.setReturnValue(String.valueOf(returnValue));
+            messageSupplier.setReturnValue(returnValue);
         }
     }
 }

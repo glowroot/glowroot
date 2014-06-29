@@ -23,8 +23,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.api.Beans;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5

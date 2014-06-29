@@ -111,12 +111,13 @@ public class PointcutConfigTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
-        assertThat(trace.getHeadline()).isEqualTo("executeWithArgs(): abc, 123");
+        assertThat(trace.getHeadline()).isEqualTo("executeWithArgs(): abc, 123, the name");
         assertThat(trace.getTransactionName()).isEqualTo("Misc / executeWithArgs");
         assertThat(spans).hasSize(1);
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("execute with args");
         assertThat(trace.getRootTraceMetric().getNestedTraceMetrics()).isEmpty();
-        assertThat(spans.get(0).getMessage().getText()).isEqualTo("executeWithArgs(): abc, 123");
+        assertThat(spans.get(0).getMessage().getText())
+                .isEqualTo("executeWithArgs(): abc, 123, the name");
     }
 
     protected static void addPointcutConfigForExecute1() throws Exception {
@@ -159,11 +160,12 @@ public class PointcutConfigTest {
         PointcutConfig config = new PointcutConfig();
         config.setType("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("executeWithArgs");
-        config.setMethodArgTypes(ImmutableList.of("java.lang.String", "int"));
+        config.setMethodArgTypes(ImmutableList.of("java.lang.String", "int",
+                "org.glowroot.tests.PointcutConfigTest$BasicMisc"));
         config.setMethodReturnType("void");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setTraceMetric("execute with args");
-        config.setSpanText("executeWithArgs(): {{0}}, {{1}}");
+        config.setSpanText("executeWithArgs(): {{0}}, {{1}}, {{2.name}}");
         config.setTransactionName("Misc / {{methodName}}");
         container.getConfigService().addPointcutConfig(config);
     }
@@ -171,10 +173,13 @@ public class PointcutConfigTest {
     public interface Misc {
         public void execute1();
         public CharSequence executeWithReturn();
-        public void executeWithArgs(String one, int two);
+        public void executeWithArgs(String one, int two, BasicMisc anotherMisc);
     }
 
     public static class BasicMisc implements Misc {
+        String getName() {
+            return "the name";
+        }
         @Override
         public void execute1() {}
         @Override
@@ -182,7 +187,7 @@ public class PointcutConfigTest {
             return "xyz";
         }
         @Override
-        public void executeWithArgs(String one, int two) {}
+        public void executeWithArgs(String one, int two, BasicMisc anotherMisc) {}
     }
 
     public static class ShouldExecute1 implements AppUnderTest, TraceMarker {
@@ -210,7 +215,7 @@ public class PointcutConfigTest {
     public static class ShouldExecuteWithArgs implements AppUnderTest {
         @Override
         public void executeApp() {
-            new BasicMisc().executeWithArgs("abc", 123);
+            new BasicMisc().executeWithArgs("abc", 123, new BasicMisc());
         }
     }
 }
