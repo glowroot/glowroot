@@ -341,6 +341,12 @@ class WeavingClassVisitor extends ClassVisitor {
             case Type.DOUBLE:
                 mv.visitFieldInsn(GETSTATIC, "java/lang/Double", "TYPE", "Ljava/lang/Class;");
                 break;
+            case Type.ARRAY:
+                loadType(mv, type.getElementType(), ownerType);
+                mv.visitIntInsn(BIPUSH, type.getDimensions());
+                mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(GeneratedBytecodeUtil.class),
+                        "getArrayClass", "(Ljava/lang/Class;I)Ljava/lang/Class;", false);
+                break;
             default:
                 // may not have access to type in meta holder, so need to use Class.forName()
                 // instead of class constant (visitLdcInsn)

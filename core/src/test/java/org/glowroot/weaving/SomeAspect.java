@@ -603,6 +603,92 @@ public class SomeAspect {
         }
     }
 
+    @Pointcut(type = "org.glowroot.weaving.other.ArrayMisc", methodName = "executeArray",
+            methodArgTypes = {".."})
+    public static class BindMethodMetaArrayAdvice {
+        public static final ThreadLocal<TestMethodMeta> isEnabledMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        public static final ThreadLocal<TestMethodMeta> onBeforeMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        public static final ThreadLocal<TestMethodMeta> onReturnMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        public static final ThreadLocal<TestMethodMeta> onThrowMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        public static final ThreadLocal<TestMethodMeta> onAfterMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        @IsEnabled
+        public static boolean isEnabled(@BindMethodMeta TestMethodMeta meta) {
+            isEnabledMethodMeta.set(meta);
+            return true;
+        }
+        @OnBefore
+        public static void onBefore(@BindMethodMeta TestMethodMeta meta) {
+            onBeforeMethodMeta.set(meta);
+        }
+        @OnReturn
+        public static void onReturn(@BindMethodMeta TestMethodMeta meta) {
+            onReturnMethodMeta.set(meta);
+        }
+        @OnThrow
+        public static void onThrow(@BindMethodMeta TestMethodMeta meta) {
+            onThrowMethodMeta.set(meta);
+        }
+        @OnAfter
+        public static void onAfter(@BindMethodMeta TestMethodMeta meta) {
+            onAfterMethodMeta.set(meta);
+        }
+        public static void resetThreadLocals() {
+            isEnabledMethodMeta.remove();
+            onBeforeMethodMeta.remove();
+            onReturnMethodMeta.remove();
+            onThrowMethodMeta.remove();
+            onAfterMethodMeta.remove();
+        }
+    }
+
+    @Pointcut(type = "org.glowroot.weaving.other.ArrayMisc", methodName = "executeWithArrayReturn",
+            methodArgTypes = {".."})
+    public static class BindMethodMetaReturnArrayAdvice {
+        public static final ThreadLocal<TestMethodMeta> isEnabledMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        public static final ThreadLocal<TestMethodMeta> onBeforeMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        public static final ThreadLocal<TestMethodMeta> onReturnMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        public static final ThreadLocal<TestMethodMeta> onThrowMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        public static final ThreadLocal<TestMethodMeta> onAfterMethodMeta =
+                new ThreadLocal<TestMethodMeta>();
+        @IsEnabled
+        public static boolean isEnabled(@BindMethodMeta TestMethodMeta meta) {
+            isEnabledMethodMeta.set(meta);
+            return true;
+        }
+        @OnBefore
+        public static void onBefore(@BindMethodMeta TestMethodMeta meta) {
+            onBeforeMethodMeta.set(meta);
+        }
+        @OnReturn
+        public static void onReturn(@BindMethodMeta TestMethodMeta meta) {
+            onReturnMethodMeta.set(meta);
+        }
+        @OnThrow
+        public static void onThrow(@BindMethodMeta TestMethodMeta meta) {
+            onThrowMethodMeta.set(meta);
+        }
+        @OnAfter
+        public static void onAfter(@BindMethodMeta TestMethodMeta meta) {
+            onAfterMethodMeta.set(meta);
+        }
+        public static void resetThreadLocals() {
+            isEnabledMethodMeta.remove();
+            onBeforeMethodMeta.remove();
+            onReturnMethodMeta.remove();
+            onThrowMethodMeta.remove();
+            onAfterMethodMeta.remove();
+        }
+    }
+
     @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
     public static class BindReturnAdvice {
         public static final ThreadLocal<String> returnValue = new ThreadLocal<String>();

@@ -364,6 +364,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.AdviceFlowOuterHolder$1");
         types.add("org.glowroot.weaving.AdviceFlowOuterHolder$AdviceFlowHolder");
         types.add("org.glowroot.weaving.AdviceMatcher");
+        types.add("org.glowroot.weaving.GeneratedBytecodeUtil");
         types.add("org.glowroot.weaving.MixinMatcher");
         types.add("org.glowroot.weaving.MixinType");
         types.add("org.glowroot.weaving.ParsedMethod");
