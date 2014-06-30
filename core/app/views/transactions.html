@@ -137,7 +137,7 @@
       <td>{{overall.errorCount}}</td>
       <td>
         <a ng-show="overall.storedTraceCount"
-           ng-href="#/traces?{{tracesQueryString(null)}}">
+           ng-href="/traces?{{tracesQueryString(null)}}">
           see {{overall.storedTraceCount}} stored traces
         </a>
       </td>
@@ -162,7 +162,7 @@
       <td>{{transaction.errorCount}}</td>
       <td>
         <a ng-show="transaction.storedTraceCount"
-           ng-href="#/traces?{{tracesQueryString(transaction.name)}}"
+           ng-href="/traces?{{tracesQueryString(transaction.name)}}"
            ng-style="transactionRowStyle(transaction.name)">
           see {{transaction.storedTraceCount}} stored traces
         </a>
