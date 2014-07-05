@@ -39,11 +39,13 @@ glowroot.controller('ConfigPointcutCtrl', [
           modifiers: data.methodModifiers
         };
         $scope.heading = data.type + '.' + data.methodName + '(' + data.methodArgTypes.join(', ') + ')';
+        $scope.selectedMethodName = data.methodName;
         $scope.selectedMethodSignature = methodSignature;
         $scope.methodSignatures = [ methodSignature ];
         $scope.spanDefinition = Boolean(data.spanText);
         $scope.traceDefinition = Boolean(data.transactionName);
         $scope.spanStackTraceThresholdMillis = data.spanStackTraceThresholdMillis;
+        $scope.loadMethodSignatures = true;
       } else {
         $scope.heading = '<New pointcut>';
         $scope.spanDefinition = false;
@@ -58,7 +60,7 @@ glowroot.controller('ConfigPointcutCtrl', [
     onNewData($scope.pointcut.config);
 
     $scope.hasChanges = function () {
-      return !angular.equals($scope.config, $scope.originalConfig);
+      return $scope.selectedMethodSignature && !angular.equals($scope.config, $scope.originalConfig);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
@@ -116,6 +118,7 @@ glowroot.controller('ConfigPointcutCtrl', [
       // to set the value to something that is not available in the dropdown
 
       if (methodName !== $scope.selectedMethodName) {
+        $scope.loadMethodSignatures = false;
         $scope.selectedMethodName = methodName;
         if (methodName === undefined) {
           // this can happen if user clears the text input and tabs away (onSelectMethodName is called on blur)
@@ -134,6 +137,9 @@ glowroot.controller('ConfigPointcutCtrl', [
         } else {
           matchingMethods(methodName);
         }
+      } else if ($scope.loadMethodSignatures) {
+        $scope.loadMethodSignatures = false;
+        matchingMethods(methodName, true);
       }
     };
 
@@ -158,16 +164,8 @@ glowroot.controller('ConfigPointcutCtrl', [
     };
 
     $scope.save = function (deferred) {
-      var methodSignature = $scope.selectedMethodSignature;
-      if (!methodSignature) {
-        deferred.reject('method for pointcut must be selected');
-        return;
-      }
       var postData = angular.copy($scope.config);
       delete postData.version;
-      postData.methodArgTypes = methodSignature.argTypes;
-      postData.methodReturnType = methodSignature.returnType;
-      postData.methodModifiers = methodSignature.modifiers;
       var url;
       var version = $scope.config.version;
       if (version) {
@@ -199,7 +197,7 @@ glowroot.controller('ConfigPointcutCtrl', [
       }
     };
 
-    function matchingMethods(methodName) {
+    function matchingMethods(methodName, keepSelectedMethodSignature) {
       var queryData = {
         type: $scope.config.type,
         methodName: methodName
@@ -219,9 +217,16 @@ glowroot.controller('ConfigPointcutCtrl', [
                 modifiers: []
               });
             }
-            if (data.length === 1) {
+            if (keepSelectedMethodSignature) {
+              for (var i = 0; i < data.length; i++) {
+                if (angular.equals($scope.selectedMethodSignature, data[i])) {
+                  $scope.selectedMethodSignature = data[i];
+                  break;
+                }
+              }
+            } else if (data.length === 1) {
               $scope.selectedMethodSignature = data[0];
-            } else {
+            } else if (!keepSelectedMethodSignature) {
               $scope.selectedMethodSignature = undefined;
             }
           })
@@ -254,6 +259,18 @@ glowroot.controller('ConfigPointcutCtrl', [
 
     $scope.$watch('spanStackTraceThresholdMillis', function (newValue) {
       $scope.config.spanStackTraceThresholdMillis = conversions.toNumber(newValue);
+    });
+
+    $scope.$watch('selectedMethodSignature', function (newValue) {
+      if (newValue) {
+        $scope.config.methodArgTypes = newValue.argTypes;
+        $scope.config.methodReturnType = newValue.returnType;
+        $scope.config.methodModifiers = newValue.modifiers;
+      } else {
+        $scope.config.methodArgTypes = '';
+        $scope.config.methodReturnType = '';
+        $scope.config.methodModifiers = '';
+      }
     });
 
     function isSignatureAll(methodSignature) {
