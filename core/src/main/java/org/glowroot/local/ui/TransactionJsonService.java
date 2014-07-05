@@ -26,10 +26,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
-import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
-import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -43,6 +41,7 @@ import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TransactionPointDao;
 import org.glowroot.local.store.TransactionSummary;
 import org.glowroot.local.store.TransactionSummaryQuery;
+import org.glowroot.local.ui.TransactionCommonService.TransactionHeader;
 import org.glowroot.markers.Singleton;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -61,12 +60,15 @@ class TransactionJsonService {
     private static final Logger logger = LoggerFactory.getLogger(TransactionJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
+    private final TransactionCommonService transactionCommonService;
     private final TransactionPointDao transactionPointDao;
     private final Clock clock;
     private final long fixedTransactionPointIntervalMillis;
 
-    TransactionJsonService(TransactionPointDao transactionPointDao, Clock clock,
+    TransactionJsonService(TransactionCommonService transactionCommonService,
+            TransactionPointDao transactionPointDao, Clock clock,
             long fixedTransactionPointIntervalSeconds) {
+        this.transactionCommonService = transactionCommonService;
         this.transactionPointDao = transactionPointDao;
         this.clock = clock;
         fixedTransactionPointIntervalMillis = fixedTransactionPointIntervalSeconds * 1000;
@@ -153,39 +155,25 @@ class TransactionJsonService {
         return sb.toString();
     }
 
+    @GET("/backend/transaction/header")
+    String getHeader(String content) throws IOException {
+        logger.debug("getHeader(): content={}", content);
+        RequestWithTransactionName request =
+                ObjectMappers.readRequiredValue(mapper, content, RequestWithTransactionName.class);
+        TransactionHeader transactionHeader = transactionCommonService.getTransactionHeader(
+                request.getTransactionName(), request.getFrom(), request.getTo());
+        return mapper.writeValueAsString(transactionHeader);
+    }
+
     @GET("/backend/transaction/profile")
     String getProfile(String content) throws IOException {
         logger.debug("getProfile(): content={}", content);
-        RequestWithTransactionName request =
-                ObjectMappers.readRequiredValue(mapper, content, RequestWithTransactionName.class);
-        String transactionName = request.getTransactionName();
-        if (transactionName == null) {
-            throw new IllegalStateException("Required field missing: 'transactionName'");
-        }
-        List<CharSource> profiles = transactionPointDao.readProfiles("", transactionName,
-                request.getFrom(), request.getTo());
-        TransactionProfileNode syntheticRootNode = new TransactionProfileNode();
-        for (CharSource profile : profiles) {
-            if (profile == null) {
-                continue;
-            }
-            TransactionProfileNode toBeMergedRootNode = ObjectMappers.readRequiredValue(mapper,
-                    profile.read(), TransactionProfileNode.class);
-            if (toBeMergedRootNode.getStackTraceElement() == null) {
-                // to-be-merged root node is already synthetic
-                mergeMatchedNode(toBeMergedRootNode, syntheticRootNode);
-            } else {
-                mergeChildNodeIntoParent(toBeMergedRootNode, syntheticRootNode);
-            }
-        }
-        if (syntheticRootNode.getChildNodes().isEmpty()) {
-            return "null"; // json null
-        } else if (syntheticRootNode.getChildNodes().size() == 1) {
-            // strip off synthetic root node since only one real root node
-            return mapper.writeValueAsString(syntheticRootNode.getChildNodes().get(0));
-        } else {
-            return mapper.writeValueAsString(syntheticRootNode);
-        }
+        ProfileRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, ProfileRequest.class);
+        TransactionProfileNode profile = transactionCommonService.getProfile(
+                request.getTransactionName(), request.getFrom(), request.getTo(),
+                request.getTruncateLeafPercentage());
+        return mapper.writeValueAsString(profile);
     }
 
     // calculate top 5 trace metrics
@@ -272,46 +260,6 @@ class TransactionJsonService {
                 + fixedTransactionPointIntervalMillis / 2, 0);
     }
 
-    private void mergeMatchedNode(TransactionProfileNode toBeMergedNode,
-            TransactionProfileNode node) {
-        node.incrementSampleCount(toBeMergedNode.getSampleCount());
-        // the trace metric names for a given stack element should always match, unless
-        // the line numbers aren't available and overloaded methods are matched up, or
-        // the stack trace was captured while one of the synthetic $trace$metric$ methods was
-        // executing in which case one of the trace metric names may be a subset of the other,
-        // in which case, the superset wins:
-        List<String> traceMetrics = toBeMergedNode.getTraceMetrics();
-        if (traceMetrics != null
-                && traceMetrics.size() > node.getTraceMetrics().size()) {
-            node.setTraceMetrics(traceMetrics);
-        }
-        for (TransactionProfileNode toBeMergedChildNode : toBeMergedNode.getChildNodes()) {
-            mergeChildNodeIntoParent(toBeMergedChildNode, node);
-        }
-    }
-
-    private void mergeChildNodeIntoParent(TransactionProfileNode toBeMergedChildNode,
-            TransactionProfileNode parentNode) {
-        // for each to-be-merged child node look for a match
-        TransactionProfileNode foundMatchingChildNode = null;
-        for (TransactionProfileNode childNode : parentNode.getChildNodes()) {
-            if (matches(toBeMergedChildNode, childNode)) {
-                foundMatchingChildNode = childNode;
-                break;
-            }
-        }
-        if (foundMatchingChildNode == null) {
-            parentNode.getChildNodes().add(toBeMergedChildNode);
-        } else {
-            mergeMatchedNode(toBeMergedChildNode, foundMatchingChildNode);
-        }
-    }
-
-    private boolean matches(TransactionProfileNode node1, TransactionProfileNode node2) {
-        return Objects.equal(node1.getStackTraceElement(), node2.getStackTraceElement())
-                && Objects.equal(node1.getLeafThreadState(), node2.getLeafThreadState());
-    }
-
     private static class RequestWithTransactionName {
 
         private final long from;
@@ -342,6 +290,45 @@ class TransactionJsonService {
         @Nullable
         private String getTransactionName() {
             return transactionName;
+        }
+    }
+
+    private static class ProfileRequest {
+
+        private final long from;
+        private final long to;
+        private final String transactionName;
+        private final double truncateLeafPercentage;
+
+        @JsonCreator
+        ProfileRequest(@JsonProperty("from") @Nullable Long from,
+                @JsonProperty("to") @Nullable Long to,
+                @JsonProperty("transactionName") @Nullable String transactionName,
+                @JsonProperty("truncateLeafPercentage") double truncateLeafPercentage)
+                throws JsonMappingException {
+            checkRequiredProperty(from, "from");
+            checkRequiredProperty(to, "to");
+            checkRequiredProperty(transactionName, "transactionName");
+            this.from = from;
+            this.to = to;
+            this.transactionName = transactionName;
+            this.truncateLeafPercentage = truncateLeafPercentage;
+        }
+
+        private long getFrom() {
+            return from;
+        }
+
+        private long getTo() {
+            return to;
+        }
+
+        private String getTransactionName() {
+            return transactionName;
+        }
+
+        private double getTruncateLeafPercentage() {
+            return truncateLeafPercentage;
         }
     }
 
@@ -386,8 +373,6 @@ class TransactionJsonService {
             if (traceMetrics == null) {
                 return new StackedPoint(transactionPoint, new MutableLongMap<String>());
             }
-            // don't need thread safety, but guessing AtomicLongMap is faster since doesn't require
-            //
             MutableLongMap<String> stackedTraceMetrics = new MutableLongMap<String>();
             SimpleTraceMetric syntheticRoot =
                     mapper.readValue(traceMetrics, SimpleTraceMetric.class);

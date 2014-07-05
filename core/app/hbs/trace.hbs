@@ -22,7 +22,7 @@
 <div class="second-line-indent">
   <strong>{{headline}}</strong>
   {{#if showExport}}
-    <button class="flat-btn flat-btn-big glowroot-link-color download-trace" data-trace-id="{{id}}">
+    <button class="flat-btn flat-btn-big glowroot-link-color download-trace">
       export
     </button>
   {{/if}}
@@ -65,7 +65,7 @@
   </tr>
   </thead>
   <tbody>
-  {{#eachTraceMetricOrdered .}}
+  {{#eachTraceMetricOrdered traceMetrics}}
     <tr class="align-top">
       <td style="text-align: left;">
         <div style="margin-left: {{traceMetricIndent .}}em;">

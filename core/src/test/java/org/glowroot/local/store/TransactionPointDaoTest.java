@@ -26,6 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.glowroot.collector.Existence;
 import org.glowroot.collector.TransactionPoint;
 import org.glowroot.common.Ticker;
 import org.glowroot.local.store.TransactionSummaryQuery.TransactionSortAttribute;
@@ -71,18 +72,26 @@ public class TransactionPointDaoTest {
     @Test
     public void shouldReadTransactions() {
         // given
-        TransactionPoint overallPoint = new TransactionPoint(10000, 1000000, 10, 0, 0, "", null);
+        TransactionPoint overallPoint =
+                new TransactionPoint(10000, 1000000, 10, 0, 0, "", Existence.NO, null);
         Map<String, TransactionPoint> transactionPoints = Maps.newHashMap();
-        transactionPoints.put("one", new TransactionPoint(10000, 100000, 1, 0, 0, "", null));
-        transactionPoints.put("two", new TransactionPoint(10000, 300000, 2, 0, 0, "", null));
-        transactionPoints.put("seven", new TransactionPoint(10000, 1400000, 7, 0, 0, "", null));
+        transactionPoints.put("one",
+                new TransactionPoint(10000, 100000, 1, 0, 0, "", Existence.NO, null));
+        transactionPoints.put("two",
+                new TransactionPoint(10000, 300000, 2, 0, 0, "", Existence.NO, null));
+        transactionPoints.put("seven",
+                new TransactionPoint(10000, 1400000, 7, 0, 0, "", Existence.NO, null));
         transactionPointDao.store("", overallPoint, transactionPoints);
 
-        TransactionPoint overallPoint2 = new TransactionPoint(20000, 1000000, 10, 0, 0, "", null);
+        TransactionPoint overallPoint2 =
+                new TransactionPoint(20000, 1000000, 10, 0, 0, "", Existence.NO, null);
         Map<String, TransactionPoint> transactionPoints2 = Maps.newHashMap();
-        transactionPoints2.put("one", new TransactionPoint(20000, 100000, 1, 0, 0, "", null));
-        transactionPoints2.put("two", new TransactionPoint(20000, 300000, 2, 0, 0, "", null));
-        transactionPoints2.put("seven", new TransactionPoint(20000, 1400000, 7, 0, 0, "", null));
+        transactionPoints2.put("one",
+                new TransactionPoint(20000, 100000, 1, 0, 0, "", Existence.NO, null));
+        transactionPoints2.put("two",
+                new TransactionPoint(20000, 300000, 2, 0, 0, "", Existence.NO, null));
+        transactionPoints2.put("seven",
+                new TransactionPoint(20000, 1400000, 7, 0, 0, "", Existence.NO, null));
         transactionPointDao.store("", overallPoint2, transactionPoints2);
         // when
         List<TransactionPoint> overallPoints = transactionPointDao.readOverallPoints("", 0, 100000);
@@ -107,17 +116,25 @@ public class TransactionPointDaoTest {
     @Test
     public void shouldReadBgTransactions() {
         // given
-        TransactionPoint overallPoint = new TransactionPoint(10000, 1000000, 10, 0, 0, "", null);
+        TransactionPoint overallPoint =
+                new TransactionPoint(10000, 1000000, 10, 0, 0, "", Existence.NO, null);
         Map<String, TransactionPoint> transactionPoints = Maps.newHashMap();
-        transactionPoints.put("one", new TransactionPoint(10000, 100000, 1, 0, 0, "", null));
-        transactionPoints.put("two", new TransactionPoint(10000, 300000, 2, 0, 0, "", null));
-        transactionPoints.put("seven", new TransactionPoint(10000, 1400000, 7, 0, 0, "", null));
+        transactionPoints.put("one",
+                new TransactionPoint(10000, 100000, 1, 0, 0, "", Existence.NO, null));
+        transactionPoints.put("two",
+                new TransactionPoint(10000, 300000, 2, 0, 0, "", Existence.NO, null));
+        transactionPoints.put("seven",
+                new TransactionPoint(10000, 1400000, 7, 0, 0, "", Existence.NO, null));
         transactionPointDao.store("bg", overallPoint, transactionPoints);
-        TransactionPoint overallPoint2 = new TransactionPoint(20000, 1000000, 10, 0, 0, "", null);
+        TransactionPoint overallPoint2 =
+                new TransactionPoint(20000, 1000000, 10, 0, 0, "", Existence.NO, null);
         Map<String, TransactionPoint> transactionPoints2 = Maps.newHashMap();
-        transactionPoints2.put("one", new TransactionPoint(20000, 100000, 1, 0, 0, "", null));
-        transactionPoints2.put("two", new TransactionPoint(20000, 300000, 2, 0, 0, "", null));
-        transactionPoints2.put("seven", new TransactionPoint(20000, 1400000, 7, 0, 0, "", null));
+        transactionPoints2.put("one",
+                new TransactionPoint(20000, 100000, 1, 0, 0, "", Existence.NO, null));
+        transactionPoints2.put("two",
+                new TransactionPoint(20000, 300000, 2, 0, 0, "", Existence.NO, null));
+        transactionPoints2.put("seven",
+                new TransactionPoint(20000, 1400000, 7, 0, 0, "", Existence.NO, null));
         transactionPointDao.store("bg", overallPoint2, transactionPoints2);
         // when
         List<TransactionPoint> overallPoints =

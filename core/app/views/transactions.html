@@ -59,18 +59,22 @@
   </div>
   <div class="form-group">
     <div class="col-lg-offset-4 col-lg-8">
-      <div gt-button
-           gt-label="Refresh"
-           gt-click="refreshButtonClick(deferred)">
+      <div gt-button-group>
+        <span gt-button
+              gt-label="Refresh"
+              gt-click="refreshButtonClick(deferred)">
+        </span>
+        <span gt-button
+              gt-label="Open Detail"
+              gt-click="viewTransactionDetail(deferred)"
+              gt-btn-class="btn-default"
+              ng-show="transactions"
+              style="margin-left: 5px;">
+        </span>
       </div>
     </div>
   </div>
 </div>
-<button class="btn btn-primary"
-        ng-click="viewTransactionDetail()"
-        ng-show="selectedTransactionName">
-  View Transaction Detail
-</button>
 <div style="clear: both; position: relative; padding-top: 20px;">
   <div class="panel-overlay" ng-show="showTableOverlay">
     <!-- this inner div is to position the spinner near top of panel since panel can be very tall pushing spinner

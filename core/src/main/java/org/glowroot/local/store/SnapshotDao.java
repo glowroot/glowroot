@@ -32,8 +32,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.collector.Existence;
 import org.glowroot.collector.Snapshot;
-import org.glowroot.collector.Snapshot.Existence;
 import org.glowroot.collector.SnapshotRepository;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.RowMapper;

@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.collector.Snapshot.Existence;
 import org.glowroot.markers.Static;
 import org.glowroot.trace.model.Trace;
 import org.glowroot.trace.model.TraceMetric;

@@ -64,7 +64,7 @@ class JavaagentTraceService extends TraceService {
 
     @Override
     public InputStream getTraceExport(String traceId) throws Exception {
-        return httpClient.getAsStream("/export/" + traceId);
+        return httpClient.getAsStream("/export/trace/" + traceId);
     }
 
     @Override

@@ -71,6 +71,10 @@ public class LocalUiModule {
     private final HttpServer httpServer;
 
     // only stored/exposed for tests
+    private final TransactionCommonService transactionCommonService;
+    // only stored/exposed for tests
+    private final TransactionExportHttpService transactionExportHttpService;
+    // only stored/exposed for tests
     private final TraceCommonService traceCommonService;
     // only stored/exposed for tests
     private final TraceExportHttpService traceExportHttpService;
@@ -102,16 +106,18 @@ public class LocalUiModule {
         String baseHref = getBaseHref(properties);
         IndexHtmlService indexHtmlService =
                 new IndexHtmlService(baseHref, httpSessionManager, layoutJsonService);
-        TransactionJsonService transactionJsonService =
-                new TransactionJsonService(storageModule.getTransactionPointDao(), clock,
-                        collectorModule.getFixedTransactionPointIntervalSeconds());
+        transactionCommonService = new TransactionCommonService(transactionPointDao);
         traceCommonService =
                 new TraceCommonService(snapshotDao, traceRegistry, traceCollector, clock, ticker);
+        TransactionJsonService transactionJsonService = new TransactionJsonService(
+                transactionCommonService, storageModule.getTransactionPointDao(), clock,
+                collectorModule.getFixedTransactionPointIntervalSeconds());
         TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,
                 traceRegistry, traceCollector, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
         TraceDetailHttpService traceDetailHttpService =
                 new TraceDetailHttpService(traceCommonService);
+        transactionExportHttpService = new TransactionExportHttpService(transactionCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
         ErrorJsonService errorJsonService = new ErrorJsonService(snapshotDao);
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getThreadAllocatedBytes(),
@@ -146,7 +152,8 @@ public class LocalUiModule {
         }
         String bindAddress = getBindAddress(properties);
         httpServer = buildHttpServer(bindAddress, port, numWorkerThreads, httpSessionManager,
-                indexHtmlService, traceDetailHttpService, traceExportHttpService, jsonServices);
+                indexHtmlService, traceDetailHttpService, transactionExportHttpService,
+                traceExportHttpService, jsonServices);
         if (httpServer != null) {
             configJsonService.setHttpServer(httpServer);
         }
@@ -209,6 +216,7 @@ public class LocalUiModule {
     private static HttpServer buildHttpServer(String bindAddress, int port, int numWorkerThreads,
             HttpSessionManager httpSessionManager, IndexHtmlService indexHtmlService,
             TraceDetailHttpService snapshotHttpService,
+            TransactionExportHttpService transactionExportHttpService,
             TraceExportHttpService traceExportHttpService, List<Object> jsonServices) {
 
         String resourceBase = "org/glowroot/local/ui/app-dist";
@@ -230,9 +238,10 @@ public class LocalUiModule {
                 resourceBase + "/bower_components/$1");
         uriMappings.put(Pattern.compile("^/sources/(.*)$"), resourceBase + "/sources/$1");
         // services
-        // export service is not bound under /backend since the export url is visible to users as
-        // the download url for the export file
-        uriMappings.put(Pattern.compile("^/export/.*$"), traceExportHttpService);
+        // export services are not bound under /backend since the export urls are visible to users
+        // as the download url for the export file
+        uriMappings.put(Pattern.compile("^/export/transaction.*$"), transactionExportHttpService);
+        uriMappings.put(Pattern.compile("^/export/trace/.*$"), traceExportHttpService);
         uriMappings.put(Pattern.compile("^/backend/trace/spans$"), snapshotHttpService);
         uriMappings.put(Pattern.compile("^/backend/trace/coarse-profile$"), snapshotHttpService);
         uriMappings.put(Pattern.compile("^/backend/trace/fine-profile$"), snapshotHttpService);

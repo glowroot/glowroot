@@ -201,10 +201,6 @@ public class Snapshot {
         return new Builder();
     }
 
-    public enum Existence {
-        YES, NO, EXPIRED;
-    }
-
     public static class Builder {
 
         @MonotonicNonNull

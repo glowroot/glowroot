@@ -21,6 +21,7 @@ public class ObjectMapper {
     public <T extends @Nullable Object> T readValue(File src, Class<T> valueType);
     public <T extends @Nullable Object> T convertValue(@Nullable Object fromValue,
             Class<T> toValueType);
+    public String writeValueAsString(@Nullable Object value);
 }
 
 public class ObjectWriter {

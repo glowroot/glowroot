@@ -65,7 +65,7 @@ glowroot.factory('traceModal', [
             $modalContent.html('expired');
           } else {
             result.data.showExport = true;
-            TraceRenderer.render(result.data, $modalContent);
+            TraceRenderer.renderTrace(result.data, $modalContent);
           }
         }, function () {
           // TODO handle this better

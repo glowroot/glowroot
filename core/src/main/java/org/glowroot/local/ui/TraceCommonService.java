@@ -205,6 +205,7 @@ public class TraceCommonService {
     }
 
     static class TraceExport {
+
         private final Snapshot snapshot;
         private final String snapshotJson;
         @Nullable

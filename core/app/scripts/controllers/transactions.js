@@ -289,12 +289,16 @@ glowroot.controller('TransactionsCtrl', [
       }
     });
 
-    $scope.viewTransactionDetail = function () {
+    $scope.viewTransactionDetail = function (deferred) {
+      // calling resolve immediately is needed to suppress the spinner since this is part of a gt-button-group
+      deferred.resolve();
       var transactionQuery = {
         from: $scope.chartFrom,
-        to: $scope.chartTo,
-        transactionName: $scope.selectedTransactionName
+        to: $scope.chartTo
       };
+      if ($scope.selectedTransactionName) {
+        transactionQuery.transactionName = $scope.selectedTransactionName;
+      }
       $modal.open({
         templateUrl: 'views/transaction-detail.html',
         controller: 'TransactionDetailCtrl',

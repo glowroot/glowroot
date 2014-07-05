@@ -15,14 +15,14 @@
  */
 
 // IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
-// that would require adding angular to export.js
+// that would require adding angular to trace-export.js
 // and that would significantly increase the size of the exported trace files
 
 // Glowroot dependency is used for spinner, but is not used in export file
 /* global $, Handlebars, JST, moment, Glowroot, alert */
 
 // IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
-// that would require adding angular to export.js
+// that would require adding angular to trace-export.js
 // and that would significantly increase the size of the exported trace files
 
 var TraceRenderer;
@@ -44,7 +44,7 @@ TraceRenderer = (function () {
   });
 
 
-  Handlebars.registerHelper('eachTraceMetricOrdered', function (trace, options) {
+  Handlebars.registerHelper('eachTraceMetricOrdered', function (traceMetrics, options) {
     var buffer = '';
 
     function traverse(traceMetric, nestingLevel) {
@@ -61,7 +61,7 @@ TraceRenderer = (function () {
     }
 
     // add the root node
-    traverse(trace.traceMetrics, 0);
+    traverse(traceMetrics, 0);
     return buffer;
   });
 
@@ -113,6 +113,19 @@ TraceRenderer = (function () {
 
   Handlebars.registerHelper('nanosToMillis', function (nanos) {
     return (nanos / 1000000).toFixed(1);
+  });
+
+  Handlebars.registerHelper('microsToMillis', function (micros) {
+    return (micros / 1000).toFixed(1);
+  });
+
+  Handlebars.registerHelper('divideMicrosByCount', function (micros, count) {
+    // and convert to millis
+    return ((micros / count) / 1000).toFixed(1);
+  });
+
+  Handlebars.registerHelper('divideCountByCount', function (count1, count2) {
+    return (count1 / count2).toFixed(1);
   });
 
   Handlebars.registerHelper('ifExistenceExpired', function (existence, options) {
@@ -224,7 +237,14 @@ TraceRenderer = (function () {
   // TODO register these handlers on trace modal each time one is opened instead of globally on $(document)
   // TODO (and make sure it still works on export files)
   $(document).on('click', 'button.download-trace', function () {
-    window.location = 'export/' + $(this).data('trace-id');
+    var $traceParent = $(this).parents('.trace-parent');
+    var traceId = $traceParent.data('traceId');
+    window.location = 'export/trace/' + traceId;
+  });
+  $(document).on('click', 'button.download-transaction', function () {
+    var $transactionParent = $(this).parents('.transaction-parent');
+    var queryString = $transactionParent.data('queryString');
+    window.location = 'export/transaction?' + queryString + '&truncateLeafPercentage=0.002';
   });
   var mousedownPageX, mousedownPageY;
   $(document).mousedown(function (e) {
@@ -291,29 +311,39 @@ TraceRenderer = (function () {
   $(document).on('click', '.profile-coarse-toggle', function () {
     var $traceParent = $(this).parents('.trace-parent');
     var $button = $(this);
-    profileToggle($button, $traceParent, '#coarseProfileOuter', 'coarseProfile', 'backend/trace/coarse-profile');
+    var traceId = $traceParent.data('traceId');
+    profileToggle($button, $traceParent, '#coarseProfileOuter', 'coarseProfile',
+            'backend/trace/coarse-profile' + '?trace-id=' + traceId);
   });
   $(document).on('click', '.profile-fine-toggle', function () {
     var $traceParent = $(this).parents('.trace-parent');
     var $button = $(this);
-    profileToggle($button, $traceParent, '#fineProfileOuter', 'fineProfile', 'backend/trace/fine-profile');
+    var traceId = $traceParent.data('traceId');
+    profileToggle($button, $traceParent, '#fineProfileOuter', 'fineProfile',
+            'backend/trace/fine-profile' + '?trace-id=' + traceId);
+  });
+  $(document).on('click', '.profile-toggle', function () {
+    var $transactionParent = $(this).parents('.transaction-parent');
+    var $button = $(this);
+    var queryString = $transactionParent.data('queryString');
+    profileToggle($button, $transactionParent, '#profileOuter', 'profile',
+            'backend/transaction/profile?' + queryString);
   });
 
-  function profileToggle($button, $traceParent, selector, traceParentDataAttribute, url) {
+  function profileToggle($button, $parent, selector, parentDataAttribute, url) {
     var $selector = $(selector);
     if ($selector.data('loading')) {
       // handles rapid clicking when loading from url
       return;
     }
     if (!$selector.data('loaded')) {
-      var profile = $traceParent.data(traceParentDataAttribute);
+      var profile = $parent.data(parentDataAttribute);
       if (profile) {
         // this is an export file
         buildMergedStackTree(profile, $selector);
         $selector.removeClass('hide');
         $selector.data('loaded', true);
       } else {
-        var traceId = $traceParent.data('traceId');
         $selector.data('loading', true);
         var loaded;
         var spinner;
@@ -322,7 +352,7 @@ TraceRenderer = (function () {
             spinner = Glowroot.showSpinner($button.parent().find('.trace-detail-spinner'));
           }
         }, 100);
-        $.get(url + '?trace-id=' + traceId)
+        $.get(url)
             .done(function (data) {
               buildMergedStackTree(data, $selector);
               $selector.removeClass('hide');
@@ -446,6 +476,11 @@ TraceRenderer = (function () {
         ret += '</span>';
         ret += escapeHtml(node.leafThreadState);
         ret += '<br>';
+      }
+      if (node.ellipsed) {
+        // each indent is 1/3em, so adding extra .333em to indent thread state
+        ret += '<span class="inline-block" style="width: 4.666em; margin-left: ' + ((level / 3)) + 'em;">';
+        ret += '</span>...<br>';
       }
       if (node.childNodes) {
         var childNodes = node.childNodes;
@@ -587,21 +622,27 @@ TraceRenderer = (function () {
   }
 
   return {
-    render: function (trace, $selector) {
+    renderTrace: function (trace, $selector) {
       var html = JST.trace(trace);
       $selector.html(html);
       $selector.addClass('trace-parent');
       $selector.data('traceId', trace.id);
     },
-    renderFromExport: function (trace, $selector, spans, coarseProfile, fineProfile) {
+    renderTraceFromExport: function (trace, $selector, spans, coarseProfile, fineProfile) {
       $selector.data('spans', spans);
       $selector.data('coarseProfile', coarseProfile);
       $selector.data('fineProfile', fineProfile);
-      this.render(trace, $selector);
+      this.renderTrace(trace, $selector);
     },
-    renderProfile: function(profile, $selector) {
-      buildMergedStackTree(profile, $selector);
-      $selector.removeClass('hide');
+    renderTransaction: function (transaction, $selector, queryString) {
+      var html = JST.transaction(transaction);
+      $selector.html(html);
+      $selector.addClass('transaction-parent');
+      $selector.data('queryString', queryString);
+    },
+    renderTransactionFromExport: function (transaction, $selector, profile) {
+      $selector.data('profile', profile);
+      this.renderTransaction(transaction, $selector);
     }
   };
 })();

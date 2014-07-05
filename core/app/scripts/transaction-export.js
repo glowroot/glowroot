@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,11 @@
 /* global TraceRenderer, $ */
 
 $(document).ready(function () {
-  var trace = JSON.parse($('#traceJson').html());
-  var spans = JSON.parse($('#spansJson').html());
-  var coarseProfileJson = $('#coarseProfileJson').html();
-  var coarseProfile;
-  if (coarseProfileJson) {
-    coarseProfile = JSON.parse(coarseProfileJson);
+  var transaction = JSON.parse($('#transactionJson').html());
+  var profileJson = $('#profileJson').html();
+  var profile;
+  if (profileJson) {
+    profile = JSON.parse(profileJson);
   }
-  var fineProfileJson = $('#fineProfileJson').html();
-  var fineProfile;
-  if (fineProfileJson) {
-    fineProfile = JSON.parse(fineProfileJson);
-  }
-  TraceRenderer.renderFromExport(trace, $('#tracePlaceholder'), spans, coarseProfile, fineProfile);
+  TraceRenderer.renderTransactionFromExport(transaction, $('#transactionPlaceholder'), profile);
 });

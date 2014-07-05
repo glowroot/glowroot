@@ -72,8 +72,10 @@ class TransactionPointBuilder {
     }
 
     TransactionPoint build(long captureTime) throws IOException {
+        String profile = getProfileJson();
+        Existence profileExistence = profile != null ? Existence.YES : Existence.NO;
         return new TransactionPoint(captureTime, totalMicros, count, errorCount, storedTraceCount,
-                getTraceMetricsJson(), getProfileJson());
+                getTraceMetricsJson(), profileExistence, profile);
     }
 
     private void addToTraceMetrics(TraceMetric traceMetric,

@@ -15,6 +15,7 @@
  */
 package org.glowroot.local.ui;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -22,6 +23,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.collect.TreeTraverser;
 import org.checkerframework.checker.nullness.qual.Nullable;
+
+import org.glowroot.markers.UsedByJsonBinding;
 
 import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
@@ -31,7 +34,8 @@ import static org.glowroot.common.ObjectMappers.nullToEmpty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class SimpleTraceMetric {
+@UsedByJsonBinding
+public class SimpleTraceMetric {
 
     static final TreeTraverser<SimpleTraceMetric> TRAVERSER =
             new TreeTraverser<SimpleTraceMetric>() {
@@ -43,9 +47,14 @@ class SimpleTraceMetric {
 
     private final String name;
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
-    private final long totalMicros;
-    private final long count;
+    private long totalMicros;
+    private long count;
     private final List<SimpleTraceMetric> nestedTraceMetrics;
+
+    static SimpleTraceMetric createSyntheticRootNode() {
+        return new SimpleTraceMetric("<multiple root nodes>", 0, 0,
+                new ArrayList<SimpleTraceMetric>());
+    }
 
     private SimpleTraceMetric(String name, long totalMicros, long count,
             List<SimpleTraceMetric> nestedTraceMetrics) {
@@ -55,20 +64,27 @@ class SimpleTraceMetric {
         this.nestedTraceMetrics = nestedTraceMetrics;
     }
 
-    String getName() {
+    void incrementCount(long num) {
+        count += num;
+    }
+
+    void incrementTotalMicros(long num) {
+        totalMicros += num;
+    }
+
+    public String getName() {
         return name;
     }
 
-    long getTotalMicros() {
+    public long getTotalMicros() {
         return totalMicros;
     }
 
-    // TODO this is currently unused
-    long getCount() {
+    public long getCount() {
         return count;
     }
 
-    List<SimpleTraceMetric> getNestedTraceMetrics() {
+    public List<SimpleTraceMetric> getNestedTraceMetrics() {
         return nestedTraceMetrics;
     }
 

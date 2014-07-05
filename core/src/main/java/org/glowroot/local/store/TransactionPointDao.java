@@ -24,9 +24,11 @@ import java.util.Map.Entry;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharSource;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.collector.Existence;
 import org.glowroot.collector.TransactionPoint;
 import org.glowroot.collector.TransactionPointRepository;
 import org.glowroot.local.store.DataSource.BatchAdder;
@@ -142,7 +144,7 @@ public class TransactionPointDao implements TransactionPointRepository {
             long captureTimeFrom, long captureTimeTo) {
         try {
             return dataSource.query("select capture_time, total_micros, count, error_count,"
-                    + " stored_trace_count, trace_metrics from overall_point where"
+                    + " stored_trace_count, trace_metrics, null from overall_point where"
                     + " transaction_type = ? and capture_time >= ? and capture_time <= ?"
                     + " order by capture_time",
                     ImmutableList.of(transactionType, captureTimeFrom, captureTimeTo),
@@ -159,7 +161,7 @@ public class TransactionPointDao implements TransactionPointRepository {
             // TODO this query is a little slow because of pulling in trace_metrics for each row
             // and sticking trace_metrics into index does not seem to help
             return dataSource.query("select capture_time, total_micros, count, error_count,"
-                    + " stored_trace_count, trace_metrics from transaction_point where"
+                    + " stored_trace_count, trace_metrics, profile_id from transaction_point where"
                     + " transaction_type = ? and transaction_name = ? and capture_time >= ?"
                     + " and capture_time <= ?",
                     ImmutableList.of(transactionType, transactionName, captureTimeFrom,
@@ -199,8 +201,8 @@ public class TransactionPointDao implements TransactionPointRepository {
             ImmutableList<TransactionSummary> transactions =
                     dataSource.query("select transaction_name, sum(total_micros), sum(count),"
                             + " sum(error_count), sum(stored_trace_count) from transaction_point"
-                            + " where transaction_type = ? and capture_time >= ?"
-                            + " and capture_time <= ? group by transaction_name "
+                            + " where transaction_type = ? and capture_time >= ? and"
+                            + " capture_time <= ? group by transaction_name "
                             + query.getSortDirection().getOrderByClause(query.getSortAttribute())
                             + " limit ?", ImmutableList.of(query.getTransactionType(),
                             query.getFrom(), query.getTo(), query.getLimit() + 1),
@@ -263,7 +265,7 @@ public class TransactionPointDao implements TransactionPointRepository {
     }
 
     @ThreadSafe
-    private static class TransactionPointRowMapper implements RowMapper<TransactionPoint> {
+    private class TransactionPointRowMapper implements RowMapper<TransactionPoint> {
         @Override
         public TransactionPoint mapRow(ResultSet resultSet) throws SQLException {
             long captureTime = resultSet.getLong(1);
@@ -277,8 +279,27 @@ public class TransactionPointDao implements TransactionPointRepository {
                 // TODO provide better fallback here
                 throw new SQLException("Found null trace_metrics in transaction_point table");
             }
+            String profileId = resultSet.getString(7);
             return new TransactionPoint(captureTime, totalMicros, count, errorCount,
-                    storedTraceCount, traceMetrics, null);
+                    storedTraceCount, traceMetrics, getExistence(profileId), null);
+        }
+
+        private Existence getExistence(@Nullable String fileBlockId) {
+            if (fileBlockId == null) {
+                return Existence.NO;
+            }
+            FileBlock fileBlock;
+            try {
+                fileBlock = FileBlock.from(fileBlockId);
+            } catch (InvalidBlockIdFormatException e) {
+                logger.warn(e.getMessage(), e);
+                return Existence.NO;
+            }
+            if (cappedDatabase.isExpired(fileBlock)) {
+                return Existence.EXPIRED;
+            } else {
+                return Existence.YES;
+            }
         }
     }
 

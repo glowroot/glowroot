@@ -1,0 +1,80 @@
+<div class="second-line-indent">
+  Transaction name: {{transactionName}}
+  {{#if showExport}}
+    <button class="flat-btn flat-btn-big glowroot-link-color download-transaction">
+      export
+    </button>
+  {{/if}}
+</div>
+<div>
+  From: {{date from}}
+</div>
+<div>
+  To: {{date to}}
+</div>
+<div>
+  Average duration: {{divideMicrosByCount totalMicros count}} milliseconds
+</div>
+<div>
+  Count: {{count}} traces
+</div>
+<div>
+  Error count: {{errorCount}} traces
+</div>
+<div>
+  Breakdown (averages per trace, in milliseconds):
+</div>
+<table class="trace-metrics-table indent2" style="border-spacing: 0;">
+  <thead>
+  <tr>
+    <td></td>
+    <td>total</td>
+    <td>count</td>
+  </tr>
+  </thead>
+  <tbody>
+  {{#eachTraceMetricOrdered traceMetrics}}
+    <tr class="align-top">
+      <td style="text-align: left;">
+        <div style="margin-left: {{traceMetricIndent .}}em;">
+          <div class="second-line-indent">{{name}}</div>
+        </div>
+      </td>
+      <td>{{divideMicrosByCount totalMicros ../count}}</td>
+      <td>{{divideCountByCount count ../count}}</td>
+    </tr>
+  {{/eachTraceMetricOrdered}}
+  </tbody>
+</table>
+<br>
+{{#ifExistenceYes profileExistence}}
+  <div>
+    <button class="flat-btn flat-btn-big-pad1aligned profile-toggle">
+      <span class="glowroot-link-color">Profile</span>
+    </button>
+    {{! spinner is not used in export file }}
+    <div>
+      <div class="hide trace-detail-spinner"></div>
+    </div>
+  </div>
+  <div class="nowrap hide" id="profileOuter">
+    <select class="form-control profile-filter input-xlarge hide" onchange="this.blur()"
+            style="margin: 4px;">
+    </select>
+    <div class="profile-common hide">
+      <span class="inline-block unexpanded-content glowroot-link-color">common base</span>
+      {{! standard expanded-content bottom margin is not needed since nothing can be expanded
+          directly below using span so background will stretch beyond page border if needed }}
+      <span class="inline-block expanded-content hide" style="margin-bottom: 0;"></span>
+    </div>
+    <div class="profile-interesting indent1"></div>
+  </div>
+{{/ifExistenceYes}}
+{{#ifExistenceExpired profileExistence}}
+  <div>
+    <strong>
+      Profile no longer exists for this trace
+    </strong>
+    <em>(see Glowroot > Configuration &gt; Storage &gt; Spans/profiles capped db)</em>
+  </div>
+{{/ifExistenceExpired}}

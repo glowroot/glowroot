@@ -188,7 +188,8 @@ module.exports = function (grunt) {
       },
       exportDist: {
         files: {
-          '<%= yeoman.exportDist %>/export.html': '<%= yeoman.app %>/export.html'
+          '<%= yeoman.exportDist %>/trace-export.html': '<%= yeoman.app %>/trace-export.html',
+          '<%= yeoman.exportDist %>/transaction-export.html': '<%= yeoman.app %>/transaction-export.html'
         },
         options: {
           dest: '<%= yeoman.exportDist %>'
@@ -231,7 +232,7 @@ module.exports = function (grunt) {
           {
             expand: true,
             cwd: '<%= yeoman.exportDist %>',
-            src: 'export.html',
+            src: '*-export.html',
             dest: '<%= yeoman.exportDist %>'
           }
         ]
@@ -328,7 +329,7 @@ module.exports = function (grunt) {
             expand: true,
             cwd: '<%= yeoman.app %>',
             dest: '<%= yeoman.exportDist %>',
-            src: 'export.html'
+            src: '*-export.html'
           }
         ]
       },
@@ -384,7 +385,7 @@ module.exports = function (grunt) {
     usemin: {
       html: [
         '<%= yeoman.dist %>/index.html',
-        '<%= yeoman.exportDist %>/export.html'
+        '<%= yeoman.exportDist %>/*-export.html'
       ],
       // use revved font filenames in revved main.css
       css: '<%= yeoman.dist %>/styles/*.main.css'

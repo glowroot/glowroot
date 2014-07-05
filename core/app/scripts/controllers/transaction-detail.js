@@ -25,9 +25,11 @@ glowroot.controller('TransactionDetailCtrl', [
   'transactionQuery',
   function ($scope, $http, $modalInstance, queryStrings, httpErrors, transactionQuery) {
 
-    $http.get('backend/transaction/profile?' + queryStrings.encodeObject(transactionQuery))
+    var queryString = queryStrings.encodeObject(transactionQuery);
+    $http.get('backend/transaction/header?' + queryStrings.encodeObject(transactionQuery))
         .success(function (data) {
-          TraceRenderer.renderProfile(data, $('#profile'));
+          data.showExport = true;
+          TraceRenderer.renderTransaction(data, $('#modalContent'), queryString);
           $scope.loaded = true;
         })
       // TODO need to implement httpErrors here in modal ui?

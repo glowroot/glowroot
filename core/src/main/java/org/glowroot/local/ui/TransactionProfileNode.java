@@ -46,6 +46,15 @@ class TransactionProfileNode {
     private int sampleCount;
     private List<String> traceMetrics;
     private final List<TransactionProfileNode> childNodes;
+    private boolean ellipsed;
+
+    static TransactionProfileNode createSyntheticRootNode() {
+        return new TransactionProfileNode("<multiple root nodes>");
+    }
+
+    static TransactionProfileNode createEllipsedNode() {
+        return new TransactionProfileNode("...");
+    }
 
     private TransactionProfileNode(@Nullable String stackTraceElement,
             @Nullable String leafThreadState, int sampleCount, List<String> traceMetrics,
@@ -57,9 +66,8 @@ class TransactionProfileNode {
         this.childNodes = childNodes;
     }
 
-    // creates new synthetic root
-    TransactionProfileNode() {
-        stackTraceElement = null;
+    private TransactionProfileNode(String stackTraceElement) {
+        this.stackTraceElement = stackTraceElement;
         leafThreadState = null;
         traceMetrics = Lists.newArrayList();
         childNodes = Lists.newArrayList();
@@ -71,6 +79,10 @@ class TransactionProfileNode {
 
     void incrementSampleCount(int num) {
         sampleCount += num;
+    }
+
+    void setEllipsed() {
+        ellipsed = true;
     }
 
     // null for synthetic root only
@@ -96,6 +108,10 @@ class TransactionProfileNode {
         return childNodes;
     }
 
+    public boolean isEllipsed() {
+        return ellipsed;
+    }
+
     @Override
     @Pure
     public String toString() {
@@ -105,6 +121,7 @@ class TransactionProfileNode {
                 .add("sampleCount", sampleCount)
                 .add("traceMetrics", traceMetrics)
                 .add("childNodes", childNodes)
+                .add("ellipsed", ellipsed)
                 .toString();
     }
 

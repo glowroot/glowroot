@@ -51,8 +51,8 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
- * Http service to export a trace snapshot as a complete html page, bound to /export. It is not
- * bound under /backend since it is visible to users as the download url for the export file.
+ * Http service to export a trace snapshot as a complete html page, bound to /export/trace. It is
+ * not bound under /backend since it is visible to users as the download url for the export file.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -127,19 +127,19 @@ public class TraceExportHttpService implements HttpService {
     }
 
     private static CharSource render(TraceExport traceExport) throws IOException {
-        final String exportCssPlaceholder =
+        String exportCssPlaceholder =
                 "<link rel=\"stylesheet\" type=\"text/css\" href=\"styles/export.css\">";
-        final String exportComponentsJsPlaceholder =
+        String exportComponentsJsPlaceholder =
                 "<script src=\"scripts/export.components.js\"></script>";
-        final String exportJsPlaceholder = "<script src=\"scripts/export.js\"></script>";
-        final String tracePlaceholder = "<script type=\"text/json\" id=\"traceJson\"></script>";
-        final String spansPlaceholder = "<script type=\"text/json\" id=\"spansJson\"></script>";
-        final String coarseProfilePlaceholder =
+        String exportJsPlaceholder = "<script src=\"scripts/trace-export.js\"></script>";
+        String tracePlaceholder = "<script type=\"text/json\" id=\"traceJson\"></script>";
+        String spansPlaceholder = "<script type=\"text/json\" id=\"spansJson\"></script>";
+        String coarseProfilePlaceholder =
                 "<script type=\"text/json\" id=\"coarseProfileJson\"></script>";
-        final String fineProfilePlaceholder =
+        String fineProfilePlaceholder =
                 "<script type=\"text/json\" id=\"fineProfileJson\"></script>";
 
-        String templateContent = asCharSource("export.html").read();
+        String templateContent = asCharSource("trace-export.html").read();
         Pattern pattern = Pattern.compile("(" + exportCssPlaceholder + "|"
                 + exportComponentsJsPlaceholder + "|" + exportJsPlaceholder + "|"
                 + tracePlaceholder + "|" + spansPlaceholder + "|" + coarseProfilePlaceholder + "|"
@@ -162,7 +162,7 @@ public class TraceExportHttpService implements HttpService {
                 charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(exportJsPlaceholder)) {
                 charSources.add(CharSource.wrap("<script>"));
-                charSources.add(asCharSource("scripts/export.js"));
+                charSources.add(asCharSource("scripts/trace-export.js"));
                 charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(tracePlaceholder)) {
                 charSources.add(CharSource.wrap(
