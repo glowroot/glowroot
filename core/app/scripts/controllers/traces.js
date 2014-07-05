@@ -327,11 +327,11 @@ glowroot.controller('TracesCtrl', [
     }
     appliedFilter.durationLow = Number($location.search().durationLow) || 0;
     appliedFilter.durationHigh = Number($location.search().durationHigh) || undefined;
-    appliedFilter.background = $location.search().background || '';
-    appliedFilter.headlineComparator = $location.search()['headline-comparator'] || 'begins';
-    appliedFilter.headline = $location.search().headline || '';
+    appliedFilter.transactionType = $location.search()['transaction-type'] || '';
     appliedFilter.transactionNameComparator = $location.search()['transaction-name-comparator'] || 'begins';
     appliedFilter.transactionName = $location.search()['transaction-name'] || '';
+    appliedFilter.headlineComparator = $location.search()['headline-comparator'] || 'begins';
+    appliedFilter.headline = $location.search().headline || '';
     appliedFilter.errorComparator = $location.search()['error-comparator'] || 'begins';
     appliedFilter.error = $location.search().error || '';
     appliedFilter.userComparator = $location.search()['user-comparator'] || 'begins';
@@ -386,8 +386,8 @@ glowroot.controller('TracesCtrl', [
       if (Number(appliedFilter.durationHigh)) {
         query['duration-high'] = appliedFilter.durationHigh;
       }
-      if (appliedFilter.background === 'true' || appliedFilter.background === 'false') {
-        query.background = appliedFilter.background;
+      if (appliedFilter.transactionType) {
+        query['transaction-type'] = appliedFilter.transactionType;
       }
       if (appliedFilter.headline) {
         query['headline-comparator'] = appliedFilter.headlineComparator;

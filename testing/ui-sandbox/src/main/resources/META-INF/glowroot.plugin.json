@@ -2,6 +2,10 @@
   "name": "Ui Sandbox Plugin",
   "id": "glowroot-ui-sandbox",
   "version": "0.5-SNAPSHOT",
+  "transactionTypes": [
+    "Sandbox",
+    "Background"
+  ],
   "traceAttributes": [
     "My First Attribute",
     "Second",

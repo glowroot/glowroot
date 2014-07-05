@@ -46,14 +46,14 @@ class TransactionCommonService {
         this.transactionPointDao = transactionPointDao;
     }
 
-    TransactionHeader getTransactionHeader(@Nullable String transactionName, long from, long to)
-            throws IOException {
+    TransactionHeader getTransactionHeader(String transactionType,
+            @Nullable String transactionName, long from, long to) throws IOException {
         List<TransactionPoint> transactionPoints;
         if (transactionName == null) {
-            transactionPoints = transactionPointDao.readOverallPoints("", from, to);
+            transactionPoints = transactionPointDao.readOverallPoints(transactionType, from, to);
         } else {
-            transactionPoints =
-                    transactionPointDao.readTransactionPoints("", transactionName, from, to);
+            transactionPoints = transactionPointDao.readTransactionPoints(transactionType,
+                    transactionName, from, to);
         }
         long totalMicros = 0;
         long count = 0;
@@ -78,15 +78,15 @@ class TransactionCommonService {
         if (syntheticRootNode.getNestedTraceMetrics().size() == 1) {
             traceMetrics = syntheticRootNode.getNestedTraceMetrics().get(0);
         }
-        return new TransactionHeader(transactionName, from, to, totalMicros, count,
-                errorCount, traceMetrics, profileExistence);
+        return new TransactionHeader(transactionType, transactionName, from, to, totalMicros,
+                count, errorCount, traceMetrics, profileExistence);
     }
 
     @Nullable
-    TransactionProfileNode getProfile(String transactionName, long from, long to,
-            double truncateLeafPercentage) throws IOException {
+    TransactionProfileNode getProfile(String transactionType, String transactionName, long from,
+            long to, double truncateLeafPercentage) throws IOException {
         List<CharSource> profiles =
-                transactionPointDao.readProfiles("", transactionName, from, to);
+                transactionPointDao.readProfiles(transactionType, transactionName, from, to);
         TransactionProfileNode syntheticRootNode = TransactionProfileNode.createSyntheticRootNode();
         for (CharSource profile : profiles) {
             if (profile == null) {
@@ -191,6 +191,7 @@ class TransactionCommonService {
     @UsedByJsonBinding
     public static class TransactionHeader {
 
+        private final String transactionType;
         @Nullable
         private final String transactionName;
         private final long from;
@@ -201,9 +202,10 @@ class TransactionCommonService {
         private final SimpleTraceMetric rootTraceMetric;
         private final Existence profileExistence;
 
-        private TransactionHeader(@Nullable String transactionName, long from, long to,
-                long totalMicros, long count, long errorCount,
+        private TransactionHeader(String transactionType, @Nullable String transactionName,
+                long from, long to, long totalMicros, long count, long errorCount,
                 SimpleTraceMetric rootTraceMetric, Existence profileExistence) {
+            this.transactionType = transactionType;
             this.transactionName = transactionName;
             this.from = from;
             this.to = to;
@@ -212,6 +214,10 @@ class TransactionCommonService {
             this.errorCount = errorCount;
             this.rootTraceMetric = rootTraceMetric;
             this.profileExistence = profileExistence;
+        }
+
+        public String getTransactionType() {
+            return transactionType;
         }
 
         @Nullable

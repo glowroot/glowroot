@@ -236,6 +236,7 @@ public class ConfigService {
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
         }
+        notifyConfigListeners();
         return pointcutConfig.getVersion();
     }
 
@@ -262,6 +263,7 @@ public class ConfigService {
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
         }
+        notifyConfigListeners();
         return pointcutConfig.getVersion();
     }
 
@@ -287,6 +289,7 @@ public class ConfigService {
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
         }
+        notifyConfigListeners();
     }
 
     public String updateAdvancedConfig(AdvancedConfig advancedConfig, String priorVersion)

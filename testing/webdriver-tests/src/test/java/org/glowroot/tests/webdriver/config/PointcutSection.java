@@ -76,12 +76,12 @@ public class PointcutSection {
         return withWait(xpath(".//input[@ng-model='traceDefinition']"));
     }
 
-    public WebElement getTransactionNameTextField() {
-        return withWait(xpath(".//textarea[@ng-model='config.transactionName']"));
+    public WebElement getTransactionTypeTextField() {
+        return withWait(xpath(".//input[@ng-model='config.transactionType']"));
     }
 
-    public WebElement getBackgroundCheckbox() {
-        return withWait(xpath(".//input[@ng-model='config.background']"));
+    public WebElement getTransactionNameTextField() {
+        return withWait(xpath(".//input[@ng-model='config.transactionName']"));
     }
 
     public WebElement getAddButton() {

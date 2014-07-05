@@ -114,17 +114,20 @@
   </div>
   <div class="form-group">
     <label class="col-lg-3 control-label"
-           for="filterBackground">
-      Background
+           for="filterTransactionType">
+      Transaction type
     </label>
     <div class="col-lg-9">
-      <select ng-model="filter.background"
+      <select ng-model="filter.transactionType"
               class="form-control"
-              id="filterBackground"
+              id="filterTransactionType"
               style="width: 25em;">
         <option value=""></option>
-        <option value="false">Exclude background traces</option>
-        <option value="true">Include only background traces</option>
+        <option ng-repeat="transactionType in layout.transactionTypes"
+                value="{{transactionType}}"
+                ng-selected="transactionType === filter.transactionType">
+          {{transactionType}}
+        </option>
       </select>
     </div>
   </div>

@@ -79,7 +79,8 @@ class ConfigMapper {
         FineProfilingConfig fineProfilingConfig = readFineProfilingNode(rootNode);
         UserOverridesConfig userOverridesConfig = readUserNode(rootNode);
         StorageConfig storageConfig = readStorageNode(rootNode);
-        UserInterfaceConfig userInterfaceConfig = readUserInterfaceNode(rootNode);
+        UserInterfaceConfig userInterfaceConfig =
+                readUserInterfaceNode(rootNode, pluginDescriptors);
         ImmutableList<PointcutConfig> pointcutConfigs = createPointcutConfigs(rootNode);
         AdvancedConfig advancedConfig = readAdvancedNode(rootNode);
         ImmutableMap<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
@@ -200,10 +201,10 @@ class ConfigMapper {
         }
     }
 
-    private static UserInterfaceConfig readUserInterfaceNode(ObjectNode rootNode)
-            throws IOException {
+    private static UserInterfaceConfig readUserInterfaceNode(ObjectNode rootNode,
+            ImmutableList<PluginDescriptor> pluginDescriptors) throws IOException {
         ObjectNode configNode = (ObjectNode) rootNode.get(USER_INTERFACE);
-        UserInterfaceConfig defaultConfig = UserInterfaceConfig.getDefault();
+        UserInterfaceConfig defaultConfig = UserInterfaceConfig.getDefault(pluginDescriptors);
         if (configNode == null) {
             return defaultConfig;
         } else {

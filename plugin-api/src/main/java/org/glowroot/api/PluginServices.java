@@ -181,30 +181,15 @@ public abstract class PluginServices {
      * If there is no active trace, a new trace is started.
      * 
      * If there is already an active trace, this method acts the same as
-     * {@link #startSpan(MessageSupplier, TraceMetricName)}.
+     * {@link #startSpan(MessageSupplier, TraceMetricName)} (the transaction name and type are not
+     * modified on the existing trace).
      * 
      * @param transactionName
      * @param messageSupplier
      * @param traceMetricName
      * @return
      */
-    public abstract Span startTrace(String transactionName, MessageSupplier messageSupplier,
-            TraceMetricName traceMetricName);
-
-    /**
-     * If there is no active trace, a new trace is started and the trace is marked as a background
-     * trace. Traces can be filtered by their background flag on the trace explorer page.
-     * 
-     * If there is already an active trace, this method acts the same as
-     * {@link #startSpan(MessageSupplier, TraceMetricName)} (the background flag is not modified on
-     * the existing trace).
-     * 
-     * @param transactionName
-     * @param messageSupplier
-     * @param traceMetricName
-     * @return
-     */
-    public abstract Span startBackgroundTrace(String transactionName,
+    public abstract Span startTrace(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TraceMetricName traceMetricName);
 
     /**
@@ -277,6 +262,15 @@ public abstract class PluginServices {
      * @param errorMessage
      */
     public abstract CompletedSpan addErrorSpan(ErrorMessage errorMessage);
+
+    /**
+     * Set the transaction type that is used for aggregation.
+     * 
+     * If there is no current trace, this method does nothing.
+     * 
+     * @param transactionName
+     */
+    public abstract void setTransactionType(String transactionType);
 
     /**
      * Set the transaction name that is used for aggregation.
@@ -444,13 +438,8 @@ public abstract class PluginServices {
             return NopTraceMetricName.INSTANCE;
         }
         @Override
-        public Span startTrace(String transactionName, MessageSupplier messageSupplier,
-                TraceMetricName traceMetricName) {
-            return NopSpan.INSTANCE;
-        }
-        @Override
-        public Span startBackgroundTrace(String transactionName, MessageSupplier messageSupplier,
-                TraceMetricName traceMetricName) {
+        public Span startTrace(String transactionType, String transactionName,
+                MessageSupplier messageSupplier, TraceMetricName traceMetricName) {
             return NopSpan.INSTANCE;
         }
         @Override
@@ -469,6 +458,8 @@ public abstract class PluginServices {
         public CompletedSpan addErrorSpan(ErrorMessage errorMessage) {
             return NopCompletedSpan.INSTANCE;
         }
+        @Override
+        public void setTransactionType(String transactionType) {}
         @Override
         public void setTransactionName(String transactionName) {}
         @Override

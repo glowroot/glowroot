@@ -99,7 +99,8 @@ public class ServletAspect {
                         sessionAttributes);
             }
             topLevel.set(messageSupplier);
-            Span span = pluginServices.startTrace(requestUri, messageSupplier, traceMetricName);
+            Span span = pluginServices.startTrace("Servlet", requestUri, messageSupplier,
+                    traceMetricName);
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction
             String transactionNameOverride =

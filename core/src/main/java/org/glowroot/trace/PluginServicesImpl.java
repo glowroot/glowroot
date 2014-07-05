@@ -201,19 +201,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public Span startTrace(String transactionName, MessageSupplier messageSupplier,
-            TraceMetricName traceMetricName) {
-        return startTrace(transactionName, messageSupplier, traceMetricName, false);
-    }
-
-    @Override
-    public Span startBackgroundTrace(String transactionName, MessageSupplier messageSupplier,
-            TraceMetricName traceMetricName) {
-        return startTrace(transactionName, messageSupplier, traceMetricName, true);
-    }
-
-    private Span startTrace(String transactionName, MessageSupplier messageSupplier,
-            TraceMetricName traceMetricName, boolean background) {
+    public Span startTrace(String transactionType, String transactionName,
+            MessageSupplier messageSupplier, TraceMetricName traceMetricName) {
         if (messageSupplier == null) {
             logger.error("startTrace(): argument 'messageSupplier' must be non-null");
             return NopSpan.INSTANCE;
@@ -238,7 +227,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             if (gcInfoEnabled) {
                 gcInfo = new TraceGcInfos();
             }
-            trace = new Trace(clock.currentTimeMillis(), background, transactionName,
+            trace = new Trace(clock.currentTimeMillis(), transactionType, transactionName,
                     messageSupplier, rootTraceMetric, startTick, threadInfo, gcInfo, ticker);
             traceRegistry.addTrace(trace);
             fineProfileScheduler.maybeScheduleFineProfilingUsingPercentage(trace);
@@ -325,6 +314,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                     trace.addSpan(currTick, currTick, null, errorMessage, true));
         }
         return NopCompletedSpan.INSTANCE;
+    }
+
+    @Override
+    public void setTransactionType(String transactionType) {
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace != null) {
+            trace.setTransactionType(transactionType);
+        }
     }
 
     @Override

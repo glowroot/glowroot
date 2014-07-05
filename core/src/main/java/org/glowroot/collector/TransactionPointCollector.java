@@ -201,12 +201,7 @@ class TransactionPointCollector {
         }
 
         private void add(Trace trace, boolean traceWillBeStored) {
-            TypeAggregates typeAggregates;
-            if (trace.isBackground()) {
-                typeAggregates = getTypeAggregates("bg");
-            } else {
-                typeAggregates = getTypeAggregates("");
-            }
+            TypeAggregates typeAggregates = getTypeAggregates(trace.getTransactionType());
             typeAggregates.add(trace, traceWillBeStored);
         }
 

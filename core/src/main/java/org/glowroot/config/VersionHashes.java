@@ -32,14 +32,14 @@ import org.glowroot.markers.Static;
  * @since 0.5
  */
 @Static
-class VersionHashes {
+public class VersionHashes {
 
     private static final Logger logger = LoggerFactory.getLogger(VersionHashes.class);
     private static final long DELIMITER = 123454321;
 
     private VersionHashes() {}
 
-    static String sha1(@Nullable Object... objects) {
+    public static String sha1(@Nullable Object... objects) {
         return hashCode(Hashing.sha1(), objects);
     }
 

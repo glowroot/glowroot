@@ -2,6 +2,9 @@
   "name": "Test Container Plugin",
   "id": "glowroot-test-container",
   "version": "0.5-SNAPSHOT",
+  "transactionTypes": [
+    "Test harness"
+  ],
   "properties": [],
   "aspects": [
     "org.glowroot.container.TraceMarkerAspect"

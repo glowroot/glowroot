@@ -252,8 +252,8 @@ glowroot.controller('ConfigPointcutCtrl', [
         return;
       }
       if (!newValue) {
+        $scope.config.transactionType = '';
         $scope.config.transactionName = '';
-        $scope.config.background = '';
       }
     });
 

@@ -62,17 +62,20 @@ public class PluginDescriptor {
     private final String name;
     private final String id;
     private final String version;
+    private final ImmutableList<String> transactionTypes;
     private final ImmutableList<String> traceAttributes;
     private final ImmutableList<PropertyDescriptor> properties;
     private final ImmutableList<String> aspects;
     private final ImmutableList<PointcutConfig> pointcuts;
 
-    private PluginDescriptor(String name, String id, String version, List<String> traceAttributes,
+    private PluginDescriptor(String name, String id, String version,
+            List<String> transactionTypes, List<String> traceAttributes,
             List<PropertyDescriptor> properties, List<String> aspects,
             List<PointcutConfig> pointcuts) {
         this.name = name;
         this.id = id;
         this.version = version;
+        this.transactionTypes = ImmutableList.copyOf(transactionTypes);
         this.traceAttributes = ImmutableList.copyOf(traceAttributes);
         this.properties = ImmutableList.copyOf(properties);
         this.aspects = ImmutableList.copyOf(aspects);
@@ -89,6 +92,10 @@ public class PluginDescriptor {
 
     public String getVersion() {
         return version;
+    }
+
+    public ImmutableList<String> getTransactionTypes() {
+        return transactionTypes;
     }
 
     public ImmutableList<String> getTraceAttributes() {
@@ -108,8 +115,8 @@ public class PluginDescriptor {
     }
 
     public PluginDescriptor copyWithoutAdvice() {
-        return new PluginDescriptor(name, id, version, traceAttributes, properties,
-                ImmutableList.<String>of(), ImmutableList.<PointcutConfig>of());
+        return new PluginDescriptor(name, id, version, transactionTypes, traceAttributes,
+                properties, ImmutableList.<String>of(), ImmutableList.<PointcutConfig>of());
     }
 
     @Override
@@ -119,6 +126,7 @@ public class PluginDescriptor {
                 .add("name", name)
                 .add("id", id)
                 .add("version", version)
+                .add("transactionTypes", transactionTypes)
                 .add("traceAttributes", traceAttributes)
                 .add("properties", properties)
                 .add("aspects", aspects)
@@ -131,6 +139,7 @@ public class PluginDescriptor {
             @JsonProperty("name") @Nullable String name,
             @JsonProperty("id") @Nullable String id,
             @JsonProperty("version") @Nullable String version,
+            @JsonProperty("transactionTypes") @Nullable List</*@Nullable*/String> uncheckedTransactionTypes,
             @JsonProperty("traceAttributes") @Nullable List</*@Nullable*/String> uncheckedTraceAttributes,
             @JsonProperty("properties") @Nullable List</*@Nullable*/PropertyDescriptor> uncheckedProperties,
             @JsonProperty("aspects") @Nullable List</*@Nullable*/String> uncheckedAspects,
@@ -138,6 +147,8 @@ public class PluginDescriptor {
             throws JsonMappingException {
         List<String> traceAttributes =
                 checkNotNullItemsForProperty(uncheckedTraceAttributes, "traceAttributes");
+        List<String> transactionTypes =
+                checkNotNullItemsForProperty(uncheckedTransactionTypes, "transactionTypes");
         List<PropertyDescriptor> properties =
                 checkNotNullItemsForProperty(uncheckedProperties, "properties");
         List<String> aspects =
@@ -147,8 +158,9 @@ public class PluginDescriptor {
         checkRequiredProperty(name, "name");
         checkRequiredProperty(id, "id");
         checkRequiredProperty(version, "version");
-        return new PluginDescriptor(name, id, version, nullToEmpty(traceAttributes),
-                nullToEmpty(properties), nullToEmpty(aspects), nullToEmpty(pointcuts));
+        return new PluginDescriptor(name, id, version, nullToEmpty(transactionTypes),
+                nullToEmpty(traceAttributes), nullToEmpty(properties), nullToEmpty(aspects),
+                nullToEmpty(pointcuts));
     }
 
     private static String stripEndingIgnoreCase(String original, String ending) {

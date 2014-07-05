@@ -71,7 +71,7 @@ public class SnapshotCreator {
         builder.startTime(trace.getStartTime());
         builder.captureTime(captureTime);
         builder.duration(captureTick - trace.getStartTick());
-        builder.background(trace.isBackground());
+        builder.transactionType(trace.getTransactionType());
         builder.transactionName(trace.getTransactionName());
         builder.headline(trace.getHeadline());
         builder.error(trace.getError());

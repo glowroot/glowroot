@@ -57,8 +57,8 @@ public class PointcutConfig {
     @Nullable
     private final Long spanStackTraceThresholdMillis;
     private final boolean spanIgnoreSameNested;
+    private final String transactionType;
     private final String transactionName;
-    private final boolean background;
 
     // enabledProperty and spanEnabledProperty are for plugin authors
     private final String enabledProperty;
@@ -70,7 +70,7 @@ public class PointcutConfig {
     public PointcutConfig(String type, String methodName, List<String> methodArgTypes,
             String methodReturnType, List<MethodModifier> methodModifiers, String traceMetric,
             String spanText, @Nullable Long spanStackTraceThresholdMillis,
-            boolean spanIgnoreSameNested, String transactionName, boolean background,
+            boolean spanIgnoreSameNested, String transactionType, String transactionName,
             String enabledProperty, String spanEnabledProperty) {
         this.type = type;
         this.methodName = methodName;
@@ -81,13 +81,13 @@ public class PointcutConfig {
         this.spanText = spanText;
         this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
         this.spanIgnoreSameNested = spanIgnoreSameNested;
+        this.transactionType = transactionType;
         this.transactionName = transactionName;
-        this.background = background;
         this.enabledProperty = enabledProperty;
         this.spanEnabledProperty = spanEnabledProperty;
         version = VersionHashes.sha1(type, methodName, methodArgTypes, methodReturnType,
                 methodModifiers, traceMetric, spanText, spanStackTraceThresholdMillis,
-                spanIgnoreSameNested, transactionName, background, enabledProperty,
+                spanIgnoreSameNested, transactionType, transactionName, enabledProperty,
                 spanEnabledProperty);
     }
 
@@ -129,12 +129,12 @@ public class PointcutConfig {
         return spanIgnoreSameNested;
     }
 
-    public String getTransactionName() {
-        return transactionName;
+    public String getTransactionType() {
+        return transactionType;
     }
 
-    public boolean isBackground() {
-        return background;
+    public String getTransactionName() {
+        return transactionName;
     }
 
     public String getEnabledProperty() {
@@ -177,8 +177,8 @@ public class PointcutConfig {
             @JsonProperty("spanText") @Nullable String spanText,
             @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
             @JsonProperty("spanIgnoreSameNested") @Nullable Boolean spanIgnoreSameNested,
+            @JsonProperty("transactionType") @Nullable String transactionType,
             @JsonProperty("transactionName") @Nullable String transactionName,
-            @JsonProperty("background") @Nullable Boolean background,
             @JsonProperty("enabledProperty") @Nullable String enabledProperty,
             @JsonProperty("spanEnabledProperty") @Nullable String spanEnabledProperty,
             // without including a parameter for version, jackson will use direct field access after
@@ -198,7 +198,7 @@ public class PointcutConfig {
         return new PointcutConfig(type, methodName, nullToEmpty(methodArgTypes), methodReturnType,
                 nullToEmpty(methodModifiers), nullToEmpty(traceMetric), nullToEmpty(spanText),
                 spanStackTraceThresholdMillis, nullToFalse(spanIgnoreSameNested),
-                nullToEmpty(transactionName), nullToFalse(background),
+                nullToEmpty(transactionType), nullToEmpty(transactionName),
                 nullToEmpty(enabledProperty), nullToEmpty(spanEnabledProperty));
     }
 
@@ -215,8 +215,8 @@ public class PointcutConfig {
                 .add("spanText", spanText)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("spanIgnoreSameNested", spanIgnoreSameNested)
+                .add("transactionType", transactionType)
                 .add("transactionName", transactionName)
-                .add("background", background)
                 .add("enabledProperty", enabledProperty)
                 .add("spanEnabledProperty", spanEnabledProperty)
                 .add("version", version)

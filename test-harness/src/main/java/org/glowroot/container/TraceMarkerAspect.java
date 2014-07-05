@@ -50,7 +50,7 @@ public class TraceMarkerAspect {
         @OnBefore
         public static Span onBefore(@BindReceiver Object receiver) {
             String receiverClassName = receiver.getClass().getName();
-            return pluginServices.startTrace("trace marker / " + receiverClassName,
+            return pluginServices.startTrace("Test harness", "trace marker / " + receiverClassName,
                     MessageSupplier.from("{}.traceMarker()", receiverClassName), traceMetricName);
         }
 

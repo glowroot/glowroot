@@ -39,7 +39,7 @@ class SnapshotTestData {
                 .startTime(1)
                 .captureTime(11)
                 .duration(MILLISECONDS.toNanos(10))
-                .background(false)
+                .transactionType("unit test")
                 .transactionName("test transaction name")
                 .headline("test headline")
                 .user("j")

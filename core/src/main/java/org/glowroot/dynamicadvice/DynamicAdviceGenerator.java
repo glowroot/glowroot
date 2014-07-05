@@ -305,6 +305,12 @@ public class DynamicAdviceGenerator {
         mv.visitFieldInsn(GETSTATIC, adviceTypeName, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;");
         if (pointcutConfig.isTrace()) {
+            String transactionType = pointcutConfig.getTransactionType();
+            if (transactionType == null) {
+                mv.visitLdcInsn("<no transaction type provided>");
+            } else {
+                mv.visitLdcInsn(transactionType);
+            }
             mv.visitVarInsn(ALOAD, 3);
             mv.visitMethodInsn(INVOKEVIRTUAL, methodMetaName, "getTransactionNameTemplate",
                     "()Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", false);
@@ -334,10 +340,8 @@ public class DynamicAdviceGenerator {
         mv.visitFieldInsn(GETSTATIC, adviceTypeName, "traceMetricName",
                 "Lorg/glowroot/api/TraceMetricName;");
         if (pointcutConfig.isTrace()) {
-            String methodName = pointcutConfig.isBackground() ? "startBackgroundTrace"
-                    : "startTrace";
-            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", methodName,
-                    "(Ljava/lang/String;Lorg/glowroot/api/MessageSupplier;"
+            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", "startTrace",
+                    "(Ljava/lang/String;Ljava/lang/String;Lorg/glowroot/api/MessageSupplier;"
                             + "Lorg/glowroot/api/TraceMetricName;)Lorg/glowroot/api/Span;", false);
         } else {
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", "startSpan",

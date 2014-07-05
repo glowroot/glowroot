@@ -95,11 +95,6 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
               deferred.reject('Current password is incorrect');
             } else {
               onNewData(data);
-              if (enablingPassword) {
-                $rootScope.showSignOutButton = true;
-              } else if (disablingPassword) {
-                $rootScope.showSignOutButton = false;
-              }
               if (changingPort && data.portChangeFailed) {
                 deferred.reject('Save succeeded, but switching over to the new port failed');
               } else if (changingPort) {

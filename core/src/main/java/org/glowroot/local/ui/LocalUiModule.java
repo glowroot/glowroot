@@ -152,8 +152,8 @@ public class LocalUiModule {
         }
         String bindAddress = getBindAddress(properties);
         httpServer = buildHttpServer(bindAddress, port, numWorkerThreads, httpSessionManager,
-                indexHtmlService, traceDetailHttpService, transactionExportHttpService,
-                traceExportHttpService, jsonServices);
+                indexHtmlService, layoutJsonService, traceDetailHttpService,
+                transactionExportHttpService, traceExportHttpService, jsonServices);
         if (httpServer != null) {
             configJsonService.setHttpServer(httpServer);
         }
@@ -215,7 +215,7 @@ public class LocalUiModule {
     @Nullable
     private static HttpServer buildHttpServer(String bindAddress, int port, int numWorkerThreads,
             HttpSessionManager httpSessionManager, IndexHtmlService indexHtmlService,
-            TraceDetailHttpService snapshotHttpService,
+            LayoutJsonService layoutJsonService, TraceDetailHttpService snapshotHttpService,
             TransactionExportHttpService transactionExportHttpService,
             TraceExportHttpService traceExportHttpService, List<Object> jsonServices) {
 
@@ -247,7 +247,7 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/backend/trace/fine-profile$"), snapshotHttpService);
         try {
             return new HttpServer(bindAddress, port, numWorkerThreads, indexHtmlService,
-                    uriMappings.build(), httpSessionManager, jsonServices);
+                    layoutJsonService, uriMappings.build(), httpSessionManager, jsonServices);
         } catch (ChannelException e) {
             // binding to the specified port failed and binding to port 0 (any port) failed
             logger.error("error binding to any port, the user interface will not be available", e);

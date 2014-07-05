@@ -41,6 +41,27 @@
           Port that the user interface listens on.
         </div>
       </div>
+      <div class="form-group">
+        <label class="col-lg-3 control-label"
+               for="defaultTransactionType">
+          Default transaction type
+        </label>
+        <div class="col-lg-9">
+          <select ng-model="config.defaultTransactionType"
+                  class="form-control"
+                  id="defaultTransactionType"
+                  style="width: auto;">
+            <option ng-repeat="transactionType in layout.transactionTypes"
+                    value="{{transactionType}}"
+                    ng-selected="transactionType === config.defaultTransactionType">
+              {{transactionType}}
+            </option>
+          </select>
+          <div class="help-block">
+            Default transaction type displayed on transactions page.
+          </div>
+        </div>
+      </div>
       <div gt-form-group
            gt-label="Password enabled"
            gt-model="config.passwordEnabled"

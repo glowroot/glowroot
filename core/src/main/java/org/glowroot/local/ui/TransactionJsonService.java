@@ -82,11 +82,12 @@ class TransactionJsonService {
         List<TransactionPoint> transactionPoints;
         String transactionName = request.getTransactionName();
         if (transactionName == null) {
-            transactionPoints = transactionPointDao.readOverallPoints("", request.getFrom(),
-                    request.getTo());
-        } else {
-            transactionPoints = transactionPointDao.readTransactionPoints("", transactionName,
+            transactionPoints = transactionPointDao.readOverallPoints(request.getTransactionType(),
                     request.getFrom(), request.getTo());
+        } else {
+            transactionPoints = transactionPointDao.readTransactionPoints(
+                    request.getTransactionType(), transactionName, request.getFrom(),
+                    request.getTo());
         }
         List<StackedPoint> stackedPoints = Lists.newArrayList();
         for (TransactionPoint transactionPoint : transactionPoints) {
@@ -161,7 +162,8 @@ class TransactionJsonService {
         RequestWithTransactionName request =
                 ObjectMappers.readRequiredValue(mapper, content, RequestWithTransactionName.class);
         TransactionHeader transactionHeader = transactionCommonService.getTransactionHeader(
-                request.getTransactionName(), request.getFrom(), request.getTo());
+                request.getTransactionType(), request.getTransactionName(), request.getFrom(),
+                request.getTo());
         return mapper.writeValueAsString(transactionHeader);
     }
 
@@ -171,11 +173,10 @@ class TransactionJsonService {
         ProfileRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, ProfileRequest.class);
         TransactionProfileNode profile = transactionCommonService.getProfile(
-                request.getTransactionName(), request.getFrom(), request.getTo(),
-                request.getTruncateLeafPercentage());
+                request.getTransactionType(), request.getTransactionName(), request.getFrom(),
+                request.getTo(), request.getTruncateLeafPercentage());
         return mapper.writeValueAsString(profile);
     }
-
     // calculate top 5 trace metrics
     private List<String> getTopTraceMetrics(List<StackedPoint> stackedPoints) {
         MutableLongMap<String> totalMicros = new MutableLongMap<String>();
@@ -264,18 +265,22 @@ class TransactionJsonService {
 
         private final long from;
         private final long to;
+        private final String transactionType;
         @Nullable
         private final String transactionName;
 
         @JsonCreator
         RequestWithTransactionName(@JsonProperty("from") @Nullable Long from,
                 @JsonProperty("to") @Nullable Long to,
+                @JsonProperty("transactionType") @Nullable String transactionType,
                 @JsonProperty("transactionName") @Nullable String transactionName)
                 throws JsonMappingException {
             checkRequiredProperty(from, "from");
             checkRequiredProperty(to, "to");
+            checkRequiredProperty(transactionType, "transactionType");
             this.from = from;
             this.to = to;
+            this.transactionType = transactionType;
             this.transactionName = transactionName;
         }
 
@@ -285,6 +290,10 @@ class TransactionJsonService {
 
         private long getTo() {
             return to;
+        }
+
+        private String getTransactionType() {
+            return transactionType;
         }
 
         @Nullable
@@ -297,20 +306,24 @@ class TransactionJsonService {
 
         private final long from;
         private final long to;
+        private final String transactionType;
         private final String transactionName;
         private final double truncateLeafPercentage;
 
         @JsonCreator
         ProfileRequest(@JsonProperty("from") @Nullable Long from,
                 @JsonProperty("to") @Nullable Long to,
+                @JsonProperty("transactionType") @Nullable String transactionType,
                 @JsonProperty("transactionName") @Nullable String transactionName,
                 @JsonProperty("truncateLeafPercentage") double truncateLeafPercentage)
                 throws JsonMappingException {
             checkRequiredProperty(from, "from");
             checkRequiredProperty(to, "to");
+            checkRequiredProperty(transactionType, "transactionType");
             checkRequiredProperty(transactionName, "transactionName");
             this.from = from;
             this.to = to;
+            this.transactionType = transactionType;
             this.transactionName = transactionName;
             this.truncateLeafPercentage = truncateLeafPercentage;
         }
@@ -321,6 +334,10 @@ class TransactionJsonService {
 
         private long getTo() {
             return to;
+        }
+
+        private String getTransactionType() {
+            return transactionType;
         }
 
         private String getTransactionName() {

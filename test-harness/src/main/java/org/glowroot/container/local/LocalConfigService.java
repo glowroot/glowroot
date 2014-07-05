@@ -173,6 +173,7 @@ class LocalConfigService implements ConfigService {
         UserInterfaceConfig config =
                 new UserInterfaceConfig(coreConfig.isPasswordEnabled(), coreConfig.getVersion());
         config.setPort(coreConfig.getPort());
+        config.setDefaultTransactionType(coreConfig.getDefaultTransactionType());
         config.setSessionTimeoutMinutes(coreConfig.getSessionTimeoutMinutes());
         return config;
     }
@@ -183,6 +184,7 @@ class LocalConfigService implements ConfigService {
         org.glowroot.config.UserInterfaceConfig coreConfig = configService.getUserInterfaceConfig();
         Overlay overlay = org.glowroot.config.UserInterfaceConfig.overlay(coreConfig);
         overlay.setPort(config.getPort());
+        overlay.setDefaultTransactionType(config.getDefaultTransactionType());
         overlay.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes());
         overlay.setCurrentPassword(config.getCurrentPassword());
         overlay.setNewPassword(config.getNewPassword());
@@ -317,8 +319,8 @@ class LocalConfigService implements ConfigService {
         config.setSpanText(coreConfig.getSpanText());
         config.setSpanStackTraceThresholdMillis(coreConfig.getSpanStackTraceThresholdMillis());
         config.setSpanIgnoreSameNested(coreConfig.isSpanIgnoreSameNested());
+        config.setTransactionType(coreConfig.getTransactionType());
         config.setTransactionName(coreConfig.getTransactionName());
-        config.setBackground(coreConfig.isBackground());
         config.setEnabledProperty(coreConfig.getEnabledProperty());
         config.setSpanEnabledProperty(coreConfig.getSpanEnabledProperty());
         return config;
@@ -340,7 +342,7 @@ class LocalConfigService implements ConfigService {
                 config.getMethodArgTypes(), methodReturnTypeName, methodModifiers,
                 nullToEmpty(config.getTraceMetric()), nullToEmpty(config.getSpanText()),
                 config.getSpanStackTraceThresholdMillis(), config.isSpanIgnoreSameNested(),
-                nullToEmpty(config.getTransactionName()), config.isBackground(),
+                nullToEmpty(config.getTransactionType()), nullToEmpty(config.getTransactionName()),
                 nullToEmpty(config.getEnabledProperty()),
                 nullToEmpty(config.getSpanEnabledProperty()));
     }

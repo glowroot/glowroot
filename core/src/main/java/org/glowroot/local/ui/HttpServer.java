@@ -65,8 +65,9 @@ public class HttpServer {
     private volatile int port;
 
     HttpServer(String bindAddress, int port, int numWorkerThreads,
-            IndexHtmlService indexHtmlService, ImmutableMap<Pattern, Object> uriMappings,
-            HttpSessionManager httpSessionManager, List<Object> jsonServices) {
+            IndexHtmlService indexHtmlService, LayoutJsonService layoutJsonService,
+            ImmutableMap<Pattern, Object> uriMappings, HttpSessionManager httpSessionManager,
+            List<Object> jsonServices) {
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
         ExecutorService bossExecutor = Executors.newCachedThreadPool(threadFactory);
@@ -76,8 +77,8 @@ public class HttpServer {
                 new NioServerBossPool(bossExecutor, 1, determiner),
                 new NioWorkerPool(workerExecutor, numWorkerThreads, determiner)));
 
-        final HttpServerHandler handler = new HttpServerHandler(indexHtmlService, uriMappings,
-                httpSessionManager, jsonServices);
+        final HttpServerHandler handler = new HttpServerHandler(indexHtmlService,
+                layoutJsonService, uriMappings, httpSessionManager, jsonServices);
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             @Override
             public ChannelPipeline getPipeline() {

@@ -52,7 +52,7 @@ public class ExternalJvmMainAspect {
 
         @OnBefore
         public static Span onBefore() {
-            return pluginServices.startTrace("javaagent container main",
+            return pluginServices.startTrace("Sandbox", "javaagent container main",
                     MessageSupplier.from("org.glowroot.container.javaagent.JavaagentContainer"
                             + ".main()"), traceMetricName);
         }

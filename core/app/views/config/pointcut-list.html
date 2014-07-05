@@ -212,35 +212,36 @@
           </div>
           <div ng-show="traceDefinition"
                style="margin-left: 3em;">
+            <div ng-class="{'has-error': formCtrl.transactionType.$invalid}">
+              <label class="control-label"
+                     style="margin-top: 15px;">
+                Transaction type
+              </label>
+              <input class="form-control"
+                     ng-model="config.transactionType"
+                     ng-required="traceDefinition"
+                     name="transactionType"
+                     id="transactionType{{$id}}"
+                     rows="2"
+                     style="max-width: 37em; vertical-align: top;">
+              <div class="help-block">
+                The transaction type is used for aggregation.
+              </div>
+            </div>
             <div ng-class="{'has-error': formCtrl.transactionName.$invalid}">
               <label class="control-label"
                      style="margin-top: 15px;">
                 Transaction name
               </label>
-              <textarea class="form-control"
-                        ng-model="config.transactionName"
-                        ng-required="traceDefinition"
-                        name="transactionName"
-                        id="transactionName{{$id}}"
-                        rows="2"
-                        style="max-width: 37em; vertical-align: top;">
-              </textarea>
+              <input class="form-control"
+                     ng-model="config.transactionName"
+                     ng-required="traceDefinition"
+                     name="transactionName"
+                     id="transactionName{{$id}}"
+                     rows="2"
+                     style="max-width: 37em; vertical-align: top;">
               <div class="help-block">
                 The transaction name is used for aggregation.
-              </div>
-            </div>
-            <div>
-              <label class="control-label"
-                     style="margin-top: 15px;">
-                Background
-              </label>
-              <div class="checkbox"
-                   style="padding-top: 0;">
-                <label>
-                  <input type="checkbox"
-                         ng-model="config.background">
-                  Mark as background transaction
-                </label>
               </div>
             </div>
           </div>

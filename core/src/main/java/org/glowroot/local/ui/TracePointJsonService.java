@@ -145,7 +145,7 @@ class TracePointJsonService {
             for (Trace trace : traceRegistry.getTraces()) {
                 if (traceCollector.shouldStore(trace)
                         && matchesDuration(trace)
-                        && matchesBackground(trace)
+                        && matchesTransactionType(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
                         && matchesHeadline(trace)
@@ -175,7 +175,7 @@ class TracePointJsonService {
             List<TracePoint> points = Lists.newArrayList();
             for (Trace trace : traceCollector.getPendingCompleteTraces()) {
                 if (matchesDuration(trace)
-                        && matchesBackground(trace)
+                        && matchesTransactionType(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
                         && matchesHeadline(trace)
@@ -199,9 +199,12 @@ class TracePointJsonService {
             return durationHigh == null || duration <= durationHigh;
         }
 
-        private boolean matchesBackground(Trace trace) {
-            Boolean background = query.getBackground();
-            return background == null || background == trace.isBackground();
+        private boolean matchesTransactionType(Trace trace) {
+            String transactionType = query.getTransactionType();
+            if (Strings.isNullOrEmpty(transactionType)) {
+                return true;
+            }
+            return transactionType.equals(trace.getTransactionType());
         }
 
         private boolean matchesErrorOnly(Trace trace) {

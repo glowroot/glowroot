@@ -50,8 +50,9 @@ public class PointcutConfig {
     private Long spanStackTraceThresholdMillis;
     private boolean spanIgnoreSameNested;
     @Nullable
+    private String transactionType;
+    @Nullable
     private String transactionName;
-    private boolean background;
     @Nullable
     private String enabledProperty;
     @Nullable
@@ -153,20 +154,21 @@ public class PointcutConfig {
     }
 
     @Nullable
+    public String getTransactionType() {
+        return transactionType;
+    }
+
+    public void setTransactionType(@Nullable String transactionType) {
+        this.transactionType = transactionType;
+    }
+
+    @Nullable
     public String getTransactionName() {
         return transactionName;
     }
 
     public void setTransactionName(@Nullable String transactionName) {
         this.transactionName = transactionName;
-    }
-
-    public boolean isBackground() {
-        return background;
-    }
-
-    public void setBackground(boolean background) {
-        this.background = background;
     }
 
     @Nullable
@@ -205,8 +207,8 @@ public class PointcutConfig {
                     && Objects.equal(spanStackTraceThresholdMillis,
                             that.spanStackTraceThresholdMillis)
                     && Objects.equal(spanIgnoreSameNested, that.spanIgnoreSameNested)
+                    && Objects.equal(transactionType, that.transactionType)
                     && Objects.equal(transactionName, that.transactionName)
-                    && Objects.equal(background, that.background)
                     && Objects.equal(enabledProperty, that.enabledProperty)
                     && Objects.equal(spanEnabledProperty, that.spanEnabledProperty);
         }
@@ -221,7 +223,7 @@ public class PointcutConfig {
         // server
         return Objects.hashCode(type, methodName, methodArgTypes, methodReturnType,
                 methodModifiers, traceMetric, spanText, spanStackTraceThresholdMillis,
-                spanIgnoreSameNested, transactionName, background, enabledProperty,
+                spanIgnoreSameNested, transactionType, transactionName, enabledProperty,
                 spanEnabledProperty);
     }
 
@@ -238,8 +240,8 @@ public class PointcutConfig {
                 .add("spanText", spanText)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("spanIgnoreSameNested", spanIgnoreSameNested)
+                .add("transactionType", transactionType)
                 .add("transactionName", transactionName)
-                .add("background", background)
                 .add("enabledProperty", enabledProperty)
                 .add("spanEnabledProperty", spanEnabledProperty)
                 .add("version", version)
@@ -257,8 +259,8 @@ public class PointcutConfig {
             @JsonProperty("spanText") @Nullable String spanText,
             @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
             @JsonProperty("spanIgnoreSameNested") @Nullable Boolean spanIgnoreSameNested,
+            @JsonProperty("transactionType") @Nullable String transactionType,
             @JsonProperty("transactionName") @Nullable String transactionName,
-            @JsonProperty("background") @Nullable Boolean background,
             @JsonProperty("enabledProperty") @Nullable String enabledProperty,
             @JsonProperty("spanEnabledProperty") @Nullable String spanEnabledProperty,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
@@ -274,8 +276,8 @@ public class PointcutConfig {
         checkRequiredProperty(traceMetric, "traceMetric");
         checkRequiredProperty(spanText, "spanText");
         checkRequiredProperty(spanIgnoreSameNested, "spanIgnoreSameNested");
+        checkRequiredProperty(transactionType, "transactionType");
         checkRequiredProperty(transactionName, "transactionName");
-        checkRequiredProperty(background, "background");
         checkRequiredProperty(enabledProperty, "enabledProperty");
         checkRequiredProperty(spanEnabledProperty, "spanEnabledProperty");
         checkRequiredProperty(version, "version");
@@ -289,8 +291,8 @@ public class PointcutConfig {
         config.setSpanText(spanText);
         config.setSpanStackTraceThresholdMillis(spanStackTraceThresholdMillis);
         config.setSpanIgnoreSameNested(spanIgnoreSameNested);
+        config.setTransactionType(transactionType);
         config.setTransactionName(transactionName);
-        config.setBackground(background);
         config.setEnabledProperty(enabledProperty);
         config.setSpanEnabledProperty(spanEnabledProperty);
         return config;

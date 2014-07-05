@@ -70,8 +70,8 @@ public class SnapshotDaoTest {
         Snapshot snapshot = SnapshotTestData.createSnapshot();
         CharSource spans = SnapshotTestData.createSpans();
         snapshotDao.store(snapshot, spans, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
-                null, null, null, null, null, null, null, null, null, null, null, 1);
+        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
+                false, null, null, null, null, null, null, null, null, null, null, null, 1);
         // when
         QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         Snapshot snapshot2 = snapshotDao.readSnapshot(queryResult.getRecords().get(0).getId());
@@ -92,8 +92,8 @@ public class SnapshotDaoTest {
         CharSource spans = SnapshotTestData.createSpans();
         snapshotDao.store(snapshot, spans, null, null);
         TracePointQuery query = new TracePointQuery(0, 100, snapshot.getDuration(),
-                snapshot.getDuration(), false, false, false, null, null, null, null, null, null,
-                null, null, null, null, null, 1);
+                snapshot.getDuration(), "unit test", false, false, null, null, null, null, null,
+                null, null, null, null, null, null, 1);
         // when
         QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
@@ -107,8 +107,8 @@ public class SnapshotDaoTest {
         CharSource spans = SnapshotTestData.createSpans();
         snapshotDao.store(snapshot, spans, null, null);
         TracePointQuery query = new TracePointQuery(0, 0, snapshot.getDuration() + 1,
-                snapshot.getDuration() + 2, false, false, false, null, null, null, null, null,
-                null, null, null, null, null, null, 1);
+                snapshot.getDuration() + 2, "unit test", false, false, null, null, null, null,
+                null, null, null, null, null, null, null, 1);
         // when
         QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
@@ -122,8 +122,8 @@ public class SnapshotDaoTest {
         CharSource spans = SnapshotTestData.createSpans();
         snapshotDao.store(snapshot, spans, null, null);
         TracePointQuery query = new TracePointQuery(0, 0, snapshot.getDuration() - 2,
-                snapshot.getDuration() - 1, false, false, false, null, null, null, null, null,
-                null, null, null, null, null, null, 1);
+                snapshot.getDuration() - 1, "unit test", false, false, null, null, null, null,
+                null, null, null, null, null, null, null, 1);
         // when
         QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
@@ -136,9 +136,9 @@ public class SnapshotDaoTest {
         Snapshot snapshot = SnapshotTestData.createSnapshot();
         CharSource spans = SnapshotTestData.createSpans();
         snapshotDao.store(snapshot, spans, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
-                null, null, null, null, null, null, null, null, "abc", StringComparator.EQUALS,
-                "xyz", 1);
+        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
+                false, null, null, null, null, null, null, null, null, "abc",
+                StringComparator.EQUALS, "xyz", 1);
         // when
         QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
@@ -151,8 +151,8 @@ public class SnapshotDaoTest {
         Snapshot snapshot = SnapshotTestData.createSnapshot();
         CharSource spans = SnapshotTestData.createSpans();
         snapshotDao.store(snapshot, spans, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
-                null, null, null, null, null, null, null, null, "abc", null, null, 1);
+        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
+                false, null, null, null, null, null, null, null, null, "abc", null, null, 1);
         // when
         QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
@@ -165,9 +165,9 @@ public class SnapshotDaoTest {
         Snapshot snapshot = SnapshotTestData.createSnapshot();
         CharSource spans = SnapshotTestData.createSpans();
         snapshotDao.store(snapshot, spans, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
-                null, null, null, null, null, null, null, null, null, StringComparator.EQUALS,
-                "xyz", 1);
+        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
+                false, null, null, null, null, null, null, null, null, null,
+                StringComparator.EQUALS, "xyz", 1);
         // when
         QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
@@ -180,9 +180,9 @@ public class SnapshotDaoTest {
         Snapshot snapshot = SnapshotTestData.createSnapshot();
         CharSource spans = SnapshotTestData.createSpans();
         snapshotDao.store(snapshot, spans, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
-                null, null, null, null, null, null, null, null, "abc", StringComparator.EQUALS,
-                "abc", 1);
+        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
+                false, null, null, null, null, null, null, null, null, "abc",
+                StringComparator.EQUALS, "abc", 1);
         // when
         QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then
@@ -195,9 +195,9 @@ public class SnapshotDaoTest {
         Snapshot snapshot = SnapshotTestData.createSnapshot();
         CharSource spans = SnapshotTestData.createSpans();
         snapshotDao.store(snapshot, spans, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, false, false, false,
-                null, null, null, null, null, null, null, null, null, StringComparator.EQUALS,
-                "xyz1", 1);
+        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
+                false, null, null, null, null, null, null, null, null, null,
+                StringComparator.EQUALS, "xyz1", 1);
         // when
         QueryResult<TracePoint> queryResult = snapshotDao.readPoints(query);
         // then

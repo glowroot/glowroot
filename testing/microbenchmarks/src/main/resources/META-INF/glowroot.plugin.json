@@ -2,6 +2,9 @@
   "name": "Microbenchmarks Plugin",
   "id": "glowroot-microbenchmarks",
   "version": "0.5-SNAPSHOT",
+  "transactionTypes": [
+    "Microbenchmark"
+  ],
   "aspects": [
     "org.glowroot.microbenchmarks.core.support.TraceWorthyAspect",
     "org.glowroot.microbenchmarks.core.support.SpanWorthyAspect",

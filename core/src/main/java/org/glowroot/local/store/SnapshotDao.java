@@ -63,11 +63,11 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("start_time", Types.BIGINT),
             new Column("capture_time", Types.BIGINT),
             new Column("duration", Types.BIGINT), // nanoseconds
-            new Column("background", Types.BOOLEAN),
-            new Column("error", Types.BOOLEAN), // for searching only
-            new Column("fine", Types.BOOLEAN), // for searching only
+            new Column("transaction_type", Types.VARCHAR),
             new Column("transaction_name", Types.VARCHAR),
             new Column("headline", Types.VARCHAR),
+            new Column("error", Types.BOOLEAN), // for searching only
+            new Column("fine", Types.BOOLEAN), // for searching only
             new Column("error_message", Types.VARCHAR),
             new Column("user", Types.VARCHAR),
             new Column("attributes", Types.VARCHAR), // json data
@@ -119,16 +119,16 @@ public class SnapshotDao implements SnapshotRepository {
         }
         try {
             dataSource.update("merge into snapshot (id, stuck, start_time, capture_time, duration,"
-                    + " background, error, fine, transaction_name, headline, error_message, user,"
-                    + " attributes, trace_metrics, thread_info, gc_infos, spans_id,"
+                    + " transaction_type, transaction_name, headline, error, fine, error_message,"
+                    + " user, attributes, trace_metrics, thread_info, gc_infos, spans_id,"
                     + " coarse_profile_id, fine_profile_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
                     + " ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(), snapshot.isStuck(),
                     snapshot.getStartTime(), snapshot.getCaptureTime(), snapshot.getDuration(),
-                    snapshot.isBackground(), snapshot.getError() != null, fineProfileId != null,
-                    snapshot.getTransactionName(), snapshot.getHeadline(), snapshot.getError(),
-                    snapshot.getUser(), snapshot.getAttributes(), snapshot.getTraceMetrics(),
-                    snapshot.getThreadInfo(), snapshot.getGcInfos(), spansId, coarseProfileId,
-                    fineProfileId);
+                    snapshot.getTransactionType(), snapshot.getTransactionName(),
+                    snapshot.getHeadline(), snapshot.getError() != null, fineProfileId != null,
+                    snapshot.getError(), snapshot.getUser(), snapshot.getAttributes(),
+                    snapshot.getTraceMetrics(), snapshot.getThreadInfo(), snapshot.getGcInfos(),
+                    spansId, coarseProfileId, fineProfileId);
             final ImmutableSetMultimap<String, String> attributesForIndexing =
                     snapshot.getAttributesForIndexing();
             if (attributesForIndexing == null) {
@@ -174,10 +174,10 @@ public class SnapshotDao implements SnapshotRepository {
         List<Snapshot> snapshots;
         try {
             snapshots = dataSource.query("select id, stuck, start_time, capture_time, duration,"
-                    + " background, transaction_name, headline, error_message, user, attributes,"
-                    + " trace_metrics, thread_info, gc_infos, spans_id, coarse_profile_id,"
-                    + " fine_profile_id from snapshot where id = ?", ImmutableList.of(traceId),
-                    new SnapshotRowMapper());
+                    + " transaction_type, transaction_name, headline, error_message, user,"
+                    + " attributes, trace_metrics, thread_info, gc_infos, spans_id,"
+                    + " coarse_profile_id, fine_profile_id from snapshot where id = ?",
+                    ImmutableList.of(traceId), new SnapshotRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -333,10 +333,10 @@ public class SnapshotDao implements SnapshotRepository {
             sql += " and snapshot.duration <= ?";
             args.add(durationHigh);
         }
-        Boolean background = query.getBackground();
-        if (background != null) {
-            sql += " and snapshot.background = ?";
-            args.add(background);
+        String transactionType = query.getTransactionType();
+        if (!Strings.isNullOrEmpty(transactionType)) {
+            sql += " and snapshot.transaction_type = ?";
+            args.add(transactionType);
         }
         if (query.isErrorOnly()) {
             sql += " and snapshot.error = ?";
@@ -490,7 +490,7 @@ public class SnapshotDao implements SnapshotRepository {
             snapshot.startTime(resultSet.getLong(3));
             snapshot.captureTime(resultSet.getLong(4));
             snapshot.duration(resultSet.getLong(5));
-            snapshot.background(resultSet.getBoolean(6));
+            snapshot.transactionType(Strings.nullToEmpty(resultSet.getString(6)));
             snapshot.transactionName(Strings.nullToEmpty(resultSet.getString(7)));
             snapshot.headline(Strings.nullToEmpty(resultSet.getString(8)));
             snapshot.error(resultSet.getString(9));

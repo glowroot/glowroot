@@ -81,7 +81,8 @@ public class LevelOneAspect {
                     return Message.withDetail(headlineFinal, detail);
                 }
             };
-            Span span = pluginServices.startTrace("basic test", messageSupplier, traceMetricName);
+            Span span = pluginServices.startTrace("Integration test", "basic test",
+                    messageSupplier, traceMetricName);
             // several trace attributes to test ordering
             pluginServices.addTraceAttribute("Zee One", arg2);
             pluginServices.addTraceAttribute("Yee Two", "yy3");

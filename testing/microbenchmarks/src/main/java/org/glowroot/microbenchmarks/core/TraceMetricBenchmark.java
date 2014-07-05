@@ -56,8 +56,8 @@ public class TraceMetricBenchmark {
     public void setup() {
         TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(OnlyForTheTraceMetricName.class);
-        rootSpan = pluginServices.startTrace("micro trace", MessageSupplier.from("micro trace"),
-                traceMetricName);
+        rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
+                MessageSupplier.from("micro trace"), traceMetricName);
         traceMetricWorthy = new TraceMetricWorthy();
     }
 

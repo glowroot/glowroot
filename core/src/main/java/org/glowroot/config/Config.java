@@ -42,7 +42,7 @@ class Config {
     static Config getDefault(ImmutableList<PluginDescriptor> pluginDescriptors) {
         return new Config(GeneralConfig.getDefault(), CoarseProfilingConfig.getDefault(),
                 FineProfilingConfig.getDefault(), UserOverridesConfig.getDefault(),
-                StorageConfig.getDefault(), UserInterfaceConfig.getDefault(),
+                StorageConfig.getDefault(), UserInterfaceConfig.getDefault(pluginDescriptors),
                 ImmutableList.<PointcutConfig>of(), AdvancedConfig.getDefault(),
                 createPluginConfigs(pluginDescriptors));
     }

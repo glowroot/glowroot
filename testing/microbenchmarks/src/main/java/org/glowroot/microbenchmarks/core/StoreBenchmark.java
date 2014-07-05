@@ -77,8 +77,8 @@ public class StoreBenchmark {
 
     @Benchmark
     public void trace() {
-        rootSpan = pluginServices.startTrace("micro trace", MessageSupplier.from("micro trace"),
-                traceMetricName);
+        rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
+                MessageSupplier.from("micro trace"), traceMetricName);
         if (store) {
             pluginServices.setTraceStoreThreshold(0, MILLISECONDS);
         }

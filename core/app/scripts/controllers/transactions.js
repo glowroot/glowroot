@@ -62,7 +62,8 @@ glowroot.controller('TransactionsCtrl', [
       var refreshId = ++currentRefreshId;
       var query = {
         from: $scope.chartFrom,
-        to: $scope.chartTo
+        to: $scope.chartTo,
+        transactionType: $scope.filterTransactionType
       };
       if ($scope.selectedTransactionName) {
         query.transactionName = $scope.selectedTransactionName;
@@ -289,12 +290,30 @@ glowroot.controller('TransactionsCtrl', [
       }
     });
 
+    $scope.$watch('filterTransactionType', function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        $scope.selectedTransactionName = '';
+        $timeout(function() {
+          $('#refreshButtonSpan').find('button').click();
+        }, 0, false);
+      }
+    });
+
+    $scope.$watch('filterDate', function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        $timeout(function() {
+          $('#refreshButtonSpan').find('button').click();
+        }, 0, false);
+      }
+    });
+
     $scope.viewTransactionDetail = function (deferred) {
       // calling resolve immediately is needed to suppress the spinner since this is part of a gt-button-group
       deferred.resolve();
       var transactionQuery = {
         from: $scope.chartFrom,
-        to: $scope.chartTo
+        to: $scope.chartTo,
+        transactionType: $scope.filterTransactionType
       };
       if ($scope.selectedTransactionName) {
         transactionQuery.transactionName = $scope.selectedTransactionName;
@@ -304,7 +323,7 @@ glowroot.controller('TransactionsCtrl', [
         controller: 'TransactionDetailCtrl',
         windowClass: 'full-screen-modal',
         resolve: {
-          transactionQuery: function() {
+          transactionQuery: function () {
             return transactionQuery;
           }
         }
@@ -316,10 +335,9 @@ glowroot.controller('TransactionsCtrl', [
 
     function updateTransactions(deferred) {
       var query = {
-        // TODO support transactionType 'bg' and others
-        transactionType: '',
         from: $scope.chartFrom,
         to: $scope.chartTo,
+        transactionType: $scope.filterTransactionType,
         sortAttribute: $scope.sortAttribute,
         sortDirection: $scope.sortDirection,
         limit: transactionLimit
@@ -389,23 +407,17 @@ glowroot.controller('TransactionsCtrl', [
     };
 
     $scope.tracesQueryString = function (transactionName) {
+      var query = {
+        // from is adjusted because transaction points are aggregates of the interval before the transaction point
+        from: $scope.chartFrom - fixedTransactionPointIntervalMillis,
+        to: $scope.chartTo,
+        transactionType: $scope.filterTransactionType
+      };
       if (transactionName) {
-        return queryStrings.encodeObject({
-          // from is adjusted because transaction points are aggregates of the interval before the transaction point
-          from: $scope.chartFrom - fixedTransactionPointIntervalMillis,
-          to: $scope.chartTo,
-          transactionName: transactionName,
-          transactionNameComparator: 'equals',
-          background: 'false'
-        });
-      } else {
-        return queryStrings.encodeObject({
-          // from is adjusted because transaction points are aggregates of the interval before the transaction point
-          from: $scope.chartFrom - fixedTransactionPointIntervalMillis,
-          to: $scope.chartTo,
-          background: 'false'
-        });
+        query.transactionName = transactionName;
+        query.transactionNameComparator = 'equals';
       }
+      return queryStrings.encodeObject(query);
     };
 
     $scope.showMore = function (deferred) {
@@ -471,6 +483,7 @@ glowroot.controller('TransactionsCtrl', [
       $scope.chartFrom = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
       $scope.chartTo = Math.min($scope.chartFrom + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
+    $scope.filterTransactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
     $scope.sortAttribute = $location.search()['sort-attribute'] || 'total';
     $scope.sortDirection = $location.search()['sort-direction'] || 'desc';
 
@@ -481,6 +494,9 @@ glowroot.controller('TransactionsCtrl', [
       if (!chartFromToDefault) {
         query.from = $scope.chartFrom - fixedTransactionPointIntervalMillis;
         query.to = $scope.chartTo;
+      }
+      if ($scope.filterTransactionType !== $scope.layout.defaultTransactionType) {
+        query['transaction-type'] = $scope.filterTransactionType;
       }
       if ($scope.selectedTransactionName) {
         query['transaction-name'] = $scope.selectedTransactionName;

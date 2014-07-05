@@ -27,6 +27,7 @@ import org.glowroot.container.Container;
 import org.glowroot.container.config.CoarseProfilingConfig;
 import org.glowroot.container.config.FineProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
+import org.glowroot.container.config.UserInterfaceConfig;
 import org.glowroot.container.javaagent.JavaagentContainer;
 import org.glowroot.container.local.LocalContainer;
 
@@ -52,8 +53,10 @@ public class UiSandboxMain {
         File dataDir = new File("target");
         // create stub config.json, otherwise glowroot container uses port 0 (any available)
         File configFile = new File(dataDir, "config.json");
+        boolean initConfig = false;
         if (!configFile.exists()) {
             Files.write("{}", configFile, Charsets.UTF_8);
+            initConfig = true;
         }
         if (useJavaagent) {
             container = new JavaagentContainer(dataDir, true, false, false,
@@ -61,23 +64,29 @@ public class UiSandboxMain {
         } else {
             container = new LocalContainer(dataDir, true, false);
         }
-        // set thresholds low so there will be lots of data to view
-        CoarseProfilingConfig coarseProfilingConfig =
-                container.getConfigService().getCoarseProfilingConfig();
-        coarseProfilingConfig.setInitialDelayMillis(500);
-        coarseProfilingConfig.setIntervalMillis(500);
-        coarseProfilingConfig.setTotalSeconds(2);
-        container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
-        FineProfilingConfig fineProfilingConfig = container.getConfigService()
-                .getFineProfilingConfig();
-        fineProfilingConfig.setTracePercentage(50);
-        fineProfilingConfig.setIntervalMillis(10);
-        fineProfilingConfig.setTotalSeconds(1);
-        container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
-        if (rollOverQuickly) {
-            StorageConfig storageConfig = container.getConfigService().getStorageConfig();
-            storageConfig.setCappedDatabaseSizeMb(10);
-            container.getConfigService().updateStorageConfig(storageConfig);
+        if (initConfig) {
+            // set thresholds low so there will be lots of data to view
+            CoarseProfilingConfig coarseProfilingConfig =
+                    container.getConfigService().getCoarseProfilingConfig();
+            coarseProfilingConfig.setInitialDelayMillis(500);
+            coarseProfilingConfig.setIntervalMillis(500);
+            coarseProfilingConfig.setTotalSeconds(2);
+            container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
+            FineProfilingConfig fineProfilingConfig = container.getConfigService()
+                    .getFineProfilingConfig();
+            fineProfilingConfig.setTracePercentage(50);
+            fineProfilingConfig.setIntervalMillis(10);
+            fineProfilingConfig.setTotalSeconds(1);
+            container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
+            if (rollOverQuickly) {
+                StorageConfig storageConfig = container.getConfigService().getStorageConfig();
+                storageConfig.setCappedDatabaseSizeMb(10);
+                container.getConfigService().updateStorageConfig(storageConfig);
+            }
+            UserInterfaceConfig userInterfaceConfig =
+                    container.getConfigService().getUserInterfaceConfig();
+            userInterfaceConfig.setDefaultTransactionType("Sandbox");
+            container.getConfigService().updateUserInterfaceConfig(userInterfaceConfig);
         }
         container.executeAppUnderTest(GenerateTraces.class);
     }

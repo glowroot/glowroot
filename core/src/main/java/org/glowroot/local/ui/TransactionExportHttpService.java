@@ -74,6 +74,12 @@ public class TransactionExportHttpService implements HttpService {
     @Nullable
     public HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
+        List<String> transactionTypeParameters = decoder.getParameters().get("transaction-type");
+        if (transactionTypeParameters == null) {
+            throw new IllegalArgumentException(
+                    "Missing required query parameter: transaction-type");
+        }
+        String transactionType = transactionTypeParameters.get(0);
         List<String> transactionNameParameters = decoder.getParameters().get("transaction-name");
         String transactionName = null;
         if (transactionNameParameters != null) {
@@ -89,11 +95,12 @@ public class TransactionExportHttpService implements HttpService {
             throw new IllegalArgumentException("Missing required query parameter: to");
         }
         long to = Long.parseLong(toParameters.get(0));
-        TransactionHeader transactionHeader =
-                transactionCommonService.getTransactionHeader(transactionName, from, to);
+        TransactionHeader transactionHeader = transactionCommonService.getTransactionHeader(
+                transactionType, transactionName, from, to);
         TransactionProfileNode profile = null;
         if (transactionName != null) {
-            profile = transactionCommonService.getProfile(transactionName, from, to, 0.001);
+            profile = transactionCommonService.getProfile(transactionType, transactionName, from,
+                    to, 0.001);
         }
         ChunkedInput in = getExportChunkedInput(transactionHeader, profile);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);

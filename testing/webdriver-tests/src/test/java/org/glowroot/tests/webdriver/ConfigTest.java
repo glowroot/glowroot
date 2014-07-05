@@ -218,9 +218,10 @@ public class ConfigTest {
         assertThat(pointcutSection.getSpanStackTraceThresholdTextTextField()
                 .getAttribute("value")).isEqualTo("");
         assertThat(pointcutSection.getTraceDefinitionCheckbox().isSelected()).isTrue();
+        assertThat(pointcutSection.getTransactionTypeTextField().getAttribute("value"))
+                .isEqualTo("a type");
         assertThat(pointcutSection.getTransactionNameTextField().getAttribute("value"))
                 .isEqualTo("a trace");
-        assertThat(pointcutSection.getBackgroundCheckbox().isSelected()).isFalse();
     }
 
     @Test
@@ -283,8 +284,8 @@ public class ConfigTest {
         assertThat(pointcutSection.getSpanStackTraceThresholdTextTextField().isDisplayed())
                 .isFalse();
         assertThat(pointcutSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
+        assertThat(pointcutSection.getTransactionTypeTextField().isDisplayed()).isFalse();
         assertThat(pointcutSection.getTransactionNameTextField().isDisplayed()).isFalse();
-        assertThat(pointcutSection.getBackgroundCheckbox().isDisplayed()).isFalse();
     }
 
     @Test
@@ -321,8 +322,8 @@ public class ConfigTest {
         assertThat(pointcutSection.getSpanStackTraceThresholdTextTextField()
                 .getAttribute("value")).isEqualTo("");
         assertThat(pointcutSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
+        assertThat(pointcutSection.getTransactionTypeTextField().isDisplayed()).isFalse();
         assertThat(pointcutSection.getTransactionNameTextField().isDisplayed()).isFalse();
-        assertThat(pointcutSection.getBackgroundCheckbox().isDisplayed()).isFalse();
     }
 
     private void createPointcut(PointcutListPage pointcutListPage) {
@@ -338,6 +339,8 @@ public class ConfigTest {
         pointcutSection.getSpanTextTextField().clear();
         pointcutSection.getSpanTextTextField().sendKeys("a span");
         pointcutSection.getTraceDefinitionCheckbox().click();
+        pointcutSection.getTransactionTypeTextField().clear();
+        pointcutSection.getTransactionTypeTextField().sendKeys("a type");
         pointcutSection.getTransactionNameTextField().clear();
         pointcutSection.getTransactionNameTextField().sendKeys("a trace");
         pointcutSection.getAddButton().click();

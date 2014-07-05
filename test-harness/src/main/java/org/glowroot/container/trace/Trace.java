@@ -44,7 +44,7 @@ public class Trace {
     private final long startTime;
     private final long captureTime;
     private final long duration;
-    private final boolean background;
+    private final String transactionType;
     private final String transactionName;
     private final String headline;
     @Nullable
@@ -61,7 +61,7 @@ public class Trace {
     private final Existence fineProfileExistence;
 
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
-            long duration, boolean background, String transactionName, String headline,
+            long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user,
             ImmutableSetMultimap<String, String> attributes, TraceMetric rootTraceMetric,
             @Nullable TraceThreadInfo threadInfo, List<TraceGcInfo> gcInfos,
@@ -73,7 +73,7 @@ public class Trace {
         this.startTime = startTime;
         this.captureTime = captureTime;
         this.duration = duration;
-        this.background = background;
+        this.transactionType = transactionType;
         this.transactionName = transactionName;
         this.headline = headline;
         this.error = error;
@@ -111,8 +111,8 @@ public class Trace {
         return duration;
     }
 
-    public boolean isBackground() {
-        return background;
+    public String getTransactionType() {
+        return transactionType;
     }
 
     public String getTransactionName() {
@@ -172,7 +172,7 @@ public class Trace {
                 .add("startTime", startTime)
                 .add("captureTime", captureTime)
                 .add("duration", duration)
-                .add("background", background)
+                .add("transactionType", transactionType)
                 .add("transactionName", transactionName)
                 .add("headline", headline)
                 .add("error", error)
@@ -195,7 +195,7 @@ public class Trace {
             @JsonProperty("startTime") @Nullable Long startTime,
             @JsonProperty("captureTime") @Nullable Long captureTime,
             @JsonProperty("duration") @Nullable Long duration,
-            @JsonProperty("background") @Nullable Boolean background,
+            @JsonProperty("transactionType") @Nullable String transactionType,
             @JsonProperty("transactionName") @Nullable String transactionName,
             @JsonProperty("headline") @Nullable String headline,
             @JsonProperty("error") @Nullable String error,
@@ -215,7 +215,7 @@ public class Trace {
         checkRequiredProperty(startTime, "startTime");
         checkRequiredProperty(captureTime, "captureTime");
         checkRequiredProperty(duration, "duration");
-        checkRequiredProperty(background, "background");
+        checkRequiredProperty(transactionType, "transactionType");
         checkRequiredProperty(transactionName, "transactionName");
         checkRequiredProperty(headline, "headline");
         checkRequiredProperty(rootTraceMetric, "rootTraceMetric");
@@ -236,7 +236,7 @@ public class Trace {
                 theAttributes.putAll(entry.getKey(), values);
             }
         }
-        return new Trace(id, active, stuck, startTime, captureTime, duration, background,
+        return new Trace(id, active, stuck, startTime, captureTime, duration, transactionType,
                 transactionName, headline, error, user, theAttributes.build(), rootTraceMetric,
                 threadInfo, nullToEmpty(gcInfos), spansExistence, coarseProfileExistence,
                 fineProfileExistence);

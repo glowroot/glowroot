@@ -51,7 +51,7 @@ public class ConfigTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedJavaagentContainer();
+        container = Containers.getSharedContainer();
     }
 
     @AfterClass
@@ -288,7 +288,8 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(UserInterfaceConfig config) {
-        // changing the password is tested elsewhere
+        // changing the port and password are tested elsewhere
+        config.setDefaultTransactionType(config.getDefaultTransactionType() + "a");
         config.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes() + 1);
     }
 
@@ -320,7 +321,8 @@ public class ConfigTest {
                 .newArrayList(MethodModifier.PUBLIC, MethodModifier.STATIC));
         config.setTraceMetric("yako");
         config.setSpanText("yak(): {{0}}, {{1}} => {{?}}");
-        config.setTransactionName("");
+        config.setTransactionType("ttype");
+        config.setTransactionName("tname");
         config.setEnabledProperty("");
         config.setSpanEnabledProperty("");
         return config;
@@ -350,7 +352,7 @@ public class ConfigTest {
         } else {
             config.setSpanStackTraceThresholdMillis(spanStackTraceThresholdMillis + 1);
         }
-        config.setTransactionName(config.getTransactionName() + "g");
-        config.setBackground(!config.isBackground());
+        config.setTransactionType(config.getTransactionType() + "g");
+        config.setTransactionName(config.getTransactionName() + "h");
     }
 }

@@ -57,12 +57,36 @@
       </div>
     </div>
   </div>
+  <div class="form-group" ng-show="layout.transactionTypes.length > 1">
+    <label class="col-lg-4 control-label" for="filterTransactionType">Transaction type</label>
+    <div class="col-lg-8">
+      <select ng-model="filterTransactionType"
+              class="form-control"
+              id="filterTransactionType"
+              style="width: auto; min-width: 10em;">
+        <option ng-repeat="transactionType in layout.transactionTypes"
+                value="{{transactionType}}"
+                ng-selected="transactionType === filterTransactionType">
+          {{transactionType}}
+        </option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-4 control-label">Transaction name</label>
+    <div class="col-lg-8">
+      <p class="form-control-static">
+        {{selectedTransactionName ? selectedTransactionName : 'All Transactions'}}
+      </p>
+    </div>
+  </div>
   <div class="form-group">
     <div class="col-lg-offset-4 col-lg-8">
       <div gt-button-group>
         <span gt-button
               gt-label="Refresh"
-              gt-click="refreshButtonClick(deferred)">
+              gt-click="refreshButtonClick(deferred)"
+              id="refreshButtonSpan">
         </span>
         <span gt-button
               gt-label="Open Detail"

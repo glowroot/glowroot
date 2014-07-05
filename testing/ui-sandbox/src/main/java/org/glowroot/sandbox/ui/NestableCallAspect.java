@@ -78,11 +78,11 @@ public class NestableCallAspect {
             }
             Span span;
             if (count % 10 == 0) {
-                span = pluginServices.startBackgroundTrace(transactionName,
+                span = pluginServices.startTrace("Background", transactionName,
                         getRootMessageSupplier(headline), traceMetricName);
             } else {
-                span = pluginServices.startTrace(transactionName, getRootMessageSupplier(headline),
-                        traceMetricName);
+                span = pluginServices.startTrace("Sandbox", transactionName,
+                        getRootMessageSupplier(headline), traceMetricName);
             }
             int index = count % (USERS.size() + 1);
             if (index < USERS.size()) {

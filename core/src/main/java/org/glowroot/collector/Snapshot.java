@@ -40,7 +40,7 @@ public class Snapshot {
     private final long startTime;
     private final long captureTime;
     private final long duration; // nanoseconds
-    private final boolean background;
+    private final String transactionType;
     private final String transactionName;
     private final String headline;
     @Nullable
@@ -62,7 +62,7 @@ public class Snapshot {
     private final ImmutableSetMultimap<String, String> attributesForIndexing;
 
     private Snapshot(String id, boolean active, boolean stuck, long startTime, long captureTime,
-            long duration, boolean background, String transactionName, String headline,
+            long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user, @Nullable String attributes,
             @Nullable String traceMetrics, @Nullable String threadInfo, @Nullable String gcInfos,
             Existence spansExistence, Existence coarseProfileExistence,
@@ -74,7 +74,7 @@ public class Snapshot {
         this.startTime = startTime;
         this.captureTime = captureTime;
         this.duration = duration;
-        this.background = background;
+        this.transactionType = transactionType;
         this.transactionName = transactionName;
         this.headline = headline;
         this.error = error;
@@ -113,8 +113,8 @@ public class Snapshot {
         return duration;
     }
 
-    public boolean isBackground() {
-        return background;
+    public String getTransactionType() {
+        return transactionType;
     }
 
     public String getTransactionName() {
@@ -182,7 +182,7 @@ public class Snapshot {
                 .add("startTime", startTime)
                 .add("captureTime", captureTime)
                 .add("duration", duration)
-                .add("background", background)
+                .add("transactionType", transactionType)
                 .add("transactionName", transactionName)
                 .add("headline", headline)
                 .add("error", error)
@@ -210,7 +210,8 @@ public class Snapshot {
         private long startTime;
         private long captureTime;
         private long duration;
-        private boolean background;
+        @MonotonicNonNull
+        private String transactionType;
         @MonotonicNonNull
         private String transactionName;
         @MonotonicNonNull
@@ -269,8 +270,9 @@ public class Snapshot {
             return this;
         }
 
-        public Builder background(boolean background) {
-            this.background = background;
+        @EnsuresNonNull("transactionType")
+        public Builder transactionType(String transactionType) {
+            this.transactionType = transactionType;
             return this;
         }
 
@@ -340,13 +342,13 @@ public class Snapshot {
             return this;
         }
 
-        @RequiresNonNull({"id", "transactionName", "headline", "spansExistence",
+        @RequiresNonNull({"id", "transactionType", "transactionName", "headline", "spansExistence",
                 "coarseProfileExistence", "fineProfileExistence"})
         public Snapshot build() {
-            return new Snapshot(id, active, stuck, startTime, captureTime, duration, background,
-                    transactionName, headline, error, user, attributes, traceMetrics, threadInfo,
-                    gcInfos, spansExistence, coarseProfileExistence, fineProfileExistence,
-                    attributesForIndexing);
+            return new Snapshot(id, active, stuck, startTime, captureTime, duration,
+                    transactionType, transactionName, headline, error, user, attributes,
+                    traceMetrics, threadInfo, gcInfos, spansExistence, coarseProfileExistence,
+                    fineProfileExistence, attributesForIndexing);
         }
     }
 }

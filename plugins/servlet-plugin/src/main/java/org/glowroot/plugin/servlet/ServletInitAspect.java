@@ -57,7 +57,7 @@ public class ServletInitAspect {
         public static Span onBefore(@BindReceiver Object listener) {
             String transactionName =
                     "servlet context initialized / " + listener.getClass().getName();
-            return pluginServices.startBackgroundTrace(transactionName,
+            return pluginServices.startTrace("Startup", transactionName,
                     MessageSupplier.from(listener.getClass().getName() + ".contextInitialized()"),
                     traceMetricName);
         }
@@ -83,10 +83,9 @@ public class ServletInitAspect {
         @OnBefore
         public static Span onBefore(@BindReceiver Object servlet) {
             String transactionName = "servlet init / " + servlet.getClass().getName();
-            return pluginServices
-                    .startBackgroundTrace(transactionName,
-                            MessageSupplier.from(servlet.getClass().getName() + ".init()"),
-                            traceMetricName);
+            return pluginServices.startTrace("Startup", transactionName,
+                    MessageSupplier.from(servlet.getClass().getName() + ".init()"),
+                    traceMetricName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
@@ -110,7 +109,7 @@ public class ServletInitAspect {
         @OnBefore
         public static Span onBefore(@BindReceiver Object filter) {
             String transactionName = "filter init / " + filter.getClass().getName();
-            return pluginServices.startBackgroundTrace(transactionName,
+            return pluginServices.startTrace("Startup", transactionName,
                     MessageSupplier.from(filter.getClass().getName() + ".init()"), traceMetricName);
         }
         @OnReturn

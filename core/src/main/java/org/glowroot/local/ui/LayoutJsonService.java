@@ -16,20 +16,29 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PluginDescriptorCache;
+import org.glowroot.config.PointcutConfig;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.HeapHistograms;
+import org.glowroot.local.ui.Layout.LayoutPlugin;
 import org.glowroot.markers.Singleton;
 
 /**
@@ -46,68 +55,35 @@ class LayoutJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final String version;
-    private final ConfigService configService;
-    private final PluginDescriptorCache pluginDescriptorCache;
 
-    @Nullable
-    private final HeapHistograms heapHistograms;
-    @Nullable
-    private final HeapDumps heapDumps;
+    private volatile Layout layout;
 
-    private final long fixedTransactionPointIntervalSeconds;
-
-    LayoutJsonService(String version, ConfigService configService,
-            PluginDescriptorCache pluginDescriptorCache, @Nullable HeapHistograms heapHistograms,
-            @Nullable HeapDumps heapDumps,
-            long fixedTransactionPointIntervalSeconds) {
+    LayoutJsonService(final String version, final ConfigService configService,
+            final PluginDescriptorCache pluginDescriptorCache,
+            final @Nullable HeapHistograms heapHistograms, final @Nullable HeapDumps heapDumps,
+            final long fixedTransactionPointIntervalSeconds) {
         this.version = version;
-        this.configService = configService;
-        this.pluginDescriptorCache = pluginDescriptorCache;
-        this.heapHistograms = heapHistograms;
-        this.heapDumps = heapDumps;
-        this.fixedTransactionPointIntervalSeconds = fixedTransactionPointIntervalSeconds;
+        configService.addConfigListener(new ConfigListener() {
+            @Override
+            public void onChange() {
+                layout = buildLayout(version, configService, pluginDescriptorCache, heapHistograms,
+                        heapDumps, fixedTransactionPointIntervalSeconds);
+            }
+        });
+        layout = buildLayout(version, configService, pluginDescriptorCache, heapHistograms,
+                heapDumps, fixedTransactionPointIntervalSeconds);
     }
 
     // this is only accessed from the url when running under 'grunt server' and is just to get back
     // layout data (or find out login is needed if required)
     @GET("/backend/layout")
     String getLayout() throws IOException {
-        logger.debug("getAuthenticatedLayout()");
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeBooleanField("jvmHeapHistogram", heapHistograms != null);
-        jg.writeBooleanField("jvmHeapDump", heapDumps != null);
-        jg.writeStringField("footerMessage", "version " + version);
-        jg.writeBooleanField("passwordEnabled",
-                configService.getUserInterfaceConfig().isPasswordEnabled());
-        jg.writeFieldName("plugins");
-        jg.writeStartArray();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
-            jg.writeStartObject();
-            jg.writeStringField("id", pluginDescriptor.getId());
-            String name = pluginDescriptor.getName();
-            // by convention, strip off trailing " Plugin"
-            if (name.endsWith(" Plugin")) {
-                name = name.substring(0, name.lastIndexOf(" Plugin"));
-            }
-            jg.writeStringField("name", name);
-            jg.writeEndObject();
-        }
-        jg.writeEndArray();
-        jg.writeFieldName("traceAttributes");
-        jg.writeStartArray();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
-            for (String traceAttribute : pluginDescriptor.getTraceAttributes()) {
-                jg.writeString(traceAttribute);
-            }
-        }
-        jg.writeEndArray();
-        jg.writeNumberField("fixedTransactionPointIntervalSeconds",
-                fixedTransactionPointIntervalSeconds);
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
+        logger.debug("getLayout()");
+        return mapper.writeValueAsString(layout);
+    }
+
+    String getLayoutVersion() {
+        return layout.getVersion();
     }
 
     String getUnauthenticatedLayout() throws IOException {
@@ -120,5 +96,58 @@ class LayoutJsonService {
         jg.writeEndObject();
         jg.close();
         return sb.toString();
+    }
+
+    private static Layout buildLayout(String version, ConfigService configService,
+            PluginDescriptorCache pluginDescriptorCache, @Nullable HeapHistograms heapHistograms,
+            @Nullable HeapDumps heapDumps, long fixedTransactionPointIntervalSeconds) {
+        List<LayoutPlugin> plugins = Lists.newArrayList();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
+            String id = pluginDescriptor.getId();
+            String name = pluginDescriptor.getName();
+            // by convention, strip off trailing " Plugin"
+            if (name.endsWith(" Plugin")) {
+                name = name.substring(0, name.lastIndexOf(" Plugin"));
+            }
+            plugins.add(new LayoutPlugin(id, name));
+        }
+        // use linked hash set to maintain ordering in case there is no default transaction type
+        Set<String> transactionTypes = Sets.newLinkedHashSet();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
+            transactionTypes.addAll(pluginDescriptor.getTransactionTypes());
+        }
+        for (PointcutConfig pointcutConfig : configService.getPointcutConfigs()) {
+            String transactionType = pointcutConfig.getTransactionType();
+            if (!transactionType.isEmpty()) {
+                transactionTypes.add(transactionType);
+            }
+        }
+        String defaultTransactionType =
+                configService.getUserInterfaceConfig().getDefaultTransactionType();
+        if (!transactionTypes.contains(defaultTransactionType)) {
+            defaultTransactionType = transactionTypes.iterator().next();
+        }
+        transactionTypes.remove(defaultTransactionType);
+        List<String> orderedTransactionTypes = Lists.newArrayList();
+        // add default transaction type first
+        orderedTransactionTypes.add(defaultTransactionType);
+        // add the rest alphabetical
+        orderedTransactionTypes.addAll(Ordering.from(String.CASE_INSENSITIVE_ORDER)
+                .sortedCopy(transactionTypes));
+        Set<String> traceAttributes = Sets.newTreeSet();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
+            traceAttributes.addAll(pluginDescriptor.getTraceAttributes());
+        }
+        return Layout.builder()
+                .jvmHeapHistogram(heapHistograms != null)
+                .jvmHeapDump(heapDumps != null)
+                .footerMessage("version " + version)
+                .passwordEnabled(configService.getUserInterfaceConfig().isPasswordEnabled())
+                .plugins(plugins)
+                .transactionTypes(orderedTransactionTypes)
+                .defaultTransactionType(defaultTransactionType)
+                .traceAttributes(ImmutableList.copyOf(traceAttributes))
+                .fixedTransactionPointIntervalSeconds(fixedTransactionPointIntervalSeconds)
+                .build();
     }
 }

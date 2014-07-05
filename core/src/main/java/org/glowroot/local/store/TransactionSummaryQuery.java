@@ -31,7 +31,7 @@ import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
  */
 public class TransactionSummaryQuery {
 
-    private final String transactionType; // currently only "" and "bg" are supported
+    private final String transactionType;
     private final long from;
     private final long to;
     private final TransactionSortAttribute sortAttribute;

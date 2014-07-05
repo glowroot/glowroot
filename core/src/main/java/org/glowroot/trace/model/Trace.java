@@ -70,7 +70,8 @@ public class Trace {
 
     private final AtomicBoolean stuck = new AtomicBoolean();
 
-    private final boolean background;
+    private volatile String transactionType;
+    private volatile boolean explicitSetTransactionType;
 
     private volatile String transactionName;
     private volatile boolean explicitSetTransactionName;
@@ -128,11 +129,11 @@ public class Trace {
     // be visible
     private volatile boolean memoryBarrier;
 
-    public Trace(long startTime, boolean background, String transactionName,
+    public Trace(long startTime, String transactionType, String transactionName,
             MessageSupplier messageSupplier, TraceMetric rootTraceMetric, long startTick,
             @Nullable TraceThreadInfo threadInfo, @Nullable TraceGcInfos gcInfo, Ticker ticker) {
         this.startTime = startTime;
-        this.background = background;
+        this.transactionType = transactionType;
         this.transactionName = transactionName;
         this.rootTraceMetric = rootTraceMetric;
         id = new TraceUniqueId(startTime);
@@ -173,8 +174,12 @@ public class Trace {
         return rootSpan.isCompleted();
     }
 
-    public boolean isBackground() {
-        return background;
+    public String getTransactionType() {
+        return transactionType;
+    }
+
+    public String getTransactionName() {
+        return transactionName;
     }
 
     public String getHeadline() {
@@ -185,10 +190,6 @@ public class Trace {
             throw new AssertionError("Somehow got hold of an error Span??");
         }
         return ((ReadableMessage) messageSupplier.get()).getText();
-    }
-
-    public String getTransactionName() {
-        return transactionName;
     }
 
     @Nullable
@@ -298,6 +299,14 @@ public class Trace {
 
     public void setStuck() {
         stuck.getAndSet(true);
+    }
+
+    public void setTransactionType(String transactionType) {
+        // use the first explicit, non-null call to setTransactionType()
+        if (!explicitSetTransactionType && transactionType != null) {
+            this.transactionType = transactionType;
+            explicitSetTransactionType = true;
+        }
     }
 
     public void setTransactionName(String transactionName) {
@@ -445,7 +454,10 @@ public class Trace {
                 .add("id", id)
                 .add("startDate", startTime)
                 .add("stuck", stuck)
-                .add("background", background)
+                .add("transactionType", transactionType)
+                .add("explicitSetTransactionType", explicitSetTransactionType)
+                .add("transactionName", transactionName)
+                .add("explicitSetTransactionName", explicitSetTransactionName)
                 .add("error", error)
                 .add("user", user)
                 .add("attributes", attributes)

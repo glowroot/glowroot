@@ -1,10 +1,19 @@
 <div class="second-line-indent">
-  Transaction name: {{transactionName}}
+  <strong>
+    {{#if transactionName}}
+      {{transactionName}}
+    {{^}}
+      All Transactions
+    {{/if}}
+  </strong>
   {{#if showExport}}
     <button class="flat-btn flat-btn-big glowroot-link-color download-transaction">
       export
     </button>
   {{/if}}
+</div>
+<div>
+  Transaction type: {{transactionType}}
 </div>
 <div>
   From: {{date from}}

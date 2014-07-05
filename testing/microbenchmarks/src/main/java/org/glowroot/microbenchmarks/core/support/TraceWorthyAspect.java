@@ -52,8 +52,8 @@ public class TraceWorthyAspect {
 
         @OnBefore
         public static Span onBefore() {
-            return pluginServices.startTrace("trace worthy", MessageSupplier.from("trace worthy"),
-                    traceMetricName);
+            return pluginServices.startTrace("Microbenchmark", "trace worthy",
+                    MessageSupplier.from("trace worthy"), traceMetricName);
         }
 
         @OnReturn

@@ -42,7 +42,6 @@ glowroot.controller('LoginCtrl', [
               deferred.reject('Password incorrect');
             } else {
               $rootScope.layout = data;
-              $rootScope.showSignOutButton = true;
               deferred.resolve('Success');
               login.returnToOriginalPath();
             }

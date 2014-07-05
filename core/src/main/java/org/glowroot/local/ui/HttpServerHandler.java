@@ -115,6 +115,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     private final ChannelGroup allChannels;
 
     private final IndexHtmlService indexHtmlService;
+    private final LayoutJsonService layoutJsonService;
     private final ImmutableMap<Pattern, Object> uriMappings;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
     private final HttpSessionManager httpSessionManager;
@@ -122,9 +123,11 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     private final ThreadLocal</*@Nullable*/Channel> currentChannel =
             new ThreadLocal</*@Nullable*/Channel>();
 
-    HttpServerHandler(IndexHtmlService indexHtmlService, ImmutableMap<Pattern, Object> uriMappings,
-            HttpSessionManager httpSessionManager, List<Object> jsonServices) {
+    HttpServerHandler(IndexHtmlService indexHtmlService, LayoutJsonService layoutJsonService,
+            ImmutableMap<Pattern, Object> uriMappings, HttpSessionManager httpSessionManager,
+            List<Object> jsonServices) {
         this.indexHtmlService = indexHtmlService;
+        this.layoutJsonService = layoutJsonService;
         this.uriMappings = uriMappings;
         this.httpSessionManager = httpSessionManager;
         List<JsonServiceMapping> jsonServiceMappings = Lists.newArrayList();
@@ -342,7 +345,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         return response;
     }
 
-    private static HttpResponse handleJsonRequest(Object jsonService, String serviceMethodName,
+    private HttpResponse handleJsonRequest(Object jsonService, String serviceMethodName,
             String[] args, String requestText) {
 
         logger.debug("handleJsonRequest(): serviceMethodName={}, args={}, requestText={}",
@@ -367,6 +370,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         if (responseText == null) {
             response.setContent(ChannelBuffers.EMPTY_BUFFER);
             response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.headers().add("Glowroot-Layout-Version", layoutJsonService.getLayoutVersion());
             HttpServices.preventCaching(response);
             return response;
         }
@@ -374,12 +378,14 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             response.setContent(ChannelBuffers.copiedBuffer(responseText.toString(),
                     Charsets.ISO_8859_1));
             response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.headers().add("Glowroot-Layout-Version", layoutJsonService.getLayoutVersion());
             HttpServices.preventCaching(response);
             return response;
         }
         if (responseText instanceof byte[]) {
             response.setContent(ChannelBuffers.wrappedBuffer((byte[]) responseText));
             response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.headers().add("Glowroot-Layout-Version", layoutJsonService.getLayoutVersion());
             HttpServices.preventCaching(response);
             return response;
         }

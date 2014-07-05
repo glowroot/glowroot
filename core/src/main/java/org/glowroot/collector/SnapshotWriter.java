@@ -42,7 +42,7 @@ public class SnapshotWriter {
         jg.writeNumberField("startTime", snapshot.getStartTime());
         jg.writeNumberField("captureTime", snapshot.getCaptureTime());
         jg.writeNumberField("duration", snapshot.getDuration());
-        jg.writeBooleanField("background", snapshot.isBackground());
+        jg.writeStringField("transactionType", snapshot.getTransactionType());
         jg.writeStringField("transactionName", snapshot.getTransactionName());
         jg.writeStringField("headline", snapshot.getHeadline());
         jg.writeStringField("error", snapshot.getError());

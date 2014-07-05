@@ -58,8 +58,8 @@ public class SpanBenchmark {
 
     @Setup
     public void setup() {
-        rootSpan = pluginServices.startTrace("micro trace", MessageSupplier.from("micro trace"),
-                traceMetricName);
+        rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
+                MessageSupplier.from("micro trace"), traceMetricName);
         spanWorthy = new SpanWorthy();
         count = 0;
     }
@@ -85,7 +85,7 @@ public class SpanBenchmark {
             //
             // this adds trace overhead every 2000th span
             rootSpan.end();
-            rootSpan = pluginServices.startTrace("micro trace",
+            rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
                     MessageSupplier.from("micro trace"), traceMetricName);
         }
     }

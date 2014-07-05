@@ -65,8 +65,8 @@ public class ResultSetBenchmark {
 
     @Setup
     public void setup() throws SQLException {
-        rootSpan = pluginServices.startTrace("micro trace", MessageSupplier.from("micro trace"),
-                traceMetricName);
+        rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
+                MessageSupplier.from("micro trace"), traceMetricName);
         switch (database) {
             case HSQLDB:
                 connection = DriverManager.getConnection("jdbc:hsqldb:mem:benchmark", "sa", "");
@@ -102,7 +102,7 @@ public class ResultSetBenchmark {
         if (++count % 10000 == 0) {
             resultSet.close();
             rootSpan.end();
-            rootSpan = pluginServices.startTrace("micro trace",
+            rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
                     MessageSupplier.from("micro trace"), traceMetricName);
             resultSet = preparedStatement.executeQuery();
         }
