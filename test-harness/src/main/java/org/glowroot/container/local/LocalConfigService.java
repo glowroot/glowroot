@@ -234,8 +234,7 @@ class LocalConfigService implements ConfigService {
     public AdvancedConfig getAdvancedConfig() {
         org.glowroot.config.AdvancedConfig coreConfig = configService.getAdvancedConfig();
         AdvancedConfig config = new AdvancedConfig(coreConfig.getVersion());
-        config.setTraceMetricWrapperMethodsDisabled(
-                coreConfig.isTraceMetricWrapperMethodsDisabled());
+        config.setTraceMetricWrapperMethods(coreConfig.isTraceMetricWrapperMethods());
         config.setWarnOnSpanOutsideTrace(coreConfig.isWarnOnSpanOutsideTrace());
         config.setWeavingDisabled(coreConfig.isWeavingDisabled());
         return config;
@@ -244,8 +243,7 @@ class LocalConfigService implements ConfigService {
     @Override
     public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
         org.glowroot.config.AdvancedConfig updatedConfig =
-                new org.glowroot.config.AdvancedConfig(
-                        config.isTraceMetricWrapperMethodsDisabled(),
+                new org.glowroot.config.AdvancedConfig(config.isTraceMetricWrapperMethods(),
                         config.isWarnOnSpanOutsideTrace(), config.isWeavingDisabled());
         configService.updateAdvancedConfig(updatedConfig, config.getVersion());
     }

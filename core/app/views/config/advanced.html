@@ -26,29 +26,25 @@
          class="form-horizontal"
          name="formCtrl">
       <div gt-form-group
-           gt-label="Disable trace metric name wrapper methods"
-           gt-model="config.traceMetricWrapperMethodsDisabled"
+           gt-label="Trace metric wrapper methods"
+           gt-model="config.traceMetricWrapperMethods"
            gt-type="checkbox">
         <div class="help-block">
           <div class="glowroot-yellow"
-               ng-show="originalConfig.traceMetricWrapperMethodsDisabled !== traceMetricWrapperMethodsDisabledActive"
+               ng-show="originalConfig.traceMetricWrapperMethods !== traceMetricWrapperMethodsActive"
                style="padding-bottom: 5px;">
-            Active value is <code>{{traceMetricWrapperMethodsDisabledActive ? 'ON' : 'OFF'}}</code>. The newly
-            configured value will take effect on next JVM restart.
+            Active value is <code>{{traceMetricWrapperMethodsActive ? 'ON' : 'OFF'}}</code>. The newly configured value
+            will take effect on next JVM restart.
           </div>
           <p>
-            By default, methods that are woven for trace metric timing are renamed with suffix
+            When enabled, all methods that are woven for trace metric timing are renamed with suffix
             <code>$glowroot$trace$metric$&lt;trace metric name&gt;</code>
             and a new method is generated in its place that simply calls the renamed method. The purpose of this is so
             that stack traces gathered by the profiler can see what trace metric timings are active, and the resulting
             trace profiles can be filtered in the UI by trace metric names. For example, a trace profile can be filtered
             to see only the profile of code that is executing jdbc queries. Or, even more useful, filter to see only the
             profile of code that has no trace metric timings, which helps to discover new bottlenecks that would be
-            worth timing via pointcuts.
-          </p>
-          <p>
-            When disabled, Glowroot will not generate these wrapper methods, and trace profiles cannot be filtered in
-            the UI by trace metric names. <em>Changes to this setting will take effect on next JVM restart.</em>
+            worth timing via pointcuts. <em>Changes to this setting will take effect on next JVM restart.</em>
           </p>
         </div>
       </div>

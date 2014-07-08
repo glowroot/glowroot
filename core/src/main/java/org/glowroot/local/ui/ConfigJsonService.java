@@ -215,8 +215,8 @@ class ConfigJsonService {
         jg.writeStartObject();
         jg.writeFieldName("config");
         writer.writeValue(jg, configService.getAdvancedConfig());
-        jg.writeBooleanField("traceMetricWrapperMethodsDisabledActive",
-                traceModule.isTraceMetricWrapperMethodsDisabled());
+        jg.writeBooleanField("traceMetricWrapperMethodsActive",
+                traceModule.isTraceMetricWrapperMethods());
         jg.writeBooleanField("weavingDisabledActive", traceModule.isWeavingDisabled());
         jg.writeEndObject();
         jg.close();

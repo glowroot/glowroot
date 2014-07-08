@@ -30,7 +30,7 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
  */
 public class AdvancedConfig {
 
-    private boolean traceMetricWrapperMethodsDisabled;
+    private boolean traceMetricWrapperMethods;
     private boolean warnOnSpanOutsideTrace;
     private boolean weavingDisabled;
 
@@ -40,12 +40,12 @@ public class AdvancedConfig {
         this.version = version;
     }
 
-    public boolean isTraceMetricWrapperMethodsDisabled() {
-        return traceMetricWrapperMethodsDisabled;
+    public boolean isTraceMetricWrapperMethods() {
+        return traceMetricWrapperMethods;
     }
 
-    public void setTraceMetricWrapperMethodsDisabled(boolean traceMetricWrapperMethodsDisabled) {
-        this.traceMetricWrapperMethodsDisabled = traceMetricWrapperMethodsDisabled;
+    public void setTraceMetricWrapperMethods(boolean traceMetricWrapperMethods) {
+        this.traceMetricWrapperMethods = traceMetricWrapperMethods;
     }
 
     public boolean isWarnOnSpanOutsideTrace() {
@@ -76,8 +76,7 @@ public class AdvancedConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(traceMetricWrapperMethodsDisabled,
-                    that.traceMetricWrapperMethodsDisabled)
+            return Objects.equal(traceMetricWrapperMethods, that.traceMetricWrapperMethods)
                     && Objects.equal(warnOnSpanOutsideTrace, that.warnOnSpanOutsideTrace)
                     && Objects.equal(weavingDisabled, that.weavingDisabled);
         }
@@ -90,15 +89,14 @@ public class AdvancedConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(traceMetricWrapperMethodsDisabled, warnOnSpanOutsideTrace,
-                weavingDisabled);
+        return Objects.hashCode(traceMetricWrapperMethods, warnOnSpanOutsideTrace, weavingDisabled);
     }
 
     @Override
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("traceMetricWrapperMethodsDisabled", traceMetricWrapperMethodsDisabled)
+                .add("traceMetricWrapperMethods", traceMetricWrapperMethods)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
                 .add("weavingDisabled", weavingDisabled)
                 .add("version", version)
@@ -107,17 +105,16 @@ public class AdvancedConfig {
 
     @JsonCreator
     static AdvancedConfig readValue(
-            @JsonProperty("traceMetricWrapperMethodsDisabled") @Nullable Boolean traceMetricWrapperMethodsDisabled,
+            @JsonProperty("traceMetricWrapperMethods") @Nullable Boolean traceMetricWrapperMethods,
             @JsonProperty("warnOnSpanOutsideTrace") @Nullable Boolean warnOnSpanOutsideTrace,
             @JsonProperty("weavingDisabled") @Nullable Boolean weavingDisabled,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(traceMetricWrapperMethodsDisabled,
-                "traceMetricWrapperMethodsDisabled");
+        checkRequiredProperty(traceMetricWrapperMethods, "traceMetricWrapperMethods");
         checkRequiredProperty(warnOnSpanOutsideTrace, "warnOnSpanOutsideTrace");
         checkRequiredProperty(weavingDisabled, "weavingDisabled");
         checkRequiredProperty(version, "version");
         AdvancedConfig config = new AdvancedConfig(version);
-        config.setTraceMetricWrapperMethodsDisabled(traceMetricWrapperMethodsDisabled);
+        config.setTraceMetricWrapperMethods(traceMetricWrapperMethods);
         config.setWarnOnSpanOutsideTrace(warnOnSpanOutsideTrace);
         config.setWeavingDisabled(weavingDisabled);
         return config;

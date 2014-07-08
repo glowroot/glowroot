@@ -56,7 +56,7 @@ public class TraceModule {
     private final CoarseProfilerWatcher coarseProfilerWatcher;
 
     private final boolean weavingDisabled;
-    private final boolean traceMetricWrapperMethodsDisabled;
+    private final boolean traceMetricWrapperMethods;
     private final boolean jvmRetransformClassesSupported;
 
     private final PluginServicesFactory pluginServicesFactory;
@@ -76,15 +76,15 @@ public class TraceModule {
         weavingTimerService = new WeavingTimerServiceImpl(traceRegistry, traceMetricNameCache);
 
         weavingDisabled = configModule.getConfigService().getAdvancedConfig().isWeavingDisabled();
-        traceMetricWrapperMethodsDisabled = configModule.getConfigService().getAdvancedConfig()
-                .isTraceMetricWrapperMethodsDisabled();
+        traceMetricWrapperMethods =
+                configModule.getConfigService().getAdvancedConfig().isTraceMetricWrapperMethods();
         // instrumentation is null when debugging with IsolatedWeavingClassLoader
         // instead of javaagent
         if (instrumentation != null && !weavingDisabled) {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
                     configModule.getPluginDescriptorCache().getMixinTypes(),
                     adviceCache.getAdvisorsSupplier(), parsedTypeCache, weavingTimerService,
-                    !traceMetricWrapperMethodsDisabled);
+                    traceMetricWrapperMethods);
             PreInitializeWeavingClasses.preInitializeClasses(TraceModule.class.getClassLoader());
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
@@ -143,8 +143,8 @@ public class TraceModule {
         return weavingDisabled;
     }
 
-    public boolean isTraceMetricWrapperMethodsDisabled() {
-        return traceMetricWrapperMethodsDisabled;
+    public boolean isTraceMetricWrapperMethods() {
+        return traceMetricWrapperMethods;
     }
 
     public boolean isJvmRetransformClassesSupported() {

@@ -34,7 +34,7 @@
     "passwordHash" : ""
   },
   "advanced" : {
-    "traceMetricWrapperMethodsDisabled" : false,
+    "traceMetricWrapperMethods" : false,
     "warnOnSpanOutsideTrace" : false,
     "weavingDisabled" : false
   },
