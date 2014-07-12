@@ -10,10 +10,11 @@
     <relativePath>../..</relativePath>
   </parent>
 
-  <artifactId>glowroot-microbenchmarks</artifactId>
+  <groupId>org.glowroot.plugins</groupId>
+  <artifactId>servlet-plugin-microbenchmarks</artifactId>
 
-  <name>Glowroot Microbenchmarks</name>
-  <description>Glowroot Microbenchmarks</description>
+  <name>Glowroot Servlet Plugin Microbenchmarks</name>
+  <description>Glowroot Servlet Plugin Microbenchmarks</description>
 
   <dependencies>
     <dependency>
@@ -21,11 +22,6 @@
       <artifactId>glowroot-plugin-api</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-web</artifactId>
-      <version>4.0.5.RELEASE</version>
     </dependency>
     <dependency>
       <groupId>org.openjdk.jmh</groupId>
@@ -37,9 +33,21 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.0.1</version>
+    </dependency>
+    <dependency>
       <!-- included in shaded jar so it can be run with -javaagent:target/microbenchmarks.jar -->
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-core</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <!-- included in shaded jar so it can be run with -javaagent:target/microbenchmarks.jar -->
+      <groupId>org.glowroot.plugins</groupId>
+      <artifactId>servlet-plugin</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>

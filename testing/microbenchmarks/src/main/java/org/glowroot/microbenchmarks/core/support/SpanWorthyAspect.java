@@ -15,14 +15,17 @@
  */
 package org.glowroot.microbenchmarks.core.support;
 
+import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
 import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
+import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
 
 /**
@@ -49,6 +52,11 @@ public class SpanWorthyAspect {
         @OnBefore
         public static Span onBefore() {
             return pluginServices.startSpan(MessageSupplier.from("span worthy"), traceMetricName);
+        }
+
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
+            span.endWithError(ErrorMessage.from(t));
         }
 
         @OnAfter

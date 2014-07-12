@@ -51,11 +51,11 @@ public class StoreBenchmark {
     private static final TraceMetricName traceMetricName =
             pluginServices.getTraceMetricName(OnlyForTheTraceMetricName.class);
 
-    @Param({"true", "false"})
+    @Param({"false", "true"})
     private boolean store;
 
-    @Param({"0", "100"})
-    private int nSpans;
+    @Param({"0", "100", "1000"})
+    private int spanCount;
 
     private Span rootSpan;
 
@@ -76,14 +76,14 @@ public class StoreBenchmark {
     }
 
     @Benchmark
-    public void trace() {
+    public void execute() {
         rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
                 MessageSupplier.from("micro trace"), traceMetricName);
         if (store) {
             pluginServices.setTraceStoreThreshold(0, MILLISECONDS);
         }
         SpanWorthy spanWorthy = new SpanWorthy();
-        for (int i = 0; i < nSpans; i++) {
+        for (int i = 0; i < spanCount; i++) {
             spanWorthy.doSomethingSpanWorthy();
         }
         rootSpan.end();

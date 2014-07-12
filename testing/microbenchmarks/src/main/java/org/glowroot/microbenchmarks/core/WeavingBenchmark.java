@@ -69,7 +69,7 @@ public class WeavingBenchmark {
     }
 
     @Benchmark
-    public void weave() throws ClassNotFoundException {
+    public void execute() throws ClassNotFoundException {
         for (String className : classNames) {
             try {
                 Class.forName(className, false, WeavingBenchmark.class.getClassLoader());

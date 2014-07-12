@@ -56,6 +56,8 @@ public class GlowrootModule {
 
     private static final Logger logger = LoggerFactory.getLogger(GlowrootModule.class);
 
+    private static final boolean dummyTicker = Boolean.getBoolean("glowroot.internal.dummyTicker");
+
     private final Ticker ticker;
     private final Clock clock;
     private final ScheduledExecutorService scheduledExecutor;
@@ -69,7 +71,16 @@ public class GlowrootModule {
     GlowrootModule(File dataDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, String version, boolean viewerModeEnabled)
             throws StartupFailedException {
-        ticker = Ticker.systemTicker();
+        if (dummyTicker) {
+            ticker = new Ticker() {
+                @Override
+                public long read() {
+                    return 0;
+                }
+            };
+        } else {
+            ticker = Ticker.systemTicker();
+        }
         clock = Clock.systemClock();
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)

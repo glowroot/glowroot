@@ -124,11 +124,15 @@ class LayoutJsonService {
         }
         String defaultTransactionType =
                 configService.getUserInterfaceConfig().getDefaultTransactionType();
-        if (!transactionTypes.contains(defaultTransactionType)) {
-            defaultTransactionType = transactionTypes.iterator().next();
-        }
-        transactionTypes.remove(defaultTransactionType);
         List<String> orderedTransactionTypes = Lists.newArrayList();
+        if (transactionTypes.isEmpty()) {
+            defaultTransactionType = "<no transaction types defined>";
+        } else {
+            if (!transactionTypes.contains(defaultTransactionType)) {
+                defaultTransactionType = transactionTypes.iterator().next();
+            }
+            transactionTypes.remove(defaultTransactionType);
+        }
         // add default transaction type first
         orderedTransactionTypes.add(defaultTransactionType);
         // add the rest alphabetical

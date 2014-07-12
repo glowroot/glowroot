@@ -20,12 +20,12 @@ import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OperationsPerInvocation;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
@@ -49,49 +49,33 @@ public class SpanBenchmark {
             pluginServices.getTraceMetricName(OnlyForTheTraceMetricName.class);
 
     @Param
-    private SpanWorthyMethod spanWorthyMethod;
+    private PointcutType pointcutType;
 
-    private Span rootSpan;
     private SpanWorthy spanWorthy;
-
-    private int count;
 
     @Setup
     public void setup() {
-        rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
-                MessageSupplier.from("micro trace"), traceMetricName);
         spanWorthy = new SpanWorthy();
-        count = 0;
-    }
-
-    @TearDown
-    public void tearDown() {
-        rootSpan.end();
     }
 
     @Benchmark
-    public void span() {
-        switch (spanWorthyMethod) {
-            case ONE:
-                spanWorthy.doSomethingSpanWorthy();
+    @OperationsPerInvocation(2000)
+    public void execute() {
+        Span rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
+                MessageSupplier.from("micro trace"), traceMetricName);
+        switch (pointcutType) {
+            case API:
+                for (int i = 0; i < 2000; i++) {
+                    spanWorthy.doSomethingSpanWorthy();
+                }
                 break;
-            case TWO:
-                spanWorthy.doSomethingSpanWorthy2();
+            case CONFIG:
+                for (int i = 0; i < 2000; i++) {
+                    spanWorthy.doSomethingSpanWorthy2();
+                }
                 break;
         }
-        if (++count % 2000 == 0) {
-            // default max spans is 2000, so need to create new trace, otherwise additional spans
-            // will be shortcut and average span time will be underestimated
-            //
-            // this adds trace overhead every 2000th span
-            rootSpan.end();
-            rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
-                    MessageSupplier.from("micro trace"), traceMetricName);
-        }
-    }
-
-    public static enum SpanWorthyMethod {
-        ONE, TWO
+        rootSpan.end();
     }
 
     @Pointcut(type = "dummy", methodName = "dummy", traceMetric = "micro trace")

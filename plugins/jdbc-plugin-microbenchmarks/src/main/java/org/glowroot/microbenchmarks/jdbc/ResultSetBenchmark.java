@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OperationsPerInvocation;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -56,17 +57,11 @@ public class ResultSetBenchmark {
     @Param
     private Database database;
 
-    private Span rootSpan;
     private Connection connection;
     private PreparedStatement preparedStatement;
-    private ResultSet resultSet;
-
-    private int count;
 
     @Setup
     public void setup() throws SQLException {
-        rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
-                MessageSupplier.from("micro trace"), traceMetricName);
         switch (database) {
             case HSQLDB:
                 connection = DriverManager.getConnection("jdbc:hsqldb:mem:benchmark", "sa", "");
@@ -85,27 +80,25 @@ public class ResultSetBenchmark {
                 break;
         }
         preparedStatement = connection.prepareStatement("select * from mock");
-        resultSet = preparedStatement.executeQuery();
     }
 
     @TearDown
     public void tearDown() throws SQLException {
-        resultSet.close();
         preparedStatement.close();
         connection.close();
-        rootSpan.end();
     }
 
     @Benchmark
+    @OperationsPerInvocation(10000)
     public void next() throws Exception {
-        resultSet.next();
-        if (++count % 10000 == 0) {
-            resultSet.close();
-            rootSpan.end();
-            rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
-                    MessageSupplier.from("micro trace"), traceMetricName);
-            resultSet = preparedStatement.executeQuery();
+        Span rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
+                MessageSupplier.from("micro trace"), traceMetricName);
+        ResultSet resultSet = preparedStatement.executeQuery();
+        for (int i = 0; i < 10000; i++) {
+            resultSet.next();
         }
+        resultSet.close();
+        rootSpan.end();
     }
 
     public static enum Database {

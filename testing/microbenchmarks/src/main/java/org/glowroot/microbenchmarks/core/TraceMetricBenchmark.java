@@ -47,7 +47,7 @@ public class TraceMetricBenchmark {
             PluginServices.get("glowroot-microbenchmarks");
 
     @Param
-    private TraceMetricWorthyMethod traceMetricWorthyMethod;
+    private PointcutType pointcutType;
 
     private Span rootSpan;
     private TraceMetricWorthy traceMetricWorthy;
@@ -67,19 +67,15 @@ public class TraceMetricBenchmark {
     }
 
     @Benchmark
-    public void traceMetric() {
-        switch (traceMetricWorthyMethod) {
-            case ONE:
+    public void execute() {
+        switch (pointcutType) {
+            case API:
                 traceMetricWorthy.doSomethingTraceMetricWorthy();
                 break;
-            case TWO:
+            case CONFIG:
                 traceMetricWorthy.doSomethingTraceMetricWorthy2();
                 break;
         }
-    }
-
-    public static enum TraceMetricWorthyMethod {
-        ONE, TWO
     }
 
     @Pointcut(type = "dummy", methodName = "dummy", traceMetric = "micro trace")

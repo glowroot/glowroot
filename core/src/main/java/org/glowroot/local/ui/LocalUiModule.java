@@ -58,13 +58,9 @@ public class LocalUiModule {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalUiModule.class);
 
+    // this is used for the demo site so there can be a standby instance on a different port
     @Nullable
-    private static final Integer port;
-
-    static {
-        // this is used for the demo site so there can be a standby instance on a different port
-        port = Integer.getInteger("glowroot.internal.ui.port");
-    }
+    private static final Integer port = Integer.getInteger("glowroot.internal.ui.port");
 
     // httpServer is only null if it could not even bind to port 0 (any available port)
     @Nullable

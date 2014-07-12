@@ -67,7 +67,8 @@ Microbenchmarks to analyze the monitoring overhead are written using the excelle
 from the following locations:
 
 * [testing/microbenchmarks](testing/microbenchmarks)
-* [plugins/jdbc-plugin-microbenchmarks](testing/microbenchmarks)
+* [plugins/servlet-plugin-microbenchmarks](plugins/servlet-plugin-microbenchmarks)
+* [plugins/jdbc-plugin-microbenchmarks](plugins/jdbc-plugin-microbenchmarks)
 
 ## Code quality
 

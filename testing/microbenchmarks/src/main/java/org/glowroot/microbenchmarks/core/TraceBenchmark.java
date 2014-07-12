@@ -38,7 +38,7 @@ import org.glowroot.microbenchmarks.core.support.TraceWorthy;
 public class TraceBenchmark {
 
     @Param
-    private TraceWorthyMethod traceWorthyMethod;
+    private PointcutType pointcutType;
 
     private TraceWorthy traceWorthy;
 
@@ -48,18 +48,14 @@ public class TraceBenchmark {
     }
 
     @Benchmark
-    public void createTrace() {
-        switch (traceWorthyMethod) {
-            case ONE:
+    public void execute() {
+        switch (pointcutType) {
+            case API:
                 traceWorthy.doSomethingTraceWorthy();
                 break;
-            case TWO:
+            case CONFIG:
                 traceWorthy.doSomethingTraceWorthy2();
                 break;
         }
-    }
-
-    public static enum TraceWorthyMethod {
-        ONE, TWO
     }
 }

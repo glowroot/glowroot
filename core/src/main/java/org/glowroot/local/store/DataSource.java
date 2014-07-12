@@ -57,12 +57,9 @@ public class DataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);
 
-    private static final boolean h2LocalServer;
-
-    static {
-        // this is used for the demo site so there can be a standby instance against the same db
-        h2LocalServer = Boolean.getBoolean("glowroot.internal.h2.localServer");
-    }
+    // this is used for the demo site so there can be a standby instance against the same db
+    private static final boolean h2LocalServer =
+            Boolean.getBoolean("glowroot.internal.h2.localServer");
 
     // null means use memDb
     @Nullable

@@ -13,25 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.microbenchmarks.baseline;
-
-import java.util.concurrent.TimeUnit;
-
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
+package org.glowroot.microbenchmarks.core;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.NANOSECONDS)
-public class SystemNanoTimeBenchmark {
+public enum PointcutType {
 
-    @Benchmark
-    public long systemNanoTime() {
-        return System.nanoTime();
-    }
+    API, CONFIG
 }

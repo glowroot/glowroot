@@ -30,7 +30,7 @@
       "methodReturnType" : "void",
       "methodModifiers" : [ ],
       "traceMetric" : "span worthy",
-      "spanText" : "span worthy",
+      "spanText" : "span worthy: {{this.name}}",
       "transactionName" : "",
       "enabledProperty": "",
       "spanEnabledProperty": ""

@@ -15,6 +15,7 @@
  */
 package org.glowroot.dynamicadvice;
 
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,10 +24,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.util.TraceClassVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +81,9 @@ import static org.objectweb.asm.Opcodes.V1_5;
 public class DynamicAdviceGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(DynamicAdviceGenerator.class);
+
+    private static final boolean dumpBytecode =
+            Boolean.getBoolean("glowroot.internal.bytecode.dump");
 
     private static final String HANDLE_CLASS_NAME = "org/glowroot/trace/PluginServicesRegistry";
     private static final String HANDLE_METHOD_NAME = "get";
@@ -153,6 +159,11 @@ public class DynamicAdviceGenerator {
         }
         cw.visitEnd();
         byte[] bytes = cw.toByteArray();
+        if (dumpBytecode) {
+            ClassReader cr = new ClassReader(bytes);
+            TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
+            cr.accept(tcv, ClassReader.SKIP_FRAMES);
+        }
         return ClassLoaders.defineClass(TypeNames.fromInternal(adviceTypeName), bytes,
                 DynamicAdviceGenerator.class.getClassLoader());
     }

@@ -24,4 +24,8 @@ public class SpanWorthy {
     public void doSomethingSpanWorthy() {}
 
     public void doSomethingSpanWorthy2() {}
+
+    public String getName() {
+        return "the name";
+    }
 }

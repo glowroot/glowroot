@@ -13,30 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.microbenchmarks.baseline;
+package org.glowroot.microbenchmarks.jdbc.support;
 
-import java.util.concurrent.TimeUnit;
-
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.State;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.NANOSECONDS)
-@State(Scope.Thread)
-public class VolatileIncrementBenchmark {
+@SuppressWarnings("serial")
+public class MockHttpServlet extends HttpServlet {
 
-    private volatile long x;
-
-    @Benchmark
-    public long volatileUpdate() {
-        return x++;
-    }
+    @Override
+    protected void service(HttpServletRequest req, HttpServletResponse resp) {}
 }
