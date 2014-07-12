@@ -54,16 +54,20 @@ public class HeapHistograms {
             virtualMachineClass = Class.forName("com.sun.tools.attach.VirtualMachine", true,
                     systemToolClassLoader);
         } catch (ClassNotFoundException e) {
-            logger.error(e.getMessage(), e);
-            return OptionalService.unavailable("<see error log for detail>");
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
+            return OptionalService.unavailable("Cannot find class"
+                    + " com.sun.tools.attach.VirtualMachine (not available in JRE)");
         }
         Class<?> hotSpotVirtualMachineClass;
         try {
             hotSpotVirtualMachineClass = Class.forName(
                     "sun.tools.attach.HotSpotVirtualMachine", true, systemToolClassLoader);
         } catch (ClassNotFoundException e) {
-            logger.error(e.getMessage(), e);
-            return OptionalService.unavailable("<see error log for detail>");
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
+            return OptionalService.unavailable("Cannot find class"
+                    + " sun.tools.attach.HotSpotVirtualMachine (not available in JRE)");
         }
         try {
             Method attachMethod = virtualMachineClass.getMethod("attach", String.class);
