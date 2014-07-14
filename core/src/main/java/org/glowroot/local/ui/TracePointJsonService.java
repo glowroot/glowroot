@@ -147,7 +147,7 @@ class TracePointJsonService {
                         && matchesDuration(trace)
                         && matchesTransactionType(trace)
                         && matchesErrorOnly(trace)
-                        && matchesFineOnly(trace)
+                        && matchesProfiledOnly(trace)
                         && matchesHeadline(trace)
                         && matchesTransactionName(trace)
                         && matchesError(trace)
@@ -177,7 +177,7 @@ class TracePointJsonService {
                 if (matchesDuration(trace)
                         && matchesTransactionType(trace)
                         && matchesErrorOnly(trace)
-                        && matchesFineOnly(trace)
+                        && matchesProfiledOnly(trace)
                         && matchesHeadline(trace)
                         && matchesTransactionName(trace)
                         && matchesError(trace)
@@ -211,8 +211,8 @@ class TracePointJsonService {
             return !query.isErrorOnly() || trace.getError() != null;
         }
 
-        private boolean matchesFineOnly(Trace trace) {
-            return !query.isFineOnly() || trace.isFine();
+        private boolean matchesProfiledOnly(Trace trace) {
+            return !query.isProfiledOnly() || trace.isProfiled();
         }
 
         private boolean matchesHeadline(Trace trace) {

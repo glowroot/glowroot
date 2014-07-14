@@ -19,15 +19,15 @@
 $(document).ready(function () {
   var trace = JSON.parse($('#traceJson').html());
   var spans = JSON.parse($('#spansJson').html());
-  var coarseProfileJson = $('#coarseProfileJson').html();
-  var coarseProfile;
-  if (coarseProfileJson) {
-    coarseProfile = JSON.parse(coarseProfileJson);
+  var profileJson = $('#profileJson').html();
+  var profile;
+  if (profileJson) {
+    profile = JSON.parse(profileJson);
   }
-  var fineProfileJson = $('#fineProfileJson').html();
-  var fineProfile;
-  if (fineProfileJson) {
-    fineProfile = JSON.parse(fineProfileJson);
+  var outlierProfileJson = $('#outlierProfileJson').html();
+  var outlierProfile;
+  if (outlierProfileJson) {
+    outlierProfile = JSON.parse(outlierProfileJson);
   }
-  TraceRenderer.renderTraceFromExport(trace, $('#tracePlaceholder'), spans, coarseProfile, fineProfile);
+  TraceRenderer.renderTraceFromExport(trace, $('#tracePlaceholder'), spans, profile, outlierProfile);
 });

@@ -40,7 +40,7 @@ public class SnapshotCreatorTest {
         // given
         Profile profile = new Profile();
         Trace trace = mock(Trace.class);
-        when(trace.getCoarseProfile()).thenReturn(profile);
+        when(trace.getOutlierProfile()).thenReturn(profile);
         // StackOverflowError was previously occurring somewhere around 1300 stack trace elements
         // using a 1mb thread stack size so testing with 10,000 here just to be sure
         StackTraceElement[] stackTrace = new StackTraceElement[10000];
@@ -52,7 +52,7 @@ public class SnapshotCreatorTest {
                 State.RUNNABLE);
         // when
         CharSource profileCharSource =
-                ProfileCharSourceCreator.createProfileCharSource(trace.getCoarseProfile());
+                ProfileCharSourceCreator.createProfileCharSource(trace.getOutlierProfile());
         assertThat(profileCharSource).isNotNull();
         // then don't blow up with StackOverflowError
         // (and an extra verification just to make sure the test was valid)

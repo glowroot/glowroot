@@ -98,12 +98,12 @@ public class Trace {
     // root span for this trace
     private final RootSpan rootSpan;
 
-    // stack trace data constructed from coarse-grained profiling
+    // stack trace data constructed from profiling
     @MonotonicNonNull
-    private volatile Profile coarseProfile;
-    // stack trace data constructed from fine-grained profiling
+    private volatile Profile profile;
+    // stack trace data constructed from outlier profiling
     @MonotonicNonNull
-    private volatile Profile fineProfile;
+    private volatile Profile outlierProfile;
 
     private final long threadId;
 
@@ -114,9 +114,9 @@ public class Trace {
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
     @Nullable
-    private volatile ScheduledRunnable coarseProfilerScheduledRunnable;
+    private volatile ScheduledRunnable profilerScheduledRunnable;
     @Nullable
-    private volatile ScheduledRunnable fineProfilerScheduledRunnable;
+    private volatile ScheduledRunnable outlierProfilerScheduledRunnable;
     @Nullable
     private volatile ScheduledRunnable stuckScheduledRunnable;
 
@@ -264,18 +264,18 @@ public class Trace {
         return rootSpan.getSpansCopy();
     }
 
-    public boolean isFine() {
-        return fineProfile != null;
+    public boolean isProfiled() {
+        return profile != null;
     }
 
     @Nullable
-    public Profile getCoarseProfile() {
-        return coarseProfile;
+    public Profile getProfile() {
+        return profile;
     }
 
     @Nullable
-    public Profile getFineProfile() {
-        return fineProfile;
+    public Profile getOutlierProfile() {
+        return outlierProfile;
     }
 
     public int getStoreThresholdMillisOverride() {
@@ -283,13 +283,13 @@ public class Trace {
     }
 
     @Nullable
-    public ScheduledRunnable getCoarseProfilerScheduledRunnable() {
-        return coarseProfilerScheduledRunnable;
+    public ScheduledRunnable getProfilerScheduledRunnable() {
+        return profilerScheduledRunnable;
     }
 
     @Nullable
-    public ScheduledRunnable getFineProfilerScheduledRunnable() {
-        return fineProfilerScheduledRunnable;
+    public ScheduledRunnable getOutlierProfilerScheduledRunnable() {
+        return outlierProfilerScheduledRunnable;
     }
 
     @Nullable
@@ -353,20 +353,20 @@ public class Trace {
         }
     }
 
-    public void setCoarseProfilerScheduledRunnable(ScheduledRunnable scheduledRunnable) {
-        if (coarseProfilerScheduledRunnable != null) {
-            logger.warn("setCoarseProfilerScheduledRunnable(): overwriting non-null"
-                    + " coarseProfilingScheduledRunnable");
+    public void setProfilerScheduledRunnable(ScheduledRunnable scheduledRunnable) {
+        if (profilerScheduledRunnable != null) {
+            logger.warn("setProfilerScheduledRunnable(): overwriting non-null"
+                    + " profilerScheduledRunnable");
         }
-        this.coarseProfilerScheduledRunnable = scheduledRunnable;
+        this.profilerScheduledRunnable = scheduledRunnable;
     }
 
-    public void setFineProfilerScheduledRunnable(ScheduledRunnable scheduledRunnable) {
-        if (fineProfilerScheduledRunnable != null) {
-            logger.warn("setFineProfilerScheduledRunnable(): overwriting non-null"
-                    + " fineProfilingScheduledRunnable");
+    public void setOutlierProfilerScheduledRunnable(ScheduledRunnable scheduledRunnable) {
+        if (outlierProfilerScheduledRunnable != null) {
+            logger.warn("setOutlierProfilerScheduledRunnable(): overwriting non-null"
+                    + " outlierProfilerScheduledRunnable");
         }
-        this.fineProfilerScheduledRunnable = scheduledRunnable;
+        this.outlierProfilerScheduledRunnable = scheduledRunnable;
     }
 
     public void setStuckScheduledRunnable(ScheduledRunnable scheduledRunnable) {
@@ -406,7 +406,7 @@ public class Trace {
         memoryBarrier = true;
     }
 
-    public void captureStackTrace(boolean fine) {
+    public void captureStackTrace(boolean outlier) {
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
         ThreadInfo threadInfo = threadBean.getThreadInfo(threadId, Integer.MAX_VALUE);
         if (threadInfo == null) {
@@ -418,22 +418,22 @@ public class Trace {
         if (rootSpan.isCompleted()) {
             return;
         }
-        if (fine) {
-            if (fineProfile == null) {
+        if (outlier) {
+            if (outlierProfile == null) {
                 // initialization possible race condition is ok, worst case scenario it misses
                 // an almost simultaneously captured stack trace
-                fineProfile = new Profile();
+                outlierProfile = new Profile();
+            }
+            outlierProfile.addStackTrace(threadInfo);
+        } else {
+            if (profile == null) {
+                // initialization possible race condition is ok, worst case scenario it misses
+                // an almost simultaneously captured stack trace
+                profile = new Profile();
             }
             // TODO make sure that when reading profile it is not in-between instantiation
             // and having its first stack trace here, maybe pass threadInfo to constructor????
-            fineProfile.addStackTrace(threadInfo);
-        } else {
-            if (coarseProfile == null) {
-                // initialization possible race condition is ok, worst case scenario it misses
-                // an almost simultaneously captured stack trace
-                coarseProfile = new Profile();
-            }
-            coarseProfile.addStackTrace(threadInfo);
+            profile.addStackTrace(threadInfo);
         }
     }
 
@@ -465,10 +465,10 @@ public class Trace {
                 .add("threadInfo", threadInfo)
                 .add("gcInfos", gcInfos)
                 .add("rootSpan", rootSpan)
-                .add("coarseProfile", coarseProfile)
-                .add("fineProfile", fineProfile)
-                .add("coarseProfilingScheduledRunnable", coarseProfilerScheduledRunnable)
-                .add("fineProfilingScheduledRunnable", fineProfilerScheduledRunnable)
+                .add("profile", profile)
+                .add("outlierProfile", outlierProfile)
+                .add("profilerScheduledRunnable", profilerScheduledRunnable)
+                .add("outlierProfilerScheduledRunnable", outlierProfilerScheduledRunnable)
                 .add("stuckScheduledRunnable", stuckScheduledRunnable)
                 .toString();
     }

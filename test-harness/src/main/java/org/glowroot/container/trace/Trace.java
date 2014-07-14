@@ -57,16 +57,16 @@ public class Trace {
     private final TraceThreadInfo threadInfo;
     private final ImmutableList<TraceGcInfo> gcInfos;
     private final Existence spansExistence;
-    private final Existence coarseProfileExistence;
-    private final Existence fineProfileExistence;
+    private final Existence profileExistence;
+    private final Existence outlierProfileExistence;
 
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user,
             ImmutableSetMultimap<String, String> attributes, TraceMetric rootTraceMetric,
             @Nullable TraceThreadInfo threadInfo, List<TraceGcInfo> gcInfos,
-            Existence spansExistence, Existence coarseProfileExistence,
-            Existence fineProfileExistence) {
+            Existence spansExistence, Existence profileExistence,
+            Existence outlierProfileExistence) {
         this.id = id;
         this.active = active;
         this.stuck = stuck;
@@ -83,8 +83,8 @@ public class Trace {
         this.threadInfo = threadInfo;
         this.gcInfos = ImmutableList.copyOf(gcInfos);
         this.spansExistence = spansExistence;
-        this.coarseProfileExistence = coarseProfileExistence;
-        this.fineProfileExistence = fineProfileExistence;
+        this.profileExistence = profileExistence;
+        this.outlierProfileExistence = outlierProfileExistence;
     }
 
     public String getId() {
@@ -154,12 +154,12 @@ public class Trace {
         return spansExistence;
     }
 
-    public Existence getCoarseProfileExistence() {
-        return coarseProfileExistence;
+    public Existence getProfileExistence() {
+        return profileExistence;
     }
 
-    public Existence getFineProfileExistence() {
-        return fineProfileExistence;
+    public Existence getOutlierProfileExistence() {
+        return outlierProfileExistence;
     }
 
     @Override
@@ -182,8 +182,8 @@ public class Trace {
                 .add("threadInfo", threadInfo)
                 .add("gcInfos", gcInfos)
                 .add("spansExistence", spansExistence)
-                .add("coarseProfileExistence", coarseProfileExistence)
-                .add("fineProfileExistence", fineProfileExistence)
+                .add("profileExistence", profileExistence)
+                .add("outlierProfileExistence", outlierProfileExistence)
                 .toString();
     }
 
@@ -205,8 +205,8 @@ public class Trace {
             @JsonProperty("threadInfo") @Nullable TraceThreadInfo threadInfo,
             @JsonProperty("gcInfos") @Nullable List</*@Nullable*/TraceGcInfo> gcInfosUnchecked,
             @JsonProperty("spansExistence") @Nullable Existence spansExistence,
-            @JsonProperty("coarseProfileExistence") @Nullable Existence coarseProfileExistence,
-            @JsonProperty("fineProfileExistence") @Nullable Existence fineProfileExistence)
+            @JsonProperty("profileExistence") @Nullable Existence profileExistence,
+            @JsonProperty("outlierProfileExistence") @Nullable Existence outlierProfileExistence)
             throws JsonMappingException {
         List<TraceGcInfo> gcInfos = checkNotNullItemsForProperty(gcInfosUnchecked, "gcInfos");
         checkRequiredProperty(id, "id");
@@ -220,8 +220,8 @@ public class Trace {
         checkRequiredProperty(headline, "headline");
         checkRequiredProperty(rootTraceMetric, "rootTraceMetric");
         checkRequiredProperty(spansExistence, "spansExistence");
-        checkRequiredProperty(coarseProfileExistence, "coarseProfileExistence");
-        checkRequiredProperty(fineProfileExistence, "fineProfileExistence");
+        checkRequiredProperty(profileExistence, "profileExistence");
+        checkRequiredProperty(outlierProfileExistence, "outlierProfileExistence");
         ImmutableSetMultimap.Builder<String, String> theAttributes = ImmutableSetMultimap.builder();
         if (attributes != null) {
             for (Entry<String, /*@Nullable*/List</*@Nullable*/String>> entry : attributes
@@ -238,8 +238,8 @@ public class Trace {
         }
         return new Trace(id, active, stuck, startTime, captureTime, duration, transactionType,
                 transactionName, headline, error, user, theAttributes.build(), rootTraceMetric,
-                threadInfo, nullToEmpty(gcInfos), spansExistence, coarseProfileExistence,
-                fineProfileExistence);
+                threadInfo, nullToEmpty(gcInfos), spansExistence, profileExistence,
+                outlierProfileExistence);
     }
 
     public enum Existence {

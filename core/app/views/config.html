@@ -22,29 +22,19 @@
         General
       </a>
       <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.coarseProfiling')}"
-         href="/config/coarse-grained-profiling">
-        Coarse-grained profiling
+         ng-class="{active: isCurrentView('config.profiling')}"
+         href="/config/profiling">
+        Profiling
       </a>
       <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.fineProfiling')}"
-         href="/config/fine-grained-profiling">
-        Fine-grained profiling
+         ng-class="{active: isCurrentView('config.outlierProfiling')}"
+         href="/config/outlier-profiling">
+        Outlier profiling
       </a>
       <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.userOverrides')}"
-         href="/config/user-specific-overrides">
-        User specific overrides
-      </a>
-      <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.storage')}"
-         href="/config/storage">
-        Storage
-      </a>
-      <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.userInterface')}"
-         href="/config/user-interface">
-        User interface
+         ng-class="{active: isCurrentView('config.userTracing')}"
+         href="/config/user-tracing">
+        User tracing
       </a>
       <a class="list-group-item selectable-list-group-item"
          ng-class="{active: isCurrentView('config.pointcuts')}"
@@ -55,6 +45,20 @@
          ng-class="{active: isCurrentView('config.advanced')}"
          href="/config/advanced">
         Advanced
+      </a>
+    </ul>
+  </div>
+  <div class="panel panel-default">
+    <ul class="list-group">
+      <a class="list-group-item selectable-list-group-item"
+         ng-class="{active: isCurrentView('config.storage')}"
+         href="/config/storage">
+        Storage
+      </a>
+      <a class="list-group-item selectable-list-group-item"
+         ng-class="{active: isCurrentView('config.userInterface')}"
+         href="/config/user-interface">
+        User interface
       </a>
     </ul>
   </div>

@@ -32,17 +32,17 @@ public interface ConfigService {
 
     void updateGeneralConfig(GeneralConfig config) throws Exception;
 
-    CoarseProfilingConfig getCoarseProfilingConfig() throws Exception;
+    ProfilingConfig getProfilingConfig() throws Exception;
 
-    void updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception;
+    void updateProfilingConfig(ProfilingConfig config) throws Exception;
 
-    FineProfilingConfig getFineProfilingConfig() throws Exception;
+    OutlierProfilingConfig getOutlierProfilingConfig() throws Exception;
 
-    void updateFineProfilingConfig(FineProfilingConfig config) throws Exception;
+    void updateOutlierProfilingConfig(OutlierProfilingConfig config) throws Exception;
 
-    UserOverridesConfig getUserOverridesConfig() throws Exception;
+    UserTracingConfig getUserTracingConfig() throws Exception;
 
-    void updateUserOverridesConfig(UserOverridesConfig config) throws Exception;
+    void updateUserTracingConfig(UserTracingConfig config) throws Exception;
 
     StorageConfig getStorageConfig() throws Exception;
 

@@ -25,48 +25,47 @@ import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
 
 /**
- * Immutable structure to hold the fine-grained profiling config.
+ * Immutable structure to hold the profiling config.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Immutable
-public class FineProfilingConfig {
+public class ProfilingConfig {
 
     public static final int USE_GENERAL_STORE_THRESHOLD = -1;
 
-    // percentage of traces to apply fine profiling, between 0.0 and 100.0
+    // percentage of traces to apply profiling, between 0.0 and 100.0
     private final double tracePercentage;
     private final int intervalMillis;
-    private final int totalSeconds;
-    // store threshold of -1 means use general config store threshold
-    // for fine-grained profiled traces, the real threshold is the minimum of this and the general
-    // threshold
+    private final int maxSeconds;
+    // store threshold of -1 means use general config store threshold for profiled traces,
+    // the real threshold is the minimum of this and the general threshold
     private final int storeThresholdMillis;
 
     private final String version;
 
-    static FineProfilingConfig getDefault() {
+    static ProfilingConfig getDefault() {
         final double tracePercentage = 0;
         final int intervalMillis = 50;
-        final int totalSeconds = 30;
+        final int maxSeconds = 30;
         final int storeThresholdMillis = USE_GENERAL_STORE_THRESHOLD;
-        return new FineProfilingConfig(tracePercentage, intervalMillis, totalSeconds,
+        return new ProfilingConfig(tracePercentage, intervalMillis, maxSeconds,
                 storeThresholdMillis);
     }
 
-    public static Overlay overlay(FineProfilingConfig base) {
+    public static Overlay overlay(ProfilingConfig base) {
         return new Overlay(base);
     }
 
     @VisibleForTesting
-    public FineProfilingConfig(double tracePercentage, int intervalMillis,
-            int totalSeconds, int storeThresholdMillis) {
+    public ProfilingConfig(double tracePercentage, int intervalMillis, int maxSeconds,
+            int storeThresholdMillis) {
         this.tracePercentage = tracePercentage;
         this.intervalMillis = intervalMillis;
-        this.totalSeconds = totalSeconds;
+        this.maxSeconds = maxSeconds;
         this.storeThresholdMillis = storeThresholdMillis;
-        version = VersionHashes.sha1(tracePercentage, intervalMillis, totalSeconds,
+        version = VersionHashes.sha1(tracePercentage, intervalMillis, maxSeconds,
                 storeThresholdMillis);
     }
 
@@ -78,8 +77,8 @@ public class FineProfilingConfig {
         return intervalMillis;
     }
 
-    public int getTotalSeconds() {
-        return totalSeconds;
+    public int getMaxSeconds() {
+        return maxSeconds;
     }
 
     public int getStoreThresholdMillis() {
@@ -97,7 +96,7 @@ public class FineProfilingConfig {
         return Objects.toStringHelper(this)
                 .add("tracePercentage", tracePercentage)
                 .add("intervalMillis", intervalMillis)
-                .add("totalSeconds", totalSeconds)
+                .add("maxSeconds", maxSeconds)
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("version", version)
                 .toString();
@@ -109,13 +108,13 @@ public class FineProfilingConfig {
 
         private double tracePercentage;
         private int intervalMillis;
-        private int totalSeconds;
+        private int maxSeconds;
         private int storeThresholdMillis;
 
-        private Overlay(FineProfilingConfig base) {
+        private Overlay(ProfilingConfig base) {
             tracePercentage = base.tracePercentage;
             intervalMillis = base.intervalMillis;
-            totalSeconds = base.totalSeconds;
+            maxSeconds = base.maxSeconds;
             storeThresholdMillis = base.storeThresholdMillis;
         }
         public void setTracePercentage(double tracePercentage) {
@@ -124,14 +123,14 @@ public class FineProfilingConfig {
         public void setIntervalMillis(int intervalMillis) {
             this.intervalMillis = intervalMillis;
         }
-        public void setTotalSeconds(int totalSeconds) {
-            this.totalSeconds = totalSeconds;
+        public void setMaxSeconds(int maxSeconds) {
+            this.maxSeconds = maxSeconds;
         }
         public void setStoreThresholdMillis(int storeThresholdMillis) {
             this.storeThresholdMillis = storeThresholdMillis;
         }
-        public FineProfilingConfig build() {
-            return new FineProfilingConfig(tracePercentage, intervalMillis, totalSeconds,
+        public ProfilingConfig build() {
+            return new ProfilingConfig(tracePercentage, intervalMillis, maxSeconds,
                     storeThresholdMillis);
         }
     }

@@ -24,8 +24,8 @@ import com.google.common.io.Files;
 
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.config.CoarseProfilingConfig;
-import org.glowroot.container.config.FineProfilingConfig;
+import org.glowroot.container.config.OutlierProfilingConfig;
+import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
 import org.glowroot.container.javaagent.JavaagentContainer;
@@ -66,18 +66,17 @@ public class UiSandboxMain {
         }
         if (initConfig) {
             // set thresholds low so there will be lots of data to view
-            CoarseProfilingConfig coarseProfilingConfig =
-                    container.getConfigService().getCoarseProfilingConfig();
-            coarseProfilingConfig.setInitialDelayMillis(500);
-            coarseProfilingConfig.setIntervalMillis(500);
-            coarseProfilingConfig.setTotalSeconds(2);
-            container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
-            FineProfilingConfig fineProfilingConfig = container.getConfigService()
-                    .getFineProfilingConfig();
-            fineProfilingConfig.setTracePercentage(50);
-            fineProfilingConfig.setIntervalMillis(10);
-            fineProfilingConfig.setTotalSeconds(1);
-            container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
+            OutlierProfilingConfig outlierProfilingConfig =
+                    container.getConfigService().getOutlierProfilingConfig();
+            outlierProfilingConfig.setInitialDelayMillis(500);
+            outlierProfilingConfig.setIntervalMillis(500);
+            outlierProfilingConfig.setMaxSeconds(2);
+            container.getConfigService().updateOutlierProfilingConfig(outlierProfilingConfig);
+            ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
+            profilingConfig.setTracePercentage(50);
+            profilingConfig.setIntervalMillis(10);
+            profilingConfig.setMaxSeconds(1);
+            container.getConfigService().updateProfilingConfig(profilingConfig);
             if (rollOverQuickly) {
                 StorageConfig storageConfig = container.getConfigService().getStorageConfig();
                 storageConfig.setCappedDatabaseSizeMb(10);

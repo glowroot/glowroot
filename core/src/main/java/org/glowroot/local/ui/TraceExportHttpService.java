@@ -134,16 +134,15 @@ public class TraceExportHttpService implements HttpService {
         String exportJsPlaceholder = "<script src=\"scripts/trace-export.js\"></script>";
         String tracePlaceholder = "<script type=\"text/json\" id=\"traceJson\"></script>";
         String spansPlaceholder = "<script type=\"text/json\" id=\"spansJson\"></script>";
-        String coarseProfilePlaceholder =
-                "<script type=\"text/json\" id=\"coarseProfileJson\"></script>";
-        String fineProfilePlaceholder =
-                "<script type=\"text/json\" id=\"fineProfileJson\"></script>";
+        String profilePlaceholder = "<script type=\"text/json\" id=\"profileJson\"></script>";
+        String outlierProfilePlaceholder =
+                "<script type=\"text/json\" id=\"outlierProfileJson\"></script>";
 
         String templateContent = asCharSource("trace-export.html").read();
         Pattern pattern = Pattern.compile("(" + exportCssPlaceholder + "|"
                 + exportComponentsJsPlaceholder + "|" + exportJsPlaceholder + "|"
-                + tracePlaceholder + "|" + spansPlaceholder + "|" + coarseProfilePlaceholder + "|"
-                + fineProfilePlaceholder + ")");
+                + tracePlaceholder + "|" + spansPlaceholder + "|" + profilePlaceholder + "|"
+                + outlierProfilePlaceholder + ")");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
         List<CharSource> charSources = Lists.newArrayList();
@@ -177,20 +176,20 @@ public class TraceExportHttpService implements HttpService {
                     charSources.add(spans);
                 }
                 charSources.add(CharSource.wrap("</script>"));
-            } else if (match.equals(coarseProfilePlaceholder)) {
+            } else if (match.equals(profilePlaceholder)) {
                 charSources.add(CharSource.wrap(
-                        "<script type=\"text/json\" id=\"coarseProfileJson\">"));
-                CharSource coarseProfile = traceExport.getCoarseProfile();
-                if (coarseProfile != null) {
-                    charSources.add(coarseProfile);
+                        "<script type=\"text/json\" id=\"profileJson\">"));
+                CharSource profile = traceExport.getProfile();
+                if (profile != null) {
+                    charSources.add(profile);
                 }
                 charSources.add(CharSource.wrap("</script>"));
-            } else if (match.equals(fineProfilePlaceholder)) {
+            } else if (match.equals(outlierProfilePlaceholder)) {
                 charSources.add(CharSource.wrap(
-                        "<script type=\"text/json\" id=\"fineProfileJson\">"));
-                CharSource fineProfile = traceExport.getFineProfile();
-                if (fineProfile != null) {
-                    charSources.add(fineProfile);
+                        "<script type=\"text/json\" id=\"outlierProfileJson\">"));
+                CharSource outlierProfile = traceExport.getOutlierProfile();
+                if (outlierProfile != null) {
+                    charSources.add(outlierProfile);
                 }
                 charSources.add(CharSource.wrap("</script>"));
             } else {

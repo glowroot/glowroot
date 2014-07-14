@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.config.CoarseProfilingConfig;
+import org.glowroot.container.config.OutlierProfilingConfig;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -42,11 +42,11 @@ public class SnapshotDaoDeletePerformanceMain {
     public static void main(String... args) throws Exception {
         Container container = Containers.createWithFileDb(new File("target"));
         // set thresholds low so there will be lots of data to view
-        CoarseProfilingConfig profilingConfig =
-                container.getConfigService().getCoarseProfilingConfig();
+        OutlierProfilingConfig profilingConfig =
+                container.getConfigService().getOutlierProfilingConfig();
         profilingConfig.setInitialDelayMillis(100);
         profilingConfig.setIntervalMillis(10);
-        container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
+        container.getConfigService().updateOutlierProfilingConfig(profilingConfig);
         container.executeAppUnderTest(GenerateTraces.class);
         int pendingWrites = container.getTraceService().getNumPendingCompleteTraces();
         while (pendingWrites > 0) {

@@ -125,8 +125,8 @@ class LocalTraceService extends TraceService {
 
     @Override
     @Nullable
-    public ProfileNode getCoarseProfile(String traceId) throws Exception {
-        String profile = traceCommonService.getCoarseProfileString(traceId);
+    public ProfileNode getProfile(String traceId) throws Exception {
+        String profile = traceCommonService.getProfileString(traceId);
         if (profile == null) {
             return null;
         }
@@ -135,8 +135,8 @@ class LocalTraceService extends TraceService {
 
     @Override
     @Nullable
-    public ProfileNode getFineProfile(String traceId) throws Exception {
-        String profile = traceCommonService.getFineProfileString(traceId);
+    public ProfileNode getOutlierProfile(String traceId) throws Exception {
+        String profile = traceCommonService.getOutlierProfileString(traceId);
         if (profile == null) {
             return null;
         }

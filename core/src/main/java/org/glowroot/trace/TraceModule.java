@@ -53,7 +53,7 @@ public class TraceModule {
     private final ThreadAllocatedBytes threadAllocatedBytes;
 
     private final StuckTraceWatcher stuckTraceWatcher;
-    private final CoarseProfilerWatcher coarseProfilerWatcher;
+    private final OutlierProfilerWatcher outlierProfilerWatcher;
 
     private final boolean weavingDisabled;
     private final boolean traceMetricWrapperMethods;
@@ -99,14 +99,14 @@ public class TraceModule {
 
         stuckTraceWatcher = new StuckTraceWatcher(scheduledExecutor, traceRegistry,
                 traceCollector, configService, ticker);
-        coarseProfilerWatcher =
-                new CoarseProfilerWatcher(scheduledExecutor, traceRegistry, configService, ticker);
+        outlierProfilerWatcher =
+                new OutlierProfilerWatcher(scheduledExecutor, traceRegistry, configService, ticker);
         stuckTraceWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
                 StuckTraceWatcher.PERIOD_MILLIS, MILLISECONDS);
-        coarseProfilerWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
-                CoarseProfilerWatcher.PERIOD_MILLIS, MILLISECONDS);
-        final FineProfileScheduler fineProfileScheduler =
-                new FineProfileScheduler(scheduledExecutor, configService, ticker, new Random());
+        outlierProfilerWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
+                OutlierProfilerWatcher.PERIOD_MILLIS, MILLISECONDS);
+        final ProfileScheduler profileScheduler =
+                new ProfileScheduler(scheduledExecutor, configService, ticker, new Random());
         // this assignment to local variable is just to make checker framework happy
         // instead of directly accessing the field from inside the anonymous inner class below
         // (in which case checker framework thinks the field may still be null)
@@ -116,7 +116,7 @@ public class TraceModule {
             public PluginServices create(@Nullable String pluginId) {
                 return PluginServicesImpl.create(traceRegistry, traceCollector,
                         configModule.getConfigService(), traceMetricNameCache,
-                        threadAllocatedBytes, fineProfileScheduler, ticker, clock,
+                        threadAllocatedBytes, profileScheduler, ticker, clock,
                         configModule.getPluginDescriptorCache(), pluginId);
             }
         };
@@ -159,7 +159,7 @@ public class TraceModule {
     @OnlyUsedByTests
     public void close() {
         stuckTraceWatcher.cancel();
-        coarseProfilerWatcher.cancel();
+        outlierProfilerWatcher.cancel();
         PluginServicesRegistry.clearStaticState();
     }
 }

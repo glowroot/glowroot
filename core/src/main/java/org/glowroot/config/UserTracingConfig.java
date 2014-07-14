@@ -26,40 +26,39 @@ import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
 
 /**
- * Immutable structure to hold the user overrides config.
+ * Immutable structure to hold the user tracing config.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Immutable
-public class UserOverridesConfig {
+public class UserTracingConfig {
 
     @Nullable
     private final String user;
     // store threshold of -1 means use general config store threshold
     // for session traces, the real threshold is the minimum of this and the general threshold
     private final int storeThresholdMillis;
-    private final boolean fineProfiling;
+    private final boolean profile;
     private final String version;
 
-    static UserOverridesConfig getDefault() {
+    static UserTracingConfig getDefault() {
         final String user = null;
         final int storeThresholdMillis = 0;
-        final boolean fineProfiling = true;
-        return new UserOverridesConfig(user, storeThresholdMillis, fineProfiling);
+        final boolean profiling = true;
+        return new UserTracingConfig(user, storeThresholdMillis, profiling);
     }
 
-    public static Overlay overlay(UserOverridesConfig base) {
+    public static Overlay overlay(UserTracingConfig base) {
         return new Overlay(base);
     }
 
     @VisibleForTesting
-    public UserOverridesConfig(@Nullable String user, int storeThresholdMillis,
-            boolean fineProfiling) {
+    public UserTracingConfig(@Nullable String user, int storeThresholdMillis, boolean profile) {
         this.user = user;
         this.storeThresholdMillis = storeThresholdMillis;
-        this.fineProfiling = fineProfiling;
-        version = VersionHashes.sha1(user, storeThresholdMillis, fineProfiling);
+        this.profile = profile;
+        version = VersionHashes.sha1(user, storeThresholdMillis, profile);
     }
 
     @Nullable
@@ -71,8 +70,8 @@ public class UserOverridesConfig {
         return storeThresholdMillis;
     }
 
-    public boolean isFineProfiling() {
-        return fineProfiling;
+    public boolean isProfile() {
+        return profile;
     }
 
     @JsonView(UiView.class)
@@ -86,7 +85,7 @@ public class UserOverridesConfig {
         return Objects.toStringHelper(this)
                 .add("user", user)
                 .add("storeThresholdMillis", storeThresholdMillis)
-                .add("fineProfiling", fineProfiling)
+                .add("profile", profile)
                 .add("version", version)
                 .toString();
     }
@@ -98,12 +97,12 @@ public class UserOverridesConfig {
         @Nullable
         private String user;
         private int storeThresholdMillis;
-        private boolean fineProfiling;
+        private boolean profile;
 
-        private Overlay(UserOverridesConfig base) {
+        private Overlay(UserTracingConfig base) {
             user = base.user;
             storeThresholdMillis = base.storeThresholdMillis;
-            fineProfiling = base.fineProfiling;
+            profile = base.profile;
         }
         public void setUser(@Nullable String user) {
             this.user = user;
@@ -111,11 +110,11 @@ public class UserOverridesConfig {
         public void setStoreThresholdMillis(int storeThresholdMillis) {
             this.storeThresholdMillis = storeThresholdMillis;
         }
-        public void setFineProfiling(boolean fineProfiling) {
-            this.fineProfiling = fineProfiling;
+        public void setProfile(boolean profile) {
+            this.profile = profile;
         }
-        public UserOverridesConfig build() {
-            return new UserOverridesConfig(user, storeThresholdMillis, fineProfiling);
+        public UserTracingConfig build() {
+            return new UserTracingConfig(user, storeThresholdMillis, profile);
         }
     }
 }

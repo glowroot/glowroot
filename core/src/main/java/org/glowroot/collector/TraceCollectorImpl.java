@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.FineProfilingConfig;
+import org.glowroot.config.ProfilingConfig;
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
@@ -88,17 +88,17 @@ public class TraceCollectorImpl implements TraceCollector {
         long duration = trace.getDuration();
         // check if should store for user tracing
         String user = trace.getUser();
-        if (user != null && user.equalsIgnoreCase(configService.getUserOverridesConfig().getUser())
-                && duration >= MILLISECONDS.toNanos(configService.getUserOverridesConfig()
+        if (user != null && user.equalsIgnoreCase(configService.getUserTracingConfig().getUser())
+                && duration >= MILLISECONDS.toNanos(configService.getUserTracingConfig()
                         .getStoreThresholdMillis())) {
             return true;
         }
-        // check if should store for fine profiling
-        if (trace.isFine()) {
-            int fineStoreThresholdMillis =
-                    configService.getFineProfilingConfig().getStoreThresholdMillis();
-            if (fineStoreThresholdMillis != FineProfilingConfig.USE_GENERAL_STORE_THRESHOLD
-                    && trace.getDuration() >= MILLISECONDS.toNanos(fineStoreThresholdMillis)) {
+        // check if should store for profiling
+        if (trace.isProfiled()) {
+            int profiledStoreThresholdMillis =
+                    configService.getProfilingConfig().getStoreThresholdMillis();
+            if (profiledStoreThresholdMillis != ProfilingConfig.USE_GENERAL_STORE_THRESHOLD
+                    && trace.getDuration() >= MILLISECONDS.toNanos(profiledStoreThresholdMillis)) {
                 return true;
             }
         }
@@ -204,10 +204,9 @@ public class TraceCollectorImpl implements TraceCollector {
         }
         CharSource spans = SpansCharSourceCreator
                 .createSpansCharSource(trace.getSpansCopy(), trace.getStartTick(), captureTick);
-        CharSource coarseProfile = ProfileCharSourceCreator
-                .createProfileCharSource(trace.getCoarseProfile());
-        CharSource fineProfile = ProfileCharSourceCreator
-                .createProfileCharSource(trace.getFineProfile());
-        snapshotRepository.store(snapshot, spans, coarseProfile, fineProfile);
+        CharSource profile = ProfileCharSourceCreator.createProfileCharSource(trace.getProfile());
+        CharSource outlierProfile =
+                ProfileCharSourceCreator.createProfileCharSource(trace.getOutlierProfile());
+        snapshotRepository.store(snapshot, spans, profile, outlierProfile);
     }
 }

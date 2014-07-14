@@ -103,43 +103,43 @@ public class TraceCommonService {
     // overwritten profile will return {"overwritten":true}
     // expired trace will return {"expired":true}
     @Nullable
-    CharSource getCoarseProfile(String traceId) throws SQLException {
+    CharSource getProfile(String traceId) throws SQLException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {
             if (active.getId().equals(traceId)) {
-                return createCoarseProfile(active);
+                return createProfile(active);
             }
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
         // and stored
         for (Trace pending : traceCollectorImpl.getPendingCompleteTraces()) {
             if (pending.getId().equals(traceId)) {
-                return createCoarseProfile(pending);
+                return createProfile(pending);
             }
         }
-        return snapshotDao.readCoarseProfile(traceId);
+        return snapshotDao.readProfile(traceId);
     }
 
     // overwritten profile will return {"overwritten":true}
     // expired trace will return {"expired":true}
     @Nullable
-    CharSource getFineProfile(String traceId) throws SQLException {
+    CharSource getOutlierProfile(String traceId) throws SQLException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {
             if (active.getId().equals(traceId)) {
-                return createFineProfile(active);
+                return createOutlierProfile(active);
             }
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
         // and stored
         for (Trace pending : traceCollectorImpl.getPendingCompleteTraces()) {
             if (pending.getId().equals(traceId)) {
-                return createFineProfile(pending);
+                return createOutlierProfile(pending);
             }
         }
-        return snapshotDao.readFineProfile(traceId);
+        return snapshotDao.readOutlierProfile(traceId);
     }
 
     @Nullable
@@ -150,8 +150,8 @@ public class TraceCommonService {
             if (active.getId().equals(traceId)) {
                 Snapshot snapshot = createActiveSnapshot(active);
                 return new TraceExport(snapshot, SnapshotWriter.toString(snapshot),
-                        createTraceSpans(active), createCoarseProfile(active),
-                        createFineProfile(active));
+                        createTraceSpans(active), createProfile(active),
+                        createOutlierProfile(active));
             }
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
@@ -160,8 +160,8 @@ public class TraceCommonService {
             if (pending.getId().equals(traceId)) {
                 Snapshot snapshot = createPendingSnapshot(pending);
                 return new TraceExport(snapshot, SnapshotWriter.toString(snapshot),
-                        createTraceSpans(pending), createCoarseProfile(pending),
-                        createFineProfile(pending));
+                        createTraceSpans(pending), createProfile(pending),
+                        createOutlierProfile(pending));
             }
         }
         Snapshot snapshot = snapshotDao.readSnapshot(traceId);
@@ -170,8 +170,8 @@ public class TraceCommonService {
         }
         try {
             return new TraceExport(snapshot, SnapshotWriter.toString(snapshot),
-                    snapshotDao.readSpans(traceId), snapshotDao.readCoarseProfile(traceId),
-                    snapshotDao.readFineProfile(traceId));
+                    snapshotDao.readSpans(traceId), snapshotDao.readProfile(traceId),
+                    snapshotDao.readOutlierProfile(traceId));
         } catch (SQLException e) {
             throw new IOException(e);
         }
@@ -193,15 +193,15 @@ public class TraceCommonService {
     }
 
     @Nullable
-    private CharSource createCoarseProfile(Trace active) {
+    private CharSource createOutlierProfile(Trace active) {
         return ProfileCharSourceCreator.createProfileCharSource(
-                active.getCoarseProfile());
+                active.getOutlierProfile());
     }
 
     @Nullable
-    private CharSource createFineProfile(Trace active) {
+    private CharSource createProfile(Trace active) {
         return ProfileCharSourceCreator.createProfileCharSource(
-                active.getFineProfile());
+                active.getProfile());
     }
 
     static class TraceExport {
@@ -211,17 +211,17 @@ public class TraceCommonService {
         @Nullable
         private final CharSource spans;
         @Nullable
-        private final CharSource coarseProfile;
+        private final CharSource profile;
         @Nullable
-        private final CharSource fineProfile;
+        private final CharSource outlierProfile;
 
         private TraceExport(Snapshot snapshot, String snapshotJson, @Nullable CharSource spans,
-                @Nullable CharSource coarseProfile, @Nullable CharSource fineProfile) {
+                @Nullable CharSource profile, @Nullable CharSource outlierProfile) {
             this.snapshot = snapshot;
             this.snapshotJson = snapshotJson;
             this.spans = spans;
-            this.coarseProfile = coarseProfile;
-            this.fineProfile = fineProfile;
+            this.profile = profile;
+            this.outlierProfile = outlierProfile;
         }
 
         Snapshot getSnapshot() {
@@ -238,13 +238,13 @@ public class TraceCommonService {
         }
 
         @Nullable
-        CharSource getCoarseProfile() {
-            return coarseProfile;
+        CharSource getProfile() {
+            return profile;
         }
 
         @Nullable
-        CharSource getFineProfile() {
-            return fineProfile;
+        CharSource getOutlierProfile() {
+            return outlierProfile;
         }
     }
 
@@ -262,8 +262,8 @@ public class TraceCommonService {
     // this method exists because tests cannot use (sometimes) shaded guava CharSource
     @OnlyUsedByTests
     @Nullable
-    public String getCoarseProfileString(String traceId) throws SQLException, IOException {
-        CharSource profile = getCoarseProfile(traceId);
+    public String getProfileString(String traceId) throws SQLException, IOException {
+        CharSource profile = getProfile(traceId);
         if (profile == null) {
             return null;
         }
@@ -273,8 +273,8 @@ public class TraceCommonService {
     // this method exists because tests cannot use (sometimes) shaded guava CharSource
     @OnlyUsedByTests
     @Nullable
-    public String getFineProfileString(String traceId) throws SQLException, IOException {
-        CharSource profile = getFineProfile(traceId);
+    public String getOutlierProfileString(String traceId) throws SQLException, IOException {
+        CharSource profile = getOutlierProfile(traceId);
         if (profile == null) {
             return null;
         }

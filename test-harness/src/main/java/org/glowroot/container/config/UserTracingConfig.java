@@ -28,16 +28,16 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class UserOverridesConfig {
+public class UserTracingConfig {
 
     @Nullable
     private String user;
     private int storeThresholdMillis;
-    private boolean fineProfiling;
+    private boolean profile;
 
     private final String version;
 
-    public UserOverridesConfig(String version) {
+    public UserTracingConfig(String version) {
         this.version = version;
     }
 
@@ -58,12 +58,12 @@ public class UserOverridesConfig {
         this.storeThresholdMillis = storeThresholdMillis;
     }
 
-    public boolean isFineProfiling() {
-        return fineProfiling;
+    public boolean isProfile() {
+        return profile;
     }
 
-    public void setFineProfiling(boolean fineProfiling) {
-        this.fineProfiling = fineProfiling;
+    public void setProfile(boolean profile) {
+        this.profile = profile;
     }
 
     public String getVersion() {
@@ -73,14 +73,14 @@ public class UserOverridesConfig {
     @Override
     @Pure
     public boolean equals(@Nullable Object obj) {
-        if (obj instanceof UserOverridesConfig) {
-            UserOverridesConfig that = (UserOverridesConfig) obj;
+        if (obj instanceof UserTracingConfig) {
+            UserTracingConfig that = (UserTracingConfig) obj;
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
             return Objects.equal(user, that.user)
                     && Objects.equal(storeThresholdMillis, that.storeThresholdMillis)
-                    && Objects.equal(fineProfiling, that.fineProfiling);
+                    && Objects.equal(profile, that.profile);
         }
         return false;
     }
@@ -91,7 +91,7 @@ public class UserOverridesConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(user, storeThresholdMillis, fineProfiling);
+        return Objects.hashCode(user, storeThresholdMillis, profile);
     }
 
     @Override
@@ -100,23 +100,23 @@ public class UserOverridesConfig {
         return Objects.toStringHelper(this)
                 .add("user", user)
                 .add("storeThresholdMillis", storeThresholdMillis)
-                .add("fineProfiling", fineProfiling)
+                .add("profile", profile)
                 .add("version", version)
                 .toString();
     }
 
     @JsonCreator
-    static UserOverridesConfig readValue(@JsonProperty("user") @Nullable String user,
+    static UserTracingConfig readValue(@JsonProperty("user") @Nullable String user,
             @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
-            @JsonProperty("fineProfiling") @Nullable Boolean fineProfiling,
+            @JsonProperty("profile") @Nullable Boolean profile,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
-        checkRequiredProperty(fineProfiling, "fineProfiling");
+        checkRequiredProperty(profile, "profile");
         checkRequiredProperty(version, "version");
-        UserOverridesConfig config = new UserOverridesConfig(version);
+        UserTracingConfig config = new UserTracingConfig(version);
         config.setUser(user);
         config.setStoreThresholdMillis(storeThresholdMillis);
-        config.setFineProfiling(fineProfiling);
+        config.setProfile(profile);
         return config;
     }
 }

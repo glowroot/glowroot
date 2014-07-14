@@ -25,15 +25,15 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.config.AdvancedConfig;
-import org.glowroot.container.config.CoarseProfilingConfig;
 import org.glowroot.container.config.ConfigService;
-import org.glowroot.container.config.FineProfilingConfig;
 import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.OutlierProfilingConfig;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.PointcutConfig;
+import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
-import org.glowroot.container.config.UserOverridesConfig;
+import org.glowroot.container.config.UserTracingConfig;
 
 /**
  * @author Trask Stalnaker
@@ -73,33 +73,33 @@ class JavaagentConfigService implements ConfigService {
     }
 
     @Override
-    public CoarseProfilingConfig getCoarseProfilingConfig() throws Exception {
-        return getConfig("/backend/config/coarse-profiling", CoarseProfilingConfig.class);
+    public ProfilingConfig getProfilingConfig() throws Exception {
+        return getConfig("/backend/config/profiling", ProfilingConfig.class);
     }
 
     @Override
-    public void updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
-        httpClient.post("/backend/config/coarse-profiling", mapper.writeValueAsString(config));
+    public void updateProfilingConfig(ProfilingConfig config) throws Exception {
+        httpClient.post("/backend/config/profiling", mapper.writeValueAsString(config));
     }
 
     @Override
-    public FineProfilingConfig getFineProfilingConfig() throws Exception {
-        return getConfig("/backend/config/fine-profiling", FineProfilingConfig.class);
+    public OutlierProfilingConfig getOutlierProfilingConfig() throws Exception {
+        return getConfig("/backend/config/outlier-profiling", OutlierProfilingConfig.class);
     }
 
     @Override
-    public void updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
-        httpClient.post("/backend/config/fine-profiling", mapper.writeValueAsString(config));
+    public void updateOutlierProfilingConfig(OutlierProfilingConfig config) throws Exception {
+        httpClient.post("/backend/config/outlier-profiling", mapper.writeValueAsString(config));
     }
 
     @Override
-    public UserOverridesConfig getUserOverridesConfig() throws Exception {
-        return getConfig("/backend/config/user-overrides", UserOverridesConfig.class);
+    public UserTracingConfig getUserTracingConfig() throws Exception {
+        return getConfig("/backend/config/user-tracing", UserTracingConfig.class);
     }
 
     @Override
-    public void updateUserOverridesConfig(UserOverridesConfig config) throws Exception {
-        httpClient.post("/backend/config/user-overrides", mapper.writeValueAsString(config));
+    public void updateUserTracingConfig(UserTracingConfig config) throws Exception {
+        httpClient.post("/backend/config/user-tracing", mapper.writeValueAsString(config));
     }
 
     @Override

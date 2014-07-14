@@ -308,21 +308,21 @@ TraceRenderer = (function () {
       $selector.addClass('hide');
     }
   });
-  $(document).on('click', '.profile-coarse-toggle', function () {
-    var $traceParent = $(this).parents('.trace-parent');
-    var $button = $(this);
-    var traceId = $traceParent.data('traceId');
-    profileToggle($button, $traceParent, '#coarseProfileOuter', 'coarseProfile',
-            'backend/trace/coarse-profile' + '?trace-id=' + traceId);
-  });
-  $(document).on('click', '.profile-fine-toggle', function () {
-    var $traceParent = $(this).parents('.trace-parent');
-    var $button = $(this);
-    var traceId = $traceParent.data('traceId');
-    profileToggle($button, $traceParent, '#fineProfileOuter', 'fineProfile',
-            'backend/trace/fine-profile' + '?trace-id=' + traceId);
-  });
   $(document).on('click', '.profile-toggle', function () {
+    var $traceParent = $(this).parents('.trace-parent');
+    var $button = $(this);
+    var traceId = $traceParent.data('traceId');
+    profileToggle($button, $traceParent, '#profileOuter', 'profile',
+            'backend/trace/profile' + '?trace-id=' + traceId);
+  });
+  $(document).on('click', '.outlier-profile-toggle', function () {
+    var $traceParent = $(this).parents('.trace-parent');
+    var $button = $(this);
+    var traceId = $traceParent.data('traceId');
+    profileToggle($button, $traceParent, '#outlierProfileOuter', 'outlierProfile',
+            'backend/trace/outlier-profile' + '?trace-id=' + traceId);
+  });
+  $(document).on('click', '.transaction-profile-toggle', function () {
     var $transactionParent = $(this).parents('.transaction-parent');
     var $button = $(this);
     var queryString = $transactionParent.data('queryString');
@@ -628,10 +628,10 @@ TraceRenderer = (function () {
       $selector.addClass('trace-parent');
       $selector.data('traceId', trace.id);
     },
-    renderTraceFromExport: function (trace, $selector, spans, coarseProfile, fineProfile) {
+    renderTraceFromExport: function (trace, $selector, spans, profile, outlierProfile) {
       $selector.data('spans', spans);
-      $selector.data('coarseProfile', coarseProfile);
-      $selector.data('fineProfile', fineProfile);
+      $selector.data('profile', profile);
+      $selector.data('outlierProfile', outlierProfile);
       this.renderTrace(trace, $selector);
     },
     renderTransaction: function (transaction, $selector, queryString) {

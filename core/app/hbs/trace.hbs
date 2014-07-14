@@ -140,17 +140,17 @@
     <em>(see Glowroot > Configuration &gt; Storage &gt; Spans/profiles capped db)</em>
   </div>
 {{/ifExistenceExpired}}
-{{#ifExistenceYes coarseProfileExistence}}
+{{#ifExistenceYes profileExistence}}
   <div>
-    <button class="flat-btn flat-btn-big-pad1aligned profile-coarse-toggle">
-      <span class="glowroot-link-color">Coarse-grained profile</span>
+    <button class="flat-btn flat-btn-big-pad1aligned profile-toggle">
+      <span class="glowroot-link-color">Profile</span>
     </button>
     {{! spinner is not used in export file }}
     <div>
       <div class="hide trace-detail-spinner"></div>
     </div>
   </div>
-  <div class="nowrap hide" id="coarseProfileOuter">
+  <div class="nowrap hide" id="profileOuter">
     <select class="form-control profile-filter input-xlarge hide" onchange="this.blur()"
             style="margin: 4px;">
     </select>
@@ -163,25 +163,25 @@
     <div class="profile-interesting indent1"></div>
   </div>
 {{/ifExistenceYes}}
-{{#ifExistenceExpired coarseProfileExistence}}
+{{#ifExistenceExpired profileExistence}}
   <div>
     <strong>
-      Coarse-grained profile no longer exists for this trace
+      Profile no longer exists for this trace
     </strong>
     <em>(see Glowroot > Configuration &gt; Storage &gt; Spans/profiles capped db)</em>
   </div>
 {{/ifExistenceExpired}}
-{{#ifExistenceYes fineProfileExistence}}
+{{#ifExistenceYes outlierProfileExistence}}
   <div>
-    <button class="flat-btn flat-btn-big-pad1aligned profile-fine-toggle">
-      <span class="glowroot-link-color">Fine-grained profile</span>
+    <button class="flat-btn flat-btn-big-pad1aligned outlier-profile-toggle">
+      <span class="glowroot-link-color">Outlier profile</span>
     </button>
     {{! spinner is not used in export file }}
     <div>
       <div class="hide trace-detail-spinner"></div>
     </div>
   </div>
-  <div class="nowrap hide" id="fineProfileOuter">
+  <div class="nowrap hide" id="outlierProfileOuter">
     <select class="form-control profile-filter input-xlarge hide" onchange="this.blur()"
             style="margin: 4px;">
     </select>
@@ -194,10 +194,10 @@
     <div class="profile-interesting indent1"></div>
   </div>
 {{/ifExistenceYes}}
-{{#ifExistenceExpired fineProfileExistence}}
+{{#ifExistenceExpired outlierProfileExistence}}
   <div>
     <strong>
-      Fine-grained profile no longer exists for this trace
+      Outlier profile no longer exists for this trace
     </strong>
     <em>(see Glowroot > Configuration &gt; Storage &gt; Spans/profiles capped db)</em>
   </div>

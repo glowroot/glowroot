@@ -36,18 +36,18 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.AdvancedConfig;
-import org.glowroot.config.CoarseProfilingConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.OptimisticLockException;
-import org.glowroot.config.FineProfilingConfig;
 import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.JsonViews.UiView;
+import org.glowroot.config.OutlierProfilingConfig;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptorCache;
+import org.glowroot.config.ProfilingConfig;
 import org.glowroot.config.StorageConfig;
 import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.config.UserInterfaceConfig.CurrentPasswordIncorrectException;
-import org.glowroot.config.UserOverridesConfig;
+import org.glowroot.config.UserTracingConfig;
 import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.markers.Singleton;
@@ -109,29 +109,15 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/config/coarse-profiling")
-    String getCoarseProfilingConfig() throws IOException, SQLException {
-        logger.debug("getCoarseProfilingConfig()");
+    @GET("/backend/config/profiling")
+    String getProfilingConfig() throws IOException, SQLException {
+        logger.debug("getProfilingConfig()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
         jg.writeStartObject();
         jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getCoarseProfilingConfig());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
-    }
-
-    @GET("/backend/config/fine-profiling")
-    String getFineProfiling() throws IOException, SQLException {
-        logger.debug("getFineProfiling()");
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getFineProfilingConfig());
+        writer.writeValue(jg, configService.getProfilingConfig());
         jg.writeNumberField("generalStoreThresholdMillis",
                 configService.getGeneralConfig().getStoreThresholdMillis());
         jg.writeEndObject();
@@ -139,15 +125,29 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/config/user-overrides")
-    String getUserOverridesConfig() throws IOException, SQLException {
-        logger.debug("getUserOverridesConfig()");
+    @GET("/backend/config/outlier-profiling")
+    String getOutlierProfilingConfig() throws IOException, SQLException {
+        logger.debug("getOutlierProfilingConfig()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
         jg.writeStartObject();
         jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getUserOverridesConfig());
+        writer.writeValue(jg, configService.getOutlierProfilingConfig());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    @GET("/backend/config/user-tracing")
+    String getUserTracingConfig() throws IOException, SQLException {
+        logger.debug("getUserTracingConfig()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
+        jg.writeStartObject();
+        jg.writeFieldName("config");
+        writer.writeValue(jg, configService.getUserTracingConfig());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -239,52 +239,52 @@ class ConfigJsonService {
         return getGeneralConfig();
     }
 
-    @POST("/backend/config/coarse-profiling")
-    String updateCoarseProfilingConfig(String content) throws IOException, SQLException {
-        logger.debug("updateCoarseProfilingConfig(): content={}", content);
+    @POST("/backend/config/profiling")
+    String updateProfilingConfig(String content) throws IOException, SQLException {
+        logger.debug("updateProfilingConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         String priorVersion = getAndRemoveVersionNode(configNode);
-        CoarseProfilingConfig config = configService.getCoarseProfilingConfig();
-        CoarseProfilingConfig.Overlay overlay = CoarseProfilingConfig.overlay(config);
+        ProfilingConfig config = configService.getProfilingConfig();
+        ProfilingConfig.Overlay overlay = ProfilingConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
         try {
-            configService.updateCoarseProfilingConfig(overlay.build(), priorVersion);
+            configService.updateProfilingConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getCoarseProfilingConfig();
+        return getProfilingConfig();
     }
 
-    @POST("/backend/config/fine-profiling")
-    String updateFineProfilingConfig(String content) throws IOException, SQLException {
-        logger.debug("updateFineProfilingConfig(): content={}", content);
+    @POST("/backend/config/outlier-profiling")
+    String updateOutlierProfilingConfig(String content) throws IOException, SQLException {
+        logger.debug("updateOutlierProfilingConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         String priorVersion = getAndRemoveVersionNode(configNode);
-        FineProfilingConfig config = configService.getFineProfilingConfig();
-        FineProfilingConfig.Overlay overlay = FineProfilingConfig.overlay(config);
+        OutlierProfilingConfig config = configService.getOutlierProfilingConfig();
+        OutlierProfilingConfig.Overlay overlay = OutlierProfilingConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
         try {
-            configService.updateFineProfilingConfig(overlay.build(), priorVersion);
+            configService.updateOutlierProfilingConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getFineProfiling();
+        return getOutlierProfilingConfig();
     }
 
-    @POST("/backend/config/user-overrides")
-    String updateUserOverridesConfig(String content) throws IOException, SQLException {
-        logger.debug("updateUserOverridesConfig(): content={}", content);
+    @POST("/backend/config/user-tracing")
+    String updateUserTracingConfig(String content) throws IOException, SQLException {
+        logger.debug("updateUserTracingConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         String priorVersion = getAndRemoveVersionNode(configNode);
-        UserOverridesConfig config = configService.getUserOverridesConfig();
-        UserOverridesConfig.Overlay overlay = UserOverridesConfig.overlay(config);
+        UserTracingConfig config = configService.getUserTracingConfig();
+        UserTracingConfig.Overlay overlay = UserTracingConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
         try {
-            configService.updateUserOverridesConfig(overlay.build(), priorVersion);
+            configService.updateUserTracingConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getUserOverridesConfig();
+        return getUserTracingConfig();
     }
 
     @POST("/backend/config/storage")

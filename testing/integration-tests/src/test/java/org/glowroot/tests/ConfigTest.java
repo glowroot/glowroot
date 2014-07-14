@@ -27,15 +27,15 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.AdvancedConfig;
-import org.glowroot.container.config.CoarseProfilingConfig;
-import org.glowroot.container.config.FineProfilingConfig;
 import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.OutlierProfilingConfig;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.PointcutConfig;
 import org.glowroot.container.config.PointcutConfig.MethodModifier;
+import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
-import org.glowroot.container.config.UserOverridesConfig;
+import org.glowroot.container.config.UserTracingConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -77,39 +77,39 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldUpdateCoarseProfilingConfig() throws Exception {
+    public void shouldUpdateProfilingConfig() throws Exception {
         // given
-        CoarseProfilingConfig config = container.getConfigService().getCoarseProfilingConfig();
+        ProfilingConfig config = container.getConfigService().getProfilingConfig();
         // when
         updateAllFields(config);
-        container.getConfigService().updateCoarseProfilingConfig(config);
+        container.getConfigService().updateProfilingConfig(config);
         // then
-        CoarseProfilingConfig updatedConfig = container.getConfigService()
-                .getCoarseProfilingConfig();
+        ProfilingConfig updatedConfig = container.getConfigService().getProfilingConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
     @Test
-    public void shouldUpdateFineProfilingConfig() throws Exception {
+    public void shouldUpdateOutlierProfilingConfig() throws Exception {
         // given
-        FineProfilingConfig config = container.getConfigService().getFineProfilingConfig();
+        OutlierProfilingConfig config = container.getConfigService().getOutlierProfilingConfig();
         // when
         updateAllFields(config);
-        container.getConfigService().updateFineProfilingConfig(config);
+        container.getConfigService().updateOutlierProfilingConfig(config);
         // then
-        FineProfilingConfig updatedConfig = container.getConfigService().getFineProfilingConfig();
+        OutlierProfilingConfig updatedConfig = container.getConfigService()
+                .getOutlierProfilingConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
     @Test
-    public void shouldUpdateUserOverridesConfig() throws Exception {
+    public void shouldUpdateUserTracingConfig() throws Exception {
         // given
-        UserOverridesConfig config = container.getConfigService().getUserOverridesConfig();
+        UserTracingConfig config = container.getConfigService().getUserTracingConfig();
         // when
         updateAllFields(config);
-        container.getConfigService().updateUserOverridesConfig(config);
+        container.getConfigService().updateUserTracingConfig(config);
         // then
-        UserOverridesConfig updatedConfig = container.getConfigService().getUserOverridesConfig();
+        UserTracingConfig updatedConfig = container.getConfigService().getUserTracingConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
@@ -263,23 +263,23 @@ public class ConfigTest {
         config.setMaxSpans(config.getMaxSpans() + 1);
     }
 
-    private static void updateAllFields(CoarseProfilingConfig config) {
+    private static void updateAllFields(ProfilingConfig config) {
+        config.setTracePercentage(config.getTracePercentage() + 1);
+        config.setIntervalMillis(config.getIntervalMillis() + 1);
+        config.setMaxSeconds(config.getMaxSeconds() + 1);
+    }
+
+    private static void updateAllFields(OutlierProfilingConfig config) {
         config.setEnabled(!config.isEnabled());
         config.setInitialDelayMillis(config.getInitialDelayMillis() + 1);
         config.setIntervalMillis(config.getIntervalMillis() + 1);
-        config.setTotalSeconds(config.getTotalSeconds() + 1);
+        config.setMaxSeconds(config.getMaxSeconds() + 1);
     }
 
-    private static void updateAllFields(FineProfilingConfig config) {
-        config.setTracePercentage(config.getTracePercentage() + 1);
-        config.setIntervalMillis(config.getIntervalMillis() + 1);
-        config.setTotalSeconds(config.getTotalSeconds() + 1);
-    }
-
-    private static void updateAllFields(UserOverridesConfig config) {
+    private static void updateAllFields(UserTracingConfig config) {
         config.setUser(config.getUser() + "x");
         config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
-        config.setFineProfiling(!config.isFineProfiling());
+        config.setProfile(!config.isProfile());
     }
 
     private static void updateAllFields(StorageConfig config) {

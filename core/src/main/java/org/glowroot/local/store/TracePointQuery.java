@@ -41,7 +41,7 @@ public class TracePointQuery {
     @Nullable
     private final String transactionType;
     private final boolean errorOnly;
-    private final boolean fineOnly;
+    private final boolean profiledOnly;
     @Nullable
     private final StringComparator transactionNameComparator;
     @Nullable
@@ -68,7 +68,7 @@ public class TracePointQuery {
 
     @VisibleForTesting
     TracePointQuery(long from, long to, long durationLow, @Nullable Long durationHigh,
-            @Nullable String transactionType, boolean errorOnly, boolean fineOnly,
+            @Nullable String transactionType, boolean errorOnly, boolean profiledOnly,
             @Nullable StringComparator transactionNameComparator, @Nullable String transactionName,
             @Nullable StringComparator headlineComparator, @Nullable String headline,
             @Nullable StringComparator errorComparator, @Nullable String error,
@@ -81,7 +81,7 @@ public class TracePointQuery {
         this.durationHigh = durationHigh;
         this.transactionType = transactionType;
         this.errorOnly = errorOnly;
-        this.fineOnly = fineOnly;
+        this.profiledOnly = profiledOnly;
         this.transactionNameComparator = transactionNameComparator;
         this.transactionName = transactionName;
         this.headlineComparator = headlineComparator;
@@ -122,8 +122,8 @@ public class TracePointQuery {
         return errorOnly;
     }
 
-    public boolean isFineOnly() {
-        return fineOnly;
+    public boolean isProfiledOnly() {
+        return profiledOnly;
     }
 
     @Nullable
@@ -195,7 +195,7 @@ public class TracePointQuery {
                 .add("durationHigh", durationHigh)
                 .add("transactionType", transactionType)
                 .add("errorOnly", errorOnly)
-                .add("fineOnly", fineOnly)
+                .add("profiledOnly", profiledOnly)
                 .add("transactionNameComparator", transactionNameComparator)
                 .add("transactionName", transactionName)
                 .add("headlineComparator", headlineComparator)
@@ -219,7 +219,7 @@ public class TracePointQuery {
             @JsonProperty("durationHigh") @Nullable Long durationHigh,
             @JsonProperty("transactionType") @Nullable String transactionType,
             @JsonProperty("errorOnly") @Nullable Boolean errorOnly,
-            @JsonProperty("fineOnly") @Nullable Boolean fineOnly,
+            @JsonProperty("profiledOnly") @Nullable Boolean profiledOnly,
             @JsonProperty("transactionNameComparator") @Nullable StringComparator transactionNameComparator,
             @JsonProperty("transactionName") @Nullable String transactionName,
             @JsonProperty("headlineComparator") @Nullable StringComparator headlineComparator,
@@ -237,7 +237,7 @@ public class TracePointQuery {
         checkRequiredProperty(to, "to");
         checkRequiredProperty(limit, "limit");
         return new TracePointQuery(from, to, nullToZero(durationLow), durationHigh,
-                transactionType, nullToFalse(errorOnly), nullToFalse(fineOnly),
+                transactionType, nullToFalse(errorOnly), nullToFalse(profiledOnly),
                 transactionNameComparator, transactionName, headlineComparator, headline,
                 errorComparator, error, userComparator, user, attributeName,
                 attributeValueComparator, attributeValue, limit);

@@ -69,10 +69,10 @@ public class SnapshotWriter {
         }
         jg.writeStringField("spansExistence",
                 snapshot.getSpansExistence().name().toLowerCase(Locale.ENGLISH));
-        jg.writeStringField("coarseProfileExistence",
-                snapshot.getCoarseProfileExistence().name().toLowerCase(Locale.ENGLISH));
-        jg.writeStringField("fineProfileExistence",
-                snapshot.getFineProfileExistence().name().toLowerCase(Locale.ENGLISH));
+        jg.writeStringField("profileExistence",
+                snapshot.getProfileExistence().name().toLowerCase(Locale.ENGLISH));
+        jg.writeStringField("outlierProfileExistence",
+                snapshot.getOutlierProfileExistence().name().toLowerCase(Locale.ENGLISH));
         jg.writeEndObject();
         jg.close();
         return sb.toString();

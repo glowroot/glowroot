@@ -67,7 +67,7 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("transaction_name", Types.VARCHAR),
             new Column("headline", Types.VARCHAR),
             new Column("error", Types.BOOLEAN), // for searching only
-            new Column("fine", Types.BOOLEAN), // for searching only
+            new Column("profiled", Types.BOOLEAN), // for searching only
             new Column("error_message", Types.VARCHAR),
             new Column("user", Types.VARCHAR),
             new Column("attributes", Types.VARCHAR), // json data
@@ -75,8 +75,8 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("thread_info", Types.VARCHAR), // json data
             new Column("gc_infos", Types.VARCHAR), // json data
             new Column("spans_id", Types.VARCHAR), // capped database id
-            new Column("coarse_profile_id", Types.VARCHAR), // capped database id
-            new Column("fine_profile_id", Types.VARCHAR)); // capped database id
+            new Column("profile_id", Types.VARCHAR), // capped database id
+            new Column("outlier_profile_id", Types.VARCHAR)); // capped database id
 
     // capture_time column is used for expiring records without using FK with on delete cascade
     private static final ImmutableList<Column> snapshotAttributeColumns = ImmutableList.of(
@@ -106,29 +106,29 @@ public class SnapshotDao implements SnapshotRepository {
     }
 
     @Override
-    public void store(final Snapshot snapshot, CharSource spans,
-            @Nullable CharSource coarseProfile, @Nullable CharSource fineProfile) {
+    public void store(final Snapshot snapshot, CharSource spans, @Nullable CharSource profile,
+            @Nullable CharSource outlierProfile) {
         String spansId = cappedDatabase.write(spans).getId();
-        String coarseProfileId = null;
-        if (coarseProfile != null) {
-            coarseProfileId = cappedDatabase.write(coarseProfile).getId();
+        String profileId = null;
+        if (profile != null) {
+            profileId = cappedDatabase.write(profile).getId();
         }
-        String fineProfileId = null;
-        if (fineProfile != null) {
-            fineProfileId = cappedDatabase.write(fineProfile).getId();
+        String outlierProfileId = null;
+        if (outlierProfile != null) {
+            outlierProfileId = cappedDatabase.write(outlierProfile).getId();
         }
         try {
             dataSource.update("merge into snapshot (id, stuck, start_time, capture_time, duration,"
-                    + " transaction_type, transaction_name, headline, error, fine, error_message,"
-                    + " user, attributes, trace_metrics, thread_info, gc_infos, spans_id,"
-                    + " coarse_profile_id, fine_profile_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
-                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(), snapshot.isStuck(),
+                    + " transaction_type, transaction_name, headline, error, profiled,"
+                    + " error_message, user, attributes, trace_metrics, thread_info, gc_infos,"
+                    + " spans_id, profile_id, outlier_profile_id) values (?, ?, ?, ?, ?, ?, ?, ?,"
+                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(), snapshot.isStuck(),
                     snapshot.getStartTime(), snapshot.getCaptureTime(), snapshot.getDuration(),
                     snapshot.getTransactionType(), snapshot.getTransactionName(),
-                    snapshot.getHeadline(), snapshot.getError() != null, fineProfileId != null,
+                    snapshot.getHeadline(), snapshot.getError() != null, profileId != null,
                     snapshot.getError(), snapshot.getUser(), snapshot.getAttributes(),
                     snapshot.getTraceMetrics(), snapshot.getThreadInfo(), snapshot.getGcInfos(),
-                    spansId, coarseProfileId, fineProfileId);
+                    spansId, profileId, outlierProfileId);
             final ImmutableSetMultimap<String, String> attributesForIndexing =
                     snapshot.getAttributesForIndexing();
             if (attributesForIndexing == null) {
@@ -176,7 +176,7 @@ public class SnapshotDao implements SnapshotRepository {
             snapshots = dataSource.query("select id, stuck, start_time, capture_time, duration,"
                     + " transaction_type, transaction_name, headline, error_message, user,"
                     + " attributes, trace_metrics, thread_info, gc_infos, spans_id,"
-                    + " coarse_profile_id, fine_profile_id from snapshot where id = ?",
+                    + " profile_id, outlier_profile_id from snapshot where id = ?",
                     ImmutableList.of(traceId), new SnapshotRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -197,13 +197,13 @@ public class SnapshotDao implements SnapshotRepository {
     }
 
     @Nullable
-    public CharSource readCoarseProfile(String traceId) throws SQLException {
-        return readFromCappedDatabase("coarse_profile_id", traceId);
+    public CharSource readProfile(String traceId) throws SQLException {
+        return readFromCappedDatabase("profile_id", traceId);
     }
 
     @Nullable
-    public CharSource readFineProfile(String traceId) throws SQLException {
-        return readFromCappedDatabase("fine_profile_id", traceId);
+    public CharSource readOutlierProfile(String traceId) throws SQLException {
+        return readFromCappedDatabase("outlier_profile_id", traceId);
     }
 
     public QueryResult<ErrorAggregate> readErrorAggregates(ErrorAggregateQuery query) {
@@ -342,8 +342,8 @@ public class SnapshotDao implements SnapshotRepository {
             sql += " and snapshot.error = ?";
             args.add(true);
         }
-        if (query.isFineOnly()) {
-            sql += " and snapshot.fine = ?";
+        if (query.isProfiledOnly()) {
+            sql += " and snapshot.profiled = ?";
             args.add(true);
         }
         StringComparator transactionNameComparator = query.getTransactionNameComparator();
@@ -500,8 +500,8 @@ public class SnapshotDao implements SnapshotRepository {
             snapshot.threadInfo(resultSet.getString(13));
             snapshot.gcInfos(resultSet.getString(14));
             snapshot.spansExistence(getExistence(resultSet.getString(15)));
-            snapshot.coarseProfileExistence(getExistence(resultSet.getString(16)));
-            snapshot.fineProfileExistence(getExistence(resultSet.getString(17)));
+            snapshot.profileExistence(getExistence(resultSet.getString(16)));
+            snapshot.outlierProfileExistence(getExistence(resultSet.getString(17)));
             return snapshot.build();
         }
 

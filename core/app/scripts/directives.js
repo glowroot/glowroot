@@ -343,7 +343,7 @@ glowroot.directive('gtFormAutofocusOnFirstInput', function () {
       return iElement.find('input').length && iElement.find('input').first().is(':visible');
     }, function (newValue) {
       if (newValue) {
-        // setTimeout is sometimes needed for IE9, e.g. on Config > Fine-grained profiling
+        // setTimeout is sometimes needed for IE9, e.g. on Config > Profiling
         setTimeout(function () {
           iElement.find('input').first().focus();
         });

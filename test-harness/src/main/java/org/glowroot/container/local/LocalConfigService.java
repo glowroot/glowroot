@@ -24,16 +24,16 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.GlowrootModule;
 import org.glowroot.config.UserInterfaceConfig.Overlay;
 import org.glowroot.container.config.AdvancedConfig;
-import org.glowroot.container.config.CoarseProfilingConfig;
 import org.glowroot.container.config.ConfigService;
-import org.glowroot.container.config.FineProfilingConfig;
 import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.OutlierProfilingConfig;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.PointcutConfig;
 import org.glowroot.container.config.PointcutConfig.MethodModifier;
+import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
-import org.glowroot.container.config.UserOverridesConfig;
+import org.glowroot.container.config.UserTracingConfig;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.ui.LocalUiModule;
 
@@ -91,63 +91,63 @@ class LocalConfigService implements ConfigService {
     }
 
     @Override
-    public CoarseProfilingConfig getCoarseProfilingConfig() {
-        org.glowroot.config.CoarseProfilingConfig coreConfig =
-                configService.getCoarseProfilingConfig();
-        CoarseProfilingConfig config = new CoarseProfilingConfig(coreConfig.getVersion());
+    public ProfilingConfig getProfilingConfig() {
+        org.glowroot.config.ProfilingConfig coreConfig =
+                configService.getProfilingConfig();
+        ProfilingConfig config = new ProfilingConfig(coreConfig.getVersion());
+        config.setTracePercentage(coreConfig.getTracePercentage());
+        config.setIntervalMillis(coreConfig.getIntervalMillis());
+        config.setMaxSeconds(coreConfig.getMaxSeconds());
+        config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
+        return config;
+    }
+
+    @Override
+    public void updateProfilingConfig(ProfilingConfig config) throws Exception {
+        org.glowroot.config.ProfilingConfig updatedConfig =
+                new org.glowroot.config.ProfilingConfig(config.getTracePercentage(),
+                        config.getIntervalMillis(), config.getMaxSeconds(),
+                        config.getStoreThresholdMillis());
+        configService.updateProfilingConfig(updatedConfig, config.getVersion());
+    }
+
+    @Override
+    public OutlierProfilingConfig getOutlierProfilingConfig() {
+        org.glowroot.config.OutlierProfilingConfig coreConfig =
+                configService.getOutlierProfilingConfig();
+        OutlierProfilingConfig config = new OutlierProfilingConfig(coreConfig.getVersion());
         config.setEnabled(coreConfig.isEnabled());
         config.setInitialDelayMillis(coreConfig.getInitialDelayMillis());
         config.setIntervalMillis(coreConfig.getIntervalMillis());
-        config.setTotalSeconds(coreConfig.getTotalSeconds());
+        config.setMaxSeconds(coreConfig.getMaxSeconds());
         return config;
     }
 
     @Override
-    public void updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
-        org.glowroot.config.CoarseProfilingConfig updatedConfig =
-                new org.glowroot.config.CoarseProfilingConfig(config.isEnabled(),
+    public void updateOutlierProfilingConfig(OutlierProfilingConfig config) throws Exception {
+        org.glowroot.config.OutlierProfilingConfig updatedConfig =
+                new org.glowroot.config.OutlierProfilingConfig(config.isEnabled(),
                         config.getInitialDelayMillis(), config.getIntervalMillis(),
-                        config.getTotalSeconds());
-        configService.updateCoarseProfilingConfig(updatedConfig, config.getVersion());
+                        config.getMaxSeconds());
+        configService.updateOutlierProfilingConfig(updatedConfig, config.getVersion());
     }
 
     @Override
-    public FineProfilingConfig getFineProfilingConfig() {
-        org.glowroot.config.FineProfilingConfig coreConfig =
-                configService.getFineProfilingConfig();
-        FineProfilingConfig config = new FineProfilingConfig(coreConfig.getVersion());
-        config.setTracePercentage(coreConfig.getTracePercentage());
-        config.setIntervalMillis(coreConfig.getIntervalMillis());
-        config.setTotalSeconds(coreConfig.getTotalSeconds());
-        config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
-        return config;
-    }
-
-    @Override
-    public void updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
-        org.glowroot.config.FineProfilingConfig updatedConfig =
-                new org.glowroot.config.FineProfilingConfig(config.getTracePercentage(),
-                        config.getIntervalMillis(), config.getTotalSeconds(),
-                        config.getStoreThresholdMillis());
-        configService.updateFineProfilingConfig(updatedConfig, config.getVersion());
-    }
-
-    @Override
-    public UserOverridesConfig getUserOverridesConfig() {
-        org.glowroot.config.UserOverridesConfig coreConfig = configService.getUserOverridesConfig();
-        UserOverridesConfig config = new UserOverridesConfig(coreConfig.getVersion());
+    public UserTracingConfig getUserTracingConfig() {
+        org.glowroot.config.UserTracingConfig coreConfig = configService.getUserTracingConfig();
+        UserTracingConfig config = new UserTracingConfig(coreConfig.getVersion());
         config.setUser(coreConfig.getUser());
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
-        config.setFineProfiling(coreConfig.isFineProfiling());
+        config.setProfile(coreConfig.isProfile());
         return config;
     }
 
     @Override
-    public void updateUserOverridesConfig(UserOverridesConfig config) throws Exception {
-        org.glowroot.config.UserOverridesConfig updatedConfig =
-                new org.glowroot.config.UserOverridesConfig(config.getUser(),
-                        config.getStoreThresholdMillis(), config.isFineProfiling());
-        configService.updateUserOverridesConfig(updatedConfig, config.getVersion());
+    public void updateUserTracingConfig(UserTracingConfig config) throws Exception {
+        org.glowroot.config.UserTracingConfig updatedConfig =
+                new org.glowroot.config.UserTracingConfig(config.getUser(),
+                        config.getStoreThresholdMillis(), config.isProfile());
+        configService.updateUserTracingConfig(updatedConfig, config.getVersion());
     }
 
     @Override

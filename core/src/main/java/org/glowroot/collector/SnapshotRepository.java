@@ -26,6 +26,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 public interface SnapshotRepository {
 
-    void store(Snapshot snapshot, CharSource spans, @Nullable CharSource coarseProfile,
-            @Nullable CharSource fineProfile);
+    void store(Snapshot snapshot, CharSource spans, @Nullable CharSource profile,
+            @Nullable CharSource outlierProfile);
 }

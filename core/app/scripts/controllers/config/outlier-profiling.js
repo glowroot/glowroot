@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('ConfigUserOverridesCtrl', [
+glowroot.controller('ConfigOutlierProfilingCtrl', [
   '$scope',
   '$http',
   'confirmIfHasChanges',
@@ -34,7 +34,7 @@ glowroot.controller('ConfigUserOverridesCtrl', [
     }
 
     $scope.save = function (deferred) {
-      $http.post('backend/config/user-overrides', $scope.config)
+      $http.post('backend/config/outlier-profiling', $scope.config)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');
@@ -42,7 +42,7 @@ glowroot.controller('ConfigUserOverridesCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/user-overrides')
+    $http.get('backend/config/outlier-profiling')
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

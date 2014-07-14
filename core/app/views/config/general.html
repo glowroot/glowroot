@@ -67,12 +67,11 @@
            gt-required="loaded"
            gt-width="7em">
         <div class="help-block">
-          Maximum number of spans collected for a given trace. This is useful for
-          limiting the memory requirement of very very long traces that capture
+          Maximum number of spans collected for a given trace. This is used to
+          limit the memory requirement of very long traces that would capture
           potentially hundreds of thousands of spans (e.g. large batch or background
           operations).
-          Also, the ui is not really optimized for viewing super large numbers of
-          spans.
+          Also, the UI is not really optimized for viewing super large numbers of spans.
         </div>
       </div>
       <div gt-form-group
@@ -89,7 +88,7 @@
            gt-model="config.gcInfoEnabled"
            gt-type="checkbox">
         <div class="help-block">
-          Capture garbage collection info per trace.
+          Capture global garbage collection info per trace.
         </div>
       </div>
       <div class="form-group form-buttons">

@@ -36,13 +36,13 @@ class ProfilerScheduledRunnable extends ScheduledRunnable {
 
     private final Trace trace;
     private final long endTick;
-    private final boolean fine;
+    private final boolean outlier;
     private final Ticker ticker;
 
-    ProfilerScheduledRunnable(Trace trace, long endTick, boolean fine, Ticker ticker) {
+    ProfilerScheduledRunnable(Trace trace, long endTick, boolean outlier, Ticker ticker) {
         this.trace = trace;
         this.endTick = endTick;
-        this.fine = fine;
+        this.outlier = outlier;
         this.ticker = ticker;
     }
 
@@ -60,7 +60,7 @@ class ProfilerScheduledRunnable extends ScheduledRunnable {
             // ScheduledExecutorService.scheduleWithFixedDelay()
             throw new TerminateSubsequentExecutionsException();
         }
-        trace.captureStackTrace(fine);
+        trace.captureStackTrace(outlier);
     }
 
     @Override
@@ -69,7 +69,7 @@ class ProfilerScheduledRunnable extends ScheduledRunnable {
         return Objects.toStringHelper(this)
                 .add("trace", trace)
                 .add("endTick", endTick)
-                .add("fine", fine)
+                .add("outlier", outlier)
                 .toString();
     }
 }

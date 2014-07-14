@@ -24,7 +24,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.FineProfilingConfig;
+import org.glowroot.container.config.ProfilingConfig;
 
 /**
  * @author Trask Stalnaker
@@ -52,11 +52,10 @@ public class ThreadInterruptTest {
     @Test
     public void shouldNotInterfereWithInterrupt() throws Exception {
         // given
-        FineProfilingConfig fineProfilingConfig =
-                container.getConfigService().getFineProfilingConfig();
-        fineProfilingConfig.setTracePercentage(100);
-        fineProfilingConfig.setIntervalMillis(10);
-        container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
+        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
+        profilingConfig.setTracePercentage(100);
+        profilingConfig.setIntervalMillis(10);
+        container.getConfigService().updateProfilingConfig(profilingConfig);
         // when
         container.executeAppUnderTest(ShouldInterrupt.class);
         // then

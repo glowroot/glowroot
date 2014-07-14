@@ -31,10 +31,10 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.Threads;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.CoarseProfilingConfig;
-import org.glowroot.container.config.FineProfilingConfig;
 import org.glowroot.container.config.GeneralConfig;
-import org.glowroot.container.config.UserOverridesConfig;
+import org.glowroot.container.config.OutlierProfilingConfig;
+import org.glowroot.container.config.ProfilingConfig;
+import org.glowroot.container.config.UserTracingConfig;
 import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.Trace.Existence;
@@ -55,11 +55,11 @@ public class ProfilingTest {
         container = Containers.getSharedContainer();
         // capture one trace to warm up the system, otherwise sometimes there are delays in class
         // loading and the profiler captures too many or too few samples
-        CoarseProfilingConfig profilingConfig =
-                container.getConfigService().getCoarseProfilingConfig();
+        OutlierProfilingConfig profilingConfig =
+                container.getConfigService().getOutlierProfilingConfig();
         profilingConfig.setInitialDelayMillis(60);
         profilingConfig.setIntervalMillis(10);
-        container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
+        container.getConfigService().updateOutlierProfilingConfig(profilingConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
     }
 
@@ -74,125 +74,77 @@ public class ProfilingTest {
     }
 
     @Test
-    public void shouldReadCoarseProfilingTree() throws Exception {
+    public void shouldReadProfilingTree() throws Exception {
         // given
-        CoarseProfilingConfig profilingConfig =
-                container.getConfigService().getCoarseProfilingConfig();
-        profilingConfig.setInitialDelayMillis(60);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setStoreThresholdMillis(10000);
+        container.getConfigService().updateGeneralConfig(generalConfig);
+        OutlierProfilingConfig outlierProfilingConfig =
+                container.getConfigService().getOutlierProfilingConfig();
+        outlierProfilingConfig.setInitialDelayMillis(200);
+        outlierProfilingConfig.setIntervalMillis(10);
+        outlierProfilingConfig.setMaxSeconds(300);
+        container.getConfigService().updateOutlierProfilingConfig(outlierProfilingConfig);
+        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
+        profilingConfig.setTracePercentage(100);
         profilingConfig.setIntervalMillis(10);
-        container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
+        profilingConfig.setStoreThresholdMillis(0);
+        container.getConfigService().updateProfilingConfig(profilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        ProfileNode coarseRootProfileNode =
-                container.getTraceService().getCoarseProfile(trace.getId());
-        assertThat(trace.getCoarseProfileExistence()).isEqualTo(Existence.YES);
-        assertThat(trace.getFineProfileExistence()).isEqualTo(Existence.NO);
-        // coarse profiler should have captured exactly 5 stack traces
-        int sampleCount = coarseRootProfileNode.getSampleCount();
-        assertThat(sampleCount).isBetween(3, 7);
-        assertThatTreeDoesNotContainSyntheticTraceMetricMethods(coarseRootProfileNode);
+        assertThat(trace.getProfileExistence()).isEqualTo(Existence.YES);
+        assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.NO);
+        // profiler should have captured about 10 stack traces
+        ProfileNode rootProfileNode = container.getTraceService().getProfile(trace.getId());
+        assertThat(rootProfileNode.getSampleCount()).isBetween(5, 15);
     }
 
     @Test
-    public void shouldReadCoarseProfilingTreeWhenTotalSecondsIsZero() throws Exception {
-        // given
-        CoarseProfilingConfig profilingConfig =
-                container.getConfigService().getCoarseProfilingConfig();
-        profilingConfig.setInitialDelayMillis(60);
-        profilingConfig.setIntervalMillis(50);
-        profilingConfig.setTotalSeconds(0);
-        container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
-        // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        ProfileNode coarseRootProfileNode =
-                container.getTraceService().getCoarseProfile(trace.getId());
-        assertThat(trace.getCoarseProfileExistence()).isEqualTo(Existence.YES);
-        assertThat(trace.getFineProfileExistence()).isEqualTo(Existence.NO);
-        // coarse profiler should have captured exactly 1 stack trace
-        assertThat(coarseRootProfileNode.getSampleCount()).isEqualTo(1);
-        assertThatTreeDoesNotContainSyntheticTraceMetricMethods(coarseRootProfileNode);
-    }
-
-    @Test
-    public void shouldReadFineProfilingTree() throws Exception {
+    public void shouldReadUserProfilingTree() throws Exception {
         // given
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
         generalConfig.setStoreThresholdMillis(10000);
         container.getConfigService().updateGeneralConfig(generalConfig);
-        CoarseProfilingConfig coarseProfilingConfig =
-                container.getConfigService().getCoarseProfilingConfig();
-        coarseProfilingConfig.setInitialDelayMillis(200);
-        coarseProfilingConfig.setIntervalMillis(10);
-        coarseProfilingConfig.setTotalSeconds(300);
-        container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
-        FineProfilingConfig fineProfilingConfig = container.getConfigService()
-                .getFineProfilingConfig();
-        fineProfilingConfig.setTracePercentage(100);
-        fineProfilingConfig.setIntervalMillis(10);
-        fineProfilingConfig.setStoreThresholdMillis(0);
-        container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
-        // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getCoarseProfileExistence()).isEqualTo(Existence.NO);
-        assertThat(trace.getFineProfileExistence()).isEqualTo(Existence.YES);
-        // fine profiler should have captured about 10 stack traces
-        ProfileNode fineRootProfileNode = container.getTraceService().getFineProfile(trace.getId());
-        assertThat(fineRootProfileNode.getSampleCount()).isBetween(5, 15);
-    }
-
-    @Test
-    public void shouldReadFineUserProfilingTree() throws Exception {
-        // given
-        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setStoreThresholdMillis(10000);
-        container.getConfigService().updateGeneralConfig(generalConfig);
-        CoarseProfilingConfig coarseProfilingConfig =
-                container.getConfigService().getCoarseProfilingConfig();
-        coarseProfilingConfig.setInitialDelayMillis(200);
-        coarseProfilingConfig.setIntervalMillis(10);
-        container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
-        FineProfilingConfig fineProfilingConfig = container.getConfigService()
-                .getFineProfilingConfig();
-        fineProfilingConfig.setTracePercentage(0);
-        fineProfilingConfig.setIntervalMillis(10);
-        fineProfilingConfig.setStoreThresholdMillis(10000);
-        container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
-        UserOverridesConfig userOverridesConfig =
-                container.getConfigService().getUserOverridesConfig();
-        userOverridesConfig.setUser("able");
-        userOverridesConfig.setStoreThresholdMillis(0);
-        userOverridesConfig.setFineProfiling(true);
-        container.getConfigService().updateUserOverridesConfig(userOverridesConfig);
+        OutlierProfilingConfig outlierProfilingConfig =
+                container.getConfigService().getOutlierProfilingConfig();
+        outlierProfilingConfig.setInitialDelayMillis(200);
+        outlierProfilingConfig.setIntervalMillis(10);
+        container.getConfigService().updateOutlierProfilingConfig(outlierProfilingConfig);
+        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
+        profilingConfig.setTracePercentage(0);
+        profilingConfig.setIntervalMillis(10);
+        profilingConfig.setStoreThresholdMillis(10000);
+        container.getConfigService().updateProfilingConfig(profilingConfig);
+        UserTracingConfig userTracingConfig = container.getConfigService().getUserTracingConfig();
+        userTracingConfig.setUser("able");
+        userTracingConfig.setStoreThresholdMillis(0);
+        userTracingConfig.setProfile(true);
+        container.getConfigService().updateUserTracingConfig(userTracingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithProfileForAble.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getCoarseProfileExistence()).isEqualTo(Existence.NO);
-        assertThat(trace.getFineProfileExistence()).isEqualTo(Existence.YES);
-        // fine profiler should have captured about 10 stack traces
-        ProfileNode fineRootProfileNode = container.getTraceService().getFineProfile(trace.getId());
-        assertThat(fineRootProfileNode.getSampleCount()).isBetween(5, 15);
+        assertThat(trace.getProfileExistence()).isEqualTo(Existence.YES);
+        assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.NO);
+        // profiler should have captured about 10 stack traces
+        ProfileNode rootProfileNode = container.getTraceService().getProfile(trace.getId());
+        assertThat(rootProfileNode.getSampleCount()).isBetween(5, 15);
     }
 
-    // set fine store threshold to 0, and see if trace shows up in active list right away
+    // set profile store threshold to 0, and see if trace shows up in active list right away
     @Test
-    public void shouldReadActiveFineProfilingTree() throws Exception {
+    public void shouldReadActiveProfilingTree() throws Exception {
         // given
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
         generalConfig.setStoreThresholdMillis(10000);
         container.getConfigService().updateGeneralConfig(generalConfig);
-        FineProfilingConfig fineProfilingConfig =
-                container.getConfigService().getFineProfilingConfig();
-        fineProfilingConfig.setTracePercentage(100);
-        fineProfilingConfig.setIntervalMillis(10);
-        fineProfilingConfig.setStoreThresholdMillis(0);
-        container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
+        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
+        profilingConfig.setTracePercentage(100);
+        profilingConfig.setIntervalMillis(10);
+        profilingConfig.setStoreThresholdMillis(0);
+        container.getConfigService().updateProfilingConfig(profilingConfig);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
@@ -212,20 +164,62 @@ public class ProfilingTest {
     }
 
     @Test
-    public void shouldNotReadProfilingTreeWhenDisabled() throws Exception {
+    public void shouldReadOutlierProfilingTree() throws Exception {
         // given
-        CoarseProfilingConfig coarseProfilingConfig =
-                container.getConfigService().getCoarseProfilingConfig();
-        coarseProfilingConfig.setEnabled(false);
-        coarseProfilingConfig.setInitialDelayMillis(60);
-        coarseProfilingConfig.setIntervalMillis(10);
-        container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
+        OutlierProfilingConfig profilingConfig =
+                container.getConfigService().getOutlierProfilingConfig();
+        profilingConfig.setInitialDelayMillis(60);
+        profilingConfig.setIntervalMillis(10);
+        container.getConfigService().updateOutlierProfilingConfig(profilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getCoarseProfileExistence()).isEqualTo(Existence.NO);
-        assertThat(trace.getFineProfileExistence()).isEqualTo(Existence.NO);
+        ProfileNode rootProfileNode = container.getTraceService().getOutlierProfile(trace.getId());
+        assertThat(trace.getProfileExistence()).isEqualTo(Existence.NO);
+        assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.YES);
+        // outlier profiler should have captured exactly 5 stack traces
+        int sampleCount = rootProfileNode.getSampleCount();
+        assertThat(sampleCount).isBetween(3, 7);
+        assertThatTreeDoesNotContainSyntheticTraceMetricMethods(rootProfileNode);
+    }
+
+    @Test
+    public void shouldReadOutlierProfilingTreeWhenMaxSecondsIsZero() throws Exception {
+        // given
+        OutlierProfilingConfig profilingConfig =
+                container.getConfigService().getOutlierProfilingConfig();
+        profilingConfig.setInitialDelayMillis(60);
+        profilingConfig.setIntervalMillis(50);
+        profilingConfig.setMaxSeconds(0);
+        container.getConfigService().updateOutlierProfilingConfig(profilingConfig);
+        // when
+        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        ProfileNode rootProfileNode = container.getTraceService().getOutlierProfile(trace.getId());
+        assertThat(trace.getProfileExistence()).isEqualTo(Existence.NO);
+        assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.YES);
+        // outlier profiler should have captured exactly 1 stack trace
+        assertThat(rootProfileNode.getSampleCount()).isEqualTo(1);
+        assertThatTreeDoesNotContainSyntheticTraceMetricMethods(rootProfileNode);
+    }
+
+    @Test
+    public void shouldNotReadProfilingTreeWhenDisabled() throws Exception {
+        // given
+        OutlierProfilingConfig outlierProfilingConfig =
+                container.getConfigService().getOutlierProfilingConfig();
+        outlierProfilingConfig.setEnabled(false);
+        outlierProfilingConfig.setInitialDelayMillis(60);
+        outlierProfilingConfig.setIntervalMillis(10);
+        container.getConfigService().updateOutlierProfilingConfig(outlierProfilingConfig);
+        // when
+        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getProfileExistence()).isEqualTo(Existence.NO);
+        assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.NO);
     }
 
     private static void assertThatTreeDoesNotContainSyntheticTraceMetricMethods(

@@ -4,25 +4,25 @@
     "storeThresholdMillis" : 0,
     "stuckThresholdSeconds" : 180,
     "maxSpans" : 2000,
-    "threadInfoEnabled" : false,
-    "gcInfoEnabled" : false
+    "threadInfoEnabled" : true,
+    "gcInfoEnabled" : true
   },
-  "coarse-profiling" : {
-    "enabled" : true,
-    "initialDelayMillis" : 1000,
-    "intervalMillis" : 500,
-    "totalSeconds" : 300
-  },
-  "fine-profiling" : {
+  "profiling" : {
     "tracePercentage" : 0.0,
     "intervalMillis" : 50,
-    "totalSeconds" : 30,
+    "maxSeconds" : 30,
     "storeThresholdMillis" : -1
   },
-  "user" : {
+  "outlier-profiling" : {
+    "enabled" : true,
+    "initialDelayMillis" : 30000,
+    "intervalMillis" : 1000,
+    "maxSeconds" : 300
+  },
+  "user-tracing" : {
     "user" : null,
     "storeThresholdMillis" : 0,
-    "fineProfiling" : true
+    "profile" : true
   },
   "storage" : {
     "traceExpirationHours" : 2147483647,
@@ -30,14 +30,14 @@
   },
   "ui" : {
     "port" : 0,
+    "defaultTransactionType" : "Integration test",
     "sessionTimeoutMinutes" : 30,
     "passwordHash" : ""
   },
   "advanced" : {
-    "traceMetricWrapperMethods" : false,
-    "warnOnSpanOutsideTrace" : false,
-    "weavingDisabled" : false
+    "traceMetricWrapperMethods" : false
   },
+  "pointcuts" : [ ],
   "plugins" : [
     {
       "id" : "glowroot-integration-tests",
@@ -56,6 +56,5 @@
       "enabled" : true,
       "properties" : { }
     }
-  ],
-  "pointcuts" : [ ]
+  ]
 }

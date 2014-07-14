@@ -82,15 +82,15 @@ public class SnapshotCreator {
         builder.threadInfo(trace.getThreadInfoJson());
         builder.gcInfos(trace.getGcInfosJson());
         builder.spansExistence(Existence.YES);
-        if (trace.getCoarseProfile() == null) {
-            builder.coarseProfileExistence(Existence.NO);
+        if (trace.getOutlierProfile() == null) {
+            builder.outlierProfileExistence(Existence.NO);
         } else {
-            builder.coarseProfileExistence(Existence.YES);
+            builder.outlierProfileExistence(Existence.YES);
         }
-        if (trace.getFineProfile() == null) {
-            builder.fineProfileExistence(Existence.NO);
+        if (trace.getProfile() == null) {
+            builder.profileExistence(Existence.NO);
         } else {
-            builder.fineProfileExistence(Existence.YES);
+            builder.profileExistence(Existence.YES);
         }
         return builder.build();
     }

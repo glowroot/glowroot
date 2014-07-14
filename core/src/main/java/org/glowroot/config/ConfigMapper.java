@@ -57,14 +57,14 @@ class ConfigMapper {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final String GENERAL = "general";
-    private static final String COARSE_PROFILING = "coarse-profiling";
-    private static final String FINE_PROFILING = "fine-profiling";
-    private static final String USER = "user";
+    private static final String PROFILING = "profiling";
+    private static final String OUTLIER_PROFILING = "outlier-profiling";
+    private static final String USER_TRACING = "user-tracing";
     private static final String STORAGE = "storage";
-    private static final String USER_INTERFACE = "ui";
+    private static final String UI = "ui";
     private static final String ADVANCED = "advanced";
-    private static final String PLUGINS = "plugins";
     private static final String POINTCUTS = "pointcuts";
+    private static final String PLUGINS = "plugins";
 
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
 
@@ -75,20 +75,20 @@ class ConfigMapper {
     Config readValue(String content) throws IOException {
         ObjectNode rootNode = (ObjectNode) mapper.readTree(content);
         GeneralConfig generalConfig = readGeneralNode(rootNode);
-        CoarseProfilingConfig coarseProfilingConfig = readCoarseProfilingNode(rootNode);
-        FineProfilingConfig fineProfilingConfig = readFineProfilingNode(rootNode);
-        UserOverridesConfig userOverridesConfig = readUserNode(rootNode);
+        ProfilingConfig profilingConfig = readProfilingNode(rootNode);
+        OutlierProfilingConfig outlierProfilingConfig = readOutlierProfilingNode(rootNode);
+        UserTracingConfig userTracingConfig = readUserTracingNode(rootNode);
         StorageConfig storageConfig = readStorageNode(rootNode);
         UserInterfaceConfig userInterfaceConfig =
                 readUserInterfaceNode(rootNode, pluginDescriptors);
-        ImmutableList<PointcutConfig> pointcutConfigs = createPointcutConfigs(rootNode);
         AdvancedConfig advancedConfig = readAdvancedNode(rootNode);
+        ImmutableList<PointcutConfig> pointcutConfigs = createPointcutConfigs(rootNode);
         ImmutableMap<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
         ImmutableList<PluginConfig> pluginConfigs =
                 createPluginConfigs(pluginNodes, pluginDescriptors);
-        return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig,
-                userOverridesConfig, storageConfig, userInterfaceConfig, pointcutConfigs,
-                advancedConfig, pluginConfigs);
+        return new Config(generalConfig, profilingConfig, outlierProfilingConfig,
+                userTracingConfig, storageConfig, userInterfaceConfig, advancedConfig,
+                pointcutConfigs, pluginConfigs);
     }
 
     static void writeValue(File configFile, Config config) throws IOException {
@@ -106,30 +106,29 @@ class ConfigMapper {
         jg.writeStartObject();
         jg.writeFieldName(GENERAL);
         writer.writeValue(jg, config.getGeneralConfig());
-        jg.writeFieldName(COARSE_PROFILING);
-        writer.writeValue(jg, config.getCoarseProfilingConfig());
-        jg.writeFieldName(FINE_PROFILING);
-        writer.writeValue(jg, config.getFineProfilingConfig());
-        jg.writeFieldName(USER);
-        writer.writeValue(jg, config.getUserOverridesConfig());
+        jg.writeFieldName(PROFILING);
+        writer.writeValue(jg, config.getProfilingConfig());
+        jg.writeFieldName(OUTLIER_PROFILING);
+        writer.writeValue(jg, config.getOutlierProfilingConfig());
+        jg.writeFieldName(USER_TRACING);
+        writer.writeValue(jg, config.getUserTracingConfig());
         jg.writeFieldName(STORAGE);
         writer.writeValue(jg, config.getStorageConfig());
-        jg.writeFieldName(USER_INTERFACE);
+        jg.writeFieldName(UI);
         writer.writeValue(jg, config.getUserInterfaceConfig());
         jg.writeFieldName(ADVANCED);
         writer.writeValue(jg, config.getAdvancedConfig());
-
+        jg.writeArrayFieldStart(POINTCUTS);
+        for (PointcutConfig pointcutConfig : config.getPointcutConfigs()) {
+            writer.writeValue(jg, pointcutConfig);
+        }
+        jg.writeEndArray();
         jg.writeArrayFieldStart(PLUGINS);
         // write out plugin ordered by plugin id
         List<PluginConfig> orderedPluginConfigs =
                 PluginConfig.orderingByName.sortedCopy(config.getPluginConfigs());
         for (PluginConfig pluginConfig : orderedPluginConfigs) {
             writer.writeValue(jg, pluginConfig);
-        }
-        jg.writeEndArray();
-        jg.writeArrayFieldStart(POINTCUTS);
-        for (PointcutConfig pointcutConfig : config.getPointcutConfigs()) {
-            writer.writeValue(jg, pointcutConfig);
         }
         jg.writeEndArray();
         jg.writeEndObject();
@@ -151,39 +150,39 @@ class ConfigMapper {
         }
     }
 
-    private static CoarseProfilingConfig readCoarseProfilingNode(ObjectNode rootNode)
+    private static ProfilingConfig readProfilingNode(ObjectNode rootNode)
             throws IOException {
-        ObjectNode configNode = (ObjectNode) rootNode.get(COARSE_PROFILING);
-        CoarseProfilingConfig defaultConfig = CoarseProfilingConfig.getDefault();
+        ObjectNode configNode = (ObjectNode) rootNode.get(PROFILING);
+        ProfilingConfig defaultConfig = ProfilingConfig.getDefault();
         if (configNode == null) {
             return defaultConfig;
         } else {
-            CoarseProfilingConfig.Overlay overlay = CoarseProfilingConfig.overlay(defaultConfig);
+            ProfilingConfig.Overlay overlay = ProfilingConfig.overlay(defaultConfig);
             mapper.readerForUpdating(overlay).readValue(configNode);
             return overlay.build();
         }
     }
 
-    private static FineProfilingConfig readFineProfilingNode(ObjectNode rootNode)
+    private static OutlierProfilingConfig readOutlierProfilingNode(ObjectNode rootNode)
             throws IOException {
-        ObjectNode configNode = (ObjectNode) rootNode.get(FINE_PROFILING);
-        FineProfilingConfig defaultConfig = FineProfilingConfig.getDefault();
+        ObjectNode configNode = (ObjectNode) rootNode.get(OUTLIER_PROFILING);
+        OutlierProfilingConfig defaultConfig = OutlierProfilingConfig.getDefault();
         if (configNode == null) {
             return defaultConfig;
         } else {
-            FineProfilingConfig.Overlay overlay = FineProfilingConfig.overlay(defaultConfig);
+            OutlierProfilingConfig.Overlay overlay = OutlierProfilingConfig.overlay(defaultConfig);
             mapper.readerForUpdating(overlay).readValue(configNode);
             return overlay.build();
         }
     }
 
-    private static UserOverridesConfig readUserNode(ObjectNode rootNode) throws IOException {
-        ObjectNode configNode = (ObjectNode) rootNode.get(USER);
-        UserOverridesConfig defaultConfig = UserOverridesConfig.getDefault();
+    private static UserTracingConfig readUserTracingNode(ObjectNode rootNode) throws IOException {
+        ObjectNode configNode = (ObjectNode) rootNode.get(USER_TRACING);
+        UserTracingConfig defaultConfig = UserTracingConfig.getDefault();
         if (configNode == null) {
             return defaultConfig;
         } else {
-            UserOverridesConfig.Overlay overlay = UserOverridesConfig.overlay(defaultConfig);
+            UserTracingConfig.Overlay overlay = UserTracingConfig.overlay(defaultConfig);
             mapper.readerForUpdating(overlay).readValue(configNode);
             return overlay.build();
         }
@@ -203,7 +202,7 @@ class ConfigMapper {
 
     private static UserInterfaceConfig readUserInterfaceNode(ObjectNode rootNode,
             ImmutableList<PluginDescriptor> pluginDescriptors) throws IOException {
-        ObjectNode configNode = (ObjectNode) rootNode.get(USER_INTERFACE);
+        ObjectNode configNode = (ObjectNode) rootNode.get(UI);
         UserInterfaceConfig defaultConfig = UserInterfaceConfig.getDefault(pluginDescriptors);
         if (configNode == null) {
             return defaultConfig;

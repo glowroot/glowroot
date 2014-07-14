@@ -312,13 +312,12 @@ public abstract class PluginServices {
      * <li>Glowroot can be configured (using the configuration page) to capture traces for a
      * specific user using a lower threshold than normal (e.g. threshold=0 to capture all requests
      * for a specific user)
-     * <li>Glowroot can be configured (using the configuration page) to perform fine-grained
-     * profiling on all traces for a specific user
+     * <li>Glowroot can be configured (using the configuration page) to perform profiling on all
+     * traces for a specific user
      * </ul>
      * 
-     * If fine-grained profiling is enabled for a specific user, this is activated (if the
-     * {@code user} matches) at the time that this method is called, so it is best to call this
-     * method early in the trace.
+     * If profiling is enabled for a specific user, this is activated (if the {@code user} matches)
+     * at the time that this method is called, so it is best to call this method early in the trace.
      * 
      * If there is no current trace, this method does nothing.
      * 

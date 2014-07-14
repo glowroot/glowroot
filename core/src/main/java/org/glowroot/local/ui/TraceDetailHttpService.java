@@ -37,8 +37,8 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
- * Http service to read trace snapshot spans, bound to /backend/trace/spans,
- * /backend/trace/coarse-profile and /backend/trace/fine-profile.
+ * Http service to read trace snapshot spans, bound to /backend/trace/spans, /backend/trace/profile
+ * and /backend/trace/outlier-profile.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -76,10 +76,10 @@ class TraceDetailHttpService implements HttpService {
         try {
             if (traceComponent.equals("spans")) {
                 charSource = traceCommonService.getSpans(traceId);
-            } else if (traceComponent.equals("coarse-profile")) {
-                charSource = traceCommonService.getCoarseProfile(traceId);
-            } else if (traceComponent.equals("fine-profile")) {
-                charSource = traceCommonService.getFineProfile(traceId);
+            } else if (traceComponent.equals("profile")) {
+                charSource = traceCommonService.getProfile(traceId);
+            } else if (traceComponent.equals("outlier-profile")) {
+                charSource = traceCommonService.getOutlierProfile(traceId);
             } else {
                 throw new IllegalStateException("Unexpected uri: " + request.getUri());
             }
@@ -90,7 +90,7 @@ class TraceDetailHttpService implements HttpService {
         response.setChunked(true);
         channel.write(response);
         if (charSource == null) {
-            // UI checks spansExistence/coarseProfileExistence/traceProfileExistence so should not
+            // UI checks spansExistence/outlierProfileExistence/traceProfileExistence so should not
             // end up here, but tests don't, send json null value to them
             channel.write(ChunkedInputs.fromReader(new StringReader("null")));
         } else {

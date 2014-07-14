@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013 the original author or authors.
+  Copyright 2013-2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 -->
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>Fine-grained profiling</h2>
+    <h2>Profiling</h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
@@ -34,7 +34,7 @@
            gt-width="7em"
            gt-addon="%">
         <div class="help-block">
-          Apply fine-grained profiling to this percentage of traces.
+          The percentage of traces to profile.
         </div>
       </div>
       <div gt-form-group
@@ -46,25 +46,27 @@
            gt-width="7em"
            gt-addon="milliseconds">
         <div class="help-block">
-          The interval at which the fine-grained profiler captures stack traces (there
-          is no initial delay for the fine-grained profiler).
+          The interval at which the profiler captures stack traces.
         </div>
       </div>
       <div gt-form-group
-           gt-label="Total"
-           gt-model="config.totalSeconds"
+           gt-label="Max time"
+           gt-model="config.maxSeconds"
            gt-number="true"
            gt-pattern="pattern.integer"
            gt-required="loaded"
            gt-width="7em"
            gt-addon="seconds">
         <div class="help-block">
-          The total length of time that the fine-grained profiler captures stack traces.
+          The maximum amount of time that a given trace will be profiled. This is used to
+          limit the memory requirement of very long traces that would capture
+          potentially many thousands of stack traces (e.g. large batch or background
+          operations).
         </div>
       </div>
       <div class="form-group"
-           ng-class="{'has-error': formCtrl.fineStoreThresholdMillis.$invalid}">
-        <label class="col-lg-3 control-label" for="fineStoreThresholdMillis">
+           ng-class="{'has-error': formCtrl.profiledStoreThresholdMillis.$invalid}">
+        <label class="col-lg-3 control-label" for="profiledStoreThresholdMillis">
           Store threshold
         </label>
         <div class="col-lg-9"
@@ -72,8 +74,8 @@
           <div class="checkbox gt-form-checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.fineStoreThresholdOverride"
-                     id="fineStoreThresholdOverride"
+                     ng-model="page.profiledStoreThresholdOverride"
+                     id="profiledStoreThresholdOverride"
                      style="margin-top: 3px;">
               Override general store threshold
             </label>
@@ -81,19 +83,19 @@
           <div class="input-group">
             <input type="text"
                    class="form-control"
-                   ng-model="page.fineStoreThresholdMillis"
+                   ng-model="page.profiledStoreThresholdMillis"
                    ng-pattern="pattern.integer"
-                   id="fineStoreThresholdMillis"
-                   name="fineStoreThresholdMillis"
+                   id="profiledStoreThresholdMillis"
+                   name="profiledStoreThresholdMillis"
                    style="width: 7em;"
-                   ng-readonly="!page.fineStoreThresholdOverride"
-                   ng-required="page.fineStoreThresholdOverride">
+                   ng-readonly="!page.profiledStoreThresholdOverride"
+                   ng-required="page.profiledStoreThresholdOverride">
             <span class="input-group-addon">
               milliseconds
             </span>
           </div>
           <div class="help-block">
-            After going through the trouble of collecting fine-grained profiling info,
+            After going through the trouble of collecting profiling info,
             it may be worth while to store the given trace even if it doesn't hit the
             general store threshold.
           </div>

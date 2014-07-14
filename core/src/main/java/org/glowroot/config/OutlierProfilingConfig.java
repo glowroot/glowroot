@@ -25,43 +25,43 @@ import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
 
 /**
- * Immutable structure to hold the coarse-grained profiling config.
+ * Immutable structure to hold the outlier profiling config.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Immutable
-public class CoarseProfilingConfig {
+public class OutlierProfilingConfig {
 
     private final boolean enabled;
     // minimum is imposed because of StackCollector#CHECK_INTERVAL_MILLIS
     // -1 means no stack traces are gathered, should be minimum 100 milliseconds
     private final int initialDelayMillis;
     private final int intervalMillis;
-    private final int totalSeconds;
+    private final int maxSeconds;
 
     private final String version;
 
-    static CoarseProfilingConfig getDefault() {
+    static OutlierProfilingConfig getDefault() {
         final boolean enabled = true;
-        final int initialDelayMillis = 1000;
-        final int intervalMillis = 500;
-        final int totalSeconds = 300;
-        return new CoarseProfilingConfig(enabled, initialDelayMillis, intervalMillis, totalSeconds);
+        final int initialDelayMillis = 30000;
+        final int intervalMillis = 1000;
+        final int maxSeconds = 300;
+        return new OutlierProfilingConfig(enabled, initialDelayMillis, intervalMillis, maxSeconds);
     }
 
-    public static Overlay overlay(CoarseProfilingConfig base) {
+    public static Overlay overlay(OutlierProfilingConfig base) {
         return new Overlay(base);
     }
 
     @VisibleForTesting
-    public CoarseProfilingConfig(boolean enabled, int initialDelayMillis, int intervalMillis,
-            int totalSeconds) {
+    public OutlierProfilingConfig(boolean enabled, int initialDelayMillis, int intervalMillis,
+            int maxSeconds) {
         this.enabled = enabled;
         this.initialDelayMillis = initialDelayMillis;
         this.intervalMillis = intervalMillis;
-        this.totalSeconds = totalSeconds;
-        version = VersionHashes.sha1(enabled, initialDelayMillis, intervalMillis, totalSeconds);
+        this.maxSeconds = maxSeconds;
+        version = VersionHashes.sha1(enabled, initialDelayMillis, intervalMillis, maxSeconds);
     }
 
     public boolean isEnabled() {
@@ -76,8 +76,8 @@ public class CoarseProfilingConfig {
         return intervalMillis;
     }
 
-    public int getTotalSeconds() {
-        return totalSeconds;
+    public int getMaxSeconds() {
+        return maxSeconds;
     }
 
     @JsonView(UiView.class)
@@ -92,7 +92,7 @@ public class CoarseProfilingConfig {
                 .add("enabled", enabled)
                 .add("initialDelayMillis", initialDelayMillis)
                 .add("intervalMillis", intervalMillis)
-                .add("totalSeconds", totalSeconds)
+                .add("maxSeconds", maxSeconds)
                 .add("version", version)
                 .toString();
     }
@@ -104,13 +104,13 @@ public class CoarseProfilingConfig {
         private boolean enabled;
         private int initialDelayMillis;
         private int intervalMillis;
-        private int totalSeconds;
+        private int maxSeconds;
 
-        private Overlay(CoarseProfilingConfig base) {
+        private Overlay(OutlierProfilingConfig base) {
             enabled = base.enabled;
             initialDelayMillis = base.initialDelayMillis;
             intervalMillis = base.intervalMillis;
-            totalSeconds = base.totalSeconds;
+            maxSeconds = base.maxSeconds;
         }
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
@@ -121,12 +121,12 @@ public class CoarseProfilingConfig {
         public void setIntervalMillis(int intervalMillis) {
             this.intervalMillis = intervalMillis;
         }
-        public void setTotalSeconds(int totalSeconds) {
-            this.totalSeconds = totalSeconds;
+        public void setMaxSeconds(int maxSeconds) {
+            this.maxSeconds = maxSeconds;
         }
-        public CoarseProfilingConfig build() {
-            return new CoarseProfilingConfig(enabled, initialDelayMillis, intervalMillis,
-                    totalSeconds);
+        public OutlierProfilingConfig build() {
+            return new OutlierProfilingConfig(enabled, initialDelayMillis, intervalMillis,
+                    maxSeconds);
         }
     }
 }

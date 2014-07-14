@@ -28,33 +28,25 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class CoarseProfilingConfig {
+public class ProfilingConfig {
 
-    private boolean enabled;
-    private int initialDelayMillis;
+    private double tracePercentage;
     private int intervalMillis;
-    private int totalSeconds;
+    private int maxSeconds;
+    private int storeThresholdMillis;
 
     private final String version;
 
-    public CoarseProfilingConfig(String version) {
+    public ProfilingConfig(String version) {
         this.version = version;
     }
 
-    public boolean isEnabled() {
-        return enabled;
+    public double getTracePercentage() {
+        return tracePercentage;
     }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public int getInitialDelayMillis() {
-        return initialDelayMillis;
-    }
-
-    public void setInitialDelayMillis(int initialDelayMillis) {
-        this.initialDelayMillis = initialDelayMillis;
+    public void setTracePercentage(double tracePercentage) {
+        this.tracePercentage = tracePercentage;
     }
 
     public int getIntervalMillis() {
@@ -65,12 +57,20 @@ public class CoarseProfilingConfig {
         this.intervalMillis = intervalMillis;
     }
 
-    public int getTotalSeconds() {
-        return totalSeconds;
+    public int getMaxSeconds() {
+        return maxSeconds;
     }
 
-    public void setTotalSeconds(int totalSeconds) {
-        this.totalSeconds = totalSeconds;
+    public void setMaxSeconds(int maxSeconds) {
+        this.maxSeconds = maxSeconds;
+    }
+
+    public int getStoreThresholdMillis() {
+        return storeThresholdMillis;
+    }
+
+    public void setStoreThresholdMillis(int storeThresholdMillis) {
+        this.storeThresholdMillis = storeThresholdMillis;
     }
 
     public String getVersion() {
@@ -80,15 +80,15 @@ public class CoarseProfilingConfig {
     @Override
     @Pure
     public boolean equals(@Nullable Object obj) {
-        if (obj instanceof CoarseProfilingConfig) {
-            CoarseProfilingConfig that = (CoarseProfilingConfig) obj;
+        if (obj instanceof ProfilingConfig) {
+            ProfilingConfig that = (ProfilingConfig) obj;
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(enabled, that.enabled)
-                    && Objects.equal(initialDelayMillis, that.initialDelayMillis)
+            return Objects.equal(tracePercentage, that.tracePercentage)
                     && Objects.equal(intervalMillis, that.intervalMillis)
-                    && Objects.equal(totalSeconds, that.totalSeconds);
+                    && Objects.equal(maxSeconds, that.maxSeconds)
+                    && Objects.equal(storeThresholdMillis, that.storeThresholdMillis);
         }
         return false;
     }
@@ -99,37 +99,38 @@ public class CoarseProfilingConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(enabled, initialDelayMillis, intervalMillis, totalSeconds);
+        return Objects.hashCode(tracePercentage, intervalMillis, maxSeconds, storeThresholdMillis);
     }
 
     @Override
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("enabled", enabled)
-                .add("initialDelayMillis", initialDelayMillis)
+                .add("tracePercentage", tracePercentage)
                 .add("intervalMillis", intervalMillis)
-                .add("totalSeconds", totalSeconds)
+                .add("maxSeconds", maxSeconds)
+                .add("storeThresholdMillis", storeThresholdMillis)
                 .add("version", version)
                 .toString();
     }
 
     @JsonCreator
-    static CoarseProfilingConfig readValue(@JsonProperty("enabled") @Nullable Boolean enabled,
-            @JsonProperty("initialDelayMillis") @Nullable Integer initialDelayMillis,
+    static ProfilingConfig readValue(
+            @JsonProperty("tracePercentage") @Nullable Double tracePercentage,
             @JsonProperty("intervalMillis") @Nullable Integer intervalMillis,
-            @JsonProperty("totalSeconds") @Nullable Integer totalSeconds,
+            @JsonProperty("maxSeconds") @Nullable Integer maxSeconds,
+            @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(enabled, "enabled");
-        checkRequiredProperty(initialDelayMillis, "initialDelayMillis");
+        checkRequiredProperty(tracePercentage, "tracePercentage");
         checkRequiredProperty(intervalMillis, "intervalMillis");
-        checkRequiredProperty(totalSeconds, "totalSeconds");
+        checkRequiredProperty(maxSeconds, "maxSeconds");
+        checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
         checkRequiredProperty(version, "version");
-        CoarseProfilingConfig config = new CoarseProfilingConfig(version);
-        config.setEnabled(enabled);
-        config.setInitialDelayMillis(initialDelayMillis);
+        ProfilingConfig config = new ProfilingConfig(version);
+        config.setTracePercentage(tracePercentage);
         config.setIntervalMillis(intervalMillis);
-        config.setTotalSeconds(totalSeconds);
+        config.setMaxSeconds(maxSeconds);
+        config.setStoreThresholdMillis(storeThresholdMillis);
         return config;
     }
 }

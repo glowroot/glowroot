@@ -63,10 +63,10 @@ public abstract class TraceService {
     public abstract List<Span> getSpans(String traceId) throws Exception;
 
     @Nullable
-    public abstract ProfileNode getCoarseProfile(String traceId) throws Exception;
+    public abstract ProfileNode getProfile(String traceId) throws Exception;
 
     @Nullable
-    public abstract ProfileNode getFineProfile(String traceId) throws Exception;
+    public abstract ProfileNode getOutlierProfile(String traceId) throws Exception;
 
     public abstract void deleteAll() throws Exception;
 }

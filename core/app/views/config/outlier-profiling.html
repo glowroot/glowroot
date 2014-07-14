@@ -15,7 +15,7 @@
 -->
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>User-specific overrides</h2>
+    <h2>Outlier profiling</h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
@@ -26,35 +26,56 @@
          class="form-horizontal"
          name="formCtrl">
       <div gt-form-group
-           gt-label="User"
-           gt-model="config.user"
-           gt-width="20em">
-        <div class="help-block">
-          All traces for the given user will use the store threshold and profiling
-          configuration below. The username matching is case-insensitive.
-        </div>
+           gt-label="Enabled"
+           gt-model="config.enabled"
+           gt-type="checkbox"
+           class="gt-form-group-without-help-block">
       </div>
       <div gt-form-group
-           gt-label="Store threshold"
-           gt-model="config.storeThresholdMillis"
+           gt-label="Initial delay"
+           gt-model="config.initialDelayMillis"
            gt-number="true"
            gt-pattern="pattern.integer"
            gt-required="loaded"
            gt-width="7em"
            gt-addon="milliseconds">
         <div class="help-block">
-          All traces for the given user that exceeds this amount of time will be
-          viewable immediately as an active trace and will be stored to disk at its
-          completion.
+          Once a trace exceeds this amount of time, the outlier profiler
+          captures stack traces periodically.
+          The interval between successive stack trace captures is defined by the
+          property directly below.
+          The stack traces captured for an individual trace are merged into a tree
+          view and provide a profile of the time spent in various portions of the
+          code.
         </div>
       </div>
       <div gt-form-group
-           gt-label="Fine profiling"
-           gt-model="config.fineProfiling"
-           gt-type="checkbox">
+           gt-label="Interval"
+           gt-model="config.intervalMillis"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-addon="milliseconds">
         <div class="help-block">
-          All traces for the given user will be profiled using the fine-grained
-          profiler.
+          The interval at which the outlier profiler captures stack traces
+          (once a trace exceeds the initial delay directly above).
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Max time"
+           gt-model="config.maxSeconds"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-addon="seconds">
+        <div class="help-block">
+          The maximum amount of time that a given outlier trace will be profiled
+          (once a trace exceeds the initial delay above). This is used to
+          limiting the memory requirement of very long traces that would capture
+          potentially many thousands of stack traces (e.g. large batch or background
+          operations).
         </div>
       </div>
       <div class="form-group form-buttons">

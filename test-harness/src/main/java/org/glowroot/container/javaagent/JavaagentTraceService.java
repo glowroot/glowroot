@@ -113,15 +113,15 @@ class JavaagentTraceService extends TraceService {
 
     @Override
     @Nullable
-    public ProfileNode getCoarseProfile(String traceId) throws Exception {
-        String content = httpClient.get("/backend/trace/coarse-profile?trace-id=" + traceId);
+    public ProfileNode getProfile(String traceId) throws Exception {
+        String content = httpClient.get("/backend/trace/profile?trace-id=" + traceId);
         return mapper.readValue(content, ProfileNode.class);
     }
 
     @Override
     @Nullable
-    public ProfileNode getFineProfile(String traceId) throws Exception {
-        String content = httpClient.get("/backend/trace/fine-profile?trace-id=" + traceId);
+    public ProfileNode getOutlierProfile(String traceId) throws Exception {
+        String content = httpClient.get("/backend/trace/outlier-profile?trace-id=" + traceId);
         return mapper.readValue(content, ProfileNode.class);
     }
 

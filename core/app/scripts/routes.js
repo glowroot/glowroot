@@ -112,20 +112,20 @@ glowroot.config([
       templateUrl: 'views/config/general.html',
       controller: 'ConfigGeneralCtrl'
     });
-    $stateProvider.state('config.coarseProfiling', {
-      url: '/coarse-grained-profiling',
-      templateUrl: 'views/config/coarse-profiling.html',
-      controller: 'ConfigCoarseProfilingCtrl'
+    $stateProvider.state('config.profiling', {
+      url: '/profiling',
+      templateUrl: 'views/config/profiling.html',
+      controller: 'ConfigProfilingCtrl'
     });
-    $stateProvider.state('config.fineProfiling', {
-      url: '/fine-grained-profiling',
-      templateUrl: 'views/config/fine-profiling.html',
-      controller: 'ConfigFineProfilingCtrl'
+    $stateProvider.state('config.outlierProfiling', {
+      url: '/outlier-profiling',
+      templateUrl: 'views/config/outlier-profiling.html',
+      controller: 'ConfigOutlierProfilingCtrl'
     });
-    $stateProvider.state('config.userOverrides', {
-      url: '/user-specific-overrides',
-      templateUrl: 'views/config/user-overrides.html',
-      controller: 'ConfigUserOverridesCtrl'
+    $stateProvider.state('config.userTracing', {
+      url: '/user-tracing',
+      templateUrl: 'views/config/user-tracing.html',
+      controller: 'ConfigUserTracingCtrl'
     });
     $stateProvider.state('config.storage', {
       url: '/storage',
@@ -137,15 +137,15 @@ glowroot.config([
       templateUrl: 'views/config/user-interface.html',
       controller: 'ConfigUserInterfaceCtrl'
     });
-    $stateProvider.state('config.pointcuts', {
-      url: '/pointcuts',
-      templateUrl: 'views/config/pointcut-list.html',
-      controller: 'ConfigPointcutListCtrl'
-    });
     $stateProvider.state('config.advanced', {
       url: '/advanced',
       templateUrl: 'views/config/advanced.html',
       controller: 'ConfigAdvancedCtrl'
+    });
+    $stateProvider.state('config.pointcuts', {
+      url: '/pointcuts',
+      templateUrl: 'views/config/pointcut-list.html',
+      controller: 'ConfigPointcutListCtrl'
     });
     $stateProvider.state('config.plugin', {
       url: '/plugin/:pluginId',

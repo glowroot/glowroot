@@ -30,9 +30,9 @@ import org.glowroot.markers.Immutable;
 class Config {
 
     private final GeneralConfig generalConfig;
-    private final CoarseProfilingConfig coarseProfilingConfig;
-    private final FineProfilingConfig fineProfilingConfig;
-    private final UserOverridesConfig userOverridesConfig;
+    private final ProfilingConfig profilingConfig;
+    private final OutlierProfilingConfig outlierProfilingConfig;
+    private final UserTracingConfig userTracingConfig;
     private final StorageConfig storageConfig;
     private final UserInterfaceConfig userInterfaceConfig;
     private final AdvancedConfig advancedConfig;
@@ -40,10 +40,10 @@ class Config {
     private final ImmutableList<PluginConfig> pluginConfigs;
 
     static Config getDefault(ImmutableList<PluginDescriptor> pluginDescriptors) {
-        return new Config(GeneralConfig.getDefault(), CoarseProfilingConfig.getDefault(),
-                FineProfilingConfig.getDefault(), UserOverridesConfig.getDefault(),
+        return new Config(GeneralConfig.getDefault(), ProfilingConfig.getDefault(),
+                OutlierProfilingConfig.getDefault(), UserTracingConfig.getDefault(),
                 StorageConfig.getDefault(), UserInterfaceConfig.getDefault(pluginDescriptors),
-                ImmutableList.<PointcutConfig>of(), AdvancedConfig.getDefault(),
+                AdvancedConfig.getDefault(), ImmutableList.<PointcutConfig>of(),
                 createPluginConfigs(pluginDescriptors));
     }
 
@@ -51,19 +51,19 @@ class Config {
         return new Builder(base);
     }
 
-    Config(GeneralConfig generalConfig, CoarseProfilingConfig coarseProfilingConfig,
-            FineProfilingConfig fineProfilingConfig, UserOverridesConfig userOverridesConfig,
+    Config(GeneralConfig generalConfig, ProfilingConfig profilingConfig,
+            OutlierProfilingConfig outlierProfilingConfig, UserTracingConfig userTracingConfig,
             StorageConfig storageConfig, UserInterfaceConfig userInterfaceConfig,
-            List<PointcutConfig> pointcutConfigs, AdvancedConfig advancedConfig,
+            AdvancedConfig advancedConfig, List<PointcutConfig> pointcutConfigs,
             List<PluginConfig> pluginConfigs) {
         this.generalConfig = generalConfig;
-        this.coarseProfilingConfig = coarseProfilingConfig;
-        this.fineProfilingConfig = fineProfilingConfig;
-        this.userOverridesConfig = userOverridesConfig;
+        this.profilingConfig = profilingConfig;
+        this.outlierProfilingConfig = outlierProfilingConfig;
+        this.userTracingConfig = userTracingConfig;
         this.storageConfig = storageConfig;
         this.userInterfaceConfig = userInterfaceConfig;
-        this.pointcutConfigs = ImmutableList.copyOf(pointcutConfigs);
         this.advancedConfig = advancedConfig;
+        this.pointcutConfigs = ImmutableList.copyOf(pointcutConfigs);
         this.pluginConfigs = ImmutableList.copyOf(pluginConfigs);
     }
 
@@ -71,16 +71,16 @@ class Config {
         return generalConfig;
     }
 
-    CoarseProfilingConfig getCoarseProfilingConfig() {
-        return coarseProfilingConfig;
+    ProfilingConfig getProfilingConfig() {
+        return profilingConfig;
     }
 
-    FineProfilingConfig getFineProfilingConfig() {
-        return fineProfilingConfig;
+    OutlierProfilingConfig getOutlierProfilingConfig() {
+        return outlierProfilingConfig;
     }
 
-    UserOverridesConfig getUserOverridesConfig() {
-        return userOverridesConfig;
+    UserTracingConfig getUserTracingConfig() {
+        return userTracingConfig;
     }
 
     StorageConfig getStorageConfig() {
@@ -115,40 +115,40 @@ class Config {
     static class Builder {
 
         private GeneralConfig generalConfig;
-        private CoarseProfilingConfig coarseProfilingConfig;
-        private FineProfilingConfig fineProfilingConfig;
-        private UserOverridesConfig userOverridesConfig;
+        private ProfilingConfig profilingConfig;
+        private OutlierProfilingConfig outlierProfilingConfig;
+        private UserTracingConfig userTracingConfig;
         private StorageConfig storageConfig;
         private UserInterfaceConfig userInterfaceConfig;
-        private List<PointcutConfig> pointcutConfigs;
         private AdvancedConfig advancedConfig;
+        private List<PointcutConfig> pointcutConfigs;
         private List<PluginConfig> pluginConfigs;
 
         private Builder(Config base) {
             generalConfig = base.generalConfig;
-            coarseProfilingConfig = base.coarseProfilingConfig;
-            fineProfilingConfig = base.fineProfilingConfig;
-            userOverridesConfig = base.userOverridesConfig;
+            profilingConfig = base.profilingConfig;
+            outlierProfilingConfig = base.outlierProfilingConfig;
+            userTracingConfig = base.userTracingConfig;
             storageConfig = base.storageConfig;
             userInterfaceConfig = base.userInterfaceConfig;
-            pointcutConfigs = base.pointcutConfigs;
             advancedConfig = base.advancedConfig;
+            pointcutConfigs = base.pointcutConfigs;
             pluginConfigs = base.pluginConfigs;
         }
         Builder generalConfig(GeneralConfig generalConfig) {
             this.generalConfig = generalConfig;
             return this;
         }
-        Builder coarseProfilingConfig(CoarseProfilingConfig coarseProfilingConfig) {
-            this.coarseProfilingConfig = coarseProfilingConfig;
+        Builder profilingConfig(ProfilingConfig profilingConfig) {
+            this.profilingConfig = profilingConfig;
             return this;
         }
-        Builder fineProfilingConfig(FineProfilingConfig fineProfilingConfig) {
-            this.fineProfilingConfig = fineProfilingConfig;
+        Builder outlierProfilingConfig(OutlierProfilingConfig outlierProfilingConfig) {
+            this.outlierProfilingConfig = outlierProfilingConfig;
             return this;
         }
-        Builder userOverridesConfig(UserOverridesConfig userOverridesConfig) {
-            this.userOverridesConfig = userOverridesConfig;
+        Builder userTracingConfig(UserTracingConfig userTracingConfig) {
+            this.userTracingConfig = userTracingConfig;
             return this;
         }
         Builder storageConfig(StorageConfig storageConfig) {
@@ -159,12 +159,12 @@ class Config {
             this.userInterfaceConfig = userInterfaceConfig;
             return this;
         }
-        Builder pointcutConfigs(List<PointcutConfig> pointcutConfigs) {
-            this.pointcutConfigs = pointcutConfigs;
-            return this;
-        }
         Builder advancedConfig(AdvancedConfig advancedConfig) {
             this.advancedConfig = advancedConfig;
+            return this;
+        }
+        Builder pointcutConfigs(List<PointcutConfig> pointcutConfigs) {
+            this.pointcutConfigs = pointcutConfigs;
             return this;
         }
         Builder pluginConfigs(List<PluginConfig> pluginConfigs) {
@@ -172,9 +172,9 @@ class Config {
             return this;
         }
         Config build() {
-            return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig,
-                    userOverridesConfig, storageConfig, userInterfaceConfig, pointcutConfigs,
-                    advancedConfig, pluginConfigs);
+            return new Config(generalConfig, profilingConfig, outlierProfilingConfig,
+                    userTracingConfig, storageConfig, userInterfaceConfig, advancedConfig,
+                    pointcutConfigs, pluginConfigs);
         }
     }
 }

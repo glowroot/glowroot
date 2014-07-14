@@ -239,8 +239,8 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/export/transaction.*$"), transactionExportHttpService);
         uriMappings.put(Pattern.compile("^/export/trace/.*$"), traceExportHttpService);
         uriMappings.put(Pattern.compile("^/backend/trace/spans$"), snapshotHttpService);
-        uriMappings.put(Pattern.compile("^/backend/trace/coarse-profile$"), snapshotHttpService);
-        uriMappings.put(Pattern.compile("^/backend/trace/fine-profile$"), snapshotHttpService);
+        uriMappings.put(Pattern.compile("^/backend/trace/profile$"), snapshotHttpService);
+        uriMappings.put(Pattern.compile("^/backend/trace/outlier-profile$"), snapshotHttpService);
         try {
             return new HttpServer(bindAddress, port, numWorkerThreads, indexHtmlService,
                     layoutJsonService, uriMappings.build(), httpSessionManager, jsonServices);

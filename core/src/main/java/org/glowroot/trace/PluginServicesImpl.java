@@ -73,7 +73,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final TraceMetricNameCache traceMetricNameCache;
     @Nullable
     private final ThreadAllocatedBytes threadAllocatedBytes;
-    private final FineProfileScheduler fineProfileScheduler;
+    private final ProfileScheduler profileScheduler;
     private final Clock clock;
     private final Ticker ticker;
 
@@ -92,11 +92,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     static PluginServicesImpl create(TraceRegistry traceRegistry, TraceCollector traceCollector,
             ConfigService configService, TraceMetricNameCache traceMetricNameCache,
-            @Nullable ThreadAllocatedBytes threadAllocatedBytes,
-            FineProfileScheduler fineProfileScheduler, Ticker ticker, Clock clock,
-            PluginDescriptorCache pluginDescriptorCache, @Nullable String pluginId) {
+            @Nullable ThreadAllocatedBytes threadAllocatedBytes, ProfileScheduler profileScheduler,
+            Ticker ticker, Clock clock, PluginDescriptorCache pluginDescriptorCache,
+            @Nullable String pluginId) {
         PluginServicesImpl pluginServices = new PluginServicesImpl(traceRegistry, traceCollector,
-                configService, traceMetricNameCache, threadAllocatedBytes, fineProfileScheduler,
+                configService, traceMetricNameCache, threadAllocatedBytes, profileScheduler,
                 ticker, clock, pluginDescriptorCache, pluginId);
         // add config listeners first before caching configuration property values to avoid a
         // (remotely) possible race condition
@@ -112,14 +112,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private PluginServicesImpl(TraceRegistry traceRegistry, TraceCollector traceCollector,
             ConfigService configService, TraceMetricNameCache traceMetricNameCache,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
-            FineProfileScheduler fineProfileScheduler, Ticker ticker, Clock clock,
+            ProfileScheduler profileScheduler, Ticker ticker, Clock clock,
             PluginDescriptorCache pluginDescriptorCache, @Nullable String pluginId) {
         this.traceRegistry = traceRegistry;
         this.traceCollector = traceCollector;
         this.configService = configService;
         this.traceMetricNameCache = traceMetricNameCache;
         this.threadAllocatedBytes = threadAllocatedBytes;
-        this.fineProfileScheduler = fineProfileScheduler;
+        this.profileScheduler = profileScheduler;
         this.clock = clock;
         this.ticker = ticker;
         if (pluginId == null) {
@@ -230,7 +230,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             trace = new Trace(clock.currentTimeMillis(), transactionType, transactionName,
                     messageSupplier, rootTraceMetric, startTick, threadInfo, gcInfo, ticker);
             traceRegistry.addTrace(trace);
-            fineProfileScheduler.maybeScheduleFineProfilingUsingPercentage(trace);
+            profileScheduler.maybeScheduleProfilingUsingPercentage(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
         } else {
             return startSpan(trace, traceMetricName, messageSupplier);
@@ -345,8 +345,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setUser(user);
-            if (user != null && trace.getFineProfilerScheduledRunnable() == null) {
-                fineProfileScheduler.maybeScheduleFineProfilingUsingUser(trace, user);
+            if (user != null && trace.getProfilerScheduledRunnable() == null) {
+                profileScheduler.maybeScheduleProfilingUsingUser(trace, user);
             }
         }
     }
@@ -483,9 +483,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             trace.popSpan(span, endTick, errorMessage);
             if (trace.isCompleted()) {
                 // the root span has been popped off
-                safeCancel(trace.getCoarseProfilerScheduledRunnable());
+                safeCancel(trace.getOutlierProfilerScheduledRunnable());
                 safeCancel(trace.getStuckScheduledRunnable());
-                safeCancel(trace.getFineProfilerScheduledRunnable());
+                safeCancel(trace.getProfilerScheduledRunnable());
                 // send to trace collector before removing from trace registry so that trace
                 // collector can cover the gap (via TraceCollectorImpl.getPendingCompleteTraces())
                 // between removing the trace from the registry and storing it

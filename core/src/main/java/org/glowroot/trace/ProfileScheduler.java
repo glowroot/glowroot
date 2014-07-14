@@ -21,8 +21,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.FineProfilingConfig;
-import org.glowroot.config.UserOverridesConfig;
+import org.glowroot.config.ProfilingConfig;
+import org.glowroot.config.UserTracingConfig;
 import org.glowroot.markers.Singleton;
 import org.glowroot.trace.model.Trace;
 
@@ -31,20 +31,20 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * Captures fine-grained profile for a percentage of traces.
+ * Captures profile for a percentage of traces.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
-class FineProfileScheduler {
+class ProfileScheduler {
 
     private final ScheduledExecutorService scheduledExecutor;
     private final ConfigService configService;
     private final Ticker ticker;
     private final Random random;
 
-    FineProfileScheduler(ScheduledExecutorService scheduledExecutor, ConfigService configService,
+    ProfileScheduler(ScheduledExecutorService scheduledExecutor, ConfigService configService,
             Ticker ticker, Random random) {
         this.scheduledExecutor = scheduledExecutor;
         this.configService = configService;
@@ -52,17 +52,17 @@ class FineProfileScheduler {
         this.random = random;
     }
 
-    void maybeScheduleFineProfilingUsingUser(Trace trace, String user) {
-        UserOverridesConfig userOverridesConfig = configService.getUserOverridesConfig();
-        String overrideUser = userOverridesConfig.getUser();
-        if (user.equalsIgnoreCase(overrideUser) && userOverridesConfig.isFineProfiling()) {
+    void maybeScheduleProfilingUsingUser(Trace trace, String user) {
+        UserTracingConfig userTracingConfig = configService.getUserTracingConfig();
+        String overrideUser = userTracingConfig.getUser();
+        if (user.equalsIgnoreCase(overrideUser) && userTracingConfig.isProfile()) {
             scheduleProfiling(trace);
         }
     }
 
-    void maybeScheduleFineProfilingUsingPercentage(Trace trace) {
-        FineProfilingConfig fineProfilingConfig = configService.getFineProfilingConfig();
-        double tracePercentage = fineProfilingConfig.getTracePercentage();
+    void maybeScheduleProfilingUsingPercentage(Trace trace) {
+        ProfilingConfig profilingConfig = configService.getProfilingConfig();
+        double tracePercentage = profilingConfig.getTracePercentage();
         // just optimization to check tracePercentage != 0
         if (tracePercentage != 0 && random.nextDouble() * 100 < tracePercentage) {
             scheduleProfiling(trace);
@@ -72,17 +72,17 @@ class FineProfileScheduler {
     // schedules the first stack collection for configured interval after trace start (or
     // immediately, if trace duration already exceeds configured collection interval)
     private void scheduleProfiling(Trace trace) {
-        FineProfilingConfig config = configService.getFineProfilingConfig();
+        ProfilingConfig config = configService.getProfilingConfig();
         // extra half interval at the end to make sure the final stack trace is grabbed if it aligns
         // on total (e.g. 100ms interval, 1 second total should result in exactly 10 stack traces)
-        long endTick = trace.getStartTick() + SECONDS.toNanos(config.getTotalSeconds())
+        long endTick = trace.getStartTick() + SECONDS.toNanos(config.getMaxSeconds())
                 + MILLISECONDS.toNanos(config.getIntervalMillis()) / 2;
         ScheduledRunnable profilerScheduledRunnable =
-                new ProfilerScheduledRunnable(trace, endTick, true, ticker);
+                new ProfilerScheduledRunnable(trace, endTick, false, ticker);
         long initialDelay = Math.max(0,
                 config.getIntervalMillis() - NANOSECONDS.toMillis(trace.getDuration()));
         profilerScheduledRunnable.scheduleWithFixedDelay(scheduledExecutor, initialDelay,
                 config.getIntervalMillis(), MILLISECONDS);
-        trace.setFineProfilerScheduledRunnable(profilerScheduledRunnable);
+        trace.setProfilerScheduledRunnable(profilerScheduledRunnable);
     }
 }

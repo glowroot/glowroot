@@ -77,16 +77,16 @@ public class ConfigService {
         return config.getGeneralConfig();
     }
 
-    public CoarseProfilingConfig getCoarseProfilingConfig() {
-        return config.getCoarseProfilingConfig();
+    public ProfilingConfig getProfilingConfig() {
+        return config.getProfilingConfig();
     }
 
-    public FineProfilingConfig getFineProfilingConfig() {
-        return config.getFineProfilingConfig();
+    public OutlierProfilingConfig getOutlierProfilingConfig() {
+        return config.getOutlierProfilingConfig();
     }
 
-    public UserOverridesConfig getUserOverridesConfig() {
-        return config.getUserOverridesConfig();
+    public UserTracingConfig getUserTracingConfig() {
+        return config.getUserTracingConfig();
     }
 
     public StorageConfig getStorageConfig() {
@@ -145,52 +145,52 @@ public class ConfigService {
         return generalConfig.getVersion();
     }
 
-    public String updateCoarseProfilingConfig(CoarseProfilingConfig coarseProfilingConfig,
-            String priorVersion) throws OptimisticLockException, IOException {
+    public String updateProfilingConfig(ProfilingConfig profilingConfig, String priorVersion)
+            throws OptimisticLockException, IOException {
         synchronized (writeLock) {
-            if (!config.getCoarseProfilingConfig().getVersion().equals(priorVersion)) {
+            if (!config.getProfilingConfig().getVersion().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
             Config updatedConfig = Config.builder(config)
-                    .coarseProfilingConfig(coarseProfilingConfig)
+                    .profilingConfig(profilingConfig)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return coarseProfilingConfig.getVersion();
+        return profilingConfig.getVersion();
     }
 
-    public String updateFineProfilingConfig(FineProfilingConfig fineProfilingConfig,
+    public String updateOutlierProfilingConfig(OutlierProfilingConfig outlierProfilingConfig,
             String priorVersion) throws OptimisticLockException, IOException {
         synchronized (writeLock) {
-            if (!config.getFineProfilingConfig().getVersion().equals(priorVersion)) {
+            if (!config.getOutlierProfilingConfig().getVersion().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
             Config updatedConfig = Config.builder(config)
-                    .fineProfilingConfig(fineProfilingConfig)
+                    .outlierProfilingConfig(outlierProfilingConfig)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return fineProfilingConfig.getVersion();
+        return outlierProfilingConfig.getVersion();
     }
 
-    public String updateUserOverridesConfig(UserOverridesConfig userOverridesConfig,
+    public String updateUserTracingConfig(UserTracingConfig userTracingConfig,
             String priorVersion) throws OptimisticLockException, IOException {
         synchronized (writeLock) {
-            if (!config.getUserOverridesConfig().getVersion().equals(priorVersion)) {
+            if (!config.getUserTracingConfig().getVersion().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
             Config updatedConfig = Config.builder(config)
-                    .userOverridesConfig(userOverridesConfig)
+                    .userTracingConfig(userTracingConfig)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return userOverridesConfig.getVersion();
+        return userTracingConfig.getVersion();
     }
 
     public String updateStorageConfig(StorageConfig storageConfig, String priorVersion)

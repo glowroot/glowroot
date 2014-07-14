@@ -64,8 +64,8 @@ public class GeneralConfig {
         final int storeThresholdMillis = 3000;
         final int stuckThresholdSeconds = 180;
         final int maxSpans = 2000;
-        final boolean threadInfoEnabled = false;
-        final boolean gcInfoEnabled = false;
+        final boolean threadInfoEnabled = true;
+        final boolean gcInfoEnabled = true;
         return new GeneralConfig(enabled, storeThresholdMillis, stuckThresholdSeconds, maxSpans,
                 threadInfoEnabled, gcInfoEnabled);
     }

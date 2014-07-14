@@ -56,8 +56,8 @@ public class Snapshot {
     @Nullable
     private final String gcInfos; // json data
     private final Existence spansExistence;
-    private final Existence coarseProfileExistence;
-    private final Existence fineProfileExistence;
+    private final Existence profileExistence;
+    private final Existence outlierProfileExistence;
     @Nullable
     private final ImmutableSetMultimap<String, String> attributesForIndexing;
 
@@ -65,8 +65,8 @@ public class Snapshot {
             long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user, @Nullable String attributes,
             @Nullable String traceMetrics, @Nullable String threadInfo, @Nullable String gcInfos,
-            Existence spansExistence, Existence coarseProfileExistence,
-            Existence fineProfileExistence,
+            Existence spansExistence, Existence profileExistence,
+            Existence outlierProfileExistence,
             @Nullable ImmutableSetMultimap<String, String> attributesForIndexing) {
         this.id = id;
         this.active = active;
@@ -84,8 +84,8 @@ public class Snapshot {
         this.threadInfo = threadInfo;
         this.gcInfos = gcInfos;
         this.spansExistence = spansExistence;
-        this.coarseProfileExistence = coarseProfileExistence;
-        this.fineProfileExistence = fineProfileExistence;
+        this.profileExistence = profileExistence;
+        this.outlierProfileExistence = outlierProfileExistence;
         this.attributesForIndexing = attributesForIndexing;
     }
 
@@ -159,12 +159,12 @@ public class Snapshot {
         return spansExistence;
     }
 
-    Existence getCoarseProfileExistence() {
-        return coarseProfileExistence;
+    Existence getOutlierProfileExistence() {
+        return outlierProfileExistence;
     }
 
-    Existence getFineProfileExistence() {
-        return fineProfileExistence;
+    Existence getProfileExistence() {
+        return profileExistence;
     }
 
     @Nullable
@@ -192,8 +192,8 @@ public class Snapshot {
                 .add("threadInfo", threadInfo)
                 .add("gcInfos", gcInfos)
                 .add("spansExistence", spansExistence)
-                .add("coarseProfileExistence", coarseProfileExistence)
-                .add("fineProfileExistence", fineProfileExistence)
+                .add("outlierProfileExistence", outlierProfileExistence)
+                .add("profileExistence", profileExistence)
                 .toString();
     }
 
@@ -231,9 +231,9 @@ public class Snapshot {
         @MonotonicNonNull
         private Existence spansExistence;
         @MonotonicNonNull
-        private Existence coarseProfileExistence;
+        private Existence profileExistence;
         @MonotonicNonNull
-        private Existence fineProfileExistence;
+        private Existence outlierProfileExistence;
         @Nullable
         private ImmutableSetMultimap<String, String> attributesForIndexing;
 
@@ -324,15 +324,15 @@ public class Snapshot {
             return this;
         }
 
-        @EnsuresNonNull("coarseProfileExistence")
-        public Builder coarseProfileExistence(Existence coarseProfileExistence) {
-            this.coarseProfileExistence = coarseProfileExistence;
+        @EnsuresNonNull("profileExistence")
+        public Builder profileExistence(Existence profileExistence) {
+            this.profileExistence = profileExistence;
             return this;
         }
 
-        @EnsuresNonNull("fineProfileExistence")
-        public Builder fineProfileExistence(Existence fineProfileExistence) {
-            this.fineProfileExistence = fineProfileExistence;
+        @EnsuresNonNull("outlierProfileExistence")
+        public Builder outlierProfileExistence(Existence outlierProfileExistence) {
+            this.outlierProfileExistence = outlierProfileExistence;
             return this;
         }
 
@@ -343,12 +343,12 @@ public class Snapshot {
         }
 
         @RequiresNonNull({"id", "transactionType", "transactionName", "headline", "spansExistence",
-                "coarseProfileExistence", "fineProfileExistence"})
+                "profileExistence", "outlierProfileExistence"})
         public Snapshot build() {
             return new Snapshot(id, active, stuck, startTime, captureTime, duration,
                     transactionType, transactionName, headline, error, user, attributes,
-                    traceMetrics, threadInfo, gcInfos, spansExistence, coarseProfileExistence,
-                    fineProfileExistence, attributesForIndexing);
+                    traceMetrics, threadInfo, gcInfos, spansExistence, profileExistence,
+                    outlierProfileExistence, attributesForIndexing);
         }
     }
 }
