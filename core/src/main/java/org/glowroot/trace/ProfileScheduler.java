@@ -64,7 +64,7 @@ class ProfileScheduler {
         ProfilingConfig profilingConfig = configService.getProfilingConfig();
         double tracePercentage = profilingConfig.getTracePercentage();
         // just optimization to check tracePercentage != 0
-        if (tracePercentage != 0 && random.nextDouble() * 100 < tracePercentage) {
+        if (tracePercentage != 0 && random.nextFloat() * 100 < tracePercentage) {
             scheduleProfiling(trace);
         }
     }
