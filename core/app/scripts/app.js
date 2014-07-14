@@ -199,46 +199,11 @@ Glowroot = (function () {
     };
   }
 
-  function configureAjaxError() {
-    var modalDiv =
-        '<div class="modal hide fade" id="ajaxErrorModal" tabindex="-1"' +
-        '    style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px;">' +
-        '  <div class="modal-header">' +
-        '    <button class="close" data-dismiss="modal">&times;</button>' +
-        '    <h3>Ajax Error</h3>' +
-        '  </div>' +
-        '  <div class="modal-body" id="ajaxError"></div>' +
-        '  <div class="modal-footer">' +
-        '    <button class="btn" data-dismiss="modal">Close</button>' +
-        '  </div>' +
-        '</div>';
-    $(document.body).append(modalDiv);
-    $(document).ajaxError(function (e, jqxhr, settings, exception) {
-      if (jqxhr.abort) {
-        // intentional abort (currently happens in firefox if expand trace detail (e.g. spans), takes long to load,
-        // hit escape key to close modal before detail request completes)
-        return;
-      }
-      var $ajaxError = $('#ajaxError');
-      if (jqxhr.status === 0) {
-        $ajaxError.html('Can\'t connect to server');
-      } else if (jqxhr.status === 200) {
-        $ajaxError.html('Error parsing json: ' + exception);
-        $ajaxError.append('<br><br>');
-        $ajaxError.append(jqxhr.responseText);
-      } else {
-        $ajaxError.html('Error from server: ' + jqxhr.statusText);
-      }
-      $('#ajaxErrorModal').modal('show');
-    });
-  }
-
   return {
     showAndFadeSuccessMessage: function (selector) {
       showAndFadeMessage(selector, 1500);
     },
     fadeOut: fadeOut,
-    showSpinner: showSpinner,
-    configureAjaxError: configureAjaxError
+    showSpinner: showSpinner
   };
 })();

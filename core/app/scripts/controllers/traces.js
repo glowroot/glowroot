@@ -255,9 +255,6 @@ glowroot.controller('TracesCtrl', [
       }
     });
 
-    // TODO CONVERT TO ANGULARJS, global $http error handler?
-    Glowroot.configureAjaxError();
-
     $('#zoomOut').click(function () {
       plot.zoomOut();
     });

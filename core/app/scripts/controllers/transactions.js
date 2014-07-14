@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, Glowroot, $ */
+/* global glowroot, angular, $ */
 
 glowroot.controller('TransactionsCtrl', [
   '$scope',
@@ -446,9 +446,6 @@ glowroot.controller('TransactionsCtrl', [
     $scope.transactionBarWidth = function (totalMicros) {
       return (totalMicros / maxTransactionTotalMicros) * 100 + '%';
     };
-
-    // TODO CONVERT TO ANGULARJS, global $http error handler?
-    Glowroot.configureAjaxError();
 
     $('#zoomOut').click(function () {
       plot.zoomOut();
