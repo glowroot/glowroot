@@ -266,6 +266,8 @@ TraceRenderer = (function () {
       if (spans) {
         // this is an export file
         $selector.data('loaded', true);
+        // first time opening
+        initSpanLineLength();
         // un-hide before building in case there are lots of spans, at least can see first few quickly
         $selector.removeClass('hide');
         renderNext(spans, 0);
