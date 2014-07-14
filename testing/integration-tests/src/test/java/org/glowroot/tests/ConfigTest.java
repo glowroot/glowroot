@@ -295,8 +295,6 @@ public class ConfigTest {
 
     private static void updateAllFields(AdvancedConfig config) {
         config.setTraceMetricWrapperMethods(!config.isTraceMetricWrapperMethods());
-        config.setWarnOnSpanOutsideTrace(!config.isWarnOnSpanOutsideTrace());
-        config.setWeavingDisabled(!config.isWeavingDisabled());
     }
 
     private static void updateAllFields(PluginConfig config) {

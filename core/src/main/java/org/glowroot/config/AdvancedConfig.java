@@ -36,17 +36,12 @@ import org.glowroot.markers.UsedByJsonBinding;
 public class AdvancedConfig {
 
     private final boolean traceMetricWrapperMethods;
-    private final boolean warnOnSpanOutsideTrace;
-    private final boolean weavingDisabled;
 
     private final String version;
 
     static AdvancedConfig getDefault() {
         final boolean traceMetricWrapperMethods = false;
-        final boolean warnOnSpanOutsideTrace = false;
-        final boolean weavingDisabled = false;
-        return new AdvancedConfig(traceMetricWrapperMethods, warnOnSpanOutsideTrace,
-                weavingDisabled);
+        return new AdvancedConfig(traceMetricWrapperMethods);
     }
 
     public static Overlay overlay(AdvancedConfig base) {
@@ -54,25 +49,13 @@ public class AdvancedConfig {
     }
 
     @VisibleForTesting
-    public AdvancedConfig(boolean traceMetricWrapperMethods, boolean warnOnSpanOutsideTrace,
-            boolean weavingDisabled) {
+    public AdvancedConfig(boolean traceMetricWrapperMethods) {
         this.traceMetricWrapperMethods = traceMetricWrapperMethods;
-        this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
-        this.weavingDisabled = weavingDisabled;
-        this.version = VersionHashes.sha1(traceMetricWrapperMethods, warnOnSpanOutsideTrace,
-                weavingDisabled);
+        this.version = VersionHashes.sha1(traceMetricWrapperMethods);
     }
 
     public boolean isTraceMetricWrapperMethods() {
         return traceMetricWrapperMethods;
-    }
-
-    public boolean isWarnOnSpanOutsideTrace() {
-        return warnOnSpanOutsideTrace;
-    }
-
-    public boolean isWeavingDisabled() {
-        return weavingDisabled;
     }
 
     @JsonView(UiView.class)
@@ -85,8 +68,6 @@ public class AdvancedConfig {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("traceMetricWrapperMethods", traceMetricWrapperMethods)
-                .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
-                .add("weavingDisabled", weavingDisabled)
                 .add("version", version)
                 .toString();
     }
@@ -96,26 +77,15 @@ public class AdvancedConfig {
     public static class Overlay {
 
         private boolean traceMetricWrapperMethods;
-        private boolean warnOnSpanOutsideTrace;
-        private boolean weavingDisabled;
 
         private Overlay(AdvancedConfig base) {
             traceMetricWrapperMethods = base.traceMetricWrapperMethods;
-            warnOnSpanOutsideTrace = base.warnOnSpanOutsideTrace;
-            weavingDisabled = base.weavingDisabled;
         }
         public void setTraceMetricWrapperMethods(boolean traceMetricWrapperMethods) {
             this.traceMetricWrapperMethods = traceMetricWrapperMethods;
         }
-        public void setWarnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
-            this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
-        }
-        public void setWeavingDisabled(boolean weavingDisabled) {
-            this.weavingDisabled = weavingDisabled;
-        }
         public AdvancedConfig build() {
-            return new AdvancedConfig(traceMetricWrapperMethods, warnOnSpanOutsideTrace,
-                    weavingDisabled);
+            return new AdvancedConfig(traceMetricWrapperMethods);
         }
     }
 }

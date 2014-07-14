@@ -48,31 +48,6 @@
           </p>
         </div>
       </div>
-      <div gt-form-group
-           gt-label="Warn on span outside of trace"
-           gt-model="config.warnOnSpanOutsideTrace"
-           gt-type="checkbox">
-        <div class="help-block">
-          When enabled, a warning will be logged when a span is encountered outside of a trace. For example, if a jdbc
-          query is executed by a background task outside of a servlet. This can be helpful for finding background tasks
-          that should be captured as traces via pointcuts.
-        </div>
-      </div>
-      <div gt-form-group
-           gt-label="Disable weaving"
-           gt-model="config.weavingDisabled"
-           gt-type="checkbox">
-        <div class="help-block">
-          <div class="glowroot-yellow"
-               ng-show="originalConfig.weavingDisabled !== weavingDisabledActive"
-               style="padding-bottom: 5px;">
-            Active value is <code>{{weavingDisabledActive ? 'ON' : 'OFF'}}</code>. The newly configured value will take
-            effect on next JVM restart.
-          </div>
-          When disabled, Glowroot will not perform any weaving and will not capture any traces.
-          Changing this requires a restart. <em>Changes to this setting will take effect on next JVM restart.</em>
-        </div>
-      </div>
       <div class="form-group form-buttons">
         <div class="col-lg-offset-3 col-lg-9">
           <div gt-button

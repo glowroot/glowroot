@@ -55,7 +55,6 @@ public class TraceModule {
     private final StuckTraceWatcher stuckTraceWatcher;
     private final OutlierProfilerWatcher outlierProfilerWatcher;
 
-    private final boolean weavingDisabled;
     private final boolean traceMetricWrapperMethods;
     private final boolean jvmRetransformClassesSupported;
 
@@ -75,12 +74,11 @@ public class TraceModule {
         final TraceMetricNameCache traceMetricNameCache = new TraceMetricNameCache();
         weavingTimerService = new WeavingTimerServiceImpl(traceRegistry, traceMetricNameCache);
 
-        weavingDisabled = configModule.getConfigService().getAdvancedConfig().isWeavingDisabled();
         traceMetricWrapperMethods =
                 configModule.getConfigService().getAdvancedConfig().isTraceMetricWrapperMethods();
         // instrumentation is null when debugging with IsolatedWeavingClassLoader
         // instead of javaagent
-        if (instrumentation != null && !weavingDisabled) {
+        if (instrumentation != null) {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
                     configModule.getPluginDescriptorCache().getMixinTypes(),
                     adviceCache.getAdvisorsSupplier(), parsedTypeCache, weavingTimerService,
@@ -137,10 +135,6 @@ public class TraceModule {
 
     public WeavingTimerService getWeavingTimerService() {
         return weavingTimerService;
-    }
-
-    public boolean isWeavingDisabled() {
-        return weavingDisabled;
     }
 
     public boolean isTraceMetricWrapperMethods() {

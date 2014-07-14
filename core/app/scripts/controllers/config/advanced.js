@@ -32,7 +32,6 @@ glowroot.controller('ConfigAdvancedCtrl', [
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
       $scope.traceMetricWrapperMethodsActive = data.traceMetricWrapperMethodsActive;
-      $scope.weavingDisabledActive = data.weavingDisabledActive;
     }
 
     $scope.save = function (deferred) {

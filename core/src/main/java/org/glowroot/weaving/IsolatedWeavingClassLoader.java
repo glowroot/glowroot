@@ -32,7 +32,6 @@ import com.google.common.io.Resources;
 import com.google.common.reflect.Reflection;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +58,6 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     // bridge classes can be either interfaces or base classes
     private final ImmutableList<Class<?>> bridgeClasses;
     private final ImmutableList<String> excludePackages;
-    @Nullable
     private final Weaver weaver;
     // guarded by 'this'
     private final Map<String, Class<?>> classes = Maps.newConcurrentMap();
@@ -78,21 +76,16 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     private IsolatedWeavingClassLoader(List<Advice> advisors, List<MixinType> mixinTypes,
             WeavingTimerService weavingTimerService, List<Class<?>> bridgeClasses,
-            List<String> excludePackages, boolean weavingDisabled,
-            boolean traceMetricWrapperMethods) {
+            List<String> excludePackages, boolean traceMetricWrapperMethods) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
         this.bridgeClasses = ImmutableList.copyOf(bridgeClasses);
         this.excludePackages = ImmutableList.copyOf(excludePackages);
-        if (weavingDisabled) {
-            weaver = null;
-        } else {
-            Supplier<ImmutableList<Advice>> advisorsSupplier =
-                    Suppliers.ofInstance(ImmutableList.copyOf(advisors));
-            Weaver weaver = new Weaver(advisorsSupplier, mixinTypes,
-                    new ParsedTypeCache(advisorsSupplier, mixinTypes), weavingTimerService,
-                    traceMetricWrapperMethods);
-            this.weaver = weaver;
-        }
+        Supplier<ImmutableList<Advice>> advisorsSupplier =
+                Suppliers.ofInstance(ImmutableList.copyOf(advisors));
+        Weaver weaver = new Weaver(advisorsSupplier, mixinTypes,
+                new ParsedTypeCache(advisorsSupplier, mixinTypes), weavingTimerService,
+                traceMetricWrapperMethods);
+        this.weaver = weaver;
     }
 
     public <S extends /*@Nullable*/Object, T extends S> S newInstance(Class<T> implClass,
@@ -143,9 +136,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         } catch (IOException e) {
             throw new ClassNotFoundException("Error loading class", e);
         }
-        if (weaver != null) {
-            bytes = weaveClass(name, bytes);
-        }
+        bytes = weaveClass(name, bytes);
         String packageName = Reflection.getPackageName(name);
         if (getPackage(packageName) == null) {
             definePackage(packageName, null, null, null, null, null, null, null);
@@ -153,7 +144,6 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return super.defineClass(name, bytes, 0, bytes.length);
     }
 
-    @RequiresNonNull("weaver")
     private byte[] weaveClass(String name, byte[] bytes) throws ClassFormatError {
         if (inWeaving.get()) {
             return bytes;
@@ -231,7 +221,6 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         private List<Advice> advisors = Lists.newArrayList();
         @MonotonicNonNull
         private WeavingTimerService weavingTimerService;
-        private boolean weavingDisabled;
         private boolean traceMetricWrapperMethods = true;
         private final List<Class<?>> bridgeClasses = Lists.newArrayList();
         private final List<String> excludePackages = Lists.newArrayList();
@@ -249,10 +238,6 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         @EnsuresNonNull("weavingTimerService")
         public void setWeavingTimerService(WeavingTimerService traceMetricTimerService) {
             this.weavingTimerService = traceMetricTimerService;
-        }
-
-        public void setWeavingDisabled(boolean weavingDisabled) {
-            this.weavingDisabled = weavingDisabled;
         }
 
         public void setTraceMetricWrapperMethods(boolean traceMetricWrapperMethods) {
@@ -279,7 +264,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                             checkNotNull(weavingTimerService);
                             return new IsolatedWeavingClassLoader(advisors, mixinTypes,
                                     weavingTimerService, bridgeClasses, excludePackages,
-                                    weavingDisabled, traceMetricWrapperMethods);
+                                    traceMetricWrapperMethods);
                         }
                     });
         }
