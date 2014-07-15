@@ -59,10 +59,10 @@ public class TraceMetric {
     private final boolean minActive;
     private final boolean maxActive;
 
-    private final ImmutableList<TraceMetric> nestedTraceMetrics;
+    private final ImmutableList<TraceMetric> nestedMetrics;
 
     private TraceMetric(String name, long total, long min, long max, long count, boolean active,
-            boolean minActive, boolean maxActive, List<TraceMetric> nestedTraceMetrics) {
+            boolean minActive, boolean maxActive, List<TraceMetric> nestedMetrics) {
         this.name = name;
         this.total = total;
         this.min = min;
@@ -71,7 +71,7 @@ public class TraceMetric {
         this.active = active;
         this.minActive = minActive;
         this.maxActive = maxActive;
-        this.nestedTraceMetrics = ImmutableList.copyOf(nestedTraceMetrics);
+        this.nestedMetrics = ImmutableList.copyOf(nestedMetrics);
     }
 
     public String getName() {
@@ -106,32 +106,32 @@ public class TraceMetric {
         return maxActive;
     }
 
-    public ImmutableList<TraceMetric> getNestedTraceMetrics() {
-        return getStableAndOrderedTraceMetrics();
+    public ImmutableList<TraceMetric> getNestedMetrics() {
+        return getStableAndOrderedNestedMetrics();
     }
 
     // the glowroot weaving trace metric is a bit unpredictable since tests are often run inside the
     // same GlowrootContainer for test speed, so test order affects whether any classes are
     // woven during the test or not
     // it's easiest to just ignore this trace metric completely
-    private ImmutableList<TraceMetric> getStableAndOrderedTraceMetrics() {
-        List<TraceMetric> stableTraceMetrics = Lists.newArrayList(nestedTraceMetrics);
-        for (Iterator<TraceMetric> i = stableTraceMetrics.iterator(); i.hasNext();) {
+    private ImmutableList<TraceMetric> getStableAndOrderedNestedMetrics() {
+        List<TraceMetric> stableNestedMetrics = Lists.newArrayList(nestedMetrics);
+        for (Iterator<TraceMetric> i = stableNestedMetrics.iterator(); i.hasNext();) {
             if ("glowroot weaving".equals(i.next().getName())) {
                 i.remove();
             }
         }
         return ImmutableList.copyOf(
-                TraceMetric.orderingByTotal.reverse().sortedCopy(stableTraceMetrics));
+                TraceMetric.orderingByTotal.reverse().sortedCopy(stableNestedMetrics));
     }
 
     @JsonIgnore
-    public List<String> getNestedTraceMetricNames() {
-        List<String> stableTraceMetrics = Lists.newArrayList();
-        for (TraceMetric stableTraceMetric : getStableAndOrderedTraceMetrics()) {
-            stableTraceMetrics.add(stableTraceMetric.getName());
+    public List<String> getNestedMetricNames() {
+        List<String> stableNestedMetrics = Lists.newArrayList();
+        for (TraceMetric stableNestedMetric : getStableAndOrderedNestedMetrics()) {
+            stableNestedMetrics.add(stableNestedMetric.getName());
         }
-        return stableTraceMetrics;
+        return stableNestedMetrics;
     }
 
     @Override
@@ -146,7 +146,7 @@ public class TraceMetric {
                 .add("active", active)
                 .add("minActive", minActive)
                 .add("maxActive", maxActive)
-                .add("nestedTraceMetrics", nestedTraceMetrics)
+                .add("nestedMetrics", nestedMetrics)
                 .toString();
     }
 
@@ -160,10 +160,10 @@ public class TraceMetric {
             @JsonProperty("active") @Nullable Boolean active,
             @JsonProperty("minActive") @Nullable Boolean minActive,
             @JsonProperty("maxActive") @Nullable Boolean maxActive,
-            @JsonProperty("nestedTraceMetrics") @Nullable List</*@Nullable*/TraceMetric> uncheckedNestedTraceMetrics)
+            @JsonProperty("nestedMetrics") @Nullable List</*@Nullable*/TraceMetric> uncheckedNestedMetrics)
             throws JsonMappingException {
-        List<TraceMetric> nestedTraceMetrics =
-                checkNotNullItemsForProperty(uncheckedNestedTraceMetrics, "nestedTraceMetrics");
+        List<TraceMetric> nestedMetrics =
+                checkNotNullItemsForProperty(uncheckedNestedMetrics, "nestedMetrics");
         checkRequiredProperty(name, "name");
         checkRequiredProperty(total, "total");
         checkRequiredProperty(min, "min");
@@ -173,6 +173,6 @@ public class TraceMetric {
         checkRequiredProperty(minActive, "minActive");
         checkRequiredProperty(maxActive, "maxActive");
         return new TraceMetric(name, total, min, max, count, active, minActive, maxActive,
-                nullToEmpty(nestedTraceMetrics));
+                nullToEmpty(nestedMetrics));
     }
 }

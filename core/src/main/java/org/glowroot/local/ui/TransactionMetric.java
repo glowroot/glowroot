@@ -35,13 +35,13 @@ import static org.glowroot.common.ObjectMappers.nullToEmpty;
  * @since 0.5
  */
 @UsedByJsonBinding
-public class SimpleTraceMetric {
+public class TransactionMetric {
 
-    static final TreeTraverser<SimpleTraceMetric> TRAVERSER =
-            new TreeTraverser<SimpleTraceMetric>() {
+    static final TreeTraverser<TransactionMetric> TRAVERSER =
+            new TreeTraverser<TransactionMetric>() {
                 @Override
-                public Iterable<SimpleTraceMetric> children(SimpleTraceMetric root) {
-                    return root.getNestedTraceMetrics();
+                public Iterable<TransactionMetric> children(TransactionMetric root) {
+                    return root.getNestedMetrics();
                 }
             };
 
@@ -49,19 +49,19 @@ public class SimpleTraceMetric {
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
     private long totalMicros;
     private long count;
-    private final List<SimpleTraceMetric> nestedTraceMetrics;
+    private final List<TransactionMetric> nestedMetrics;
 
-    static SimpleTraceMetric createSyntheticRootNode() {
-        return new SimpleTraceMetric("<multiple root nodes>", 0, 0,
-                new ArrayList<SimpleTraceMetric>());
+    static TransactionMetric createSyntheticRootMetric() {
+        return new TransactionMetric("<multiple root nodes>", 0, 0,
+                new ArrayList<TransactionMetric>());
     }
 
-    private SimpleTraceMetric(String name, long totalMicros, long count,
-            List<SimpleTraceMetric> nestedTraceMetrics) {
+    private TransactionMetric(String name, long totalMicros, long count,
+            List<TransactionMetric> nestedMetrics) {
         this.name = name;
         this.totalMicros = totalMicros;
         this.count = count;
-        this.nestedTraceMetrics = nestedTraceMetrics;
+        this.nestedMetrics = nestedMetrics;
     }
 
     void incrementCount(long num) {
@@ -84,22 +84,22 @@ public class SimpleTraceMetric {
         return count;
     }
 
-    public List<SimpleTraceMetric> getNestedTraceMetrics() {
-        return nestedTraceMetrics;
+    public List<TransactionMetric> getNestedMetrics() {
+        return nestedMetrics;
     }
 
     @JsonCreator
-    static SimpleTraceMetric readValue(
+    static TransactionMetric readValue(
             @JsonProperty("name") @Nullable String name,
             @JsonProperty("totalMicros") @Nullable Long totalMicros,
             @JsonProperty("count") @Nullable Long count,
-            @JsonProperty("nestedTraceMetrics") @Nullable List</*@Nullable*/SimpleTraceMetric> uncheckedNestedTraceMetrics)
+            @JsonProperty("nestedMetrics") @Nullable List</*@Nullable*/TransactionMetric> uncheckedNestedMetrics)
             throws JsonMappingException {
-        List<SimpleTraceMetric> nestedTraceMetrics =
-                checkNotNullItemsForProperty(uncheckedNestedTraceMetrics, "nestedTraceMetrics");
+        List<TransactionMetric> nestedMetrics =
+                checkNotNullItemsForProperty(uncheckedNestedMetrics, "nestedMetrics");
         checkRequiredProperty(name, "name");
         checkRequiredProperty(totalMicros, "totalMicros");
         checkRequiredProperty(count, "count");
-        return new SimpleTraceMetric(name, totalMicros, count, nullToEmpty(nestedTraceMetrics));
+        return new TransactionMetric(name, totalMicros, count, nullToEmpty(nestedMetrics));
     }
 }

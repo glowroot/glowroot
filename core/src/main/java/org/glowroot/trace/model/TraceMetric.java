@@ -64,19 +64,19 @@ public class TraceMetric implements TraceMetricTimerExt {
     private long startTick;
     private int selfNestingLevel;
 
-    // nestedTraceMetrics is only accessed by trace thread so no need for volatile or synchronized
+    // nestedMetrics is only accessed by trace thread so no need for volatile or synchronized
     // access during trace metric capture which is important
     //
     // lazy initialize to save memory in common case where this is a leaf trace metric
     @MonotonicNonNull
-    private Map<TraceMetricNameImpl, TraceMetric> nestedTraceMetrics;
+    private Map<TraceMetricNameImpl, TraceMetric> nestedMetrics;
 
     // separate list for thread safe access by other threads (e.g. stuck trace capture and active
     // trace viewer)
     //
     // lazy initialize to save memory in common case where this is a leaf trace metric
     @Nullable
-    private volatile List<TraceMetric> threadSafeNestedTraceMetrics;
+    private volatile List<TraceMetric> threadSafeNestedMetrics;
 
     // parent and currentTraceMetricHolder don't need to be thread safe as they are only accessed by
     // the trace thread
@@ -88,7 +88,7 @@ public class TraceMetric implements TraceMetricTimerExt {
 
     // optimization for common case of re-requesting same nested trace metric over and over
     @Nullable
-    private TraceMetric cachedNestedTraceMetric;
+    private TraceMetric cachedNestedMetric;
 
     public TraceMetric(TraceMetricNameImpl traceMetricName, @Nullable TraceMetric parent,
             CurrentTraceMetricHolder currentTraceMetricHolder, Ticker ticker) {
@@ -153,14 +153,14 @@ public class TraceMetric implements TraceMetricTimerExt {
             jg.writeBooleanField("minActive", false);
             jg.writeBooleanField("maxActive", false);
         }
-        if (threadSafeNestedTraceMetrics != null) {
-            ImmutableList<TraceMetric> copyOfNestedTraceMetrics;
-            synchronized (threadSafeNestedTraceMetrics) {
-                copyOfNestedTraceMetrics = ImmutableList.copyOf(threadSafeNestedTraceMetrics);
+        if (threadSafeNestedMetrics != null) {
+            ImmutableList<TraceMetric> copyOfNestedMetrics;
+            synchronized (threadSafeNestedMetrics) {
+                copyOfNestedMetrics = ImmutableList.copyOf(threadSafeNestedMetrics);
             }
-            jg.writeArrayFieldStart("nestedTraceMetrics");
-            for (TraceMetric nestedTraceMetric : copyOfNestedTraceMetrics) {
-                nestedTraceMetric.writeValue(jg);
+            jg.writeArrayFieldStart("nestedMetrics");
+            for (TraceMetric nestedMetric : copyOfNestedMetrics) {
+                nestedMetric.writeValue(jg);
             }
             jg.writeEndArray();
         }
@@ -210,69 +210,68 @@ public class TraceMetric implements TraceMetricTimerExt {
     }
 
     // only called by trace thread at trace completion
-    public List<TraceMetric> getNestedTraceMetrics() {
-        if (threadSafeNestedTraceMetrics == null) {
+    public List<TraceMetric> getNestedMetrics() {
+        if (threadSafeNestedMetrics == null) {
             return ImmutableList.of();
         } else {
-            return threadSafeNestedTraceMetrics;
+            return threadSafeNestedMetrics;
         }
     }
 
     // only called by trace thread
-    public TraceMetric startNestedTraceMetric(TraceMetricName traceMetricName) {
+    public TraceMetric startNestedMetric(TraceMetricName traceMetricName) {
         // trace metric names are guaranteed one instance per name so pointer equality can be used
         if (this.traceMetricName == traceMetricName) {
             selfNestingLevel++;
             return this;
         }
         long startTick = ticker.read();
-        return startNestedTraceMetricInternal(traceMetricName, startTick);
+        return startNestedMetricInternal(traceMetricName, startTick);
     }
 
     // only called by trace thread
-    public TraceMetric startNestedTraceMetric(TraceMetricName traceMetricName, long startTick) {
+    public TraceMetric startNestedMetric(TraceMetricName traceMetricName, long startTick) {
         // trace metric names are guaranteed one instance per name so pointer equality can be used
         if (this.traceMetricName == traceMetricName) {
             selfNestingLevel++;
             return this;
         }
-        return startNestedTraceMetricInternal(traceMetricName, startTick);
+        return startNestedMetricInternal(traceMetricName, startTick);
     }
 
-    private TraceMetric startNestedTraceMetricInternal(TraceMetricName traceMetricName,
+    private TraceMetric startNestedMetricInternal(TraceMetricName traceMetricName,
             long startTick) {
         // optimization for common case of starting same nested trace metric over and over
-        if (cachedNestedTraceMetric != null &&
-                cachedNestedTraceMetric.getTraceMetricName() == traceMetricName) {
-            cachedNestedTraceMetric.start(startTick);
-            return cachedNestedTraceMetric;
+        if (cachedNestedMetric != null &&
+                cachedNestedMetric.getTraceMetricName() == traceMetricName) {
+            cachedNestedMetric.start(startTick);
+            return cachedNestedMetric;
         }
-        if (nestedTraceMetrics == null) {
+        if (nestedMetrics == null) {
             // reduce capacity from default 32 down to 16 just to save a bit of memory
             // don't reduce further or it will increase hash collisions and impact get performance
-            nestedTraceMetrics = new IdentityHashMap<TraceMetricNameImpl, TraceMetric>(16);
+            nestedMetrics = new IdentityHashMap<TraceMetricNameImpl, TraceMetric>(16);
         }
-        TraceMetric nestedTraceMetric = nestedTraceMetrics.get(traceMetricName);
-        if (nestedTraceMetric != null) {
-            nestedTraceMetric.start(startTick);
+        TraceMetric nestedMetric = nestedMetrics.get(traceMetricName);
+        if (nestedMetric != null) {
+            nestedMetric.start(startTick);
             // optimization for common case of re-requesting same nested trace metric over and over
-            cachedNestedTraceMetric = nestedTraceMetric;
-            return nestedTraceMetric;
+            cachedNestedMetric = nestedMetric;
+            return nestedMetric;
         }
         TraceMetricNameImpl traceMetricNameImpl = (TraceMetricNameImpl) traceMetricName;
-        nestedTraceMetric =
-                new TraceMetric(traceMetricNameImpl, this, currentTraceMetricHolder, ticker);
-        nestedTraceMetric.start(startTick);
-        nestedTraceMetrics.put(traceMetricNameImpl, nestedTraceMetric);
-        if (threadSafeNestedTraceMetrics == null) {
-            threadSafeNestedTraceMetrics = Lists.newArrayList();
+        nestedMetric = new TraceMetric(traceMetricNameImpl, this, currentTraceMetricHolder, ticker);
+        nestedMetric.start(startTick);
+        nestedMetrics.put(traceMetricNameImpl, nestedMetric);
+        if (threadSafeNestedMetrics == null) {
+            threadSafeNestedMetrics = Lists.newArrayList();
         }
-        synchronized (threadSafeNestedTraceMetrics) {
-            threadSafeNestedTraceMetrics.add(nestedTraceMetric);
+        synchronized (threadSafeNestedMetrics) {
+            threadSafeNestedMetrics.add(nestedMetric);
         }
         // optimization for common case of re-requesting same nested trace metric over and over
-        cachedNestedTraceMetric = nestedTraceMetric;
-        return nestedTraceMetric;
+        cachedNestedMetric = nestedMetric;
+        return nestedMetric;
     }
 
     private void recordData(long time) {
@@ -289,10 +288,10 @@ public class TraceMetric implements TraceMetricTimerExt {
     @Override
     @Pure
     public String toString() {
-        ImmutableList<TraceMetric> copyOfNestedTraceMetrics = null;
-        if (threadSafeNestedTraceMetrics != null) {
-            synchronized (threadSafeNestedTraceMetrics) {
-                copyOfNestedTraceMetrics = ImmutableList.copyOf(threadSafeNestedTraceMetrics);
+        ImmutableList<TraceMetric> copyOfNestedMetrics = null;
+        if (threadSafeNestedMetrics != null) {
+            synchronized (threadSafeNestedMetrics) {
+                copyOfNestedMetrics = ImmutableList.copyOf(threadSafeNestedMetrics);
             }
         }
         return Objects.toStringHelper(this)
@@ -303,7 +302,7 @@ public class TraceMetric implements TraceMetricTimerExt {
                 .add("count", count)
                 .add("startTick", startTick)
                 .add("selfNestingLevel", selfNestingLevel)
-                .add("nestedTraceMetrics", copyOfNestedTraceMetrics)
+                .add("nestedMetrics", copyOfNestedMetrics)
                 .toString();
     }
 }

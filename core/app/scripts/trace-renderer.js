@@ -50,18 +50,133 @@ TraceRenderer = (function () {
     function traverse(traceMetric, nestingLevel) {
       traceMetric.nestingLevel = nestingLevel;
       buffer += options.fn(traceMetric);
-      if (traceMetric.nestedTraceMetrics) {
-        traceMetric.nestedTraceMetrics.sort(function (a, b) {
+      if (traceMetric.nestedMetrics) {
+        traceMetric.nestedMetrics.sort(function (a, b) {
           return b.total - a.total;
         });
-        $.each(traceMetric.nestedTraceMetrics, function (index, traceMetric) {
-          traverse(traceMetric, nestingLevel + 1);
+        $.each(traceMetric.nestedMetrics, function (index, nestedMetric) {
+          traverse(nestedMetric, nestingLevel + 1);
         });
       }
     }
 
     // add the root node
     traverse(traceMetrics, 0);
+    return buffer;
+  });
+
+  Handlebars.registerHelper('eachTraceMetricFlattenedOrdered', function (traceMetrics, options) {
+    var flattenedTraceMetricMap = {};
+    var flattenedTraceMetrics = [];
+
+    function traverse(traceMetric, parentMetricNames) {
+      var flattenedTraceMetric = flattenedTraceMetricMap[traceMetric.name];
+      if (!flattenedTraceMetric) {
+        flattenedTraceMetric = {
+          name: traceMetric.name,
+          total: traceMetric.total,
+          min: traceMetric.min,
+          max: traceMetric.max,
+          count: traceMetric.count,
+          active: traceMetric.active,
+          minActive: traceMetric.minActive,
+          maxActive: traceMetric.maxActive
+        };
+        flattenedTraceMetricMap[traceMetric.name] = flattenedTraceMetric;
+        flattenedTraceMetrics.push(flattenedTraceMetric);
+      } else if (parentMetricNames.indexOf(traceMetric.name) === -1) {
+        // only add to existing flattened metric if the trace metric isn't appearing under itself
+        // (this is possible when they are separated by another trace metric)
+        flattenedTraceMetric.total += traceMetric.total;
+        flattenedTraceMetric.active = flattenedTraceMetric.active || traceMetric.active;
+        if (traceMetric.min < flattenedTraceMetric.min) {
+          flattenedTraceMetric.min = traceMetric.min;
+          flattenedTraceMetric.minActive = traceMetric.minActive;
+        }
+        if (traceMetric.max > flattenedTraceMetric.max) {
+          flattenedTraceMetric.max = traceMetric.max;
+          flattenedTraceMetric.maxActive = traceMetric.maxActive;
+        }
+        flattenedTraceMetric.count += traceMetric.count;
+      }
+      if (traceMetric.nestedMetrics) {
+        $.each(traceMetric.nestedMetrics, function (index, nestedMetric) {
+          traverse(nestedMetric, parentMetricNames.concat(traceMetric));
+        });
+      }
+    }
+
+    // add the root node
+    traverse(traceMetrics, []);
+
+    flattenedTraceMetrics.sort(function (a, b) {
+      return b.total - a.total;
+    });
+    var buffer = '';
+    $.each(flattenedTraceMetrics, function (index, metric) {
+      buffer += options.fn(metric);
+    });
+    return buffer;
+  });
+
+  Handlebars.registerHelper('eachTransactionMetricOrdered', function (transactionMetrics, options) {
+    var buffer = '';
+
+    function traverse(transactionMetrics, nestingLevel) {
+      transactionMetrics.nestingLevel = nestingLevel;
+      buffer += options.fn(transactionMetrics);
+      if (transactionMetrics.nestedMetrics) {
+        transactionMetrics.nestedMetrics.sort(function (a, b) {
+          return b.totalMicros - a.totalMicros;
+        });
+        $.each(transactionMetrics.nestedMetrics, function (index, nestedMetric) {
+          traverse(nestedMetric, nestingLevel + 1);
+        });
+      }
+    }
+
+    // add the root node
+    traverse(transactionMetrics, 0);
+    return buffer;
+  });
+
+  Handlebars.registerHelper('eachTransactionMetricFlattenedOrdered', function (transactionMetrics, options) {
+    var flattenedTransactionMetricMap = {};
+    var flattenedTransactionMetrics = [];
+
+    function traverse(transactionMetric, parentMetricNames) {
+      var flattenedTransactionMetric = flattenedTransactionMetricMap[transactionMetric.name];
+      if (!flattenedTransactionMetric) {
+        flattenedTransactionMetric = {
+          name: transactionMetric.name,
+          totalMicros: transactionMetric.totalMicros,
+          count: transactionMetric.count
+        };
+        flattenedTransactionMetricMap[transactionMetric.name] = flattenedTransactionMetric;
+        flattenedTransactionMetrics.push(flattenedTransactionMetric);
+      } else if (parentMetricNames.indexOf(transactionMetric.name) === -1) {
+        // only add to existing flattened metric if the transaction metric isn't appearing under itself
+        // (this is possible when they are separated by another transaction metric)
+        flattenedTransactionMetric.totalMicros += transactionMetric.totalMicros;
+        flattenedTransactionMetric.count += transactionMetric.count;
+      }
+      if (transactionMetric.nestedMetrics) {
+        $.each(transactionMetric.nestedMetrics, function (index, nestedMetric) {
+          traverse(nestedMetric, parentMetricNames.concat(transactionMetric));
+        });
+      }
+    }
+
+    // add the root node
+    traverse(transactionMetrics, []);
+
+    flattenedTransactionMetrics.sort(function (a, b) {
+      return b.totalMicros - a.totalMicros;
+    });
+    var buffer = '';
+    $.each(flattenedTransactionMetrics, function (index, metric) {
+      buffer += options.fn(metric);
+    });
     return buffer;
   });
 
@@ -250,6 +365,9 @@ TraceRenderer = (function () {
   $(document).mousedown(function (e) {
     mousedownPageX = e.pageX;
     mousedownPageY = e.pageY;
+  });
+  $(document).on('click', '.metric-view-toggle', function () {
+    $(this).parents('.trace-metrics').children('table').toggleClass('hide');
   });
   $(document).on('click', '.unexpanded-content, .expanded-content', function (e, keyboard) {
     smartToggle($(this).parent(), e, keyboard);

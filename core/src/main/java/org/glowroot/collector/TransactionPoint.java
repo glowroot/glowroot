@@ -32,20 +32,20 @@ public class TransactionPoint {
     private final long count;
     private final long errorCount;
     private final long storedTraceCount;
-    private final String traceMetrics;
+    private final String transactionMetrics;
     private final Existence profileExistence;
     @Nullable
     private final String profile; // only used when storing
 
     public TransactionPoint(long captureTime, long totalMicros, long count, long errorCount,
-            long storedTraceCount, String traceMetrics, Existence profileExistence,
+            long storedTraceCount, String transactionMetrics, Existence profileExistence,
             @Nullable String profile) {
         this.captureTime = captureTime;
         this.totalMicros = totalMicros;
         this.count = count;
         this.errorCount = errorCount;
         this.storedTraceCount = storedTraceCount;
-        this.traceMetrics = traceMetrics;
+        this.transactionMetrics = transactionMetrics;
         this.profileExistence = profileExistence;
         this.profile = profile;
     }
@@ -70,8 +70,8 @@ public class TransactionPoint {
         return storedTraceCount;
     }
 
-    public String getTraceMetrics() {
-        return traceMetrics;
+    public String getTransactionMetrics() {
+        return transactionMetrics;
     }
 
     public Existence getProfileExistence() {

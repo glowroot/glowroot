@@ -80,10 +80,10 @@ public class PointcutConfigTest {
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(spans).hasSize(2);
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
+        assertThat(trace.getRootTraceMetric().getNestedMetricNames())
                 .containsOnly("execute one");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics().get(0)
-                .getNestedTraceMetricNames()).containsOnly("execute one trace metric only");
+        assertThat(trace.getRootTraceMetric().getNestedMetrics().get(0)
+                .getNestedMetricNames()).containsOnly("execute one trace metric only");
         assertThat(spans.get(1).getMessage().getText()).isEqualTo("execute1() => void");
         assertThat(spans.get(1).getStackTrace()).isNotNull();
     }
@@ -98,7 +98,7 @@ public class PointcutConfigTest {
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(spans).hasSize(2);
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
+        assertThat(trace.getRootTraceMetric().getNestedMetricNames())
                 .containsOnly("execute with return");
         assertThat(spans.get(1).getMessage().getText()).isEqualTo("executeWithReturn() => xyz");
     }
@@ -115,7 +115,7 @@ public class PointcutConfigTest {
         assertThat(trace.getTransactionName()).isEqualTo("Misc / executeWithArgs");
         assertThat(spans).hasSize(1);
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("execute with args");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics()).isEmpty();
+        assertThat(trace.getRootTraceMetric().getNestedMetrics()).isEmpty();
         assertThat(spans.get(0).getMessage().getText())
                 .isEqualTo("executeWithArgs(): abc, 123, the name");
     }

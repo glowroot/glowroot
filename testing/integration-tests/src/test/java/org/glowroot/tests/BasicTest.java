@@ -67,12 +67,12 @@ public class BasicTest {
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("level one");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
+        assertThat(trace.getRootTraceMetric().getNestedMetricNames())
                 .containsOnly("level two");
-        TraceMetric levelTwoTraceMetric = trace.getRootTraceMetric().getNestedTraceMetrics().get(0);
-        assertThat(levelTwoTraceMetric.getNestedTraceMetricNames()).containsOnly("level three");
-        TraceMetric levelThreeTraceMetric = levelTwoTraceMetric.getNestedTraceMetrics().get(0);
-        assertThat(levelThreeTraceMetric.getNestedTraceMetricNames()).containsOnly("level four");
+        TraceMetric levelTwoTraceMetric = trace.getRootTraceMetric().getNestedMetrics().get(0);
+        assertThat(levelTwoTraceMetric.getNestedMetricNames()).containsOnly("level three");
+        TraceMetric levelThreeTraceMetric = levelTwoTraceMetric.getNestedMetrics().get(0);
+        assertThat(levelThreeTraceMetric.getNestedMetricNames()).containsOnly("level four");
         assertThat(spans).hasSize(4);
         Span span1 = spans.get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");
@@ -105,14 +105,14 @@ public class BasicTest {
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("level one");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
+        assertThat(trace.getRootTraceMetric().getNestedMetricNames())
                 .containsOnly("level two");
-        TraceMetric levelTwoTraceMetric = trace.getRootTraceMetric().getNestedTraceMetrics().get(0);
-        assertThat(levelTwoTraceMetric.getNestedTraceMetricNames()).containsOnly("level three");
-        TraceMetric levelThreeTraceMetric = levelTwoTraceMetric.getNestedTraceMetrics().get(0);
-        assertThat(levelThreeTraceMetric.getNestedTraceMetricNames()).containsOnly("level four");
-        TraceMetric levelFourTraceMetric = levelThreeTraceMetric.getNestedTraceMetrics().get(0);
-        assertThat(levelFourTraceMetric.getNestedTraceMetricNames()).containsOnly("level five");
+        TraceMetric levelTwoTraceMetric = trace.getRootTraceMetric().getNestedMetrics().get(0);
+        assertThat(levelTwoTraceMetric.getNestedMetricNames()).containsOnly("level three");
+        TraceMetric levelThreeTraceMetric = levelTwoTraceMetric.getNestedMetrics().get(0);
+        assertThat(levelThreeTraceMetric.getNestedMetricNames()).containsOnly("level four");
+        TraceMetric levelFourTraceMetric = levelThreeTraceMetric.getNestedMetrics().get(0);
+        assertThat(levelFourTraceMetric.getNestedMetricNames()).containsOnly("level five");
         assertThat(spans).hasSize(4);
         Span span1 = spans.get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");
@@ -147,14 +147,14 @@ public class BasicTest {
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("level one");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
+        assertThat(trace.getRootTraceMetric().getNestedMetricNames())
                 .containsOnly("level two");
-        TraceMetric levelTwoTraceMetric = trace.getRootTraceMetric().getNestedTraceMetrics().get(0);
-        assertThat(levelTwoTraceMetric.getNestedTraceMetricNames()).containsOnly("level three");
-        TraceMetric levelThreeTraceMetric = levelTwoTraceMetric.getNestedTraceMetrics().get(0);
-        assertThat(levelThreeTraceMetric.getNestedTraceMetricNames()).containsOnly("level four");
-        TraceMetric levelFourTraceMetric = levelThreeTraceMetric.getNestedTraceMetrics().get(0);
-        assertThat(levelFourTraceMetric.getNestedTraceMetricNames()).containsOnly("level five");
+        TraceMetric levelTwoTraceMetric = trace.getRootTraceMetric().getNestedMetrics().get(0);
+        assertThat(levelTwoTraceMetric.getNestedMetricNames()).containsOnly("level three");
+        TraceMetric levelThreeTraceMetric = levelTwoTraceMetric.getNestedMetrics().get(0);
+        assertThat(levelThreeTraceMetric.getNestedMetricNames()).containsOnly("level four");
+        TraceMetric levelFourTraceMetric = levelThreeTraceMetric.getNestedMetrics().get(0);
+        assertThat(levelFourTraceMetric.getNestedMetricNames()).containsOnly("level five");
         assertThat(spans).hasSize(5);
         Span span1 = spans.get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");

@@ -47,7 +47,7 @@ class WeavingTimerServiceImpl implements WeavingTimerService {
             return NopWeavingTimer.INSTANCE;
         }
         final TraceMetricTimerExt traceMetricTimer =
-                traceMetric.startNestedTraceMetric(traceMetricName);
+                traceMetric.startNestedMetric(traceMetricName);
         return new WeavingTimer() {
             @Override
             public void stop() {

@@ -259,11 +259,11 @@ public class JdbcPluginTest {
                 "jdbc execution: insert into employee (name) values ('john doe')");
         Span jdbcCommitSpan = spans.get(2);
         assertThat(jdbcCommitSpan.getMessage().getText()).isEqualTo("jdbc commit");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics()).hasSize(3);
+        assertThat(trace.getRootTraceMetric().getNestedMetrics()).hasSize(3);
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
+        assertThat(trace.getRootTraceMetric().getNestedMetricNames())
                 .containsOnly("jdbc execute", "jdbc commit", "jdbc statement close");
     }
 
@@ -281,11 +281,11 @@ public class JdbcPluginTest {
                 "jdbc execution: insert into employee (name) values ('john doe')");
         Span jdbcCommitSpan = spans.get(2);
         assertThat(jdbcCommitSpan.getMessage().getText()).isEqualTo("jdbc rollback");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics()).hasSize(3);
+        assertThat(trace.getRootTraceMetric().getNestedMetrics()).hasSize(3);
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetricNames())
+        assertThat(trace.getRootTraceMetric().getNestedMetricNames())
                 .containsOnly("jdbc execute", "jdbc rollback", "jdbc statement close");
     }
 
@@ -298,7 +298,7 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         boolean found = false;
-        for (TraceMetric traceMetric : trace.getRootTraceMetric().getNestedTraceMetrics()) {
+        for (TraceMetric traceMetric : trace.getRootTraceMetric().getNestedMetrics()) {
             if (traceMetric.getName().equals("jdbc resultset value")) {
                 found = true;
                 break;
@@ -318,9 +318,9 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(spans).hasSize(1);
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics()).hasSize(1);
+        assertThat(trace.getRootTraceMetric().getNestedMetrics()).hasSize(1);
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics().get(0).getName())
+        assertThat(trace.getRootTraceMetric().getNestedMetrics().get(0).getName())
                 .isEqualTo("jdbc metadata");
     }
 
@@ -337,9 +337,9 @@ public class JdbcPluginTest {
         assertThat(spans).hasSize(2);
         assertThat(spans.get(1).getMessage().getText()).isEqualTo("jdbc metadata:"
                 + " DatabaseMetaData.getTables()");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics()).hasSize(1);
+        assertThat(trace.getRootTraceMetric().getNestedMetrics()).hasSize(1);
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics().get(0).getName())
+        assertThat(trace.getRootTraceMetric().getNestedMetrics().get(0).getName())
                 .isEqualTo("jdbc metadata");
     }
 

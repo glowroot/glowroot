@@ -64,7 +64,7 @@ public class TraceMetricTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithTraceMetrics.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics()).isEmpty();
+        assertThat(trace.getRootTraceMetric().getNestedMetrics()).isEmpty();
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
     }
 
@@ -75,7 +75,7 @@ public class TraceMetricTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSameNestedTraceMetric.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics()).isEmpty();
+        assertThat(trace.getRootTraceMetric().getNestedMetrics()).isEmpty();
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
         assertThat(trace.getRootTraceMetric().getCount()).isEqualTo(1);
     }
@@ -95,7 +95,7 @@ public class TraceMetricTest {
         // then
         Trace trace = container.getTraceService().getActiveTrace(5, SECONDS);
         assertThat(trace).isNotNull();
-        assertThat(trace.getRootTraceMetric().getNestedTraceMetrics()).isEmpty();
+        assertThat(trace.getRootTraceMetric().getNestedMetrics()).isEmpty();
         assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
         assertThat(trace.getRootTraceMetric().getCount()).isEqualTo(1);
         assertThat(trace.getRootTraceMetric().isActive()).isTrue();

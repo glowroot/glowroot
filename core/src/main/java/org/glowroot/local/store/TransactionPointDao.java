@@ -105,7 +105,7 @@ public class TransactionPointDao implements TransactionPointRepository {
                     + " values (?, ?, ?, ?, ?, ?, ?)", transactionType,
                     overallPoint.getCaptureTime(), overallPoint.getTotalMicros(),
                     overallPoint.getCount(), overallPoint.getErrorCount(),
-                    overallPoint.getStoredTraceCount(), overallPoint.getTraceMetrics());
+                    overallPoint.getStoredTraceCount(), overallPoint.getTransactionMetrics());
             dataSource.batchUpdate("insert into transaction_point (transaction_type,"
                     + " transaction_name, capture_time, total_micros, count, error_count,"
                     + " stored_trace_count, trace_metrics, profile_id) values"
@@ -128,7 +128,7 @@ public class TransactionPointDao implements TransactionPointRepository {
                         preparedStatement.setLong(6, transactionPoint.getErrorCount());
                         preparedStatement.setLong(7,
                                 transactionPoint.getStoredTraceCount());
-                        preparedStatement.setString(8, transactionPoint.getTraceMetrics());
+                        preparedStatement.setString(8, transactionPoint.getTransactionMetrics());
                         preparedStatement.setString(9, profileId);
                         preparedStatement.addBatch();
                     }

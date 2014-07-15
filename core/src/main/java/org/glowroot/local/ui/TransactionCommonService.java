@@ -58,15 +58,15 @@ class TransactionCommonService {
         long totalMicros = 0;
         long count = 0;
         long errorCount = 0;
-        SimpleTraceMetric syntheticRootNode = SimpleTraceMetric.createSyntheticRootNode();
+        TransactionMetric syntheticRootMetric = TransactionMetric.createSyntheticRootMetric();
         Existence profileExistence = Existence.NO;
         for (TransactionPoint transactionPoint : transactionPoints) {
             totalMicros += transactionPoint.getTotalMicros();
             count += transactionPoint.getCount();
             errorCount += transactionPoint.getErrorCount();
-            SimpleTraceMetric toBeMergedSyntheticRootNode =
-                    mapper.readValue(transactionPoint.getTraceMetrics(), SimpleTraceMetric.class);
-            mergeMatchedNode(toBeMergedSyntheticRootNode, syntheticRootNode);
+            TransactionMetric toBeMergedSyntheticRootMetric = mapper.readValue(
+                    transactionPoint.getTransactionMetrics(), TransactionMetric.class);
+            mergeMatchedMetric(toBeMergedSyntheticRootMetric, syntheticRootMetric);
             if (profileExistence == Existence.NO) {
                 profileExistence = transactionPoint.getProfileExistence();
             } else if (profileExistence == Existence.EXPIRED
@@ -74,12 +74,12 @@ class TransactionCommonService {
                 profileExistence = Existence.YES;
             }
         }
-        SimpleTraceMetric traceMetrics = syntheticRootNode;
-        if (syntheticRootNode.getNestedTraceMetrics().size() == 1) {
-            traceMetrics = syntheticRootNode.getNestedTraceMetrics().get(0);
+        TransactionMetric transactionMetrics = syntheticRootMetric;
+        if (syntheticRootMetric.getNestedMetrics().size() == 1) {
+            transactionMetrics = syntheticRootMetric.getNestedMetrics().get(0);
         }
         return new TransactionHeader(transactionType, transactionName, from, to, totalMicros,
-                count, errorCount, traceMetrics, profileExistence);
+                count, errorCount, transactionMetrics, profileExistence);
     }
 
     @Nullable
@@ -116,22 +116,22 @@ class TransactionCommonService {
         }
     }
 
-    private void mergeMatchedNode(SimpleTraceMetric toBeMergedNode, SimpleTraceMetric node) {
-        node.incrementCount(toBeMergedNode.getCount());
-        node.incrementTotalMicros(toBeMergedNode.getTotalMicros());
-        for (SimpleTraceMetric toBeMergedChildNode : toBeMergedNode.getNestedTraceMetrics()) {
+    private void mergeMatchedMetric(TransactionMetric toBeMergedMetric, TransactionMetric metric) {
+        metric.incrementCount(toBeMergedMetric.getCount());
+        metric.incrementTotalMicros(toBeMergedMetric.getTotalMicros());
+        for (TransactionMetric toBeMergedNestedMetric : toBeMergedMetric.getNestedMetrics()) {
             // for each to-be-merged child node look for a match
-            SimpleTraceMetric foundMatchingChildNode = null;
-            for (SimpleTraceMetric childNode : node.getNestedTraceMetrics()) {
-                if (toBeMergedChildNode.getName().equals(childNode.getName())) {
-                    foundMatchingChildNode = childNode;
+            TransactionMetric foundMatchingChildMetric = null;
+            for (TransactionMetric childMetric : metric.getNestedMetrics()) {
+                if (toBeMergedNestedMetric.getName().equals(childMetric.getName())) {
+                    foundMatchingChildMetric = childMetric;
                     break;
                 }
             }
-            if (foundMatchingChildNode == null) {
-                node.getNestedTraceMetrics().add(toBeMergedChildNode);
+            if (foundMatchingChildMetric == null) {
+                metric.getNestedMetrics().add(toBeMergedNestedMetric);
             } else {
-                mergeMatchedNode(toBeMergedChildNode, foundMatchingChildNode);
+                mergeMatchedMetric(toBeMergedNestedMetric, foundMatchingChildMetric);
             }
         }
     }
@@ -139,14 +139,13 @@ class TransactionCommonService {
     private void mergeMatchedNode(TransactionProfileNode toBeMergedNode,
             TransactionProfileNode node) {
         node.incrementSampleCount(toBeMergedNode.getSampleCount());
-        // the trace metric names for a given stack element should always match, unless
+        // the transaction metric names for a given stack element should always match, unless
         // the line numbers aren't available and overloaded methods are matched up, or
         // the stack trace was captured while one of the synthetic $trace$metric$ methods was
         // executing in which case one of the trace metric names may be a subset of the other,
         // in which case, the superset wins:
         List<String> traceMetrics = toBeMergedNode.getTraceMetrics();
-        if (traceMetrics != null
-                && traceMetrics.size() > node.getTraceMetrics().size()) {
+        if (traceMetrics != null && traceMetrics.size() > node.getTraceMetrics().size()) {
             node.setTraceMetrics(traceMetrics);
         }
         for (TransactionProfileNode toBeMergedChildNode : toBeMergedNode.getChildNodes()) {
@@ -199,12 +198,12 @@ class TransactionCommonService {
         private final long totalMicros;
         private final long count;
         private final long errorCount;
-        private final SimpleTraceMetric rootTraceMetric;
+        private final TransactionMetric rootTransactionMetric;
         private final Existence profileExistence;
 
         private TransactionHeader(String transactionType, @Nullable String transactionName,
                 long from, long to, long totalMicros, long count, long errorCount,
-                SimpleTraceMetric rootTraceMetric, Existence profileExistence) {
+                TransactionMetric rootTransactionMetric, Existence profileExistence) {
             this.transactionType = transactionType;
             this.transactionName = transactionName;
             this.from = from;
@@ -212,7 +211,7 @@ class TransactionCommonService {
             this.totalMicros = totalMicros;
             this.count = count;
             this.errorCount = errorCount;
-            this.rootTraceMetric = rootTraceMetric;
+            this.rootTransactionMetric = rootTransactionMetric;
             this.profileExistence = profileExistence;
         }
 
@@ -245,8 +244,8 @@ class TransactionCommonService {
             return errorCount;
         }
 
-        public SimpleTraceMetric getTraceMetrics() {
-            return rootTraceMetric;
+        public TransactionMetric getTransactionMetrics() {
+            return rootTransactionMetric;
         }
 
         public Existence getProfileExistence() {

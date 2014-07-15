@@ -33,28 +33,66 @@
 <div>
   Breakdown (averages per trace, in milliseconds):
 </div>
-<table class="trace-metrics-table indent2" style="border-spacing: 0;">
-  <thead>
-  <tr>
-    <td></td>
-    <td>total</td>
-    <td>count</td>
-  </tr>
-  </thead>
-  <tbody>
-  {{#eachTraceMetricOrdered traceMetrics}}
-    <tr class="align-top">
-      <td style="text-align: left;">
-        <div style="margin-left: {{traceMetricIndent .}}em;">
-          <div class="second-line-indent">{{name}}</div>
-        </div>
+<div class="trace-metrics">
+  <table class="trace-metrics-table indent2" style="border-spacing: 0;">
+    <thead>
+    <tr>
+      <td></td>
+      <td>total</td>
+      <td>count</td>
+      <td>
+        <button class="flat-btn flat-btn-big glowroot-link-color metric-view-toggle"
+                style="margin-top: -6px; margin-bottom: -6px;">
+          switch to tree view
+        </button>
       </td>
-      <td>{{divideMicrosByCount totalMicros ../count}}</td>
-      <td>{{divideCountByCount count ../count}}</td>
     </tr>
-  {{/eachTraceMetricOrdered}}
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+    {{#eachTransactionMetricFlattenedOrdered transactionMetrics}}
+      <tr class="align-top">
+        <td style="text-align: left;">
+          <div style="margin-left: {{traceMetricIndent .}}em;">
+            <div class="second-line-indent">{{name}}</div>
+          </div>
+        </td>
+        <td>{{divideMicrosByCount totalMicros ../count}}</td>
+        <td>{{divideCountByCount count ../count}}</td>
+        <td></td>
+      </tr>
+    {{/eachTransactionMetricFlattenedOrdered}}
+    </tbody>
+  </table>
+  <table class="hide trace-metrics-table indent2" style="border-spacing: 0;">
+    <thead>
+    <tr>
+      <td></td>
+      <td>total</td>
+      <td>count</td>
+      <td>
+        <button class="flat-btn flat-btn-big glowroot-link-color metric-view-toggle"
+                style="margin-top: -6px; margin-bottom: -6px;">
+          switch to flattened view
+        </button>
+      </td>
+    </tr>
+    </thead>
+    <tbody>
+    {{#eachTransactionMetricOrdered transactionMetrics}}
+      <tr class="align-top">
+        <td style="text-align: left;">
+          <div style="margin-left: {{traceMetricIndent .}}em;">
+            <div class="second-line-indent">{{name}}</div>
+          </div>
+        </td>
+        <td>{{divideMicrosByCount totalMicros ../count}}</td>
+        <td>{{divideCountByCount count ../count}}</td>
+        <td></td>
+      </tr>
+    {{/eachTransactionMetricOrdered}}
+    </tbody>
+  </table>
+</div>
 <br>
 {{#ifExistenceYes profileExistence}}
   <div>

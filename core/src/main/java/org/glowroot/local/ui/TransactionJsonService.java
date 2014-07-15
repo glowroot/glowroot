@@ -93,10 +93,10 @@ class TransactionJsonService {
         for (TransactionPoint transactionPoint : transactionPoints) {
             stackedPoints.add(StackedPoint.create(transactionPoint));
         }
-        List<String> traceMetrics = getTopTraceMetrics(stackedPoints);
+        List<String> transactionMetrics = getTopTransactionMetrics(stackedPoints);
         List<DataSeries> dataSeriesList = Lists.newArrayList();
-        for (String traceMetric : traceMetrics) {
-            dataSeriesList.add(new DataSeries(traceMetric));
+        for (String transactionMetric : transactionMetrics) {
+            dataSeriesList.add(new DataSeries(transactionMetric));
         }
         DataSeries otherDataSeries = new DataSeries(null);
         TransactionPoint lastTransactionPoint = null;
@@ -178,7 +178,7 @@ class TransactionJsonService {
         return mapper.writeValueAsString(profile);
     }
     // calculate top 5 trace metrics
-    private List<String> getTopTraceMetrics(List<StackedPoint> stackedPoints) {
+    private List<String> getTopTransactionMetrics(List<StackedPoint> stackedPoints) {
         MutableLongMap<String> totalMicros = new MutableLongMap<String>();
         for (StackedPoint stackedPoint : stackedPoints) {
             for (Entry<String, MutableLong> entry : stackedPoint.getStackedMetrics().entrySet()) {
@@ -194,12 +194,12 @@ class TransactionJsonService {
                     }
                 });
         final int topX = 5;
-        List<String> traceMetrics = Lists.newArrayList();
+        List<String> transactionMetrics = Lists.newArrayList();
         for (Entry<String, MutableLong> entry : valueOrdering
                 .greatestOf(totalMicros.entrySet(), topX)) {
-            traceMetrics.add(entry.getKey());
+            transactionMetrics.add(entry.getKey());
         }
-        return traceMetrics;
+        return transactionMetrics;
     }
 
     private void addInitialUpslope(long requestFrom, TransactionPoint transactionPoint,
@@ -386,31 +386,31 @@ class TransactionJsonService {
 
         private static StackedPoint create(TransactionPoint transactionPoint)
                 throws IOException {
-            String traceMetrics = transactionPoint.getTraceMetrics();
-            if (traceMetrics == null) {
+            String transactionMetrics = transactionPoint.getTransactionMetrics();
+            if (transactionMetrics == null) {
                 return new StackedPoint(transactionPoint, new MutableLongMap<String>());
             }
-            MutableLongMap<String> stackedTraceMetrics = new MutableLongMap<String>();
-            SimpleTraceMetric syntheticRoot =
-                    mapper.readValue(traceMetrics, SimpleTraceMetric.class);
+            MutableLongMap<String> stackedTransactionMetrics = new MutableLongMap<String>();
+            TransactionMetric syntheticRootMetric =
+                    mapper.readValue(transactionMetrics, TransactionMetric.class);
             // skip synthetic root trace metric
-            for (SimpleTraceMetric realRoot : syntheticRoot.getNestedTraceMetrics()) {
+            for (TransactionMetric realRootMetric : syntheticRootMetric.getNestedMetrics()) {
                 // skip real root trace metrics
-                for (SimpleTraceMetric topLevelTraceMetric : realRoot.getNestedTraceMetrics()) {
+                for (TransactionMetric topLevelMetric : realRootMetric.getNestedMetrics()) {
                     // traverse tree starting at top-level (under root) trace metrics
-                    for (SimpleTraceMetric traceMetric : SimpleTraceMetric.TRAVERSER
-                            .preOrderTraversal(topLevelTraceMetric)) {
+                    for (TransactionMetric transactionMetric : TransactionMetric.TRAVERSER
+                            .preOrderTraversal(topLevelMetric)) {
                         long totalNestedMicros = 0;
-                        for (SimpleTraceMetric nestedTraceMetric : traceMetric
-                                .getNestedTraceMetrics()) {
-                            totalNestedMicros += nestedTraceMetric.getTotalMicros();
+                        for (TransactionMetric nestedMetric : transactionMetric
+                                .getNestedMetrics()) {
+                            totalNestedMicros += nestedMetric.getTotalMicros();
                         }
-                        stackedTraceMetrics.add(traceMetric.getName(),
-                                traceMetric.getTotalMicros() - totalNestedMicros);
+                        stackedTransactionMetrics.add(transactionMetric.getName(),
+                                transactionMetric.getTotalMicros() - totalNestedMicros);
                     }
                 }
             }
-            return new StackedPoint(transactionPoint, stackedTraceMetrics);
+            return new StackedPoint(transactionPoint, stackedTransactionMetrics);
         }
 
         private StackedPoint(TransactionPoint transactionPoint,

@@ -45,7 +45,7 @@ class TransactionPointBuilder {
     private long count;
     private long errorCount;
     private long storedTraceCount;
-    private final SimpleTraceMetric syntheticRootTraceMetric = new SimpleTraceMetric("");
+    private final TransactionMetric syntheticRootTransactionMetric = new TransactionMetric("");
     private final TransactionProfileBuilder transactionProfile = new TransactionProfileBuilder();
 
     TransactionPointBuilder() {}
@@ -63,8 +63,8 @@ class TransactionPointBuilder {
         storedTraceCount++;
     }
 
-    void addToTraceMetrics(TraceMetric rootTraceMetric) {
-        addToTraceMetrics(rootTraceMetric, syntheticRootTraceMetric);
+    void addToTransactionMetrics(TraceMetric rootTraceMetric) {
+        addToTransactionMetrics(rootTraceMetric, syntheticRootTransactionMetric);
     }
 
     void addToProfile(Profile profile) {
@@ -75,28 +75,28 @@ class TransactionPointBuilder {
         String profile = getProfileJson();
         Existence profileExistence = profile != null ? Existence.YES : Existence.NO;
         return new TransactionPoint(captureTime, totalMicros, count, errorCount, storedTraceCount,
-                getTraceMetricsJson(), profileExistence, profile);
+                getTransactionMetricsJson(), profileExistence, profile);
     }
 
-    private void addToTraceMetrics(TraceMetric traceMetric,
-            SimpleTraceMetric parentTraceMetric) {
+    private void addToTransactionMetrics(TraceMetric traceMetric,
+            TransactionMetric parentTransactionMetric) {
         String name = traceMetric.getName();
-        SimpleTraceMetric childTraceMetric = parentTraceMetric.nestedTraceMetrics.get(name);
-        if (childTraceMetric == null) {
-            childTraceMetric = new SimpleTraceMetric(name);
-            parentTraceMetric.nestedTraceMetrics.put(name, childTraceMetric);
+        TransactionMetric transactionMetric = parentTransactionMetric.nestedMetrics.get(name);
+        if (transactionMetric == null) {
+            transactionMetric = new TransactionMetric(name);
+            parentTransactionMetric.nestedMetrics.put(name, transactionMetric);
         }
-        childTraceMetric.totalMicros += NANOSECONDS.toMicros(traceMetric.getTotal());
-        childTraceMetric.count += traceMetric.getCount();
-        for (TraceMetric nestedTraceMetric : traceMetric.getNestedTraceMetrics()) {
-            addToTraceMetrics(nestedTraceMetric, childTraceMetric);
+        transactionMetric.totalMicros += NANOSECONDS.toMicros(traceMetric.getTotal());
+        transactionMetric.count += traceMetric.getCount();
+        for (TraceMetric nestedTraceMetric : traceMetric.getNestedMetrics()) {
+            addToTransactionMetrics(nestedTraceMetric, transactionMetric);
         }
     }
 
-    private String getTraceMetricsJson() throws IOException {
+    private String getTransactionMetricsJson() throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        writeTraceMetric(jg, syntheticRootTraceMetric);
+        writeTransactionMetric(jg, syntheticRootTransactionMetric);
         jg.close();
         return sb.toString();
     }
@@ -109,29 +109,29 @@ class TransactionPointBuilder {
         }
     }
 
-    private void writeTraceMetric(JsonGenerator jg, SimpleTraceMetric traceMetric)
+    private void writeTransactionMetric(JsonGenerator jg, TransactionMetric transactionMetric)
             throws IOException {
         jg.writeStartObject();
-        jg.writeStringField("name", traceMetric.name);
-        jg.writeNumberField("totalMicros", traceMetric.totalMicros);
-        jg.writeNumberField("count", traceMetric.count);
-        if (!traceMetric.nestedTraceMetrics.isEmpty()) {
-            jg.writeArrayFieldStart("nestedTraceMetrics");
-            for (SimpleTraceMetric nestedTraceMetric : traceMetric.nestedTraceMetrics.values()) {
-                writeTraceMetric(jg, nestedTraceMetric);
+        jg.writeStringField("name", transactionMetric.name);
+        jg.writeNumberField("totalMicros", transactionMetric.totalMicros);
+        jg.writeNumberField("count", transactionMetric.count);
+        if (!transactionMetric.nestedMetrics.isEmpty()) {
+            jg.writeArrayFieldStart("nestedMetrics");
+            for (TransactionMetric nestedMetric : transactionMetric.nestedMetrics.values()) {
+                writeTransactionMetric(jg, nestedMetric);
             }
             jg.writeEndArray();
         }
         jg.writeEndObject();
     }
 
-    private static class SimpleTraceMetric {
+    private static class TransactionMetric {
         private final String name;
         // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
         private long totalMicros;
         private long count;
-        private final Map<String, SimpleTraceMetric> nestedTraceMetrics = Maps.newHashMap();
-        private SimpleTraceMetric(String name) {
+        private final Map<String, TransactionMetric> nestedMetrics = Maps.newHashMap();
+        private TransactionMetric(String name) {
             this.name = name;
         }
     }

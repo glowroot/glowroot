@@ -267,7 +267,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (currentTraceMetric == null) {
             return NopTraceMetricTimer.INSTANCE;
         }
-        return currentTraceMetric.startNestedTraceMetric(traceMetricName);
+        return currentTraceMetric.startNestedMetric(traceMetricName);
     }
 
     private TraceMetricTimerExt startTraceMetric(TraceMetricName traceMetricName, long startTick) {
@@ -281,7 +281,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (currentTraceMetric == null) {
             return NopTraceMetricTimerExt.INSTANCE;
         }
-        return currentTraceMetric.startNestedTraceMetric(traceMetricName, startTick);
+        return currentTraceMetric.startNestedMetric(traceMetricName, startTick);
     }
 
     @Override
