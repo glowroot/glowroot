@@ -55,34 +55,34 @@
     "org.glowroot.tests.plugin.MatchAllTypesAspect",
     "org.glowroot.tests.plugin.MockDriverAspect"
   ],
-  "pointcuts" : [
+  "pointcuts": [
     {
-      "className" : "org.glowroot.tests.LevelFour",
-      "methodName" : "call",
-      "methodParameterTypes" : [
+      "className": "org.glowroot.tests.LevelFour",
+      "methodName": "call",
+      "methodParameterTypes": [
         "java.lang.String",
         "java.lang.String"
       ],
-      "methodReturnType" : "void",
-      "methodModifiers" : [ ],
-      "traceMetric" : "level four",
-      "messageTemplate" : "Level Four: {{0}}, {{1}}",
-      "transactionNameTemplate" : "",
+      "methodReturnType": "void",
+      "methodModifiers": [ ],
+      "traceMetric": "level four",
+      "messageTemplate": "Level Four: {{0}}, {{1}}",
+      "transactionNameTemplate": "",
       "enabledProperty": "",
       "spanEnabledProperty": ""
     },
     {
-      "className" : "org.glowroot.tests.LevelFive",
-      "methodName" : "call",
-      "methodParameterTypes" : [
+      "className": "org.glowroot.tests.LevelFive",
+      "methodName": "call",
+      "methodParameterTypes": [
         "java.lang.String",
         "java.lang.String"
       ],
-      "methodReturnType" : "void",
-      "methodModifiers" : [ ],
-      "traceMetric" : "level five",
-      "messageTemplate" : "Level Five: {{0}}, {{1}}",
-      "transactionNameTemplate" : "",
+      "methodReturnType": "void",
+      "methodModifiers": [ ],
+      "traceMetric": "level five",
+      "messageTemplate": "Level Five: {{0}}, {{1}}",
+      "transactionNameTemplate": "",
       "enabledProperty": "levelFiveEnabled",
       "spanEnabledProperty": "levelFiveSpanEnabled"
     }

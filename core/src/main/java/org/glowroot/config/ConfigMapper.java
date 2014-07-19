@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -96,7 +97,7 @@ class ConfigMapper {
     }
 
     static String writeValueAsString(Config config) throws IOException {
-        DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
+        CustomPrettyPrinter prettyPrinter = new CustomPrettyPrinter();
         prettyPrinter.indentArraysWith(Lf2SpacesIndenter.instance);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))
@@ -279,5 +280,15 @@ class ConfigMapper {
             pointcutConfigs.add(pointcutConfig);
         }
         return ImmutableList.copyOf(pointcutConfigs);
+    }
+
+    @SuppressWarnings("serial")
+    private static class CustomPrettyPrinter extends DefaultPrettyPrinter {
+
+        @Override
+        public void writeObjectFieldValueSeparator(JsonGenerator jg) throws IOException,
+                JsonGenerationException {
+            jg.writeRaw(": ");
+        }
     }
 }
