@@ -211,7 +211,7 @@ public class TracePointJsonServiceTest {
         when(trace.getId()).thenReturn(id);
         when(trace.getStartTick()).thenReturn(
                 DEFAULT_CURRENT_TICK - MILLISECONDS.toNanos(durationMillis));
-        when(trace.getAttributes()).thenReturn(ImmutableSetMultimap.<String, String>of());
+        when(trace.getCustomAttributes()).thenReturn(ImmutableSetMultimap.<String, String>of());
         return trace;
     }
 
@@ -220,7 +220,7 @@ public class TracePointJsonServiceTest {
         when(trace.getId()).thenReturn(id);
         when(trace.getDuration()).thenReturn(MILLISECONDS.toNanos(durationMillis));
         when(trace.isCompleted()).thenReturn(true);
-        when(trace.getAttributes()).thenReturn(ImmutableSetMultimap.<String, String>of());
+        when(trace.getCustomAttributes()).thenReturn(ImmutableSetMultimap.<String, String>of());
         return trace;
     }
 

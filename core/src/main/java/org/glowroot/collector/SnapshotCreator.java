@@ -76,8 +76,8 @@ public class SnapshotCreator {
         builder.headline(trace.getHeadline());
         builder.error(trace.getError());
         builder.user(trace.getUser());
-        builder.attributes(writeAttributesAsString(trace.getAttributes()));
-        builder.attributesForIndexing(trace.getAttributes());
+        builder.customAttributes(writeCustomAttributesAsString(trace.getCustomAttributes()));
+        builder.customAttributesForIndexing(trace.getCustomAttributes());
         builder.traceMetrics(writeTraceMetricsAsString(trace.getRootTraceMetric()));
         builder.threadInfo(trace.getThreadInfoJson());
         builder.gcInfos(trace.getGcInfosJson());
@@ -96,8 +96,8 @@ public class SnapshotCreator {
     }
 
     @Nullable
-    private static String writeAttributesAsString(ImmutableSetMultimap<String, String> attributes)
-            throws IOException {
+    private static String writeCustomAttributesAsString(
+            ImmutableSetMultimap<String, String> attributes) throws IOException {
         if (attributes.isEmpty()) {
             return null;
         }

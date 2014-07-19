@@ -333,9 +333,9 @@ glowroot.controller('TracesCtrl', [
     appliedFilter.error = $location.search().error || '';
     appliedFilter.userComparator = $location.search()['user-comparator'] || 'begins';
     appliedFilter.user = $location.search().user || '';
-    appliedFilter.attributeName = $location.search()['attribute-name'] || '';
-    appliedFilter.attributeValueComparator = $location.search()['attribute-value-comparator'] || 'begins';
-    appliedFilter.attributeValue = $location.search()['attribute-value'] || '';
+    appliedFilter.customAttributeName = $location.search()['custom-attribute-name'] || '';
+    appliedFilter.customAttributeValueComparator = $location.search()['custom-attribute-value-comparator'] || 'begins';
+    appliedFilter.customAttributeValue = $location.search()['custom-attribute-value'] || '';
     appliedFilter.limit = Number($location.search().limit);
     if (!appliedFilter.limit) {
       filterLimitDefault = true;
@@ -402,12 +402,12 @@ glowroot.controller('TracesCtrl', [
         query['user-comparator'] = appliedFilter.userComparator;
         query.user = appliedFilter.user;
       }
-      if (appliedFilter.attributeName) {
-        query['attribute-name'] = appliedFilter.attributeName;
+      if (appliedFilter.customAttributeName) {
+        query['custom-attribute-name'] = appliedFilter.customAttributeName;
       }
-      if (appliedFilter.attributeValue) {
-        query['attribute-value-comparator'] = appliedFilter.attributeValueComparator;
-        query['attribute-value'] = appliedFilter.attributeValue;
+      if (appliedFilter.customAttributeValue) {
+        query['custom-attribute-value-comparator'] = appliedFilter.customAttributeValueComparator;
+        query['custom-attribute-value'] = appliedFilter.customAttributeValue;
       }
       if (appliedFilter.errorOnly) {
         query['error-only'] = 'true';

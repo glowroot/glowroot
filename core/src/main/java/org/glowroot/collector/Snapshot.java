@@ -48,7 +48,7 @@ public class Snapshot {
     @Nullable
     private final String user;
     @Nullable
-    private final String attributes; // json data
+    private final String customAttributes; // json data
     @Nullable
     private final String traceMetrics; // json data
     @Nullable
@@ -59,15 +59,15 @@ public class Snapshot {
     private final Existence profileExistence;
     private final Existence outlierProfileExistence;
     @Nullable
-    private final ImmutableSetMultimap<String, String> attributesForIndexing;
+    private final ImmutableSetMultimap<String, String> customAttributesForIndexing;
 
     private Snapshot(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, String transactionType, String transactionName, String headline,
-            @Nullable String error, @Nullable String user, @Nullable String attributes,
+            @Nullable String error, @Nullable String user, @Nullable String customAttributes,
             @Nullable String traceMetrics, @Nullable String threadInfo, @Nullable String gcInfos,
             Existence spansExistence, Existence profileExistence,
             Existence outlierProfileExistence,
-            @Nullable ImmutableSetMultimap<String, String> attributesForIndexing) {
+            @Nullable ImmutableSetMultimap<String, String> customAttributesForIndexing) {
         this.id = id;
         this.active = active;
         this.stuck = stuck;
@@ -79,14 +79,14 @@ public class Snapshot {
         this.headline = headline;
         this.error = error;
         this.user = user;
-        this.attributes = attributes;
+        this.customAttributes = customAttributes;
         this.traceMetrics = traceMetrics;
         this.threadInfo = threadInfo;
         this.gcInfos = gcInfos;
         this.spansExistence = spansExistence;
         this.profileExistence = profileExistence;
         this.outlierProfileExistence = outlierProfileExistence;
-        this.attributesForIndexing = attributesForIndexing;
+        this.customAttributesForIndexing = customAttributesForIndexing;
     }
 
     public String getId() {
@@ -136,8 +136,8 @@ public class Snapshot {
     }
 
     @Nullable
-    public String getAttributes() {
-        return attributes;
+    public String getCustomAttributes() {
+        return customAttributes;
     }
 
     @Nullable
@@ -168,8 +168,8 @@ public class Snapshot {
     }
 
     @Nullable
-    public ImmutableSetMultimap<String, String> getAttributesForIndexing() {
-        return attributesForIndexing;
+    public ImmutableSetMultimap<String, String> getCustomAttributesForIndexing() {
+        return customAttributesForIndexing;
     }
 
     @Override
@@ -187,13 +187,14 @@ public class Snapshot {
                 .add("headline", headline)
                 .add("error", error)
                 .add("user", user)
-                .add("attributes", attributes)
+                .add("customAttributes", customAttributes)
                 .add("traceMetrics", traceMetrics)
                 .add("threadInfo", threadInfo)
                 .add("gcInfos", gcInfos)
                 .add("spansExistence", spansExistence)
                 .add("outlierProfileExistence", outlierProfileExistence)
                 .add("profileExistence", profileExistence)
+                .add("customAttributesForIndexing", customAttributesForIndexing)
                 .toString();
     }
 
@@ -221,7 +222,7 @@ public class Snapshot {
         @Nullable
         private String user;
         @Nullable
-        private String attributes;
+        private String customAttributes;
         @Nullable
         private String traceMetrics;
         @Nullable
@@ -235,7 +236,7 @@ public class Snapshot {
         @MonotonicNonNull
         private Existence outlierProfileExistence;
         @Nullable
-        private ImmutableSetMultimap<String, String> attributesForIndexing;
+        private ImmutableSetMultimap<String, String> customAttributesForIndexing;
 
         private Builder() {}
 
@@ -298,8 +299,8 @@ public class Snapshot {
             return this;
         }
 
-        public Builder attributes(@Nullable String attributes) {
-            this.attributes = attributes;
+        public Builder customAttributes(@Nullable String customAttributes) {
+            this.customAttributes = customAttributes;
             return this;
         }
 
@@ -336,9 +337,9 @@ public class Snapshot {
             return this;
         }
 
-        public Builder attributesForIndexing(
+        public Builder customAttributesForIndexing(
                 ImmutableSetMultimap<String, String> attributesForIndexing) {
-            this.attributesForIndexing = attributesForIndexing;
+            this.customAttributesForIndexing = attributesForIndexing;
             return this;
         }
 
@@ -346,9 +347,9 @@ public class Snapshot {
                 "profileExistence", "outlierProfileExistence"})
         public Snapshot build() {
             return new Snapshot(id, active, stuck, startTime, captureTime, duration,
-                    transactionType, transactionName, headline, error, user, attributes,
+                    transactionType, transactionName, headline, error, user, customAttributes,
                     traceMetrics, threadInfo, gcInfos, spansExistence, profileExistence,
-                    outlierProfileExistence, attributesForIndexing);
+                    outlierProfileExistence, customAttributesForIndexing);
         }
     }
 }

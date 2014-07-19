@@ -43,7 +43,7 @@ public class Layout {
     private final ImmutableList<LayoutPlugin> plugins;
     private final ImmutableList<String> transactionTypes;
     private final String defaultTransactionType;
-    private final ImmutableList<String> traceAttributes;
+    private final ImmutableList<String> traceCustomAttributes;
     private final long fixedTransactionPointIntervalSeconds;
     private final String version;
 
@@ -53,7 +53,7 @@ public class Layout {
 
     Layout(boolean jvmHeapHistogram, boolean jvmHeapDump, String footerMessage,
             boolean passwordEnabled, List<LayoutPlugin> plugins, List<String> transactionTypes,
-            String defaultTransactionType, List<String> traceAttributes,
+            String defaultTransactionType, List<String> traceCustomAttributes,
             long fixedTransactionPointIntervalSeconds) {
         this.jvmHeapHistogram = jvmHeapHistogram;
         this.jvmHeapDump = jvmHeapDump;
@@ -62,10 +62,10 @@ public class Layout {
         this.plugins = ImmutableList.copyOf(plugins);
         this.transactionTypes = ImmutableList.copyOf(transactionTypes);
         this.defaultTransactionType = defaultTransactionType;
-        this.traceAttributes = ImmutableList.copyOf(traceAttributes);
+        this.traceCustomAttributes = ImmutableList.copyOf(traceCustomAttributes);
         this.fixedTransactionPointIntervalSeconds = fixedTransactionPointIntervalSeconds;
         version = VersionHashes.sha1(jvmHeapHistogram, jvmHeapDump, footerMessage, passwordEnabled,
-                transactionTypes, defaultTransactionType, traceAttributes,
+                transactionTypes, defaultTransactionType, traceCustomAttributes,
                 fixedTransactionPointIntervalSeconds);
     }
 
@@ -97,8 +97,8 @@ public class Layout {
         return defaultTransactionType;
     }
 
-    public ImmutableList<String> getTraceAttributes() {
-        return traceAttributes;
+    public ImmutableList<String> getTraceCustomAttributes() {
+        return traceCustomAttributes;
     }
 
     public long getFixedTransactionPointIntervalSeconds() {
@@ -120,7 +120,7 @@ public class Layout {
                 .add("plugins", plugins)
                 .add("transactionTypes", transactionTypes)
                 .add("defaultTransactionType", defaultTransactionType)
-                .add("traceAttributes", traceAttributes)
+                .add("traceCustomAttributes", traceCustomAttributes)
                 .add("fixedTransactionPointIntervalSeconds", fixedTransactionPointIntervalSeconds)
                 .toString();
     }
@@ -156,7 +156,7 @@ public class Layout {
         private List<String> transactionTypes = ImmutableList.of();
         @MonotonicNonNull
         private String defaultTransactionType;
-        private List<String> traceAttributes = ImmutableList.of();
+        private List<String> traceCustomAttributes = ImmutableList.of();
         private long fixedTransactionPointIntervalSeconds;
 
         private Builder() {}
@@ -198,8 +198,8 @@ public class Layout {
             return this;
         }
 
-        Builder traceAttributes(List<String> traceAttributes) {
-            this.traceAttributes = traceAttributes;
+        Builder traceCustomAttributes(List<String> traceCustomAttributes) {
+            this.traceCustomAttributes = traceCustomAttributes;
             return this;
         }
 
@@ -211,7 +211,7 @@ public class Layout {
         @RequiresNonNull({"footerMessage", "defaultTransactionType"})
         Layout build() {
             return new Layout(jvmHeapHistogram, jvmHeapDump, footerMessage, passwordEnabled,
-                    plugins, transactionTypes, defaultTransactionType, traceAttributes,
+                    plugins, transactionTypes, defaultTransactionType, traceCustomAttributes,
                     fixedTransactionPointIntervalSeconds);
         }
     }

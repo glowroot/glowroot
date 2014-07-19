@@ -70,7 +70,7 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("profiled", Types.BOOLEAN), // for searching only
             new Column("error_message", Types.VARCHAR),
             new Column("user", Types.VARCHAR),
-            new Column("attributes", Types.VARCHAR), // json data
+            new Column("custom_attributes", Types.VARCHAR), // json data
             new Column("trace_metrics", Types.VARCHAR), // json data
             new Column("thread_info", Types.VARCHAR), // json data
             new Column("gc_infos", Types.VARCHAR), // json data
@@ -79,7 +79,7 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("outlier_profile_id", Types.VARCHAR)); // capped database id
 
     // capture_time column is used for expiring records without using FK with on delete cascade
-    private static final ImmutableList<Column> snapshotAttributeColumns = ImmutableList.of(
+    private static final ImmutableList<Column> snapshotCustomAttributeColumns = ImmutableList.of(
             new Column("snapshot_id", Types.VARCHAR),
             new Column("name", Types.VARCHAR),
             new Column("value", Types.VARCHAR),
@@ -102,7 +102,7 @@ public class SnapshotDao implements SnapshotRepository {
         upgradeSnapshotTable(dataSource);
         dataSource.syncTable("snapshot", snapshotColumns);
         dataSource.syncIndexes("snapshot", snapshotIndexes);
-        dataSource.syncTable("snapshot_attribute", snapshotAttributeColumns);
+        dataSource.syncTable("snapshot_custom_attribute", snapshotCustomAttributeColumns);
     }
 
     @Override
@@ -120,28 +120,29 @@ public class SnapshotDao implements SnapshotRepository {
         try {
             dataSource.update("merge into snapshot (id, stuck, start_time, capture_time, duration,"
                     + " transaction_type, transaction_name, headline, error, profiled,"
-                    + " error_message, user, attributes, trace_metrics, thread_info, gc_infos,"
-                    + " spans_id, profile_id, outlier_profile_id) values (?, ?, ?, ?, ?, ?, ?, ?,"
-                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(), snapshot.isStuck(),
-                    snapshot.getStartTime(), snapshot.getCaptureTime(), snapshot.getDuration(),
-                    snapshot.getTransactionType(), snapshot.getTransactionName(),
-                    snapshot.getHeadline(), snapshot.getError() != null, profileId != null,
-                    snapshot.getError(), snapshot.getUser(), snapshot.getAttributes(),
-                    snapshot.getTraceMetrics(), snapshot.getThreadInfo(), snapshot.getGcInfos(),
-                    spansId, profileId, outlierProfileId);
-            final ImmutableSetMultimap<String, String> attributesForIndexing =
-                    snapshot.getAttributesForIndexing();
-            if (attributesForIndexing == null) {
-                logger.warn("snapshot attributesForIndex was not provided");
-            } else if (!attributesForIndexing.isEmpty()) {
-                dataSource.batchUpdate("insert into snapshot_attribute (snapshot_id, name, value,"
-                        + " capture_time) values (?, ?, ?, ?)", new BatchAdder() {
+                    + " error_message, user, custom_attributes, trace_metrics, thread_info,"
+                    + " gc_infos, spans_id, profile_id, outlier_profile_id) values (?, ?, ?, ?, ?,"
+                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(),
+                    snapshot.isStuck(), snapshot.getStartTime(), snapshot.getCaptureTime(),
+                    snapshot.getDuration(), snapshot.getTransactionType(),
+                    snapshot.getTransactionName(), snapshot.getHeadline(),
+                    snapshot.getError() != null, profileId != null, snapshot.getError(),
+                    snapshot.getUser(), snapshot.getCustomAttributes(), snapshot.getTraceMetrics(),
+                    snapshot.getThreadInfo(), snapshot.getGcInfos(), spansId, profileId,
+                    outlierProfileId);
+            final ImmutableSetMultimap<String, String> customAttributesForIndexing =
+                    snapshot.getCustomAttributesForIndexing();
+            if (customAttributesForIndexing == null) {
+                logger.warn("snapshot customAttributesForIndex was not provided");
+            } else if (!customAttributesForIndexing.isEmpty()) {
+                dataSource.batchUpdate("insert into snapshot_custom_attribute (snapshot_id, name,"
+                        + " value, capture_time) values (?, ?, ?, ?)", new BatchAdder() {
                     @Override
                     public void addBatches(PreparedStatement preparedStatement)
                             throws SQLException {
-                        // attributesForIndexing is final and null check already performed above
-                        checkNotNull(attributesForIndexing);
-                        for (Entry<String, String> entry : attributesForIndexing.entries()) {
+                        // customAttributesForIndexing is final and null check performed above
+                        checkNotNull(customAttributesForIndexing);
+                        for (Entry<String, String> entry : customAttributesForIndexing.entries()) {
                             preparedStatement.setString(1, snapshot.getId());
                             preparedStatement.setString(2, entry.getKey());
                             preparedStatement.setString(3, entry.getValue());
@@ -175,7 +176,7 @@ public class SnapshotDao implements SnapshotRepository {
         try {
             snapshots = dataSource.query("select id, stuck, start_time, capture_time, duration,"
                     + " transaction_type, transaction_name, headline, error_message, user,"
-                    + " attributes, trace_metrics, thread_info, gc_infos, spans_id,"
+                    + " custom_attributes, trace_metrics, thread_info, gc_infos, spans_id,"
                     + " profile_id, outlier_profile_id from snapshot where id = ?",
                     ImmutableList.of(traceId), new SnapshotRowMapper());
         } catch (SQLException e) {
@@ -222,7 +223,7 @@ public class SnapshotDao implements SnapshotRepository {
 
     public void deleteAll() {
         try {
-            dataSource.execute("truncate table snapshot_attribute");
+            dataSource.execute("truncate table snapshot_custom_attribute");
             dataSource.execute("truncate table snapshot");
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -234,7 +235,7 @@ public class SnapshotDao implements SnapshotRepository {
             // delete 100 at a time, which is both faster than deleting all at once, and doesn't
             // lock the single jdbc connection for one large chunk of time
             while (true) {
-                int deleted = dataSource.update("delete from snapshot_attribute"
+                int deleted = dataSource.update("delete from snapshot_custom_attribute"
                         + " where capture_time < ? limit 100", captureTime);
                 deleted += dataSource.update("delete from snapshot where capture_time < ?"
                         + " limit 100", captureTime);
@@ -313,10 +314,10 @@ public class SnapshotDao implements SnapshotRepository {
         String sql = "select snapshot.id, snapshot.capture_time, snapshot.duration, snapshot.error"
                 + " from snapshot";
         List<Object> args = Lists.newArrayList();
-        ParameterizedSql attributeJoin = getSnapshotAttributeJoin(query);
-        if (attributeJoin != null) {
-            sql += attributeJoin.getSql();
-            args.addAll(attributeJoin.getArgs());
+        ParameterizedSql customAttributeJoin = getSnapshotCustomAttributeJoin(query);
+        if (customAttributeJoin != null) {
+            sql += customAttributeJoin.getSql();
+            args.addAll(customAttributeJoin.getArgs());
         } else {
             sql += " where";
         }
@@ -379,25 +380,27 @@ public class SnapshotDao implements SnapshotRepository {
     }
 
     @Nullable
-    private static ParameterizedSql getSnapshotAttributeJoin(TracePointQuery query) {
+    private static ParameterizedSql getSnapshotCustomAttributeJoin(TracePointQuery query) {
         String criteria = "";
         List<Object> criteriaArgs = Lists.newArrayList();
-        String attributeName = query.getAttributeName();
-        if (!Strings.isNullOrEmpty(attributeName)) {
+        String customAttributeName = query.getCustomAttributeName();
+        if (!Strings.isNullOrEmpty(customAttributeName)) {
             criteria += " upper(attr.name) = ? and";
-            criteriaArgs.add(attributeName.toUpperCase(Locale.ENGLISH));
+            criteriaArgs.add(customAttributeName.toUpperCase(Locale.ENGLISH));
         }
-        StringComparator attributeValueComparator = query.getAttributeValueComparator();
-        String attributeValue = query.getAttributeValue();
-        if (attributeValueComparator != null && !Strings.isNullOrEmpty(attributeValue)) {
-            criteria += " upper(attr.value) " + attributeValueComparator.getComparator() + " ? and";
-            criteriaArgs.add(attributeValueComparator.formatParameter(
-                    attributeValue.toUpperCase(Locale.ENGLISH)));
+        StringComparator customAttributeValueComparator = query.getCustomAttributeValueComparator();
+        String customAttributeValue = query.getCustomAttributeValue();
+        if (customAttributeValueComparator != null
+                && !Strings.isNullOrEmpty(customAttributeValue)) {
+            criteria += " upper(attr.value) " + customAttributeValueComparator.getComparator()
+                    + " ? and";
+            criteriaArgs.add(customAttributeValueComparator.formatParameter(
+                    customAttributeValue.toUpperCase(Locale.ENGLISH)));
         }
         if (criteria.equals("")) {
             return null;
         } else {
-            String sql = ", snapshot_attribute attr where attr.snapshot_id = snapshot.id"
+            String sql = ", snapshot_custom_attribute attr where attr.snapshot_id = snapshot.id"
                     + " and attr.capture_time > ? and attr.capture_time <= ? and" + criteria;
             List<Object> args = Lists.newArrayList();
             args.add(query.getFrom());
@@ -495,7 +498,7 @@ public class SnapshotDao implements SnapshotRepository {
             snapshot.headline(Strings.nullToEmpty(resultSet.getString(8)));
             snapshot.error(resultSet.getString(9));
             snapshot.user(resultSet.getString(10));
-            snapshot.attributes(resultSet.getString(11));
+            snapshot.customAttributes(resultSet.getString(11));
             snapshot.traceMetrics(resultSet.getString(12));
             snapshot.threadInfo(resultSet.getString(13));
             snapshot.gcInfos(resultSet.getString(14));

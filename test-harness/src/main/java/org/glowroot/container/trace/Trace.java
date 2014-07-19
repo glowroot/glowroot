@@ -51,7 +51,7 @@ public class Trace {
     private final String error;
     @Nullable
     private final String user;
-    private final ImmutableSetMultimap<String, String> attributes;
+    private final ImmutableSetMultimap<String, String> customAttributes;
     private final TraceMetric rootTraceMetric;
     @Nullable
     private final TraceThreadInfo threadInfo;
@@ -63,7 +63,7 @@ public class Trace {
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user,
-            ImmutableSetMultimap<String, String> attributes, TraceMetric rootTraceMetric,
+            ImmutableSetMultimap<String, String> customAttributes, TraceMetric rootTraceMetric,
             @Nullable TraceThreadInfo threadInfo, List<TraceGcInfo> gcInfos,
             Existence spansExistence, Existence profileExistence,
             Existence outlierProfileExistence) {
@@ -78,7 +78,7 @@ public class Trace {
         this.headline = headline;
         this.error = error;
         this.user = user;
-        this.attributes = attributes;
+        this.customAttributes = customAttributes;
         this.rootTraceMetric = rootTraceMetric;
         this.threadInfo = threadInfo;
         this.gcInfos = ImmutableList.copyOf(gcInfos);
@@ -133,8 +133,8 @@ public class Trace {
         return user;
     }
 
-    public ImmutableSetMultimap<String, String> getAttributes() {
-        return attributes;
+    public ImmutableSetMultimap<String, String> getCustomAttributes() {
+        return customAttributes;
     }
 
     public TraceMetric getRootTraceMetric() {
@@ -177,7 +177,7 @@ public class Trace {
                 .add("headline", headline)
                 .add("error", error)
                 .add("user", user)
-                .add("attributes", attributes)
+                .add("customAttributes", customAttributes)
                 .add("rootTraceMetric", rootTraceMetric)
                 .add("threadInfo", threadInfo)
                 .add("gcInfos", gcInfos)
@@ -200,7 +200,7 @@ public class Trace {
             @JsonProperty("headline") @Nullable String headline,
             @JsonProperty("error") @Nullable String error,
             @JsonProperty("user") @Nullable String user,
-            @JsonProperty("attributes") @Nullable Map<String, /*@Nullable*/List</*@Nullable*/String>> attributes,
+            @JsonProperty("customAttributes") @Nullable Map<String, /*@Nullable*/List</*@Nullable*/String>> customAttributes,
             @JsonProperty("traceMetrics") @Nullable TraceMetric rootTraceMetric,
             @JsonProperty("threadInfo") @Nullable TraceThreadInfo threadInfo,
             @JsonProperty("gcInfos") @Nullable List</*@Nullable*/TraceGcInfo> gcInfosUnchecked,
@@ -222,22 +222,24 @@ public class Trace {
         checkRequiredProperty(spansExistence, "spansExistence");
         checkRequiredProperty(profileExistence, "profileExistence");
         checkRequiredProperty(outlierProfileExistence, "outlierProfileExistence");
-        ImmutableSetMultimap.Builder<String, String> theAttributes = ImmutableSetMultimap.builder();
-        if (attributes != null) {
-            for (Entry<String, /*@Nullable*/List</*@Nullable*/String>> entry : attributes
+        ImmutableSetMultimap.Builder<String, String> theCustomAttributes =
+                ImmutableSetMultimap.builder();
+        if (customAttributes != null) {
+            for (Entry<String, /*@Nullable*/List</*@Nullable*/String>> entry : customAttributes
                     .entrySet()) {
                 List</*@Nullable*/String> uncheckedValues = entry.getValue();
                 if (uncheckedValues == null) {
                     throw new JsonMappingException(
-                            "Null value not allowed for attribute map value");
+                            "Null value not allowed for custom attribute map value");
                 }
                 List<String> values =
-                        checkNotNullItemsForProperty(uncheckedValues, "traceAttributes");
-                theAttributes.putAll(entry.getKey(), values);
+                        checkNotNullItemsForProperty(uncheckedValues, "customAttributes");
+                theCustomAttributes.putAll(entry.getKey(), values);
             }
         }
         return new Trace(id, active, stuck, startTime, captureTime, duration, transactionType,
-                transactionName, headline, error, user, theAttributes.build(), rootTraceMetric,
+                transactionName, headline, error, user, theCustomAttributes.build(),
+                rootTraceMetric,
                 threadInfo, nullToEmpty(gcInfos), spansExistence, profileExistence,
                 outlierProfileExistence);
     }

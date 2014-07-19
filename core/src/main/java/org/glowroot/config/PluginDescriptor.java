@@ -63,20 +63,20 @@ public class PluginDescriptor {
     private final String id;
     private final String version;
     private final ImmutableList<String> transactionTypes;
-    private final ImmutableList<String> traceAttributes;
+    private final ImmutableList<String> traceCustomAttributes;
     private final ImmutableList<PropertyDescriptor> properties;
     private final ImmutableList<String> aspects;
     private final ImmutableList<PointcutConfig> pointcuts;
 
     private PluginDescriptor(String name, String id, String version,
-            List<String> transactionTypes, List<String> traceAttributes,
+            List<String> transactionTypes, List<String> traceCustomAttributes,
             List<PropertyDescriptor> properties, List<String> aspects,
             List<PointcutConfig> pointcuts) {
         this.name = name;
         this.id = id;
         this.version = version;
         this.transactionTypes = ImmutableList.copyOf(transactionTypes);
-        this.traceAttributes = ImmutableList.copyOf(traceAttributes);
+        this.traceCustomAttributes = ImmutableList.copyOf(traceCustomAttributes);
         this.properties = ImmutableList.copyOf(properties);
         this.aspects = ImmutableList.copyOf(aspects);
         this.pointcuts = ImmutableList.copyOf(pointcuts);
@@ -98,8 +98,8 @@ public class PluginDescriptor {
         return transactionTypes;
     }
 
-    public ImmutableList<String> getTraceAttributes() {
-        return traceAttributes;
+    public ImmutableList<String> getTraceCustomAttributes() {
+        return traceCustomAttributes;
     }
 
     public ImmutableList<PropertyDescriptor> getProperties() {
@@ -115,7 +115,7 @@ public class PluginDescriptor {
     }
 
     public PluginDescriptor copyWithoutAdvice() {
-        return new PluginDescriptor(name, id, version, transactionTypes, traceAttributes,
+        return new PluginDescriptor(name, id, version, transactionTypes, traceCustomAttributes,
                 properties, ImmutableList.<String>of(), ImmutableList.<PointcutConfig>of());
     }
 
@@ -127,7 +127,7 @@ public class PluginDescriptor {
                 .add("id", id)
                 .add("version", version)
                 .add("transactionTypes", transactionTypes)
-                .add("traceAttributes", traceAttributes)
+                .add("traceCustomAttributes", traceCustomAttributes)
                 .add("properties", properties)
                 .add("aspects", aspects)
                 .add("pointcuts", pointcuts)
@@ -140,13 +140,13 @@ public class PluginDescriptor {
             @JsonProperty("id") @Nullable String id,
             @JsonProperty("version") @Nullable String version,
             @JsonProperty("transactionTypes") @Nullable List</*@Nullable*/String> uncheckedTransactionTypes,
-            @JsonProperty("traceAttributes") @Nullable List</*@Nullable*/String> uncheckedTraceAttributes,
+            @JsonProperty("traceCustomAttributes") @Nullable List</*@Nullable*/String> uncheckedTraceCustomAttributes,
             @JsonProperty("properties") @Nullable List</*@Nullable*/PropertyDescriptor> uncheckedProperties,
             @JsonProperty("aspects") @Nullable List</*@Nullable*/String> uncheckedAspects,
             @JsonProperty("pointcuts") @Nullable List</*@Nullable*/PointcutConfig> uncheckedPointcuts)
             throws JsonMappingException {
-        List<String> traceAttributes =
-                checkNotNullItemsForProperty(uncheckedTraceAttributes, "traceAttributes");
+        List<String> traceCustomAttributes = checkNotNullItemsForProperty(
+                uncheckedTraceCustomAttributes, "traceCustomAttributes");
         List<String> transactionTypes =
                 checkNotNullItemsForProperty(uncheckedTransactionTypes, "transactionTypes");
         List<PropertyDescriptor> properties =
@@ -159,7 +159,7 @@ public class PluginDescriptor {
         checkRequiredProperty(id, "id");
         checkRequiredProperty(version, "version");
         return new PluginDescriptor(name, id, version, nullToEmpty(transactionTypes),
-                nullToEmpty(traceAttributes), nullToEmpty(properties), nullToEmpty(aspects),
+                nullToEmpty(traceCustomAttributes), nullToEmpty(properties), nullToEmpty(aspects),
                 nullToEmpty(pointcuts));
     }
 

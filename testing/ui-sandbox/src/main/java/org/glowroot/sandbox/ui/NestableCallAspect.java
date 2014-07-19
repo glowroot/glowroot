@@ -91,21 +91,22 @@ public class NestableCallAspect {
                 pluginServices.setTraceUser(null);
             }
             if (random.nextBoolean()) {
-                pluginServices.addTraceAttribute("My First Attribute", "hello world");
-                pluginServices.addTraceAttribute("My First Attribute", "hello world");
-                pluginServices.addTraceAttribute("My First Attribute",
+                pluginServices.putTraceCustomAttribute("My First Attribute", "hello world");
+                pluginServices.putTraceCustomAttribute("My First Attribute", "hello world");
+                pluginServices.putTraceCustomAttribute("My First Attribute",
                         "hello world " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                pluginServices.addTraceAttribute("Second", "val " + random.nextInt(10));
+                pluginServices.putTraceCustomAttribute("Second", "val " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                pluginServices.addTraceAttribute("A Very Long Attribute Value", "abcdefghijkl"
-                        + "mnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
+                pluginServices.putTraceCustomAttribute("A Very Long Attribute Value",
+                        Strings.repeat("abcdefghijklmnopqrstuvwxyz", 3));
             }
             if (random.nextBoolean()) {
-                pluginServices.addTraceAttribute("Another", "a b c d e f g h i j k l m n o p q"
-                        + " r s t u v w x y z a b c d e f g h i j k l m n o p q r s t u v w x y z");
+                pluginServices.putTraceCustomAttribute("Another",
+                        "a b c d e f g h i j k l m n o p q r s t u v w x y z"
+                                + " a b c d e f g h i j k l m n o p q r s t u v w x y z");
             }
             return span;
         }

@@ -59,11 +59,11 @@ public class TracePointQuery {
     @Nullable
     private final String user;
     @Nullable
-    private final String attributeName;
+    private final String customAttributeName;
     @Nullable
-    private final StringComparator attributeValueComparator;
+    private final StringComparator customAttributeValueComparator;
     @Nullable
-    private final String attributeValue;
+    private final String customAttributeValue;
     private final int limit;
 
     @VisibleForTesting
@@ -73,8 +73,9 @@ public class TracePointQuery {
             @Nullable StringComparator headlineComparator, @Nullable String headline,
             @Nullable StringComparator errorComparator, @Nullable String error,
             @Nullable StringComparator userComparator, @Nullable String user,
-            @Nullable String attributeName, @Nullable StringComparator attributeValueComparator,
-            @Nullable String attributeValue, int limit) {
+            @Nullable String customAttributeName,
+            @Nullable StringComparator customAttributeValueComparator,
+            @Nullable String customAttributeValue, int limit) {
         this.from = from;
         this.to = to;
         this.durationLow = durationLow;
@@ -90,9 +91,9 @@ public class TracePointQuery {
         this.error = error;
         this.userComparator = userComparator;
         this.user = user;
-        this.attributeName = attributeName;
-        this.attributeValueComparator = attributeValueComparator;
-        this.attributeValue = attributeValue;
+        this.customAttributeName = customAttributeName;
+        this.customAttributeValueComparator = customAttributeValueComparator;
+        this.customAttributeValue = customAttributeValue;
         this.limit = limit;
     }
 
@@ -167,18 +168,18 @@ public class TracePointQuery {
     }
 
     @Nullable
-    public String getAttributeName() {
-        return attributeName;
+    public String getCustomAttributeName() {
+        return customAttributeName;
     }
 
     @Nullable
-    public StringComparator getAttributeValueComparator() {
-        return attributeValueComparator;
+    public StringComparator getCustomAttributeValueComparator() {
+        return customAttributeValueComparator;
     }
 
     @Nullable
-    public String getAttributeValue() {
-        return attributeValue;
+    public String getCustomAttributeValue() {
+        return customAttributeValue;
     }
 
     public int getLimit() {
@@ -204,9 +205,9 @@ public class TracePointQuery {
                 .add("error", error)
                 .add("userComparator", userComparator)
                 .add("user", user)
-                .add("attributeName", attributeName)
-                .add("attributeValueComparator", attributeValueComparator)
-                .add("attributeValue", attributeValue)
+                .add("customAttributeName", customAttributeName)
+                .add("attributeValueComparator", customAttributeValueComparator)
+                .add("attributeValue", customAttributeValue)
                 .add("limit", limit)
                 .toString();
     }
@@ -228,8 +229,8 @@ public class TracePointQuery {
             @JsonProperty("error") @Nullable String error,
             @JsonProperty("userComparator") @Nullable StringComparator userComparator,
             @JsonProperty("user") @Nullable String user,
-            @JsonProperty("attributeName") @Nullable String attributeName,
-            @JsonProperty("attributeValueComparator") @Nullable StringComparator attributeValueComparator,
+            @JsonProperty("customAttributeName") @Nullable String customAttributeName,
+            @JsonProperty("customAttributeValueComparator") @Nullable StringComparator customAttributeValueComparator,
             @JsonProperty("attributeValue") @Nullable String attributeValue,
             @JsonProperty("limit") @Nullable Integer limit)
             throws JsonMappingException {
@@ -239,7 +240,7 @@ public class TracePointQuery {
         return new TracePointQuery(from, to, nullToZero(durationLow), durationHigh,
                 transactionType, nullToFalse(errorOnly), nullToFalse(profiledOnly),
                 transactionNameComparator, transactionName, headlineComparator, headline,
-                errorComparator, error, userComparator, user, attributeName,
-                attributeValueComparator, attributeValue, limit);
+                errorComparator, error, userComparator, user, customAttributeName,
+                customAttributeValueComparator, attributeValue, limit);
     }
 }

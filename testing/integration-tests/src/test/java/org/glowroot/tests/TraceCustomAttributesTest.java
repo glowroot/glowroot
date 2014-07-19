@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceAttributesTest {
+public class TraceCustomAttributesTest {
 
     private static Container container;
 
@@ -60,7 +60,7 @@ public class TraceAttributesTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        Iterator<Entry<String, String>> i = trace.getAttributes().entries().iterator();
+        Iterator<Entry<String, String>> i = trace.getCustomAttributes().entries().iterator();
         Entry<String, String> entry = i.next();
         assertThat(entry.getKey()).isEqualTo("Wee Four");
         assertThat(entry.getValue()).isEqualTo("ww");

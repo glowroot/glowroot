@@ -5,7 +5,7 @@
   "transactionTypes": [
     "Integration test"
   ],
-  "traceAttributes": [
+  "traceCustomAttributes": [
     "Zee One",
     "Yee Two",
     "Xee Three",

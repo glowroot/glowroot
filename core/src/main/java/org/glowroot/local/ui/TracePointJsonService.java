@@ -152,7 +152,7 @@ class TracePointJsonService {
                         && matchesTransactionName(trace)
                         && matchesError(trace)
                         && matchesUser(trace)
-                        && matchesAttribute(trace)) {
+                        && matchesCustomAttribute(trace)) {
                     activeTraces.add(trace);
                 }
             }
@@ -182,7 +182,7 @@ class TracePointJsonService {
                         && matchesTransactionName(trace)
                         && matchesError(trace)
                         && matchesUser(trace)
-                        && matchesAttribute(trace)) {
+                        && matchesCustomAttribute(trace)) {
                     points.add(TracePoint.from(trace.getId(), clock.currentTimeMillis(),
                             trace.getDuration(), trace.getError() != null));
                 }
@@ -235,24 +235,24 @@ class TracePointJsonService {
                     trace.getUser());
         }
 
-        private boolean matchesAttribute(Trace trace) {
-            if (Strings.isNullOrEmpty(query.getAttributeName())
-                    && (query.getAttributeValueComparator() == null
-                    || Strings.isNullOrEmpty(query.getAttributeValue()))) {
-                // no attribute filter
+        private boolean matchesCustomAttribute(Trace trace) {
+            if (Strings.isNullOrEmpty(query.getCustomAttributeName())
+                    && (query.getCustomAttributeValueComparator() == null
+                    || Strings.isNullOrEmpty(query.getCustomAttributeValue()))) {
+                // no custom attribute filter
                 return true;
             }
-            for (Entry<String, Collection<String>> entry : trace.getAttributes().asMap()
+            for (Entry<String, Collection<String>> entry : trace.getCustomAttributes().asMap()
                     .entrySet()) {
-                String attributeName = entry.getKey();
+                String customAttributeName = entry.getKey();
                 if (!matchesUsingStringComparator(StringComparator.EQUALS,
-                        query.getAttributeName(), attributeName)) {
+                        query.getCustomAttributeName(), customAttributeName)) {
                     // name doesn't match, no need to test values
                     continue;
                 }
-                for (String attributeValue : entry.getValue()) {
-                    if (matchesUsingStringComparator(query.getAttributeValueComparator(),
-                            query.getAttributeValue(), attributeValue)) {
+                for (String customAttributeValue : entry.getValue()) {
+                    if (matchesUsingStringComparator(query.getCustomAttributeValueComparator(),
+                            query.getCustomAttributeValue(), customAttributeValue)) {
                         // found matching name and value
                         return true;
                     }

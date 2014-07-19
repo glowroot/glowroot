@@ -59,7 +59,7 @@ public class Trace {
     public static final int USE_GENERAL_STORE_THRESHOLD = -1;
 
     // initial capacity is very important, see ThreadSafeCollectionOfTenBenchmark
-    private static final int ATTRIBUTE_KEYS_INITIAL_CAPACITY = 16;
+    private static final int CUSTOM_ATTRIBUTE_KEYS_INITIAL_CAPACITY = 16;
 
     // a unique identifier
     private final TraceUniqueId id;
@@ -83,10 +83,10 @@ public class Trace {
     @Nullable
     private volatile String user;
 
-    // lazy loaded to reduce memory when attributes are not used
-    @GuardedBy("attributes")
+    // lazy loaded to reduce memory when custom attributes are not used
+    @GuardedBy("customAttributes")
     @MonotonicNonNull
-    private volatile SetMultimap<String, String> attributes;
+    private volatile SetMultimap<String, String> customAttributes;
 
     private final TraceMetric rootTraceMetric;
 
@@ -211,16 +211,16 @@ public class Trace {
         return user;
     }
 
-    public ImmutableSetMultimap<String, String> getAttributes() {
-        if (attributes == null) {
+    public ImmutableSetMultimap<String, String> getCustomAttributes() {
+        if (customAttributes == null) {
             return ImmutableSetMultimap.of();
         }
-        SetMultimap<String, String> orderedAttributes =
+        SetMultimap<String, String> orderedCustomAttributes =
                 TreeMultimap.create(String.CASE_INSENSITIVE_ORDER, String.CASE_INSENSITIVE_ORDER);
-        synchronized (attributes) {
-            orderedAttributes.putAll(attributes);
+        synchronized (customAttributes) {
+            orderedCustomAttributes.putAll(customAttributes);
         }
-        return ImmutableSetMultimap.copyOf(orderedAttributes);
+        return ImmutableSetMultimap.copyOf(orderedCustomAttributes);
     }
 
     public boolean readMemoryBarrier() {
@@ -324,14 +324,14 @@ public class Trace {
         }
     }
 
-    public void addAttribute(String name, @Nullable String value) {
-        if (attributes == null) {
+    public void putCustomAttribute(String name, @Nullable String value) {
+        if (customAttributes == null) {
             // no race condition here since only trace thread calls addAttribute()
-            attributes = HashMultimap.create(ATTRIBUTE_KEYS_INITIAL_CAPACITY, 1);
+            customAttributes = HashMultimap.create(CUSTOM_ATTRIBUTE_KEYS_INITIAL_CAPACITY, 1);
         }
         String val = Strings.nullToEmpty(value);
-        synchronized (attributes) {
-            attributes.put(name, val);
+        synchronized (customAttributes) {
+            customAttributes.put(name, val);
         }
     }
 
@@ -452,7 +452,7 @@ public class Trace {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
-                .add("startDate", startTime)
+                .add("startTime", startTime)
                 .add("stuck", stuck)
                 .add("transactionType", transactionType)
                 .add("explicitSetTransactionType", explicitSetTransactionType)
@@ -460,7 +460,7 @@ public class Trace {
                 .add("explicitSetTransactionName", explicitSetTransactionName)
                 .add("error", error)
                 .add("user", user)
-                .add("attributes", attributes)
+                .add("customAttributes", customAttributes)
                 .add("rootTraceMetric", rootTraceMetric)
                 .add("threadInfo", threadInfo)
                 .add("gcInfos", gcInfos)

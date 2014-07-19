@@ -340,14 +340,17 @@ public abstract class PluginServices {
      * @param value
      *            value of the attribute, null values will be normalized to the empty string
      */
-    public abstract void addTraceAttribute(String name, @Nullable String value);
+    public abstract void putTraceCustomAttribute(String name, @Nullable String value);
 
     /**
-     * Overrides the general store threshold (Configuration &gt; General &gt; Store threshold). This
-     * can be used to store particular traces at a lower or higher threshold than the general
-     * threshold.
+     * Overrides the general store threshold (Configuration &gt; General &gt; Store threshold) for
+     * the current trace. This can be used to store particular traces at a lower or higher threshold
+     * than the general threshold.
      * 
-     * If this is called multiple times, the minimum {@code threshold} will be used.
+     * If this is called multiple times for a give trace, the minimum {@code threshold} will be
+     * used.
+     * 
+     * If there is no current trace, this method does nothing.
      * 
      * @param threshold
      * @param unit
@@ -466,7 +469,7 @@ public abstract class PluginServices {
         @Override
         public void setTraceUser(@Nullable String user) {}
         @Override
-        public void addTraceAttribute(String name, @Nullable String value) {}
+        public void putTraceCustomAttribute(String name, @Nullable String value) {}
         @Override
         public void setTraceStoreThreshold(long threshold, TimeUnit unit) {}
         @Override

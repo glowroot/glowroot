@@ -43,8 +43,8 @@ class SnapshotTestData {
                 .transactionName("test transaction name")
                 .headline("test headline")
                 .user("j")
-                .attributes("{\"abc\":\"xyz\", \"xyz\":\"abc\"}")
-                .attributesForIndexing(ImmutableSetMultimap.of("abc", "xyz", "xyz", "abc"))
+                .customAttributes("{\"abc\":\"xyz\", \"xyz\":\"abc\"}")
+                .customAttributesForIndexing(ImmutableSetMultimap.of("abc", "xyz", "xyz", "abc"))
                 .build();
     }
 

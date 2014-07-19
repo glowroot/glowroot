@@ -85,12 +85,12 @@ public class LevelOneAspect {
             Span span = pluginServices.startTrace("Integration test", "basic test",
                     messageSupplier, traceMetricName);
             // several trace attributes to test ordering
-            pluginServices.addTraceAttribute("Zee One", arg2);
-            pluginServices.addTraceAttribute("Yee Two", "yy3");
-            pluginServices.addTraceAttribute("Yee Two", "yy");
-            pluginServices.addTraceAttribute("Yee Two", "Yy2");
-            pluginServices.addTraceAttribute("Xee Three", "xx");
-            pluginServices.addTraceAttribute("Wee Four", "ww");
+            pluginServices.putTraceCustomAttribute("Zee One", arg2);
+            pluginServices.putTraceCustomAttribute("Yee Two", "yy3");
+            pluginServices.putTraceCustomAttribute("Yee Two", "yy");
+            pluginServices.putTraceCustomAttribute("Yee Two", "Yy2");
+            pluginServices.putTraceCustomAttribute("Xee Three", "xx");
+            pluginServices.putTraceCustomAttribute("Wee Four", "ww");
             return span;
         }
 

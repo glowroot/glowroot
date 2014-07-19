@@ -47,10 +47,10 @@ public class SnapshotWriter {
         jg.writeStringField("headline", snapshot.getHeadline());
         jg.writeStringField("error", snapshot.getError());
         jg.writeStringField("user", snapshot.getUser());
-        String attributes = snapshot.getAttributes();
-        if (attributes != null) {
-            jg.writeFieldName("attributes");
-            jg.writeRawValue(attributes);
+        String customAttributes = snapshot.getCustomAttributes();
+        if (customAttributes != null) {
+            jg.writeFieldName("customAttributes");
+            jg.writeRawValue(customAttributes);
         }
         String traceMetrics = snapshot.getTraceMetrics();
         if (traceMetrics != null) {

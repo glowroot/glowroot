@@ -138,9 +138,9 @@ class LayoutJsonService {
         // add the rest alphabetical
         orderedTransactionTypes.addAll(Ordering.from(String.CASE_INSENSITIVE_ORDER)
                 .sortedCopy(transactionTypes));
-        Set<String> traceAttributes = Sets.newTreeSet();
+        Set<String> traceCustomAttributes = Sets.newTreeSet();
         for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
-            traceAttributes.addAll(pluginDescriptor.getTraceAttributes());
+            traceCustomAttributes.addAll(pluginDescriptor.getTraceCustomAttributes());
         }
         return Layout.builder()
                 .jvmHeapHistogram(heapHistograms != null)
@@ -150,7 +150,7 @@ class LayoutJsonService {
                 .plugins(plugins)
                 .transactionTypes(orderedTransactionTypes)
                 .defaultTransactionType(defaultTransactionType)
-                .traceAttributes(ImmutableList.copyOf(traceAttributes))
+                .traceCustomAttributes(ImmutableList.copyOf(traceCustomAttributes))
                 .fixedTransactionPointIntervalSeconds(fixedTransactionPointIntervalSeconds)
                 .build();
     }
