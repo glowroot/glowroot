@@ -49,7 +49,11 @@ public class RequestInvoker {
     @Nullable
     private final Method getHeaderNamesMethod;
     @Nullable
+    private final Method getUserPrincipalMethod;
+    @Nullable
     private final Method getParameterMapMethod;
+
+    private final PrincipalInvoker principalInvoker;
 
     public RequestInvoker(Class<?> clazz) {
         Class<?> httpServletRequestClass = null;
@@ -69,7 +73,10 @@ public class RequestInvoker {
         getHeaderMethod = getMethod(httpServletRequestClass, "getHeader", String.class);
         getHeadersMethod = getMethod(httpServletRequestClass, "getHeaders", String.class);
         getHeaderNamesMethod = getMethod(httpServletRequestClass, "getHeaderNames");
+        getUserPrincipalMethod = getMethod(httpServletRequestClass, "getUserPrincipal");
         getParameterMapMethod = getMethod(servletRequestClass, "getParameterMap");
+
+        principalInvoker = new PrincipalInvoker(clazz);
     }
 
     @Nullable
@@ -180,6 +187,24 @@ public class RequestInvoker {
             logger.warn("error calling HttpServletRequest.getHeaderNames()", t);
             return EmptyStringEnumeration.INSTANCE;
         }
+    }
+
+    @Nullable
+    public String getUserPrincipalName(Object request) {
+        if (getUserPrincipalMethod == null) {
+            return null;
+        }
+        Object principal;
+        try {
+            principal = getUserPrincipalMethod.invoke(request);
+        } catch (Throwable t) {
+            logger.warn("error calling HttpServletRequest.getUserPrincipal()", t);
+            return null;
+        }
+        if (principal == null) {
+            return null;
+        }
+        return principalInvoker.getName(principal);
     }
 
     @SuppressWarnings("unchecked")

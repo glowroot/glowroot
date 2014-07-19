@@ -15,6 +15,8 @@
  */
 package org.glowroot.plugin.servlet;
 
+import java.security.Principal;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -22,6 +24,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
@@ -52,6 +55,16 @@ public class UserTest {
     @After
     public void afterEachTest() throws Exception {
         container.checkAndReset();
+    }
+
+    @Test
+    public void testHasRequestUserPrincipal() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(HasRequestUserPrincipal.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getUser()).isEqualTo("my name is mock");
     }
 
     @Test
@@ -141,6 +154,14 @@ public class UserTest {
     }
 
     @SuppressWarnings("serial")
+    public static class HasRequestUserPrincipal extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request).setUserPrincipal(new MockPrincipal());
+        }
+    }
+
+    @SuppressWarnings("serial")
     public static class HasSessionUserAttribute extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
@@ -191,6 +212,13 @@ public class UserTest {
         }
         public String getTwo() {
             return two;
+        }
+    }
+
+    private static class MockPrincipal implements Principal {
+        @Override
+        public String getName() {
+            return "my name is mock";
         }
     }
 }
