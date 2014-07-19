@@ -54,7 +54,7 @@ class Weaver {
     // this is an internal property sometimes useful for debugging errors in the weaver,
     // especially exceptions of type java.lang.VerifyError
     private static final boolean verifyWeaving =
-            Boolean.valueOf(System.getProperty("glowroot.internal.weaving.verify"));
+            Boolean.getBoolean("glowroot.internal.weaving.verify");
 
     private final Supplier<ImmutableList<Advice>> advisors;
     private final ImmutableList<MixinType> mixinTypes;

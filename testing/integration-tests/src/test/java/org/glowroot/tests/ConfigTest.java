@@ -227,8 +227,7 @@ public class ConfigTest {
         // when
         container.getConfigService().removePointcutConfig(version);
         // then
-        List<? extends PointcutConfig> configs =
-                container.getConfigService().getPointcutConfigs();
+        List<PointcutConfig> configs = container.getConfigService().getPointcutConfigs();
         assertThat(configs).isEmpty();
     }
 

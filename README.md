@@ -1,4 +1,4 @@
-<img src="https://s.gravatar.com/avatar/988492aef73921a1ddb4741059390dde?s=70" alt="Glowroot Logo"> Glowroot &nbsp;&nbsp; [![Build Status](https://travis-ci.org/glowroot/glowroot.png?branch=master)](https://travis-ci.org/glowroot/glowroot)
+Glowroot &nbsp;&nbsp; [![Build Status](https://travis-ci.org/glowroot/glowroot.png?branch=master)](https://travis-ci.org/glowroot/glowroot)
 =========
 
 ## Quick start

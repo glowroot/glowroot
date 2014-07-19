@@ -202,7 +202,7 @@
       </plugin>
       <plugin>
         <!--
-          ensure that only methods available in jdk 5 can
+          ensure that only methods available in jdk 6 can
           be used even when compiling with a more recent jdk
         -->
         <groupId>org.codehaus.mojo</groupId>
