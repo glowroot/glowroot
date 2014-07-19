@@ -35,6 +35,15 @@
             </div>
           </td>
         </tr>
+        <!-- all the platform mbeans already expose ObjectName attribute -->
+        <tr ng-hide="node.attributeMap.ObjectName">
+          <td valign="top"><em>ObjectName</em></td>
+          <td style="padding-left: 10px;">
+            <div class="break-word">
+              {{node.objectName}}
+            </div>
+          </td>
+        </tr>
       </table>
     </div>
   </div>
