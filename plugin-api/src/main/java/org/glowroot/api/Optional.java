@@ -84,11 +84,11 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
      * 
      * This version can be helpful to avoid unchecked casting.
      * 
-     * @param type
+     * @param clazz
      * @return an {@code Optional} instance with no contained reference
      */
     @SuppressWarnings({"unchecked"})
-    public static <T extends /*@NonNull*/Object> Optional<T> absent(Class<T> type) {
+    public static <T extends /*@NonNull*/Object> Optional<T> absent(Class<T> clazz) {
         return (Optional<T>) Absent.INSTANCE;
     }
 

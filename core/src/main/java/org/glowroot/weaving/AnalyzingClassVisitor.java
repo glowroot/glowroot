@@ -75,14 +75,18 @@ class AnalyzingClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public void visit(int version, int access, String name, @Nullable String signature,
-            @Nullable String superName, String/*@Nullable*/[] interfaceNamesNullable) {
+    public void visit(int version, int access, String internalName, @Nullable String signature,
+            @Nullable String superInternalName,
+            String/*@Nullable*/[] interfaceInternalNamesNullable) {
 
-        String[] interfaceNames = interfaceNamesNullable == null ? new String[0]
-                : interfaceNamesNullable;
-        analyzedClassBuilder = AnalyzedClass.builder(access, TypeNames.fromInternal(name),
-                TypeNames.fromInternal(superName), TypeNames.fromInternal(interfaceNames));
-        String className = TypeNames.fromInternal(name);
+        ImmutableList<String> interfaceNames = ImmutableList.of();
+        if (interfaceInternalNamesNullable != null) {
+            interfaceNames = ClassNames.fromInternalNames(interfaceInternalNamesNullable);
+        }
+        String className = ClassNames.fromInternalName(internalName);
+        String superClassName = ClassNames.fromInternalName(superInternalName);
+        analyzedClassBuilder = AnalyzedClass.builder(access, className, superClassName,
+                interfaceNames);
         adviceMatchers = AdviceMatcher.getAdviceMatchers(className, advisors);
         if (Modifier.isInterface(access)) {
             ImmutableList<MixinType> matchedMixinTypes = getMatchedMixinTypes(className,
@@ -93,17 +97,18 @@ class AnalyzingClassVisitor extends ClassVisitor {
             return;
         }
         ParseContext parseContext = new ParseContext(className, codeSource);
-        List<AnalyzedClass> superHierarchy = analyzedWorld.getTypeHierarchy(
-                TypeNames.fromInternal(superName), loader, parseContext);
-        List<AnalyzedClass> newInterfaceHierarchy =
-                getInterfaceHierarchy(interfaceNames, parseContext);
+        List<AnalyzedClass> superAnalyzedHierarchy =
+                analyzedWorld.getAnalyzedHierarchy(superClassName, loader, parseContext);
+        List<AnalyzedClass> interfaceAnalyzedHierarchy =
+                getAnalyzedHierarchy(interfaceNames, parseContext);
         // it's ok if there are duplicates in the superAnalyzedClasses list (e.g. an interface that
         // appears twice in a type hierarchy), it's rare, dups don't cause an issue for callers, and
         // so it doesn't seem worth the (minor) performance hit to de-dup every time
         superAnalyzedClasses = Lists.newArrayList();
-        superAnalyzedClasses.addAll(superHierarchy);
-        superAnalyzedClasses.addAll(newInterfaceHierarchy);
-        matchedMixinTypes = getMatchedMixinTypes(className, superHierarchy, newInterfaceHierarchy);
+        superAnalyzedClasses.addAll(superAnalyzedHierarchy);
+        superAnalyzedClasses.addAll(interfaceAnalyzedHierarchy);
+        matchedMixinTypes = getMatchedMixinTypes(className, superAnalyzedHierarchy,
+                interfaceAnalyzedHierarchy);
         analyzedClassBuilder.addMixinTypes(matchedMixinTypes);
 
         boolean hasSuperAdvice = false;
@@ -177,14 +182,14 @@ class AnalyzingClassVisitor extends ClassVisitor {
         return analyzedClass;
     }
 
-    private List<AnalyzedClass> getInterfaceHierarchy(String[] interfaceNames,
+    private List<AnalyzedClass> getAnalyzedHierarchy(ImmutableList<String> classNames,
             ParseContext parseContext) {
-        List<AnalyzedClass> superTypes = Lists.newArrayList();
-        for (String interfaceName : interfaceNames) {
-            superTypes.addAll(analyzedWorld.getTypeHierarchy(
-                    TypeNames.fromInternal(interfaceName), loader, parseContext));
+        List<AnalyzedClass> analyzedHierarchy = Lists.newArrayList();
+        for (String className : classNames) {
+            analyzedHierarchy.addAll(
+                    analyzedWorld.getAnalyzedHierarchy(className, loader, parseContext));
         }
-        return superTypes;
+        return analyzedHierarchy;
     }
 
     private ImmutableList<MixinType> getMatchedMixinTypes(String className,

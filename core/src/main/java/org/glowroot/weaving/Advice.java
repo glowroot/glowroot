@@ -292,23 +292,23 @@ public class Advice {
     }
 
     private static Set<Class<?>> getClassMetas(List<AdviceParameter> parameters) {
-        Set<Class<?>> types = Sets.newHashSet();
+        Set<Class<?>> classes = Sets.newHashSet();
         for (AdviceParameter parameter : parameters) {
             if (parameter.getKind() == ParameterKind.CLASS_META) {
-                types.add(parameter.getType());
+                classes.add(parameter.getType());
             }
         }
-        return types;
+        return classes;
     }
 
     private static Set<Class<?>> getMethodMetas(List<AdviceParameter> parameters) {
-        Set<Class<?>> types = Sets.newHashSet();
+        Set<Class<?>> classes = Sets.newHashSet();
         for (AdviceParameter parameter : parameters) {
             if (parameter.getKind() == ParameterKind.METHOD_META) {
-                types.add(parameter.getType());
+                classes.add(parameter.getType());
             }
         }
-        return types;
+        return classes;
     }
 
     static class AdviceParameter {

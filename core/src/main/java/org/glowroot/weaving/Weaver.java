@@ -202,7 +202,7 @@ class Weaver {
             }
             AnalyzedClass analyzedClass1;
             try {
-                analyzedClass1 = analyzedWorld.getAnalyzedClass(TypeNames.fromInternal(type1),
+                analyzedClass1 = analyzedWorld.getAnalyzedClass(ClassNames.fromInternalName(type1),
                         loader);
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
@@ -215,7 +215,7 @@ class Weaver {
             }
             AnalyzedClass analyzedClass2;
             try {
-                analyzedClass2 = analyzedWorld.getAnalyzedClass(TypeNames.fromInternal(type2),
+                analyzedClass2 = analyzedWorld.getAnalyzedClass(ClassNames.fromInternalName(type2),
                         loader);
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
@@ -245,7 +245,7 @@ class Weaver {
             String superName = analyzedClass1.getSuperName();
             while (superName != null) {
                 if (isAssignableFrom(superName, analyzedClass2)) {
-                    return TypeNames.toInternal(superName);
+                    return ClassNames.toInternalName(superName);
                 }
                 try {
                     AnalyzedClass superAnalyzedClass =
@@ -265,16 +265,16 @@ class Weaver {
             return "java/lang/Object";
         }
 
-        private boolean isAssignableFrom(String possibleSuperTypeName,
+        private boolean isAssignableFrom(String possibleSuperClassName,
                 AnalyzedClass analyzedClass) {
-            if (analyzedClass.getName().equals(possibleSuperTypeName)) {
+            if (analyzedClass.getName().equals(possibleSuperClassName)) {
                 return true;
             }
             for (String interfaceName : analyzedClass.getInterfaceNames()) {
                 try {
                     AnalyzedClass interfaceAnalyzedClass =
                             analyzedWorld.getAnalyzedClass(interfaceName, loader);
-                    if (isAssignableFrom(possibleSuperTypeName, interfaceAnalyzedClass)) {
+                    if (isAssignableFrom(possibleSuperClassName, interfaceAnalyzedClass)) {
                         return true;
                     }
                 } catch (IOException e) {
@@ -293,7 +293,7 @@ class Weaver {
             try {
                 AnalyzedClass superAnalyzedClass =
                         analyzedWorld.getAnalyzedClass(superName, loader);
-                return isAssignableFrom(possibleSuperTypeName, superAnalyzedClass);
+                return isAssignableFrom(possibleSuperClassName, superAnalyzedClass);
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 return false;

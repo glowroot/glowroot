@@ -53,14 +53,15 @@ class AdviceFlowGenerator {
     private AdviceFlowGenerator() {}
 
     static Class<?> generate() throws AdviceConstructionException {
-        String generatedTypeName = "org/glowroot/weaving/GeneratedAdviceFlow"
+        String generatedInternalName = "org/glowroot/weaving/GeneratedAdviceFlow"
                 + counter.incrementAndGet();
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
-        cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, generatedTypeName, null, "java/lang/Object", null);
+        cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, generatedInternalName, null, "java/lang/Object",
+                null);
         writeThreadLocalFields(cw);
-        writeThreadLocalInitialization(cw, generatedTypeName);
+        writeThreadLocalInitialization(cw, generatedInternalName);
         try {
-            return ClassLoaders.defineClass(TypeNames.fromInternal(generatedTypeName),
+            return ClassLoaders.defineClass(ClassNames.fromInternalName(generatedInternalName),
                     cw.toByteArray(), AdviceFlowGenerator.class.getClassLoader());
         } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
@@ -73,14 +74,14 @@ class AdviceFlowGenerator {
                 adviceFlowOuterHolderType.getDescriptor(), null, null);
     }
 
-    private static void writeThreadLocalInitialization(ClassVisitor cv, String adviceFlowTypeName) {
+    private static void writeThreadLocalInitialization(ClassVisitor cv, String ownerInternalName) {
         MethodVisitor mv = cv.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
         checkNotNull(mv);
         mv.visitCode();
-        String adviceFlowInternalName = adviceFlowOuterHolderType.getInternalName();
-        mv.visitMethodInsn(INVOKESTATIC, adviceFlowInternalName, "create",
-                "()L" + adviceFlowInternalName + ";", false);
-        mv.visitFieldInsn(PUTSTATIC, adviceFlowTypeName, "adviceFlow",
+        String holderInternalName = adviceFlowOuterHolderType.getInternalName();
+        mv.visitMethodInsn(INVOKESTATIC, holderInternalName, "create",
+                "()L" + holderInternalName + ";", false);
+        mv.visitFieldInsn(PUTSTATIC, ownerInternalName, "adviceFlow",
                 adviceFlowOuterHolderType.getDescriptor());
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);

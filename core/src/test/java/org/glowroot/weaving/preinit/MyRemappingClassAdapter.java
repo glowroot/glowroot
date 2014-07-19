@@ -30,20 +30,20 @@ import static org.objectweb.asm.Opcodes.ASM5;
 // from org.objectweb.asm.commons.RemappingClassAdapter
 class MyRemappingClassAdapter extends ClassVisitor {
 
-    private final TypeCollector typeCollector;
+    private final ClassCollector typeCollector;
     @Nullable
-    private String typeName;
+    private String internalName;
 
-    MyRemappingClassAdapter(TypeCollector remapper) {
+    MyRemappingClassAdapter(ClassCollector remapper) {
         super(ASM5);
         this.typeCollector = remapper;
     }
 
     @Override
-    public void visit(int version, int access, String name, @Nullable String signature,
-            @Nullable String superName, String[] interfaces) {
-        this.typeName = name;
-        typeCollector.setSuperType(superName);
+    public void visit(int version, int access, String internalName, @Nullable String signature,
+            @Nullable String superInternalName, String[] interfaces) {
+        this.internalName = internalName;
+        typeCollector.setSuperInternalNames(superInternalName);
         typeCollector.setInterfaceTypes(Arrays.asList(interfaces));
     }
 
@@ -51,7 +51,7 @@ class MyRemappingClassAdapter extends ClassVisitor {
     public MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
 
-        ReferencedMethod referencedMethod = ReferencedMethod.from(typeName, name, desc);
+        ReferencedMethod referencedMethod = ReferencedMethod.from(internalName, name, desc);
         MethodCollector methodCollector = new MethodCollector();
         if (exceptions != null) {
             for (String exception : exceptions) {

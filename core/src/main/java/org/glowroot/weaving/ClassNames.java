@@ -28,31 +28,31 @@ import org.glowroot.markers.Static;
  * @since 0.5
  */
 @Static
-public class TypeNames {
+public class ClassNames {
 
-    private TypeNames() {}
+    private ClassNames() {}
 
     @PolyNull
-    public static String fromInternal(@PolyNull String typeName) {
-        if (typeName == null) {
+    public static String fromInternalName(@PolyNull String internalName) {
+        if (internalName == null) {
             return null;
         } else {
-            return typeName.replace('/', '.');
+            return internalName.replace('/', '.');
         }
     }
 
-    public static String toInternal(String typeName) {
-        return typeName.replace('.', '/');
+    public static String toInternalName(String className) {
+        return className.replace('.', '/');
     }
 
-    static ImmutableList<String> fromInternal(String/*@Nullable*/[] internalTypeNames) {
-        if (internalTypeNames == null) {
+    static ImmutableList<String> fromInternalNames(String/*@Nullable*/[] internalNames) {
+        if (internalNames == null) {
             return ImmutableList.of();
         }
-        List<String> typeNames = Lists.newArrayList();
-        for (String typeName : internalTypeNames) {
-            typeNames.add(typeName.replace('/', '.'));
+        List<String> classNames = Lists.newArrayList();
+        for (String internalName : internalNames) {
+            classNames.add(internalName.replace('/', '.'));
         }
-        return ImmutableList.copyOf(typeNames);
+        return ImmutableList.copyOf(classNames);
     }
 }

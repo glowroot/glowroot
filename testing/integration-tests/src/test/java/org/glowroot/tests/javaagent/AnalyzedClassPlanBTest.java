@@ -29,7 +29,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.weaving.AnalyzedWorld;
-import org.glowroot.weaving.TypeNames;
+import org.glowroot.weaving.ClassNames;
 
 /**
  * @author Trask Stalnaker
@@ -67,7 +67,7 @@ public class AnalyzedClassPlanBTest {
     public void shouldLogWarningInAnalyzedWorldPlanB() throws Exception {
         // given
         container.addExpectedLogMessage(AnalyzedWorld.class.getName(), "could not find resource "
-                + TypeNames.toInternal(Y.class.getName()) + ".class");
+                + ClassNames.toInternalName(Y.class.getName()) + ".class");
         // when
         container.executeAppUnderTest(ShouldLogWarningInAnalyzedWorldPlanB.class);
         // then
@@ -103,8 +103,8 @@ public class AnalyzedClassPlanBTest {
             }
         }
         protected Class<?> load(String name) throws IOException {
-            byte[] bytes = Resources.toByteArray(Resources.getResource(TypeNames.toInternal(name)
-                    + ".class"));
+            byte[] bytes = Resources.toByteArray(Resources.getResource(
+                    ClassNames.toInternalName(name) + ".class"));
             return super.defineClass(name, bytes, 0, bytes.length);
         }
         @Override

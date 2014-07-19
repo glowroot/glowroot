@@ -210,11 +210,11 @@ class JavaagentConfigService implements ConfigService {
         updateGeneralConfig(generalConfig);
     }
 
-    private <T> T getConfig(String url, Class<T> type) throws Exception {
+    private <T> T getConfig(String url, Class<T> valueType) throws Exception {
         String response = httpClient.get(url);
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         JsonNode configNode = ObjectMappers.getRequiredChildNode(rootNode, "config");
-        return mapper.treeToValue(configNode, type);
+        return mapper.treeToValue(configNode, valueType);
     }
 
     interface GetUiPortCommand {

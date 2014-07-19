@@ -27,29 +27,29 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class TypeCollector {
+class ClassCollector {
 
     @Nullable
-    private String superType;
+    private String superInternalNames;
     @Nullable
-    private ImmutableList<String> interfaceTypes;
+    private ImmutableList<String> interfaceInternalNames;
     @Nullable
-    private ImmutableList<String> allSuperTypes;
+    private ImmutableList<String> allSuperInternalNames;
 
     // map key is the method "name:desc"
     private final Map<String, MethodCollector> methodCollectors = Maps.newHashMap();
 
     @Nullable
-    String getSuperType() {
-        return superType;
+    String getSuperInternalNames() {
+        return superInternalNames;
     }
 
-    ImmutableList<String> getInterfaceTypes() {
-        return interfaceTypes;
+    ImmutableList<String> getInterfaceInternalNames() {
+        return interfaceInternalNames;
     }
 
-    ImmutableList<String> getAllSuperTypes() {
-        return allSuperTypes;
+    ImmutableList<String> getAllSuperInternalNames() {
+        return allSuperInternalNames;
     }
 
     @Nullable
@@ -61,16 +61,16 @@ class TypeCollector {
         return methodCollectors.keySet();
     }
 
-    void setSuperType(@Nullable String superType) {
-        this.superType = superType;
+    void setSuperInternalNames(@Nullable String superInternalNames) {
+        this.superInternalNames = superInternalNames;
     }
 
-    void setInterfaceTypes(List<String> interfaceTypes) {
-        this.interfaceTypes = ImmutableList.copyOf(interfaceTypes);
+    void setInterfaceTypes(List<String> interfaceInternalNames) {
+        this.interfaceInternalNames = ImmutableList.copyOf(interfaceInternalNames);
     }
 
-    void setAllSuperTypes(List<String> allSuperTypes) {
-        this.allSuperTypes = ImmutableList.copyOf(allSuperTypes);
+    void setAllSuperInternalNames(List<String> allSuperInternalNames) {
+        this.allSuperInternalNames = ImmutableList.copyOf(allSuperInternalNames);
     }
 
     void addMethod(ReferencedMethod referencedMethod, MethodCollector methodCollector) {

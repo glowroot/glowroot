@@ -79,7 +79,7 @@ import org.glowroot.weaving.SomeAspect.TestClassMeta;
 import org.glowroot.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
 import org.glowroot.weaving.SomeAspect.TestMethodMeta;
 import org.glowroot.weaving.SomeAspect.ThrowableToStringAdvice;
-import org.glowroot.weaving.SomeAspect.TypeNamePatternAdvice;
+import org.glowroot.weaving.SomeAspect.ClassNamePatternAdvice;
 import org.glowroot.weaving.SomeAspect.WildMethodAdvice;
 import org.glowroot.weaving.WeavingTimerService.WeavingTimer;
 import org.glowroot.weaving.other.ArrayMisc;
@@ -861,7 +861,7 @@ public class WeaverTest {
     public void shouldWeaveTypeWithNamePattern() throws Exception {
         // given
         SomeAspect.resetThreadLocals();
-        Misc test = newWovenObject(PrimitiveMisc.class, Misc.class, TypeNamePatternAdvice.class);
+        Misc test = newWovenObject(PrimitiveMisc.class, Misc.class, ClassNamePatternAdvice.class);
         // when
         test.execute1();
         // then

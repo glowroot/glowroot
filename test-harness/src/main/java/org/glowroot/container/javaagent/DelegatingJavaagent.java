@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import java.util.jar.Manifest;
 import com.google.common.io.Resources;
 
 import org.glowroot.markers.Static;
-import org.glowroot.weaving.TypeNames;
+import org.glowroot.weaving.ClassNames;
 
 /**
  * @author Trask Stalnaker
@@ -61,7 +61,8 @@ public class DelegatingJavaagent {
         manifest.getMainAttributes().put(new Attributes.Name("Can-Redefine-Classes"), "true");
         manifest.getMainAttributes().put(new Attributes.Name("Can-Retransform-Classes"), "true");
         JarOutputStream out = new JarOutputStream(new FileOutputStream(jarFile), manifest);
-        String resourceName = TypeNames.toInternal(DelegatingJavaagent.class.getName()) + ".class";
+        String resourceName =
+                ClassNames.toInternalName(DelegatingJavaagent.class.getName()) + ".class";
         out.putNextEntry(new JarEntry(resourceName));
         Resources.asByteSource(Resources.getResource(resourceName)).copyTo(out);
         out.closeEntry();

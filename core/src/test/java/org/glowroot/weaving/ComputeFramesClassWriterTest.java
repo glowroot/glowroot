@@ -43,22 +43,22 @@ public class ComputeFramesClassWriterTest {
 
     @Test
     public void shouldFindCommonSuperClass() {
-        assertCommonSuperType(C.class, Y.class, B.class);
-        assertCommonSuperType(C.class, B.class, B.class);
-        assertCommonSuperType(C.class, A.class, A.class);
-        assertCommonSuperType(C.class, I.class, I.class);
+        assertCommonSuperClass(C.class, Y.class, B.class);
+        assertCommonSuperClass(C.class, B.class, B.class);
+        assertCommonSuperClass(C.class, A.class, A.class);
+        assertCommonSuperClass(C.class, I.class, I.class);
     }
 
-    private <R, S extends R, T extends R> void assertCommonSuperType(Class<S> type1,
-            Class<T> type2, Class<R> commonSuperType) {
+    private <R, S extends R, T extends R> void assertCommonSuperClass(Class<S> class1,
+            Class<T> class2, Class<R> commonSuperClass) {
 
-        String commonSuperTypeName = cw.getCommonSuperClass(
-                internalTypeName(type1), internalTypeName(type2));
-        assertThat(commonSuperTypeName).isEqualTo(internalTypeName(commonSuperType));
+        String commonSuperInternalName =
+                cw.getCommonSuperClass(internalName(class1), internalName(class2));
+        assertThat(commonSuperInternalName).isEqualTo(internalName(commonSuperClass));
     }
 
-    private static String internalTypeName(Class<?> type) {
-        return TypeNames.toInternal(type.getName());
+    private static String internalName(Class<?> clazz) {
+        return ClassNames.toInternalName(clazz.getName());
     }
 
     static interface I {}

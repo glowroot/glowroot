@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,18 +26,18 @@ import org.objectweb.asm.commons.Remapper;
  */
 class MethodCollector extends Remapper {
 
-    private final Set<String> referencedTypes = Sets.newHashSet();
+    private final Set<String> referencedInternalNames = Sets.newHashSet();
     // referenced method is stored as "owner:name:desc"
     private final Set<ReferencedMethod> referencedMethods = Sets.newHashSet();
 
     @Override
-    public String map(String typeName) {
-        referencedTypes.add(typeName);
-        return typeName;
+    public String map(String internalName) {
+        referencedInternalNames.add(internalName);
+        return internalName;
     }
 
-    Set<String> getReferencedTypes() {
-        return referencedTypes;
+    Set<String> getReferencedInternalNames() {
+        return referencedInternalNames;
     }
 
     Set<ReferencedMethod> getReferencedMethods() {

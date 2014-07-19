@@ -327,13 +327,13 @@ class LocalConfigService implements ConfigService {
             methodModifiers.add(
                     org.glowroot.api.weaving.MethodModifier.valueOf(methodModifier.name()));
         }
-        String typeName = config.getClassName();
+        String className = config.getClassName();
         String methodName = config.getMethodName();
         String methodReturnTypeName = config.getMethodReturnType();
-        checkNotNull(typeName, "PointcutConfig typeName is null");
+        checkNotNull(className, "PointcutConfig className is null");
         checkNotNull(methodName, "PointcutConfig methodName is null");
         checkNotNull(methodReturnTypeName, "PointcutConfig methodReturnTypeName is null");
-        return new org.glowroot.config.PointcutConfig(typeName, methodName,
+        return new org.glowroot.config.PointcutConfig(className, methodName,
                 config.getMethodParameterTypes(), methodReturnTypeName, methodModifiers,
                 nullToEmpty(config.getTraceMetric()), nullToEmpty(config.getMessageTemplate()),
                 config.getStackTraceThresholdMillis(), config.isCaptureSelfNested(),

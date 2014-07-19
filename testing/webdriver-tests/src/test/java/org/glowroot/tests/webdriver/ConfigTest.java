@@ -241,14 +241,14 @@ public class ConfigTest {
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
         PointcutSection pointcutSection = pointcutListPage.getSection(0);
-        WebElement typeNameTextField = pointcutSection.getClassNameTextField();
+        WebElement classNameTextField = pointcutSection.getClassNameTextField();
 
         // when
         Utils.clearInput(pointcutSection.getTraceMetricTextField());
         pointcutSection.getDeleteButton().click();
 
         // then
-        new WebDriverWait(driver, 30).until(ExpectedConditions.stalenessOf(typeNameTextField));
+        new WebDriverWait(driver, 30).until(ExpectedConditions.stalenessOf(classNameTextField));
     }
 
     @Test

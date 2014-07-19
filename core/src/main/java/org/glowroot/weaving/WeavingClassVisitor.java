@@ -137,10 +137,12 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public void visit(int version, int access, String name, @Nullable String signature,
-            @Nullable String superName, String/*@Nullable*/[] interfaceNamesNullable) {
-        analyzingClassVisitor.visit(version, access, name, signature, superName,
-                interfaceNamesNullable);
+    public void visit(int version, int access, String internalName, @Nullable String signature,
+            @Nullable String superInternalName,
+            String/*@Nullable*/[] interfaceInternalNamesNullable) {
+
+        analyzingClassVisitor.visit(version, access, internalName, signature, superInternalName,
+                interfaceInternalNamesNullable);
         if (analyzingClassVisitor.isNothingInteresting()
                 && analyzingClassVisitor.getMatchedMixinTypes().isEmpty()) {
             // performance optimization
@@ -175,11 +177,12 @@ class WeavingClassVisitor extends ClassVisitor {
                 }
             }
         }
-        type = Type.getObjectType(name);
+        type = Type.getObjectType(internalName);
         String/*@Nullable*/[] interfacesIncludingMixins =
-                getInterfacesIncludingMixins(interfaceNamesNullable,
+                getInterfacesIncludingMixins(interfaceInternalNamesNullable,
                         analyzingClassVisitor.getMatchedMixinTypes());
-        super.visit(version, access, name, signature, superName, interfacesIncludingMixins);
+        super.visit(version, access, internalName, signature, superInternalName,
+                interfacesIncludingMixins);
     }
 
     @Override
@@ -310,7 +313,7 @@ class WeavingClassVisitor extends ClassVisitor {
         mv.visitEnd();
         cw.visitEnd();
         byte[] bytes = cw.toByteArray();
-        ClassLoaders.defineClass(TypeNames.fromInternal(metaHolderName), bytes, loader);
+        ClassLoaders.defineClass(ClassNames.fromInternalName(metaHolderName), bytes, loader);
     }
 
     private static void loadType(MethodVisitor mv, Type type, Type ownerType) {
@@ -362,14 +365,13 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     private static String/*@Nullable*/[] getInterfacesIncludingMixins(
-            String/*@Nullable*/[] interfaceNamesNullable,
-            ImmutableList<MixinType> matchedMixinTypes) {
+            String/*@Nullable*/[] interfaces, ImmutableList<MixinType> matchedMixinTypes) {
         if (matchedMixinTypes.isEmpty()) {
-            return interfaceNamesNullable;
+            return interfaces;
         }
         Set<String> interfacesIncludingMixins = Sets.newHashSet();
-        if (interfaceNamesNullable != null) {
-            interfacesIncludingMixins.addAll(Arrays.asList(interfaceNamesNullable));
+        if (interfaces != null) {
+            interfacesIncludingMixins.addAll(Arrays.asList(interfaces));
         }
         for (MixinType matchedMixinType : matchedMixinTypes) {
             for (Class<?> mixinInterface : matchedMixinType.getInterfaces()) {
@@ -585,7 +587,7 @@ class WeavingClassVisitor extends ClassVisitor {
         if (superName == null) {
             superType = Type.getType(Object.class);
         } else {
-            superType = Type.getType(TypeNames.toInternal(superName));
+            superType = Type.getType(ClassNames.toInternalName(superName));
         }
         // method is called invokeConstructor, but should really be called invokeSpecial
         mg.invokeConstructor(superType,

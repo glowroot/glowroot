@@ -137,12 +137,12 @@ public class AnalyzedWorld {
         }
     }
 
-    public List<Class<?>> getExistingSubClasses(Set<String> rootTypeNames) {
+    public List<Class<?>> getExistingSubClasses(Set<String> rootClassNames) {
         List<Class<?>> classes = Lists.newArrayList();
         for (ClassLoader loader : world.asMap().keySet()) {
-            classes.addAll(getExistingSubClasses(rootTypeNames, loader));
+            classes.addAll(getExistingSubClasses(rootClassNames, loader));
         }
-        classes.addAll(getExistingSubClasses(rootTypeNames, null));
+        classes.addAll(getExistingSubClasses(rootClassNames, null));
         return classes;
     }
 
@@ -167,24 +167,24 @@ public class AnalyzedWorld {
 
     void add(AnalyzedClass analyzedClass, @Nullable ClassLoader loader) {
         ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses = getAnalyzedClasses(loader);
-        String typeName = analyzedClass.getName();
-        loaderAnalyzedClasses.put(typeName, analyzedClass);
+        String className = analyzedClass.getName();
+        loaderAnalyzedClasses.put(className, analyzedClass);
     }
 
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
-    List<AnalyzedClass> getTypeHierarchy(@Nullable String typeName, @Nullable ClassLoader loader,
-            ParseContext parseContext) {
-        if (typeName == null || typeName.equals("java.lang.Object")) {
+    List<AnalyzedClass> getAnalyzedHierarchy(@Nullable String className,
+            @Nullable ClassLoader loader, ParseContext parseContext) {
+        if (className == null || className.equals("java.lang.Object")) {
             return ImmutableList.of();
         }
-        return getSuperClasses(typeName, loader, parseContext);
+        return getSuperClasses(className, loader, parseContext);
     }
 
-    AnalyzedClass getAnalyzedClass(String typeName, @Nullable ClassLoader loader)
+    AnalyzedClass getAnalyzedClass(String className, @Nullable ClassLoader loader)
             throws ClassNotFoundException, IOException {
-        return getOrCreateAnalyzedClass(typeName, loader);
+        return getOrCreateAnalyzedClass(className, loader);
     }
 
     AnalyzedClass getJavaLangObjectAnalyzedClass() {
@@ -320,7 +320,7 @@ public class AnalyzedWorld {
 
     private AnalyzedClass createAnalyzedClass(String className, @Nullable ClassLoader loader)
             throws ClassNotFoundException, IOException {
-        String path = TypeNames.toInternal(className) + ".class";
+        String path = ClassNames.toInternalName(className) + ".class";
         URL url;
         if (loader == null) {
             // null loader means the bootstrap class loader
@@ -372,8 +372,8 @@ public class AnalyzedWorld {
     // other loader where the type may have already been loaded
     private AnalyzedClass createAnalyzedClassPlanB(String className, @Nullable ClassLoader loader)
             throws ClassNotFoundException {
-        Class<?> type = Class.forName(className, false, loader);
-        AnalyzedClass analyzedClass = getAnalyzedClasses(type.getClassLoader()).get(className);
+        Class<?> clazz = Class.forName(className, false, loader);
+        AnalyzedClass analyzedClass = getAnalyzedClasses(clazz.getClassLoader()).get(className);
         if (analyzedClass == null) {
             // a class was loaded by Class.forName() above that was not previously loaded which
             // means weaving was bypassed since ClassFileTransformer.transform() is not re-entrant
@@ -383,8 +383,8 @@ public class AnalyzedWorld {
             logger.warn("could not find resource {}.class in class loader {}, so the class"
                     + " had to be loaded using Class.forName() during weaving of one of its"
                     + " subclasses, which means it was not woven itself since weaving is not"
-                    + " re-entrant", TypeNames.toInternal(type.getName()), loader);
-            return createAnalyzedClassPlanC(type, advisors.get());
+                    + " re-entrant", ClassNames.toInternalName(clazz.getName()), loader);
+            return createAnalyzedClassPlanC(clazz, advisors.get());
         } else {
             // the type was previously loaded so weaving was not bypassed, yay!
             return analyzedClass;
@@ -409,12 +409,12 @@ public class AnalyzedWorld {
     }
 
     // now that the type has been loaded anyways, build the analyzed class via reflection
-    private static AnalyzedClass createAnalyzedClassPlanC(Class<?> type,
+    private static AnalyzedClass createAnalyzedClassPlanC(Class<?> clazz,
             ImmutableList<Advice> advisors) {
         List<AdviceMatcher> adviceMatchers =
-                AdviceMatcher.getAdviceMatchers(type.getName(), advisors);
+                AdviceMatcher.getAdviceMatchers(clazz.getName(), advisors);
         List<AnalyzedMethod> analyzedMethods = Lists.newArrayList();
-        for (Method method : type.getDeclaredMethods()) {
+        for (Method method : clazz.getDeclaredMethods()) {
             if (method.isSynthetic()) {
                 // don't add synthetic methods to the analyzed model
                 continue;
@@ -439,12 +439,12 @@ public class AnalyzedWorld {
             }
         }
         List<String> interfaceNames = Lists.newArrayList();
-        for (Class<?> interfaceClass : type.getInterfaces()) {
+        for (Class<?> interfaceClass : clazz.getInterfaces()) {
             interfaceNames.add(interfaceClass.getName());
         }
-        Class<?> superclass = type.getSuperclass();
-        String superName = superclass == null ? null : superclass.getName();
-        return AnalyzedClass.from(type.getModifiers(), type.getName(), superName, interfaceNames,
+        Class<?> superClass = clazz.getSuperclass();
+        String superName = superClass == null ? null : superClass.getName();
+        return AnalyzedClass.from(clazz.getModifiers(), clazz.getName(), superName, interfaceNames,
                 analyzedMethods);
     }
 

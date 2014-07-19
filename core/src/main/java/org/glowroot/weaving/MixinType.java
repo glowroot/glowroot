@@ -76,8 +76,8 @@ public class MixinType {
         this.implementation = implementation;
         this.interfaces = ImmutableList.copyOf(interfaces);
         List<String> interfaceNames = Lists.newArrayList();
-        for (Class<?> type : interfaces) {
-            interfaceNames.add(type.getName());
+        for (Class<?> iface : interfaces) {
+            interfaceNames.add(iface.getName());
         }
         this.interfaceNames = ImmutableList.copyOf(interfaceNames);
         this.initMethodName = initMethodName;

@@ -65,7 +65,7 @@ public class Beans {
             CacheBuilder.newBuilder().weakKeys()
                     .build(new CacheLoader<Class<?>, ConcurrentMap<String, AccessibleObject>>() {
                         @Override
-                        public ConcurrentMap<String, AccessibleObject> load(Class<?> type) {
+                        public ConcurrentMap<String, AccessibleObject> load(Class<?> clazz) {
                             // weak values since Method has a strong reference to its Class which
                             // is used as the key in the outer loading cache
                             return new MapMaker().weakValues().makeMap();
@@ -78,8 +78,8 @@ public class Beans {
             CacheBuilder.newBuilder().weakKeys()
                     .build(new CacheLoader<Class<?>, ImmutableMap<String, Method>>() {
                         @Override
-                        public ImmutableMap<String, Method> load(Class<?> type) {
-                            return getPropertyNames(type);
+                        public ImmutableMap<String, Method> load(Class<?> clazz) {
+                            return getPropertyNames(clazz);
                         }
                     });
 
@@ -163,50 +163,50 @@ public class Beans {
         return builder.build();
     }
 
-    private static AccessibleObject getAccessor(Class<?> type, String name) {
-        ConcurrentMap<String, AccessibleObject> accessorsForType = getters.getUnchecked(type);
+    private static AccessibleObject getAccessor(Class<?> clazz, String name) {
+        ConcurrentMap<String, AccessibleObject> accessorsForType = getters.getUnchecked(clazz);
         AccessibleObject accessor = accessorsForType.get(name);
         if (accessor == null) {
-            accessor = loadAccessor(type, name);
+            accessor = loadAccessor(clazz, name);
             accessor.setAccessible(true);
             accessorsForType.put(name, accessor);
         }
         return accessor;
     }
 
-    private static AccessibleObject loadAccessor(Class<?> type, String name) {
+    private static AccessibleObject loadAccessor(Class<?> clazz, String name) {
         String capitalizedName = Character.toUpperCase(name.charAt(0)) + name.substring(1);
         try {
             // TODO getMethod will only find public methods, but the problem with using
             // getDeclaredMethod() is that it will miss public methods in super classes
-            return getMethod(type, "get" + capitalizedName);
+            return getMethod(clazz, "get" + capitalizedName);
         } catch (ReflectiveException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
             // fall back to "is" prefix
             try {
-                return getMethod(type, "is" + capitalizedName);
+                return getMethod(clazz, "is" + capitalizedName);
             } catch (ReflectiveException f) {
                 // log exception at debug level
                 logger.debug(f.getMessage(), f);
                 // fall back to no prefix
                 try {
-                    return getMethod(type, name);
+                    return getMethod(clazz, name);
                 } catch (ReflectiveException g) {
                     // log exception at debug level
                     logger.debug(g.getMessage(), g);
                     // fall back to field access
                     try {
                         // TODO getDeclaredField will miss fields in super classes
-                        return type.getDeclaredField(name);
+                        return clazz.getDeclaredField(name);
                     } catch (NoSuchFieldException h) {
                         // log exception at debug level
-                        logger.debug("no accessor found for {} in class {}", name, type.getName(),
+                        logger.debug("no accessor found for {} in class {}", name, clazz.getName(),
                                 h);
                         return SENTINEL_METHOD;
                     } catch (SecurityException h) {
                         // log exception at debug level
-                        logger.debug("no accessor found for {} in class {}", name, type.getName(),
+                        logger.debug("no accessor found for {} in class {}", name, clazz.getName(),
                                 h);
                         return SENTINEL_METHOD;
                     }
@@ -215,9 +215,9 @@ public class Beans {
         }
     }
 
-    private static ImmutableMap<String, Method> getPropertyNames(Class<?> type) {
+    private static ImmutableMap<String, Method> getPropertyNames(Class<?> clazz) {
         ImmutableMap.Builder<String, Method> builder = ImmutableMap.builder();
-        for (Method method : type.getMethods()) {
+        for (Method method : clazz.getMethods()) {
             String propertyName = getPropertyName(method);
             if (propertyName != null) {
                 builder.put(propertyName, method);
@@ -245,9 +245,9 @@ public class Beans {
         return null;
     }
 
-    private static Method getMethod(Class<?> type, String methodName) throws ReflectiveException {
+    private static Method getMethod(Class<?> clazz, String methodName) throws ReflectiveException {
         try {
-            return type.getMethod(methodName);
+            return clazz.getMethod(methodName);
         } catch (NoSuchMethodException e) {
             throw new ReflectiveException(e);
         } catch (SecurityException e) {

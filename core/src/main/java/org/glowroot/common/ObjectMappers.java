@@ -64,8 +64,8 @@ public class ObjectMappers {
     }
 
     public static <T extends /*@Nullable*/Object> T readRequiredValue(ObjectMapper mapper,
-            String content, Class<T> type) throws IOException {
-        T value = mapper.readValue(content, type);
+            String content, Class<T> valueType) throws IOException {
+        T value = mapper.readValue(content, valueType);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
         }
@@ -73,8 +73,8 @@ public class ObjectMappers {
     }
 
     public static <T extends /*@Nullable*/Object> T readRequiredValue(ObjectMapper mapper,
-            File file, Class<T> type) throws IOException {
-        T value = mapper.readValue(file, type);
+            File file, Class<T> valueType) throws IOException {
+        T value = mapper.readValue(file, valueType);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
         }
@@ -82,8 +82,8 @@ public class ObjectMappers {
     }
 
     public static <T extends /*@Nullable*/Object> T treeToRequiredValue(ObjectMapper mapper,
-            TreeNode n, Class<T> type) throws JsonProcessingException {
-        T value = mapper.treeToValue(n, type);
+            TreeNode n, Class<T> valueType) throws JsonProcessingException {
+        T value = mapper.treeToValue(n, valueType);
         if (value == null) {
             throw new JsonMappingException("Node is json null");
         }
@@ -145,10 +145,10 @@ public class ObjectMappers {
             super.setupModule(context);
             context.addDeserializers(new Deserializers.Base() {
                 @Override
-                public EnumDeserializer findEnumDeserializer(Class<?> type,
+                public EnumDeserializer findEnumDeserializer(Class<?> enumClass,
                         DeserializationConfig config, BeanDescription beanDesc)
                         throws JsonMappingException {
-                    return new EnumDeserializer(type);
+                    return new EnumDeserializer(enumClass);
                 }
             });
         }

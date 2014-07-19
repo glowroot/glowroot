@@ -29,7 +29,7 @@ import org.objectweb.asm.ClassReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.weaving.TypeNames;
+import org.glowroot.weaving.ClassNames;
 
 /**
  * @author Trask Stalnaker
@@ -41,7 +41,7 @@ public class GlobalCollector {
 
     // caches
     private final Set<ReferencedMethod> referencedMethods = Sets.newHashSet();
-    private final Map<String, Optional<TypeCollector>> typeCollectors = Maps.newHashMap();
+    private final Map<String, Optional<ClassCollector>> classCollectors = Maps.newHashMap();
 
     private final Set<ReferencedMethod> overrides = Sets.newTreeSet();
 
@@ -58,15 +58,15 @@ public class GlobalCollector {
         indent = prevIndent;
     }
 
-    public void registerType(String typeName) throws IOException {
-        addType(typeName);
+    public void registerClass(String internalName) throws IOException {
+        addClass(internalName);
     }
 
     public void processOverrides() throws IOException {
         while (true) {
-            for (String typeName : typeCollectors.keySet()) {
-                addOverrideReferencedMethods(typeName);
-                addOverrideBootstrapMethods(typeName);
+            for (String internalName : classCollectors.keySet()) {
+                addOverrideReferencedMethods(internalName);
+                addOverrideBootstrapMethods(internalName);
             }
             if (overrides.isEmpty()) {
                 return;
@@ -79,16 +79,17 @@ public class GlobalCollector {
         }
     }
 
-    public List<String> usedTypes() {
-        List<String> typeNames = Lists.newArrayList();
-        for (String typeName : Sets.newTreeSet(typeCollectors.keySet())) {
-            if (!Types.inBootstrapClassLoader(typeName) && !typeName.startsWith("org/slf4j/")
-                    && !typeName.startsWith("org/glowroot/shaded/slf4j/")
-                    && Types.exists(typeName)) {
-                typeNames.add(TypeNames.fromInternal(typeName));
+    public List<String> usedInternalNames() {
+        List<String> internalNames = Lists.newArrayList();
+        for (String internalName : Sets.newTreeSet(classCollectors.keySet())) {
+            if (!InternalNames.inBootstrapClassLoader(internalName)
+                    && !internalName.startsWith("org/slf4j/")
+                    && !internalName.startsWith("org/glowroot/shaded/slf4j/")
+                    && InternalNames.exists(internalName)) {
+                internalNames.add(ClassNames.fromInternalName(internalName));
             }
         }
-        return typeNames;
+        return internalNames;
     }
 
     private void processMethod(ReferencedMethod rootMethod, boolean expected) throws IOException {
@@ -101,36 +102,36 @@ public class GlobalCollector {
             return;
         }
         logger.debug("{}{}", indent, rootMethod);
-        // add the containing type and its super types if not already added
-        Optional<TypeCollector> optional = typeCollectors.get(owner);
+        // add the containing class and its super classes if not already added
+        Optional<ClassCollector> optional = classCollectors.get(owner);
         if (optional == null) {
-            optional = addType(owner);
+            optional = addClass(owner);
         }
         if (!optional.isPresent()) {
-            // couldn't find type
+            // couldn't find class
             if (expected) {
-                throw new IOException("Could not find type '" + owner + "'");
+                throw new IOException("Could not find class '" + owner + "'");
             } else {
                 return;
             }
         }
         referencedMethods.add(rootMethod);
-        if (Types.inBootstrapClassLoader(owner)) {
+        if (InternalNames.inBootstrapClassLoader(owner)) {
             return;
         }
         if (owner.startsWith("org/slf4j/") || owner.startsWith("org/glowroot/shaded/slf4j/")) {
             return;
         }
-        TypeCollector typeCollector = optional.get();
+        ClassCollector classCollector = optional.get();
         String methodId = rootMethod.getName() + ":" + rootMethod.getDesc();
-        MethodCollector methodCollector = typeCollector.getMethodCollector(methodId);
+        MethodCollector methodCollector = classCollector.getMethodCollector(methodId);
         if (expected && methodCollector == null) {
             throw new IOException("Could not find method '" + rootMethod + "'");
         }
         if (methodCollector == null && !rootMethod.getName().equals("<clinit>")
-                && typeCollector.getSuperType() != null) {
-            // can't find method in type, so go up to super type
-            processMethod(ReferencedMethod.from(typeCollector.getSuperType(), methodId));
+                && classCollector.getSuperInternalNames() != null) {
+            // can't find method in class, so go up to super class
+            processMethod(ReferencedMethod.from(classCollector.getSuperInternalNames(), methodId));
         }
         // methodCollector can be null, e.g. unimplemented interface method in an abstract class
         if (methodCollector != null) {
@@ -139,9 +140,9 @@ public class GlobalCollector {
     }
 
     private void processMethod(MethodCollector methodCollector) throws IOException {
-        // add types referenced from inside the method
-        for (String referencedType : methodCollector.getReferencedTypes()) {
-            addType(referencedType);
+        // add classes referenced from inside the method
+        for (String referencedInternalName : methodCollector.getReferencedInternalNames()) {
+            addClass(referencedInternalName);
         }
         // recurse into other methods called from inside the method
         for (ReferencedMethod referencedMethod : methodCollector.getReferencedMethods()) {
@@ -149,79 +150,81 @@ public class GlobalCollector {
         }
     }
 
-    private Optional<TypeCollector> addType(String typeName) throws IOException {
-        Optional<TypeCollector> optional = typeCollectors.get(typeName);
+    private Optional<ClassCollector> addClass(String internalName) throws IOException {
+        Optional<ClassCollector> optional = classCollectors.get(internalName);
         if (optional != null) {
             return optional;
         }
-        List<String> allSuperTypes = Lists.newArrayList();
-        TypeCollector typeCollector = createTypeCollector(typeName);
-        if (typeCollector == null) {
+        List<String> allSuperInternalNames = Lists.newArrayList();
+        ClassCollector classCollector = createClassCollector(internalName);
+        if (classCollector == null) {
             optional = Optional.absent();
-            typeCollectors.put(typeName, optional);
+            classCollectors.put(internalName, optional);
             return optional;
         }
-        // don't return or recurse without typeCollector being fully built
-        typeCollectors.put(typeName, Optional.of(typeCollector));
-        if (typeCollector.getSuperType() != null) {
-            // it's a major problem if super type is not present, ok to call Optional.get()
-            TypeCollector superTypeCollector = addType(typeCollector.getSuperType()).get();
-            allSuperTypes.addAll(superTypeCollector.getAllSuperTypes());
-            allSuperTypes.add(typeCollector.getSuperType());
+        // don't return or recurse without classCollector being fully built
+        classCollectors.put(internalName, Optional.of(classCollector));
+        if (classCollector.getSuperInternalNames() != null) {
+            // it's a major problem if super class is not present, ok to call Optional.get()
+            ClassCollector superClassCollector =
+                    addClass(classCollector.getSuperInternalNames()).get();
+            allSuperInternalNames.addAll(superClassCollector.getAllSuperInternalNames());
+            allSuperInternalNames.add(classCollector.getSuperInternalNames());
         }
-        for (String interfaceType : typeCollector.getInterfaceTypes()) {
-            Optional<TypeCollector> itype = addType(interfaceType);
-            if (itype.isPresent()) {
-                allSuperTypes.addAll(itype.get().getAllSuperTypes());
-                allSuperTypes.add(interfaceType);
+        for (String interfaceInternalName : classCollector.getInterfaceInternalNames()) {
+            Optional<ClassCollector> loopOptional = addClass(interfaceInternalName);
+            if (loopOptional.isPresent()) {
+                allSuperInternalNames.addAll(loopOptional.get().getAllSuperInternalNames());
+                allSuperInternalNames.add(interfaceInternalName);
             } else {
-                logger.debug("could not find type: {}", interfaceType);
-                typeCollector.setAllSuperTypes(allSuperTypes);
+                logger.debug("could not find class: {}", interfaceInternalName);
+                classCollector.setAllSuperInternalNames(allSuperInternalNames);
                 return Optional.absent();
             }
         }
-        typeCollector.setAllSuperTypes(allSuperTypes);
+        classCollector.setAllSuperInternalNames(allSuperInternalNames);
         // add static initializer (if it exists)
-        processMethod(ReferencedMethod.from(typeName, "<clinit>", "()V"));
+        processMethod(ReferencedMethod.from(internalName, "<clinit>", "()V"));
         // always add default constructor (if it exists)
-        processMethod(ReferencedMethod.from(typeName, "<init>", "()V"));
-        return Optional.of(typeCollector);
+        processMethod(ReferencedMethod.from(internalName, "<init>", "()V"));
+        return Optional.of(classCollector);
     }
 
     @Nullable
-    private TypeCollector createTypeCollector(String typeName) {
-        if (ClassLoader.getSystemResource(typeName + ".class") == null) {
+    private ClassCollector createClassCollector(String internalName) {
+        if (ClassLoader.getSystemResource(internalName + ".class") == null) {
             // no need to log error for H2 optional geometry support
-            if (!typeName.startsWith("com/vividsolutions/jts/")) {
-                logger.error("could not find class: {}", typeName);
+            if (!internalName.startsWith("com/vividsolutions/jts/")) {
+                logger.error("could not find class: {}", internalName);
             }
             return null;
         }
-        TypeCollector typeCollector = new TypeCollector();
+        ClassCollector classCollector = new ClassCollector();
         try {
-            ClassReader cr = new ClassReader(typeName);
-            MyRemappingClassAdapter visitor = new MyRemappingClassAdapter(typeCollector);
+            ClassReader cr = new ClassReader(internalName);
+            MyRemappingClassAdapter visitor = new MyRemappingClassAdapter(classCollector);
             cr.accept(visitor, 0);
-            return typeCollector;
+            return classCollector;
         } catch (IOException e) {
-            logger.error("error parsing class: {}", typeName);
+            logger.error("error parsing class: {}", internalName);
             return null;
         }
     }
 
-    private void addOverrideReferencedMethods(String typeName) {
-        Optional<TypeCollector> optional = typeCollectors.get(typeName);
+    private void addOverrideReferencedMethods(String internalName) {
+        Optional<ClassCollector> optional = classCollectors.get(internalName);
         if (!optional.isPresent()) {
             return;
         }
-        TypeCollector typeCollector = optional.get();
-        for (String methodId : typeCollector.getMethodIds()) {
+        ClassCollector classCollector = optional.get();
+        for (String methodId : classCollector.getMethodIds()) {
             if (methodId.startsWith("<clinit>:") || methodId.startsWith("<init>:")) {
                 continue;
             }
-            for (String superType : typeCollector.getAllSuperTypes()) {
-                if (referencedMethods.contains(ReferencedMethod.from(superType, methodId))) {
-                    addOverrideMethod(typeName, methodId);
+            for (String superInternalName : classCollector.getAllSuperInternalNames()) {
+                if (referencedMethods.contains(
+                        ReferencedMethod.from(superInternalName, methodId))) {
+                    addOverrideMethod(internalName, methodId);
                     // break inner loop
                     break;
                 }
@@ -229,33 +232,34 @@ public class GlobalCollector {
         }
     }
 
-    private void addOverrideBootstrapMethods(String typeName) {
-        if (Types.inBootstrapClassLoader(typeName)) {
+    private void addOverrideBootstrapMethods(String internalName) {
+        if (InternalNames.inBootstrapClassLoader(internalName)) {
             return;
         }
-        Optional<TypeCollector> optional = typeCollectors.get(typeName);
+        Optional<ClassCollector> optional = classCollectors.get(internalName);
         if (!optional.isPresent()) {
             return;
         }
-        TypeCollector typeCollector = optional.get();
-        // add overridden bootstrap methods in type, e.g. hashCode(), toString()
-        for (String methodId : typeCollector.getMethodIds()) {
+        ClassCollector classCollector = optional.get();
+        // add overridden bootstrap methods in class, e.g. hashCode(), toString()
+        for (String methodId : classCollector.getMethodIds()) {
             if (methodId.startsWith("<clinit>:") || methodId.startsWith("<init>:")) {
                 continue;
             }
-            for (String superType : typeCollector.getAllSuperTypes()) {
-                if (Types.inBootstrapClassLoader(superType)) {
-                    TypeCollector superTypeCollector = typeCollectors.get(superType).get();
-                    if (superTypeCollector.getMethodCollector(methodId) != null) {
-                        addOverrideMethod(typeName, methodId);
+            for (String superInternalName : classCollector.getAllSuperInternalNames()) {
+                if (InternalNames.inBootstrapClassLoader(superInternalName)) {
+                    ClassCollector superClassCollector = classCollectors.get(superInternalName)
+                            .get();
+                    if (superClassCollector.getMethodCollector(methodId) != null) {
+                        addOverrideMethod(internalName, methodId);
                     }
                 }
             }
         }
     }
 
-    private void addOverrideMethod(String typeName, String methodId) {
-        ReferencedMethod referencedMethod = ReferencedMethod.from(typeName, methodId);
+    private void addOverrideMethod(String internalName, String methodId) {
+        ReferencedMethod referencedMethod = ReferencedMethod.from(internalName, methodId);
         if (!referencedMethods.contains(referencedMethod)) {
             overrides.add(referencedMethod);
         }

@@ -371,11 +371,11 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.AnalyzedWorld$1");
         types.add("org.glowroot.weaving.AnalyzedWorld$ParseContext");
         types.add("org.glowroot.weaving.AnalyzingClassVisitor");
+        types.add("org.glowroot.weaving.ClassNames");
         types.add("org.glowroot.weaving.GeneratedBytecodeUtil");
         types.add("org.glowroot.weaving.MixinMatcher");
         types.add("org.glowroot.weaving.MixinType");
         types.add("org.glowroot.weaving.PatchedAdviceAdapter");
-        types.add("org.glowroot.weaving.TypeNames");
         types.add("org.glowroot.weaving.Weaver");
         types.add("org.glowroot.weaving.Weaver$ComputeFramesClassWriter");
         types.add("org.glowroot.weaving.Weaver$JSRInlinerClassVisitor");

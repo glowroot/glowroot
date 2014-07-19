@@ -36,8 +36,8 @@ public class WebDriverRunner extends BlockJUnit4ClassRunner {
 
     private static Logger logger = LoggerFactory.getLogger(ScreenshotCapturingStatement.class);
 
-    public WebDriverRunner(Class<?> type) throws InitializationError {
-        super(type);
+    public WebDriverRunner(Class<?> clazz) throws InitializationError {
+        super(clazz);
     }
 
     @Override

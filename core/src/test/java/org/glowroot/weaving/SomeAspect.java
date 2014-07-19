@@ -972,7 +972,7 @@ public class SomeAspect {
     public static class NonMatchingStaticAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Mis*", methodName = "execute1")
-    public static class TypeNamePatternAdvice extends BasicAdvice {}
+    public static class ClassNamePatternAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
             methodReturnType = "void")

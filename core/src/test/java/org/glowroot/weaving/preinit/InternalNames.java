@@ -20,41 +20,42 @@ import java.util.concurrent.ConcurrentMap;
 import com.google.common.collect.Maps;
 
 import org.glowroot.markers.ThreadSafe;
-import org.glowroot.weaving.TypeNames;
+import org.glowroot.weaving.ClassNames;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 @ThreadSafe
-class Types {
+class InternalNames {
 
-    private static final ConcurrentMap<String, Boolean> bootstrapTypes = Maps.newConcurrentMap();
-    private static final ConcurrentMap<String, Boolean> allTypes = Maps.newConcurrentMap();
+    private static final ConcurrentMap<String, Boolean> bootstrapInternalNames =
+            Maps.newConcurrentMap();
+    private static final ConcurrentMap<String, Boolean> allInternalNames = Maps.newConcurrentMap();
 
-    private Types() {}
+    private InternalNames() {}
 
-    static boolean inBootstrapClassLoader(String type) {
-        Boolean cached = bootstrapTypes.get(type);
+    static boolean inBootstrapClassLoader(String internalName) {
+        Boolean cached = bootstrapInternalNames.get(internalName);
         if (cached == null) {
-            cached = calculateIsBootstrapType(type);
-            bootstrapTypes.put(type, cached);
+            cached = calculateIsBootstrapClass(internalName);
+            bootstrapInternalNames.put(internalName, cached);
         }
         return cached;
     }
 
-    static boolean exists(String type) {
-        Boolean cached = allTypes.get(type);
+    static boolean exists(String internalName) {
+        Boolean cached = allInternalNames.get(internalName);
         if (cached == null) {
-            cached = calculateExists(type);
-            allTypes.put(type, cached);
+            cached = calculateExists(internalName);
+            allInternalNames.put(internalName, cached);
         }
         return cached;
     }
 
-    private static boolean calculateIsBootstrapType(String type) {
+    private static boolean calculateIsBootstrapClass(String internalName) {
         try {
-            return getType(type).getClassLoader() == null;
+            return classForInternalName(internalName).getClassLoader() == null;
         } catch (ClassNotFoundException e) {
             return false;
         } catch (NoClassDefFoundError e) {
@@ -62,9 +63,9 @@ class Types {
         }
     }
 
-    private static boolean calculateExists(String type) {
+    private static boolean calculateExists(String internalName) {
         try {
-            getType(type);
+            classForInternalName(internalName);
             return true;
         } catch (ClassNotFoundException e) {
             return false;
@@ -73,8 +74,9 @@ class Types {
         }
     }
 
-    private static Class<?> getType(String typeName) throws ClassNotFoundException {
-        return Class.forName(TypeNames.fromInternal(typeName), false,
+    private static Class<?> classForInternalName(String internalName)
+            throws ClassNotFoundException {
+        return Class.forName(ClassNames.fromInternalName(internalName), false,
                 ClassLoader.getSystemClassLoader());
     }
 }

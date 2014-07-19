@@ -36,7 +36,7 @@ public class PreInitializeStorageShutdownClassesTest {
     @Test
     public void shouldCheckHardcodedListAgainstReality() throws IOException {
         GlobalCollector globalCollector = new GlobalCollector();
-        globalCollector.registerType("org/h2/jdbc/JdbcConnection");
+        globalCollector.registerClass("org/h2/jdbc/JdbcConnection");
         // "call" DataSource$ShutdownHookThread.run() and CappedDatabase$ShutdownHookThread.run()
         // because class loading during jvm shutdown throws exception
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
@@ -46,7 +46,7 @@ public class PreInitializeStorageShutdownClassesTest {
         globalCollector.processOverrides();
         // these assertions just help for debugging, since it can be hard to see the differences in
         // the very large lists below in the "real" assertion
-        List<String> globalCollectorUsedTypes = globalCollector.usedTypes();
+        List<String> globalCollectorUsedTypes = globalCollector.usedInternalNames();
         globalCollectorUsedTypes.removeAll(PreInitializeStorageShutdownClasses.maybeUsedTypes());
         assertThat(Sets.difference(Sets.newHashSet(globalCollectorUsedTypes),
                 Sets.newHashSet(PreInitializeStorageShutdownClasses.usedTypes()))).isEmpty();

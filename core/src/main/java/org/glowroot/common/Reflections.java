@@ -31,10 +31,10 @@ public class Reflections {
 
     private Reflections() {}
 
-    public static Method getDeclaredMethod(Class<?> type, String name, Class<?>... parameterTypes)
+    public static Method getDeclaredMethod(Class<?> clazz, String name, Class<?>... parameterTypes)
             throws ReflectiveException {
         try {
-            Method method = type.getDeclaredMethod(name, parameterTypes);
+            Method method = clazz.getDeclaredMethod(name, parameterTypes);
             method.setAccessible(true);
             return method;
         } catch (NoSuchMethodException e) {
@@ -44,10 +44,10 @@ public class Reflections {
         }
     }
 
-    public static Method getMethod(Class<?> type, String name, Class<?>... parameterTypes)
+    public static Method getMethod(Class<?> clazz, String name, Class<?>... parameterTypes)
             throws ReflectiveException {
         try {
-            return type.getMethod(name, parameterTypes);
+            return clazz.getMethod(name, parameterTypes);
         } catch (NoSuchMethodException e) {
             throw new ReflectiveException(e);
         } catch (SecurityException e) {

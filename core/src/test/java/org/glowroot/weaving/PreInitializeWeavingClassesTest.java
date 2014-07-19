@@ -39,7 +39,7 @@ public class PreInitializeWeavingClassesTest {
         // register WeavingTimerServiceImpl since the WeavingClassFileTransformer constructor
         // accepts the WeavingTimerService interface and so WeavingTimerServiceImpl would otherwise
         // go unseen
-        globalCollector.registerType("org/glowroot/trace/WeavingTimerServiceImpl");
+        globalCollector.registerClass("org/glowroot/trace/WeavingTimerServiceImpl");
         // "call" AnalyzedWorld constructor to capture types used by LoadingCache
         // (so these types will be in the list of possible subtypes later on)
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
@@ -59,7 +59,7 @@ public class PreInitializeWeavingClassesTest {
         globalCollector.processOverrides();
         // these assertions just help for debugging, since it can be hard to see the differences in
         // the very large lists below in the "real" assertion
-        List<String> globalCollectorUsedTypes = globalCollector.usedTypes();
+        List<String> globalCollectorUsedTypes = globalCollector.usedInternalNames();
         globalCollectorUsedTypes.removeAll(PreInitializeWeavingClasses.maybeUsedTypes());
         assertThat(Sets.difference(Sets.newHashSet(globalCollectorUsedTypes),
                 Sets.newHashSet(PreInitializeWeavingClasses.usedTypes()))).isEmpty();
