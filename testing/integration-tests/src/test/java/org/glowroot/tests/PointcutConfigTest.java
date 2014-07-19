@@ -128,7 +128,7 @@ public class PointcutConfigTest {
         config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setTraceMetric("execute one");
-        config.setMessageTemplate("execute1() => {{ret}}");
+        config.setMessageTemplate("execute1() => {{_}}");
         config.setStackTraceThresholdMillis(0L);
         container.getConfigService().addPointcutConfig(config);
     }
@@ -152,7 +152,7 @@ public class PointcutConfigTest {
         config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setTraceMetric("execute with return");
-        config.setMessageTemplate("executeWithReturn() => {{ret}}");
+        config.setMessageTemplate("executeWithReturn() => {{_}}");
         container.getConfigService().addPointcutConfig(config);
     }
 

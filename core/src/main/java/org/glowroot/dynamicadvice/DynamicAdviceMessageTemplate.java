@@ -88,7 +88,7 @@ public class DynamicAdviceMessageTemplate {
                     allParts.add(new ConstantPart("<requested arg index out of bounds: "
                             + argNumber + ">"));
                 }
-            } else if (base.equals("ret")) {
+            } else if (base.equals("_")) {
                 ValuePathPart part = new ValuePathPart(PartType.RETURN_PATH, returnType, remaining);
                 allParts.add(part);
                 returnPathParts.add(part);

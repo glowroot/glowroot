@@ -41,7 +41,7 @@ public class DynamicPointcutMessageSupplierTest {
     @Test
     public void shouldRenderNormal() {
         DynamicAdviceMessageTemplate template = DynamicAdviceMessageTemplate
-                .create("{{this.class.name}}.{{methodName}}(): {{0.name}} => {{ret}}",
+                .create("{{this.class.name}}.{{methodName}}(): {{0.name}} => {{_}}",
                         TestReceiver.class, void.class, new Class<?>[] {HasName.class});
         Message message = DynamicAdviceMessageSupplier.create(template, new TestReceiver(),
                 "execute", new HasName()).get();
