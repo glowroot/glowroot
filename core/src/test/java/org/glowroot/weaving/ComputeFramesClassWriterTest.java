@@ -36,9 +36,8 @@ public class ComputeFramesClassWriterTest {
     @Before
     public void beforeEachTest() {
         Supplier<ImmutableList<Advice>> advisors = Suppliers.ofInstance(ImmutableList.<Advice>of());
-        ParsedTypeCache parsedTypeCache =
-                new ParsedTypeCache(advisors, ImmutableList.<MixinType>of());
-        cw = new ComputeFramesClassWriter(0, parsedTypeCache, getClass().getClassLoader(), null,
+        AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisors, ImmutableList.<MixinType>of());
+        cw = new ComputeFramesClassWriter(0, analyzedWorld, getClass().getClassLoader(), null,
                 ComputeFramesClassWriterTest.class.getName());
     }
 

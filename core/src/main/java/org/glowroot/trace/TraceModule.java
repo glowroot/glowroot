@@ -31,7 +31,7 @@ import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.PluginServicesRegistry.PluginServicesFactory;
-import org.glowroot.weaving.ParsedTypeCache;
+import org.glowroot.weaving.AnalyzedWorld;
 import org.glowroot.weaving.PreInitializeWeavingClasses;
 import org.glowroot.weaving.WeavingClassFileTransformer;
 import org.glowroot.weaving.WeavingTimerService;
@@ -45,7 +45,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @ThreadSafe
 public class TraceModule {
 
-    private final ParsedTypeCache parsedTypeCache;
+    private final AnalyzedWorld analyzedWorld;
     private final TraceRegistry traceRegistry;
     private final AdviceCache adviceCache;
     private final WeavingTimerService weavingTimerService;
@@ -69,8 +69,8 @@ public class TraceModule {
         traceRegistry = new TraceRegistry();
         adviceCache = new AdviceCache(configModule.getPluginDescriptorCache().getAdvisors(),
                 configService.getPointcutConfigs());
-        parsedTypeCache = new ParsedTypeCache(adviceCache.getAdvisorsSupplier(), configModule
-                .getPluginDescriptorCache().getMixinTypes());
+        analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
+                configModule.getPluginDescriptorCache().getMixinTypes());
         final TraceMetricNameCache traceMetricNameCache = new TraceMetricNameCache();
         weavingTimerService = new WeavingTimerServiceImpl(traceRegistry, traceMetricNameCache);
 
@@ -81,7 +81,7 @@ public class TraceModule {
         if (instrumentation != null) {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
                     configModule.getPluginDescriptorCache().getMixinTypes(),
-                    adviceCache.getAdvisorsSupplier(), parsedTypeCache, weavingTimerService,
+                    adviceCache.getAdvisorsSupplier(), analyzedWorld, weavingTimerService,
                     traceMetricWrapperMethods);
             PreInitializeWeavingClasses.preInitializeClasses(TraceModule.class.getClassLoader());
             if (instrumentation.isRetransformClassesSupported()) {
@@ -121,8 +121,8 @@ public class TraceModule {
         PluginServicesRegistry.initStaticState(pluginServicesFactory);
     }
 
-    public ParsedTypeCache getParsedTypeCache() {
-        return parsedTypeCache;
+    public AnalyzedWorld getAnalyzedWorld() {
+        return analyzedWorld;
     }
 
     public TraceRegistry getTraceRegistry() {

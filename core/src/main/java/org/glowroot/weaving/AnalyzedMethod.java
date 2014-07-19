@@ -31,9 +31,9 @@ import org.glowroot.markers.Immutable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// Strings are interned to reduce memory footprint of ParsedTypeCache
+// Strings are interned to reduce memory footprint of AnalyzedWorld
 @Immutable
-public class ParsedMethod {
+public class AnalyzedMethod {
 
     private final String name;
     private final ImmutableList<String> parameterTypes;
@@ -48,7 +48,7 @@ public class ParsedMethod {
 
     private final ImmutableList<Advice> advisors;
 
-    static ParsedMethod from(String name, List<Type> parameterTypes, Type returnType,
+    static AnalyzedMethod from(String name, List<Type> parameterTypes, Type returnType,
             int modifiers, @Nullable String signature, List<String> exceptions,
             List<Advice> advisors) {
         List<String> parameterTypeNames = Lists.newArrayList();
@@ -56,11 +56,11 @@ public class ParsedMethod {
             parameterTypeNames.add(parameterType.getClassName());
         }
         String returnTypeName = returnType.getClassName();
-        return new ParsedMethod(name, parameterTypeNames, returnTypeName, modifiers, signature,
+        return new AnalyzedMethod(name, parameterTypeNames, returnTypeName, modifiers, signature,
                 exceptions, advisors);
     }
 
-    private ParsedMethod(String name, List<String> parameterTypes, String returnType,
+    private AnalyzedMethod(String name, List<String> parameterTypes, String returnType,
             int modifiers,
             @Nullable String signature, List<String> exceptions, List<Advice> advisors) {
         this.name = name.intern();
@@ -133,15 +133,16 @@ public class ParsedMethod {
 
     // equals and hashCode are only defined in terms of name and parameterTypes since those uniquely
     // identify a method within a given class
-    // this is currently important because ParsedMethod is used as a map key in WeavingClassVisitor
+    // this is currently important because AnalyzedMethod is used as a map key in
+    // WeavingClassVisitor
     @Override
     @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj == this) {
             return true;
         }
-        if (obj instanceof ParsedMethod) {
-            ParsedMethod that = (ParsedMethod) obj;
+        if (obj instanceof AnalyzedMethod) {
+            AnalyzedMethod that = (AnalyzedMethod) obj;
             return Objects.equal(name, that.name)
                     && Objects.equal(parameterTypes, that.parameterTypes);
         }
@@ -150,7 +151,8 @@ public class ParsedMethod {
 
     // equals and hashCode are only defined in terms of name and parameterTypes since those uniquely
     // identify a method within a given class
-    // this is currently important because ParsedMethod is used as a map key in WeavingClassVisitor
+    // this is currently important because AnalyzedMethod is used as a map key in
+    // WeavingClassVisitor
     @Override
     @Pure
     public int hashCode() {

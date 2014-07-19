@@ -20,7 +20,7 @@ import java.net.URISyntaxException;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
-import org.glowroot.weaving.ParsedTypeCache;
+import org.glowroot.weaving.AnalyzedWorld;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -34,10 +34,10 @@ public class ClasspathCacheTest {
 
     @Test
     public void shouldRead() throws URISyntaxException {
-        ParsedTypeCache parsedTypeCache = mock(ParsedTypeCache.class);
-        when(parsedTypeCache.getClassLoaders())
+        AnalyzedWorld analyzedWorld = mock(AnalyzedWorld.class);
+        when(analyzedWorld.getClassLoaders())
                 .thenReturn(ImmutableList.of(ClasspathCacheTest.class.getClassLoader()));
-        ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
+        ClasspathCache classpathCache = new ClasspathCache(analyzedWorld);
         assertThat(classpathCache.getMatchingClassNames("lang.stringutils", 10))
                 .contains("org.apache.commons.lang.StringUtils");
     }

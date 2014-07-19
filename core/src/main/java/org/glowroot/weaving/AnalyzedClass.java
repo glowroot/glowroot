@@ -37,37 +37,37 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// a ParsedType is never created for Object.class
-// Strings are interned to reduce memory footprint of ParsedTypeCache
+// an AnalyzedClass is never created for Object.class
+// Strings are interned to reduce memory footprint of AnalyzedWorld
 @Immutable
-public class ParsedType {
+public class AnalyzedClass {
 
     private final int modifiers;
     private final String name;
-    // null superName means the super type is Object.class
-    // (a ParsedType is never created for Object.class)
+    // null superName means the super class is Object.class
+    // (an AnalyzedClass is never created for Object.class)
     @Nullable
     private final String superName;
     private final ImmutableList<String> interfaceNames;
-    private final ImmutableList<ParsedMethod> parsedMethods;
+    private final ImmutableList<AnalyzedMethod> analyzedMethods;
 
     private final ImmutableList<MixinType> mixinTypes;
 
     // interfaces that do not extend anything have null superClass
-    static ParsedType from(int modifiers, String name, @Nullable String superName,
-            List<String> interfaceNames, List<ParsedMethod> methods) {
-        return new ParsedType(modifiers, name, superName, interfaceNames, methods,
+    static AnalyzedClass from(int modifiers, String name, @Nullable String superName,
+            List<String> interfaceNames, List<AnalyzedMethod> methods) {
+        return new AnalyzedClass(modifiers, name, superName, interfaceNames, methods,
                 ImmutableList.<MixinType>of());
     }
 
-    private ParsedType(int modifiers, String name, @Nullable String superName,
-            List<String> interfaceNames, List<ParsedMethod> parsedMethods,
+    private AnalyzedClass(int modifiers, String name, @Nullable String superName,
+            List<String> interfaceNames, List<AnalyzedMethod> analyzedMethods,
             List<MixinType> mixinTypes) {
         this.modifiers = modifiers;
         this.name = name.intern();
         this.superName = superName == null ? null : superName.intern();
-        this.interfaceNames = ParsedMethod.internStringList(interfaceNames);
-        this.parsedMethods = ImmutableList.copyOf(parsedMethods);
+        this.interfaceNames = AnalyzedMethod.internStringList(interfaceNames);
+        this.analyzedMethods = ImmutableList.copyOf(analyzedMethods);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
     }
 
@@ -83,8 +83,8 @@ public class ParsedType {
         return name;
     }
 
-    // null superName means the super type is Object.class
-    // (a ParsedType is never created for Object.class)
+    // null superName means the super class is Object.class
+    // (an AnalyzedClass is never created for Object.class)
     @Nullable
     String getSuperName() {
         return superName;
@@ -94,18 +94,18 @@ public class ParsedType {
         return interfaceNames;
     }
 
-    public Iterable<ParsedMethod> getMethodsExcludingNative() {
-        return Iterables.filter(parsedMethods, new Predicate<ParsedMethod>() {
+    public Iterable<AnalyzedMethod> getMethodsExcludingNative() {
+        return Iterables.filter(analyzedMethods, new Predicate<AnalyzedMethod>() {
             @Override
-            public boolean apply(@Nullable ParsedMethod parsedMethod) {
-                checkNotNull(parsedMethod);
-                return !Modifier.isNative(parsedMethod.getModifiers());
+            public boolean apply(@Nullable AnalyzedMethod analyzedMethod) {
+                checkNotNull(analyzedMethod);
+                return !Modifier.isNative(analyzedMethod.getModifiers());
             }
         });
     }
 
-    List<ParsedMethod> getParsedMethods() {
-        return parsedMethods;
+    List<AnalyzedMethod> getAnalyzedMethods() {
+        return analyzedMethods;
     }
 
     ImmutableList<MixinType> getMixinTypes() {
@@ -113,8 +113,8 @@ public class ParsedType {
     }
 
     boolean hasReweavableAdvice() {
-        for (ParsedMethod parsedMethod : parsedMethods) {
-            for (Advice advice : parsedMethod.getAdvisors()) {
+        for (AnalyzedMethod analyzedMethod : analyzedMethods) {
+            for (Advice advice : analyzedMethod.getAdvisors()) {
                 if (advice.isReweavable()) {
                     return true;
                 }
@@ -126,13 +126,13 @@ public class ParsedType {
     @Override
     @Pure
     public boolean equals(@Nullable Object obj) {
-        if (obj instanceof ParsedType) {
-            ParsedType that = (ParsedType) obj;
+        if (obj instanceof AnalyzedClass) {
+            AnalyzedClass that = (AnalyzedClass) obj;
             return Objects.equal(modifiers, that.modifiers)
                     && Objects.equal(name, that.name)
                     && Objects.equal(superName, that.superName)
                     && Objects.equal(interfaceNames, that.interfaceNames)
-                    && Objects.equal(parsedMethods, that.parsedMethods);
+                    && Objects.equal(analyzedMethods, that.analyzedMethods);
         }
         return false;
     }
@@ -140,7 +140,7 @@ public class ParsedType {
     @Override
     @Pure
     public int hashCode() {
-        return Objects.hashCode(modifiers, name, superName, interfaceNames, parsedMethods);
+        return Objects.hashCode(modifiers, name, superName, interfaceNames, analyzedMethods);
     }
 
     @Override
@@ -151,7 +151,7 @@ public class ParsedType {
                 .add("name", name)
                 .add("superName", superName)
                 .add("interfaceNames", interfaceNames)
-                .add("methods", parsedMethods)
+                .add("methods", analyzedMethods)
                 .toString();
     }
 
@@ -168,7 +168,7 @@ public class ParsedType {
         @Nullable
         private final String superName;
         private final List<String> interfaceNames;
-        private final List<ParsedMethod> methods = Lists.newArrayList();
+        private final List<AnalyzedMethod> methods = Lists.newArrayList();
         private final List<MixinType> mixinTypes = Lists.newArrayList();
 
         private Builder(int modifiers, String name, @Nullable String superName,
@@ -179,10 +179,11 @@ public class ParsedType {
             this.interfaceNames = interfaceNames;
         }
 
-        ParsedMethod addParsedMethod(int access, String name, String desc,
+        AnalyzedMethod addAnalyzedMethod(int access, String name, String desc,
                 @Nullable String signature, List<String> exceptions, List<Advice> advisors) {
             List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
-            ParsedMethod method = ParsedMethod.from(name, parameterTypes, Type.getReturnType(desc),
+            AnalyzedMethod method = AnalyzedMethod.from(name, parameterTypes,
+                    Type.getReturnType(desc),
                     access, signature, exceptions, advisors);
             methods.add(method);
             return method;
@@ -196,8 +197,9 @@ public class ParsedType {
             this.mixinTypes.addAll(mixinTypes);
         }
 
-        ParsedType build() {
-            return new ParsedType(modifiers, name, superName, interfaceNames, methods, mixinTypes);
+        AnalyzedClass build() {
+            return new AnalyzedClass(modifiers, name, superName, interfaceNames, methods,
+                    mixinTypes);
         }
     }
 }

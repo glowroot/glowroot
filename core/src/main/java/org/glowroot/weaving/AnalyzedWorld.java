@@ -53,9 +53,9 @@ import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
  * @since 0.5
  */
 @Singleton
-public class ParsedTypeCache {
+public class AnalyzedWorld {
 
-    private static final Logger logger = LoggerFactory.getLogger(ParsedTypeCache.class);
+    private static final Logger logger = LoggerFactory.getLogger(AnalyzedWorld.class);
 
     private static final Method findLoadedClassMethod;
 
@@ -76,44 +76,44 @@ public class ParsedTypeCache {
     //
     // note, not using nested loading cache since the nested loading cache maintains a strong
     // reference to the class loader
-    private final LoadingCache<ClassLoader, ConcurrentMap<String, ParsedType>> parsedTypeCache =
+    private final LoadingCache<ClassLoader, ConcurrentMap<String, AnalyzedClass>> world =
             CacheBuilder.newBuilder().weakKeys()
-                    .build(new CacheLoader<ClassLoader, ConcurrentMap<String, ParsedType>>() {
+                    .build(new CacheLoader<ClassLoader, ConcurrentMap<String, AnalyzedClass>>() {
                         @Override
-                        public ConcurrentMap<String, ParsedType> load(ClassLoader loader) {
+                        public ConcurrentMap<String, AnalyzedClass> load(ClassLoader loader) {
                             // intentionally avoiding Maps.newConcurrentMap() since it uses many
                             // additional classes that must then be pre-initialized since this
                             // is called from inside ClassFileTransformer.transform()
                             // (see PreInitializeClasses)
-                            return new ConcurrentHashMap<String, ParsedType>();
+                            return new ConcurrentHashMap<String, AnalyzedClass>();
                         }
                     });
 
-    // the parsed types for the bootstrap class loader (null) have to be stored separately since
+    // the analyzed classes for the bootstrap class loader (null) have to be stored separately since
     // LoadingCache doesn't accept null keys, and using an Optional<ClassLoader> for the key makes
     // the weakness on the Optional instance which is not strongly referenced from anywhere and
     // therefore the keys will most likely be cleared while their class loaders are still being used
     //
     // intentionally avoiding Maps.newConcurrentMap() for the same reason as above
-    private final ConcurrentMap<String, ParsedType> bootstrapLoaderParsedTypeCache =
-            new ConcurrentHashMap<String, ParsedType>();
+    private final ConcurrentMap<String, AnalyzedClass> bootstrapLoaderWorld =
+            new ConcurrentHashMap<String, AnalyzedClass>();
 
     private final Supplier<ImmutableList<Advice>> advisors;
     private final ImmutableList<MixinType> mixinTypes;
 
-    private final ParsedType javaLangObjectParsedType;
+    private final AnalyzedClass javaLangObjectAnalyzedClass;
 
-    public ParsedTypeCache(Supplier<ImmutableList<Advice>> advisors, List<MixinType> mixinTypes) {
+    public AnalyzedWorld(Supplier<ImmutableList<Advice>> advisors, List<MixinType> mixinTypes) {
         this.advisors = advisors;
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
-        javaLangObjectParsedType = createParsedTypePlanC(Object.class, advisors.get());
+        javaLangObjectAnalyzedClass = createAnalyzedClassPlanC(Object.class, advisors.get());
     }
 
     public List<Class<?>> getClassesWithReweavableAdvice() {
         List<Class<?>> classes = Lists.newArrayList();
-        for (Entry<ClassLoader, ConcurrentMap<String, ParsedType>> outerEntry : parsedTypeCache
+        for (Entry<ClassLoader, ConcurrentMap<String, AnalyzedClass>> outerEntry : world
                 .asMap().entrySet()) {
-            for (Entry<String, ParsedType> innerEntry : outerEntry.getValue().entrySet()) {
+            for (Entry<String, AnalyzedClass> innerEntry : outerEntry.getValue().entrySet()) {
                 if (innerEntry.getValue().hasReweavableAdvice()) {
                     try {
                         classes.add(outerEntry.getKey().loadClass(innerEntry.getKey()));
@@ -130,119 +130,121 @@ public class ParsedTypeCache {
         for (Class<?> clazz : classes) {
             ClassLoader loader = clazz.getClassLoader();
             if (loader == null) {
-                bootstrapLoaderParsedTypeCache.remove(clazz.getName());
+                bootstrapLoaderWorld.remove(clazz.getName());
             } else {
-                parsedTypeCache.getUnchecked(loader).remove(clazz.getName());
+                world.getUnchecked(loader).remove(clazz.getName());
             }
         }
     }
 
     public List<Class<?>> getExistingSubClasses(Set<String> rootTypeNames) {
         List<Class<?>> classes = Lists.newArrayList();
-        for (ClassLoader loader : parsedTypeCache.asMap().keySet()) {
+        for (ClassLoader loader : world.asMap().keySet()) {
             classes.addAll(getExistingSubClasses(rootTypeNames, loader));
         }
         classes.addAll(getExistingSubClasses(rootTypeNames, null));
         return classes;
     }
 
-    public List<ParsedType> getParsedTypes(String typeName) {
-        List<ParsedType> parsedTypes = Lists.newArrayList();
-        ParsedType parsedType = bootstrapLoaderParsedTypeCache.get(typeName);
-        if (parsedType != null) {
-            parsedTypes.add(parsedType);
+    public List<AnalyzedClass> getAnalyzedClasses(String className) {
+        List<AnalyzedClass> analyzedClasses = Lists.newArrayList();
+        AnalyzedClass analyzedClass = bootstrapLoaderWorld.get(className);
+        if (analyzedClass != null) {
+            analyzedClasses.add(analyzedClass);
         }
-        for (Map<String, ParsedType> loaderParsedTypes : this.parsedTypeCache.asMap().values()) {
-            parsedType = loaderParsedTypes.get(typeName);
-            if (parsedType != null) {
-                parsedTypes.add(parsedType);
+        for (Map<String, AnalyzedClass> loaderAnalyzedClasses : world.asMap().values()) {
+            analyzedClass = loaderAnalyzedClasses.get(className);
+            if (analyzedClass != null) {
+                analyzedClasses.add(analyzedClass);
             }
         }
-        return parsedTypes;
+        return analyzedClasses;
     }
 
     public ImmutableList<ClassLoader> getClassLoaders() {
-        return ImmutableList.copyOf(parsedTypeCache.asMap().keySet());
+        return ImmutableList.copyOf(world.asMap().keySet());
     }
 
-    void add(ParsedType parsedType, @Nullable ClassLoader loader) {
-        ConcurrentMap<String, ParsedType> loaderParsedTypes = getParsedTypes(loader);
-        String typeName = parsedType.getName();
-        loaderParsedTypes.put(typeName, parsedType);
+    void add(AnalyzedClass analyzedClass, @Nullable ClassLoader loader) {
+        ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses = getAnalyzedClasses(loader);
+        String typeName = analyzedClass.getName();
+        loaderAnalyzedClasses.put(typeName, analyzedClass);
     }
 
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
-    List<ParsedType> getTypeHierarchy(@Nullable String typeName, @Nullable ClassLoader loader,
+    List<AnalyzedClass> getTypeHierarchy(@Nullable String typeName, @Nullable ClassLoader loader,
             ParseContext parseContext) {
         if (typeName == null || typeName.equals("java.lang.Object")) {
             return ImmutableList.of();
         }
-        return getSuperTypes(typeName, loader, parseContext);
+        return getSuperClasses(typeName, loader, parseContext);
     }
 
-    ParsedType getParsedType(String typeName, @Nullable ClassLoader loader)
+    AnalyzedClass getAnalyzedClass(String typeName, @Nullable ClassLoader loader)
             throws ClassNotFoundException, IOException {
-        return getOrCreateParsedType(typeName, loader);
+        return getOrCreateAnalyzedClass(typeName, loader);
     }
 
-    ParsedType getJavaLangObjectParsedType() {
-        return javaLangObjectParsedType;
+    AnalyzedClass getJavaLangObjectAnalyzedClass() {
+        return javaLangObjectAnalyzedClass;
     }
 
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
-    private List<ParsedType> getSuperTypes(String typeName, @Nullable ClassLoader loader,
+    private List<AnalyzedClass> getSuperClasses(String className, @Nullable ClassLoader loader,
             ParseContext parseContext) {
-        ParsedType parsedType;
+        AnalyzedClass analyzedClass;
         try {
-            parsedType = getOrCreateParsedType(typeName, loader);
+            analyzedClass = getOrCreateAnalyzedClass(className, loader);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
         } catch (ClassNotFoundException e) {
             // log at debug level only since the code referencing the class must not be getting used
             // anyways, as it would fail on execution since the type doesn't exist
-            logger.debug("type {} not found while parsing type {}", typeName, parseContext, e);
+            logger.debug("type {} not found while parsing type {}", className, parseContext, e);
             return ImmutableList.of();
         }
-        List<ParsedType> superTypes = Lists.newArrayList();
-        superTypes.add(parsedType);
-        String superName = parsedType.getSuperName();
+        List<AnalyzedClass> superTypes = Lists.newArrayList();
+        superTypes.add(analyzedClass);
+        String superName = analyzedClass.getSuperName();
         if (superName != null && !superName.equals("java.lang.Object")) {
-            superTypes.addAll(getSuperTypes(superName, loader, parseContext));
+            superTypes.addAll(getSuperClasses(superName, loader, parseContext));
         }
-        for (String interfaceName : parsedType.getInterfaceNames()) {
-            superTypes.addAll(getSuperTypes(interfaceName, loader, parseContext));
+        for (String interfaceName : analyzedClass.getInterfaceNames()) {
+            superTypes.addAll(getSuperClasses(interfaceName, loader, parseContext));
         }
         return superTypes;
     }
 
-    private ParsedType getOrCreateParsedType(String typeName, @Nullable ClassLoader loader)
+    private AnalyzedClass getOrCreateAnalyzedClass(String className, @Nullable ClassLoader loader)
             throws ClassNotFoundException, IOException {
-        ClassLoader parsedTypeLoader = getParsedTypeLoader(typeName, loader);
-        ConcurrentMap<String, ParsedType> loaderParsedTypes = getParsedTypes(parsedTypeLoader);
-        ParsedType parsedType = loaderParsedTypes.get(typeName);
-        if (parsedType == null) {
-            parsedType = createParsedType(typeName, parsedTypeLoader);
-            ParsedType storedParsedType = loaderParsedTypes.putIfAbsent(typeName, parsedType);
-            if (storedParsedType != null) {
-                // (rare) concurrent ParsedType creation, use the one that made it into the map
-                parsedType = storedParsedType;
+        ClassLoader analyzedClassLoader = getAnalyzedLoader(className, loader);
+        ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses =
+                getAnalyzedClasses(analyzedClassLoader);
+        AnalyzedClass analyzedClass = loaderAnalyzedClasses.get(className);
+        if (analyzedClass == null) {
+            analyzedClass = createAnalyzedClass(className, analyzedClassLoader);
+            AnalyzedClass existingAnalyzedClass =
+                    loaderAnalyzedClasses.putIfAbsent(className, analyzedClass);
+            if (existingAnalyzedClass != null) {
+                // (rare) concurrent AnalyzedClass creation, use the one that made it into the map
+                analyzedClass = existingAnalyzedClass;
             }
         }
-        return parsedType;
+        return analyzedClass;
     }
 
-    private List<Class<?>> getExistingSubClasses(Set<String> rootTypeNames,
+    private List<Class<?>> getExistingSubClasses(Set<String> rootClassNames,
             @Nullable ClassLoader loader) {
         List<Class<?>> classes = Lists.newArrayList();
-        for (ParsedType parsedType : getParsedTypes(loader).values()) {
-            if (isSubClass(parsedType, rootTypeNames, loader)) {
+        for (AnalyzedClass analyzedClass : getAnalyzedClasses(loader).values()) {
+            if (isSubClass(analyzedClass, rootClassNames, loader)) {
                 try {
-                    classes.add(Class.forName(parsedType.getName(), false, loader));
+                    classes.add(Class.forName(analyzedClass.getName(), false, loader));
                 } catch (ClassNotFoundException e) {
                     logger.warn(e.getMessage(), e);
                 }
@@ -251,74 +253,74 @@ public class ParsedTypeCache {
         return classes;
     }
 
-    private boolean isSubClass(ParsedType parsedType, Set<String> rootTypeNames,
+    private boolean isSubClass(AnalyzedClass analyzedClass, Set<String> rootClassNames,
             @Nullable ClassLoader loader) {
-        List<String> superTypeNames = getExistingTypeHierarchy(parsedType, loader);
-        for (String superTypeName : superTypeNames) {
-            if (rootTypeNames.contains(superTypeName)) {
+        List<String> superClassNames = getExistingClassHierarchy(analyzedClass, loader);
+        for (String superClassName : superClassNames) {
+            if (rootClassNames.contains(superClassName)) {
                 return true;
             }
         }
         return false;
     }
 
-    private List<String> getExistingTypeHierarchy(ParsedType parsedType,
+    private List<String> getExistingClassHierarchy(AnalyzedClass analyzedClass,
             @Nullable ClassLoader loader) {
-        List<String> superTypes = Lists.newArrayList(parsedType.getName());
-        String superName = parsedType.getSuperName();
+        List<String> superClasses = Lists.newArrayList(analyzedClass.getName());
+        String superName = analyzedClass.getSuperName();
         if (superName != null && !superName.equals("java.lang.Object")) {
-            ParsedType superParsedType = getExistingParsedType(superName, loader);
-            if (superParsedType != null) {
-                superTypes.addAll(getExistingTypeHierarchy(superParsedType, loader));
+            AnalyzedClass superAnalyzedClass = getExistingAnalyzedClass(superName, loader);
+            if (superAnalyzedClass != null) {
+                superClasses.addAll(getExistingClassHierarchy(superAnalyzedClass, loader));
             }
         }
-        for (String interfaceName : parsedType.getInterfaceNames()) {
-            ParsedType interfaceParsedType = getExistingParsedType(interfaceName, loader);
-            if (interfaceParsedType != null) {
-                superTypes.addAll(getExistingTypeHierarchy(interfaceParsedType, loader));
+        for (String interfaceName : analyzedClass.getInterfaceNames()) {
+            AnalyzedClass interfaceAnalyzedClass = getExistingAnalyzedClass(interfaceName, loader);
+            if (interfaceAnalyzedClass != null) {
+                superClasses.addAll(getExistingClassHierarchy(interfaceAnalyzedClass, loader));
             }
         }
-        return superTypes;
+        return superClasses;
     }
 
     @Nullable
-    private ParsedType getExistingParsedType(String typeName, @Nullable ClassLoader loader) {
-        ClassLoader parsedTypeLoader = getParsedTypeLoader(typeName, loader);
-        if (parsedTypeLoader == null) {
-            return bootstrapLoaderParsedTypeCache.get(typeName);
+    private AnalyzedClass getExistingAnalyzedClass(String className, @Nullable ClassLoader loader) {
+        ClassLoader analyzedLoader = getAnalyzedLoader(className, loader);
+        if (analyzedLoader == null) {
+            return bootstrapLoaderWorld.get(className);
         }
-        return parsedTypeCache.getUnchecked(parsedTypeLoader).get(typeName);
+        return world.getUnchecked(analyzedLoader).get(className);
     }
 
     @Nullable
-    private ClassLoader getParsedTypeLoader(String typeName, @Nullable ClassLoader loader) {
+    private ClassLoader getAnalyzedLoader(String className, @Nullable ClassLoader loader) {
         if (loader == null) {
             return null;
         }
         // can't call Class.forName() since that bypasses ClassFileTransformer.transform() if the
         // class hasn't already been loaded, so instead, call the package protected
         // ClassLoader.findLoadClass()
-        Class<?> type = null;
+        Class<?> clazz = null;
         try {
-            type = (Class<?>) Reflections.invoke(findLoadedClassMethod, loader, typeName);
+            clazz = (Class<?>) Reflections.invoke(findLoadedClassMethod, loader, className);
         } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
         }
-        ClassLoader parsedTypeLoader = loader;
-        if (type != null) {
-            // this type has already been loaded, so the corresponding parsedType should already be
-            // in the cache under its class loader
+        ClassLoader analyzedLoader = loader;
+        if (clazz != null) {
+            // this class has already been loaded, so the corresponding analyzedType should already
+            // be in the cache under its class loader
             //
             // this helps in cases where the .class files are not available via
             // ClassLoader.getResource(), as well as being a good optimization in other cases
-            parsedTypeLoader = type.getClassLoader();
+            analyzedLoader = clazz.getClassLoader();
         }
-        return parsedTypeLoader;
+        return analyzedLoader;
     }
 
-    private ParsedType createParsedType(String typeName, @Nullable ClassLoader loader)
+    private AnalyzedClass createAnalyzedClass(String className, @Nullable ClassLoader loader)
             throws ClassNotFoundException, IOException {
-        String path = TypeNames.toInternal(typeName) + ".class";
+        String path = TypeNames.toInternal(className) + ".class";
         URL url;
         if (loader == null) {
             // null loader means the bootstrap class loader
@@ -336,13 +338,13 @@ public class ParsedTypeCache {
                         parentLoaderUrl = parentLoader.getResource(path);
                     }
                     if (url.equals(parentLoaderUrl)) {
-                        // reuse parent loader's ParsedType if available
-                        // this saves time here, and reduces memory footprint of ParsedTypeCache
+                        // reuse parent loader's AnalyzedClass if available
+                        // this saves time here, and reduces memory footprint of AnalyzedWorld
                         // which can be very noticeable when lots of ClassLoaders, e.g. groovy
-                        ParsedType parentLoaderParsedType =
-                                getParsedTypes(parentLoader).get(typeName);
-                        if (parentLoaderParsedType != null) {
-                            return parentLoaderParsedType;
+                        AnalyzedClass parentLoaderAnalyzedClass =
+                                getAnalyzedClasses(parentLoader).get(className);
+                        if (parentLoaderAnalyzedClass != null) {
+                            return parentLoaderAnalyzedClass;
                         }
                     }
                     tempLoader = parentLoader;
@@ -353,26 +355,26 @@ public class ParsedTypeCache {
             // what follows is just a best attempt in the sort-of-rare case when a custom class
             // loader does not expose .class file contents via getResource(), e.g.
             // org.codehaus.groovy.runtime.callsite.CallSiteClassLoader
-            return createParsedTypePlanB(typeName, loader);
+            return createAnalyzedClassPlanB(className, loader);
         }
-        ParsedTypeClassVisitor cv =
-                new ParsedTypeClassVisitor(advisors.get(), mixinTypes, loader, this, null);
+        AnalyzingClassVisitor cv =
+                new AnalyzingClassVisitor(advisors.get(), mixinTypes, loader, this, null);
         byte[] bytes = Resources.toByteArray(url);
         ClassReader cr = new ClassReader(bytes);
         cr.accept(cv, 0);
-        ParsedType parsedType = cv.getParsedType();
-        checkNotNull(parsedType); // parsedType is non-null after visiting the class
-        return parsedType;
+        AnalyzedClass analyzedClass = cv.getAnalyzedClass();
+        checkNotNull(analyzedClass); // analyzedClass is non-null after visiting the class
+        return analyzedClass;
     }
 
     // plan B covers some class loaders like
     // org.codehaus.groovy.runtime.callsite.CallSiteClassLoader that delegate loadClass() to some
     // other loader where the type may have already been loaded
-    private ParsedType createParsedTypePlanB(String typeName, @Nullable ClassLoader loader)
+    private AnalyzedClass createAnalyzedClassPlanB(String className, @Nullable ClassLoader loader)
             throws ClassNotFoundException {
-        Class<?> type = Class.forName(typeName, false, loader);
-        ParsedType parsedType = getParsedTypes(type.getClassLoader()).get(typeName);
-        if (parsedType == null) {
+        Class<?> type = Class.forName(className, false, loader);
+        AnalyzedClass analyzedClass = getAnalyzedClasses(type.getClassLoader()).get(className);
+        if (analyzedClass == null) {
             // a class was loaded by Class.forName() above that was not previously loaded which
             // means weaving was bypassed since ClassFileTransformer.transform() is not re-entrant
 
@@ -382,18 +384,18 @@ public class ParsedTypeCache {
                     + " had to be loaded using Class.forName() during weaving of one of its"
                     + " subclasses, which means it was not woven itself since weaving is not"
                     + " re-entrant", TypeNames.toInternal(type.getName()), loader);
-            return createParsedTypePlanC(type, advisors.get());
+            return createAnalyzedClassPlanC(type, advisors.get());
         } else {
             // the type was previously loaded so weaving was not bypassed, yay!
-            return parsedType;
+            return analyzedClass;
         }
     }
 
-    private ConcurrentMap<String, ParsedType> getParsedTypes(@Nullable ClassLoader loader) {
+    private ConcurrentMap<String, AnalyzedClass> getAnalyzedClasses(@Nullable ClassLoader loader) {
         if (loader == null) {
-            return bootstrapLoaderParsedTypeCache;
+            return bootstrapLoaderWorld;
         } else {
-            return parsedTypeCache.getUnchecked(loader);
+            return world.getUnchecked(loader);
         }
     }
 
@@ -401,19 +403,20 @@ public class ParsedTypeCache {
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("parsedTypes", parsedTypeCache)
-                .add("bootstrapLoaderParsedTypes", bootstrapLoaderParsedTypeCache)
+                .add("world", world)
+                .add("bootstrapLoaderWorld", bootstrapLoaderWorld)
                 .toString();
     }
 
-    // now that the type has been loaded anyways, build the parsed type via reflection
-    private static ParsedType createParsedTypePlanC(Class<?> type, ImmutableList<Advice> advisors) {
+    // now that the type has been loaded anyways, build the analyzed class via reflection
+    private static AnalyzedClass createAnalyzedClassPlanC(Class<?> type,
+            ImmutableList<Advice> advisors) {
         List<AdviceMatcher> adviceMatchers =
                 AdviceMatcher.getAdviceMatchers(type.getName(), advisors);
-        List<ParsedMethod> parsedMethods = Lists.newArrayList();
+        List<AnalyzedMethod> analyzedMethods = Lists.newArrayList();
         for (Method method : type.getDeclaredMethods()) {
             if (method.isSynthetic()) {
-                // don't add synthetic methods to the parsed type model
+                // don't add synthetic methods to the analyzed model
                 continue;
             }
             List<Type> parameterTypes = Lists.newArrayList();
@@ -424,14 +427,15 @@ public class ParsedTypeCache {
             List<Advice> matchingAdvisors = getMatchingAdvisors(method.getModifiers(),
                     method.getName(), parameterTypes, returnType, adviceMatchers);
             if (!matchingAdvisors.isEmpty() && (method.getModifiers() & ACC_SYNTHETIC) == 0) {
-                // don't add synthetic methods to the parsed type model
+                // don't add synthetic methods to the analyzed model
                 List<String> exceptions = Lists.newArrayList();
                 for (Class<?> exceptionType : method.getExceptionTypes()) {
                     exceptions.add(Type.getInternalName(exceptionType));
                 }
-                ParsedMethod parsedMethod = ParsedMethod.from(method.getName(), parameterTypes,
+                AnalyzedMethod analyzedMethod = AnalyzedMethod.from(method.getName(),
+                        parameterTypes,
                         returnType, method.getModifiers(), null, exceptions, matchingAdvisors);
-                parsedMethods.add(parsedMethod);
+                analyzedMethods.add(analyzedMethod);
             }
         }
         List<String> interfaceNames = Lists.newArrayList();
@@ -440,8 +444,8 @@ public class ParsedTypeCache {
         }
         Class<?> superclass = type.getSuperclass();
         String superName = superclass == null ? null : superclass.getName();
-        return ParsedType.from(type.getModifiers(), type.getName(), superName, interfaceNames,
-                parsedMethods);
+        return AnalyzedClass.from(type.getModifiers(), type.getName(), superName, interfaceNames,
+                analyzedMethods);
     }
 
     private static List<Advice> getMatchingAdvisors(int access, String name,

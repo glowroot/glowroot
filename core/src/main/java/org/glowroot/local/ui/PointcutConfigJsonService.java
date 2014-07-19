@@ -43,7 +43,7 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.config.PointcutConfig;
-import org.glowroot.local.ui.UiParsedMethod.UiParsedMethodOrdering;
+import org.glowroot.local.ui.UiAnalyzedMethod.UiAnalyzedMethodOrdering;
 import org.glowroot.markers.Singleton;
 import org.glowroot.trace.AdviceCache;
 import org.glowroot.trace.TraceModule;
@@ -140,22 +140,22 @@ class PointcutConfigJsonService {
         logger.debug("getMethodSignatures(): content={}", content);
         MethodSignaturesRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, MethodSignaturesRequest.class);
-        List<UiParsedMethod> parsedMethods =
-                getParsedMethods(request.getClassName(), request.getMethodName());
+        List<UiAnalyzedMethod> analyzedMethods =
+                getAnalyzedMethods(request.getClassName(), request.getMethodName());
         ArrayNode matchingMethods = mapper.createArrayNode();
-        for (UiParsedMethod parsedMethod : parsedMethods) {
+        for (UiAnalyzedMethod analyzedMethod : analyzedMethods) {
             ObjectNode matchingMethod = mapper.createObjectNode();
-            matchingMethod.put("name", parsedMethod.getName());
+            matchingMethod.put("name", analyzedMethod.getName());
             ArrayNode parameterTypes = mapper.createArrayNode();
-            for (String parameterType : parsedMethod.getParameterTypes()) {
+            for (String parameterType : analyzedMethod.getParameterTypes()) {
                 parameterTypes.add(parameterType);
             }
             matchingMethod.set("parameterTypes", parameterTypes);
-            matchingMethod.put("returnType", parsedMethod.getReturnType());
+            matchingMethod.put("returnType", analyzedMethod.getReturnType());
             ArrayNode modifiers = mapper.createArrayNode();
             // strip final and synchronized from displayed modifiers since they have no impact on
             // the weaver's method matching
-            int reducedModifiers = parsedMethod.getModifiers() & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
+            int reducedModifiers = analyzedMethod.getModifiers() & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
             String modifierNames = Modifier.toString(reducedModifiers);
             for (String modifier : splitter.split(modifierNames)) {
                 modifiers.add(modifier.toLowerCase(Locale.ENGLISH));
@@ -220,11 +220,11 @@ class PointcutConfigJsonService {
             String partialMethodName, int limit) {
         String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
         Set<String> methodNames = Sets.newHashSet();
-        for (UiParsedMethod parsedMethod : classpathCache.getParsedMethods(className)) {
-            if (Modifier.isNative(parsedMethod.getModifiers())) {
+        for (UiAnalyzedMethod analyzedMethod : classpathCache.getAnalyzedMethods(className)) {
+            if (Modifier.isNative(analyzedMethod.getModifiers())) {
                 continue;
             }
-            String methodName = parsedMethod.getName();
+            String methodName = analyzedMethod.getName();
             if (methodName.equals("<init>") || methodName.equals("<clinit>")) {
                 // static initializers are not supported by weaver
                 // (see AdviceMatcher.isMethodNameMatch())
@@ -244,19 +244,19 @@ class PointcutConfigJsonService {
         }
     }
 
-    private List<UiParsedMethod> getParsedMethods(String className, String methodName) {
+    private List<UiAnalyzedMethod> getAnalyzedMethods(String className, String methodName) {
         // use set to remove duplicate methods (e.g. same class loaded by multiple class loaders)
-        Set<UiParsedMethod> parsedMethods = Sets.newHashSet();
-        for (UiParsedMethod parsedMethod : classpathCache.getParsedMethods(className)) {
-            if (Modifier.isNative(parsedMethod.getModifiers())) {
+        Set<UiAnalyzedMethod> analyzedMethods = Sets.newHashSet();
+        for (UiAnalyzedMethod analyzedMethod : classpathCache.getAnalyzedMethods(className)) {
+            if (Modifier.isNative(analyzedMethod.getModifiers())) {
                 continue;
             }
-            if (parsedMethod.getName().equals(methodName)) {
-                parsedMethods.add(parsedMethod);
+            if (analyzedMethod.getName().equals(methodName)) {
+                analyzedMethods.add(analyzedMethod);
             }
         }
         // order methods by accessibility, then by name, then by number of args
-        return UiParsedMethodOrdering.INSTANCE.sortedCopy(parsedMethods);
+        return UiAnalyzedMethodOrdering.INSTANCE.sortedCopy(analyzedMethods);
     }
 
     private static class ClassNamesRequest {

@@ -36,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.ThreadSafe;
-import org.glowroot.weaving.ParsedTypeCache.ParseContext;
+import org.glowroot.weaving.AnalyzedWorld.ParseContext;
 import org.glowroot.weaving.WeavingClassVisitor.AbortWeavingException;
 import org.glowroot.weaving.WeavingTimerService.WeavingTimer;
 
@@ -58,16 +58,16 @@ class Weaver {
 
     private final Supplier<ImmutableList<Advice>> advisors;
     private final ImmutableList<MixinType> mixinTypes;
-    private final ParsedTypeCache parsedTypeCache;
+    private final AnalyzedWorld analyzedWorld;
     private final WeavingTimerService weavingTimerService;
     private final boolean traceMetricWrapperMethods;
 
     Weaver(Supplier<ImmutableList<Advice>> advisors, List<MixinType> mixinTypes,
-            ParsedTypeCache parsedTypeCache, WeavingTimerService weavingTimerService,
+            AnalyzedWorld analyzedWorld, WeavingTimerService weavingTimerService,
             boolean traceMetricWrapperMethods) {
         this.advisors = advisors;
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
-        this.parsedTypeCache = parsedTypeCache;
+        this.analyzedWorld = analyzedWorld;
         this.weavingTimerService = weavingTimerService;
         this.traceMetricWrapperMethods = traceMetricWrapperMethods;
     }
@@ -106,9 +106,9 @@ class Weaver {
             //
             ClassWriter cw = new ComputeFramesClassWriter(
                     ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES,
-                    parsedTypeCache, loader, codeSource, className);
+                    analyzedWorld, loader, codeSource, className);
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors.get(), mixinTypes,
-                    loader, parsedTypeCache, codeSource, traceMetricWrapperMethods);
+                    loader, analyzedWorld, codeSource, traceMetricWrapperMethods);
             ClassReader cr = new ClassReader(classBytes);
             try {
                 cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
@@ -139,7 +139,7 @@ class Weaver {
         return Objects.toStringHelper(this)
                 .add("advisors", advisors)
                 .add("mixinTypes", mixinTypes)
-                .add("parsedTypeCache", parsedTypeCache)
+                .add("analyzedWorld", analyzedWorld)
                 .add("weavingTimerService", weavingTimerService)
                 .add("traceMetricWrapperMethods", traceMetricWrapperMethods)
                 .toString();
@@ -181,15 +181,15 @@ class Weaver {
     @VisibleForTesting
     static class ComputeFramesClassWriter extends ClassWriter {
 
-        private final ParsedTypeCache parsedTypeCache;
+        private final AnalyzedWorld analyzedWorld;
         @Nullable
         private final ClassLoader loader;
         private final ParseContext parseContext;
 
-        public ComputeFramesClassWriter(int flags, ParsedTypeCache parsedTypeCache,
+        public ComputeFramesClassWriter(int flags, AnalyzedWorld analyzedWorld,
                 @Nullable ClassLoader loader, @Nullable CodeSource codeSource, String className) {
             super(flags);
-            this.parsedTypeCache = parsedTypeCache;
+            this.analyzedWorld = analyzedWorld;
             this.loader = loader;
             this.parseContext = new ParseContext(className, codeSource);
         }
@@ -200,9 +200,10 @@ class Weaver {
             if (type1.equals("java/lang/Object") || type2.equals("java/lang/Object")) {
                 return "java/lang/Object";
             }
-            ParsedType parsedType1;
+            AnalyzedClass analyzedClass1;
             try {
-                parsedType1 = parsedTypeCache.getParsedType(TypeNames.fromInternal(type1), loader);
+                analyzedClass1 = analyzedWorld.getAnalyzedClass(TypeNames.fromInternal(type1),
+                        loader);
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 return "java/lang/Object";
@@ -212,9 +213,10 @@ class Weaver {
                 logger.debug("type {} not found while parsing type {}", type1, parseContext, e);
                 return "java/lang/Object";
             }
-            ParsedType parsedType2;
+            AnalyzedClass analyzedClass2;
             try {
-                parsedType2 = parsedTypeCache.getParsedType(TypeNames.fromInternal(type2), loader);
+                analyzedClass2 = analyzedWorld.getAnalyzedClass(TypeNames.fromInternal(type2),
+                        loader);
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 return "java/lang/Object";
@@ -224,30 +226,31 @@ class Weaver {
                 logger.debug("type {} not found while parsing type {}", type2, parseContext, e);
                 return "java/lang/Object";
             }
-            return getCommonSuperClass(parsedType1, parsedType2, type1, type2);
+            return getCommonSuperClass(analyzedClass1, analyzedClass2, type1, type2);
         }
 
-        private String getCommonSuperClass(ParsedType parsedType1, ParsedType parsedType2,
-                String type1, String type2) {
-            if (isAssignableFrom(parsedType1.getName(), parsedType2)) {
+        private String getCommonSuperClass(AnalyzedClass analyzedClass1,
+                AnalyzedClass analyzedClass2, String type1, String type2) {
+            if (isAssignableFrom(analyzedClass1.getName(), analyzedClass2)) {
                 return type1;
             }
-            if (isAssignableFrom(parsedType2.getName(), parsedType1)) {
+            if (isAssignableFrom(analyzedClass2.getName(), analyzedClass1)) {
                 return type2;
             }
-            if (parsedType1.isInterface() || parsedType2.isInterface()) {
+            if (analyzedClass1.isInterface() || analyzedClass2.isInterface()) {
                 return "java/lang/Object";
             }
-            // climb parsedType1 super class hierarchy and check if any of them are assignable from
-            // parsedType2
-            String superName = parsedType1.getSuperName();
+            // climb analyzedClass1 super class hierarchy and check if any of them are assignable
+            // from analyzedClass2
+            String superName = analyzedClass1.getSuperName();
             while (superName != null) {
-                if (isAssignableFrom(superName, parsedType2)) {
+                if (isAssignableFrom(superName, analyzedClass2)) {
                     return TypeNames.toInternal(superName);
                 }
                 try {
-                    ParsedType superParsedType = parsedTypeCache.getParsedType(superName, loader);
-                    superName = superParsedType.getSuperName();
+                    AnalyzedClass superAnalyzedClass =
+                            analyzedWorld.getAnalyzedClass(superName, loader);
+                    superName = superAnalyzedClass.getSuperName();
                 } catch (IOException e) {
                     logger.error(e.getMessage(), e);
                     return "java/lang/Object";
@@ -262,15 +265,16 @@ class Weaver {
             return "java/lang/Object";
         }
 
-        private boolean isAssignableFrom(String possibleSuperTypeName, ParsedType parsedType) {
-            if (parsedType.getName().equals(possibleSuperTypeName)) {
+        private boolean isAssignableFrom(String possibleSuperTypeName,
+                AnalyzedClass analyzedClass) {
+            if (analyzedClass.getName().equals(possibleSuperTypeName)) {
                 return true;
             }
-            for (String interfaceName : parsedType.getInterfaceNames()) {
+            for (String interfaceName : analyzedClass.getInterfaceNames()) {
                 try {
-                    ParsedType interfaceParsedType =
-                            parsedTypeCache.getParsedType(interfaceName, loader);
-                    if (isAssignableFrom(possibleSuperTypeName, interfaceParsedType)) {
+                    AnalyzedClass interfaceAnalyzedClass =
+                            analyzedWorld.getAnalyzedClass(interfaceName, loader);
+                    if (isAssignableFrom(possibleSuperTypeName, interfaceAnalyzedClass)) {
                         return true;
                     }
                 } catch (IOException e) {
@@ -282,13 +286,14 @@ class Weaver {
                             parseContext, e);
                 }
             }
-            String superName = parsedType.getSuperName();
+            String superName = analyzedClass.getSuperName();
             if (superName == null) {
                 return false;
             }
             try {
-                ParsedType superParsedType = parsedTypeCache.getParsedType(superName, loader);
-                return isAssignableFrom(possibleSuperTypeName, superParsedType);
+                AnalyzedClass superAnalyzedClass =
+                        analyzedWorld.getAnalyzedClass(superName, loader);
+                return isAssignableFrom(possibleSuperTypeName, superAnalyzedClass);
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 return false;

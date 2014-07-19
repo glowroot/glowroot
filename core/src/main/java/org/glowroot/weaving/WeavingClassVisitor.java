@@ -105,7 +105,7 @@ class WeavingClassVisitor extends ClassVisitor {
     @Nullable
     private final ClassLoader loader;
 
-    private final ParsedTypeClassVisitor parsedTypeClassVisitor;
+    private final AnalyzingClassVisitor analyzingClassVisitor;
 
     private final boolean traceMetricWrapperMethods;
 
@@ -126,26 +126,26 @@ class WeavingClassVisitor extends ClassVisitor {
 
     public WeavingClassVisitor(ClassVisitor cv, ImmutableList<Advice> advisors,
             ImmutableList<MixinType> mixinTypes, @Nullable ClassLoader loader,
-            ParsedTypeCache parsedTypeCache, @Nullable CodeSource codeSource,
+            AnalyzedWorld analyzedWorld, @Nullable CodeSource codeSource,
             boolean traceMetricWrapperMethods) {
         super(ASM5, cv);
         this.cv = cv;
         this.loader = loader;
-        parsedTypeClassVisitor = new ParsedTypeClassVisitor(advisors, mixinTypes, loader,
-                parsedTypeCache, codeSource);
+        analyzingClassVisitor = new AnalyzingClassVisitor(advisors, mixinTypes, loader,
+                analyzedWorld, codeSource);
         this.traceMetricWrapperMethods = traceMetricWrapperMethods;
     }
 
     @Override
     public void visit(int version, int access, String name, @Nullable String signature,
             @Nullable String superName, String/*@Nullable*/[] interfaceNamesNullable) {
-        parsedTypeClassVisitor.visit(version, access, name, signature, superName,
+        analyzingClassVisitor.visit(version, access, name, signature, superName,
                 interfaceNamesNullable);
-        if (parsedTypeClassVisitor.isNothingInteresting()
-                && parsedTypeClassVisitor.getMatchedMixinTypes().isEmpty()) {
+        if (analyzingClassVisitor.isNothingInteresting()
+                && analyzingClassVisitor.getMatchedMixinTypes().isEmpty()) {
             // performance optimization
             nothingAtAllToWeave = true;
-            parsedTypeClassVisitor.visitEndReturningParsedType();
+            analyzingClassVisitor.visitEndReturningAnalyzedClass();
             // not great to use exception for control flow, but no other way to abort weaving here
             // at least save the cost of exception instantiation by re-using exception instance
             throw AbortWeavingException.INSTANCE;
@@ -154,7 +154,7 @@ class WeavingClassVisitor extends ClassVisitor {
         if (nothingAtAllToWeave) {
             return;
         }
-        for (AdviceMatcher adviceMatcher : parsedTypeClassVisitor.getAdviceMatchers()) {
+        for (AdviceMatcher adviceMatcher : analyzingClassVisitor.getAdviceMatchers()) {
             if (!adviceMatcher.getAdvice().getClassMetas().isEmpty()
                     || !adviceMatcher.getAdvice().getMethodMetas().isEmpty()) {
                 maybeHasMetas = true;
@@ -162,9 +162,10 @@ class WeavingClassVisitor extends ClassVisitor {
             }
         }
         if (!maybeHasMetas) {
-            outer: for (ParsedType parsedType : parsedTypeClassVisitor.getSuperParsedTypes()) {
-                for (ParsedMethod parsedMethod : parsedType.getParsedMethods()) {
-                    for (Advice advice : parsedMethod.getAdvisors()) {
+            outer: for (AnalyzedClass analyzedClass : analyzingClassVisitor
+                    .getSuperAnalyzedClasses()) {
+                for (AnalyzedMethod analyzedMethod : analyzedClass.getAnalyzedMethods()) {
+                    for (Advice advice : analyzedMethod.getAdvisors()) {
                         if (!advice.getClassMetas().isEmpty()
                                 || !advice.getMethodMetas().isEmpty()) {
                             maybeHasMetas = true;
@@ -177,7 +178,7 @@ class WeavingClassVisitor extends ClassVisitor {
         type = Type.getObjectType(name);
         String/*@Nullable*/[] interfacesIncludingMixins =
                 getInterfacesIncludingMixins(interfaceNamesNullable,
-                        parsedTypeClassVisitor.getMatchedMixinTypes());
+                        analyzingClassVisitor.getMatchedMixinTypes());
         super.visit(version, access, name, signature, superName, interfacesIncludingMixins);
     }
 
@@ -185,7 +186,7 @@ class WeavingClassVisitor extends ClassVisitor {
     @Nullable
     public MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
-        List<Advice> matchingAdvisors = parsedTypeClassVisitor.visitMethodReturningAdvisors(access,
+        List<Advice> matchingAdvisors = analyzingClassVisitor.visitMethodReturningAdvisors(access,
                 name, desc, signature, exceptions);
         if (nothingAtAllToWeave) {
             return null;
@@ -196,7 +197,7 @@ class WeavingClassVisitor extends ClassVisitor {
             // don't try to weave abstract, native and synthetic methods
             return cv.visitMethod(access, name, desc, signature, exceptions);
         }
-        if (name.equals("<init>") && !parsedTypeClassVisitor.getMatchedMixinTypes().isEmpty()) {
+        if (name.equals("<init>") && !analyzingClassVisitor.getMatchedMixinTypes().isEmpty()) {
             return visitInitWithMixin(access, name, desc, signature, exceptions, matchingAdvisors);
         }
         if (matchingAdvisors.isEmpty()) {
@@ -207,15 +208,15 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @Override
     public void visitEnd() {
-        ParsedType parsedType = parsedTypeClassVisitor.visitEndReturningParsedType();
+        AnalyzedClass analyzedClass = analyzingClassVisitor.visitEndReturningAnalyzedClass();
         if (nothingAtAllToWeave) {
             return;
         }
         checkNotNull(type); // type is non null if there is something to weave
-        for (MixinType mixinType : parsedTypeClassVisitor.getMatchedMixinTypes()) {
+        for (MixinType mixinType : analyzingClassVisitor.getMatchedMixinTypes()) {
             addMixin(mixinType);
         }
-        handleInheritedMethodsThatNowFulfillAdvice(parsedType);
+        handleInheritedMethodsThatNowFulfillAdvice(analyzedClass);
         // handle metas at end, since handleInheritedMethodsThatNowFulfillAdvice()
         // above could add new metas
         if (metaHolderName != null) {
@@ -385,7 +386,7 @@ class WeavingClassVisitor extends ClassVisitor {
         int methodMetaUniqueNum = collectClassAndMethodMetas(matchingAdvisors, desc);
         MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
         checkNotNull(mv);
-        mv = new InitMixins(mv, access, name, desc, parsedTypeClassVisitor.getMatchedMixinTypes(),
+        mv = new InitMixins(mv, access, name, desc, analyzingClassVisitor.getMatchedMixinTypes(),
                 type);
         for (Advice advice : matchingAdvisors) {
             if (advice.getPointcut().traceMetric().length() != 0) {
@@ -524,51 +525,51 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     @RequiresNonNull("type")
-    private void handleInheritedMethodsThatNowFulfillAdvice(ParsedType parsedType) {
-        if (parsedType.isInterface() || parsedType.isAbstract()) {
+    private void handleInheritedMethodsThatNowFulfillAdvice(AnalyzedClass analyzedClass) {
+        if (analyzedClass.isInterface() || analyzedClass.isAbstract()) {
             return;
         }
-        Map<ParsedMethod, Set<Advice>> matchingAdvisorSets = Maps.newHashMap();
-        for (ParsedType superParsedType : parsedTypeClassVisitor.getSuperParsedTypes()) {
-            if (!superParsedType.isInterface()) {
+        Map<AnalyzedMethod, Set<Advice>> matchingAdvisorSets = Maps.newHashMap();
+        for (AnalyzedClass superAnalyzedClass : analyzingClassVisitor.getSuperAnalyzedClasses()) {
+            if (!superAnalyzedClass.isInterface()) {
                 continue;
             }
-            for (ParsedMethod superParsedMethod : superParsedType.getParsedMethods()) {
-                Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(superParsedMethod);
+            for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.getAnalyzedMethods()) {
+                Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(superAnalyzedMethod);
                 if (matchingAdvisorSet == null) {
                     matchingAdvisorSet = Sets.newHashSet();
-                    matchingAdvisorSets.put(superParsedMethod, matchingAdvisorSet);
+                    matchingAdvisorSets.put(superAnalyzedMethod, matchingAdvisorSet);
                 }
-                matchingAdvisorSet.addAll(superParsedMethod.getAdvisors());
+                matchingAdvisorSet.addAll(superAnalyzedMethod.getAdvisors());
             }
         }
-        for (ParsedMethod parsedMethod : parsedType.getParsedMethods()) {
-            matchingAdvisorSets.remove(parsedMethod);
+        for (AnalyzedMethod analyzedMethod : analyzedClass.getAnalyzedMethods()) {
+            matchingAdvisorSets.remove(analyzedMethod);
         }
-        for (ParsedType superParsedType : parsedTypeClassVisitor.getSuperParsedTypes()) {
-            if (superParsedType.isInterface()) {
+        for (AnalyzedClass superAnalyzedClass : analyzingClassVisitor.getSuperAnalyzedClasses()) {
+            if (superAnalyzedClass.isInterface()) {
                 continue;
             }
-            for (ParsedMethod superParsedMethod : superParsedType.getParsedMethods()) {
-                Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(superParsedMethod);
+            for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.getAnalyzedMethods()) {
+                Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(superAnalyzedMethod);
                 if (matchingAdvisorSet == null) {
                     continue;
                 }
-                matchingAdvisorSet.removeAll(superParsedMethod.getAdvisors());
+                matchingAdvisorSet.removeAll(superAnalyzedMethod.getAdvisors());
             }
         }
-        for (Entry<ParsedMethod, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
-            ParsedMethod inheritedMethod = entry.getKey();
+        for (Entry<AnalyzedMethod, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
+            AnalyzedMethod inheritedMethod = entry.getKey();
             Set<Advice> advisors = entry.getValue();
             if (!advisors.isEmpty()) {
-                overrideAndWeaveInheritedMethod(parsedType, inheritedMethod, advisors);
+                overrideAndWeaveInheritedMethod(analyzedClass, inheritedMethod, advisors);
             }
         }
     }
 
     @RequiresNonNull("type")
-    private void overrideAndWeaveInheritedMethod(ParsedType parsedType,
-            ParsedMethod inheritedMethod, Collection<Advice> matchingAdvisors) {
+    private void overrideAndWeaveInheritedMethod(AnalyzedClass analyzedClass,
+            AnalyzedMethod inheritedMethod, Collection<Advice> matchingAdvisors) {
         String[] exceptions = Iterables.toArray(inheritedMethod.getExceptions(), String.class);
         MethodVisitor mv = visitMethodWithAdvice(ACC_PUBLIC, inheritedMethod.getName(),
                 inheritedMethod.getDesc(), inheritedMethod.getSignature(), exceptions,
@@ -579,7 +580,7 @@ class WeavingClassVisitor extends ClassVisitor {
         mg.visitCode();
         mg.loadThis();
         mg.loadArgs();
-        String superName = parsedType.getSuperName();
+        String superName = analyzedClass.getSuperName();
         Type superType;
         if (superName == null) {
             superType = Type.getType(Object.class);

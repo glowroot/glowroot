@@ -28,14 +28,14 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.weaving.ParsedTypeCache;
+import org.glowroot.weaving.AnalyzedWorld;
 import org.glowroot.weaving.TypeNames;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class ParsedTypePlanBTest {
+public class AnalyzedClassPlanBTest {
 
     private static Container container;
 
@@ -55,32 +55,32 @@ public class ParsedTypePlanBTest {
     }
 
     @Test
-    public void shouldNotLogWarningInParsedTypeCachePlanB() throws Exception {
+    public void shouldNotLogWarningInAnalyzedWorldPlanB() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldNotLogWarningInParsedTypeCachePlanB.class);
+        container.executeAppUnderTest(ShouldNotLogWarningInAnalyzedWorldPlanB.class);
         // then
         // container close will validate that there were no unexpected warnings or errors
     }
 
     @Test
-    public void shouldLogWarningInParsedTypeCachePlanB() throws Exception {
+    public void shouldLogWarningInAnalyzedWorldPlanB() throws Exception {
         // given
-        container.addExpectedLogMessage(ParsedTypeCache.class.getName(), "could not find resource "
+        container.addExpectedLogMessage(AnalyzedWorld.class.getName(), "could not find resource "
                 + TypeNames.toInternal(Y.class.getName()) + ".class");
         // when
-        container.executeAppUnderTest(ShouldLogWarningInParsedTypeCachePlanB.class);
+        container.executeAppUnderTest(ShouldLogWarningInAnalyzedWorldPlanB.class);
         // then
     }
 
-    public static class ShouldNotLogWarningInParsedTypeCachePlanB implements AppUnderTest {
+    public static class ShouldNotLogWarningInAnalyzedWorldPlanB implements AppUnderTest {
         @Override
         public void executeApp() throws Exception {
             Class.forName(Z.class.getName(), true, new DelegatingClassLoader());
         }
     }
 
-    public static class ShouldLogWarningInParsedTypeCachePlanB implements AppUnderTest {
+    public static class ShouldLogWarningInAnalyzedWorldPlanB implements AppUnderTest {
         @Override
         public void executeApp() throws Exception {
             Class.forName(Z.class.getName(), true, new DelegatingClassLoader2());

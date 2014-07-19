@@ -32,7 +32,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
-import org.glowroot.weaving.ParsedTypeCache.ParseContext;
+import org.glowroot.weaving.AnalyzedWorld.ParseContext;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ASM5;
@@ -41,36 +41,36 @@ import static org.objectweb.asm.Opcodes.ASM5;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class ParsedTypeClassVisitor extends ClassVisitor {
+class AnalyzingClassVisitor extends ClassVisitor {
 
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
     @Nullable
     private final ClassLoader loader;
-    private final ParsedTypeCache parsedTypeCache;
+    private final AnalyzedWorld analyzedWorld;
     @Nullable
     private final CodeSource codeSource;
 
     private ImmutableList<AdviceMatcher> adviceMatchers = ImmutableList.of();
     private ImmutableList<MixinType> matchedMixinTypes = ImmutableList.of();
 
-    private List<ParsedType> superParsedTypes = ImmutableList.of();
+    private List<AnalyzedClass> superAnalyzedClasses = ImmutableList.of();
 
     private boolean nothingInterestingHere;
 
-    private ParsedType./*@MonotonicNonNull*/Builder parsedTypeBuilder;
+    private AnalyzedClass./*@MonotonicNonNull*/Builder analyzedClassBuilder;
 
     @Nullable
-    private ParsedType parsedType;
+    private AnalyzedClass analyzedClass;
 
-    public ParsedTypeClassVisitor(ImmutableList<Advice> advisors,
+    public AnalyzingClassVisitor(ImmutableList<Advice> advisors,
             ImmutableList<MixinType> mixinTypes, @Nullable ClassLoader loader,
-            ParsedTypeCache parsedTypeCache, @Nullable CodeSource codeSource) {
+            AnalyzedWorld analyzedWorld, @Nullable CodeSource codeSource) {
         super(ASM5);
         this.mixinTypes = mixinTypes;
         this.advisors = advisors;
         this.loader = loader;
-        this.parsedTypeCache = parsedTypeCache;
+        this.analyzedWorld = analyzedWorld;
         this.codeSource = codeSource;
     }
 
@@ -80,35 +80,35 @@ class ParsedTypeClassVisitor extends ClassVisitor {
 
         String[] interfaceNames = interfaceNamesNullable == null ? new String[0]
                 : interfaceNamesNullable;
-        parsedTypeBuilder = ParsedType.builder(access, TypeNames.fromInternal(name),
+        analyzedClassBuilder = AnalyzedClass.builder(access, TypeNames.fromInternal(name),
                 TypeNames.fromInternal(superName), TypeNames.fromInternal(interfaceNames));
         String className = TypeNames.fromInternal(name);
         adviceMatchers = AdviceMatcher.getAdviceMatchers(className, advisors);
         if (Modifier.isInterface(access)) {
             ImmutableList<MixinType> matchedMixinTypes = getMatchedMixinTypes(className,
-                    ImmutableList.<ParsedType>of(), ImmutableList.<ParsedType>of());
-            superParsedTypes = ImmutableList.of();
-            parsedTypeBuilder.addMixinTypes(matchedMixinTypes);
+                    ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
+            superAnalyzedClasses = ImmutableList.of();
+            analyzedClassBuilder.addMixinTypes(matchedMixinTypes);
             nothingInterestingHere = adviceMatchers.isEmpty();
             return;
         }
         ParseContext parseContext = new ParseContext(className, codeSource);
-        List<ParsedType> superHierarchy = parsedTypeCache.getTypeHierarchy(
+        List<AnalyzedClass> superHierarchy = analyzedWorld.getTypeHierarchy(
                 TypeNames.fromInternal(superName), loader, parseContext);
-        List<ParsedType> newInterfaceHierarchy =
+        List<AnalyzedClass> newInterfaceHierarchy =
                 getInterfaceHierarchy(interfaceNames, parseContext);
-        // it's ok if there are duplicates in the superParsedTypes list (e.g. an interface that
+        // it's ok if there are duplicates in the superAnalyzedClasses list (e.g. an interface that
         // appears twice in a type hierarchy), it's rare, dups don't cause an issue for callers, and
         // so it doesn't seem worth the (minor) performance hit to de-dup every time
-        superParsedTypes = Lists.newArrayList();
-        superParsedTypes.addAll(superHierarchy);
-        superParsedTypes.addAll(newInterfaceHierarchy);
+        superAnalyzedClasses = Lists.newArrayList();
+        superAnalyzedClasses.addAll(superHierarchy);
+        superAnalyzedClasses.addAll(newInterfaceHierarchy);
         matchedMixinTypes = getMatchedMixinTypes(className, superHierarchy, newInterfaceHierarchy);
-        parsedTypeBuilder.addMixinTypes(matchedMixinTypes);
+        analyzedClassBuilder.addMixinTypes(matchedMixinTypes);
 
         boolean hasSuperAdvice = false;
-        for (ParsedType parsedType : superParsedTypes) {
-            if (!parsedType.getParsedMethods().isEmpty()) {
+        for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
+            if (!analyzedClass.getAnalyzedMethods().isEmpty()) {
                 hasSuperAdvice = true;
                 break;
             }
@@ -126,7 +126,7 @@ class ParsedTypeClassVisitor extends ClassVisitor {
 
     @Override
     public void visitEnd() {
-        visitEndReturningParsedType();
+        visitEndReturningAnalyzedClass();
     }
 
     List<Advice> visitMethodReturningAdvisors(int access, String name, String desc,
@@ -142,18 +142,18 @@ class ParsedTypeClassVisitor extends ClassVisitor {
         List<String> exceptionList = exceptions == null ? ImmutableList.<String>of()
                 : Arrays.asList(exceptions);
         if (!matchingAdvisors.isEmpty()) {
-            checkNotNull(parsedTypeBuilder, "Call to visit() is required");
-            parsedTypeBuilder.addParsedMethod(access, name, desc, signature, exceptionList,
+            checkNotNull(analyzedClassBuilder, "Call to visit() is required");
+            analyzedClassBuilder.addAnalyzedMethod(access, name, desc, signature, exceptionList,
                     matchingAdvisors);
         }
         return matchingAdvisors;
     }
 
-    ParsedType visitEndReturningParsedType() {
-        checkNotNull(parsedTypeBuilder, "Call to visit() is required");
-        parsedType = parsedTypeBuilder.build();
-        parsedTypeCache.add(parsedType, loader);
-        return parsedType;
+    AnalyzedClass visitEndReturningAnalyzedClass() {
+        checkNotNull(analyzedClassBuilder, "Call to visit() is required");
+        analyzedClass = analyzedClassBuilder.build();
+        analyzedWorld.add(analyzedClass, loader);
+        return analyzedClass;
     }
 
     ImmutableList<AdviceMatcher> getAdviceMatchers() {
@@ -164,8 +164,8 @@ class ParsedTypeClassVisitor extends ClassVisitor {
         return matchedMixinTypes;
     }
 
-    List<ParsedType> getSuperParsedTypes() {
-        return superParsedTypes;
+    List<AnalyzedClass> getSuperAnalyzedClasses() {
+        return superAnalyzedClasses;
     }
 
     boolean isNothingInteresting() {
@@ -173,22 +173,23 @@ class ParsedTypeClassVisitor extends ClassVisitor {
     }
 
     @Nullable
-    ParsedType getParsedType() {
-        return parsedType;
+    AnalyzedClass getAnalyzedClass() {
+        return analyzedClass;
     }
 
-    private List<ParsedType> getInterfaceHierarchy(String[] interfaceNames,
+    private List<AnalyzedClass> getInterfaceHierarchy(String[] interfaceNames,
             ParseContext parseContext) {
-        List<ParsedType> superTypes = Lists.newArrayList();
+        List<AnalyzedClass> superTypes = Lists.newArrayList();
         for (String interfaceName : interfaceNames) {
-            superTypes.addAll(parsedTypeCache.getTypeHierarchy(
+            superTypes.addAll(analyzedWorld.getTypeHierarchy(
                     TypeNames.fromInternal(interfaceName), loader, parseContext));
         }
         return superTypes;
     }
 
     private ImmutableList<MixinType> getMatchedMixinTypes(String className,
-            Iterable<ParsedType> superParsedTypes, List<ParsedType> newInterfaceParsedTypes) {
+            Iterable<AnalyzedClass> superAnalyzedClasses,
+            List<AnalyzedClass> newInterfaceAnalyzedClasses) {
         Set<MixinType> matchedMixinTypes = Sets.newHashSet();
         String typeClassName = className;
         for (MixinType mixinType : mixinTypes) {
@@ -196,13 +197,13 @@ class ParsedTypeClassVisitor extends ClassVisitor {
                 matchedMixinTypes.add(mixinType);
             }
         }
-        for (ParsedType newInterfaceParsedType : newInterfaceParsedTypes) {
-            matchedMixinTypes.addAll(newInterfaceParsedType.getMixinTypes());
+        for (AnalyzedClass newInterfaceAnalyzedClass : newInterfaceAnalyzedClasses) {
+            matchedMixinTypes.addAll(newInterfaceAnalyzedClass.getMixinTypes());
         }
         // remove mixins that were already implemented in a super class
-        for (ParsedType superParsedType : superParsedTypes) {
-            if (!superParsedType.isInterface()) {
-                matchedMixinTypes.removeAll(superParsedType.getMixinTypes());
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+            if (!superAnalyzedClass.isInterface()) {
+                matchedMixinTypes.removeAll(superAnalyzedClass.getMixinTypes());
             }
         }
         return ImmutableList.copyOf(matchedMixinTypes);
@@ -218,11 +219,11 @@ class ParsedTypeClassVisitor extends ClassVisitor {
             }
         }
         // look at super types
-        checkNotNull(superParsedTypes, "Call to visit() is required");
-        for (ParsedType parsedType : superParsedTypes) {
-            for (ParsedMethod parsedMethod : parsedType.getParsedMethods()) {
-                if (parsedMethod.isOverriddenBy(methodName, parameterTypes)) {
-                    matchingAdvisors.addAll(parsedMethod.getAdvisors());
+        checkNotNull(superAnalyzedClasses, "Call to visit() is required");
+        for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
+            for (AnalyzedMethod analyzedMethod : analyzedClass.getAnalyzedMethods()) {
+                if (analyzedMethod.isOverriddenBy(methodName, parameterTypes)) {
+                    matchingAdvisors.addAll(analyzedMethod.getAdvisors());
                 }
             }
         }
@@ -246,8 +247,8 @@ class ParsedTypeClassVisitor extends ClassVisitor {
                 .add("adviceMatchers", adviceMatchers)
                 .add("matchedMixinTypes", matchedMixinTypes)
                 .add("nothingAtAllToWeave", nothingInterestingHere);
-        if (parsedTypeBuilder != null) {
-            toStringHelper.add("parsedType", parsedTypeBuilder.build());
+        if (analyzedClassBuilder != null) {
+            toStringHelper.add("analyzedClass", analyzedClassBuilder.build());
         }
         return toStringHelper.toString();
     }

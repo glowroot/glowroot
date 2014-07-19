@@ -47,7 +47,7 @@ import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.TraceModule;
 import org.glowroot.trace.TraceRegistry;
-import org.glowroot.weaving.ParsedTypeCache;
+import org.glowroot.weaving.AnalyzedWorld;
 
 /**
  * @author Trask Stalnaker
@@ -89,7 +89,7 @@ public class LocalUiModule {
         DataSource dataSource = storageModule.getDataSource();
         CappedDatabase cappedDatabase = storageModule.getCappedDatabase();
         TraceCollectorImpl traceCollector = collectorModule.getTraceCollector();
-        ParsedTypeCache parsedTypeCache = traceModule.getParsedTypeCache();
+        AnalyzedWorld analyzedWorld = traceModule.getAnalyzedWorld();
 
         TraceRegistry traceRegistry = traceModule.getTraceRegistry();
 
@@ -120,11 +120,11 @@ public class LocalUiModule {
                 jvmModule.getHeapHistograms(), jvmModule.getHeapDumps());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
                 pluginDescriptorCache, dataDir, httpSessionManager, traceModule);
-        ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
+        ClasspathCache classpathCache = new ClasspathCache(analyzedWorld);
         PointcutConfigJsonService pointcutConfigJsonService = new PointcutConfigJsonService(
                 configService, traceModule.getAdviceCache(), classpathCache, traceModule);
         AdminJsonService adminJsonService = new AdminJsonService(transactionPointDao, snapshotDao,
-                configService, traceModule.getAdviceCache(), parsedTypeCache,
+                configService, traceModule.getAdviceCache(), analyzedWorld,
                 instrumentation, traceCollector, dataSource, traceRegistry);
 
         List<Object> jsonServices = Lists.newArrayList();

@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.Singleton;
-import org.glowroot.weaving.ParsedTypeCache;
+import org.glowroot.weaving.AnalyzedWorld;
 
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ASM5;
@@ -65,7 +65,7 @@ class ClasspathCache {
 
     private static final Logger logger = LoggerFactory.getLogger(ClasspathCache.class);
 
-    private final ParsedTypeCache parsedTypeCache;
+    private final AnalyzedWorld analyzedWorld;
 
     // using sets of URIs because URLs have expensive equals and hashcode methods
     // see http://michaelscharf.blogspot.com/2006/11/javaneturlequals-and-hashcode-make.html
@@ -76,8 +76,8 @@ class ClasspathCache {
     @GuardedBy("classNameUppers")
     private final SortedMap<String, SortedSet<String>> classNameUppers = Maps.newTreeMap();
 
-    ClasspathCache(ParsedTypeCache parsedTypeCache) {
-        this.parsedTypeCache = parsedTypeCache;
+    ClasspathCache(AnalyzedWorld analyzedWorld) {
+        this.analyzedWorld = analyzedWorld;
     }
 
     List<String> getMatchingClassNames(String partialClassName, int limit) {
@@ -99,22 +99,22 @@ class ClasspathCache {
         return Lists.newArrayList(classNames);
     }
 
-    ImmutableList<UiParsedMethod> getParsedMethods(String className) {
+    ImmutableList<UiAnalyzedMethod> getAnalyzedMethods(String className) {
         // update cache before proceeding
         updateCache();
-        List<UiParsedMethod> parsedMethods = Lists.newArrayList();
+        List<UiAnalyzedMethod> analyzedMethods = Lists.newArrayList();
         Set<URI> uris = classNames.get(className);
         if (uris == null) {
             return ImmutableList.of();
         }
         for (URI uri : uris) {
             try {
-                parsedMethods.addAll(getParsedMethods(uri));
+                analyzedMethods.addAll(getAnalyzedMethods(uri));
             } catch (IOException e) {
                 logger.warn(e.getMessage(), e);
             }
         }
-        return ImmutableList.copyOf(parsedMethods);
+        return ImmutableList.copyOf(analyzedMethods);
     }
 
     void updateCache() {
@@ -123,12 +123,12 @@ class ClasspathCache {
         }
     }
 
-    private List<UiParsedMethod> getParsedMethods(URI uri) throws IOException {
-        ParsedTypeClassVisitor cv = new ParsedTypeClassVisitor();
+    private List<UiAnalyzedMethod> getAnalyzedMethods(URI uri) throws IOException {
+        AnalyzingClassVisitor cv = new AnalyzingClassVisitor();
         byte[] bytes = Resources.toByteArray(uri.toURL());
         ClassReader cr = new ClassReader(bytes);
         cr.accept(cv, 0);
-        return cv.getParsedMethods();
+        return cv.getAnalyzedMethods();
     }
 
     private void updateCache(URLClassLoader loader) {
@@ -179,7 +179,7 @@ class ClasspathCache {
     }
 
     private List<ClassLoader> getKnownClassLoaders() {
-        List<ClassLoader> loaders = Lists.newArrayList(parsedTypeCache.getClassLoaders());
+        List<ClassLoader> loaders = Lists.newArrayList(analyzedWorld.getClassLoaders());
         if (loaders.isEmpty()) {
             // this is needed for testing the UI outside of javaagent
             ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
@@ -287,11 +287,11 @@ class ClasspathCache {
         }
     }
 
-    private static class ParsedTypeClassVisitor extends ClassVisitor {
+    private static class AnalyzingClassVisitor extends ClassVisitor {
 
-        private final List<UiParsedMethod> parsedMethods = Lists.newArrayList();
+        private final List<UiAnalyzedMethod> analyzedMethods = Lists.newArrayList();
 
-        private ParsedTypeClassVisitor() {
+        private AnalyzingClassVisitor() {
             super(ASM5);
         }
 
@@ -300,19 +300,19 @@ class ClasspathCache {
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String/*@Nullable*/[] exceptions) {
             if ((access & ACC_SYNTHETIC) == 0) {
-                // don't add synthetic methods to the parsed type model
+                // don't add synthetic methods to the analyzed model
                 List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
                 Type returnType = Type.getReturnType(desc);
                 List<String> exceptionList = exceptions == null ? ImmutableList.<String>of()
                         : Arrays.asList(exceptions);
-                parsedMethods.add(UiParsedMethod.from(name, parameterTypes, returnType, access,
+                analyzedMethods.add(UiAnalyzedMethod.from(name, parameterTypes, returnType, access,
                         signature, exceptionList));
             }
             return null;
         }
 
-        private List<UiParsedMethod> getParsedMethods() {
-            return parsedMethods;
+        private List<UiAnalyzedMethod> getAnalyzedMethods() {
+            return analyzedMethods;
         }
     }
 }

@@ -364,16 +364,16 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.AdviceFlowOuterHolder$1");
         types.add("org.glowroot.weaving.AdviceFlowOuterHolder$AdviceFlowHolder");
         types.add("org.glowroot.weaving.AdviceMatcher");
+        types.add("org.glowroot.weaving.AnalyzedClass");
+        types.add("org.glowroot.weaving.AnalyzedClass$Builder");
+        types.add("org.glowroot.weaving.AnalyzedMethod");
+        types.add("org.glowroot.weaving.AnalyzedWorld");
+        types.add("org.glowroot.weaving.AnalyzedWorld$1");
+        types.add("org.glowroot.weaving.AnalyzedWorld$ParseContext");
+        types.add("org.glowroot.weaving.AnalyzingClassVisitor");
         types.add("org.glowroot.weaving.GeneratedBytecodeUtil");
         types.add("org.glowroot.weaving.MixinMatcher");
         types.add("org.glowroot.weaving.MixinType");
-        types.add("org.glowroot.weaving.ParsedMethod");
-        types.add("org.glowroot.weaving.ParsedType");
-        types.add("org.glowroot.weaving.ParsedType$Builder");
-        types.add("org.glowroot.weaving.ParsedTypeCache");
-        types.add("org.glowroot.weaving.ParsedTypeCache$1");
-        types.add("org.glowroot.weaving.ParsedTypeCache$ParseContext");
-        types.add("org.glowroot.weaving.ParsedTypeClassVisitor");
         types.add("org.glowroot.weaving.PatchedAdviceAdapter");
         types.add("org.glowroot.weaving.TypeNames");
         types.add("org.glowroot.weaving.Weaver");
@@ -490,7 +490,7 @@ public class PreInitializeWeavingClasses {
         // (see http://stackoverflow.com/questions/2883181)
         types.add("org.glowroot.common.Reflections$1");
         types.add("org.glowroot.trace.model.TraceGcInfo$1");
-        types.add("org.glowroot.weaving.ParsedType$1");
+        types.add("org.glowroot.weaving.AnalyzedClass$1");
         types.add("org.glowroot.weaving.Weaver$1");
         types.add("org.glowroot.weaving.WeavingMethodVisitor$1");
         types.add("org.glowroot.weaving.WeavingClassVisitor$1");

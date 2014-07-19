@@ -36,7 +36,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @since 0.5
  */
 @Immutable
-public class UiParsedMethod {
+public class UiAnalyzedMethod {
 
     private final String name;
     private final ImmutableList<String> parameterTypes;
@@ -47,18 +47,18 @@ public class UiParsedMethod {
     private final String signature;
     private final ImmutableList<String> exceptions;
 
-    static UiParsedMethod from(String name, List<Type> parameterTypes, Type returnType,
+    static UiAnalyzedMethod from(String name, List<Type> parameterTypes, Type returnType,
             int modifiers, @Nullable String signature, List<String> exceptions) {
         List<String> parameterTypeNames = Lists.newArrayList();
         for (Type parameterType : parameterTypes) {
             parameterTypeNames.add(parameterType.getClassName());
         }
         String returnTypeName = returnType.getClassName();
-        return new UiParsedMethod(name, parameterTypeNames, returnTypeName, modifiers, signature,
+        return new UiAnalyzedMethod(name, parameterTypeNames, returnTypeName, modifiers, signature,
                 exceptions);
     }
 
-    private UiParsedMethod(String name, List<String> parameterTypes, String returnType,
+    private UiAnalyzedMethod(String name, List<String> parameterTypes, String returnType,
             int modifiers, @Nullable String signature, List<String> exceptions) {
         this.name = name;
         this.parameterTypes = ImmutableList.copyOf(parameterTypes);
@@ -96,16 +96,16 @@ public class UiParsedMethod {
 
     // equals and hashCode are only defined in terms of name and parameterTypes since those uniquely
     // identify a method within a given class
-    // this is currently important because UiParsedMethod is used in a set to filter out duplicates
-    // in PointcutConfigJsonService
+    // this is currently important because UiAnalyzedMethod is used in a set to filter out
+    // duplicates in PointcutConfigJsonService
     @Override
     @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj == this) {
             return true;
         }
-        if (obj instanceof UiParsedMethod) {
-            UiParsedMethod that = (UiParsedMethod) obj;
+        if (obj instanceof UiAnalyzedMethod) {
+            UiAnalyzedMethod that = (UiAnalyzedMethod) obj;
             return Objects.equal(name, that.name)
                     && Objects.equal(parameterTypes, that.parameterTypes);
         }
@@ -114,8 +114,8 @@ public class UiParsedMethod {
 
     // equals and hashCode are only defined in terms of name and parameterTypes since those uniquely
     // identify a method within a given class
-    // this is currently important because UiParsedMethod is used in a set to filter out duplicates
-    // in PointcutConfigJsonService
+    // this is currently important because UiAnalyzedMethod is used in a set to filter out
+    // duplicates in PointcutConfigJsonService
     @Override
     @Pure
     public int hashCode() {
@@ -136,12 +136,12 @@ public class UiParsedMethod {
     }
 
     @Immutable
-    static class UiParsedMethodOrdering extends Ordering<UiParsedMethod> {
+    static class UiAnalyzedMethodOrdering extends Ordering<UiAnalyzedMethod> {
 
-        static final UiParsedMethodOrdering INSTANCE = new UiParsedMethodOrdering();
+        static final UiAnalyzedMethodOrdering INSTANCE = new UiAnalyzedMethodOrdering();
 
         @Override
-        public int compare(@Nullable UiParsedMethod left, @Nullable UiParsedMethod right) {
+        public int compare(@Nullable UiAnalyzedMethod left, @Nullable UiAnalyzedMethod right) {
             checkNotNull(left);
             checkNotNull(right);
             return ComparisonChain.start()
@@ -152,8 +152,8 @@ public class UiParsedMethod {
                     .result();
         }
 
-        private static int getAccessibility(UiParsedMethod parsedMethod) {
-            int modifiers = parsedMethod.getModifiers();
+        private static int getAccessibility(UiAnalyzedMethod analyzedMethod) {
+            int modifiers = analyzedMethod.getModifiers();
             if (Modifier.isPublic(modifiers)) {
                 return 1;
             } else if (Modifier.isProtected(modifiers)) {

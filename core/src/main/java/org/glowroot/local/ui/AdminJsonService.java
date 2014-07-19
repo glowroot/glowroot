@@ -39,7 +39,7 @@ import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
 import org.glowroot.trace.AdviceCache;
 import org.glowroot.trace.TraceRegistry;
-import org.glowroot.weaving.ParsedTypeCache;
+import org.glowroot.weaving.AnalyzedWorld;
 
 /**
  * Json service for various admin tasks.
@@ -57,7 +57,7 @@ class AdminJsonService {
     private final SnapshotDao snapshotDao;
     private final ConfigService configService;
     private final AdviceCache adviceCache;
-    private final ParsedTypeCache parsedTypeCache;
+    private final AnalyzedWorld analyzedWorld;
     @Nullable
     private final Instrumentation instrumentation;
     private final TraceCollectorImpl traceCollector;
@@ -65,14 +65,14 @@ class AdminJsonService {
     private final TraceRegistry traceRegistry;
 
     AdminJsonService(TransactionPointDao transactionPointDao, SnapshotDao snapshotDao,
-            ConfigService configService, AdviceCache adviceCache, ParsedTypeCache parsedTypeCache,
+            ConfigService configService, AdviceCache adviceCache, AnalyzedWorld analyzedWorld,
             @Nullable Instrumentation instrumentation, TraceCollectorImpl traceCollector,
             DataSource dataSource, TraceRegistry traceRegistry) {
         this.transactionPointDao = transactionPointDao;
         this.snapshotDao = snapshotDao;
         this.configService = configService;
         this.adviceCache = adviceCache;
-        this.parsedTypeCache = parsedTypeCache;
+        this.analyzedWorld = analyzedWorld;
         this.instrumentation = instrumentation;
         this.traceCollector = traceCollector;
         this.dataSource = dataSource;
@@ -103,20 +103,20 @@ class AdminJsonService {
             classNames.add(pointcutConfig.getClassName());
         }
         Set<Class<?>> classes = Sets.newHashSet();
-        List<Class<?>> existingReweavableClasses = parsedTypeCache.getClassesWithReweavableAdvice();
+        List<Class<?>> existingReweavableClasses = analyzedWorld.getClassesWithReweavableAdvice();
         List<Class<?>> possibleNewReweavableClasses =
-                parsedTypeCache.getExistingSubClasses(classNames);
+                analyzedWorld.getExistingSubClasses(classNames);
         classes.addAll(existingReweavableClasses);
         classes.addAll(possibleNewReweavableClasses);
         if (classes.isEmpty()) {
             return "{\"classes\":0}";
         }
-        // need to clear these classes from ParsedTypeCache, otherwise if a subclass and its parent
+        // need to clear these classes from AnalyzedWorld, otherwise if a subclass and its parent
         // class are both in the list and the subclass is re-transformed first, it will use the
-        // old cached ParsedType for its parent which will have the old ParsedMethod advisors
-        parsedTypeCache.clearClassesBeforeReweaving(classes);
+        // old cached AnalyzedClass for its parent which will have the old AnalyzedMethod advisors
+        analyzedWorld.clearClassesBeforeReweaving(classes);
         instrumentation.retransformClasses(Iterables.toArray(classes, Class.class));
-        List<Class<?>> updatedReweavableClasses = parsedTypeCache.getClassesWithReweavableAdvice();
+        List<Class<?>> updatedReweavableClasses = analyzedWorld.getClassesWithReweavableAdvice();
         // all existing reweavable classes were woven
         int count = existingReweavableClasses.size();
         // now add newly reweavable classes

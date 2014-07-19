@@ -51,11 +51,10 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // note: an exception is made for WeavingTimerService, see PreInitializeWeavingClassesTest for
     // explanation
     public WeavingClassFileTransformer(List<MixinType> mixinTypes,
-            Supplier<ImmutableList<Advice>> advisors,
-            ParsedTypeCache parsedTypeCache, WeavingTimerService weavingTimerService,
-            boolean traceMetricWrapperMethods) {
+            Supplier<ImmutableList<Advice>> advisors, AnalyzedWorld analyzedWorld,
+            WeavingTimerService weavingTimerService, boolean traceMetricWrapperMethods) {
         this.traceMetricTimerService = weavingTimerService;
-        weaver = new Weaver(advisors, mixinTypes, parsedTypeCache, traceMetricTimerService,
+        weaver = new Weaver(advisors, mixinTypes, analyzedWorld, traceMetricTimerService,
                 traceMetricWrapperMethods);
         // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
         // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
