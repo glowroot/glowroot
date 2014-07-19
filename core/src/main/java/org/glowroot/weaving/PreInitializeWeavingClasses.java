@@ -325,11 +325,11 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.api.TraceMetricName");
         types.add("org.glowroot.api.TraceMetricTimer");
         types.add("org.glowroot.api.weaving.BindClassMeta");
-        types.add("org.glowroot.api.weaving.BindMethodArg");
-        types.add("org.glowroot.api.weaving.BindMethodArgArray");
         types.add("org.glowroot.api.weaving.BindMethodMeta");
         types.add("org.glowroot.api.weaving.BindMethodName");
         types.add("org.glowroot.api.weaving.BindOptionalReturn");
+        types.add("org.glowroot.api.weaving.BindParameter");
+        types.add("org.glowroot.api.weaving.BindParameterArray");
         types.add("org.glowroot.api.weaving.BindReceiver");
         types.add("org.glowroot.api.weaving.BindReturn");
         types.add("org.glowroot.api.weaving.BindThrowable");

@@ -30,9 +30,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@literal @}{@code OnReturn}.
  * <p>
  * An {@literal @}{@code OnReturn} method can accept parameters annotated with any of the following:
- * {@literal @}{@link BindReceiver}, {@literal @}{@link BindMethodArg},
+ * {@literal @}{@link BindReceiver}, {@literal @}{@link BindParameter},
  * 
- * {@literal @}{@link BindMethodArgArray}, {@literal @}{@link BindMethodName},
+ * {@literal @}{@link BindParameterArray}, {@literal @}{@link BindMethodName},
  * 
  * {@literal @}{@link BindTraveler} or {@literal @}{@link BindReturn}.
  * 

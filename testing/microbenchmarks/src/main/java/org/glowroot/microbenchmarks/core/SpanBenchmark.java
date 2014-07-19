@@ -78,6 +78,6 @@ public class SpanBenchmark {
         rootSpan.end();
     }
 
-    @Pointcut(type = "dummy", methodName = "dummy", traceMetric = "micro trace")
+    @Pointcut(className = "dummy", methodName = "dummy", traceMetric = "micro trace")
     private static class OnlyForTheTraceMetricName {}
 }

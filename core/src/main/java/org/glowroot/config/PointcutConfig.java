@@ -47,18 +47,18 @@ import static org.glowroot.common.ObjectMappers.nullToFalse;
 @Immutable
 public class PointcutConfig {
 
-    private final String type;
+    private final String className;
     private final String methodName;
-    private final ImmutableList<String> methodArgTypes;
+    private final ImmutableList<String> methodParameterTypes;
     private final String methodReturnType;
     private final ImmutableList<MethodModifier> methodModifiers;
     private final String traceMetric;
-    private final String spanText;
+    private final String messageTemplate;
     @Nullable
-    private final Long spanStackTraceThresholdMillis;
-    private final boolean spanIgnoreSameNested;
+    private final Long stackTraceThresholdMillis;
+    private final boolean captureSelfNested;
     private final String transactionType;
-    private final String transactionName;
+    private final String transactionNameTemplate;
 
     // enabledProperty and spanEnabledProperty are for plugin authors
     private final String enabledProperty;
@@ -67,40 +67,40 @@ public class PointcutConfig {
     private final String version;
 
     @VisibleForTesting
-    public PointcutConfig(String type, String methodName, List<String> methodArgTypes,
+    public PointcutConfig(String className, String methodName, List<String> methodParameterTypes,
             String methodReturnType, List<MethodModifier> methodModifiers, String traceMetric,
-            String spanText, @Nullable Long spanStackTraceThresholdMillis,
-            boolean spanIgnoreSameNested, String transactionType, String transactionName,
+            String messageTemplate, @Nullable Long stackTraceThresholdMillis,
+            boolean captureSelfNested, String transactionType, String transactionNameTemplate,
             String enabledProperty, String spanEnabledProperty) {
-        this.type = type;
+        this.className = className;
         this.methodName = methodName;
-        this.methodArgTypes = ImmutableList.copyOf(methodArgTypes);
+        this.methodParameterTypes = ImmutableList.copyOf(methodParameterTypes);
         this.methodReturnType = methodReturnType;
         this.methodModifiers = ImmutableList.copyOf(methodModifiers);
         this.traceMetric = traceMetric;
-        this.spanText = spanText;
-        this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
-        this.spanIgnoreSameNested = spanIgnoreSameNested;
+        this.messageTemplate = messageTemplate;
+        this.stackTraceThresholdMillis = stackTraceThresholdMillis;
+        this.captureSelfNested = captureSelfNested;
         this.transactionType = transactionType;
-        this.transactionName = transactionName;
+        this.transactionNameTemplate = transactionNameTemplate;
         this.enabledProperty = enabledProperty;
         this.spanEnabledProperty = spanEnabledProperty;
-        version = VersionHashes.sha1(type, methodName, methodArgTypes, methodReturnType,
-                methodModifiers, traceMetric, spanText, spanStackTraceThresholdMillis,
-                spanIgnoreSameNested, transactionType, transactionName, enabledProperty,
+        version = VersionHashes.sha1(className, methodName, methodParameterTypes, methodReturnType,
+                methodModifiers, traceMetric, messageTemplate, stackTraceThresholdMillis,
+                captureSelfNested, transactionType, transactionNameTemplate, enabledProperty,
                 spanEnabledProperty);
     }
 
-    public String getType() {
-        return type;
+    public String getClassName() {
+        return className;
     }
 
     public String getMethodName() {
         return methodName;
     }
 
-    public ImmutableList<String> getMethodArgTypes() {
-        return methodArgTypes;
+    public ImmutableList<String> getMethodParameterTypes() {
+        return methodParameterTypes;
     }
 
     public String getMethodReturnType() {
@@ -116,25 +116,25 @@ public class PointcutConfig {
         return traceMetric;
     }
 
-    public String getSpanText() {
-        return spanText;
+    public String getMessageTemplate() {
+        return messageTemplate;
     }
 
     @Nullable
-    public Long getSpanStackTraceThresholdMillis() {
-        return spanStackTraceThresholdMillis;
+    public Long getStackTraceThresholdMillis() {
+        return stackTraceThresholdMillis;
     }
 
-    public boolean isSpanIgnoreSameNested() {
-        return spanIgnoreSameNested;
+    public boolean isCaptureSelfNested() {
+        return captureSelfNested;
     }
 
     public String getTransactionType() {
         return transactionType;
     }
 
-    public String getTransactionName() {
-        return transactionName;
+    public String getTransactionNameTemplate() {
+        return transactionNameTemplate;
     }
 
     public String getEnabledProperty() {
@@ -158,65 +158,66 @@ public class PointcutConfig {
 
     @JsonIgnore
     public boolean isSpan() {
-        return !spanText.isEmpty();
+        return !messageTemplate.isEmpty();
     }
 
     @JsonIgnore
     public boolean isTrace() {
-        return !transactionName.isEmpty();
+        return !transactionNameTemplate.isEmpty();
     }
 
     @JsonCreator
     static PointcutConfig readValue(
-            @JsonProperty("type") @Nullable String type,
+            @JsonProperty("className") @Nullable String className,
             @JsonProperty("methodName") @Nullable String methodName,
-            @JsonProperty("methodArgTypes") @Nullable List</*@Nullable*/String> uncheckedMethodArgTypes,
+            @JsonProperty("methodParameterTypes") @Nullable List</*@Nullable*/String> uncheckedMethodParameterTypes,
             @JsonProperty("methodReturnType") @Nullable String methodReturnType,
             @JsonProperty("methodModifiers") @Nullable List</*@Nullable*/MethodModifier> uncheckedMethodModifiers,
             @JsonProperty("traceMetric") @Nullable String traceMetric,
-            @JsonProperty("spanText") @Nullable String spanText,
-            @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
-            @JsonProperty("spanIgnoreSameNested") @Nullable Boolean spanIgnoreSameNested,
+            @JsonProperty("messageTemplate") @Nullable String messageTemplate,
+            @JsonProperty("stackTraceThresholdMillis") @Nullable Long stackTraceThresholdMillis,
+            @JsonProperty("captureSelfNested") @Nullable Boolean captureSelfNested,
             @JsonProperty("transactionType") @Nullable String transactionType,
-            @JsonProperty("transactionName") @Nullable String transactionName,
+            @JsonProperty("transactionNameTemplate") @Nullable String transactionNameTemplate,
             @JsonProperty("enabledProperty") @Nullable String enabledProperty,
             @JsonProperty("spanEnabledProperty") @Nullable String spanEnabledProperty,
             // without including a parameter for version, jackson will use direct field access after
             // this method in order to set the version field if it is included in the json being
             // deserialized (overwriting the hashed version that is calculated in the constructor)
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        List<String> methodArgTypes =
-                checkNotNullItemsForProperty(uncheckedMethodArgTypes, "methodArgTypes");
+        List<String> methodParameterTypes =
+                checkNotNullItemsForProperty(uncheckedMethodParameterTypes, "methodParameterTypes");
         List<MethodModifier> methodModifiers =
                 checkNotNullItemsForProperty(uncheckedMethodModifiers, "methodModifiers");
-        checkRequiredProperty(type, "type");
+        checkRequiredProperty(className, "className");
         checkRequiredProperty(methodName, "methodName");
         checkRequiredProperty(methodReturnType, "methodReturnType");
         if (version != null) {
             throw new JsonMappingException("Version field is not allowed for deserialization");
         }
-        return new PointcutConfig(type, methodName, nullToEmpty(methodArgTypes), methodReturnType,
-                nullToEmpty(methodModifiers), nullToEmpty(traceMetric), nullToEmpty(spanText),
-                spanStackTraceThresholdMillis, nullToFalse(spanIgnoreSameNested),
-                nullToEmpty(transactionType), nullToEmpty(transactionName),
-                nullToEmpty(enabledProperty), nullToEmpty(spanEnabledProperty));
+        return new PointcutConfig(className, methodName, nullToEmpty(methodParameterTypes),
+                methodReturnType, nullToEmpty(methodModifiers), nullToEmpty(traceMetric),
+                nullToEmpty(messageTemplate), stackTraceThresholdMillis,
+                nullToFalse(captureSelfNested), nullToEmpty(transactionType),
+                nullToEmpty(transactionNameTemplate), nullToEmpty(enabledProperty),
+                nullToEmpty(spanEnabledProperty));
     }
 
     @Override
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("type", type)
+                .add("className", className)
                 .add("methodName", methodName)
-                .add("methodArgTypes", methodArgTypes)
+                .add("methodParameterTypes", methodParameterTypes)
                 .add("methodReturnType", methodReturnType)
                 .add("methodModifiers", methodModifiers)
                 .add("traceMetric", traceMetric)
-                .add("spanText", spanText)
-                .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
-                .add("spanIgnoreSameNested", spanIgnoreSameNested)
+                .add("messageTemplate", messageTemplate)
+                .add("stackTraceThresholdMillis", stackTraceThresholdMillis)
+                .add("captureSelfNested", captureSelfNested)
                 .add("transactionType", transactionType)
-                .add("transactionName", transactionName)
+                .add("transactionNameTemplate", transactionNameTemplate)
                 .add("enabledProperty", enabledProperty)
                 .add("spanEnabledProperty", spanEnabledProperty)
                 .add("version", version)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,23 +22,19 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Annotates parameters to any {@literal @}{@link Pointcut} advice method
+ * Annotates a parameter to any {@literal @}{@link Pointcut} advice method
  * 
  * ({@literal @}{@link IsEnabled}, {@literal @}{@link OnBefore}, {@literal @}{@link OnReturn},
  * {@literal @}{@link OnThrow}, {@literal @}{@link OnAfter}).
  * <p>
- * When the advice method is called, the arguments passed to the method matched by the
- * {@link Pointcut} are bound to these parameters.
+ * When the advice method is called, all of the parameters passed to the method matched by the
+ * {@link Pointcut} are wrapped into a single {@link Object[]} and bound to this parameter.
  * <p>
- * There cannot be more {@literal @}{@link BindMethodArg} parameters than the number of arguments
- * passed to the {@link Pointcut} method. If {@code ".."} is used at the end of
- * {@link Pointcut#methodArgTypes()} and the number of arguments is unknown, then
- * {@link BindMethodArgArray} can be used to bind all arguments to a single parameter of type
- * {@code Object[]}.
+ * Parameters annotated with {@literal @}{@link BindMethodName} must be of type {@link Object[]}.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Target(PARAMETER)
 @Retention(RUNTIME)
-public @interface BindMethodArg {}
+public @interface BindParameterArray {}

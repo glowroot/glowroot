@@ -20,7 +20,7 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
 import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.weaving.BindMethodArg;
+import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -36,8 +36,8 @@ public class LogErrorAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
 
-    @Pointcut(type = "org.glowroot.tests.LogError", methodName = "log",
-            methodArgTypes = {"java.lang.String"}, traceMetric = "log error")
+    @Pointcut(className = "org.glowroot.tests.LogError", methodName = "log",
+            methodParameterTypes = {"java.lang.String"}, traceMetric = "log error")
     public static class LogErrorAdvice {
 
         private static final TraceMetricName traceMetricName =
@@ -49,7 +49,7 @@ public class LogErrorAspect {
         }
 
         @OnBefore
-        public static Span onBefore(@BindMethodArg String message) {
+        public static Span onBefore(@BindParameter String message) {
             return pluginServices.startSpan(MessageSupplier.from("ERROR -- {}", message),
                     traceMetricName);
 
@@ -61,7 +61,7 @@ public class LogErrorAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.tests.LogError", methodName = "addNestedErrorSpan",
+    @Pointcut(className = "org.glowroot.tests.LogError", methodName = "addNestedErrorSpan",
             traceMetric = "add nested error span")
     public static class AddErrorSpanAdvice {
 
@@ -90,7 +90,7 @@ public class LogErrorAspect {
 
     // this is just to generate an additional $glowroot$ method to test that consecutive
     // $glowroot$ methods in a span stack trace are stripped out correctly
-    @Pointcut(type = "org.glowroot.tests.LogError", methodName = "log",
-            methodArgTypes = {"java.lang.String"}, traceMetric = "log error 2")
+    @Pointcut(className = "org.glowroot.tests.LogError", methodName = "log",
+            methodParameterTypes = {"java.lang.String"}, traceMetric = "log error 2")
     public static class LogErrorAdvice2 {}
 }

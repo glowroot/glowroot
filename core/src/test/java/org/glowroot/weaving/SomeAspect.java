@@ -23,11 +23,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.OptionalReturn;
 import org.glowroot.api.weaving.BindClassMeta;
-import org.glowroot.api.weaving.BindMethodArg;
-import org.glowroot.api.weaving.BindMethodArgArray;
 import org.glowroot.api.weaving.BindMethodMeta;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindOptionalReturn;
+import org.glowroot.api.weaving.BindParameter;
+import org.glowroot.api.weaving.BindParameterArray;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
@@ -78,7 +78,7 @@ public class SomeAspect {
         orderedEvents.set(new ArrayList<String>());
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1|execute2",
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1|execute2",
             traceMetric = "xyz")
     public static class BasicAdvice {
         @IsEnabled
@@ -110,7 +110,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.SuperBasicMisc", methodName = "superBasic",
+    @Pointcut(className = "org.glowroot.weaving.SuperBasicMisc", methodName = "superBasic",
             traceMetric = "superbasic")
     public static class SuperBasicAdvice {
         @IsEnabled
@@ -136,7 +136,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "java.lang.Throwable", methodName = "toString",
+    @Pointcut(className = "java.lang.Throwable", methodName = "toString",
             traceMetric = "throwable to string")
     public static class ThrowableToStringAdvice {
         @IsEnabled
@@ -162,7 +162,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.BasicMisc", methodName = "<init>")
+    @Pointcut(className = "org.glowroot.weaving.BasicMisc", methodName = "<init>")
     public static class BasicMiscConstructorAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -187,8 +187,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.BasicMisc", methodName = "<init>",
-            methodArgTypes = {".."})
+    @Pointcut(className = "org.glowroot.weaving.BasicMisc", methodName = "<init>",
+            methodParameterTypes = {".."})
     public static class BasicMiscAllConstructorAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -218,8 +218,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.BasicMisc", methodName = "withInnerArg",
-            methodArgTypes = {"org.glowroot.weaving.BasicMisc$Inner"})
+    @Pointcut(className = "org.glowroot.weaving.BasicMisc", methodName = "withInnerArg",
+            methodParameterTypes = {"org.glowroot.weaving.BasicMisc$Inner"})
     public static class BasicWithInnerClassArgAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -244,7 +244,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.BasicMisc$InnerMisc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.BasicMisc$InnerMisc", methodName = "execute1")
     public static class BasicWithInnerClassAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -269,7 +269,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindReceiverAdvice {
         public static final ThreadLocal<Misc> isEnabledReceiver = new ThreadLocal<Misc>();
         public static final ThreadLocal<Misc> onBeforeReceiver = new ThreadLocal<Misc>();
@@ -306,33 +306,33 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
-            methodArgTypes = {"java.lang.String", "int"})
-    public static class BindMethodArgAdvice {
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
+            methodParameterTypes = {"java.lang.String", "int"})
+    public static class BindParameterAdvice {
         public static final ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
         public static final ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
         public static final ThreadLocal<Object[]> onReturnParams = new ThreadLocal<Object[]>();
         public static final ThreadLocal<Object[]> onThrowParams = new ThreadLocal<Object[]>();
         public static final ThreadLocal<Object[]> onAfterParams = new ThreadLocal<Object[]>();
         @IsEnabled
-        public static boolean isEnabled(@BindMethodArg String one, @BindMethodArg int two) {
+        public static boolean isEnabled(@BindParameter String one, @BindParameter int two) {
             isEnabledParams.set(new Object[] {one, two});
             return true;
         }
         @OnBefore
-        public static void onBefore(@BindMethodArg String one, @BindMethodArg int two) {
+        public static void onBefore(@BindParameter String one, @BindParameter int two) {
             onBeforeParams.set(new Object[] {one, two});
         }
         @OnReturn
-        public static void onReturn(@BindMethodArg String one, @BindMethodArg int two) {
+        public static void onReturn(@BindParameter String one, @BindParameter int two) {
             onReturnParams.set(new Object[] {one, two});
         }
         @OnThrow
-        public static void onThrow(@BindMethodArg String one, @BindMethodArg int two) {
+        public static void onThrow(@BindParameter String one, @BindParameter int two) {
             onThrowParams.set(new Object[] {one, two});
         }
         @OnAfter
-        public static void onAfter(@BindMethodArg String one, @BindMethodArg int two) {
+        public static void onAfter(@BindParameter String one, @BindParameter int two) {
             onAfterParams.set(new Object[] {one, two});
         }
         public static void resetThreadLocals() {
@@ -344,33 +344,33 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
-            methodArgTypes = {"java.lang.String", "int"})
-    public static class BindMethodArgArrayAdvice {
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
+            methodParameterTypes = {"java.lang.String", "int"})
+    public static class BindParameterArrayAdvice {
         public static final ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
         public static final ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
         public static final ThreadLocal<Object[]> onReturnParams = new ThreadLocal<Object[]>();
         public static final ThreadLocal<Object[]> onThrowParams = new ThreadLocal<Object[]>();
         public static final ThreadLocal<Object[]> onAfterParams = new ThreadLocal<Object[]>();
         @IsEnabled
-        public static boolean isEnabled(@BindMethodArgArray Object[] args) {
+        public static boolean isEnabled(@BindParameterArray Object[] args) {
             isEnabledParams.set(args);
             return true;
         }
         @OnBefore
-        public static void onBefore(@BindMethodArgArray Object[] args) {
+        public static void onBefore(@BindParameterArray Object[] args) {
             onBeforeParams.set(args);
         }
         @OnReturn
-        public static void onReturn(@BindMethodArgArray Object[] args) {
+        public static void onReturn(@BindParameterArray Object[] args) {
             onReturnParams.set(args);
         }
         @OnThrow
-        public static void onThrow(@BindMethodArgArray Object[] args) {
+        public static void onThrow(@BindParameterArray Object[] args) {
             onThrowParams.set(args);
         }
         @OnAfter
-        public static void onAfter(@BindMethodArgArray Object[] args) {
+        public static void onAfter(@BindParameterArray Object[] args) {
             onAfterParams.set(args);
         }
         public static void resetThreadLocals() {
@@ -382,7 +382,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindTravelerAdvice {
         public static final ThreadLocal<String> onReturnTraveler = new ThreadLocal<String>();
         public static final ThreadLocal<String> onThrowTraveler = new ThreadLocal<String>();
@@ -410,7 +410,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindPrimitiveTravelerAdvice {
         public static final ThreadLocal<Integer> onReturnTraveler = new ThreadLocal<Integer>();
         public static final ThreadLocal<Integer> onThrowTraveler = new ThreadLocal<Integer>();
@@ -438,7 +438,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindPrimitiveBooleanTravelerAdvice {
         public static final ThreadLocal<Boolean> onReturnTraveler = new ThreadLocal<Boolean>();
         public static final ThreadLocal<Boolean> onThrowTraveler = new ThreadLocal<Boolean>();
@@ -466,7 +466,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindPrimitiveTravelerBadAdvice {
         public static final ThreadLocal<Integer> onReturnTraveler = new ThreadLocal<Integer>();
         public static final ThreadLocal<Integer> onThrowTraveler = new ThreadLocal<Integer>();
@@ -492,7 +492,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindPrimitiveBooleanTravelerBadAdvice {
         public static final ThreadLocal<Boolean> onReturnTraveler = new ThreadLocal<Boolean>();
         public static final ThreadLocal<Boolean> onThrowTraveler = new ThreadLocal<Boolean>();
@@ -518,7 +518,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindClassMetaAdvice {
         public static final ThreadLocal<TestClassMeta> isEnabledClassMeta =
                 new ThreadLocal<TestClassMeta>();
@@ -560,8 +560,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
-            methodArgTypes = {".."})
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
+            methodParameterTypes = {".."})
     public static class BindMethodMetaAdvice {
         public static final ThreadLocal<TestMethodMeta> isEnabledMethodMeta =
                 new ThreadLocal<TestMethodMeta>();
@@ -603,8 +603,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.other.ArrayMisc", methodName = "executeArray",
-            methodArgTypes = {".."})
+    @Pointcut(className = "org.glowroot.weaving.other.ArrayMisc", methodName = "executeArray",
+            methodParameterTypes = {".."})
     public static class BindMethodMetaArrayAdvice {
         public static final ThreadLocal<TestMethodMeta> isEnabledMethodMeta =
                 new ThreadLocal<TestMethodMeta>();
@@ -646,8 +646,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.other.ArrayMisc", methodName = "executeWithArrayReturn",
-            methodArgTypes = {".."})
+    @Pointcut(className = "org.glowroot.weaving.other.ArrayMisc",
+            methodName = "executeWithArrayReturn", methodParameterTypes = {".."})
     public static class BindMethodMetaReturnArrayAdvice {
         public static final ThreadLocal<TestMethodMeta> isEnabledMethodMeta =
                 new ThreadLocal<TestMethodMeta>();
@@ -689,7 +689,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
     public static class BindReturnAdvice {
         public static final ThreadLocal<String> returnValue = new ThreadLocal<String>();
         @OnReturn
@@ -701,7 +701,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.PrimitiveMisc",
+    @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc",
             methodName = "executeWithIntReturn")
     public static class BindPrimitiveReturnAdvice {
         public static final ThreadLocal<Integer> returnValue = new ThreadLocal<Integer>();
@@ -714,7 +714,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.PrimitiveMisc",
+    @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc",
             methodName = "executeWithIntReturn")
     public static class BindAutoboxedReturnAdvice {
         public static final ThreadLocal<Object> returnValue = new ThreadLocal<Object>();
@@ -727,7 +727,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
     public static class BindOptionalReturnAdvice {
         public static final ThreadLocal<OptionalReturn> returnValue =
                 new ThreadLocal<OptionalReturn>();
@@ -740,7 +740,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindOptionalVoidReturnAdvice {
         public static final ThreadLocal<OptionalReturn> returnValue =
                 new ThreadLocal<OptionalReturn>();
@@ -753,7 +753,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.PrimitiveMisc", methodName = "executeWithIntReturn")
+    @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc",
+            methodName = "executeWithIntReturn")
     public static class BindOptionalPrimitiveReturnAdvice {
         public static final ThreadLocal<OptionalReturn> returnValue =
                 new ThreadLocal<OptionalReturn>();
@@ -766,7 +767,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindThrowableAdvice {
         public static final ThreadLocal<Throwable> throwable = new ThreadLocal<Throwable>();
         @OnThrow
@@ -778,7 +779,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1",
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
             traceMetric = "efg")
     public static class BindMethodNameAdvice {
         public static final ThreadLocal<String> isEnabledMethodName = new ThreadLocal<String>();
@@ -816,7 +817,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
     public static class ChangeReturnAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -828,9 +829,9 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
-            methodArgTypes = {".."})
-    public static class MethodArgsDotDotAdvice1 {
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
+            methodParameterTypes = {".."})
+    public static class MethodParametersDotDotAdvice1 {
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -840,9 +841,9 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
-            methodArgTypes = {"java.lang.String", ".."})
-    public static class MethodArgsDotDotAdvice2 {
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
+            methodParameterTypes = {"java.lang.String", ".."})
+    public static class MethodParametersDotDotAdvice2 {
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -852,9 +853,9 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
-            methodArgTypes = {"java.lang.String", "int", ".."})
-    public static class MethodArgsDotDotAdvice3 {
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
+            methodParameterTypes = {"java.lang.String", "int", ".."})
+    public static class MethodParametersDotDotAdvice3 {
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -924,12 +925,12 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1",
-            ignoreSameNested = true)
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            ignoreSelfNested = true)
     public static class NotNestingAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1",
-            ignoreSameNested = true)
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            ignoreSelfNested = true)
     public static class NotNestingWithNoIsEnabledAdvice {
         @OnBefore
         public static void onBefore() {
@@ -955,66 +956,66 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute*",
-            methodArgTypes = {".."}, traceMetric = "abc xyz")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute*",
+            methodParameterTypes = {".."}, traceMetric = "abc xyz")
     public static class InnerMethodAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute*",
-            methodArgTypes = {".."}, ignoreSameNested = true)
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute*",
+            methodParameterTypes = {".."}, ignoreSelfNested = true)
     public static class MultipleMethodsAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.StaticMisc", methodName = "executeStatic")
+    @Pointcut(className = "org.glowroot.weaving.StaticMisc", methodName = "executeStatic")
     public static class StaticAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1",
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
             methodModifiers = MethodModifier.STATIC)
     public static class NonMatchingStaticAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.Mis*", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Mis*", methodName = "execute1")
     public static class TypeNamePatternAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1",
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
             methodReturnType = "void")
     public static class MethodReturnVoidAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
             methodReturnType = "java.lang.CharSequence")
     public static class MethodReturnCharSequenceAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
             methodReturnType = "java.lang.String")
     public static class MethodReturnStringAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1",
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
             methodReturnType = "java.lang.String")
     public static class NonMatchingMethodReturnAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
             methodReturnType = "java.lang.Number")
     public static class NonMatchingMethodReturnAdvice2 extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
             methodReturnType = "java.lang.")
     public static class MethodReturnNarrowingAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "*",
-            methodArgTypes = {".."}, traceMetric = "wild")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "*",
+            methodParameterTypes = {".."}, traceMetric = "wild")
     public static class WildMethodAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.PrimitiveMisc", methodName = "executePrimitive",
-            methodArgTypes = {"int", "double", "long", "byte[]"})
+    @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc", methodName = "executePrimitive",
+            methodParameterTypes = {"int", "double", "long", "byte[]"})
     public static class PrimitiveAdvice extends BasicAdvice {}
 
-    @Pointcut(type = "org.glowroot.weaving.PrimitiveMisc", methodName = "executePrimitive",
-            methodArgTypes = {"int", "double", "*", ".."})
+    @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc", methodName = "executePrimitive",
+            methodParameterTypes = {"int", "double", "*", ".."})
     public static class PrimitiveWithWildcardAdvice {
         @IsEnabled
-        public static boolean isEnabled(@SuppressWarnings("unused") @BindMethodArg int x) {
+        public static boolean isEnabled(@SuppressWarnings("unused") @BindParameter int x) {
             enabledCount.increment();
             return true;
         }
         @OnBefore
-        public static void onBefore(@SuppressWarnings("unused") @BindMethodArg int x) {
+        public static void onBefore(@SuppressWarnings("unused") @BindParameter int x) {
             onBeforeCount.increment();
         }
         public static void resetThreadLocals() {
@@ -1023,11 +1024,11 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.PrimitiveMisc", methodName = "executePrimitive",
-            methodArgTypes = {"int", "double", "*", ".."})
+    @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc", methodName = "executePrimitive",
+            methodParameterTypes = {"int", "double", "*", ".."})
     public static class PrimitiveWithAutoboxAdvice {
         @IsEnabled
-        public static boolean isEnabled(@SuppressWarnings("unused") @BindMethodArg Object x) {
+        public static boolean isEnabled(@SuppressWarnings("unused") @BindParameter Object x) {
             enabledCount.increment();
             return true;
         }
@@ -1036,8 +1037,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
-            methodArgTypes = {"java.lang.String", "int"})
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
+            methodParameterTypes = {"java.lang.String", "int"})
     public static class BrokenAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -1052,8 +1053,8 @@ public class SomeAspect {
         public static void onAfter(@SuppressWarnings("unused") @BindTraveler Object traveler) {}
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
-            methodArgTypes = {"java.lang.String", "int"})
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
+            methodParameterTypes = {"java.lang.String", "int"})
     public static class VeryBadAdvice {
         @OnBefore
         public static Object onBefore() {
@@ -1077,8 +1078,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
-            methodArgTypes = {"java.lang.String", "int"})
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
+            methodParameterTypes = {"java.lang.String", "int"})
     public static class MoreVeryBadAdvice {
         @OnReturn
         public static void onReturn() {
@@ -1103,7 +1104,7 @@ public class SomeAspect {
     }
 
     // same as MoreVeryBadAdvice, but testing weaving a method with a non-void return type
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
     public static class MoreVeryBadAdvice2 {
         @OnReturn
         public static void onReturn() {
@@ -1127,8 +1128,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc3", methodName = "identity",
-            methodArgTypes = {"org.glowroot.weaving.BasicMisc"})
+    @Pointcut(className = "org.glowroot.weaving.Misc3", methodName = "identity",
+            methodParameterTypes = {"org.glowroot.weaving.BasicMisc"})
     public static class CircularClassDependencyAdvice {
         @OnBefore
         public static void onBefore() {
@@ -1139,7 +1140,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class InterfaceAppearsTwiceInHierarchyAdvice {
         @OnBefore
         public static void onBefore() {
@@ -1150,8 +1151,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
-            methodArgTypes = {".."})
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
+            methodParameterTypes = {".."})
     public static class FinalMethodAdvice {
         @OnBefore
         public static void onBefore() {
@@ -1163,8 +1164,9 @@ public class SomeAspect {
     }
 
     // test weaving against JSR bytecode that ends up being inlined via JSRInlinerAdapter
-    @Pointcut(type = "org.apache.jackrabbit.core.persistence.pool.BundleDbPersistenceManager",
-            methodName = "loadBundle", methodArgTypes = {"org.apache.jackrabbit.core.id.NodeId"})
+    @Pointcut(className = "org.apache.jackrabbit.core.persistence.pool.BundleDbPersistenceManager",
+            methodName = "loadBundle",
+            methodParameterTypes = {"org.apache.jackrabbit.core.id.NodeId"})
     public static class TestJSRInlinedMethodAdvice {}
 
     static class IntegerThreadLocal extends ThreadLocal<Integer> {

@@ -56,9 +56,9 @@ public class ReweaveCountTest {
     public void shouldCalculateCorrectReweaveCount() throws Exception {
         container.executeAppUnderTest(ShouldLoadClassesForWeaving.class);
         PointcutConfig config = new PointcutConfig();
-        config.setType("org.glowroot.tests.javaagent.ReweaveCountTest$AAA");
+        config.setClassName("org.glowroot.tests.javaagent.ReweaveCountTest$AAA");
         config.setMethodName("x");
-        config.setMethodArgTypes(ImmutableList.<String>of());
+        config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
         config.setTraceMetric("x");
         String configVersion = container.getConfigService().addPointcutConfig(config);

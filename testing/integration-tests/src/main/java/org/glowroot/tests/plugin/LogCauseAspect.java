@@ -20,7 +20,7 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
 import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.weaving.BindMethodArg;
+import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -40,8 +40,8 @@ public class LogCauseAspect {
     private static final Exception cause2 = new IllegalStateException("Cause 2", cause1);
     private static final Exception cause3 = new IllegalArgumentException("Cause 3", cause2);
 
-    @Pointcut(type = "org.glowroot.tests.LogCause", methodName = "log",
-            methodArgTypes = {"java.lang.String"}, traceMetric = "log error")
+    @Pointcut(className = "org.glowroot.tests.LogCause", methodName = "log",
+            methodParameterTypes = {"java.lang.String"}, traceMetric = "log error")
     public static class LogCauseAdvice {
 
         private static final TraceMetricName traceMetricName =
@@ -53,7 +53,7 @@ public class LogCauseAspect {
         }
 
         @OnBefore
-        public static Span onBefore(@BindMethodArg String message) {
+        public static Span onBefore(@BindParameter String message) {
             return pluginServices.startSpan(MessageSupplier.from("ERROR -- {}", message),
                     traceMetricName);
         }

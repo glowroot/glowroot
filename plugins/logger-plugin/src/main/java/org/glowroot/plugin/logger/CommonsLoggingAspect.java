@@ -20,7 +20,7 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
 import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.weaving.BindMethodArg;
+import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -45,8 +45,8 @@ public class CommonsLoggingAspect {
         return (!warn || traceErrorOnWarn) && (throwable || traceErrorOnErrorWithNoThrowable);
     }
 
-    @Pointcut(type = "org.apache.commons.logging.Log", methodName = "warn|error|fatal",
-            methodArgTypes = {"java.lang.Object"}, traceMetric = TRACE_METRIC)
+    @Pointcut(className = "org.apache.commons.logging.Log", methodName = "warn|error|fatal",
+            methodParameterTypes = {"java.lang.Object"}, traceMetric = TRACE_METRIC)
     public static class LogAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LogAdvice.class);
@@ -55,7 +55,7 @@ public class CommonsLoggingAspect {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
         }
         @OnBefore
-        public static Span onBefore(@BindMethodArg Object message,
+        public static Span onBefore(@BindParameter Object message,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (markTraceAsError(methodName.equals("warn"), false)) {
@@ -66,14 +66,14 @@ public class CommonsLoggingAspect {
                     traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span, @BindMethodArg Object message) {
+        public static void onAfter(@BindTraveler Span span, @BindParameter Object message) {
             LoggerPlugin.inAdvice.set(false);
             span.endWithError(ErrorMessage.from(String.valueOf(message)));
         }
     }
 
-    @Pointcut(type = "org.apache.commons.logging.Log", methodName = "warn|error|fatal",
-            methodArgTypes = {"java.lang.Object", "java.lang.Throwable"},
+    @Pointcut(className = "org.apache.commons.logging.Log", methodName = "warn|error|fatal",
+            methodParameterTypes = {"java.lang.Object", "java.lang.Throwable"},
             traceMetric = TRACE_METRIC)
     public static class LogWithThrowableAdvice {
         private static final TraceMetricName traceMetricName =
@@ -83,7 +83,7 @@ public class CommonsLoggingAspect {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
         }
         @OnBefore
-        public static Span onBefore(@BindMethodArg Object message, @BindMethodArg Throwable t,
+        public static Span onBefore(@BindParameter Object message, @BindParameter Throwable t,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (markTraceAsError(methodName.equals("warn"), t != null)) {
@@ -94,7 +94,7 @@ public class CommonsLoggingAspect {
                     traceMetricName);
         }
         @OnAfter
-        public static void onAfter(@BindMethodArg Object message, @BindMethodArg Throwable t,
+        public static void onAfter(@BindParameter Object message, @BindParameter Throwable t,
                 @BindTraveler Span span) {
             LoggerPlugin.inAdvice.set(false);
             if (t == null) {

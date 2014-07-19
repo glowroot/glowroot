@@ -30,8 +30,8 @@ public class RequestParameterAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("servlet");
 
-    @Pointcut(type = "javax.servlet.ServletRequest", methodName = "getParameter*",
-            methodArgTypes = {".."}, ignoreSameNested = true)
+    @Pointcut(className = "javax.servlet.ServletRequest", methodName = "getParameter*",
+            methodParameterTypes = {".."}, ignoreSelfNested = true)
     public static class GetParameterAdvice {
         @IsEnabled
         public static boolean isEnabled() {

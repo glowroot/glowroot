@@ -44,7 +44,7 @@ class AdviceMatcher {
     static ImmutableList<AdviceMatcher> getAdviceMatchers(String className, List<Advice> advisors) {
         List<AdviceMatcher> adviceMatchers = Lists.newArrayList();
         for (Advice advice : advisors) {
-            if (AdviceMatcher.isTypeMatch(className, advice)) {
+            if (AdviceMatcher.isClassNameMatch(className, advice)) {
                 adviceMatchers.add(new AdviceMatcher(advice));
             }
         }
@@ -55,9 +55,9 @@ class AdviceMatcher {
         this.advice = advice;
     }
 
-    boolean isMethodLevelMatch(String methodName, List<Type> argTypes, Type returnType,
+    boolean isMethodLevelMatch(String methodName, List<Type> parameterTypes, Type returnType,
             int modifiers) {
-        if (!isMethodNameMatch(methodName) || !isMethodArgTypesMatch(argTypes)) {
+        if (!isMethodNameMatch(methodName) || !isMethodParameterTypesMatch(parameterTypes)) {
             return false;
         }
         return isMethodReturnMatch(returnType) && isMethodModifiersMatch(modifiers);
@@ -67,47 +67,48 @@ class AdviceMatcher {
         return advice;
     }
 
-    private boolean isMethodNameMatch(String name) {
-        if (name.equals("<clinit>")) {
+    private boolean isMethodNameMatch(String methodName) {
+        if (methodName.equals("<clinit>")) {
             // static initializers are not supported
             return false;
         }
-        if (name.equals("<init>")) {
+        if (methodName.equals("<init>")) {
             // constructors only match by exact name (don't want patterns to match constructors)
             return advice.getPointcut().methodName().equals("<init>");
         }
-        Pattern pointcutMethodPattern = advice.getPointcutMethodPattern();
-        if (pointcutMethodPattern == null) {
-            return advice.getPointcut().methodName().equals(name);
+        Pattern pointcutMethodNamePattern = advice.getPointcutMethodNamePattern();
+        if (pointcutMethodNamePattern == null) {
+            return advice.getPointcut().methodName().equals(methodName);
         } else {
-            return pointcutMethodPattern.matcher(name).matches();
+            return pointcutMethodNamePattern.matcher(methodName).matches();
         }
     }
 
-    private boolean isMethodArgTypesMatch(List<Type> argTypes) {
-        String[] pointcutMethodArgs = advice.getPointcut().methodArgTypes();
-        for (int i = 0; i < pointcutMethodArgs.length; i++) {
-            if (pointcutMethodArgs[i].equals("..")) {
-                if (i != pointcutMethodArgs.length - 1) {
-                    logger.warn("'..' can only be used at the end of methodArgTypes");
+    private boolean isMethodParameterTypesMatch(List<Type> parameterTypes) {
+        String[] pointcutMethodParameterTypes = advice.getPointcut().methodParameterTypes();
+        for (int i = 0; i < pointcutMethodParameterTypes.length; i++) {
+            if (pointcutMethodParameterTypes[i].equals("..")) {
+                if (i != pointcutMethodParameterTypes.length - 1) {
+                    logger.warn("'..' can only be used at the end of methodParameterTypes");
                     return false;
                 } else {
                     // ".." matches everything after this
                     return true;
                 }
             }
-            if (argTypes.size() == i) {
+            if (parameterTypes.size() == i) {
                 // have run out of argument types to match
                 return false;
             }
             // only supporting * at this point
-            if (!pointcutMethodArgs[i].equals("*")
-                    && !pointcutMethodArgs[i].equals(argTypes.get(i).getClassName())) {
+            if (!pointcutMethodParameterTypes[i].equals("*")
+                    && !pointcutMethodParameterTypes[i].equals(
+                            parameterTypes.get(i).getClassName())) {
                 return false;
             }
         }
         // need this final test since argumentTypes may still have unmatched elements
-        return argTypes.size() == pointcutMethodArgs.length;
+        return parameterTypes.size() == pointcutMethodParameterTypes.length;
     }
 
     private boolean isMethodReturnMatch(Type returnType) {
@@ -155,12 +156,12 @@ class AdviceMatcher {
                 .toString();
     }
 
-    static boolean isTypeMatch(String className, Advice advice) {
-        Pattern pointcutTypePattern = advice.getPointcutTypePattern();
-        if (pointcutTypePattern == null) {
-            return advice.getPointcut().type().equals(className);
+    static boolean isClassNameMatch(String className, Advice advice) {
+        Pattern pointcutClassNamePattern = advice.getPointcutClassNamePattern();
+        if (pointcutClassNamePattern == null) {
+            return advice.getPointcut().className().equals(className);
         } else {
-            return pointcutTypePattern.matcher(className).matches();
+            return pointcutClassNamePattern.matcher(className).matches();
         }
     }
 }

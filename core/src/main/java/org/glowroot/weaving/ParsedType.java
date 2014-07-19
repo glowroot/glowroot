@@ -181,8 +181,8 @@ public class ParsedType {
 
         ParsedMethod addParsedMethod(int access, String name, String desc,
                 @Nullable String signature, List<String> exceptions, List<Advice> advisors) {
-            List<Type> argTypes = Arrays.asList(Type.getArgumentTypes(desc));
-            ParsedMethod method = ParsedMethod.from(name, argTypes, Type.getReturnType(desc),
+            List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
+            ParsedMethod method = ParsedMethod.from(name, parameterTypes, Type.getReturnType(desc),
                     access, signature, exceptions, advisors);
             methods.add(method);
             return method;

@@ -25,8 +25,8 @@ import org.glowroot.api.weaving.Pointcut;
  */
 public class WeavingJDK14BytecodeAspect {
 
-    @Pointcut(type = "org.apache.commons.lang.StringUtils", methodName = "isEmpty",
-            methodArgTypes = {"java.lang.String"}, traceMetric = "is empty")
+    @Pointcut(className = "org.apache.commons.lang.StringUtils", methodName = "isEmpty",
+            methodParameterTypes = {"java.lang.String"}, traceMetric = "is empty")
     public static class BasicAdvice {
         @OnBefore
         public static void onBefore(@SuppressWarnings("unused") @BindMethodName String test) {}

@@ -39,7 +39,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class UiParsedMethod {
 
     private final String name;
-    private final ImmutableList<String> argTypes;
+    private final ImmutableList<String> parameterTypes;
     private final String returnType;
     private final int modifiers;
 
@@ -47,21 +47,21 @@ public class UiParsedMethod {
     private final String signature;
     private final ImmutableList<String> exceptions;
 
-    static UiParsedMethod from(String name, List<Type> argTypes, Type returnType, int modifiers,
-            @Nullable String signature, List<String> exceptions) {
-        List<String> argTypeNames = Lists.newArrayList();
-        for (Type argType : argTypes) {
-            argTypeNames.add(argType.getClassName());
+    static UiParsedMethod from(String name, List<Type> parameterTypes, Type returnType,
+            int modifiers, @Nullable String signature, List<String> exceptions) {
+        List<String> parameterTypeNames = Lists.newArrayList();
+        for (Type parameterType : parameterTypes) {
+            parameterTypeNames.add(parameterType.getClassName());
         }
         String returnTypeName = returnType.getClassName();
-        return new UiParsedMethod(name, argTypeNames, returnTypeName, modifiers, signature,
+        return new UiParsedMethod(name, parameterTypeNames, returnTypeName, modifiers, signature,
                 exceptions);
     }
 
-    private UiParsedMethod(String name, List<String> argTypes, String returnType, int modifiers,
-            @Nullable String signature, List<String> exceptions) {
+    private UiParsedMethod(String name, List<String> parameterTypes, String returnType,
+            int modifiers, @Nullable String signature, List<String> exceptions) {
         this.name = name;
-        this.argTypes = ImmutableList.copyOf(argTypes);
+        this.parameterTypes = ImmutableList.copyOf(parameterTypes);
         this.returnType = returnType.intern();
         this.modifiers = modifiers;
         this.signature = signature;
@@ -73,8 +73,8 @@ public class UiParsedMethod {
     }
 
     // these are class names
-    public ImmutableList<String> getArgTypes() {
-        return argTypes;
+    public ImmutableList<String> getParameterTypes() {
+        return parameterTypes;
     }
 
     public String getReturnType() {
@@ -94,7 +94,7 @@ public class UiParsedMethod {
         return exceptions;
     }
 
-    // equals and hashCode are only defined in terms of name and argTypes since those uniquely
+    // equals and hashCode are only defined in terms of name and parameterTypes since those uniquely
     // identify a method within a given class
     // this is currently important because UiParsedMethod is used in a set to filter out duplicates
     // in PointcutConfigJsonService
@@ -106,19 +106,20 @@ public class UiParsedMethod {
         }
         if (obj instanceof UiParsedMethod) {
             UiParsedMethod that = (UiParsedMethod) obj;
-            return Objects.equal(name, that.name) && Objects.equal(argTypes, that.argTypes);
+            return Objects.equal(name, that.name)
+                    && Objects.equal(parameterTypes, that.parameterTypes);
         }
         return false;
     }
 
-    // equals and hashCode are only defined in terms of name and argTypes since those uniquely
+    // equals and hashCode are only defined in terms of name and parameterTypes since those uniquely
     // identify a method within a given class
     // this is currently important because UiParsedMethod is used in a set to filter out duplicates
     // in PointcutConfigJsonService
     @Override
     @Pure
     public int hashCode() {
-        return Objects.hashCode(name, argTypes);
+        return Objects.hashCode(name, parameterTypes);
     }
 
     @Override
@@ -126,7 +127,7 @@ public class UiParsedMethod {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)
-                .add("argTypes", argTypes)
+                .add("parameterTypes", parameterTypes)
                 .add("returnType", returnType)
                 .add("modifiers", modifiers)
                 .add("signature", signature)
@@ -146,8 +147,8 @@ public class UiParsedMethod {
             return ComparisonChain.start()
                     .compare(getAccessibility(left), getAccessibility(right))
                     .compare(left.getName(), right.getName())
-                    .compare(left.getArgTypes().size(), right.getArgTypes().size())
-                    .compare(left.getArgTypes().size(), right.getArgTypes().size())
+                    .compare(left.getParameterTypes().size(), right.getParameterTypes().size())
+                    .compare(left.getParameterTypes().size(), right.getParameterTypes().size())
                     .result();
         }
 

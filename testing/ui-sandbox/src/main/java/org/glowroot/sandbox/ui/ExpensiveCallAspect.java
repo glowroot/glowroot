@@ -52,7 +52,7 @@ public class ExpensiveCallAspect {
     private static final Exception cause = new IllegalStateException(
             "a cause with a different stack trace", nestedCause);
 
-    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute0",
+    @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute0",
             traceMetric = "expensive 0")
     public static class ExpensiveCallAdvice0 {
         private static final TraceMetricName traceMetricName =
@@ -81,7 +81,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute1",
+    @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute1",
             traceMetric = "expensive 1")
     public static class ExpensiveCallAdvice1 {
         private static final TraceMetricName traceMetricName =
@@ -107,7 +107,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute2",
+    @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute2",
             traceMetric = "expensive 2")
     public static class ExpensiveCallAdvice2 {
         private static final TraceMetricName traceMetricName =
@@ -133,7 +133,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute3",
+    @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute3",
             traceMetric = "expensive 3")
     public static class ExpensiveCallAdvice3 {
         private static final TraceMetricName traceMetricName =
@@ -159,7 +159,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute4",
+    @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute4",
             traceMetric = "expensive 4")
     public static class ExpensiveCallAdvice4 {
         private static final TraceMetricName traceMetricName =
@@ -185,7 +185,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute5",
+    @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute5",
             traceMetric = "expensive 5")
     public static class ExpensiveCallAdvice5 {
         private static final TraceMetricName traceMetricName =
@@ -211,7 +211,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute6",
+    @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute6",
             traceMetric = "expensive 6")
     public static class ExpensiveCallAdvice6 {
         private static final TraceMetricName traceMetricName =
@@ -237,7 +237,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute7",
+    @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute7",
             traceMetric = "expensive 7")
     public static class ExpensiveCallAdvice7 {
         private static final TraceMetricName traceMetricName =
@@ -263,7 +263,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute8",
+    @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute8",
             traceMetric = "expensive 8")
     public static class ExpensiveCallAdvice8 {
         private static final TraceMetricName traceMetricName =
@@ -289,7 +289,7 @@ public class ExpensiveCallAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute9",
+    @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute9",
             traceMetric = "expensive 9 really long to test wrapping")
     public static class ExpensiveCallAdvice9 {
         private static final TraceMetricName traceMetricName =
@@ -321,7 +321,7 @@ public class ExpensiveCallAspect {
             return null;
         }
         MessageSupplier messageSupplier =
-                MessageSupplier.from(expensiveCallInvoker.getSpanText(expensiveCall));
+                MessageSupplier.from(expensiveCallInvoker.getSpanMessage(expensiveCall));
         return pluginServices.startSpan(messageSupplier, traceMetricName);
     }
 
@@ -371,8 +371,8 @@ public class ExpensiveCallAspect {
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", ImmutableList.of("v311aa", "v311bb")),
                                 "attr32", "value32", "attr33", "value33"));
-                String spanText = expensiveCallInvoker.getSpanText(expensiveCall);
-                return Message.withDetail(spanText, detail);
+                String spanMessage = expensiveCallInvoker.getSpanMessage(expensiveCall);
+                return Message.withDetail(spanMessage, detail);
             }
         };
     }

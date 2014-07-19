@@ -24,8 +24,8 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
 import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.weaving.BindMethodArg;
 import org.glowroot.api.weaving.BindMethodName;
+import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -71,8 +71,9 @@ public class Slf4jMarkerAspect {
         }
     }
 
-    @Pointcut(type = "org.slf4j.Logger", methodName = "warn|error",
-            methodArgTypes = {"org.slf4j.Marker", "java.lang.String"}, traceMetric = TRACE_METRIC)
+    @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
+            methodParameterTypes = {"org.slf4j.Marker", "java.lang.String"},
+            traceMetric = TRACE_METRIC)
     public static class LogNoArgAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(LogNoArgAdvice.class);
@@ -81,8 +82,8 @@ public class Slf4jMarkerAspect {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
         }
         @OnBefore
-        public static Span onBefore(@SuppressWarnings("unused") @BindMethodArg Object marker,
-                @BindMethodArg String message, @BindMethodName String methodName) {
+        public static Span onBefore(@SuppressWarnings("unused") @BindParameter Object marker,
+                @BindParameter String message, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (markTraceAsError(methodName.equals("warn"), false)) {
                 pluginServices.setTraceError(message);
@@ -93,15 +94,15 @@ public class Slf4jMarkerAspect {
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span,
-                @SuppressWarnings("unused") @BindMethodArg Object marker,
-                @BindMethodArg String message) {
+                @SuppressWarnings("unused") @BindParameter Object marker,
+                @BindParameter String message) {
             LoggerPlugin.inAdvice.set(false);
             span.endWithError(ErrorMessage.from(message));
         }
     }
 
-    @Pointcut(type = "org.slf4j.Logger", methodName = "warn|error",
-            methodArgTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object"},
+    @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
+            methodParameterTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object"},
             traceMetric = TRACE_METRIC)
     public static class LogOneArgAdvice {
         private static final TraceMetricName traceMetricName =
@@ -112,8 +113,8 @@ public class Slf4jMarkerAspect {
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
-                @SuppressWarnings("unused") @BindMethodArg Object marker,
-                @BindMethodArg String format, @BindMethodArg Object arg,
+                @SuppressWarnings("unused") @BindParameter Object marker,
+                @BindParameter String format, @BindParameter Object arg,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg);
@@ -126,8 +127,8 @@ public class Slf4jMarkerAspect {
         }
     }
 
-    @Pointcut(type = "org.slf4j.Logger", methodName = "warn|error",
-            methodArgTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Throwable"},
+    @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
+            methodParameterTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Throwable"},
             traceMetric = TRACE_METRIC)
     public static class LogOneArgThrowableAdvice {
         private static final TraceMetricName traceMetricName =
@@ -138,8 +139,8 @@ public class Slf4jMarkerAspect {
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
-                @SuppressWarnings("unused") @BindMethodArg Object marker,
-                @BindMethodArg String format, @BindMethodArg Object arg,
+                @SuppressWarnings("unused") @BindParameter Object marker,
+                @BindParameter String format, @BindParameter Object arg,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg);
@@ -152,8 +153,8 @@ public class Slf4jMarkerAspect {
         }
     }
 
-    @Pointcut(type = "org.slf4j.Logger", methodName = "warn|error",
-            methodArgTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object",
+    @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
+            methodParameterTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object",
                     "java.lang.Object"}, traceMetric = TRACE_METRIC)
     public static class LogTwoArgsAdvice {
         private static final TraceMetricName traceMetricName =
@@ -164,9 +165,9 @@ public class Slf4jMarkerAspect {
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
-                @SuppressWarnings("unused") @BindMethodArg Object marker,
-                @BindMethodArg String format, @BindMethodArg Object arg1,
-                @BindMethodArg Object arg2, @BindMethodName String methodName) {
+                @SuppressWarnings("unused") @BindParameter Object marker,
+                @BindParameter String format, @BindParameter Object arg1,
+                @BindParameter Object arg2, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg1, arg2);
             return Slf4jMarkerAspect.onBefore(formattingTuple, methodName, traceMetricName);
@@ -178,8 +179,8 @@ public class Slf4jMarkerAspect {
         }
     }
 
-    @Pointcut(type = "org.slf4j.Logger", methodName = "warn|error",
-            methodArgTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object[]"},
+    @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
+            methodParameterTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object[]"},
             traceMetric = TRACE_METRIC)
     public static class LogAdvice {
         private static final TraceMetricName traceMetricName =
@@ -190,8 +191,8 @@ public class Slf4jMarkerAspect {
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
-                @SuppressWarnings("unused") @BindMethodArg Object marker,
-                @BindMethodArg String format, @BindMethodArg Object[] arguments,
+                @SuppressWarnings("unused") @BindParameter Object marker,
+                @BindParameter String format, @BindParameter Object[] arguments,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             FormattingTuple formattingTuple = MessageFormatter.arrayFormat(format, arguments);

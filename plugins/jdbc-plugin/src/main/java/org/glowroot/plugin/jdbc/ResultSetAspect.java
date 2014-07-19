@@ -47,9 +47,10 @@ public class ResultSetAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    @Pointcut(type = "java.sql.ResultSet",
-            methodName = "next|previous|relative|absolute|first|last", methodArgTypes = "..",
-            ignoreSameNested = true, traceMetric = "jdbc resultset navigate")
+    // TODO optimization, remove ignoreSelfNested = true
+    @Pointcut(className = "java.sql.ResultSet",
+            methodName = "next|previous|relative|absolute|first|last", methodParameterTypes = "..",
+            ignoreSelfNested = true, traceMetric = "jdbc resultset navigate")
     public static class NavigateAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(NavigateAdvice.class);
@@ -116,8 +117,8 @@ public class ResultSetAspect {
         }
     }
 
-    @Pointcut(type = "java.sql.ResultSet", methodName = "get*", methodArgTypes = {"int", ".."},
-            traceMetric = "jdbc resultset value")
+    @Pointcut(className = "java.sql.ResultSet", methodName = "get*",
+            methodParameterTypes = {"int", ".."}, traceMetric = "jdbc resultset value")
     public static class ValueAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(ValueAdvice.class);
@@ -149,8 +150,8 @@ public class ResultSetAspect {
         }
     }
 
-    @Pointcut(type = "java.sql.ResultSet", methodName = "get*",
-            methodArgTypes = {"java.lang.String", ".."}, traceMetric = "jdbc resultset value")
+    @Pointcut(className = "java.sql.ResultSet", methodName = "get*",
+            methodParameterTypes = {"java.lang.String", ".."}, traceMetric = "jdbc resultset value")
     public static class ValueAdvice2 {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(ValueAdvice2.class);

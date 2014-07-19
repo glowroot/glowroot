@@ -31,9 +31,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@literal @}{@link OnThrow} methods, if either of those are present.
  * <p>
  * An {@literal @}{@code OnAfter} method can accept parameters annotated with any of the following:
- * {@literal @}{@link BindReceiver}, {@literal @}{@link BindMethodArg},
+ * {@literal @}{@link BindReceiver}, {@literal @}{@link BindParameter},
  * 
- * {@literal @}{@link BindMethodArgArray}, {@literal @}{@link BindMethodName} or
+ * {@literal @}{@link BindParameterArray}, {@literal @}{@link BindMethodName} or
  * 
  * {@literal @}{@link BindTraveler}. {@literal @}{@link BindTraveler} can only be used if there is a
  * corresponding {@literal @}{@link OnBefore} method that returns a non-{@code void} type (the

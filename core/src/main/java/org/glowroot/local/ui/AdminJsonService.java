@@ -98,14 +98,14 @@ class AdminJsonService {
         }
         ImmutableList<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
         adviceCache.updateAdvisors(pointcutConfigs);
-        Set<String> typeNames = Sets.newHashSet();
+        Set<String> classNames = Sets.newHashSet();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
-            typeNames.add(pointcutConfig.getType());
+            classNames.add(pointcutConfig.getClassName());
         }
         Set<Class<?>> classes = Sets.newHashSet();
         List<Class<?>> existingReweavableClasses = parsedTypeCache.getClassesWithReweavableAdvice();
         List<Class<?>> possibleNewReweavableClasses =
-                parsedTypeCache.getExistingSubClasses(typeNames);
+                parsedTypeCache.getExistingSubClasses(classNames);
         classes.addAll(existingReweavableClasses);
         classes.addAll(possibleNewReweavableClasses);
         if (classes.isEmpty()) {

@@ -70,8 +70,9 @@ public class DataSourceAspect {
         captureSetAutoCommitSpans = pluginServices.getBooleanProperty("captureSetAutoCommitSpans");
     }
 
-    @Pointcut(type = "javax.sql.DataSource", methodName = "getConnection",
-            methodArgTypes = {".."}, ignoreSameNested = true, traceMetric = "jdbc get connection")
+    @Pointcut(className = "javax.sql.DataSource", methodName = "getConnection",
+            methodParameterTypes = {".."}, ignoreSelfNested = true,
+            traceMetric = "jdbc get connection")
     public static class CommitAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(CommitAdvice.class);

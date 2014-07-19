@@ -19,7 +19,6 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -171,21 +170,22 @@ public class DynamicAdviceGenerator {
     private void addClassAnnotation(ClassWriter cw) {
         AnnotationVisitor annotationVisitor =
                 cw.visitAnnotation("Lorg/glowroot/api/weaving/Pointcut;", true);
-        annotationVisitor.visit("type", pointcutConfig.getType());
+        annotationVisitor.visit("className", pointcutConfig.getClassName());
         annotationVisitor.visit("methodName", pointcutConfig.getMethodName());
-        AnnotationVisitor argVisitor = annotationVisitor.visitArray("methodArgTypes");
-        for (String methodArgTypeName : pointcutConfig.getMethodArgTypes()) {
-            argVisitor.visit(null, methodArgTypeName);
+        AnnotationVisitor arrayAnnotationVisitor =
+                annotationVisitor.visitArray("methodParameterTypes");
+        for (String methodParameterType : pointcutConfig.getMethodParameterTypes()) {
+            arrayAnnotationVisitor.visit(null, methodParameterType);
         }
-        argVisitor.visitEnd();
+        arrayAnnotationVisitor.visitEnd();
         String traceMetric = pointcutConfig.getTraceMetric();
         if (traceMetric == null) {
             annotationVisitor.visit("traceMetric", "<no trace metric provided>");
         } else {
             annotationVisitor.visit("traceMetric", traceMetric);
         }
-        if (pointcutConfig.isSpan() && pointcutConfig.isSpanIgnoreSameNested()) {
-            annotationVisitor.visit("ignoreSameNested", true);
+        if (pointcutConfig.isSpan() && !pointcutConfig.isCaptureSelfNested()) {
+            annotationVisitor.visit("ignoreSelfNested", true);
         }
         annotationVisitor.visitEnd();
     }
@@ -282,7 +282,7 @@ public class DynamicAdviceGenerator {
                 .visitEnd();
         mv.visitParameterAnnotation(1, "Lorg/glowroot/api/weaving/BindMethodName;", true)
                 .visitEnd();
-        mv.visitParameterAnnotation(2, "Lorg/glowroot/api/weaving/BindMethodArgArray;", true)
+        mv.visitParameterAnnotation(2, "Lorg/glowroot/api/weaving/BindParameterArray;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(3, "Lorg/glowroot/api/weaving/BindMethodMeta;", true)
                 .visitEnd();
@@ -338,7 +338,7 @@ public class DynamicAdviceGenerator {
                     "getMessageText", "()Ljava/lang/String;", false);
         }
         mv.visitVarInsn(ALOAD, 3);
-        mv.visitMethodInsn(INVOKEVIRTUAL, methodMetaName, "getSpanTextTemplate",
+        mv.visitMethodInsn(INVOKEVIRTUAL, methodMetaName, "getMessageTemplate",
                 "()Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", false);
         mv.visitVarInsn(ALOAD, 0);
         mv.visitVarInsn(ALOAD, 1);
@@ -467,12 +467,12 @@ public class DynamicAdviceGenerator {
                     "updateWithReturnValue", "(Lorg/glowroot/api/Span;Ljava/lang/Object;)V", false);
         }
         mv.visitVarInsn(ALOAD, travelerParamIndex);
-        Long spanStackTraceThresholdMillis = pointcutConfig.getSpanStackTraceThresholdMillis();
-        if (spanStackTraceThresholdMillis == null) {
+        Long stackTraceThresholdMillis = pointcutConfig.getStackTraceThresholdMillis();
+        if (stackTraceThresholdMillis == null) {
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/Span", "end",
                     "()Lorg/glowroot/api/CompletedSpan;", true);
         } else {
-            mv.visitLdcInsn(spanStackTraceThresholdMillis);
+            mv.visitLdcInsn(stackTraceThresholdMillis);
             mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
                     "Ljava/util/concurrent/TimeUnit;");
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/Span", "endWithStackTrace",
@@ -549,14 +549,14 @@ public class DynamicAdviceGenerator {
     private void generateMethodMeta() throws ReflectiveException {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, methodMetaName, null, "java/lang/Object", null);
-        cw.visitField(ACC_PRIVATE + ACC_FINAL, "spanTextTemplate",
+        cw.visitField(ACC_PRIVATE + ACC_FINAL, "messageTemplate",
                 "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", null, null)
                 .visitEnd();
         cw.visitField(ACC_PRIVATE + ACC_FINAL, "transactionNameTemplate",
                 "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;", null, null)
                 .visitEnd();
         generateMethodMetaConstructor(cw);
-        generateMethodMetaGetter(cw, "spanTextTemplate", "getSpanTextTemplate");
+        generateMethodMetaGetter(cw, "messageTemplate", "getMessageTemplate");
         generateMethodMetaGetter(cw, "transactionNameTemplate", "getTransactionNameTemplate");
         cw.visitEnd();
         byte[] bytes = cw.toByteArray();
@@ -573,11 +573,11 @@ public class DynamicAdviceGenerator {
         mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
         mv.visitVarInsn(ALOAD, 0);
         if (pointcutConfig.isSpan()) {
-            String spanText = pointcutConfig.getSpanText();
-            if (spanText == null) {
-                mv.visitLdcInsn("<no span text provided>");
+            String messageTemplate = pointcutConfig.getMessageTemplate();
+            if (messageTemplate == null) {
+                mv.visitLdcInsn("<no message template provided>");
             } else {
-                mv.visitLdcInsn(spanText);
+                mv.visitLdcInsn(messageTemplate);
             }
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 2);
@@ -589,15 +589,15 @@ public class DynamicAdviceGenerator {
         } else {
             mv.visitInsn(ACONST_NULL);
         }
-        mv.visitFieldInsn(PUTFIELD, methodMetaName, "spanTextTemplate",
+        mv.visitFieldInsn(PUTFIELD, methodMetaName, "messageTemplate",
                 "Lorg/glowroot/dynamicadvice/DynamicAdviceMessageTemplate;");
         mv.visitVarInsn(ALOAD, 0);
         if (pointcutConfig.isTrace()) {
-            String transactionName = pointcutConfig.getTransactionName();
-            if (Strings.isNullOrEmpty(transactionName)) {
-                mv.visitLdcInsn("<no transaction name provided>");
+            String transactionNameTemplate = pointcutConfig.getTransactionNameTemplate();
+            if (transactionNameTemplate.isEmpty()) {
+                mv.visitLdcInsn("<no transaction name template provided>");
             } else {
-                mv.visitLdcInsn(transactionName);
+                mv.visitLdcInsn(transactionNameTemplate);
             }
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 2);

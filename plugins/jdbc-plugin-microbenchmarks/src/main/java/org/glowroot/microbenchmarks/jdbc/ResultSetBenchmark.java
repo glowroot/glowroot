@@ -105,6 +105,6 @@ public class ResultSetBenchmark {
         HSQLDB, MOCK
     }
 
-    @Pointcut(type = "dummy", methodName = "dummy", traceMetric = "micro trace")
+    @Pointcut(className = "dummy", methodName = "dummy", traceMetric = "micro trace")
     private static class OnlyForTheTraceMetricName {}
 }

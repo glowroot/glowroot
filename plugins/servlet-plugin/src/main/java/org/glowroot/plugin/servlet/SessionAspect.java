@@ -21,7 +21,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.weaving.BindClassMeta;
-import org.glowroot.api.weaving.BindMethodArg;
+import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.IsEnabled;
@@ -42,8 +42,8 @@ public class SessionAspect {
      * ================== Http Session Attributes ==================
      */
 
-    @Pointcut(type = "javax.servlet.http.HttpServletRequest", methodName = "getSession",
-            methodArgTypes = {".."})
+    @Pointcut(className = "javax.servlet.http.HttpServletRequest", methodName = "getSession",
+            methodParameterTypes = {".."})
     public static class GetSessionAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -66,7 +66,7 @@ public class SessionAspect {
         }
     }
 
-    @Pointcut(type = "javax.servlet.http.HttpSession", methodName = "invalidate")
+    @Pointcut(className = "javax.servlet.http.HttpSession", methodName = "invalidate")
     public static class InvalidateAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -83,8 +83,8 @@ public class SessionAspect {
         }
     }
 
-    @Pointcut(type = "javax.servlet.http.HttpSession", methodName = "setAttribute|putValue",
-            methodArgTypes = {"java.lang.String", "java.lang.Object"})
+    @Pointcut(className = "javax.servlet.http.HttpSession", methodName = "setAttribute|putValue",
+            methodParameterTypes = {"java.lang.String", "java.lang.Object"})
     public static class SetAttributeAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -92,7 +92,7 @@ public class SessionAspect {
         }
         @OnAfter
         public static void onAfter(@BindReceiver Object session,
-                @BindMethodArg @Nullable String name, @BindMethodArg @Nullable Object value,
+                @BindParameter @Nullable String name, @BindParameter @Nullable Object value,
                 @BindClassMeta SessionInvoker sessionInvoker) {
             if (name == null) {
                 // theoretically possible, so just ignore
@@ -110,8 +110,8 @@ public class SessionAspect {
         }
     }
 
-    @Pointcut(type = "javax.servlet.http.HttpSession", methodName = "removeAttribute",
-            methodArgTypes = {"java.lang.String"})
+    @Pointcut(className = "javax.servlet.http.HttpSession", methodName = "removeAttribute",
+            methodParameterTypes = {"java.lang.String"})
     public static class RemoveAttributeAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -119,7 +119,7 @@ public class SessionAspect {
         }
         @OnAfter
         public static void onAfter(@BindReceiver Object realSession,
-                @BindMethodArg @Nullable String name,
+                @BindParameter @Nullable String name,
                 @BindClassMeta SessionInvoker sessionInvoker) {
             // calling HttpSession.setAttribute() with null value is the same as calling
             // removeAttribute(), per the setAttribute() javadoc

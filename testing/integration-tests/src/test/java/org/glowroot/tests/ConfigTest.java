@@ -310,28 +310,28 @@ public class ConfigTest {
 
     private static PointcutConfig createPointcutConfig() {
         PointcutConfig config = new PointcutConfig();
-        config.setType("java.util.Collections");
+        config.setClassName("java.util.Collections");
         config.setMethodName("yak");
-        config.setMethodArgTypes(Lists.newArrayList("java.lang.String", "java.util.List"));
+        config.setMethodParameterTypes(Lists.newArrayList("java.lang.String", "java.util.List"));
         config.setMethodReturnType("void");
         config.setMethodModifiers(Lists
                 .newArrayList(MethodModifier.PUBLIC, MethodModifier.STATIC));
         config.setTraceMetric("yako");
-        config.setSpanText("yak(): {{0}}, {{1}} => {{?}}");
+        config.setMessageTemplate("yak(): {{0}}, {{1}} => {{?}}");
         config.setTransactionType("ttype");
-        config.setTransactionName("tname");
+        config.setTransactionNameTemplate("tname");
         config.setEnabledProperty("");
         config.setSpanEnabledProperty("");
         return config;
     }
 
     private static void updateAllFields(PointcutConfig config) {
-        config.setType(config.getType() + "a");
+        config.setClassName(config.getClassName() + "a");
         config.setMethodName(config.getMethodName() + "b");
-        if (config.getMethodArgTypes().size() == 0) {
-            config.setMethodArgTypes(ImmutableList.of("java.lang.String"));
+        if (config.getMethodParameterTypes().size() == 0) {
+            config.setMethodParameterTypes(ImmutableList.of("java.lang.String"));
         } else {
-            config.setMethodArgTypes(ImmutableList.of(config.getMethodArgTypes().get(0)
+            config.setMethodParameterTypes(ImmutableList.of(config.getMethodParameterTypes().get(0)
                     + "c"));
         }
         config.setMethodReturnType(config.getMethodReturnType() + "d");
@@ -342,14 +342,14 @@ public class ConfigTest {
                     .of(MethodModifier.PUBLIC, MethodModifier.STATIC));
         }
         config.setTraceMetric(config.getTraceMetric() + "e");
-        config.setSpanText(config.getSpanText() + "f");
-        Long spanStackTraceThresholdMillis = config.getSpanStackTraceThresholdMillis();
-        if (spanStackTraceThresholdMillis == null) {
-            config.setSpanStackTraceThresholdMillis(1000L);
+        config.setMessageTemplate(config.getMessageTemplate() + "f");
+        Long stackTraceThresholdMillis = config.getStackTraceThresholdMillis();
+        if (stackTraceThresholdMillis == null) {
+            config.setStackTraceThresholdMillis(1000L);
         } else {
-            config.setSpanStackTraceThresholdMillis(spanStackTraceThresholdMillis + 1);
+            config.setStackTraceThresholdMillis(stackTraceThresholdMillis + 1);
         }
         config.setTransactionType(config.getTransactionType() + "g");
-        config.setTransactionName(config.getTransactionName() + "h");
+        config.setTransactionNameTemplate(config.getTransactionNameTemplate() + "h");
     }
 }

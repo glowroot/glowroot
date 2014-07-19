@@ -28,7 +28,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@literal @}{@link Pointcut} class may be annotated with {@literal @}{@code IsEnabled}.
  * <p>
  * An {@literal @}{@code IsEnabled} method can accept parameters annotated with any of the
- * following: {@link BindReceiver}, {@link BindMethodArg}, {@link BindMethodArgArray} or
+ * following: {@link BindReceiver}, {@link BindParameter}, {@link BindParameterArray} or
  * {@link BindMethodName}.
  * <p>
  * An {@literal @}{@code IsEnabled} method must return a {@code boolean}. If it returns

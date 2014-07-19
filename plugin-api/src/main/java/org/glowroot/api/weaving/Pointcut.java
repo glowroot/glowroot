@@ -29,7 +29,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 public @interface Pointcut {
 
-    String type();
+    String className();
     /**
      * | and * can be used for limited regular expressions. Full regular expressions can be used by
      * starting and ending methodName with /.
@@ -38,9 +38,11 @@ public @interface Pointcut {
     // patterns never match constructors
     // static initializers ("<clinit>") are not supported
     String methodName();
-    String[] methodArgTypes() default {};
+    String[] methodParameterTypes() default {};
     String methodReturnType() default "";
     MethodModifier[] methodModifiers() default {};
-    boolean ignoreSameNested() default false;
+    // the default is false since it costs a thread local lookup to ignore self nested calls,
+    // and trace metrics already handle self nested calls, so it is only needed for spans
+    boolean ignoreSelfNested() default false;
     String traceMetric() default "";
 }

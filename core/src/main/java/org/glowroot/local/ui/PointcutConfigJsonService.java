@@ -72,10 +72,10 @@ class PointcutConfigJsonService {
     private final ClasspathCache classpathCache;
 
     PointcutConfigJsonService(ConfigService configService, AdviceCache adviceCache,
-            ClasspathCache classpathTypeCache, TraceModule traceModule) {
+            ClasspathCache classpathCache, TraceModule traceModule) {
         this.configService = configService;
         this.adviceCache = adviceCache;
-        this.classpathCache = classpathTypeCache;
+        this.classpathCache = classpathCache;
         this.traceModule = traceModule;
     }
 
@@ -115,14 +115,14 @@ class PointcutConfigJsonService {
         thread.start();
     }
 
-    @GET("/backend/config/matching-types")
-    String getMatchingTypes(String content) throws IOException {
-        logger.debug("getMatchingTypes(): content={}", content);
-        TypesRequest request = ObjectMappers.readRequiredValue(mapper, content, TypesRequest.class);
-        List<String> matchingTypeNames = getMatchingTypeNames(request.getPartialTypeName(),
-                request.getLimit());
-
-        return mapper.writeValueAsString(matchingTypeNames);
+    @GET("/backend/config/matching-class-names")
+    String getMatchingClassNames(String content) throws IOException {
+        logger.debug("getMatchingClassNames(): content={}", content);
+        ClassNamesRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, ClassNamesRequest.class);
+        List<String> matchingClassNames =
+                getMatchingClassNames(request.getPartialClassName(), request.getLimit());
+        return mapper.writeValueAsString(matchingClassNames);
     }
 
     @GET("/backend/config/matching-method-names")
@@ -130,7 +130,7 @@ class PointcutConfigJsonService {
         logger.debug("getMatchingMethodNames(): content={}", content);
         MethodNamesRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, MethodNamesRequest.class);
-        List<String> matchingMethodNames = getMatchingMethodNames(request.getType(),
+        List<String> matchingMethodNames = getMatchingMethodNames(request.getClassName(),
                 request.getPartialMethodName(), request.getLimit());
         return mapper.writeValueAsString(matchingMethodNames);
     }
@@ -141,16 +141,16 @@ class PointcutConfigJsonService {
         MethodSignaturesRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, MethodSignaturesRequest.class);
         List<UiParsedMethod> parsedMethods =
-                getParsedMethods(request.getType(), request.getMethodName());
+                getParsedMethods(request.getClassName(), request.getMethodName());
         ArrayNode matchingMethods = mapper.createArrayNode();
         for (UiParsedMethod parsedMethod : parsedMethods) {
             ObjectNode matchingMethod = mapper.createObjectNode();
             matchingMethod.put("name", parsedMethod.getName());
-            ArrayNode argTypes = mapper.createArrayNode();
-            for (String argTypeName : parsedMethod.getArgTypes()) {
-                argTypes.add(argTypeName);
+            ArrayNode parameterTypes = mapper.createArrayNode();
+            for (String parameterType : parsedMethod.getParameterTypes()) {
+                parameterTypes.add(parameterType);
             }
-            matchingMethod.set("argTypes", argTypes);
+            matchingMethod.set("parameterTypes", parameterTypes);
             matchingMethod.put("returnType", parsedMethod.getReturnType());
             ArrayNode modifiers = mapper.createArrayNode();
             // strip final and synchronized from displayed modifiers since they have no impact on
@@ -202,25 +202,25 @@ class PointcutConfigJsonService {
         configService.deletePointcutConfig(version);
     }
 
-    // returns the first <limit> matching type names, ordered alphabetically (case-insensitive)
-    private ImmutableList<String> getMatchingTypeNames(String partialTypeName, int limit) {
-        Set<String> typeNames = Sets.newHashSet();
-        typeNames.addAll(classpathCache.getMatchingTypeNames(partialTypeName, limit));
-        ImmutableList<String> sortedTypeNames =
-                Ordering.from(String.CASE_INSENSITIVE_ORDER).immutableSortedCopy(typeNames);
-        if (sortedTypeNames.size() > limit) {
-            return sortedTypeNames.subList(0, limit);
+    // returns the first <limit> matching class names, ordered alphabetically (case-insensitive)
+    private ImmutableList<String> getMatchingClassNames(String partialClassName, int limit) {
+        Set<String> classNames = Sets.newHashSet();
+        classNames.addAll(classpathCache.getMatchingClassNames(partialClassName, limit));
+        ImmutableList<String> sortedClassNames =
+                Ordering.from(String.CASE_INSENSITIVE_ORDER).immutableSortedCopy(classNames);
+        if (sortedClassNames.size() > limit) {
+            return sortedClassNames.subList(0, limit);
         } else {
-            return sortedTypeNames;
+            return sortedClassNames;
         }
     }
 
     // returns the first <limit> matching method names, ordered alphabetically (case-insensitive)
-    private ImmutableList<String> getMatchingMethodNames(String typeName, String partialMethodName,
-            int limit) {
+    private ImmutableList<String> getMatchingMethodNames(String className,
+            String partialMethodName, int limit) {
         String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
         Set<String> methodNames = Sets.newHashSet();
-        for (UiParsedMethod parsedMethod : classpathCache.getParsedMethods(typeName)) {
+        for (UiParsedMethod parsedMethod : classpathCache.getParsedMethods(className)) {
             if (Modifier.isNative(parsedMethod.getModifiers())) {
                 continue;
             }
@@ -244,10 +244,10 @@ class PointcutConfigJsonService {
         }
     }
 
-    private List<UiParsedMethod> getParsedMethods(String typeName, String methodName) {
-        // use set to remove duplicate methods (e.g. same type loaded by multiple class loaders)
+    private List<UiParsedMethod> getParsedMethods(String className, String methodName) {
+        // use set to remove duplicate methods (e.g. same class loaded by multiple class loaders)
         Set<UiParsedMethod> parsedMethods = Sets.newHashSet();
-        for (UiParsedMethod parsedMethod : classpathCache.getParsedMethods(typeName)) {
+        for (UiParsedMethod parsedMethod : classpathCache.getParsedMethods(className)) {
             if (Modifier.isNative(parsedMethod.getModifiers())) {
                 continue;
             }
@@ -259,21 +259,21 @@ class PointcutConfigJsonService {
         return UiParsedMethodOrdering.INSTANCE.sortedCopy(parsedMethods);
     }
 
-    private static class TypesRequest {
+    private static class ClassNamesRequest {
 
-        private final String partialTypeName;
+        private final String partialClassName;
         private final int limit;
 
         @JsonCreator
-        TypesRequest(@JsonProperty("partialTypeName") @Nullable String partialTypeName,
+        ClassNamesRequest(@JsonProperty("partialClassName") @Nullable String partialClassName,
                 @JsonProperty("limit") int limit) throws JsonMappingException {
-            checkRequiredProperty(partialTypeName, "partialTypeName");
-            this.partialTypeName = partialTypeName;
+            checkRequiredProperty(partialClassName, "partialClassName");
+            this.partialClassName = partialClassName;
             this.limit = limit;
         }
 
-        private String getPartialTypeName() {
-            return partialTypeName;
+        private String getPartialClassName() {
+            return partialClassName;
         }
 
         private int getLimit() {
@@ -283,23 +283,23 @@ class PointcutConfigJsonService {
 
     private static class MethodNamesRequest {
 
-        private final String type;
+        private final String className;
         private final String partialMethodName;
         private final int limit;
 
         @JsonCreator
-        MethodNamesRequest(@JsonProperty("type") @Nullable String type,
+        MethodNamesRequest(@JsonProperty("className") @Nullable String className,
                 @JsonProperty("partialMethodName") @Nullable String partialMethodName,
                 @JsonProperty("limit") int limit) throws JsonMappingException {
-            checkRequiredProperty(type, "type");
+            checkRequiredProperty(className, "className");
             checkRequiredProperty(partialMethodName, "partialMethodName");
-            this.type = type;
+            this.className = className;
             this.partialMethodName = partialMethodName;
             this.limit = limit;
         }
 
-        private String getType() {
-            return type;
+        private String getClassName() {
+            return className;
         }
 
         private String getPartialMethodName() {
@@ -313,21 +313,21 @@ class PointcutConfigJsonService {
 
     private static class MethodSignaturesRequest {
 
-        private final String type;
+        private final String className;
         private final String methodName;
 
         @JsonCreator
-        MethodSignaturesRequest(@JsonProperty("type") @Nullable String type,
+        MethodSignaturesRequest(@JsonProperty("className") @Nullable String className,
                 @JsonProperty("methodName") @Nullable String methodName)
                 throws JsonMappingException {
-            checkRequiredProperty(type, "type");
+            checkRequiredProperty(className, "className");
             checkRequiredProperty(methodName, "methodName");
-            this.type = type;
+            this.className = className;
             this.methodName = methodName;
         }
 
-        private String getType() {
-            return type;
+        private String getClassName() {
+            return className;
         }
 
         private String getMethodName() {

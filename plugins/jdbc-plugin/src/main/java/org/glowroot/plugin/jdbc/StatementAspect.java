@@ -31,7 +31,7 @@ import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
 import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.TraceMetricTimer;
-import org.glowroot.api.weaving.BindMethodArg;
+import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
@@ -103,8 +103,8 @@ public class StatementAspect {
     // ===================== Statement Preparation =====================
 
     // capture the sql used to create the PreparedStatement
-    @Pointcut(type = "java.sql.Connection", methodName = "prepare*",
-            methodArgTypes = {"java.lang.String", ".."}, ignoreSameNested = true,
+    @Pointcut(className = "java.sql.Connection", methodName = "prepare*",
+            methodParameterTypes = {"java.lang.String", ".."}, ignoreSelfNested = true,
             traceMetric = "jdbc prepare")
     public static class PrepareAdvice {
         private static final TraceMetricName traceMetricName =
@@ -123,7 +123,7 @@ public class StatementAspect {
         }
         @OnReturn
         public static void onReturn(@BindReturn PreparedStatement preparedStatement,
-                @BindMethodArg String sql) {
+                @BindParameter String sql) {
             ((HasStatementMirror) preparedStatement)
                     .setGlowrootStatementMirror(new PreparedStatementMirror(sql));
         }
@@ -140,12 +140,12 @@ public class StatementAspect {
     // capture the parameters that are bound to the PreparedStatement except
     // parameters bound via setNull(..)
     // see special case below to handle setNull()
-    @Pointcut(type = "java.sql.PreparedStatement", methodName = "/(?!setNull$)set.*/",
-            methodArgTypes = {"int", "*", ".."}, ignoreSameNested = true)
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "/(?!setNull$)set.*/",
+            methodParameterTypes = {"int", "*", ".."}, ignoreSelfNested = true)
     public static class SetXAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver PreparedStatement preparedStatement,
-                @BindMethodArg int parameterIndex, @BindMethodArg Object x) {
+                @BindParameter int parameterIndex, @BindParameter Object x) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
             if (x instanceof InputStream || x instanceof Reader) {
                 mirror.setParameterValue(parameterIndex, new StreamingParameterValue(x));
@@ -160,12 +160,12 @@ public class StatementAspect {
         }
     }
 
-    @Pointcut(type = "java.sql.PreparedStatement", methodName = "setNull",
-            methodArgTypes = {"int", "int", ".."}, ignoreSameNested = true)
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "setNull",
+            methodParameterTypes = {"int", "int", ".."}, ignoreSelfNested = true)
     public static class SetNullAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver PreparedStatement preparedStatement,
-                @BindMethodArg int parameterIndex) {
+                @BindParameter int parameterIndex) {
             getPreparedStatementMirror(preparedStatement).setParameterValue(parameterIndex,
                     new NullParameterValue());
         }
@@ -173,18 +173,18 @@ public class StatementAspect {
 
     // ================== Statement Batching ==================
 
-    @Pointcut(type = "java.sql.Statement", methodName = "addBatch",
-            methodArgTypes = {"java.lang.String"}, ignoreSameNested = true)
+    @Pointcut(className = "java.sql.Statement", methodName = "addBatch",
+            methodParameterTypes = {"java.lang.String"}, ignoreSelfNested = true)
     public static class StatementAddBatchAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver Statement statement,
-                @BindMethodArg String sql) {
+                @BindParameter String sql) {
             getStatementMirror(statement).addBatch(sql);
         }
     }
 
-    @Pointcut(type = "java.sql.PreparedStatement", methodName = "addBatch",
-            ignoreSameNested = true)
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "addBatch",
+            ignoreSelfNested = true)
     public static class PreparedStatementAddBatchAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver PreparedStatement preparedStatement) {
@@ -194,7 +194,7 @@ public class StatementAspect {
 
     // Statement.clearBatch() can be used to re-initiate a prepared statement
     // that has been cached from a previous usage
-    @Pointcut(type = "java.sql.Statement", methodName = "clearBatch")
+    @Pointcut(className = "java.sql.Statement", methodName = "clearBatch")
     public static class ClearBatchAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver Statement statement) {
@@ -205,8 +205,8 @@ public class StatementAspect {
 
     // =================== Statement Execution ===================
 
-    @Pointcut(type = "java.sql.Statement", methodName = "execute*",
-            methodArgTypes = {"java.lang.String", ".."}, ignoreSameNested = true,
+    @Pointcut(className = "java.sql.Statement", methodName = "execute*",
+            methodParameterTypes = {"java.lang.String", ".."}, ignoreSelfNested = true,
             traceMetric = "jdbc execute")
     public static class StatementExecuteAdvice {
         private static final TraceMetricName traceMetricName =
@@ -219,7 +219,7 @@ public class StatementAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@BindReceiver Statement statement,
-                @BindMethodArg String sql) {
+                @BindParameter String sql) {
             StatementMirror mirror = getStatementMirror(statement);
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.create(sql);
@@ -249,8 +249,8 @@ public class StatementAspect {
     }
 
     // executeBatch is not included since it is handled separately (below)
-    @Pointcut(type = "java.sql.PreparedStatement",
-            methodName = "execute|executeQuery|executeUpdate", ignoreSameNested = true,
+    @Pointcut(className = "java.sql.PreparedStatement",
+            methodName = "execute|executeQuery|executeUpdate", ignoreSelfNested = true,
             traceMetric = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
         private static final TraceMetricName traceMetricName =
@@ -296,8 +296,8 @@ public class StatementAspect {
         }
     }
 
-    @Pointcut(type = "java.sql.Statement", methodName = "executeBatch", ignoreSameNested = true,
-            traceMetric = "jdbc execute")
+    @Pointcut(className = "java.sql.Statement", methodName = "executeBatch",
+            ignoreSelfNested = true, traceMetric = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(StatementExecuteBatchAdvice.class);
@@ -361,7 +361,7 @@ public class StatementAspect {
 
     // ================== Statement Closing ==================
 
-    @Pointcut(type = "java.sql.Statement", methodName = "close", ignoreSameNested = true,
+    @Pointcut(className = "java.sql.Statement", methodName = "close", ignoreSelfNested = true,
             traceMetric = "jdbc statement close")
     public static class CloseAdvice {
         private static final TraceMetricName traceMetricName =

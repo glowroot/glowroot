@@ -34,7 +34,7 @@ import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.weaving.BindMethodArg;
+import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -98,7 +98,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         this.methodMetaUniqueNum = methodMetaUniqueNum;
         boolean needsTryCatch = false;
         for (Advice advice : advisors) {
-            if (advice.getPointcut().ignoreSameNested() || advice.getOnThrowAdvice() != null
+            if (advice.getPointcut().ignoreSelfNested() || advice.getOnThrowAdvice() != null
                     || advice.getOnAfterAdvice() != null) {
                 needsTryCatch = true;
                 break;
@@ -248,14 +248,14 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         Integer enabledLocal = null;
         Method isEnabledAdvice = advice.getIsEnabledAdvice();
         if (isEnabledAdvice != null) {
-            loadMethodArgs(advice.getIsEnabledParameters(), 0, -1, advice.getAdviceType(),
+            loadMethodParameters(advice.getIsEnabledParameters(), 0, -1, advice.getAdviceType(),
                     IsEnabled.class);
             invokeStatic(advice.getAdviceType(), isEnabledAdvice);
             enabledLocal = newLocal(Type.BOOLEAN_TYPE);
             enabledLocals.put(advice, enabledLocal);
             storeLocal(enabledLocal);
         }
-        if (advice.getPointcut().ignoreSameNested()) {
+        if (advice.getPointcut().ignoreSelfNested()) {
             // topFlowLocal must be defined/initialized outside of any code branches since it is
             // referenced later on in resetAdviceFlowIfNecessary()
             int adviceFlowHolderLocal = newLocal(adviceFlowHolderType);
@@ -336,7 +336,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
             loadLocal(enabledLocal);
             visitJumpInsn(IFEQ, onBeforeBlockEnd);
         }
-        loadMethodArgs(advice.getOnBeforeParameters(), 0, -1, advice.getAdviceType(),
+        loadMethodParameters(advice.getOnBeforeParameters(), 0, -1, advice.getAdviceType(),
                 OnBefore.class);
         invokeStatic(advice.getAdviceType(), onBeforeAdvice);
         if (travelerLocal != null) {
@@ -385,7 +385,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                     // first argument is not @BindReturn
                     break;
             }
-            loadMethodArgs(advice.getOnReturnParameters(), startIndex,
+            loadMethodParameters(advice.getOnReturnParameters(), startIndex,
                     travelerLocals.get(advice), advice.getAdviceType(), OnReturn.class);
         }
         int sort = onReturnAdvice.getReturnType().getSort();
@@ -455,7 +455,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                     dup();
                     startIndex++;
                 }
-                loadMethodArgs(advice.getOnThrowParameters(), startIndex,
+                loadMethodParameters(advice.getOnThrowParameters(), startIndex,
                         travelerLocals.get(advice), advice.getAdviceType(), OnThrow.class);
                 invokeStatic(advice.getAdviceType(), onThrowAdvice);
             }
@@ -478,7 +478,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 loadLocal(enabledLocal);
                 visitJumpInsn(IFEQ, onAfterBlockEnd);
             }
-            loadMethodArgs(advice.getOnAfterParameters(), 0, travelerLocals.get(advice),
+            loadMethodParameters(advice.getOnAfterParameters(), 0, travelerLocals.get(advice),
                     advice.getAdviceType(), OnAfter.class);
             invokeStatic(advice.getAdviceType(), onAfterAdvice);
             if (onAfterBlockEnd != null) {
@@ -489,16 +489,16 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     private void resetAdviceFlowIfNecessary() {
         for (Advice advice : advisors) {
-            if (advice.getPointcut().ignoreSameNested()) {
+            if (advice.getPointcut().ignoreSelfNested()) {
                 Integer enabledLocal = enabledLocals.get(advice);
                 Integer adviceFlowLocal = adviceFlowLocals.get(advice);
                 Integer adviceFlowHolderLocal = adviceFlowHolderLocals.get(advice);
                 // enabledLocal is non-null for all advice
                 checkNotNull(enabledLocal, "enabledLocal is null");
-                // adviceFlowLocal is non-null for all advice with ignoreSameNested = true
+                // adviceFlowLocal is non-null for all advice with ignoreSelfNested = true
                 // (same condition as tested above)
                 checkNotNull(adviceFlowLocal, "adviceFlowLocal is null");
-                // adviceFlowHolderLocal is non-null for all advice with ignoreSameNested = true
+                // adviceFlowHolderLocal is non-null for all advice with ignoreSelfNested = true
                 // (same condition as tested above)
                 checkNotNull(adviceFlowHolderLocal, "adviceFlowHolderLocal is null");
 
@@ -516,7 +516,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         }
     }
 
-    private void loadMethodArgs(ImmutableList<AdviceParameter> parameters, int startIndex,
+    private void loadMethodParameters(ImmutableList<AdviceParameter> parameters, int startIndex,
             @Nullable Integer travelerLocal, Type adviceType,
             Class<? extends Annotation> annotationType) {
 
@@ -528,7 +528,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                     loadTarget();
                     break;
                 case METHOD_ARG:
-                    loadMethodArg(adviceType, annotationType, argIndex++, parameter);
+                    loadMethodParameters(adviceType, annotationType, argIndex++, parameter);
                     break;
                 case METHOD_ARG_ARRAY:
                     loadArgArray();
@@ -570,12 +570,12 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         }
     }
 
-    private void loadMethodArg(Type adviceType, Class<? extends Annotation> annotationType,
+    private void loadMethodParameters(Type adviceType, Class<? extends Annotation> annotationType,
             int argIndex, AdviceParameter parameter) {
         if (argIndex >= argumentTypes.length) {
             logger.warn("the @{} method in {} has more @{} arguments than the number of args"
                     + " in the target method", annotationType.getSimpleName(),
-                    adviceType.getClassName(), BindMethodArg.class.getSimpleName());
+                    adviceType.getClassName(), BindParameter.class.getSimpleName());
             pushDefault(Type.getType(parameter.getType()));
             return;
         }

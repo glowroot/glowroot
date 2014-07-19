@@ -35,8 +35,8 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
 import org.glowroot.api.weaving.BindClassMeta;
-import org.glowroot.api.weaving.BindMethodArg;
-import org.glowroot.api.weaving.BindMethodArgArray;
+import org.glowroot.api.weaving.BindParameter;
+import org.glowroot.api.weaving.BindParameterArray;
 import org.glowroot.api.weaving.BindMethodMeta;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindOptionalReturn;
@@ -71,29 +71,29 @@ public class Advice {
     };
 
     private static final ImmutableList<Class<? extends Annotation>> isEnabledBindAnnotationTypes =
-            ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
+            ImmutableList.of(BindReceiver.class, BindParameter.class, BindParameterArray.class,
                     BindMethodName.class, BindClassMeta.class, BindMethodMeta.class);
     private static final ImmutableList<Class<? extends Annotation>> onBeforeBindAnnotationTypes =
-            ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
+            ImmutableList.of(BindReceiver.class, BindParameter.class, BindParameterArray.class,
                     BindMethodName.class, BindClassMeta.class, BindMethodMeta.class);
     private static final ImmutableList<Class<? extends Annotation>> onReturnBindAnnotationTypes =
-            ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
+            ImmutableList.of(BindReceiver.class, BindParameter.class, BindParameterArray.class,
                     BindMethodName.class, BindReturn.class, BindOptionalReturn.class,
                     BindTraveler.class, BindClassMeta.class, BindMethodMeta.class);
     private static final ImmutableList<Class<? extends Annotation>> onThrowBindAnnotationTypes =
-            ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
+            ImmutableList.of(BindReceiver.class, BindParameter.class, BindParameterArray.class,
                     BindMethodName.class, BindThrowable.class, BindTraveler.class,
                     BindClassMeta.class, BindMethodMeta.class);
     private static final ImmutableList<Class<? extends Annotation>> onAfterBindAnnotationTypes =
-            ImmutableList.of(BindReceiver.class, BindMethodArg.class, BindMethodArgArray.class,
+            ImmutableList.of(BindReceiver.class, BindParameter.class, BindParameterArray.class,
                     BindMethodName.class, BindTraveler.class, BindClassMeta.class,
                     BindMethodMeta.class);
 
     private static final ImmutableMap<Class<? extends Annotation>, ParameterKind> parameterKindMap =
             new ImmutableMap.Builder<Class<? extends Annotation>, ParameterKind>()
                     .put(BindReceiver.class, ParameterKind.RECEIVER)
-                    .put(BindMethodArg.class, ParameterKind.METHOD_ARG)
-                    .put(BindMethodArgArray.class, ParameterKind.METHOD_ARG_ARRAY)
+                    .put(BindParameter.class, ParameterKind.METHOD_ARG)
+                    .put(BindParameterArray.class, ParameterKind.METHOD_ARG_ARRAY)
                     .put(BindMethodName.class, ParameterKind.METHOD_NAME)
                     .put(BindReturn.class, ParameterKind.RETURN)
                     .put(BindOptionalReturn.class, ParameterKind.OPTIONAL_RETURN)
@@ -106,9 +106,9 @@ public class Advice {
     private final Pointcut pointcut;
     private final Type adviceType;
     @Nullable
-    private final Pattern pointcutTypePattern;
+    private final Pattern pointcutClassNamePattern;
     @Nullable
-    private final Pattern pointcutMethodPattern;
+    private final Pattern pointcutMethodNamePattern;
     @Nullable
     private final Method isEnabledAdvice;
     @Nullable
@@ -139,8 +139,8 @@ public class Advice {
         return new Builder(pointcut, adviceClass, reweavable).build();
     }
 
-    private Advice(Pointcut pointcut, Type adviceType, @Nullable Pattern pointcutTypePattern,
-            @Nullable Pattern pointcutMethodPattern, @Nullable Method isEnabledAdvice,
+    private Advice(Pointcut pointcut, Type adviceType, @Nullable Pattern pointcutClassNamePattern,
+            @Nullable Pattern pointcutMethodNamePattern, @Nullable Method isEnabledAdvice,
             @Nullable Method onBeforeAdvice, @Nullable Method onReturnAdvice,
             @Nullable Method onThrowAdvice, @Nullable Method onAfterAdvice,
             @Nullable Type travelerType, List<AdviceParameter> isEnabledParameters,
@@ -150,8 +150,8 @@ public class Advice {
             boolean reweavable) {
         this.pointcut = pointcut;
         this.adviceType = adviceType;
-        this.pointcutTypePattern = pointcutTypePattern;
-        this.pointcutMethodPattern = pointcutMethodPattern;
+        this.pointcutClassNamePattern = pointcutClassNamePattern;
+        this.pointcutMethodNamePattern = pointcutMethodNamePattern;
         this.isEnabledAdvice = isEnabledAdvice;
         this.onBeforeAdvice = onBeforeAdvice;
         this.onReturnAdvice = onReturnAdvice;
@@ -186,13 +186,13 @@ public class Advice {
     }
 
     @Nullable
-    Pattern getPointcutTypePattern() {
-        return pointcutTypePattern;
+    Pattern getPointcutClassNamePattern() {
+        return pointcutClassNamePattern;
     }
 
     @Nullable
-    Pattern getPointcutMethodPattern() {
-        return pointcutMethodPattern;
+    Pattern getPointcutMethodNamePattern() {
+        return pointcutMethodNamePattern;
     }
 
     Type getAdviceType() {
@@ -271,8 +271,8 @@ public class Advice {
         return Objects.toStringHelper(this)
                 .add("pointcut", pointcut)
                 .add("adviceType", adviceType)
-                .add("pointcutTypePattern", pointcutTypePattern)
-                .add("pointcutMethodPattern", pointcutMethodPattern)
+                .add("pointcutClassNamePattern", pointcutClassNamePattern)
+                .add("pointcutMethodNamePattern", pointcutMethodNamePattern)
                 .add("isEnabledAdvice", isEnabledAdvice)
                 .add("onBeforeAdvice", onBeforeAdvice)
                 .add("onReturnAdvice", onReturnAdvice)
@@ -350,9 +350,9 @@ public class Advice {
         @MonotonicNonNull
         private Type adviceType;
         @Nullable
-        private Pattern pointcutTypePattern;
+        private Pattern pointcutClassNamePattern;
         @Nullable
-        private Pattern pointcutMethodPattern;
+        private Pattern pointcutMethodNamePattern;
         @MonotonicNonNull
         private Method isEnabledAdvice;
         @MonotonicNonNull
@@ -383,8 +383,8 @@ public class Advice {
 
         private Advice build() throws AdviceConstructionException {
             adviceType = Type.getType(adviceClass);
-            pointcutTypePattern = buildPattern(pointcut.type());
-            pointcutMethodPattern = buildPattern(pointcut.methodName());
+            pointcutClassNamePattern = buildPattern(pointcut.className());
+            pointcutMethodNamePattern = buildPattern(pointcut.methodName());
             for (java.lang.reflect.Method method : adviceClass.getMethods()) {
                 if (method.isAnnotationPresent(IsEnabled.class)) {
                     initIsEnabledAdvice(adviceClass, method);
@@ -399,10 +399,11 @@ public class Advice {
                 }
             }
             generatedAdviceFlowClass = AdviceFlowGenerator.generate();
-            return new Advice(pointcut, adviceType, pointcutTypePattern, pointcutMethodPattern,
-                    isEnabledAdvice, onBeforeAdvice, onReturnAdvice, onThrowAdvice, onAfterAdvice,
-                    travelerType, isEnabledParameters, onBeforeParameters, onReturnParameters,
-                    onThrowParameters, onAfterParameters, generatedAdviceFlowClass, reweavable);
+            return new Advice(pointcut, adviceType, pointcutClassNamePattern,
+                    pointcutMethodNamePattern, isEnabledAdvice, onBeforeAdvice, onReturnAdvice,
+                    onThrowAdvice, onAfterAdvice, travelerType, isEnabledParameters,
+                    onBeforeParameters, onReturnParameters, onThrowParameters, onAfterParameters,
+                    generatedAdviceFlowClass, reweavable);
         }
 
         private void initIsEnabledAdvice(Class<?> adviceClass, java.lang.reflect.Method method)

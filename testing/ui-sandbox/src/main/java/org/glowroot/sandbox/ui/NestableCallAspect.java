@@ -48,8 +48,8 @@ public class NestableCallAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
 
-    @Pointcut(type = "org.glowroot.sandbox.ui.NestableCall", methodName = "execute",
-            traceMetric = "nestable", ignoreSameNested = true)
+    @Pointcut(className = "org.glowroot.sandbox.ui.NestableCall", methodName = "execute",
+            traceMetric = "nestable", ignoreSelfNested = true)
     public static class NestableCallAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(NestableCallAdvice.class);
@@ -127,7 +127,7 @@ public class NestableCallAspect {
         }
     }
 
-    private static MessageSupplier getRootMessageSupplier(final String spanText) {
+    private static MessageSupplier getRootMessageSupplier(final String spanMessage) {
         return new MessageSupplier() {
             @Override
             public Message get() {
@@ -136,7 +136,7 @@ public class NestableCallAspect {
                                 ImmutableMap.of("attr311", ImmutableList.of("v311a", "v311b")),
                                 "attr32", getLongDetailValue(true),
                                 "attr33", getLongDetailValue(false)));
-                return Message.withDetail(spanText, detail);
+                return Message.withDetail(spanMessage, detail);
             }
         };
     }

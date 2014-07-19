@@ -35,24 +35,24 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 public class PointcutConfig {
 
     @Nullable
-    private String type;
+    private String className;
     @Nullable
     private String methodName;
-    private ImmutableList<String> methodArgTypes;
+    private ImmutableList<String> methodParameterTypes;
     @Nullable
     private String methodReturnType;
     private ImmutableList<MethodModifier> methodModifiers;
     @Nullable
     private String traceMetric;
     @Nullable
-    private String spanText;
+    private String messageTemplate;
     @Nullable
-    private Long spanStackTraceThresholdMillis;
-    private boolean spanIgnoreSameNested;
+    private Long stackTraceThresholdMillis;
+    private boolean captureSelfNested;
     @Nullable
     private String transactionType;
     @Nullable
-    private String transactionName;
+    private String transactionNameTemplate;
     @Nullable
     private String enabledProperty;
     @Nullable
@@ -64,24 +64,24 @@ public class PointcutConfig {
 
     // used to create new PointcutConfig records that haven't been sent to server yet
     public PointcutConfig() {
-        methodArgTypes = ImmutableList.of();
+        methodParameterTypes = ImmutableList.of();
         methodModifiers = ImmutableList.of();
         version = null;
     }
 
     public PointcutConfig(String version) {
-        methodArgTypes = ImmutableList.of();
+        methodParameterTypes = ImmutableList.of();
         methodModifiers = ImmutableList.of();
         this.version = version;
     }
 
     @Nullable
-    public String getType() {
-        return type;
+    public String getClassName() {
+        return className;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public void setClassName(String className) {
+        this.className = className;
     }
 
     @Nullable
@@ -93,12 +93,12 @@ public class PointcutConfig {
         this.methodName = methodName;
     }
 
-    public ImmutableList<String> getMethodArgTypes() {
-        return methodArgTypes;
+    public ImmutableList<String> getMethodParameterTypes() {
+        return methodParameterTypes;
     }
 
-    public void setMethodArgTypes(List<String> methodArgTypes) {
-        this.methodArgTypes = ImmutableList.copyOf(methodArgTypes);
+    public void setMethodParameterTypes(List<String> methodParameterTypes) {
+        this.methodParameterTypes = ImmutableList.copyOf(methodParameterTypes);
     }
 
     @Nullable
@@ -128,29 +128,29 @@ public class PointcutConfig {
     }
 
     @Nullable
-    public String getSpanText() {
-        return spanText;
+    public String getMessageTemplate() {
+        return messageTemplate;
     }
 
-    public void setSpanText(@Nullable String spanText) {
-        this.spanText = spanText;
+    public void setMessageTemplate(@Nullable String messageTemplate) {
+        this.messageTemplate = messageTemplate;
     }
 
     @Nullable
-    public Long getSpanStackTraceThresholdMillis() {
-        return spanStackTraceThresholdMillis;
+    public Long getStackTraceThresholdMillis() {
+        return stackTraceThresholdMillis;
     }
 
-    public void setSpanStackTraceThresholdMillis(@Nullable Long spanStackTraceThresholdMillis) {
-        this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
+    public void setStackTraceThresholdMillis(@Nullable Long stackTraceThresholdMillis) {
+        this.stackTraceThresholdMillis = stackTraceThresholdMillis;
     }
 
-    public boolean isSpanIgnoreSameNested() {
-        return spanIgnoreSameNested;
+    public boolean isCaptureSelfNested() {
+        return captureSelfNested;
     }
 
-    public void setSpanIgnoreSameNested(boolean spanIgnoreSameNested) {
-        this.spanIgnoreSameNested = spanIgnoreSameNested;
+    public void setCaptureSelfNested(boolean captureSelfNested) {
+        this.captureSelfNested = captureSelfNested;
     }
 
     @Nullable
@@ -163,12 +163,12 @@ public class PointcutConfig {
     }
 
     @Nullable
-    public String getTransactionName() {
-        return transactionName;
+    public String getTransactionNameTemplate() {
+        return transactionNameTemplate;
     }
 
-    public void setTransactionName(@Nullable String transactionName) {
-        this.transactionName = transactionName;
+    public void setTransactionNameTemplate(@Nullable String transactionNameTemplate) {
+        this.transactionNameTemplate = transactionNameTemplate;
     }
 
     @Nullable
@@ -197,18 +197,17 @@ public class PointcutConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(type, that.type)
+            return Objects.equal(className, that.className)
                     && Objects.equal(methodName, that.methodName)
-                    && Objects.equal(methodArgTypes, that.methodArgTypes)
+                    && Objects.equal(methodParameterTypes, that.methodParameterTypes)
                     && Objects.equal(methodReturnType, that.methodReturnType)
                     && Objects.equal(methodModifiers, that.methodModifiers)
                     && Objects.equal(traceMetric, that.traceMetric)
-                    && Objects.equal(spanText, that.spanText)
-                    && Objects.equal(spanStackTraceThresholdMillis,
-                            that.spanStackTraceThresholdMillis)
-                    && Objects.equal(spanIgnoreSameNested, that.spanIgnoreSameNested)
+                    && Objects.equal(messageTemplate, that.messageTemplate)
+                    && Objects.equal(stackTraceThresholdMillis, that.stackTraceThresholdMillis)
+                    && Objects.equal(captureSelfNested, that.captureSelfNested)
                     && Objects.equal(transactionType, that.transactionType)
-                    && Objects.equal(transactionName, that.transactionName)
+                    && Objects.equal(transactionNameTemplate, that.transactionNameTemplate)
                     && Objects.equal(enabledProperty, that.enabledProperty)
                     && Objects.equal(spanEnabledProperty, that.spanEnabledProperty);
         }
@@ -221,9 +220,9 @@ public class PointcutConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(type, methodName, methodArgTypes, methodReturnType,
-                methodModifiers, traceMetric, spanText, spanStackTraceThresholdMillis,
-                spanIgnoreSameNested, transactionType, transactionName, enabledProperty,
+        return Objects.hashCode(className, methodName, methodParameterTypes, methodReturnType,
+                methodModifiers, traceMetric, messageTemplate, stackTraceThresholdMillis,
+                captureSelfNested, transactionType, transactionNameTemplate, enabledProperty,
                 spanEnabledProperty);
     }
 
@@ -231,17 +230,17 @@ public class PointcutConfig {
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("type", type)
+                .add("className", className)
                 .add("methodName", methodName)
-                .add("methodArgTypes", methodArgTypes)
+                .add("methodParameterTypes", methodParameterTypes)
                 .add("methodReturnType", methodReturnType)
                 .add("methodModifiers", methodModifiers)
                 .add("traceMetric", traceMetric)
-                .add("spanText", spanText)
-                .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
-                .add("spanIgnoreSameNested", spanIgnoreSameNested)
+                .add("messageTemplate", messageTemplate)
+                .add("stackTraceThresholdMillis", stackTraceThresholdMillis)
+                .add("captureSelfNested", captureSelfNested)
                 .add("transactionType", transactionType)
-                .add("transactionName", transactionName)
+                .add("transactionNameTemplate", transactionNameTemplate)
                 .add("enabledProperty", enabledProperty)
                 .add("spanEnabledProperty", spanEnabledProperty)
                 .add("version", version)
@@ -250,49 +249,49 @@ public class PointcutConfig {
 
     @JsonCreator
     static PointcutConfig readValue(
-            @JsonProperty("type") @Nullable String type,
+            @JsonProperty("className") @Nullable String className,
             @JsonProperty("methodName") @Nullable String methodName,
-            @JsonProperty("methodArgTypes") @Nullable List</*@Nullable*/String> uncheckedMethodArgTypes,
+            @JsonProperty("methodParameterTypes") @Nullable List</*@Nullable*/String> uncheckedMethodParameterTypes,
             @JsonProperty("methodReturnType") @Nullable String methodReturnType,
             @JsonProperty("methodModifiers") @Nullable List</*@Nullable*/MethodModifier> uncheckedMethodModifiers,
             @JsonProperty("traceMetric") @Nullable String traceMetric,
-            @JsonProperty("spanText") @Nullable String spanText,
-            @JsonProperty("spanStackTraceThresholdMillis") @Nullable Long spanStackTraceThresholdMillis,
-            @JsonProperty("spanIgnoreSameNested") @Nullable Boolean spanIgnoreSameNested,
+            @JsonProperty("messageTemplate") @Nullable String messageTemplate,
+            @JsonProperty("stackTraceThresholdMillis") @Nullable Long stackTraceThresholdMillis,
+            @JsonProperty("captureSelfNested") @Nullable Boolean captureSelfNested,
             @JsonProperty("transactionType") @Nullable String transactionType,
-            @JsonProperty("transactionName") @Nullable String transactionName,
+            @JsonProperty("transactionNameTemplate") @Nullable String transactionNameTemplate,
             @JsonProperty("enabledProperty") @Nullable String enabledProperty,
             @JsonProperty("spanEnabledProperty") @Nullable String spanEnabledProperty,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        List<String> methodArgTypes =
-                checkNotNullItemsForProperty(uncheckedMethodArgTypes, "methodArgTypes");
+        List<String> methodParameterTypes =
+                checkNotNullItemsForProperty(uncheckedMethodParameterTypes, "methodParameterTypes");
         List<MethodModifier> methodModifiers =
                 checkNotNullItemsForProperty(uncheckedMethodModifiers, "methodModifiers");
-        checkRequiredProperty(type, "type");
+        checkRequiredProperty(className, "className");
         checkRequiredProperty(methodName, "methodName");
-        checkRequiredProperty(methodArgTypes, "methodArgTypes");
+        checkRequiredProperty(methodParameterTypes, "methodParameterTypes");
         checkRequiredProperty(methodReturnType, "methodReturnType");
         checkRequiredProperty(methodModifiers, "methodModifiers");
         checkRequiredProperty(traceMetric, "traceMetric");
-        checkRequiredProperty(spanText, "spanText");
-        checkRequiredProperty(spanIgnoreSameNested, "spanIgnoreSameNested");
+        checkRequiredProperty(messageTemplate, "messageTemplate");
+        checkRequiredProperty(captureSelfNested, "captureSelfNested");
         checkRequiredProperty(transactionType, "transactionType");
-        checkRequiredProperty(transactionName, "transactionName");
+        checkRequiredProperty(transactionNameTemplate, "transactionNameTemplate");
         checkRequiredProperty(enabledProperty, "enabledProperty");
         checkRequiredProperty(spanEnabledProperty, "spanEnabledProperty");
         checkRequiredProperty(version, "version");
         PointcutConfig config = new PointcutConfig(version);
-        config.setType(type);
+        config.setClassName(className);
         config.setMethodName(methodName);
-        config.setMethodArgTypes(methodArgTypes);
+        config.setMethodParameterTypes(methodParameterTypes);
         config.setMethodReturnType(methodReturnType);
         config.setMethodModifiers(methodModifiers);
         config.setTraceMetric(traceMetric);
-        config.setSpanText(spanText);
-        config.setSpanStackTraceThresholdMillis(spanStackTraceThresholdMillis);
-        config.setSpanIgnoreSameNested(spanIgnoreSameNested);
+        config.setMessageTemplate(messageTemplate);
+        config.setStackTraceThresholdMillis(stackTraceThresholdMillis);
+        config.setCaptureSelfNested(captureSelfNested);
         config.setTransactionType(transactionType);
-        config.setTransactionName(transactionName);
+        config.setTransactionNameTemplate(transactionNameTemplate);
         config.setEnabledProperty(enabledProperty);
         config.setSpanEnabledProperty(spanEnabledProperty);
         return config;

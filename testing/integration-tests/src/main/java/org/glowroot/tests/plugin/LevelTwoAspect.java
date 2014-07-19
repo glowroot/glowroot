@@ -22,7 +22,7 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
 import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.weaving.BindMethodArg;
+import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -38,8 +38,9 @@ public class LevelTwoAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
 
-    @Pointcut(type = "org.glowroot.tests.LevelTwo", methodName = "call",
-            methodArgTypes = {"java.lang.String", "java.lang.String"}, traceMetric = "level two")
+    @Pointcut(className = "org.glowroot.tests.LevelTwo", methodName = "call",
+            methodParameterTypes = {"java.lang.String", "java.lang.String"},
+            traceMetric = "level two")
     public static class LevelTwoAdvice {
 
         private static final TraceMetricName traceMetricName =
@@ -51,8 +52,8 @@ public class LevelTwoAspect {
         }
 
         @OnBefore
-        public static Span onBefore(@BindMethodArg final String arg1,
-                @BindMethodArg final String arg2) {
+        public static Span onBefore(@BindParameter final String arg1,
+                @BindParameter final String arg2) {
             return pluginServices.startSpan(new MessageSupplier() {
                 @Override
                 public Message get() {

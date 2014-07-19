@@ -416,20 +416,20 @@ public class ParsedTypeCache {
                 // don't add synthetic methods to the parsed type model
                 continue;
             }
-            List<Type> argTypes = Lists.newArrayList();
+            List<Type> parameterTypes = Lists.newArrayList();
             for (Class<?> parameterType : method.getParameterTypes()) {
-                argTypes.add(Type.getType(parameterType));
+                parameterTypes.add(Type.getType(parameterType));
             }
             Type returnType = Type.getType(method.getReturnType());
             List<Advice> matchingAdvisors = getMatchingAdvisors(method.getModifiers(),
-                    method.getName(), argTypes, returnType, adviceMatchers);
+                    method.getName(), parameterTypes, returnType, adviceMatchers);
             if (!matchingAdvisors.isEmpty() && (method.getModifiers() & ACC_SYNTHETIC) == 0) {
                 // don't add synthetic methods to the parsed type model
                 List<String> exceptions = Lists.newArrayList();
                 for (Class<?> exceptionType : method.getExceptionTypes()) {
                     exceptions.add(Type.getInternalName(exceptionType));
                 }
-                ParsedMethod parsedMethod = ParsedMethod.from(method.getName(), argTypes,
+                ParsedMethod parsedMethod = ParsedMethod.from(method.getName(), parameterTypes,
                         returnType, method.getModifiers(), null, exceptions, matchingAdvisors);
                 parsedMethods.add(parsedMethod);
             }
@@ -444,11 +444,11 @@ public class ParsedTypeCache {
                 parsedMethods);
     }
 
-    private static List<Advice> getMatchingAdvisors(int access, String name, List<Type> argTypes,
-            Type returnType, List<AdviceMatcher> adviceMatchers) {
+    private static List<Advice> getMatchingAdvisors(int access, String name,
+            List<Type> parameterTypes, Type returnType, List<AdviceMatcher> adviceMatchers) {
         List<Advice> matchingAdvisors = Lists.newArrayList();
         for (AdviceMatcher adviceMatcher : adviceMatchers) {
-            if (adviceMatcher.isMethodLevelMatch(name, argTypes, returnType, access)) {
+            if (adviceMatcher.isMethodLevelMatch(name, parameterTypes, returnType, access)) {
                 matchingAdvisors.add(adviceMatcher.getAdvice());
             }
         }

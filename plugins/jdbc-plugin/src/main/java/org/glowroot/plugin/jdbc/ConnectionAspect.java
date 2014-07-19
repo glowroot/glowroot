@@ -22,7 +22,7 @@ import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
 import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.TraceMetricTimer;
-import org.glowroot.api.weaving.BindMethodArg;
+import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -59,7 +59,7 @@ public class ConnectionAspect {
         captureSetAutoCommitSpans = pluginServices.getBooleanProperty("captureSetAutoCommitSpans");
     }
 
-    @Pointcut(type = "java.sql.Connection", methodName = "commit", ignoreSameNested = true,
+    @Pointcut(className = "java.sql.Connection", methodName = "commit", ignoreSelfNested = true,
             traceMetric = "jdbc commit")
     public static class CommitAdvice {
         private static final TraceMetricName traceMetricName =
@@ -82,7 +82,7 @@ public class ConnectionAspect {
         }
     }
 
-    @Pointcut(type = "java.sql.Connection", methodName = "rollback", ignoreSameNested = true,
+    @Pointcut(className = "java.sql.Connection", methodName = "rollback", ignoreSelfNested = true,
             traceMetric = "jdbc rollback")
     public static class RollbackAdvice {
         private static final TraceMetricName traceMetricName =
@@ -105,7 +105,7 @@ public class ConnectionAspect {
         }
     }
 
-    @Pointcut(type = "java.sql.Connection", methodName = "close", ignoreSameNested = true,
+    @Pointcut(className = "java.sql.Connection", methodName = "close", ignoreSelfNested = true,
             traceMetric = "jdbc connection close")
     public static class CloseAdvice {
         private static final TraceMetricName traceMetricName =
@@ -142,8 +142,8 @@ public class ConnectionAspect {
         }
     }
 
-    @Pointcut(type = "java.sql.Connection", methodName = "setAutoCommit",
-            methodArgTypes = {"boolean"}, ignoreSameNested = true,
+    @Pointcut(className = "java.sql.Connection", methodName = "setAutoCommit",
+            ignoreSelfNested = true, methodParameterTypes = {"boolean"},
             traceMetric = "jdbc set autocommit")
     public static class SetAutoCommitAdvice {
         private static final TraceMetricName traceMetricName =
@@ -153,7 +153,7 @@ public class ConnectionAspect {
             return pluginServices.isEnabled() && captureSetAutoCommitSpans;
         }
         @OnBefore
-        public static Span onBefore(@BindMethodArg boolean autoCommit) {
+        public static Span onBefore(@BindParameter boolean autoCommit) {
             return pluginServices.startSpan(
                     MessageSupplier.from("jdbc set autocommit: {}", Boolean.toString(autoCommit)),
                     traceMetricName);

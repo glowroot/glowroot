@@ -135,9 +135,10 @@ class ParsedTypeClassVisitor extends ClassVisitor {
             // no need to pass method on to class writer
             return ImmutableList.of();
         }
-        List<Type> argTypes = Arrays.asList(Type.getArgumentTypes(desc));
+        List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
         Type returnType = Type.getReturnType(desc);
-        List<Advice> matchingAdvisors = getMatchingAdvisors(name, argTypes, returnType, access);
+        List<Advice> matchingAdvisors =
+                getMatchingAdvisors(name, parameterTypes, returnType, access);
         List<String> exceptionList = exceptions == null ? ImmutableList.<String>of()
                 : Arrays.asList(exceptions);
         if (!matchingAdvisors.isEmpty()) {
@@ -207,11 +208,12 @@ class ParsedTypeClassVisitor extends ClassVisitor {
         return ImmutableList.copyOf(matchedMixinTypes);
     }
 
-    private List<Advice> getMatchingAdvisors(String methodName, List<Type> argTypes,
+    private List<Advice> getMatchingAdvisors(String methodName, List<Type> parameterTypes,
             Type returnType, int modifiers) {
         Set<Advice> matchingAdvisors = Sets.newHashSet();
         for (AdviceMatcher adviceMatcher : adviceMatchers) {
-            if (adviceMatcher.isMethodLevelMatch(methodName, argTypes, returnType, modifiers)) {
+            if (adviceMatcher.isMethodLevelMatch(methodName, parameterTypes, returnType,
+                    modifiers)) {
                 matchingAdvisors.add(adviceMatcher.getAdvice());
             }
         }
@@ -219,7 +221,7 @@ class ParsedTypeClassVisitor extends ClassVisitor {
         checkNotNull(superParsedTypes, "Call to visit() is required");
         for (ParsedType parsedType : superParsedTypes) {
             for (ParsedMethod parsedMethod : parsedType.getParsedMethods()) {
-                if (parsedMethod.isOverriddenBy(methodName, argTypes)) {
+                if (parsedMethod.isOverriddenBy(methodName, parameterTypes)) {
                     matchingAdvisors.addAll(parsedMethod.getAdvisors());
                 }
             }

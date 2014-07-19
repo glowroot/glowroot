@@ -69,10 +69,10 @@ public class TraceMetricTest {
     }
 
     @Test
-    public void shouldReadTraceMetricsWithRootAndSameNested() throws Exception {
+    public void shouldReadTraceMetricsWithRootAndSelfNested() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSameNestedTraceMetric.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSelfNestedTraceMetric.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getRootTraceMetric().getNestedMetrics()).isEmpty();
@@ -117,7 +117,7 @@ public class TraceMetricTest {
         }
     }
 
-    public static class ShouldGenerateTraceWithRootAndSameNestedTraceMetric implements
+    public static class ShouldGenerateTraceWithRootAndSelfNestedTraceMetric implements
             AppUnderTest,
             TraceMarker {
         private int nestingLevel = 0;

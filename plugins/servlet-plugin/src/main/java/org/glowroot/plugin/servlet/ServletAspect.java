@@ -24,7 +24,7 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
 import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.weaving.BindClassMeta;
-import org.glowroot.api.weaving.BindMethodArg;
+import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -62,9 +62,9 @@ public class ServletAspect {
     private static final ThreadLocal</*@Nullable*/ErrorMessage> sendError =
             new ThreadLocal</*@Nullable*/ErrorMessage>();
 
-    @Pointcut(type = "javax.servlet.Servlet", methodName = "service",
-            methodArgTypes = {"javax.servlet.ServletRequest", "javax.servlet.ServletResponse"},
-            traceMetric = "http request")
+    @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
+            methodParameterTypes = {"javax.servlet.ServletRequest",
+                    "javax.servlet.ServletResponse"}, traceMetric = "http request")
     public static class ServiceAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(ServiceAdvice.class);
@@ -74,7 +74,7 @@ public class ServletAspect {
             return pluginServices.isEnabled() && topLevel.get() == null;
         }
         @OnBefore
-        public static Span onBefore(@BindMethodArg Object request,
+        public static Span onBefore(@BindParameter Object request,
                 @BindClassMeta RequestInvoker requestInvoker,
                 @BindClassMeta SessionInvoker sessionInvoker) {
             // request parameter map is collected in GetParameterAdvice
@@ -144,16 +144,16 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(type = "javax.servlet.http.HttpServlet", methodName = "do*", methodArgTypes = {
-            "javax.servlet.http.HttpServletRequest", "javax.servlet.http.HttpServletResponse"},
-            traceMetric = "http request")
+    @Pointcut(className = "javax.servlet.http.HttpServlet", methodName = "do*",
+            methodParameterTypes = {"javax.servlet.http.HttpServletRequest",
+                    "javax.servlet.http.HttpServletResponse"}, traceMetric = "http request")
     public static class DoMethodsAdvice extends ServiceAdvice {
         @IsEnabled
         public static boolean isEnabled() {
             return ServiceAdvice.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindMethodArg Object request,
+        public static Span onBefore(@BindParameter Object request,
                 @BindClassMeta RequestInvoker requestInvoker,
                 @BindClassMeta SessionInvoker sessionInvoker) {
             return ServiceAdvice.onBefore(request, requestInvoker, sessionInvoker);
@@ -168,7 +168,7 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(type = "javax.servlet.Filter", methodName = "doFilter", methodArgTypes = {
+    @Pointcut(className = "javax.servlet.Filter", methodName = "doFilter", methodParameterTypes = {
             "javax.servlet.ServletRequest", "javax.servlet.ServletResponse",
             "javax.servlet.FilterChain"}, traceMetric = "http request")
     public static class DoFilterAdvice extends ServiceAdvice {
@@ -177,7 +177,7 @@ public class ServletAspect {
             return ServiceAdvice.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindMethodArg Object request,
+        public static Span onBefore(@BindParameter Object request,
                 @BindClassMeta RequestInvoker requestInvoker,
                 @BindClassMeta SessionInvoker sessionInvoker) {
             return ServiceAdvice.onBefore(request, requestInvoker, sessionInvoker);
@@ -192,11 +192,11 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(type = "javax.servlet.http.HttpServletResponse", methodName = "sendError",
-            methodArgTypes = {"int", ".."}, ignoreSameNested = true)
+    @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "sendError",
+            methodParameterTypes = {"int", ".."}, ignoreSelfNested = true)
     public static class SendErrorAdvice {
         @OnAfter
-        public static void onAfter(@BindMethodArg Integer statusCode) {
+        public static void onAfter(@BindParameter Integer statusCode) {
             // only capture 5xx server errors
             if (statusCode >= 500 && topLevel.get() != null) {
                 ErrorMessage errorMessage = ErrorMessage.from("sendError, HTTP status code "
@@ -208,11 +208,11 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(type = "javax.servlet.http.HttpServletResponse", methodName = "setStatus",
-            methodArgTypes = {"int", ".."}, ignoreSameNested = true)
+    @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "setStatus",
+            methodParameterTypes = {"int", ".."}, ignoreSelfNested = true)
     public static class SetStatusAdvice {
         @OnAfter
-        public static void onAfter(@BindMethodArg Integer statusCode) {
+        public static void onAfter(@BindParameter Integer statusCode) {
             // only capture 5xx server errors
             if (statusCode >= 500 && topLevel.get() != null) {
                 ErrorMessage errorMessage = ErrorMessage.from("setStatus, HTTP status code "

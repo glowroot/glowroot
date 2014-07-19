@@ -33,8 +33,8 @@ public class MockDriverAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
 
-    @Pointcut(type = "org.glowroot.tests.MockDriver", methodName = "getMajorVersion",
-            methodArgTypes = {}, traceMetric = "get major version")
+    @Pointcut(className = "org.glowroot.tests.MockDriver", methodName = "getMajorVersion",
+            methodParameterTypes = {}, traceMetric = "get major version")
     public static class GetMajorVersionAdvice {
 
         private static final TraceMetricName traceMetricName =

@@ -206,21 +206,21 @@ public class ConfigTest {
         PointcutSection pointcutSection = pointcutListPage.getSection(0);
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(pointcutSection.getTypeTextField().getAttribute("value"))
+        assertThat(pointcutSection.getClassNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.AppUnderTest");
         assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
         assertThat(pointcutSection.getTraceMetricTextField().getAttribute("value"))
                 .isEqualTo("a trace metric");
         assertThat(pointcutSection.getSpanDefinitionCheckbox().isSelected()).isTrue();
-        assertThat(pointcutSection.getSpanTextTextField().getAttribute("value"))
+        assertThat(pointcutSection.getMessageTemplateTextField().getAttribute("value"))
                 .isEqualTo("a span");
-        assertThat(pointcutSection.getSpanStackTraceThresholdTextTextField()
+        assertThat(pointcutSection.getStackTraceThresholdTextTextField()
                 .getAttribute("value")).isEqualTo("");
         assertThat(pointcutSection.getTraceDefinitionCheckbox().isSelected()).isTrue();
         assertThat(pointcutSection.getTransactionTypeTextField().getAttribute("value"))
                 .isEqualTo("a type");
-        assertThat(pointcutSection.getTransactionNameTextField().getAttribute("value"))
+        assertThat(pointcutSection.getTransactionNameTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace");
     }
 
@@ -241,7 +241,7 @@ public class ConfigTest {
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
         PointcutSection pointcutSection = pointcutListPage.getSection(0);
-        WebElement typeNameTextField = pointcutSection.getTypeTextField();
+        WebElement typeNameTextField = pointcutSection.getClassNameTextField();
 
         // when
         Utils.clearInput(pointcutSection.getTraceMetricTextField());
@@ -273,19 +273,19 @@ public class ConfigTest {
         PointcutSection pointcutSection = pointcutPage.getSection(0);
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(pointcutSection.getTypeTextField().getAttribute("value"))
+        assertThat(pointcutSection.getClassNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.AppUnderTest");
         assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
         assertThat(pointcutSection.getTraceMetricTextField().getAttribute("value"))
                 .isEqualTo("a trace metric");
         assertThat(pointcutSection.getSpanDefinitionCheckbox().isSelected()).isFalse();
-        assertThat(pointcutSection.getSpanTextTextField().isDisplayed()).isFalse();
-        assertThat(pointcutSection.getSpanStackTraceThresholdTextTextField().isDisplayed())
+        assertThat(pointcutSection.getMessageTemplateTextField().isDisplayed()).isFalse();
+        assertThat(pointcutSection.getStackTraceThresholdTextTextField().isDisplayed())
                 .isFalse();
         assertThat(pointcutSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
         assertThat(pointcutSection.getTransactionTypeTextField().isDisplayed()).isFalse();
-        assertThat(pointcutSection.getTransactionNameTextField().isDisplayed()).isFalse();
+        assertThat(pointcutSection.getTransactionNameTemplateTextField().isDisplayed()).isFalse();
     }
 
     @Test
@@ -310,39 +310,39 @@ public class ConfigTest {
         PointcutSection pointcutSection = pointcutListPage.getSection(0);
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(pointcutSection.getTypeTextField().getAttribute("value"))
+        assertThat(pointcutSection.getClassNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.AppUnderTest");
         assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
         assertThat(pointcutSection.getTraceMetricTextField().getAttribute("value"))
                 .isEqualTo("a trace metric");
         assertThat(pointcutSection.getSpanDefinitionCheckbox().isSelected()).isTrue();
-        assertThat(pointcutSection.getSpanTextTextField().getAttribute("value"))
+        assertThat(pointcutSection.getMessageTemplateTextField().getAttribute("value"))
                 .isEqualTo("a span");
-        assertThat(pointcutSection.getSpanStackTraceThresholdTextTextField()
+        assertThat(pointcutSection.getStackTraceThresholdTextTextField()
                 .getAttribute("value")).isEqualTo("");
         assertThat(pointcutSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
         assertThat(pointcutSection.getTransactionTypeTextField().isDisplayed()).isFalse();
-        assertThat(pointcutSection.getTransactionNameTextField().isDisplayed()).isFalse();
+        assertThat(pointcutSection.getTransactionNameTemplateTextField().isDisplayed()).isFalse();
     }
 
     private void createPointcut(PointcutListPage pointcutListPage) {
         pointcutListPage.getAddPointcutButton().click();
         PointcutSection pointcutSection = pointcutListPage.getSection(0);
-        pointcutSection.getTypeTextField().sendKeys("container.AppUnderTest");
-        pointcutSection.clickTypeAutoCompleteItem("org.glowroot.container.AppUnderTest");
+        pointcutSection.getClassNameTextField().sendKeys("container.AppUnderTest");
+        pointcutSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
         pointcutSection.getMethodNameTextField().sendKeys("exec");
         pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
         pointcutSection.getTraceMetricTextField().clear();
         pointcutSection.getTraceMetricTextField().sendKeys("a trace metric");
         pointcutSection.getSpanDefinitionCheckbox().click();
-        pointcutSection.getSpanTextTextField().clear();
-        pointcutSection.getSpanTextTextField().sendKeys("a span");
+        pointcutSection.getMessageTemplateTextField().clear();
+        pointcutSection.getMessageTemplateTextField().sendKeys("a span");
         pointcutSection.getTraceDefinitionCheckbox().click();
         pointcutSection.getTransactionTypeTextField().clear();
         pointcutSection.getTransactionTypeTextField().sendKeys("a type");
-        pointcutSection.getTransactionNameTextField().clear();
-        pointcutSection.getTransactionNameTextField().sendKeys("a trace");
+        pointcutSection.getTransactionNameTemplateTextField().clear();
+        pointcutSection.getTransactionNameTemplateTextField().sendKeys("a trace");
         pointcutSection.getAddButton().click();
         // getSaveButton() waits for the Save button to become visible (after adding is successful)
         pointcutSection.getSaveButton();
@@ -351,8 +351,8 @@ public class ConfigTest {
     private void createTraceMetricOnlyPointcut(PointcutListPage pointcutListPage) {
         pointcutListPage.getAddPointcutButton().click();
         PointcutSection pointcutSection = pointcutListPage.getSection(0);
-        pointcutSection.getTypeTextField().sendKeys("container.AppUnderTest");
-        pointcutSection.clickTypeAutoCompleteItem("org.glowroot.container.AppUnderTest");
+        pointcutSection.getClassNameTextField().sendKeys("container.AppUnderTest");
+        pointcutSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
         pointcutSection.getMethodNameTextField().sendKeys("exec");
         pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
         pointcutSection.getTraceMetricTextField().clear();
@@ -365,15 +365,15 @@ public class ConfigTest {
     private void createTraceMetricAndSpanOnlyPointcut(PointcutListPage pointcutListPage) {
         pointcutListPage.getAddPointcutButton().click();
         PointcutSection pointcutSection = pointcutListPage.getSection(0);
-        pointcutSection.getTypeTextField().sendKeys("container.AppUnderTest");
-        pointcutSection.clickTypeAutoCompleteItem("org.glowroot.container.AppUnderTest");
+        pointcutSection.getClassNameTextField().sendKeys("container.AppUnderTest");
+        pointcutSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
         pointcutSection.getMethodNameTextField().sendKeys("exec");
         pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
         pointcutSection.getTraceMetricTextField().clear();
         pointcutSection.getTraceMetricTextField().sendKeys("a trace metric");
         pointcutSection.getSpanDefinitionCheckbox().click();
-        pointcutSection.getSpanTextTextField().clear();
-        pointcutSection.getSpanTextTextField().sendKeys("a span");
+        pointcutSection.getMessageTemplateTextField().clear();
+        pointcutSection.getMessageTemplateTextField().sendKeys("a span");
         pointcutSection.getAddButton().click();
         // getSaveButton() waits for the Save button to become visible (after adding is successful)
         pointcutSection.getSaveButton();

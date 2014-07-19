@@ -51,8 +51,8 @@ public class DatabaseMetaDataAspect {
     private static final ThreadLocal</*@Nullable*/String> currentlyExecutingMethodName =
             new ThreadLocal</*@Nullable*/String>();
 
-    @Pointcut(type = "java.sql.DatabaseMetaData", methodName = "*", methodArgTypes = {".."},
-            ignoreSameNested = true, traceMetric = "jdbc metadata")
+    @Pointcut(className = "java.sql.DatabaseMetaData", methodName = "*",
+            methodParameterTypes = {".."}, ignoreSelfNested = true, traceMetric = "jdbc metadata")
     public static class AllMethodAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(AllMethodAdvice.class);
@@ -90,7 +90,7 @@ public class DatabaseMetaDataAspect {
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable Object spanOrTimer) {
             // don't need to track prior value and reset to that value, since
-            // @Pointcut.ignoreSameNested = true prevents re-entrant calls
+            // @Pointcut.ignoreSelfNested = true prevents re-entrant calls
             currentlyExecutingMethodName.remove();
             if (spanOrTimer == null) {
                 return;
@@ -106,7 +106,7 @@ public class DatabaseMetaDataAspect {
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler @Nullable Object spanOrTimer) {
             // don't need to track prior value and reset to that value, since
-            // @Pointcut.ignoreSameNested = true prevents re-entrant calls
+            // @Pointcut.ignoreSelfNested = true prevents re-entrant calls
             currentlyExecutingMethodName.remove();
             if (spanOrTimer == null) {
                 return;

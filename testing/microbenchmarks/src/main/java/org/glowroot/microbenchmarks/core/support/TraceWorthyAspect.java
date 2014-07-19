@@ -37,8 +37,8 @@ public class TraceWorthyAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-microbenchmarks");
 
-    @Pointcut(type = "org.glowroot.microbenchmarks.core.support.TraceWorthy",
-            methodName = "doSomethingTraceWorthy", methodArgTypes = {},
+    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TraceWorthy",
+            methodName = "doSomethingTraceWorthy", methodParameterTypes = {},
             traceMetric = "trace worthy")
     public static class TraceWorthyAdvice {
 

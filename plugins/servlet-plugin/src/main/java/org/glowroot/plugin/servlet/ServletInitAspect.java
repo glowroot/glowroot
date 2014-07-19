@@ -43,8 +43,9 @@ public class ServletInitAspect {
      * ================== Startup ==================
      */
 
-    @Pointcut(type = "javax.servlet.ServletContextListener", methodName = "contextInitialized",
-            methodArgTypes = {"javax.servlet.ServletContextEvent"}, traceMetric = "servlet startup")
+    @Pointcut(className = "javax.servlet.ServletContextListener", methodName = "contextInitialized",
+            methodParameterTypes = {"javax.servlet.ServletContextEvent"},
+            traceMetric = "servlet startup")
     public static class ContextInitializedAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(ContextInitializedAdvice.class);
@@ -71,8 +72,8 @@ public class ServletInitAspect {
         }
     }
 
-    @Pointcut(type = "javax.servlet.Servlet", methodName = "init",
-            methodArgTypes = {"javax.servlet.ServletConfig"}, traceMetric = "servlet startup")
+    @Pointcut(className = "javax.servlet.Servlet", methodName = "init",
+            methodParameterTypes = {"javax.servlet.ServletConfig"}, traceMetric = "servlet startup")
     public static class ServletInitAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(ServletInitAdvice.class);
@@ -97,8 +98,8 @@ public class ServletInitAspect {
         }
     }
 
-    @Pointcut(type = "javax.servlet.Filter", methodName = "init",
-            methodArgTypes = {"javax.servlet.FilterConfig"}, traceMetric = "servlet startup")
+    @Pointcut(className = "javax.servlet.Filter", methodName = "init",
+            methodParameterTypes = {"javax.servlet.FilterConfig"}, traceMetric = "servlet startup")
     public static class FilterInitAdvice {
         private static final TraceMetricName traceMetricName =
                 pluginServices.getTraceMetricName(FilterInitAdvice.class);

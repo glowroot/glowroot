@@ -36,7 +36,7 @@ import org.glowroot.markers.Immutable;
 public class ParsedMethod {
 
     private final String name;
-    private final ImmutableList<String> argTypes;
+    private final ImmutableList<String> parameterTypes;
     private final String returnType;
     private final int modifiers;
 
@@ -48,21 +48,23 @@ public class ParsedMethod {
 
     private final ImmutableList<Advice> advisors;
 
-    static ParsedMethod from(String name, List<Type> argTypes, Type returnType, int modifiers,
-            @Nullable String signature, List<String> exceptions, List<Advice> advisors) {
-        List<String> argTypeNames = Lists.newArrayList();
-        for (Type argType : argTypes) {
-            argTypeNames.add(argType.getClassName());
+    static ParsedMethod from(String name, List<Type> parameterTypes, Type returnType,
+            int modifiers, @Nullable String signature, List<String> exceptions,
+            List<Advice> advisors) {
+        List<String> parameterTypeNames = Lists.newArrayList();
+        for (Type parameterType : parameterTypes) {
+            parameterTypeNames.add(parameterType.getClassName());
         }
         String returnTypeName = returnType.getClassName();
-        return new ParsedMethod(name, argTypeNames, returnTypeName, modifiers, signature,
+        return new ParsedMethod(name, parameterTypeNames, returnTypeName, modifiers, signature,
                 exceptions, advisors);
     }
 
-    private ParsedMethod(String name, List<String> argTypes, String returnType, int modifiers,
+    private ParsedMethod(String name, List<String> parameterTypes, String returnType,
+            int modifiers,
             @Nullable String signature, List<String> exceptions, List<Advice> advisors) {
         this.name = name.intern();
-        this.argTypes = internStringList(argTypes);
+        this.parameterTypes = internStringList(parameterTypes);
         this.returnType = returnType.intern();
         this.modifiers = modifiers;
         this.signature = signature == null ? null : signature.intern();
@@ -75,8 +77,8 @@ public class ParsedMethod {
     }
 
     // these are class names
-    public ImmutableList<String> getArgTypes() {
-        return argTypes;
+    public ImmutableList<String> getParameterTypes() {
+        return parameterTypes;
     }
 
     public String getReturnType() {
@@ -100,9 +102,9 @@ public class ParsedMethod {
 
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
     String getDesc() {
-        Type[] types = new Type[argTypes.size()];
-        for (int i = 0; i < argTypes.size(); i++) {
-            types[i] = getType(argTypes.get(i));
+        Type[] types = new Type[parameterTypes.size()];
+        for (int i = 0; i < parameterTypes.size(); i++) {
+            types[i] = getType(parameterTypes.get(i));
         }
         return Type.getMethodDescriptor(getType(returnType), types);
     }
@@ -111,25 +113,25 @@ public class ParsedMethod {
         return advisors;
     }
 
-    boolean isOverriddenBy(String methodName, List<Type> argTypes) {
+    boolean isOverriddenBy(String methodName, List<Type> parameterTypes) {
         if (Modifier.isPrivate(this.modifiers)) {
             return false;
         }
         if (!methodName.equals(name)) {
             return false;
         }
-        if (argTypes.size() != this.argTypes.size()) {
+        if (parameterTypes.size() != this.parameterTypes.size()) {
             return false;
         }
-        for (int i = 0; i < argTypes.size(); i++) {
-            if (!argTypes.get(i).getClassName().equals(this.argTypes.get(i))) {
+        for (int i = 0; i < parameterTypes.size(); i++) {
+            if (!parameterTypes.get(i).getClassName().equals(this.parameterTypes.get(i))) {
                 return false;
             }
         }
         return true;
     }
 
-    // equals and hashCode are only defined in terms of name and argTypes since those uniquely
+    // equals and hashCode are only defined in terms of name and parameterTypes since those uniquely
     // identify a method within a given class
     // this is currently important because ParsedMethod is used as a map key in WeavingClassVisitor
     @Override
@@ -140,18 +142,19 @@ public class ParsedMethod {
         }
         if (obj instanceof ParsedMethod) {
             ParsedMethod that = (ParsedMethod) obj;
-            return Objects.equal(name, that.name) && Objects.equal(argTypes, that.argTypes);
+            return Objects.equal(name, that.name)
+                    && Objects.equal(parameterTypes, that.parameterTypes);
         }
         return false;
     }
 
-    // equals and hashCode are only defined in terms of name and argTypes since those uniquely
+    // equals and hashCode are only defined in terms of name and parameterTypes since those uniquely
     // identify a method within a given class
     // this is currently important because ParsedMethod is used as a map key in WeavingClassVisitor
     @Override
     @Pure
     public int hashCode() {
-        return Objects.hashCode(name, argTypes);
+        return Objects.hashCode(name, parameterTypes);
     }
 
     @Override
@@ -159,7 +162,7 @@ public class ParsedMethod {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)
-                .add("argTypes", argTypes)
+                .add("parameterTypes", parameterTypes)
                 .add("returnType", returnType)
                 .add("modifiers", modifiers)
                 .add("signature", signature)

@@ -305,17 +305,17 @@ class LocalConfigService implements ConfigService {
             methodModifiers.add(MethodModifier.valueOf(methodModifier.name()));
         }
         PointcutConfig config = new PointcutConfig(coreConfig.getVersion());
-        config.setType(coreConfig.getType());
+        config.setClassName(coreConfig.getClassName());
         config.setMethodName(coreConfig.getMethodName());
-        config.setMethodArgTypes(coreConfig.getMethodArgTypes());
+        config.setMethodParameterTypes(coreConfig.getMethodParameterTypes());
         config.setMethodReturnType(coreConfig.getMethodReturnType());
         config.setMethodModifiers(methodModifiers);
         config.setTraceMetric(coreConfig.getTraceMetric());
-        config.setSpanText(coreConfig.getSpanText());
-        config.setSpanStackTraceThresholdMillis(coreConfig.getSpanStackTraceThresholdMillis());
-        config.setSpanIgnoreSameNested(coreConfig.isSpanIgnoreSameNested());
+        config.setMessageTemplate(coreConfig.getMessageTemplate());
+        config.setStackTraceThresholdMillis(coreConfig.getStackTraceThresholdMillis());
+        config.setCaptureSelfNested(coreConfig.isCaptureSelfNested());
         config.setTransactionType(coreConfig.getTransactionType());
-        config.setTransactionName(coreConfig.getTransactionName());
+        config.setTransactionNameTemplate(coreConfig.getTransactionNameTemplate());
         config.setEnabledProperty(coreConfig.getEnabledProperty());
         config.setSpanEnabledProperty(coreConfig.getSpanEnabledProperty());
         return config;
@@ -327,17 +327,18 @@ class LocalConfigService implements ConfigService {
             methodModifiers.add(
                     org.glowroot.api.weaving.MethodModifier.valueOf(methodModifier.name()));
         }
-        String typeName = config.getType();
+        String typeName = config.getClassName();
         String methodName = config.getMethodName();
         String methodReturnTypeName = config.getMethodReturnType();
         checkNotNull(typeName, "PointcutConfig typeName is null");
         checkNotNull(methodName, "PointcutConfig methodName is null");
         checkNotNull(methodReturnTypeName, "PointcutConfig methodReturnTypeName is null");
         return new org.glowroot.config.PointcutConfig(typeName, methodName,
-                config.getMethodArgTypes(), methodReturnTypeName, methodModifiers,
-                nullToEmpty(config.getTraceMetric()), nullToEmpty(config.getSpanText()),
-                config.getSpanStackTraceThresholdMillis(), config.isSpanIgnoreSameNested(),
-                nullToEmpty(config.getTransactionType()), nullToEmpty(config.getTransactionName()),
+                config.getMethodParameterTypes(), methodReturnTypeName, methodModifiers,
+                nullToEmpty(config.getTraceMetric()), nullToEmpty(config.getMessageTemplate()),
+                config.getStackTraceThresholdMillis(), config.isCaptureSelfNested(),
+                nullToEmpty(config.getTransactionType()),
+                nullToEmpty(config.getTransactionNameTemplate()),
                 nullToEmpty(config.getEnabledProperty()),
                 nullToEmpty(config.getSpanEnabledProperty()));
     }

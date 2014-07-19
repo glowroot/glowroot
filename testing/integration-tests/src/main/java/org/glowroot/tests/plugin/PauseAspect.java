@@ -37,8 +37,8 @@ public class PauseAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
 
-    @Pointcut(type = "org.glowroot.tests.Pause", methodName = "pauseOneMillisecond",
-            methodArgTypes = {}, traceMetric = "pause")
+    @Pointcut(className = "org.glowroot.tests.Pause", methodName = "pauseOneMillisecond",
+            methodParameterTypes = {}, traceMetric = "pause")
     public static class PauseAdvice {
 
         private static final TraceMetricName traceMetricName =
@@ -67,7 +67,7 @@ public class PauseAspect {
 
     // this is just to generate an additional $glowroot$ method to test that consecutive
     // $glowroot$ methods in a span stack trace are stripped out correctly
-    @Pointcut(type = "org.glowroot.tests.LogError", methodName = "pause", methodArgTypes = {"int"},
-            traceMetric = "pause 2")
+    @Pointcut(className = "org.glowroot.tests.LogError", methodName = "pause",
+            methodParameterTypes = {"int"}, traceMetric = "pause 2")
     public static class PauseAdvice2 {}
 }

@@ -37,8 +37,8 @@ public class ExternalJvmMainAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
 
-    @Pointcut(type = "org.glowroot.container.javaagent.JavaagentContainer",
-            methodName = "main", methodArgTypes = {"java.lang.String[]"},
+    @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
+            methodName = "main", methodParameterTypes = {"java.lang.String[]"},
             traceMetric = "external jvm main")
     public static class MainAdvice {
 
@@ -63,7 +63,7 @@ public class ExternalJvmMainAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.container.javaagent.JavaagentContainer",
+    @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
             methodName = "traceMetricOne", traceMetric = "trace metric one")
     public static class TraceMetricOneAdvice {
 
@@ -86,7 +86,7 @@ public class ExternalJvmMainAspect {
         }
     }
 
-    @Pointcut(type = "org.glowroot.container.javaagent.JavaagentContainer",
+    @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
             methodName = "traceMetricTwo", traceMetric = "trace metric two")
     public static class TraceMetricTwoAdvice {
 

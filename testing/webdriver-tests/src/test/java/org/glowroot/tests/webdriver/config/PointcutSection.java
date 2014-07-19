@@ -40,12 +40,12 @@ public class PointcutSection {
         this.form = form;
     }
 
-    public WebElement getTypeTextField() {
-        return withWait(xpath(".//input[@ng-model='config.type']"));
+    public WebElement getClassNameTextField() {
+        return withWait(xpath(".//input[@ng-model='config.className']"));
     }
 
-    public void clickTypeAutoCompleteItem(String type) {
-        clickTypeAheadItem("Type", type);
+    public void clickClassNameAutoCompleteItem(String className) {
+        clickTypeAheadItem("Class name", className);
     }
 
     public WebElement getMethodNameTextField() {
@@ -64,12 +64,12 @@ public class PointcutSection {
         return withWait(xpath(".//input[@ng-model='spanDefinition']"));
     }
 
-    public WebElement getSpanTextTextField() {
-        return withWait(xpath(".//textarea[@ng-model='config.spanText']"));
+    public WebElement getMessageTemplateTextField() {
+        return withWait(xpath(".//textarea[@ng-model='config.messageTemplate']"));
     }
 
-    public WebElement getSpanStackTraceThresholdTextTextField() {
-        return withWait(xpath(".//input[@ng-model='spanStackTraceThresholdMillis']"));
+    public WebElement getStackTraceThresholdTextTextField() {
+        return withWait(xpath(".//input[@ng-model='stackTraceThresholdMillis']"));
     }
 
     public WebElement getTraceDefinitionCheckbox() {
@@ -80,8 +80,8 @@ public class PointcutSection {
         return withWait(xpath(".//input[@ng-model='config.transactionType']"));
     }
 
-    public WebElement getTransactionNameTextField() {
-        return withWait(xpath(".//input[@ng-model='config.transactionName']"));
+    public WebElement getTransactionNameTemplateTextField() {
+        return withWait(xpath(".//input[@ng-model='config.transactionNameTemplate']"));
     }
 
     public WebElement getAddButton() {

@@ -24,32 +24,32 @@ class NestableCall {
     private final NestableCall child;
     private final int numExpensiveCalls;
     private final int maxTimeMillis;
-    private final int maxSpanTextLength;
+    private final int maxSpanMessageLength;
 
     NestableCall() {
         this(0, 0, 0);
     }
 
-    NestableCall(int numExpensiveCalls, int maxTimeMillis, int maxSpanTextLength) {
+    NestableCall(int numExpensiveCalls, int maxTimeMillis, int maxSpanMessageLength) {
         this.child = null;
         this.numExpensiveCalls = numExpensiveCalls;
         this.maxTimeMillis = maxTimeMillis;
-        this.maxSpanTextLength = maxSpanTextLength;
+        this.maxSpanMessageLength = maxSpanMessageLength;
     }
 
     NestableCall(NestableCall child, int numExpensiveCalls, int maxTimeMillis,
-            int maxSpanTextLength) {
+            int maxSpanMessageLength) {
         this.child = child;
         this.numExpensiveCalls = numExpensiveCalls;
         this.maxTimeMillis = maxTimeMillis;
-        this.maxSpanTextLength = maxSpanTextLength;
+        this.maxSpanMessageLength = maxSpanMessageLength;
     }
 
     void execute() {
         if (child != null) {
             child.execute();
         }
-        ExpensiveCall expensiveCall = new ExpensiveCall(maxTimeMillis, maxSpanTextLength);
+        ExpensiveCall expensiveCall = new ExpensiveCall(maxTimeMillis, maxSpanMessageLength);
         for (int i = 0; i < numExpensiveCalls; i++) {
             expensiveCall.execute();
         }

@@ -29,9 +29,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@literal @}{@code Pointcut} class may be annotated with {@code OnThrow}.
  * <p>
  * An {@literal @}{@code OnThrow} method can accept parameters annotated with any of the following:
- * {@literal @}{@link BindReceiver}, {@literal @}{@link BindMethodArg},
+ * {@literal @}{@link BindReceiver}, {@literal @}{@link BindParameter},
  * 
- * {@literal @}{@link BindMethodArgArray}, {@literal @}{@link BindMethodName},
+ * {@literal @}{@link BindParameterArray}, {@literal @}{@link BindMethodName},
  * 
  * {@literal @}{@link BindTraveler} or {@literal @}{@link BindThrowable}.
  * 

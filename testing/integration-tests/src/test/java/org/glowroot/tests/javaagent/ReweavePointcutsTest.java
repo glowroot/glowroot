@@ -62,8 +62,8 @@ public class ReweavePointcutsTest extends PointcutConfigTest {
 
     @Override
     @Test
-    public void shouldRenderSpanTextWithReturnValue() throws Exception {
-        super.shouldRenderSpanTextWithReturnValue();
+    public void shouldRenderMessageTemplateWithReturnValue() throws Exception {
+        super.shouldRenderMessageTemplateWithReturnValue();
     }
 
     @Override

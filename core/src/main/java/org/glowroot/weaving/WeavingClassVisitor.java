@@ -274,12 +274,12 @@ class WeavingClassVisitor extends ClassVisitor {
             loadType(mv, type, metaHolderType);
             loadType(mv, methodMetaInstance.getReturnType(), metaHolderType);
 
-            mv.visitIntInsn(BIPUSH, methodMetaInstance.getArgTypes().size());
+            mv.visitIntInsn(BIPUSH, methodMetaInstance.getParameterTypes().size());
             mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
-            for (int i = 0; i < methodMetaInstance.getArgTypes().size(); i++) {
+            for (int i = 0; i < methodMetaInstance.getParameterTypes().size(); i++) {
                 mv.visitInsn(DUP);
                 mv.visitIntInsn(BIPUSH, i);
-                loadType(mv, methodMetaInstance.getArgTypes().get(i), metaHolderType);
+                loadType(mv, methodMetaInstance.getParameterTypes().get(i), metaHolderType);
                 mv.visitInsn(AASTORE);
             }
 
@@ -434,10 +434,10 @@ class WeavingClassVisitor extends ClassVisitor {
         if (!methodMetas.isEmpty()) {
             methodMetaUniqueNum = ++methodMetaCounter;
             for (Class<?> methodMeta : methodMetas) {
-                List<Type> argTypes = Arrays.asList(Type.getArgumentTypes(desc));
+                List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
                 Type returnType = Type.getReturnType(desc);
-                methodMetaInstances.add(new MethodMetaInstance(methodMeta, returnType, argTypes,
-                        methodMetaUniqueNum));
+                methodMetaInstances.add(new MethodMetaInstance(methodMeta, returnType,
+                        parameterTypes, methodMetaUniqueNum));
             }
         }
         if ((!classMetas.isEmpty() || !methodMetas.isEmpty()) && metaHolderName == null) {
@@ -649,14 +649,14 @@ class WeavingClassVisitor extends ClassVisitor {
 
         private final Class<?> methodMeta;
         private final Type returnType;
-        private final List<Type> argTypes;
+        private final List<Type> parameterTypes;
         private final int uniqueNum;
 
-        private MethodMetaInstance(Class<?> methodMeta, Type returnType, List<Type> argTypes,
+        private MethodMetaInstance(Class<?> methodMeta, Type returnType, List<Type> parameterTypes,
                 int uniqueNum) {
             this.methodMeta = methodMeta;
             this.returnType = returnType;
-            this.argTypes = argTypes;
+            this.parameterTypes = parameterTypes;
             this.uniqueNum = uniqueNum;
         }
 
@@ -668,8 +668,8 @@ class WeavingClassVisitor extends ClassVisitor {
             return returnType;
         }
 
-        private List<Type> getArgTypes() {
-            return argTypes;
+        private List<Type> getParameterTypes() {
+            return parameterTypes;
         }
 
         private int getUniqueNum() {

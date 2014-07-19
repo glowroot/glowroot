@@ -39,8 +39,8 @@ import org.glowroot.api.weaving.Pointcut;
  * 
  *     private static final PluginServices pluginServices = PluginServices.get(&quot;spring&quot;);
  * 
- *     &#064;Pointcut(typeName = &quot;org.springframework.validation.Validator&quot;,
- *             methodName = &quot;validate&quot;, methodArgs = {&quot;..&quot;},
+ *     &#064;Pointcut(className = &quot;org.springframework.validation.Validator&quot;,
+ *             methodName = &quot;validate&quot;, methodParameterTypes = {&quot;..&quot;},
  *             traceMetric = &quot;spring validator&quot;)
  *     public static class ValidatorAdvice {
  *         private static final TraceMetricName traceMetricName =

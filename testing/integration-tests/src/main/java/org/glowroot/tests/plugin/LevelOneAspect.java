@@ -26,7 +26,7 @@ import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
 import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.weaving.BindMethodArg;
+import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -44,8 +44,9 @@ public class LevelOneAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
 
-    @Pointcut(type = "org.glowroot.tests.LevelOne", methodName = "call",
-            methodArgTypes = {"java.lang.String", "java.lang.String"}, traceMetric = "level one")
+    @Pointcut(className = "org.glowroot.tests.LevelOne", methodName = "call",
+            methodParameterTypes = {"java.lang.String", "java.lang.String"},
+            traceMetric = "level one")
     public static class LevelOneAdvice {
 
         private static final TraceMetricName traceMetricName =
@@ -57,8 +58,8 @@ public class LevelOneAspect {
         }
 
         @OnBefore
-        public static Span onBefore(@BindMethodArg final String arg1,
-                @BindMethodArg final String arg2) {
+        public static Span onBefore(@BindParameter final String arg1,
+                @BindParameter final String arg2) {
             String headline = pluginServices.getStringProperty("alternateHeadline");
             if (headline.isEmpty()) {
                 headline = "Level One";

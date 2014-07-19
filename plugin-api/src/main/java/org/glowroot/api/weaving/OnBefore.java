@@ -28,9 +28,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@literal @}{@code Pointcut} class may be annotated with {@literal @}{@code OnBefore}.
  * <p>
  * An {@literal @}{@code OnBefore} method can accept parameters annotated with any of the following:
- * {@literal @}{@link BindReceiver}, {@literal @}{@link BindMethodArg},
+ * {@literal @}{@link BindReceiver}, {@literal @}{@link BindParameter},
  * 
- * {@literal @}{@link BindMethodArgArray} or {@literal @}{@link BindMethodName}.
+ * {@literal @}{@link BindParameterArray} or {@literal @}{@link BindMethodName}.
  * <p>
  * An {@literal @}{@code OnBefore} method may return {@code void} or a non-{@code void} type. If it
  * returns a non-{@code void} type, the value returned by the {@literal @}{@code OnBefore} method is

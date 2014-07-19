@@ -32,8 +32,6 @@ import org.glowroot.weaving.SomeAspect.BasicWithInnerClassAdvice;
 import org.glowroot.weaving.SomeAspect.BasicWithInnerClassArgAdvice;
 import org.glowroot.weaving.SomeAspect.BindAutoboxedReturnAdvice;
 import org.glowroot.weaving.SomeAspect.BindClassMetaAdvice;
-import org.glowroot.weaving.SomeAspect.BindMethodArgAdvice;
-import org.glowroot.weaving.SomeAspect.BindMethodArgArrayAdvice;
 import org.glowroot.weaving.SomeAspect.BindMethodMetaAdvice;
 import org.glowroot.weaving.SomeAspect.BindMethodMetaArrayAdvice;
 import org.glowroot.weaving.SomeAspect.BindMethodMetaReturnArrayAdvice;
@@ -41,6 +39,8 @@ import org.glowroot.weaving.SomeAspect.BindMethodNameAdvice;
 import org.glowroot.weaving.SomeAspect.BindOptionalPrimitiveReturnAdvice;
 import org.glowroot.weaving.SomeAspect.BindOptionalReturnAdvice;
 import org.glowroot.weaving.SomeAspect.BindOptionalVoidReturnAdvice;
+import org.glowroot.weaving.SomeAspect.BindParameterAdvice;
+import org.glowroot.weaving.SomeAspect.BindParameterArrayAdvice;
 import org.glowroot.weaving.SomeAspect.BindPrimitiveBooleanTravelerAdvice;
 import org.glowroot.weaving.SomeAspect.BindPrimitiveReturnAdvice;
 import org.glowroot.weaving.SomeAspect.BindPrimitiveTravelerAdvice;
@@ -58,9 +58,9 @@ import org.glowroot.weaving.SomeAspect.HasStringInterfaceMixin;
 import org.glowroot.weaving.SomeAspect.HasStringMultipleMixin;
 import org.glowroot.weaving.SomeAspect.InnerMethodAdvice;
 import org.glowroot.weaving.SomeAspect.InterfaceAppearsTwiceInHierarchyAdvice;
-import org.glowroot.weaving.SomeAspect.MethodArgsDotDotAdvice1;
-import org.glowroot.weaving.SomeAspect.MethodArgsDotDotAdvice2;
-import org.glowroot.weaving.SomeAspect.MethodArgsDotDotAdvice3;
+import org.glowroot.weaving.SomeAspect.MethodParametersDotDotAdvice1;
+import org.glowroot.weaving.SomeAspect.MethodParametersDotDotAdvice2;
+import org.glowroot.weaving.SomeAspect.MethodParametersDotDotAdvice3;
 import org.glowroot.weaving.SomeAspect.MethodReturnCharSequenceAdvice;
 import org.glowroot.weaving.SomeAspect.MethodReturnStringAdvice;
 import org.glowroot.weaving.SomeAspect.MethodReturnVoidAdvice;
@@ -193,29 +193,29 @@ public class WeaverTest {
         assertThat(BindReceiverAdvice.onAfterReceiver.get()).isEqualTo(test);
     }
 
-    // ===================== @BindMethodArg =====================
+    // ===================== @BindParameter =====================
 
     @Test
-    public void shouldBindMethodArgs() throws Exception {
+    public void shouldBindParameters() throws Exception {
         // given
-        BindMethodArgAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindMethodArgAdvice.class);
+        BindParameterAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindParameterAdvice.class);
         // when
         test.executeWithArgs("one", 2);
         // then
         Object[] parameters = new Object[] {"one", 2};
-        assertThat(BindMethodArgAdvice.isEnabledParams.get()).isEqualTo(parameters);
-        assertThat(BindMethodArgAdvice.onBeforeParams.get()).isEqualTo(parameters);
-        assertThat(BindMethodArgAdvice.onReturnParams.get()).isEqualTo(parameters);
-        assertThat(BindMethodArgAdvice.onThrowParams.get()).isNull();
-        assertThat(BindMethodArgAdvice.onAfterParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterAdvice.isEnabledParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterAdvice.onBeforeParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterAdvice.onReturnParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterAdvice.onThrowParams.get()).isNull();
+        assertThat(BindParameterAdvice.onAfterParams.get()).isEqualTo(parameters);
     }
 
     @Test
-    public void shouldBindMethodArgOnThrow() throws Exception {
+    public void shouldBindParameterOnThrow() throws Exception {
         // given
-        BindMethodArgAdvice.resetThreadLocals();
-        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, BindMethodArgAdvice.class);
+        BindParameterAdvice.resetThreadLocals();
+        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, BindParameterAdvice.class);
         // when
         try {
             test.executeWithArgs("one", 2);
@@ -223,37 +223,37 @@ public class WeaverTest {
         }
         // then
         Object[] parameters = new Object[] {"one", 2};
-        assertThat(BindMethodArgAdvice.isEnabledParams.get()).isEqualTo(parameters);
-        assertThat(BindMethodArgAdvice.onBeforeParams.get()).isEqualTo(parameters);
-        assertThat(BindMethodArgAdvice.onReturnParams.get()).isNull();
-        assertThat(BindMethodArgAdvice.onThrowParams.get()).isEqualTo(parameters);
-        assertThat(BindMethodArgAdvice.onAfterParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterAdvice.isEnabledParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterAdvice.onBeforeParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterAdvice.onReturnParams.get()).isNull();
+        assertThat(BindParameterAdvice.onThrowParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterAdvice.onAfterParams.get()).isEqualTo(parameters);
     }
 
-    // ===================== @BindMethodArgArray =====================
+    // ===================== @BindParameterArray =====================
 
     @Test
-    public void shouldBindMethodArgArray() throws Exception {
+    public void shouldBindParameterArray() throws Exception {
         // given
-        BindMethodArgArrayAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindMethodArgArrayAdvice.class);
+        BindParameterArrayAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindParameterArrayAdvice.class);
         // when
         test.executeWithArgs("one", 2);
         // then
         Object[] parameters = new Object[] {"one", 2};
-        assertThat(BindMethodArgArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
-        assertThat(BindMethodArgArrayAdvice.onBeforeParams.get()).isEqualTo(parameters);
-        assertThat(BindMethodArgArrayAdvice.onReturnParams.get()).isEqualTo(parameters);
-        assertThat(BindMethodArgArrayAdvice.onThrowParams.get()).isNull();
-        assertThat(BindMethodArgArrayAdvice.onAfterParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterArrayAdvice.onBeforeParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterArrayAdvice.onReturnParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterArrayAdvice.onThrowParams.get()).isNull();
+        assertThat(BindParameterArrayAdvice.onAfterParams.get()).isEqualTo(parameters);
     }
 
     @Test
-    public void shouldBindMethodArgArrayOnThrow() throws Exception {
+    public void shouldBindParameterArrayOnThrow() throws Exception {
         // given
-        BindMethodArgArrayAdvice.resetThreadLocals();
+        BindParameterArrayAdvice.resetThreadLocals();
         Misc test = newWovenObject(ThrowingMisc.class, Misc.class,
-                BindMethodArgArrayAdvice.class);
+                BindParameterArrayAdvice.class);
         // when
         try {
             test.executeWithArgs("one", 2);
@@ -261,11 +261,11 @@ public class WeaverTest {
         }
         // then
         Object[] parameters = new Object[] {"one", 2};
-        assertThat(BindMethodArgArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
-        assertThat(BindMethodArgArrayAdvice.onBeforeParams.get()).isEqualTo(parameters);
-        assertThat(BindMethodArgArrayAdvice.onReturnParams.get()).isNull();
-        assertThat(BindMethodArgArrayAdvice.onThrowParams.get()).isEqualTo(parameters);
-        assertThat(BindMethodArgArrayAdvice.onAfterParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterArrayAdvice.onBeforeParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterArrayAdvice.onReturnParams.get()).isNull();
+        assertThat(BindParameterArrayAdvice.onThrowParams.get()).isEqualTo(parameters);
+        assertThat(BindParameterArrayAdvice.onAfterParams.get()).isEqualTo(parameters);
     }
 
     // ===================== @BindTraveler =====================
@@ -621,13 +621,14 @@ public class WeaverTest {
         assertThat(SomeAspect.onAfterCount.get()).isEqualTo(0);
     }
 
-    // ===================== methodArgs '..' =====================
+    // ===================== methodParameters '..' =====================
 
     @Test
-    public void shouldMatchMethodArgsDotDot1() throws Exception {
+    public void shouldMatchMethodParametersDotDot1() throws Exception {
         // given
-        MethodArgsDotDotAdvice1.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, MethodArgsDotDotAdvice1.class);
+        MethodParametersDotDotAdvice1.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                MethodParametersDotDotAdvice1.class);
         // when
         test.executeWithArgs("one", 2);
         // then
@@ -635,10 +636,11 @@ public class WeaverTest {
     }
 
     @Test
-    public void shouldMatchMethodArgsDotDot2() throws Exception {
+    public void shouldMatchMethodParametersDotDot2() throws Exception {
         // given
-        MethodArgsDotDotAdvice2.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, MethodArgsDotDotAdvice2.class);
+        MethodParametersDotDotAdvice2.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                MethodParametersDotDotAdvice2.class);
         // when
         test.executeWithArgs("one", 2);
         // then
@@ -646,10 +648,11 @@ public class WeaverTest {
     }
 
     @Test
-    public void shouldMatchMethodArgsDotDot3() throws Exception {
+    public void shouldMatchMethodParametersDotDot3() throws Exception {
         // given
-        MethodArgsDotDotAdvice3.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, MethodArgsDotDotAdvice3.class);
+        MethodParametersDotDotAdvice3.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                MethodParametersDotDotAdvice3.class);
         // when
         test.executeWithArgs("one", 2);
         // then

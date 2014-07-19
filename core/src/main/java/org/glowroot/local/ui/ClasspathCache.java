@@ -71,39 +71,39 @@ class ClasspathCache {
     // see http://michaelscharf.blogspot.com/2006/11/javaneturlequals-and-hashcode-make.html
     private final Set<URI> classpathURIs =
             Sets.newSetFromMap(Maps.<URI, Boolean>newConcurrentMap());
-    private final Map<String, Set<URI>> typeNames = Maps.newConcurrentMap();
+    private final Map<String, Set<URI>> classNames = Maps.newConcurrentMap();
 
-    @GuardedBy("typeNameUppers")
-    private final SortedMap<String, SortedSet<String>> typeNameUppers = Maps.newTreeMap();
+    @GuardedBy("classNameUppers")
+    private final SortedMap<String, SortedSet<String>> classNameUppers = Maps.newTreeMap();
 
     ClasspathCache(ParsedTypeCache parsedTypeCache) {
         this.parsedTypeCache = parsedTypeCache;
     }
 
-    List<String> getMatchingTypeNames(String partialTypeName, int limit) {
+    List<String> getMatchingClassNames(String partialClassName, int limit) {
         // update cache before proceeding
         updateCache();
-        String partialTypeNameUpper = partialTypeName.toUpperCase(Locale.ENGLISH);
-        Set<String> typeNames = Sets.newTreeSet();
-        synchronized (typeNameUppers) {
-            for (Entry<String, SortedSet<String>> entry : typeNameUppers.entrySet()) {
-                String typeNameUpper = entry.getKey();
-                if (typeNameUpper.contains(partialTypeNameUpper)) {
-                    typeNames.addAll(entry.getValue());
-                    if (typeNames.size() >= limit) {
-                        return Lists.newArrayList(typeNames).subList(0, limit);
+        String partialClassNameUpper = partialClassName.toUpperCase(Locale.ENGLISH);
+        Set<String> classNames = Sets.newTreeSet();
+        synchronized (classNameUppers) {
+            for (Entry<String, SortedSet<String>> entry : classNameUppers.entrySet()) {
+                String classNameUpper = entry.getKey();
+                if (classNameUpper.contains(partialClassNameUpper)) {
+                    classNames.addAll(entry.getValue());
+                    if (classNames.size() >= limit) {
+                        return Lists.newArrayList(classNames).subList(0, limit);
                     }
                 }
             }
         }
-        return Lists.newArrayList(typeNames);
+        return Lists.newArrayList(classNames);
     }
 
-    ImmutableList<UiParsedMethod> getParsedMethods(String typeName) {
+    ImmutableList<UiParsedMethod> getParsedMethods(String className) {
         // update cache before proceeding
         updateCache();
         List<UiParsedMethod> parsedMethods = Lists.newArrayList();
-        Set<URI> uris = typeNames.get(typeName);
+        Set<URI> uris = classNames.get(className);
         if (uris == null) {
             return ImmutableList.of();
         }
@@ -158,7 +158,7 @@ class ClasspathCache {
         for (URI uri : uris) {
             synchronized (classpathURIs) {
                 if (!classpathURIs.contains(uri)) {
-                    loadTypeNames(uri);
+                    loadClassNames(uri);
                     classpathURIs.add(uri);
                 }
             }
@@ -192,25 +192,25 @@ class ClasspathCache {
         return loaders;
     }
 
-    private void loadTypeNames(URI uri) {
+    private void loadClassNames(URI uri) {
         try {
             if (uri.getScheme().equals("file")) {
                 File file = new File(uri);
                 if (file.isDirectory()) {
-                    loadTypeNamesFromDirectory(file, "");
+                    loadClassNamesFromDirectory(file, "");
                 } else if (file.exists() && file.getName().endsWith(".jar")) {
-                    loadTypeNamesFromJarFile(uri);
+                    loadClassNamesFromJarFile(uri);
                 }
             } else if (uri.getPath().endsWith(".jar")) {
                 // try to load jar from non-file uri
-                loadTypeNamesFromJarFile(uri);
+                loadClassNamesFromJarFile(uri);
             }
         } catch (IOException e) {
             logger.debug("error reading classes from uri: {}", uri, e);
         }
     }
 
-    private void loadTypeNamesFromDirectory(File dir, String prefix) throws MalformedURLException {
+    private void loadClassNamesFromDirectory(File dir, String prefix) throws MalformedURLException {
         File[] files = dir.listFiles();
         if (files == null) {
             return;
@@ -219,14 +219,14 @@ class ClasspathCache {
             String name = file.getName();
             if (file.isFile() && name.endsWith(".class")) {
                 URI fileUri = new File(dir, name).toURI();
-                addTypeName(prefix + name.substring(0, name.lastIndexOf('.')), fileUri);
+                addClassName(prefix + name.substring(0, name.lastIndexOf('.')), fileUri);
             } else if (file.isDirectory()) {
-                loadTypeNamesFromDirectory(file, prefix + name + ".");
+                loadClassNamesFromDirectory(file, prefix + name + ".");
             }
         }
     }
 
-    private void loadTypeNamesFromJarFile(URI jarUri) throws IOException {
+    private void loadClassNamesFromJarFile(URI jarUri) throws IOException {
         Closer closer = Closer.create();
         JarInputStream jarIn = closer.register(new JarInputStream(jarUri.toURL().openStream()));
         try {
@@ -236,7 +236,7 @@ class ClasspathCache {
                 if (classpath != null) {
                     for (String path : Splitter.on(' ').omitEmptyStrings().split(classpath)) {
                         URI uri = jarUri.resolve(path);
-                        loadTypeNames(uri);
+                        loadClassNames(uri);
                     }
                 }
             }
@@ -247,12 +247,12 @@ class ClasspathCache {
                 }
                 String name = jarEntry.getName();
                 if (name.endsWith(".class")) {
-                    String typeName = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
+                    String className = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
                     // TODO test if this works with jar loaded over http protocol
                     try {
                         URI fileURI = new URI("jar", jarUri.getScheme() + ":" + jarUri.getPath()
                                 + "!/" + name, "");
-                        addTypeName(typeName, fileURI);
+                        addClassName(className, fileURI);
                     } catch (URISyntaxException e) {
                         logger.error(e.getMessage(), e);
                     }
@@ -265,25 +265,25 @@ class ClasspathCache {
         }
     }
 
-    private void addTypeName(String typeName, URI uri) {
-        Set<URI> uris = typeNames.get(typeName);
+    private void addClassName(String className, URI uri) {
+        Set<URI> uris = classNames.get(className);
         if (uris == null) {
             uris = Sets.newCopyOnWriteArraySet();
-            typeNames.put(typeName, uris);
+            classNames.put(className, uris);
         }
         uris.add(uri);
-        addTypeNameUpper(typeName);
+        addClassNameUpper(className);
     }
 
-    private void addTypeNameUpper(String typeName) {
-        String typeNameUpper = typeName.toUpperCase(Locale.ENGLISH);
-        synchronized (typeNameUppers) {
-            SortedSet<String> typeNames = typeNameUppers.get(typeNameUpper);
-            if (typeNames == null) {
-                typeNames = Sets.newTreeSet();
-                typeNameUppers.put(typeNameUpper, typeNames);
+    private void addClassNameUpper(String className) {
+        String classNameUpper = className.toUpperCase(Locale.ENGLISH);
+        synchronized (classNameUppers) {
+            SortedSet<String> classNames = classNameUppers.get(classNameUpper);
+            if (classNames == null) {
+                classNames = Sets.newTreeSet();
+                classNameUppers.put(classNameUpper, classNames);
             }
-            typeNames.add(typeName);
+            classNames.add(className);
         }
     }
 
@@ -301,11 +301,11 @@ class ClasspathCache {
                 @Nullable String signature, String/*@Nullable*/[] exceptions) {
             if ((access & ACC_SYNTHETIC) == 0) {
                 // don't add synthetic methods to the parsed type model
-                List<Type> argTypes = Arrays.asList(Type.getArgumentTypes(desc));
+                List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
                 Type returnType = Type.getReturnType(desc);
                 List<String> exceptionList = exceptions == null ? ImmutableList.<String>of()
                         : Arrays.asList(exceptions);
-                parsedMethods.add(UiParsedMethod.from(name, argTypes, returnType, access,
+                parsedMethods.add(UiParsedMethod.from(name, parameterTypes, returnType, access,
                         signature, exceptionList));
             }
             return null;

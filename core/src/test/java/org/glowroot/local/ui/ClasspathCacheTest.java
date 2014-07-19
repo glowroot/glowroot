@@ -38,7 +38,7 @@ public class ClasspathCacheTest {
         when(parsedTypeCache.getClassLoaders())
                 .thenReturn(ImmutableList.of(ClasspathCacheTest.class.getClassLoader()));
         ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
-        assertThat(classpathCache.getMatchingTypeNames("lang.stringutils", 10))
+        assertThat(classpathCache.getMatchingClassNames("lang.stringutils", 10))
                 .contains("org.apache.commons.lang.StringUtils");
     }
 }

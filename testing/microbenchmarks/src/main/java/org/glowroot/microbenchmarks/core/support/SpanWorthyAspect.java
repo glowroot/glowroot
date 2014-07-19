@@ -37,8 +37,9 @@ public class SpanWorthyAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-microbenchmarks");
 
-    @Pointcut(type = "org.glowroot.microbenchmarks.core.support.SpanWorthy",
-            methodName = "doSomethingSpanWorthy", methodArgTypes = {}, traceMetric = "span worthy")
+    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.SpanWorthy",
+            methodName = "doSomethingSpanWorthy", methodParameterTypes = {},
+            traceMetric = "span worthy")
     public static class SpanWorthyAdvice {
 
         private static final TraceMetricName traceMetricName =

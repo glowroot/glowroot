@@ -31,27 +31,27 @@ glowroot.controller('ConfigPointcutCtrl', [
       $scope.config = data;
       $scope.originalConfig = angular.copy(data);
 
-      if (data.type) {
+      if (data.className) {
         var methodSignature = {
           name: data.methodName,
-          argTypes: data.methodArgTypes,
+          parameterTypes: data.methodParameterTypes,
           returnType: data.methodReturnType,
           modifiers: data.methodModifiers
         };
-        $scope.heading = data.type + '.' + data.methodName + '(' + data.methodArgTypes.join(', ') + ')';
+        $scope.heading = data.className + '.' + data.methodName + '(' + data.methodParameterTypes.join(', ') + ')';
         $scope.selectedMethodName = data.methodName;
         $scope.selectedMethodSignature = methodSignature;
         $scope.methodSignatures = [ methodSignature ];
-        $scope.spanDefinition = Boolean(data.spanText);
-        $scope.traceDefinition = Boolean(data.transactionName);
-        $scope.spanStackTraceThresholdMillis = data.spanStackTraceThresholdMillis;
+        $scope.spanDefinition = Boolean(data.messageTemplate);
+        $scope.traceDefinition = Boolean(data.transactionNameTemplate);
+        $scope.stackTraceThresholdMillis = data.stackTraceThresholdMillis;
         $scope.loadMethodSignatures = true;
       } else {
         $scope.heading = '<New pointcut>';
         $scope.spanDefinition = false;
         $scope.traceDefinition = false;
         $timeout(function () {
-          // focus on type name
+          // focus on class name
           $scope.isFocus = true;
         }, 0);
       }
@@ -64,13 +64,13 @@ glowroot.controller('ConfigPointcutCtrl', [
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
-    $scope.types = function (suggestion) {
+    $scope.classNames = function (suggestion) {
       var postData = {
-        partialTypeName: suggestion,
+        partialClassName: suggestion,
         limit: 10
       };
       // use 'then' method to return promise
-      return $http.get('backend/config/matching-types?' + queryStrings.encodeObject(postData))
+      return $http.get('backend/config/matching-class-names?' + queryStrings.encodeObject(postData))
           .then(function (response) {
             return response.data;
           }, function () {
@@ -78,12 +78,12 @@ glowroot.controller('ConfigPointcutCtrl', [
           });
     };
 
-    $scope.onSelectType = function () {
-      var type = $scope.config.type;
+    $scope.onSelectClassName = function () {
+      var className = $scope.config.className;
       // check if the value has really changed (e.g. that a user didn't start altering text and
       // then changed mind and put the previous value back)
-      if (type !== $scope.selectedType) {
-        $scope.selectedType = type;
+      if (className !== $scope.selectedClassName) {
+        $scope.selectedClassName = className;
         $scope.selectedMethodName = '';
         $scope.methodSignatures = [];
         $scope.config.methodName = '';
@@ -95,7 +95,7 @@ glowroot.controller('ConfigPointcutCtrl', [
         return [ suggestion ];
       }
       var queryData = {
-        type: $scope.config.type,
+        className: $scope.config.className,
         partialMethodName: suggestion,
         limit: 10
       };
@@ -128,7 +128,7 @@ glowroot.controller('ConfigPointcutCtrl', [
           $scope.methodSignatures = [
             {
               name: methodName,
-              argTypes: [ '..' ],
+              parameterTypes: [ '..' ],
               returnType: '',
               modifiers: []
             }
@@ -153,11 +153,11 @@ glowroot.controller('ConfigPointcutCtrl', [
         text += methodSignature.modifiers[i] + ' ';
       }
       text += methodSignature.returnType + ' ' + methodSignature.name + '(';
-      for (i = 0; i < methodSignature.argTypes.length; i++) {
+      for (i = 0; i < methodSignature.parameterTypes.length; i++) {
         if (i > 0) {
           text += ', ';
         }
-        text += methodSignature.argTypes[i];
+        text += methodSignature.parameterTypes[i];
       }
       text += ')';
       return text;
@@ -199,7 +199,7 @@ glowroot.controller('ConfigPointcutCtrl', [
 
     function matchingMethods(methodName, keepSelectedMethodSignature) {
       var queryData = {
-        type: $scope.config.type,
+        className: $scope.config.className,
         methodName: methodName
       };
       $scope.methodSignaturesLoading = true;
@@ -212,7 +212,7 @@ glowroot.controller('ConfigPointcutCtrl', [
               // non-matching method name and clicks outside of the input field to bypass the typeahead values
               $scope.methodSignatures.push({
                 name: methodName,
-                argTypes: [ '..' ],
+                parameterTypes: [ '..' ],
                 returnType: '',
                 modifiers: []
               });
@@ -239,9 +239,9 @@ glowroot.controller('ConfigPointcutCtrl', [
         return;
       }
       if (!newValue) {
-        $scope.config.spanText = '';
-        $scope.config.spanStackTraceThresholdMillis = '';
-        $scope.config.spanIgnoreSameNested = '';
+        $scope.config.messageTemplate = '';
+        $scope.config.stackTraceThresholdMillis = '';
+        $scope.config.ignoreSelfNested = false;
         $scope.traceDefinition = false;
       }
     });
@@ -253,21 +253,21 @@ glowroot.controller('ConfigPointcutCtrl', [
       }
       if (!newValue) {
         $scope.config.transactionType = '';
-        $scope.config.transactionName = '';
+        $scope.config.transactionNameTemplate = '';
       }
     });
 
-    $scope.$watch('spanStackTraceThresholdMillis', function (newValue) {
-      $scope.config.spanStackTraceThresholdMillis = conversions.toNumber(newValue);
+    $scope.$watch('stackTraceThresholdMillis', function (newValue) {
+      $scope.config.stackTraceThresholdMillis = conversions.toNumber(newValue);
     });
 
     $scope.$watch('selectedMethodSignature', function (newValue) {
       if (newValue) {
-        $scope.config.methodArgTypes = newValue.argTypes;
+        $scope.config.methodParameterTypes = newValue.parameterTypes;
         $scope.config.methodReturnType = newValue.returnType;
         $scope.config.methodModifiers = newValue.modifiers;
       } else {
-        $scope.config.methodArgTypes = '';
+        $scope.config.methodParameterTypes = '';
         $scope.config.methodReturnType = '';
         $scope.config.methodModifiers = '';
       }
@@ -275,7 +275,7 @@ glowroot.controller('ConfigPointcutCtrl', [
 
     function isSignatureAll(methodSignature) {
       return methodSignature.modifiers.length === 0 && methodSignature.returnType === '' &&
-          methodSignature.argTypes.length === 1 && methodSignature.argTypes[0] === '..';
+          methodSignature.parameterTypes.length === 1 && methodSignature.parameterTypes[0] === '..';
     }
   }
 ]);

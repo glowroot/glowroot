@@ -63,6 +63,6 @@ class WeavingTimerServiceImpl implements WeavingTimerService {
         public void stop() {}
     }
 
-    @Pointcut(type = "", methodName = "", traceMetric = "glowroot weaving")
+    @Pointcut(className = "", methodName = "", traceMetric = "glowroot weaving")
     private static class OnlyForThePointcutTraceMetric {}
 }

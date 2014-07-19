@@ -32,11 +32,11 @@ public class ExpensiveCall {
     private static final Random random = new Random();
 
     private final int maxTimeMillis;
-    private final int maxSpanTextLength;
+    private final int maxSpanMessageLength;
 
-    ExpensiveCall(int maxTimeMillis, int maxSpanTextLength) {
+    ExpensiveCall(int maxTimeMillis, int maxSpanMessageLength) {
         this.maxTimeMillis = maxTimeMillis;
-        this.maxSpanTextLength = maxSpanTextLength;
+        this.maxSpanMessageLength = maxSpanMessageLength;
     }
 
     void execute() {
@@ -121,8 +121,8 @@ public class ExpensiveCall {
     }
 
     @UsedByReflection
-    public String getSpanText() {
-        return getSpanText(random.nextInt(5) > 0);
+    public String getSpanMessage() {
+        return getSpanMessage(random.nextInt(5) > 0);
     }
 
     // this is just to prevent jvm from optimizing away for the loop below
@@ -176,10 +176,10 @@ public class ExpensiveCall {
         }
     }
 
-    private String getSpanText(boolean spaces) {
-        int spanTextLength = random.nextInt(maxSpanTextLength);
-        StringBuilder sb = new StringBuilder(spanTextLength);
-        for (int i = 0; i < spanTextLength; i++) {
+    private String getSpanMessage(boolean spaces) {
+        int spanMessageLength = random.nextInt(maxSpanMessageLength);
+        StringBuilder sb = new StringBuilder(spanMessageLength);
+        for (int i = 0; i < spanMessageLength; i++) {
             // random lowercase character
             sb.append((char) ('a' + random.nextInt(26)));
             if (spaces && random.nextInt(6) == 0) {
