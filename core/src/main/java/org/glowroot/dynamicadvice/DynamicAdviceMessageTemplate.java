@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,7 +172,11 @@ public class DynamicAdviceMessageTemplate {
             this.pathEvaluator = new PathEvaluator(valueClass, propertyPath);
         }
 
-        String evaluatePart(Object base) {
+        String evaluatePart(@Nullable Object base) {
+            if (base == null) {
+                // this is same as String.valueOf((Object) null);
+                return "null";
+            }
             try {
                 return String.valueOf(pathEvaluator.evaluateOnBase(base));
             } catch (IllegalArgumentException e) {

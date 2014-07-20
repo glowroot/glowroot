@@ -15,6 +15,8 @@
  */
 package org.glowroot.dynamicadvice;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.Span;
@@ -40,7 +42,7 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
 
     @UsedByGeneratedBytecode
     public static DynamicAdviceMessageSupplier create(DynamicAdviceMessageTemplate template,
-            Object receiver, String methodName, Object... args) {
+            Object receiver, String methodName, @Nullable Object... args) {
         // render paths to strings immediately in case the objects are mutable
         String[] resolvedReceiverPathParts = new String[template.getThisPathParts().size()];
         int i = 0;
@@ -69,7 +71,7 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
         this.methodName = methodName;
     }
 
-    public void setReturnValue(Object returnValue) {
+    public void setReturnValue(@Nullable Object returnValue) {
         // render the return value to strings immediately in case it is mutable
         String[] parts = new String[template.getReturnPathParts().size()];
         int i = 0;
@@ -118,7 +120,7 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
     }
 
     @UsedByGeneratedBytecode
-    public static void updateWithReturnValue(Span span, Object returnValue) {
+    public static void updateWithReturnValue(Span span, @Nullable Object returnValue) {
         DynamicAdviceMessageSupplier messageSupplier =
                 (DynamicAdviceMessageSupplier) span.getMessageSupplier();
         if (messageSupplier != null) {

@@ -79,6 +79,9 @@ public class PathEvaluator {
                 }
                 curr = field.get(curr);
             }
+            if (curr == null) {
+                return null;
+            }
         }
         if (remainingPath != null) {
             // too bad, revert to slow Beans
