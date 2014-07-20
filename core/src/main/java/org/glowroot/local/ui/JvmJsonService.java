@@ -203,13 +203,10 @@ class JvmJsonService {
                 node = new MBeanTreeInnerNode(domain);
                 sortedRootNodes.put(domain, node);
             }
-            List<String> keyValuePairs =
-                    Splitter.on(',').splitToList(objectName.getKeyPropertyListString());
-            for (int i = 0; i < keyValuePairs.size(); i++) {
-                String keyValuePair = keyValuePairs.get(i);
-                int separator = keyValuePair.indexOf('=');
-                String value = keyValuePair.substring(separator + 1);
-                if (i == keyValuePairs.size() - 1) {
+            List<String> propertyValues = ObjectNames.getPropertyValues(objectName);
+            for (int i = 0; i < propertyValues.size(); i++) {
+                String value = propertyValues.get(i);
+                if (i == propertyValues.size() - 1) {
                     String name =
                             objectName.getDomain() + ":" + objectName.getKeyPropertyListString();
                     if (request.getExpanded().contains(name)) {
