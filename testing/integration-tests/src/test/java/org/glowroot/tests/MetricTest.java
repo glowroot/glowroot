@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceMetricTest {
+public class MetricTest {
 
     private static Container container;
 
@@ -58,55 +58,55 @@ public class TraceMetricTest {
     }
 
     @Test
-    public void shouldReadTraceMetrics() throws Exception {
+    public void shouldReadMetrics() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithTraceMetrics.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithMetrics.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getRootTraceMetric().getNestedMetrics()).isEmpty();
-        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
     }
 
     @Test
-    public void shouldReadTraceMetricsWithRootAndSelfNested() throws Exception {
+    public void shouldReadMetricsWithRootAndSelfNested() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSelfNestedTraceMetric.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSelfNestedMetric.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getRootTraceMetric().getNestedMetrics()).isEmpty();
-        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getCount()).isEqualTo(1);
+        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getCount()).isEqualTo(1);
     }
 
     @Test
-    public void shouldReadActiveTraceMetrics() throws Exception {
+    public void shouldReadActiveMetrics() throws Exception {
         // given
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                container.executeAppUnderTest(ShouldGenerateActiveTraceWithTraceMetrics.class);
+                container.executeAppUnderTest(ShouldGenerateActiveTraceWithMetrics.class);
                 return null;
             }
         });
         // then
         Trace trace = container.getTraceService().getActiveTrace(5, SECONDS);
         assertThat(trace).isNotNull();
-        assertThat(trace.getRootTraceMetric().getNestedMetrics()).isEmpty();
-        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getCount()).isEqualTo(1);
-        assertThat(trace.getRootTraceMetric().isActive()).isTrue();
-        assertThat(trace.getRootTraceMetric().isMinActive()).isTrue();
-        assertThat(trace.getRootTraceMetric().isMaxActive()).isTrue();
+        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getCount()).isEqualTo(1);
+        assertThat(trace.getRootMetric().isActive()).isTrue();
+        assertThat(trace.getRootMetric().isMinActive()).isTrue();
+        assertThat(trace.getRootMetric().isMaxActive()).isTrue();
         // cleanup
         future.get();
         executorService.shutdown();
     }
 
-    public static class ShouldGenerateTraceWithTraceMetrics implements AppUnderTest, TraceMarker {
+    public static class ShouldGenerateTraceWithMetrics implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
@@ -117,7 +117,7 @@ public class TraceMetricTest {
         }
     }
 
-    public static class ShouldGenerateTraceWithRootAndSelfNestedTraceMetric implements
+    public static class ShouldGenerateTraceWithRootAndSelfNestedMetric implements
             AppUnderTest,
             TraceMarker {
         private int nestingLevel = 0;
@@ -135,7 +135,7 @@ public class TraceMetricTest {
         }
     }
 
-    public static class ShouldGenerateActiveTraceWithTraceMetrics implements AppUnderTest,
+    public static class ShouldGenerateActiveTraceWithMetrics implements AppUnderTest,
             TraceMarker {
         @Override
         public void executeApp() throws InterruptedException {

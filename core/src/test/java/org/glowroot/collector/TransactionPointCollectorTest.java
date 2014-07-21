@@ -83,7 +83,7 @@ public class TransactionPointCollectorTest {
         TraceMetric traceMetric = mock(TraceMetric.class);
         when(traceMetric.getName()).thenReturn("test 123");
         when(trace.getDuration()).thenReturn(MILLISECONDS.toNanos(123));
-        when(trace.getRootTraceMetric()).thenReturn(traceMetric);
+        when(trace.getRootMetric()).thenReturn(traceMetric);
         // when
         int count = 0;
         long firstCaptureTime = transactionPointCollector.add(trace, false);

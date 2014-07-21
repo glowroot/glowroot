@@ -35,13 +35,13 @@ import org.glowroot.markers.UsedByJsonBinding;
 @Immutable
 public class AdvancedConfig {
 
-    private final boolean traceMetricWrapperMethods;
+    private final boolean metricWrapperMethods;
 
     private final String version;
 
     static AdvancedConfig getDefault() {
-        final boolean traceMetricWrapperMethods = false;
-        return new AdvancedConfig(traceMetricWrapperMethods);
+        final boolean metricWrapperMethods = false;
+        return new AdvancedConfig(metricWrapperMethods);
     }
 
     public static Overlay overlay(AdvancedConfig base) {
@@ -49,13 +49,13 @@ public class AdvancedConfig {
     }
 
     @VisibleForTesting
-    public AdvancedConfig(boolean traceMetricWrapperMethods) {
-        this.traceMetricWrapperMethods = traceMetricWrapperMethods;
-        this.version = VersionHashes.sha1(traceMetricWrapperMethods);
+    public AdvancedConfig(boolean metricWrapperMethods) {
+        this.metricWrapperMethods = metricWrapperMethods;
+        this.version = VersionHashes.sha1(metricWrapperMethods);
     }
 
-    public boolean isTraceMetricWrapperMethods() {
-        return traceMetricWrapperMethods;
+    public boolean isMetricWrapperMethods() {
+        return metricWrapperMethods;
     }
 
     @JsonView(UiView.class)
@@ -67,7 +67,7 @@ public class AdvancedConfig {
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("traceMetricWrapperMethods", traceMetricWrapperMethods)
+                .add("metricWrapperMethods", metricWrapperMethods)
                 .add("version", version)
                 .toString();
     }
@@ -76,16 +76,16 @@ public class AdvancedConfig {
     @UsedByJsonBinding
     public static class Overlay {
 
-        private boolean traceMetricWrapperMethods;
+        private boolean metricWrapperMethods;
 
         private Overlay(AdvancedConfig base) {
-            traceMetricWrapperMethods = base.traceMetricWrapperMethods;
+            metricWrapperMethods = base.metricWrapperMethods;
         }
-        public void setTraceMetricWrapperMethods(boolean traceMetricWrapperMethods) {
-            this.traceMetricWrapperMethods = traceMetricWrapperMethods;
+        public void setMetricWrapperMethods(boolean metricWrapperMethods) {
+            this.metricWrapperMethods = metricWrapperMethods;
         }
         public AdvancedConfig build() {
-            return new AdvancedConfig(traceMetricWrapperMethods);
+            return new AdvancedConfig(metricWrapperMethods);
         }
     }
 }

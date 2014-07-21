@@ -22,10 +22,10 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -46,11 +46,11 @@ public class LevelOneAspect {
 
     @Pointcut(className = "org.glowroot.tests.LevelOne", methodName = "call",
             methodParameterTypes = {"java.lang.String", "java.lang.String"},
-            traceMetric = "level one")
+            metricName = "level one")
     public static class LevelOneAdvice {
 
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LevelOneAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LevelOneAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -83,14 +83,14 @@ public class LevelOneAspect {
                 }
             };
             Span span = pluginServices.startTrace("Integration test", "basic test",
-                    messageSupplier, traceMetricName);
+                    messageSupplier, metricName);
             // several trace attributes to test ordering
-            pluginServices.putTraceCustomAttribute("Zee One", arg2);
-            pluginServices.putTraceCustomAttribute("Yee Two", "yy3");
-            pluginServices.putTraceCustomAttribute("Yee Two", "yy");
-            pluginServices.putTraceCustomAttribute("Yee Two", "Yy2");
-            pluginServices.putTraceCustomAttribute("Xee Three", "xx");
-            pluginServices.putTraceCustomAttribute("Wee Four", "ww");
+            pluginServices.setTraceCustomAttribute("Zee One", arg2);
+            pluginServices.setTraceCustomAttribute("Yee Two", "yy3");
+            pluginServices.setTraceCustomAttribute("Yee Two", "yy");
+            pluginServices.setTraceCustomAttribute("Yee Two", "Yy2");
+            pluginServices.setTraceCustomAttribute("Xee Three", "xx");
+            pluginServices.setTraceCustomAttribute("Wee Four", "ww");
             return span;
         }
 

@@ -181,7 +181,7 @@ public class ProfilingTest {
         // outlier profiler should have captured exactly 5 stack traces
         int sampleCount = rootProfileNode.getSampleCount();
         assertThat(sampleCount).isBetween(3, 7);
-        assertThatTreeDoesNotContainSyntheticTraceMetricMethods(rootProfileNode);
+        assertThatTreeDoesNotContainSyntheticMetricWrapperMethods(rootProfileNode);
     }
 
     @Test
@@ -202,7 +202,7 @@ public class ProfilingTest {
         assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.YES);
         // outlier profiler should have captured exactly 1 stack trace
         assertThat(rootProfileNode.getSampleCount()).isEqualTo(1);
-        assertThatTreeDoesNotContainSyntheticTraceMetricMethods(rootProfileNode);
+        assertThatTreeDoesNotContainSyntheticMetricWrapperMethods(rootProfileNode);
     }
 
     @Test
@@ -222,15 +222,15 @@ public class ProfilingTest {
         assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.NO);
     }
 
-    private static void assertThatTreeDoesNotContainSyntheticTraceMetricMethods(
+    private static void assertThatTreeDoesNotContainSyntheticMetricWrapperMethods(
             ProfileNode profileNode) {
-        if (profileNode.getStackTraceElement().contains("$glowroot$trace$metric$")) {
-            throw new AssertionError("Not expecting synthetic trace metric methods but found: "
+        if (profileNode.getStackTraceElement().contains("$glowroot$metric$")) {
+            throw new AssertionError("Not expecting synthetic metric methods but found: "
                     + profileNode.getStackTraceElement());
         }
         if (profileNode.getChildNodes() != null) {
             for (ProfileNode child : profileNode.getChildNodes()) {
-                assertThatTreeDoesNotContainSyntheticTraceMetricMethods(child);
+                assertThatTreeDoesNotContainSyntheticMetricWrapperMethods(child);
             }
         }
     }

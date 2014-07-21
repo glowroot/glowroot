@@ -322,8 +322,8 @@ public class PreInitializeWeavingClasses {
 
     private static List<String> getGlowrootUsedTypes() {
         List<String> types = Lists.newArrayList();
-        types.add("org.glowroot.api.TraceMetricName");
-        types.add("org.glowroot.api.TraceMetricTimer");
+        types.add("org.glowroot.api.MetricName");
+        types.add("org.glowroot.api.MetricTimer");
         types.add("org.glowroot.api.weaving.BindClassMeta");
         types.add("org.glowroot.api.weaving.BindMethodMeta");
         types.add("org.glowroot.api.weaving.BindMethodName");
@@ -353,9 +353,9 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.trace.WeavingTimerServiceImpl$1");
         types.add("org.glowroot.trace.WeavingTimerServiceImpl$NopWeavingTimer");
         types.add("org.glowroot.trace.model.CurrentTraceMetricHolder");
+        types.add("org.glowroot.trace.model.MetricNameImpl");
+        types.add("org.glowroot.trace.model.MetricTimerExt");
         types.add("org.glowroot.trace.model.TraceMetric");
-        types.add("org.glowroot.trace.model.TraceMetricNameImpl");
-        types.add("org.glowroot.trace.model.TraceMetricTimerExt");
         types.add("org.glowroot.weaving.Advice");
         types.add("org.glowroot.weaving.Advice$1");
         types.add("org.glowroot.weaving.Advice$AdviceParameter");

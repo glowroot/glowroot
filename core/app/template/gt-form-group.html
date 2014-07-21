@@ -20,6 +20,16 @@
                  id="{{gtId}}">
         </div>
       </div>
+      <div ng-switch-when="textarea">
+        <textarea class="form-control"
+                  ng-model="$parent.ngModel"
+                  name="property"
+                  id="{{gtId}}"
+                  ng-required="gtRequired()"
+                  ng-style="{'max-width': gtWidth ? gtWidth : 'none'}"
+                  rows="{{gtRows ? gtRows : ''}}">
+        </textarea>
+      </div>
       <div ng-switch-default>
         <div ng-style="{display : gtWidth ? 'inline' : 'block'}">
           <div ng-class="{'input-group' : gtAddon}">
@@ -32,7 +42,7 @@
                    id="{{gtId}}"
                    ng-pattern="ngPattern"
                    ng-required="gtRequired()"
-                   ng-style="{width: gtWidth ? gtWidth : 'none'}">
+                   ng-style="{'max-width': gtWidth ? gtWidth : 'none'}">
             <span ng-if="gtAddon" class="input-group-addon">{{gtAddon}}</span>
           </div>
         </div>

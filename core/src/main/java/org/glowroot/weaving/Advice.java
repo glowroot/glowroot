@@ -61,12 +61,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Immutable
 public class Advice {
 
-    static final Ordering<Advice> orderingTraceMetric = new Ordering<Advice>() {
+    static final Ordering<Advice> orderingByMetricName = new Ordering<Advice>() {
         @Override
         public int compare(@Nullable Advice left, @Nullable Advice right) {
             checkNotNull(left);
             checkNotNull(right);
-            return left.pointcut.traceMetric().compareToIgnoreCase(right.pointcut.traceMetric());
+            return left.pointcut.metricName().compareToIgnoreCase(right.pointcut.metricName());
         }
     };
 

@@ -52,10 +52,10 @@ public class SnapshotWriter {
             jg.writeFieldName("customAttributes");
             jg.writeRawValue(customAttributes);
         }
-        String traceMetrics = snapshot.getTraceMetrics();
-        if (traceMetrics != null) {
-            jg.writeFieldName("traceMetrics");
-            jg.writeRawValue(traceMetrics);
+        String metrics = snapshot.getMetrics();
+        if (metrics != null) {
+            jg.writeFieldName("metrics");
+            jg.writeRawValue(metrics);
         }
         String threadInfo = snapshot.getThreadInfo();
         if (threadInfo != null) {

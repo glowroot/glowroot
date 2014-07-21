@@ -30,7 +30,9 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.TraceMarker;
+import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.PointcutConfig;
+import org.glowroot.container.config.PointcutConfig.AdviceKind;
 import org.glowroot.container.config.PointcutConfig.MethodModifier;
 import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
@@ -51,7 +53,7 @@ public class PointcutConfigTest {
         dataDir = TempDirs.createTempDir("glowroot-test-datadir");
         container = Containers.createWithFileDb(dataDir);
         addPointcutConfigForExecute1();
-        addPointcutConfigForExecute1TraceMetricOnly();
+        addPointcutConfigForExecute1MetricOnly();
         addPointcutConfigForExecuteWithReturn();
         addPointcutConfigForExecuteWithArgs();
         // re-start now with pointcut configs
@@ -73,17 +75,22 @@ public class PointcutConfigTest {
     @Test
     public void shouldExecute1() throws Exception {
         // given
+        GeneralConfig config = container.getConfigService().getGeneralConfig();
+        config.setStoreThresholdMillis(Integer.MAX_VALUE);
+        container.getConfigService().updateGeneralConfig(config);
         // when
         container.executeAppUnderTest(ShouldExecute1.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(spans).hasSize(2);
-        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getNestedMetricNames())
+        assertThat(trace.getTransactionType()).isEqualTo("test override type");
+        assertThat(trace.getTransactionName()).isEqualTo("test override name");
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getNestedMetricNames())
                 .containsOnly("execute one");
-        assertThat(trace.getRootTraceMetric().getNestedMetrics().get(0)
-                .getNestedMetricNames()).containsOnly("execute one trace metric only");
+        assertThat(trace.getRootMetric().getNestedMetrics().get(0)
+                .getNestedMetricNames()).containsOnly("execute one metric only");
         assertThat(spans.get(1).getMessage().getText()).isEqualTo("execute1() => void");
         assertThat(spans.get(1).getStackTrace()).isNotNull();
     }
@@ -97,8 +104,8 @@ public class PointcutConfigTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(spans).hasSize(2);
-        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getNestedMetricNames())
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getNestedMetricNames())
                 .containsOnly("execute with return");
         assertThat(spans.get(1).getMessage().getText()).isEqualTo("executeWithReturn() => xyz");
     }
@@ -112,10 +119,11 @@ public class PointcutConfigTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("executeWithArgs(): abc, 123, the name");
+        assertThat(trace.getTransactionType()).isEqualTo("Pointcut config test");
         assertThat(trace.getTransactionName()).isEqualTo("Misc / executeWithArgs");
         assertThat(spans).hasSize(1);
-        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("execute with args");
-        assertThat(trace.getRootTraceMetric().getNestedMetrics()).isEmpty();
+        assertThat(trace.getRootMetric().getName()).isEqualTo("execute with args");
+        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
         assertThat(spans.get(0).getMessage().getText())
                 .isEqualTo("executeWithArgs(): abc, 123, the name");
     }
@@ -127,20 +135,25 @@ public class PointcutConfigTest {
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setTraceMetric("execute one");
+        config.setAdviceKind(AdviceKind.SPAN);
+        config.setMetricName("execute one");
         config.setMessageTemplate("execute1() => {{_}}");
         config.setStackTraceThresholdMillis(0L);
+        config.setTransactionType("test override type");
+        config.setTransactionNameTemplate("test override name");
+        config.setTraceStoreThresholdMillis(0L);
         container.getConfigService().addPointcutConfig(config);
     }
 
-    protected static void addPointcutConfigForExecute1TraceMetricOnly() throws Exception {
+    protected static void addPointcutConfigForExecute1MetricOnly() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setClassName("org.glowroot.tests.PointcutConfigTest$Misc");
         config.setMethodName("execute1");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setTraceMetric("execute one trace metric only");
+        config.setAdviceKind(AdviceKind.METRIC);
+        config.setMetricName("execute one metric only");
         container.getConfigService().addPointcutConfig(config);
     }
 
@@ -151,7 +164,8 @@ public class PointcutConfigTest {
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setTraceMetric("execute with return");
+        config.setAdviceKind(AdviceKind.SPAN);
+        config.setMetricName("execute with return");
         config.setMessageTemplate("executeWithReturn() => {{_}}");
         container.getConfigService().addPointcutConfig(config);
     }
@@ -164,8 +178,10 @@ public class PointcutConfigTest {
                 "org.glowroot.tests.PointcutConfigTest$BasicMisc"));
         config.setMethodReturnType("void");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setTraceMetric("execute with args");
+        config.setAdviceKind(AdviceKind.TRACE);
+        config.setMetricName("execute with args");
         config.setMessageTemplate("executeWithArgs(): {{0}}, {{1}}, {{2.name}}");
+        config.setTransactionType("Pointcut config test");
         config.setTransactionNameTemplate("Misc / {{methodName}}");
         container.getConfigService().addPointcutConfig(config);
     }

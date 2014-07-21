@@ -44,7 +44,7 @@ class TransactionProfileNode {
     @Nullable
     private final String leafThreadState;
     private int sampleCount;
-    private List<String> traceMetrics;
+    private List<String> metricNames;
     private final List<TransactionProfileNode> childNodes;
     private boolean ellipsed;
 
@@ -57,24 +57,24 @@ class TransactionProfileNode {
     }
 
     private TransactionProfileNode(@Nullable String stackTraceElement,
-            @Nullable String leafThreadState, int sampleCount, List<String> traceMetrics,
+            @Nullable String leafThreadState, int sampleCount, List<String> metricNames,
             List<TransactionProfileNode> childNodes) {
         this.stackTraceElement = stackTraceElement;
         this.leafThreadState = leafThreadState;
         this.sampleCount = sampleCount;
-        this.traceMetrics = traceMetrics;
+        this.metricNames = metricNames;
         this.childNodes = childNodes;
     }
 
     private TransactionProfileNode(String stackTraceElement) {
         this.stackTraceElement = stackTraceElement;
         leafThreadState = null;
-        traceMetrics = Lists.newArrayList();
+        metricNames = Lists.newArrayList();
         childNodes = Lists.newArrayList();
     }
 
-    void setTraceMetrics(List<String> traceMetrics) {
-        this.traceMetrics = traceMetrics;
+    void setMetricNames(List<String> metricNames) {
+        this.metricNames = metricNames;
     }
 
     void incrementSampleCount(int num) {
@@ -100,8 +100,8 @@ class TransactionProfileNode {
         return sampleCount;
     }
 
-    public List<String> getTraceMetrics() {
-        return traceMetrics;
+    public List<String> getMetricNames() {
+        return metricNames;
     }
 
     public List<TransactionProfileNode> getChildNodes() {
@@ -119,7 +119,7 @@ class TransactionProfileNode {
                 .add("leafThreadState", leafThreadState)
                 .add("stackTraceElement", stackTraceElement)
                 .add("sampleCount", sampleCount)
-                .add("traceMetrics", traceMetrics)
+                .add("metricNames", metricNames)
                 .add("childNodes", childNodes)
                 .add("ellipsed", ellipsed)
                 .toString();
@@ -130,15 +130,15 @@ class TransactionProfileNode {
             @JsonProperty("stackTraceElement") @Nullable String stackTraceElement,
             @JsonProperty("leafThreadState") @Nullable String leafThreadState,
             @JsonProperty("sampleCount") @Nullable Integer sampleCount,
-            @JsonProperty("traceMetrics") @Nullable List</*@Nullable*/String> uncheckedTraceMetrics,
+            @JsonProperty("metricNames") @Nullable List</*@Nullable*/String> uncheckedMetricNames,
             @JsonProperty("childNodes") @Nullable List</*@Nullable*/TransactionProfileNode> uncheckedChildNodes)
             throws JsonMappingException {
-        List<String> traceMetrics =
-                checkNotNullItemsForProperty(uncheckedTraceMetrics, "traceMetrics");
+        List<String> metricNames =
+                checkNotNullItemsForProperty(uncheckedMetricNames, "metricNames");
         List<TransactionProfileNode> childNodes =
                 checkNotNullItemsForProperty(uncheckedChildNodes, "childNodes");
         checkRequiredProperty(sampleCount, "sampleCount");
         return new TransactionProfileNode(stackTraceElement, leafThreadState,
-                sampleCount, nullToEmpty(traceMetrics), nullToEmpty(childNodes));
+                sampleCount, nullToEmpty(metricNames), nullToEmpty(childNodes));
     }
 }

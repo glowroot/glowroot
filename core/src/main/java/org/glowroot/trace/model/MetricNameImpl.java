@@ -15,17 +15,17 @@
  */
 package org.glowroot.trace.model;
 
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceMetricNameImpl implements TraceMetricName {
+public class MetricNameImpl implements MetricName {
 
     private final String name;
 
-    public TraceMetricNameImpl(String name) {
+    public MetricNameImpl(String name) {
         this.name = name;
     }
 

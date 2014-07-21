@@ -19,7 +19,7 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -41,11 +41,11 @@ public class LogCauseAspect {
     private static final Exception cause3 = new IllegalArgumentException("Cause 3", cause2);
 
     @Pointcut(className = "org.glowroot.tests.LogCause", methodName = "log",
-            methodParameterTypes = {"java.lang.String"}, traceMetric = "log error")
+            methodParameterTypes = {"java.lang.String"}, metricName = "log error")
     public static class LogCauseAdvice {
 
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LogCauseAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogCauseAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -55,7 +55,7 @@ public class LogCauseAspect {
         @OnBefore
         public static Span onBefore(@BindParameter String message) {
             return pluginServices.startSpan(MessageSupplier.from("ERROR -- {}", message),
-                    traceMetricName);
+                    metricName);
         }
 
         @OnAfter

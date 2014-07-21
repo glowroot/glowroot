@@ -18,7 +18,7 @@ package org.glowroot.tests.plugin;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -38,11 +38,11 @@ public class PauseAspect {
             PluginServices.get("glowroot-integration-tests");
 
     @Pointcut(className = "org.glowroot.tests.Pause", methodName = "pauseOneMillisecond",
-            methodParameterTypes = {}, traceMetric = "pause")
+            methodParameterTypes = {}, metricName = "pause")
     public static class PauseAdvice {
 
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LogErrorAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogErrorAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -52,7 +52,7 @@ public class PauseAspect {
         @OnBefore
         public static Span onBefore() {
             return pluginServices.startSpan(MessageSupplier.from("Pause.pauseOneMillisecond()"),
-                    traceMetricName);
+                    metricName);
         }
 
         @OnAfter
@@ -68,6 +68,6 @@ public class PauseAspect {
     // this is just to generate an additional $glowroot$ method to test that consecutive
     // $glowroot$ methods in a span stack trace are stripped out correctly
     @Pointcut(className = "org.glowroot.tests.LogError", methodName = "pause",
-            methodParameterTypes = {"int"}, traceMetric = "pause 2")
+            methodParameterTypes = {"int"}, metricName = "pause 2")
     public static class PauseAdvice2 {}
 }

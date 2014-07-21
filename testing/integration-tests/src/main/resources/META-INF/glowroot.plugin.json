@@ -43,6 +43,16 @@
       "prompt": "Capture LevelFive spans",
       "name": "levelFiveSpanEnabled",
       "type": "boolean"
+    },
+    {
+      "prompt": "Test enabled property",
+      "name": "abcEnabled",
+      "type": "boolean"
+    },
+    {
+      "prompt": "Test span enabled property",
+      "name": "abcSpanEnabled",
+      "type": "boolean"
     }
   ],
   "aspects": [
@@ -65,7 +75,8 @@
       ],
       "methodReturnType": "void",
       "methodModifiers": [ ],
-      "traceMetric": "level four",
+      "adviceKind": "span",
+      "metricName": "level four",
       "messageTemplate": "Level Four: {{0}}, {{1}}",
       "transactionNameTemplate": "",
       "enabledProperty": "",
@@ -80,11 +91,33 @@
       ],
       "methodReturnType": "void",
       "methodModifiers": [ ],
-      "traceMetric": "level five",
+      "adviceKind": "span",
+      "metricName": "level five",
       "messageTemplate": "Level Five: {{0}}, {{1}}",
       "transactionNameTemplate": "",
       "enabledProperty": "levelFiveEnabled",
       "spanEnabledProperty": "levelFiveSpanEnabled"
+    },
+    {
+      "className": "org.glowroot.tests.AAA",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "java.lang.String",
+        ".."
+      ],
+      "methodReturnType": "void",
+      "methodModifiers": [ ],
+      "adviceKind": "other",
+      "metricName": "",
+      "messageTemplate": "",
+      "transactionNameTemplate": "{{0}} {{1.nested.name}}",
+      "traceUserTemplate": "u{{1.nested.name}}",
+      "traceCustomAttributeTemplates": {
+        "View": "v{{0}}",
+        "Z": "z{{0}}"
+      },
+      "enabledProperty": "",
+      "spanEnabledProperty": ""
     }
   ]
 }

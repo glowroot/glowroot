@@ -16,10 +16,10 @@
 package org.glowroot.sandbox.ui;
 
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
+import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.TraceMetricTimer;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -27,8 +27,8 @@ import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.Pointcut;
 
 /**
- * This is used to generate a trace with <multiple root nodes> (and with multiple trace metrics)
- * just to test this unusual situation.
+ * This is used to generate a trace with <multiple root nodes> (and with multiple metrics) just to
+ * test this unusual situation.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -39,11 +39,11 @@ public class ExternalJvmMainAspect {
 
     @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
             methodName = "main", methodParameterTypes = {"java.lang.String[]"},
-            traceMetric = "external jvm main")
+            metricName = "external jvm main")
     public static class MainAdvice {
 
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(MainAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(MainAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -54,7 +54,7 @@ public class ExternalJvmMainAspect {
         public static Span onBefore() {
             return pluginServices.startTrace("Sandbox", "javaagent container main",
                     MessageSupplier.from("org.glowroot.container.javaagent.JavaagentContainer"
-                            + ".main()"), traceMetricName);
+                            + ".main()"), metricName);
         }
 
         @OnAfter
@@ -64,11 +64,11 @@ public class ExternalJvmMainAspect {
     }
 
     @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
-            methodName = "traceMetricOne", traceMetric = "trace metric one")
-    public static class TraceMetricOneAdvice {
+            methodName = "metricMarkerOne", metricName = "metric one")
+    public static class MetricMarkerOneAdvice {
 
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(TraceMetricOneAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(MetricMarkerOneAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -76,22 +76,22 @@ public class ExternalJvmMainAspect {
         }
 
         @OnBefore
-        public static TraceMetricTimer onBefore() {
-            return pluginServices.startTraceMetric(traceMetricName);
+        public static MetricTimer onBefore() {
+            return pluginServices.startMetric(metricName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler TraceMetricTimer traceMetricTimer) {
-            traceMetricTimer.stop();
+        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
+            metricTimer.stop();
         }
     }
 
     @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
-            methodName = "traceMetricTwo", traceMetric = "trace metric two")
-    public static class TraceMetricTwoAdvice {
+            methodName = "metricMarkerTwo", metricName = "metric two")
+    public static class MetricMarkerTwoAdvice {
 
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(TraceMetricTwoAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(MetricMarkerTwoAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -99,13 +99,13 @@ public class ExternalJvmMainAspect {
         }
 
         @OnBefore
-        public static TraceMetricTimer onBefore() {
-            return pluginServices.startTraceMetric(traceMetricName);
+        public static MetricTimer onBefore() {
+            return pluginServices.startMetric(metricName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler TraceMetricTimer traceMetricTimer) {
-            traceMetricTimer.stop();
+        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
+            metricTimer.stop();
         }
     }
 }

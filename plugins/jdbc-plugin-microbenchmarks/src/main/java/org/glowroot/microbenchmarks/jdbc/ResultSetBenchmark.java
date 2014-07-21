@@ -37,7 +37,7 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.microbenchmarks.jdbc.support.MockConnection;
 
@@ -51,8 +51,8 @@ import org.glowroot.microbenchmarks.jdbc.support.MockConnection;
 public class ResultSetBenchmark {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
-    private static final TraceMetricName traceMetricName =
-            pluginServices.getTraceMetricName(OnlyForTheTraceMetricName.class);
+    private static final MetricName metricName =
+            pluginServices.getMetricName(OnlyForTheMetricName.class);
 
     @Param
     private Database database;
@@ -92,7 +92,7 @@ public class ResultSetBenchmark {
     @OperationsPerInvocation(10000)
     public void next() throws Exception {
         Span rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
-                MessageSupplier.from("micro trace"), traceMetricName);
+                MessageSupplier.from("micro trace"), metricName);
         ResultSet resultSet = preparedStatement.executeQuery();
         for (int i = 0; i < 10000; i++) {
             resultSet.next();
@@ -105,6 +105,6 @@ public class ResultSetBenchmark {
         HSQLDB, MOCK
     }
 
-    @Pointcut(className = "dummy", methodName = "dummy", traceMetric = "micro trace")
-    private static class OnlyForTheTraceMetricName {}
+    @Pointcut(className = "dummy", methodName = "dummy", metricName = "micro trace")
+    private static class OnlyForTheMetricName {}
 }

@@ -18,7 +18,7 @@ package org.glowroot.container;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -36,11 +36,11 @@ public class TraceMarkerAspect {
             PluginServices.get("glowroot-test-container");
 
     @Pointcut(className = "org.glowroot.container.TraceMarker", methodName = "traceMarker",
-            traceMetric = "mock trace marker", ignoreSelfNested = true)
+            metricName = "mock trace marker", ignoreSelfNested = true)
     public static class TraceMarkerAdvice {
 
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(TraceMarkerAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(TraceMarkerAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -51,7 +51,7 @@ public class TraceMarkerAspect {
         public static Span onBefore(@BindReceiver Object receiver) {
             String receiverClassName = receiver.getClass().getName();
             return pluginServices.startTrace("Test harness", "trace marker / " + receiverClassName,
-                    MessageSupplier.from("{}.traceMarker()", receiverClassName), traceMetricName);
+                    MessageSupplier.from("{}.traceMarker()", receiverClassName), metricName);
         }
 
         @OnAfter

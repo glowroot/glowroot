@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.weaving;
-
-import org.glowroot.api.weaving.BindMethodName;
-import org.glowroot.api.weaving.OnBefore;
-import org.glowroot.api.weaving.Pointcut;
+package org.glowroot.tests;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class WeavingJDK14BytecodeAspect {
+class NestedParamObject {
 
-    @Pointcut(className = "org.apache.commons.lang.StringUtils", methodName = "isEmpty",
-            methodParameterTypes = {"java.lang.String"}, metricName = "is empty")
-    public static class BasicAdvice {
-        @OnBefore
-        public static void onBefore(@SuppressWarnings("unused") @BindMethodName String test) {}
+    private final String name;
+
+    NestedParamObject(String name) {
+        this.name = name;
+    }
+
+    String getName() {
+        return name;
     }
 }

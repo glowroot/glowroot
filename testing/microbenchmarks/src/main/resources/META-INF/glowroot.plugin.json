@@ -8,7 +8,7 @@
   "aspects": [
     "org.glowroot.microbenchmarks.core.support.TraceWorthyAspect",
     "org.glowroot.microbenchmarks.core.support.SpanWorthyAspect",
-    "org.glowroot.microbenchmarks.core.support.TraceMetricWorthyAspect"
+    "org.glowroot.microbenchmarks.core.support.MetricWorthyAspect"
   ],
   "pointcuts": [
     {
@@ -17,7 +17,8 @@
       "methodParameterTypes": [ ],
       "methodReturnType": "void",
       "methodModifiers": [ ],
-      "traceMetric": "trace worthy",
+      "adviceKind": "trace",
+      "metricName": "trace worthy",
       "messageTemplate": "trace worthy",
       "transactionNameTemplate": "trace worthy",
       "enabledProperty": "",
@@ -29,31 +30,34 @@
       "methodParameterTypes": [ ],
       "methodReturnType": "void",
       "methodModifiers": [ ],
-      "traceMetric": "span worthy",
+      "adviceKind": "span",
+      "metricName": "span worthy",
       "messageTemplate": "span worthy: {{this.name}}",
       "transactionNameTemplate": "",
       "enabledProperty": "",
       "spanEnabledProperty": ""
     },
     {
-      "className": "org.glowroot.microbenchmarks.core.support.TraceMetricWorthy",
-      "methodName": "doSomethingTraceMetricWorthy2",
+      "className": "org.glowroot.microbenchmarks.core.support.MetricWorthy",
+      "methodName": "doSomethingMetricWorthy2",
       "methodParameterTypes": [ ],
       "methodReturnType": "void",
       "methodModifiers": [ ],
-      "traceMetric": "trace metric worthy",
+      "adviceKind": "metric",
+      "metricName": "trace metric worthy",
       "messageTemplate": "",
       "transactionNameTemplate": "",
       "enabledProperty": "",
       "spanEnabledProperty": ""
     },
     {
-      "className": "org.glowroot.microbenchmarks.core.support.TraceMetricWorthy",
-      "methodName": "doSomethingTraceMetricWorthy2B",
+      "className": "org.glowroot.microbenchmarks.core.support.MetricWorthy",
+      "methodName": "doSomethingMetricWorthy2B",
       "methodParameterTypes": [ ],
       "methodReturnType": "void",
       "methodModifiers": [ ],
-      "traceMetric": "trace metric worthy B",
+      "adviceKind": "metric",
+      "metricName": "trace metric worthy B",
       "messageTemplate": "",
       "transactionNameTemplate": "",
       "enabledProperty": "",

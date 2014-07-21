@@ -25,6 +25,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.PointcutConfig;
+import org.glowroot.container.config.PointcutConfig.AdviceKind;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,7 +61,8 @@ public class ReweaveCountTest {
         config.setMethodName("x");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
-        config.setTraceMetric("x");
+        config.setAdviceKind(AdviceKind.METRIC);
+        config.setMetricName("x");
         String configVersion = container.getConfigService().addPointcutConfig(config);
         int reweaveCount = container.getConfigService().reweavePointcuts();
         assertThat(reweaveCount).isEqualTo(2);

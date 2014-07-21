@@ -28,8 +28,8 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.TraceMetricTimer;
+import org.glowroot.api.MetricName;
+import org.glowroot.api.MetricTimer;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -72,10 +72,10 @@ public class DataSourceAspect {
 
     @Pointcut(className = "javax.sql.DataSource", methodName = "getConnection",
             methodParameterTypes = {".."}, ignoreSelfNested = true,
-            traceMetric = "jdbc get connection")
+            metricName = "jdbc get connection")
     public static class CommitAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(CommitAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(CommitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -84,9 +84,9 @@ public class DataSourceAspect {
         public static Object onBefore() {
             if (captureGetConnectionSpans) {
                 return pluginServices.startSpan(new GetConnectionMessageSupplier(),
-                        traceMetricName);
+                        metricName);
             } else {
-                return pluginServices.startTraceMetric(traceMetricName);
+                return pluginServices.startMetric(metricName);
             }
         }
         @OnReturn
@@ -112,7 +112,7 @@ public class DataSourceAspect {
                 span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                         MILLISECONDS);
             } else {
-                ((TraceMetricTimer) spanOrTimer).stop();
+                ((MetricTimer) spanOrTimer).stop();
             }
         }
         @OnThrow
@@ -120,7 +120,7 @@ public class DataSourceAspect {
             if (spanOrTimer instanceof Span) {
                 ((Span) spanOrTimer).endWithError(ErrorMessage.from(t));
             } else {
-                ((TraceMetricTimer) spanOrTimer).stop();
+                ((MetricTimer) spanOrTimer).stop();
             }
         }
     }

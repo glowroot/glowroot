@@ -62,11 +62,11 @@ class RootSpan {
 
     private final Ticker ticker;
 
-    RootSpan(MessageSupplier messageSupplier, TraceMetricTimerExt traceMetricTimer, long startTick,
+    RootSpan(MessageSupplier messageSupplier, MetricTimerExt metricTimer, long startTick,
             Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
-        rootSpan = new Span(messageSupplier, startTick, 0, traceMetricTimer);
+        rootSpan = new Span(messageSupplier, startTick, 0, metricTimer);
         spanStack.add(rootSpan);
         synchronized (spans) {
             spans.add(rootSpan);
@@ -107,9 +107,8 @@ class RootSpan {
         return endTick != null;
     }
 
-    Span pushSpan(long startTick, MessageSupplier messageSupplier,
-            TraceMetricTimerExt traceMetric) {
-        Span span = createSpan(startTick, messageSupplier, null, traceMetric, false);
+    Span pushSpan(long startTick, MessageSupplier messageSupplier, MetricTimerExt metricTimer) {
+        Span span = createSpan(startTick, messageSupplier, null, metricTimer, false);
         spanStack.add(span);
         synchronized (spans) {
             spans.add(span);
@@ -150,7 +149,7 @@ class RootSpan {
     }
 
     private Span createSpan(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage, @Nullable TraceMetricTimerExt traceMetricTimer,
+            @Nullable ErrorMessage errorMessage, @Nullable MetricTimerExt metricTimer,
             boolean limitBypassed) {
         if (spanLimitExceeded && !limitBypassed) {
             // just in case the spanLimit property is changed in the middle of a trace this resets
@@ -170,7 +169,7 @@ class RootSpan {
         } else {
             nestingLevel = currentSpan.getNestingLevel() + 1;
         }
-        Span span = new Span(messageSupplier, startTick, nestingLevel, traceMetricTimer);
+        Span span = new Span(messageSupplier, startTick, nestingLevel, metricTimer);
         span.setErrorMessage(errorMessage);
         return span;
     }

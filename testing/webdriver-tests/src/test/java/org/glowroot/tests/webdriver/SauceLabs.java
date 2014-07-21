@@ -86,6 +86,11 @@ public class SauceLabs {
             // webdriver capabilities
             capabilities.setBrowserName(browserName);
             capabilities.setVersion(browserVersion);
+            if (browserName.equals("iexplore")) {
+                // currently tests fail with default nativeEvents=true
+                // (can't select radio buttons on pointcut config page)
+                capabilities.setCapability("nativeEvents", false);
+            }
         } else if (!Strings.isNullOrEmpty(deviceName)) {
             // appium capabilities
             capabilities.setCapability("device", deviceName);

@@ -71,7 +71,7 @@ public class SnapshotDao implements SnapshotRepository {
             new Column("error_message", Types.VARCHAR),
             new Column("user", Types.VARCHAR),
             new Column("custom_attributes", Types.VARCHAR), // json data
-            new Column("trace_metrics", Types.VARCHAR), // json data
+            new Column("metrics", Types.VARCHAR), // json data
             new Column("thread_info", Types.VARCHAR), // json data
             new Column("gc_infos", Types.VARCHAR), // json data
             new Column("spans_id", Types.VARCHAR), // capped database id
@@ -120,14 +120,14 @@ public class SnapshotDao implements SnapshotRepository {
         try {
             dataSource.update("merge into snapshot (id, stuck, start_time, capture_time, duration,"
                     + " transaction_type, transaction_name, headline, error, profiled,"
-                    + " error_message, user, custom_attributes, trace_metrics, thread_info,"
-                    + " gc_infos, spans_id, profile_id, outlier_profile_id) values (?, ?, ?, ?, ?,"
-                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(),
+                    + " error_message, user, custom_attributes, metrics, thread_info, gc_infos,"
+                    + " spans_id, profile_id, outlier_profile_id) values (?, ?, ?, ?, ?, ?, ?, ?,"
+                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(),
                     snapshot.isStuck(), snapshot.getStartTime(), snapshot.getCaptureTime(),
                     snapshot.getDuration(), snapshot.getTransactionType(),
                     snapshot.getTransactionName(), snapshot.getHeadline(),
                     snapshot.getError() != null, profileId != null, snapshot.getError(),
-                    snapshot.getUser(), snapshot.getCustomAttributes(), snapshot.getTraceMetrics(),
+                    snapshot.getUser(), snapshot.getCustomAttributes(), snapshot.getMetrics(),
                     snapshot.getThreadInfo(), snapshot.getGcInfos(), spansId, profileId,
                     outlierProfileId);
             final ImmutableSetMultimap<String, String> customAttributesForIndexing =
@@ -176,8 +176,8 @@ public class SnapshotDao implements SnapshotRepository {
         try {
             snapshots = dataSource.query("select id, stuck, start_time, capture_time, duration,"
                     + " transaction_type, transaction_name, headline, error_message, user,"
-                    + " custom_attributes, trace_metrics, thread_info, gc_infos, spans_id,"
-                    + " profile_id, outlier_profile_id from snapshot where id = ?",
+                    + " custom_attributes, metrics, thread_info, gc_infos, spans_id, profile_id,"
+                    + " outlier_profile_id from snapshot where id = ?",
                     ImmutableList.of(traceId), new SnapshotRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -499,7 +499,7 @@ public class SnapshotDao implements SnapshotRepository {
             snapshot.error(resultSet.getString(9));
             snapshot.user(resultSet.getString(10));
             snapshot.customAttributes(resultSet.getString(11));
-            snapshot.traceMetrics(resultSet.getString(12));
+            snapshot.metrics(resultSet.getString(12));
             snapshot.threadInfo(resultSet.getString(13));
             snapshot.gcInfos(resultSet.getString(14));
             snapshot.spansExistence(getExistence(resultSet.getString(15)));

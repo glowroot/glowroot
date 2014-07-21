@@ -215,8 +215,7 @@ class ConfigJsonService {
         jg.writeStartObject();
         jg.writeFieldName("config");
         writer.writeValue(jg, configService.getAdvancedConfig());
-        jg.writeBooleanField("traceMetricWrapperMethodsActive",
-                traceModule.isTraceMetricWrapperMethods());
+        jg.writeBooleanField("metricWrapperMethodsActive", traceModule.isMetricWrapperMethods());
         jg.writeEndObject();
         jg.close();
         return sb.toString();

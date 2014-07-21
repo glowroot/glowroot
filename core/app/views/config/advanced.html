@@ -26,14 +26,14 @@
          class="form-horizontal"
          name="formCtrl">
       <div gt-form-group
-           gt-label="Trace metric wrapper methods"
-           gt-model="config.traceMetricWrapperMethods"
+           gt-label="Metric wrapper methods"
+           gt-model="config.metricWrapperMethods"
            gt-type="checkbox">
         <div class="help-block">
           <div class="glowroot-yellow"
-               ng-show="originalConfig.traceMetricWrapperMethods !== traceMetricWrapperMethodsActive"
+               ng-show="originalConfig.metricWrapperMethods !== metricWrapperMethodsActive"
                style="padding-bottom: 5px;">
-            Active value is <code>{{traceMetricWrapperMethodsActive ? 'ON' : 'OFF'}}</code>. The newly configured value
+            Active value is <code>{{metricWrapperMethodsActive ? 'ON' : 'OFF'}}</code>. The newly configured value
             will take effect on next JVM restart.
           </div>
           <p>

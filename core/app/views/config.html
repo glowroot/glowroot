@@ -22,6 +22,11 @@
         General
       </a>
       <a class="list-group-item selectable-list-group-item"
+         ng-class="{active: isCurrentView('config.pointcuts')}"
+         href="/config/pointcuts">
+        Pointcuts
+      </a>
+      <a class="list-group-item selectable-list-group-item"
          ng-class="{active: isCurrentView('config.profiling')}"
          href="/config/profiling">
         Profiling
@@ -35,11 +40,6 @@
          ng-class="{active: isCurrentView('config.userTracing')}"
          href="/config/user-tracing">
         User tracing
-      </a>
-      <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.pointcuts')}"
-         href="/config/pointcuts">
-        Pointcuts
       </a>
       <a class="list-group-item selectable-list-group-item"
          ng-class="{active: isCurrentView('config.advanced')}"

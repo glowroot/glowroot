@@ -23,10 +23,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
+import org.glowroot.api.MetricName;
+import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
-import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.TraceMetricTimer;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindTraveler;
@@ -50,24 +50,24 @@ public class ResultSetAspect {
     // TODO optimization, remove ignoreSelfNested = true
     @Pointcut(className = "java.sql.ResultSet",
             methodName = "next|previous|relative|absolute|first|last", methodParameterTypes = "..",
-            ignoreSelfNested = true, traceMetric = "jdbc resultset navigate")
+            ignoreSelfNested = true, metricName = "jdbc resultset navigate")
     public static class NavigateAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(NavigateAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(NavigateAdvice.class);
         private static volatile boolean pluginEnabled;
         // plugin configuration property captureResultSetNext is cached to limit map lookups
-        private static volatile boolean traceMetricEnabled;
+        private static volatile boolean metricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
                 @Override
                 public void onChange() {
                     pluginEnabled = pluginServices.isEnabled();
-                    traceMetricEnabled = pluginEnabled
+                    metricEnabled = pluginEnabled
                             && pluginServices.getBooleanProperty("captureResultSetNext");
                 }
             });
             pluginEnabled = pluginServices.isEnabled();
-            traceMetricEnabled = pluginEnabled
+            metricEnabled = pluginEnabled
                     && pluginServices.getBooleanProperty("captureResultSetNext");
         }
         @IsEnabled
@@ -77,9 +77,9 @@ public class ResultSetAspect {
         }
         @OnBefore
         @Nullable
-        public static TraceMetricTimer onBefore() {
-            if (traceMetricEnabled) {
-                return pluginServices.startTraceMetric(traceMetricName);
+        public static MetricTimer onBefore() {
+            if (metricEnabled) {
+                return pluginServices.startMetric(metricName);
             } else {
                 return null;
             }
@@ -110,76 +110,76 @@ public class ResultSetAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable TraceMetricTimer traceMetricTimer) {
-            if (traceMetricTimer != null) {
-                traceMetricTimer.stop();
+        public static void onAfter(@BindTraveler @Nullable MetricTimer metricTimer) {
+            if (metricTimer != null) {
+                metricTimer.stop();
             }
         }
     }
 
     @Pointcut(className = "java.sql.ResultSet", methodName = "get*",
-            methodParameterTypes = {"int", ".."}, traceMetric = "jdbc resultset value")
+            methodParameterTypes = {"int", ".."}, metricName = "jdbc resultset value")
     public static class ValueAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(ValueAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ValueAdvice.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
-        private static volatile boolean traceMetricEnabled;
+        private static volatile boolean metricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
                 @Override
                 public void onChange() {
-                    traceMetricEnabled = pluginServices.isEnabled()
+                    metricEnabled = pluginServices.isEnabled()
                             && pluginServices.getBooleanProperty("captureResultSetGet");
                 }
             });
-            traceMetricEnabled = pluginServices.isEnabled()
+            metricEnabled = pluginServices.isEnabled()
                     && pluginServices.getBooleanProperty("captureResultSetGet");
         }
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return traceMetricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
+            return metricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
-        public static TraceMetricTimer onBefore() {
-            return pluginServices.startTraceMetric(traceMetricName);
+        public static MetricTimer onBefore() {
+            return pluginServices.startMetric(metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler TraceMetricTimer traceMetricTimer) {
-            traceMetricTimer.stop();
+        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
+            metricTimer.stop();
         }
     }
 
     @Pointcut(className = "java.sql.ResultSet", methodName = "get*",
-            methodParameterTypes = {"java.lang.String", ".."}, traceMetric = "jdbc resultset value")
+            methodParameterTypes = {"java.lang.String", ".."}, metricName = "jdbc resultset value")
     public static class ValueAdvice2 {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(ValueAdvice2.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ValueAdvice2.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
-        private static volatile boolean traceMetricEnabled;
+        private static volatile boolean metricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
                 @Override
                 public void onChange() {
-                    traceMetricEnabled = pluginServices.isEnabled()
+                    metricEnabled = pluginServices.isEnabled()
                             && pluginServices.getBooleanProperty("captureResultSetGet");
                 }
             });
-            traceMetricEnabled = pluginServices.isEnabled()
+            metricEnabled = pluginServices.isEnabled()
                     && pluginServices.getBooleanProperty("captureResultSetGet");
         }
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return traceMetricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
+            return metricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
-        public static TraceMetricTimer onBefore() {
-            return pluginServices.startTraceMetric(traceMetricName);
+        public static MetricTimer onBefore() {
+            return pluginServices.startMetric(metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler TraceMetricTimer traceMetricTimer) {
-            traceMetricTimer.stop();
+        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
+            metricTimer.stop();
         }
     }
 

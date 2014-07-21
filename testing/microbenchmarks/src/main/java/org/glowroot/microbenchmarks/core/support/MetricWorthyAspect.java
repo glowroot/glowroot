@@ -15,9 +15,9 @@
  */
 package org.glowroot.microbenchmarks.core.support;
 
+import org.glowroot.api.MetricName;
+import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.TraceMetricTimer;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -28,18 +28,18 @@ import org.glowroot.api.weaving.Pointcut;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceMetricWorthyAspect {
+public class MetricWorthyAspect {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-microbenchmarks");
 
-    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TraceMetricWorthy",
-            methodName = "doSomethingTraceMetricWorthy", methodParameterTypes = {},
-            traceMetric = "trace metric worthy")
-    public static class TraceMetricWorthyAdvice {
+    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.MetricWorthy",
+            methodName = "doSomethingMetricWorthy", methodParameterTypes = {},
+            metricName = "metric worthy")
+    public static class MetricWorthyAdvice {
 
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(TraceMetricWorthyAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(MetricWorthyAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -47,23 +47,23 @@ public class TraceMetricWorthyAspect {
         }
 
         @OnBefore
-        public static TraceMetricTimer onBefore() {
-            return pluginServices.startTraceMetric(traceMetricName);
+        public static MetricTimer onBefore() {
+            return pluginServices.startMetric(metricName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler TraceMetricTimer timer) {
+        public static void onAfter(@BindTraveler MetricTimer timer) {
             timer.stop();
         }
     }
 
-    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TraceMetricWorthy",
-            methodName = "doSomethingTraceMetricWorthyB", methodParameterTypes = {},
-            traceMetric = "trace metric worthy B")
-    public static class TraceMetricWorthyAdviceB {
+    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.MetricWorthy",
+            methodName = "doSomethingMetricWorthyB", methodParameterTypes = {},
+            metricName = "metric worthy B")
+    public static class MetricWorthyAdviceB {
 
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(TraceMetricWorthyAdviceB.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(MetricWorthyAdviceB.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -71,12 +71,12 @@ public class TraceMetricWorthyAspect {
         }
 
         @OnBefore
-        public static TraceMetricTimer onBefore() {
-            return pluginServices.startTraceMetric(traceMetricName);
+        public static MetricTimer onBefore() {
+            return pluginServices.startMetric(metricName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler TraceMetricTimer timer) {
+        public static void onAfter(@BindTraveler MetricTimer timer) {
             timer.stop();
         }
     }

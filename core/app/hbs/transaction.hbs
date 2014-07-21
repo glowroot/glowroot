@@ -49,10 +49,10 @@
     </tr>
     </thead>
     <tbody>
-    {{#eachTransactionMetricFlattenedOrdered transactionMetrics}}
+    {{#eachTransactionMetricFlattenedOrdered metrics}}
       <tr class="align-top">
         <td style="text-align: left;">
-          <div style="margin-left: {{traceMetricIndent .}}em;">
+          <div style="margin-left: {{metricIndent .}}em;">
             <div class="second-line-indent">{{name}}</div>
           </div>
         </td>
@@ -78,10 +78,10 @@
     </tr>
     </thead>
     <tbody>
-    {{#eachTransactionMetricOrdered transactionMetrics}}
+    {{#eachTransactionMetricOrdered metrics}}
       <tr class="align-top">
         <td style="text-align: left;">
-          <div style="margin-left: {{traceMetricIndent .}}em;">
+          <div style="margin-left: {{metricIndent .}}em;">
             <div class="second-line-indent">{{name}}</div>
           </div>
         </td>

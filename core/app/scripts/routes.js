@@ -112,6 +112,11 @@ glowroot.config([
       templateUrl: 'views/config/general.html',
       controller: 'ConfigGeneralCtrl'
     });
+    $stateProvider.state('config.pointcuts', {
+      url: '/pointcuts',
+      templateUrl: 'views/config/pointcut-list.html',
+      controller: 'ConfigPointcutListCtrl'
+    });
     $stateProvider.state('config.profiling', {
       url: '/profiling',
       templateUrl: 'views/config/profiling.html',
@@ -127,6 +132,11 @@ glowroot.config([
       templateUrl: 'views/config/user-tracing.html',
       controller: 'ConfigUserTracingCtrl'
     });
+    $stateProvider.state('config.advanced', {
+      url: '/advanced',
+      templateUrl: 'views/config/advanced.html',
+      controller: 'ConfigAdvancedCtrl'
+    });
     $stateProvider.state('config.storage', {
       url: '/storage',
       templateUrl: 'views/config/storage.html',
@@ -136,16 +146,6 @@ glowroot.config([
       url: '/user-interface',
       templateUrl: 'views/config/user-interface.html',
       controller: 'ConfigUserInterfaceCtrl'
-    });
-    $stateProvider.state('config.advanced', {
-      url: '/advanced',
-      templateUrl: 'views/config/advanced.html',
-      controller: 'ConfigAdvancedCtrl'
-    });
-    $stateProvider.state('config.pointcuts', {
-      url: '/pointcuts',
-      templateUrl: 'views/config/pointcut-list.html',
-      controller: 'ConfigPointcutListCtrl'
     });
     $stateProvider.state('config.plugin', {
       url: '/plugin/:pluginId',

@@ -60,30 +60,30 @@ class Weaver {
     private final ImmutableList<MixinType> mixinTypes;
     private final AnalyzedWorld analyzedWorld;
     private final WeavingTimerService weavingTimerService;
-    private final boolean traceMetricWrapperMethods;
+    private final boolean metricWrapperMethods;
 
     Weaver(Supplier<ImmutableList<Advice>> advisors, List<MixinType> mixinTypes,
             AnalyzedWorld analyzedWorld, WeavingTimerService weavingTimerService,
-            boolean traceMetricWrapperMethods) {
+            boolean metricWrapperMethods) {
         this.advisors = advisors;
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.analyzedWorld = analyzedWorld;
         this.weavingTimerService = weavingTimerService;
-        this.traceMetricWrapperMethods = traceMetricWrapperMethods;
+        this.metricWrapperMethods = metricWrapperMethods;
     }
 
     byte/*@Nullable*/[] weave(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
-        if (traceMetricWrapperMethods) {
-            return weave$glowroot$trace$metric$glowroot$weaving$0(classBytes, className,
-                    codeSource, loader);
+        if (metricWrapperMethods) {
+            return weave$glowroot$metric$glowroot$weaving$0(classBytes, className, codeSource,
+                    loader);
         } else {
             return weaveInternal(classBytes, className, codeSource, loader);
         }
     }
 
-    // weird method name is following "trace metric marker" method naming
-    private byte/*@Nullable*/[] weave$glowroot$trace$metric$glowroot$weaving$0(byte[] classBytes,
+    // weird method name is following "metric marker" method naming
+    private byte/*@Nullable*/[] weave$glowroot$metric$glowroot$weaving$0(byte[] classBytes,
             String className, @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         return weaveInternal(classBytes, className, codeSource, loader);
     }
@@ -108,7 +108,7 @@ class Weaver {
                     ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES,
                     analyzedWorld, loader, codeSource, className);
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors.get(), mixinTypes,
-                    loader, analyzedWorld, codeSource, traceMetricWrapperMethods);
+                    loader, analyzedWorld, codeSource, metricWrapperMethods);
             ClassReader cr = new ClassReader(classBytes);
             try {
                 cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
@@ -141,7 +141,7 @@ class Weaver {
                 .add("mixinTypes", mixinTypes)
                 .add("analyzedWorld", analyzedWorld)
                 .add("weavingTimerService", weavingTimerService)
-                .add("traceMetricWrapperMethods", traceMetricWrapperMethods)
+                .add("metricWrapperMethods", metricWrapperMethods)
                 .toString();
     }
 

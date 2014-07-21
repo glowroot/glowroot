@@ -75,15 +75,15 @@ public class ConfigTest {
                     container.getConfigService().getUserInterfaceConfig();
             userInterfaceConfig.setPort(4000);
             container.getConfigService().updateUserInterfaceConfig(userInterfaceConfig);
-        }
-        if (!SauceLabs.useSauceLabs()) {
+        } else {
             seleniumServer = new SeleniumServer();
             seleniumServer.start();
             // single webdriver instance for much better performance
             if (USE_LOCAL_IE) {
-                // https://code.google.com/p/selenium/issues/detail?id=4403
+                // currently tests fail with default nativeEvents=true
+                // (can't select radio buttons on pointcut config page)
                 DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
-                capabilities.setCapability("enablePersistentHover", false);
+                capabilities.setCapability("nativeEvents", false);
                 driver = new InternetExplorerDriver(capabilities);
             } else {
                 driver = new FirefoxDriver();
@@ -197,7 +197,7 @@ public class ConfigTest {
         configSidebar.getPointcutsLink().click();
 
         // when
-        createPointcut(pointcutListPage);
+        createTracePointcut(pointcutListPage);
 
         // then
         app.open();
@@ -210,18 +210,19 @@ public class ConfigTest {
                 .isEqualTo("org.glowroot.container.AppUnderTest");
         assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(pointcutSection.getTraceMetricTextField().getAttribute("value"))
-                .isEqualTo("a trace metric");
-        assertThat(pointcutSection.getSpanDefinitionCheckbox().isSelected()).isTrue();
+        assertThat(pointcutSection.getAdviceKindTraceRadioButton().isSelected()).isTrue();
+        assertThat(pointcutSection.getMetricNameTextField().getAttribute("value"))
+                .isEqualTo("a metric");
         assertThat(pointcutSection.getMessageTemplateTextField().getAttribute("value"))
                 .isEqualTo("a span");
         assertThat(pointcutSection.getStackTraceThresholdTextTextField()
                 .getAttribute("value")).isEqualTo("");
-        assertThat(pointcutSection.getTraceDefinitionCheckbox().isSelected()).isTrue();
         assertThat(pointcutSection.getTransactionTypeTextField().getAttribute("value"))
                 .isEqualTo("a type");
         assertThat(pointcutSection.getTransactionNameTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace");
+        assertThat(pointcutSection.getTraceStoreThresholdMillisTextField().getAttribute("value"))
+                .isEqualTo("123");
     }
 
     @Test
@@ -235,7 +236,7 @@ public class ConfigTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getPointcutsLink().click();
-        createPointcut(pointcutListPage);
+        createTracePointcut(pointcutListPage);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
@@ -244,7 +245,7 @@ public class ConfigTest {
         WebElement classNameTextField = pointcutSection.getClassNameTextField();
 
         // when
-        Utils.clearInput(pointcutSection.getTraceMetricTextField());
+        Utils.clearInput(pointcutSection.getMetricNameTextField());
         pointcutSection.getDeleteButton().click();
 
         // then
@@ -252,7 +253,7 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldAddTraceMetricOnlyPointcut() throws Exception {
+    public void shouldAddMetricOnlyPointcut() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
@@ -264,7 +265,7 @@ public class ConfigTest {
         configSidebar.getPointcutsLink().click();
 
         // when
-        createTraceMetricOnlyPointcut(pointcutPage);
+        createMetricPointcut(pointcutPage);
 
         // then
         app.open();
@@ -277,19 +278,13 @@ public class ConfigTest {
                 .isEqualTo("org.glowroot.container.AppUnderTest");
         assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(pointcutSection.getTraceMetricTextField().getAttribute("value"))
-                .isEqualTo("a trace metric");
-        assertThat(pointcutSection.getSpanDefinitionCheckbox().isSelected()).isFalse();
-        assertThat(pointcutSection.getMessageTemplateTextField().isDisplayed()).isFalse();
-        assertThat(pointcutSection.getStackTraceThresholdTextTextField().isDisplayed())
-                .isFalse();
-        assertThat(pointcutSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
-        assertThat(pointcutSection.getTransactionTypeTextField().isDisplayed()).isFalse();
-        assertThat(pointcutSection.getTransactionNameTemplateTextField().isDisplayed()).isFalse();
+        assertThat(pointcutSection.getAdviceKindMetricRadioButton().isSelected()).isTrue();
+        assertThat(pointcutSection.getMetricNameTextField().getAttribute("value"))
+                .isEqualTo("a metric");
     }
 
     @Test
-    public void shouldAddTraceMetricAndSpanOnlyPointcut() throws Exception {
+    public void shouldAddMetricAndSpanOnlyPointcut() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
@@ -301,7 +296,7 @@ public class ConfigTest {
         configSidebar.getPointcutsLink().click();
 
         // when
-        createTraceMetricAndSpanOnlyPointcut(pointcutListPage);
+        createSpanPointcut(pointcutListPage);
 
         // then
         app.open();
@@ -314,64 +309,63 @@ public class ConfigTest {
                 .isEqualTo("org.glowroot.container.AppUnderTest");
         assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(pointcutSection.getTraceMetricTextField().getAttribute("value"))
-                .isEqualTo("a trace metric");
-        assertThat(pointcutSection.getSpanDefinitionCheckbox().isSelected()).isTrue();
+        assertThat(pointcutSection.getAdviceKindSpanRadioButton().isSelected()).isTrue();
+        assertThat(pointcutSection.getMetricNameTextField().getAttribute("value"))
+                .isEqualTo("a metric");
         assertThat(pointcutSection.getMessageTemplateTextField().getAttribute("value"))
                 .isEqualTo("a span");
         assertThat(pointcutSection.getStackTraceThresholdTextTextField()
                 .getAttribute("value")).isEqualTo("");
-        assertThat(pointcutSection.getTraceDefinitionCheckbox().isSelected()).isFalse();
-        assertThat(pointcutSection.getTransactionTypeTextField().isDisplayed()).isFalse();
-        assertThat(pointcutSection.getTransactionNameTemplateTextField().isDisplayed()).isFalse();
     }
 
-    private void createPointcut(PointcutListPage pointcutListPage) {
+    private void createTracePointcut(PointcutListPage pointcutListPage) {
         pointcutListPage.getAddPointcutButton().click();
         PointcutSection pointcutSection = pointcutListPage.getSection(0);
         pointcutSection.getClassNameTextField().sendKeys("container.AppUnderTest");
         pointcutSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
         pointcutSection.getMethodNameTextField().sendKeys("exec");
         pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
-        pointcutSection.getTraceMetricTextField().clear();
-        pointcutSection.getTraceMetricTextField().sendKeys("a trace metric");
-        pointcutSection.getSpanDefinitionCheckbox().click();
+        pointcutSection.getAdviceKindTraceRadioButton().click();
+        pointcutSection.getMetricNameTextField().clear();
+        pointcutSection.getMetricNameTextField().sendKeys("a metric");
         pointcutSection.getMessageTemplateTextField().clear();
         pointcutSection.getMessageTemplateTextField().sendKeys("a span");
-        pointcutSection.getTraceDefinitionCheckbox().click();
         pointcutSection.getTransactionTypeTextField().clear();
         pointcutSection.getTransactionTypeTextField().sendKeys("a type");
         pointcutSection.getTransactionNameTemplateTextField().clear();
         pointcutSection.getTransactionNameTemplateTextField().sendKeys("a trace");
+        pointcutSection.getTraceStoreThresholdMillisTextField().clear();
+        pointcutSection.getTraceStoreThresholdMillisTextField().sendKeys("123");
         pointcutSection.getAddButton().click();
         // getSaveButton() waits for the Save button to become visible (after adding is successful)
         pointcutSection.getSaveButton();
     }
 
-    private void createTraceMetricOnlyPointcut(PointcutListPage pointcutListPage) {
+    private void createMetricPointcut(PointcutListPage pointcutListPage) {
         pointcutListPage.getAddPointcutButton().click();
         PointcutSection pointcutSection = pointcutListPage.getSection(0);
         pointcutSection.getClassNameTextField().sendKeys("container.AppUnderTest");
         pointcutSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
         pointcutSection.getMethodNameTextField().sendKeys("exec");
         pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
-        pointcutSection.getTraceMetricTextField().clear();
-        pointcutSection.getTraceMetricTextField().sendKeys("a trace metric");
+        pointcutSection.getAdviceKindMetricRadioButton().click();
+        pointcutSection.getMetricNameTextField().clear();
+        pointcutSection.getMetricNameTextField().sendKeys("a metric");
         pointcutSection.getAddButton().click();
         // getSaveButton() waits for the Save button to become visible (after adding is successful)
         pointcutSection.getSaveButton();
     }
 
-    private void createTraceMetricAndSpanOnlyPointcut(PointcutListPage pointcutListPage) {
+    private void createSpanPointcut(PointcutListPage pointcutListPage) {
         pointcutListPage.getAddPointcutButton().click();
         PointcutSection pointcutSection = pointcutListPage.getSection(0);
         pointcutSection.getClassNameTextField().sendKeys("container.AppUnderTest");
         pointcutSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
         pointcutSection.getMethodNameTextField().sendKeys("exec");
         pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
-        pointcutSection.getTraceMetricTextField().clear();
-        pointcutSection.getTraceMetricTextField().sendKeys("a trace metric");
-        pointcutSection.getSpanDefinitionCheckbox().click();
+        pointcutSection.getAdviceKindSpanRadioButton().click();
+        pointcutSection.getMetricNameTextField().clear();
+        pointcutSection.getMetricNameTextField().sendKeys("a metric");
         pointcutSection.getMessageTemplateTextField().clear();
         pointcutSection.getMessageTemplateTextField().sendKeys("a span");
         pointcutSection.getAddButton().click();

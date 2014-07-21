@@ -17,9 +17,9 @@ package org.glowroot.microbenchmarks.core.support;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -39,11 +39,11 @@ public class SpanWorthyAspect {
 
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.SpanWorthy",
             methodName = "doSomethingSpanWorthy", methodParameterTypes = {},
-            traceMetric = "span worthy")
+            metricName = "span worthy")
     public static class SpanWorthyAdvice {
 
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(SpanWorthyAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(SpanWorthyAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -52,7 +52,7 @@ public class SpanWorthyAspect {
 
         @OnBefore
         public static Span onBefore() {
-            return pluginServices.startSpan(MessageSupplier.from("span worthy"), traceMetricName);
+            return pluginServices.startSpan(MessageSupplier.from("span worthy"), metricName);
         }
 
         @OnThrow

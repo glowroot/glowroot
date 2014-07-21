@@ -29,8 +29,8 @@ import org.glowroot.api.LoggerFactory;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.TraceMetricTimer;
+import org.glowroot.api.MetricName;
+import org.glowroot.api.MetricTimer;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
@@ -105,18 +105,18 @@ public class StatementAspect {
     // capture the sql used to create the PreparedStatement
     @Pointcut(className = "java.sql.Connection", methodName = "prepare*",
             methodParameterTypes = {"java.lang.String", ".."}, ignoreSelfNested = true,
-            traceMetric = "jdbc prepare")
+            metricName = "jdbc prepare")
     public static class PrepareAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(PrepareAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(PrepareAdvice.class);
         @OnBefore
         @Nullable
-        public static TraceMetricTimer onBefore() {
+        public static MetricTimer onBefore() {
             // don't capture if implementation detail of a DatabaseMetaData method
             // (can't use @IsEnabled since need @OnReturn to always execute)
             if (pluginServices.isEnabled()
                     && !DatabaseMetaDataAspect.isCurrentlyExecuting()) {
-                return pluginServices.startTraceMetric(traceMetricName);
+                return pluginServices.startMetric(metricName);
             } else {
                 return null;
             }
@@ -128,9 +128,9 @@ public class StatementAspect {
                     .setGlowrootStatementMirror(new PreparedStatementMirror(sql));
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable TraceMetricTimer traceMetricTimer) {
-            if (traceMetricTimer != null) {
-                traceMetricTimer.stop();
+        public static void onAfter(@BindTraveler @Nullable MetricTimer metricTimer) {
+            if (metricTimer != null) {
+                metricTimer.stop();
             }
         }
     }
@@ -207,10 +207,10 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.Statement", methodName = "execute*",
             methodParameterTypes = {"java.lang.String", ".."}, ignoreSelfNested = true,
-            traceMetric = "jdbc execute")
+            metricName = "jdbc execute")
     public static class StatementExecuteAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(StatementExecuteAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(StatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -224,7 +224,7 @@ public class StatementAspect {
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.create(sql);
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startSpan(jdbcMessageSupplier, traceMetricName);
+                return pluginServices.startSpan(jdbcMessageSupplier, metricName);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
@@ -251,10 +251,10 @@ public class StatementAspect {
     // executeBatch is not included since it is handled separately (below)
     @Pointcut(className = "java.sql.PreparedStatement",
             methodName = "execute|executeQuery|executeUpdate", ignoreSelfNested = true,
-            traceMetric = "jdbc execute")
+            metricName = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(PreparedStatementExecuteAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(PreparedStatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -272,7 +272,7 @@ public class StatementAspect {
                     jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
                 }
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startSpan(jdbcMessageSupplier, traceMetricName);
+                return pluginServices.startSpan(jdbcMessageSupplier, metricName);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
@@ -297,10 +297,10 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.Statement", methodName = "executeBatch",
-            ignoreSelfNested = true, traceMetric = "jdbc execute")
+            ignoreSelfNested = true, metricName = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(StatementExecuteBatchAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(StatementExecuteBatchAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -321,7 +321,7 @@ public class StatementAspect {
                         jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
                     }
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                    return pluginServices.startSpan(jdbcMessageSupplier, traceMetricName);
+                    return pluginServices.startSpan(jdbcMessageSupplier, metricName);
                 } else {
                     // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
                     // plugin is re-enabled in the middle of iterating over a different result set
@@ -334,7 +334,7 @@ public class StatementAspect {
                     JdbcMessageSupplier jdbcMessageSupplier =
                             JdbcMessageSupplier.createWithBatchedSqls(mirror);
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                    return pluginServices.startSpan(jdbcMessageSupplier, traceMetricName);
+                    return pluginServices.startSpan(jdbcMessageSupplier, metricName);
                 } else {
                     // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
                     // plugin is re-enabled in the middle of iterating over a different result set
@@ -362,10 +362,10 @@ public class StatementAspect {
     // ================== Statement Closing ==================
 
     @Pointcut(className = "java.sql.Statement", methodName = "close", ignoreSelfNested = true,
-            traceMetric = "jdbc statement close")
+            metricName = "jdbc statement close")
     public static class CloseAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(CloseAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -373,16 +373,16 @@ public class StatementAspect {
                     && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
-        public static TraceMetricTimer onBefore(@BindReceiver Statement statement) {
+        public static MetricTimer onBefore(@BindReceiver Statement statement) {
             // help out gc a little by clearing the weak reference, don't want to solely rely on
             // this (and use strong reference) in case a jdbc driver implementation closes
             // statements in finalize by calling an internal method and not calling public close()
             getStatementMirror(statement).setLastJdbcMessageSupplier(null);
-            return pluginServices.startTraceMetric(traceMetricName);
+            return pluginServices.startMetric(metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler TraceMetricTimer traceMetricTimer) {
-            traceMetricTimer.stop();
+        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
+            metricTimer.stop();
         }
     }
 

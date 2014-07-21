@@ -51,6 +51,7 @@ import org.glowroot.weaving.SomeAspect.BindTravelerAdvice;
 import org.glowroot.weaving.SomeAspect.BrokenAdvice;
 import org.glowroot.weaving.SomeAspect.ChangeReturnAdvice;
 import org.glowroot.weaving.SomeAspect.CircularClassDependencyAdvice;
+import org.glowroot.weaving.SomeAspect.ClassNamePatternAdvice;
 import org.glowroot.weaving.SomeAspect.FinalMethodAdvice;
 import org.glowroot.weaving.SomeAspect.HasString;
 import org.glowroot.weaving.SomeAspect.HasStringClassMixin;
@@ -79,7 +80,6 @@ import org.glowroot.weaving.SomeAspect.TestClassMeta;
 import org.glowroot.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
 import org.glowroot.weaving.SomeAspect.TestMethodMeta;
 import org.glowroot.weaving.SomeAspect.ThrowableToStringAdvice;
-import org.glowroot.weaving.SomeAspect.ClassNamePatternAdvice;
 import org.glowroot.weaving.SomeAspect.WildMethodAdvice;
 import org.glowroot.weaving.WeavingTimerService.WeavingTimer;
 import org.glowroot.weaving.other.ArrayMisc;
@@ -793,7 +793,7 @@ public class WeaverTest {
         // then
         assertThat(methodName).isNotNull();
         assertThat(methodName.toString())
-                .matches("executeWithReturn\\$glowroot\\$trace\\$metric\\$abc\\$xyz\\$\\d+");
+                .matches("executeWithReturn\\$glowroot\\$metric\\$abc\\$xyz\\$\\d+");
     }
 
     // ===================== static pointcuts =====================

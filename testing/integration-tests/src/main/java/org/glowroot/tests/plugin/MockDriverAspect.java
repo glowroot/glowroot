@@ -18,7 +18,7 @@ package org.glowroot.tests.plugin;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
@@ -34,15 +34,15 @@ public class MockDriverAspect {
             PluginServices.get("glowroot-integration-tests");
 
     @Pointcut(className = "org.glowroot.tests.MockDriver", methodName = "getMajorVersion",
-            methodParameterTypes = {}, traceMetric = "get major version")
+            methodParameterTypes = {}, metricName = "get major version")
     public static class GetMajorVersionAdvice {
 
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(GetMajorVersionAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(GetMajorVersionAdvice.class);
 
         @OnBefore
         public static Span onBefore() {
-            return pluginServices.startSpan(MessageSupplier.from("major version"), traceMetricName);
+            return pluginServices.startSpan(MessageSupplier.from("major version"), metricName);
         }
 
         @OnAfter

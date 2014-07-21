@@ -87,3 +87,19 @@
   color: #5e5e5e;
   font-weight: bold;
 }
+
+// override bootstrap defaults
+.panel-body legend {
+  width: inherit;
+  padding: 0 10px;
+}
+
+.panel-body fieldset {
+  margin-bottom: 20px;
+}
+
+.has-error .help-block {
+  // override bootstrap default which turns help blocks red
+  // see bootstrap issue #1939
+  color: lighten(@text-color, 25%) !important;
+}

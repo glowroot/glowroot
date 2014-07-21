@@ -102,8 +102,8 @@ public class LocalContainer implements Container {
         advisors.addAll(adviceCache.getAdvisors());
         loader.setAdvisors(advisors);
         loader.setWeavingTimerService(glowrootModule.getTraceModule().getWeavingTimerService());
-        loader.setTraceMetricWrapperMethods(glowrootModule.getConfigModule().getConfigService()
-                .getAdvancedConfig().isTraceMetricWrapperMethods());
+        loader.setMetricWrapperMethods(glowrootModule.getConfigModule().getConfigService()
+                .getAdvancedConfig().isMetricWrapperMethods());
         loader.addBridgeClasses(AppUnderTest.class, AppUnderTestServices.class);
         // TODO add hook to optionally exclude guava package which improves integration-test
         // performance

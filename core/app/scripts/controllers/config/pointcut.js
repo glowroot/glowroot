@@ -38,18 +38,16 @@ glowroot.controller('ConfigPointcutCtrl', [
           returnType: data.methodReturnType,
           modifiers: data.methodModifiers
         };
-        $scope.heading = data.className + '.' + data.methodName + '(' + data.methodParameterTypes.join(', ') + ')';
+        var adviceKind = data.adviceKind;
         $scope.selectedMethodName = data.methodName;
         $scope.selectedMethodSignature = methodSignature;
         $scope.methodSignatures = [ methodSignature ];
-        $scope.spanDefinition = Boolean(data.messageTemplate);
-        $scope.traceDefinition = Boolean(data.transactionNameTemplate);
-        $scope.stackTraceThresholdMillis = data.stackTraceThresholdMillis;
+        $scope.metricOrGreater = adviceKind === 'metric' || adviceKind === 'span' || adviceKind === 'trace';
+        $scope.spanOrGreater = adviceKind === 'span' || adviceKind === 'trace';
+        $scope.span = adviceKind === 'span';
+        $scope.trace = adviceKind === 'trace';
         $scope.loadMethodSignatures = true;
       } else {
-        $scope.heading = '<New pointcut>';
-        $scope.spanDefinition = false;
-        $scope.traceDefinition = false;
         $timeout(function () {
           // focus on class name
           $scope.isFocus = true;
@@ -144,6 +142,9 @@ glowroot.controller('ConfigPointcutCtrl', [
     };
 
     $scope.methodSignatureText = function (methodSignature) {
+      if (methodSignature.name.indexOf('*') !== -1 || methodSignature.name.indexOf('|') !== -1) {
+        return 'all methods matching the above name';
+      }
       if (isSignatureAll(methodSignature)) {
         return 'all methods with the above name';
       }
@@ -233,32 +234,25 @@ glowroot.controller('ConfigPointcutCtrl', [
           .error(httpErrors.handler($scope));
     }
 
-    $scope.$watch('spanDefinition', function (newValue, oldValue) {
-      if (newValue === oldValue) {
-        // called due to watcher initialization
-        return;
+    $scope.$watch('config.adviceKind', function (value) {
+      $scope.metricOrGreater = value === 'metric' || value === 'span' || value === 'trace';
+      $scope.spanOrGreater = value === 'span' || value === 'trace';
+      $scope.span = value === 'span';
+      $scope.trace = value === 'trace';
+      if (!$scope.metricOrGreater) {
+        $scope.config.metricName = '';
       }
-      if (!newValue) {
+      if (!$scope.spanOrGreater) {
         $scope.config.messageTemplate = '';
+        $scope.config.captureSelfNested = false;
+      }
+      if (!$scope.span) {
         $scope.config.stackTraceThresholdMillis = '';
-        $scope.config.ignoreSelfNested = false;
-        $scope.traceDefinition = false;
       }
-    });
-
-    $scope.$watch('traceDefinition', function (newValue, oldValue) {
-      if (newValue === oldValue) {
-        // called due to watcher initialization
-        return;
-      }
-      if (!newValue) {
+      if (!$scope.trace) {
         $scope.config.transactionType = '';
         $scope.config.transactionNameTemplate = '';
       }
-    });
-
-    $scope.$watch('stackTraceThresholdMillis', function (newValue) {
-      $scope.config.stackTraceThresholdMillis = conversions.toNumber(newValue);
     });
 
     $scope.$watch('selectedMethodSignature', function (newValue) {

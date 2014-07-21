@@ -30,7 +30,7 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
  */
 public class AdvancedConfig {
 
-    private boolean traceMetricWrapperMethods;
+    private boolean metricWrapperMethods;
 
     private final String version;
 
@@ -38,12 +38,12 @@ public class AdvancedConfig {
         this.version = version;
     }
 
-    public boolean isTraceMetricWrapperMethods() {
-        return traceMetricWrapperMethods;
+    public boolean isMetricWrapperMethods() {
+        return metricWrapperMethods;
     }
 
-    public void setTraceMetricWrapperMethods(boolean traceMetricWrapperMethods) {
-        this.traceMetricWrapperMethods = traceMetricWrapperMethods;
+    public void setMetricWrapperMethods(boolean metricWrapperMethods) {
+        this.metricWrapperMethods = metricWrapperMethods;
     }
 
     public String getVersion() {
@@ -58,7 +58,7 @@ public class AdvancedConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(traceMetricWrapperMethods, that.traceMetricWrapperMethods);
+            return Objects.equal(metricWrapperMethods, that.metricWrapperMethods);
         }
         return false;
     }
@@ -69,26 +69,26 @@ public class AdvancedConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(traceMetricWrapperMethods);
+        return Objects.hashCode(metricWrapperMethods);
     }
 
     @Override
     @Pure
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("traceMetricWrapperMethods", traceMetricWrapperMethods)
+                .add("metricWrapperMethods", metricWrapperMethods)
                 .add("version", version)
                 .toString();
     }
 
     @JsonCreator
     static AdvancedConfig readValue(
-            @JsonProperty("traceMetricWrapperMethods") @Nullable Boolean traceMetricWrapperMethods,
+            @JsonProperty("metricWrapperMethods") @Nullable Boolean metricWrapperMethods,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(traceMetricWrapperMethods, "traceMetricWrapperMethods");
+        checkRequiredProperty(metricWrapperMethods, "metricWrapperMethods");
         checkRequiredProperty(version, "version");
         AdvancedConfig config = new AdvancedConfig(version);
-        config.setTraceMetricWrapperMethods(traceMetricWrapperMethods);
+        config.setMetricWrapperMethods(metricWrapperMethods);
         return config;
     }
 }

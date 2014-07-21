@@ -41,10 +41,10 @@ import org.glowroot.api.weaving.Pointcut;
  * 
  *     &#064;Pointcut(className = &quot;org.springframework.validation.Validator&quot;,
  *             methodName = &quot;validate&quot;, methodParameterTypes = {&quot;..&quot;},
- *             traceMetric = &quot;spring validator&quot;)
+ *             metricName = &quot;spring validator&quot;)
  *     public static class ValidatorAdvice {
- *         private static final TraceMetricName traceMetricName =
- *                 pluginServices.getTraceMetricName(ValidatorAdvice.class);
+ *         private static final MetricName metricName =
+ *                 pluginServices.getMetricName(ValidatorAdvice.class);
  *         &#064;IsEnabled
  *         public static boolean isEnabled() {
  *             return pluginServices.isEnabled();
@@ -53,7 +53,7 @@ import org.glowroot.api.weaving.Pointcut;
  *         public static Span onBefore(@BindReceiver Object validator) {
  *             return pluginServices.startSpan(
  *                     MessageSupplier.from(&quot;spring validator: {}&quot;, validator.getClass().getName()),
- *                     traceMetricName);
+ *                     metricName);
  *         }
  *         &#064;OnAfter
  *         public static void onAfter(@BindTraveler Span span) {
@@ -162,50 +162,50 @@ public abstract class PluginServices {
     public abstract Double getDoubleProperty(String name);
 
     /**
-     * Returns the {@code TraceMetricName} instance for the specified {@code adviceClass}.
+     * Returns the {@code MetricName} instance for the specified {@code adviceClass}.
      * 
      * {@code adviceClass} must be a {@code Class} with a {@link Pointcut} annotation that has a
-     * non-empty {@link Pointcut#traceMetric()}. This is how the {@code TraceMetricName} is named.
+     * non-empty {@link Pointcut#metricName()}. This is how the {@code MetricName} is named.
      * 
-     * The same {@code TraceMetricName} is always returned for a given {@code adviceClass}.
+     * The same {@code MetricName} is always returned for a given {@code adviceClass}.
      * 
      * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
      * looking it up every time it is needed (which is often).
      * 
      * @param adviceClass
-     * @return the {@code TraceMetricName} instance for the specified {@code adviceClass}
+     * @return the {@code MetricName} instance for the specified {@code adviceClass}
      */
-    public abstract TraceMetricName getTraceMetricName(Class<?> adviceClass);
+    public abstract MetricName getMetricName(Class<?> adviceClass);
 
     /**
      * If there is no active trace, a new trace is started.
      * 
      * If there is already an active trace, this method acts the same as
-     * {@link #startSpan(MessageSupplier, TraceMetricName)} (the transaction name and type are not
+     * {@link #startSpan(MessageSupplier, MetricName)} (the transaction name and type are not
      * modified on the existing trace).
      * 
      * @param transactionName
      * @param messageSupplier
-     * @param traceMetricName
+     * @param metricName
      * @return
      */
     public abstract Span startTrace(String transactionType, String transactionName,
-            MessageSupplier messageSupplier, TraceMetricName traceMetricName);
+            MessageSupplier messageSupplier, MetricName metricName);
 
     /**
-     * Creates and starts a span with the given {@code messageSupplier}. A trace metric timer for
-     * the specified trace metric is also started.
+     * Creates and starts a span with the given {@code messageSupplier}. A metric timer for the
+     * specified metric is also started.
      * 
      * Since spans can be expensive in great quantities, there is a {@code maxSpans} property on the
      * configuration page to limit the number of spans created for any given trace.
      * 
      * Once a trace has accumulated {@code maxSpans} spans, this method doesn't add new spans to the
-     * trace, but instead returns a dummy span. A trace metric timer for the specified trace metric
-     * is still started, since trace metrics are very cheap, even in great quantities. The dummy
-     * span adhere to the {@link Span} contract and return the specified {@link MessageSupplier} in
-     * response to {@link Span#getMessageSupplier()}. Calling {@link Span#end()} on the dummy span
-     * ends the trace metric timer. If {@link Span#endWithError(ErrorMessage)} is called on the
-     * dummy span, then the dummy span will be escalated to a real span. If
+     * trace, but instead returns a dummy span. A metric timer for the specified metric is still
+     * started, since metrics are very cheap, even in great quantities. The dummy span adhere to the
+     * {@link Span} contract and return the specified {@link MessageSupplier} in response to
+     * {@link Span#getMessageSupplier()}. Calling {@link Span#end()} on the dummy span ends the
+     * metric timer. If {@link Span#endWithError(ErrorMessage)} is called on the dummy span, then
+     * the dummy span will be escalated to a real span. If
      * {@link Span#endWithStackTrace(long, TimeUnit)} is called on the dummy span and the dummy span
      * duration exceeds the specified threshold, then the dummy span will be escalated to a real
      * span. If {@link Span#captureSpanStackTrace()} is called on the dummy span, then the dummy
@@ -216,24 +216,24 @@ public abstract class PluginServices {
      * {@link Span}.
      * 
      * @param messageSupplier
-     * @param traceMetricName
+     * @param metricName
      * @return
      */
     public abstract Span startSpan(MessageSupplier messageSupplier,
-            TraceMetricName traceMetricName);
+            MetricName metricName);
 
     /**
-     * Starts a timer for the specified trace metric. If a timer is already running for the
-     * specified trace metric, it will keep an internal counter of the number of starts, and it will
-     * only end the timer after the corresponding number of ends.
+     * Starts a timer for the specified metric. If a timer is already running for the specified
+     * metric, it will keep an internal counter of the number of starts, and it will only end the
+     * timer after the corresponding number of ends.
      * 
      * If there is no current trace, this method does nothing, and returns a no-op instance of
-     * {@link TraceMetricTimer}.
+     * {@link MetricTimer}.
      * 
-     * @param traceMetricName
+     * @param metricName
      * @return the timer for calling stop
      */
-    public abstract TraceMetricTimer startTraceMetric(TraceMetricName traceMetricName);
+    public abstract MetricTimer startMetric(MetricName metricName);
 
     /**
      * Adds a span with duration zero.
@@ -270,7 +270,7 @@ public abstract class PluginServices {
      * 
      * @param transactionName
      */
-    public abstract void setTransactionType(String transactionType);
+    public abstract void setTransactionType(@Nullable String transactionType);
 
     /**
      * Set the transaction name that is used for aggregation.
@@ -279,7 +279,7 @@ public abstract class PluginServices {
      * 
      * @param transactionName
      */
-    public abstract void setTransactionName(String transactionName);
+    public abstract void setTransactionName(@Nullable String transactionName);
 
     /**
      * Marks the trace as an error with the given message. Normally traces are only marked as an
@@ -298,7 +298,7 @@ public abstract class PluginServices {
      * 
      * If there is no current trace, this method does nothing.
      */
-    public abstract void setTraceError(String error);
+    public abstract void setTraceError(@Nullable String error);
 
     /**
      * Sets the user attribute on the trace. This attribute is shared across all plugins, and is
@@ -340,7 +340,7 @@ public abstract class PluginServices {
      * @param value
      *            value of the attribute, null values will be normalized to the empty string
      */
-    public abstract void putTraceCustomAttribute(String name, @Nullable String value);
+    public abstract void setTraceCustomAttribute(String name, @Nullable String value);
 
     /**
      * Overrides the general store threshold (Configuration &gt; General &gt; Store threshold) for
@@ -436,21 +436,21 @@ public abstract class PluginServices {
         @Override
         public void registerConfigListener(ConfigListener listener) {}
         @Override
-        public TraceMetricName getTraceMetricName(Class<?> adviceClass) {
-            return NopTraceMetricName.INSTANCE;
+        public MetricName getMetricName(Class<?> adviceClass) {
+            return NopMetricName.INSTANCE;
         }
         @Override
         public Span startTrace(String transactionType, String transactionName,
-                MessageSupplier messageSupplier, TraceMetricName traceMetricName) {
+                MessageSupplier messageSupplier, MetricName metricName) {
             return NopSpan.INSTANCE;
         }
         @Override
-        public Span startSpan(MessageSupplier messageSupplier, TraceMetricName traceMetricName) {
+        public Span startSpan(MessageSupplier messageSupplier, MetricName metricName) {
             return NopSpan.INSTANCE;
         }
         @Override
-        public TraceMetricTimer startTraceMetric(TraceMetricName traceMetricName) {
-            return NopTraceMetricTimer.INSTANCE;
+        public MetricTimer startMetric(MetricName metricName) {
+            return NopMetricTimer.INSTANCE;
         }
         @Override
         public CompletedSpan addSpan(MessageSupplier messageSupplier) {
@@ -461,15 +461,15 @@ public abstract class PluginServices {
             return NopCompletedSpan.INSTANCE;
         }
         @Override
-        public void setTransactionType(String transactionType) {}
+        public void setTransactionType(@Nullable String transactionType) {}
         @Override
-        public void setTransactionName(String transactionName) {}
+        public void setTransactionName(@Nullable String transactionName) {}
         @Override
         public void setTraceError(@Nullable String error) {}
         @Override
         public void setTraceUser(@Nullable String user) {}
         @Override
-        public void putTraceCustomAttribute(String name, @Nullable String value) {}
+        public void setTraceCustomAttribute(String name, @Nullable String value) {}
         @Override
         public void setTraceStoreThreshold(long threshold, TimeUnit unit) {}
         @Override
@@ -477,9 +477,9 @@ public abstract class PluginServices {
             return false;
         }
 
-        private static class NopTraceMetricName implements TraceMetricName {
-            private static final NopTraceMetricName INSTANCE = new NopTraceMetricName();
-            private NopTraceMetricName() {}
+        private static class NopMetricName implements MetricName {
+            private static final NopMetricName INSTANCE = new NopMetricName();
+            private NopMetricName() {}
         }
 
         private static class NopSpan implements Span {
@@ -504,9 +504,9 @@ public abstract class PluginServices {
             }
         }
 
-        private static class NopTraceMetricTimer implements TraceMetricTimer {
-            private static final NopTraceMetricTimer INSTANCE = new NopTraceMetricTimer();
-            private NopTraceMetricTimer() {}
+        private static class NopMetricTimer implements MetricTimer {
+            private static final NopMetricTimer INSTANCE = new NopMetricTimer();
+            private NopMetricTimer() {}
             @Override
             public void stop() {}
         }

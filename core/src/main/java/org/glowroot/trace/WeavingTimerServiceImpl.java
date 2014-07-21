@@ -15,12 +15,12 @@
  */
 package org.glowroot.trace;
 
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.model.CurrentTraceMetricHolder;
+import org.glowroot.trace.model.MetricTimerExt;
 import org.glowroot.trace.model.TraceMetric;
-import org.glowroot.trace.model.TraceMetricTimerExt;
 import org.glowroot.weaving.WeavingTimerService;
 
 /**
@@ -30,28 +30,26 @@ import org.glowroot.weaving.WeavingTimerService;
 class WeavingTimerServiceImpl implements WeavingTimerService {
 
     private final TraceRegistry traceRegistry;
-    private final TraceMetricName traceMetricName;
+    private final MetricName metricName;
 
-    WeavingTimerServiceImpl(TraceRegistry traceRegistry,
-            TraceMetricNameCache traceMetricNameCache) {
+    WeavingTimerServiceImpl(TraceRegistry traceRegistry, MetricNameCache metricNameCache) {
         this.traceRegistry = traceRegistry;
-        this.traceMetricName = traceMetricNameCache.getName(OnlyForThePointcutTraceMetric.class);
+        this.metricName = metricNameCache.getName(OnlyForTheMetricName.class);
     }
 
     @Override
     public WeavingTimer start() {
         CurrentTraceMetricHolder currentTraceMetricHolder =
                 traceRegistry.getCurrentTraceMetricHolder();
-        TraceMetric traceMetric = currentTraceMetricHolder.get();
-        if (traceMetric == null) {
+        TraceMetric currentMetric = currentTraceMetricHolder.get();
+        if (currentMetric == null) {
             return NopWeavingTimer.INSTANCE;
         }
-        final TraceMetricTimerExt traceMetricTimer =
-                traceMetric.startNestedMetric(traceMetricName);
+        final MetricTimerExt metricTimer = currentMetric.startNestedMetric(metricName);
         return new WeavingTimer() {
             @Override
             public void stop() {
-                traceMetricTimer.stop();
+                metricTimer.stop();
             }
         };
     }
@@ -63,6 +61,6 @@ class WeavingTimerServiceImpl implements WeavingTimerService {
         public void stop() {}
     }
 
-    @Pointcut(className = "", methodName = "", traceMetric = "glowroot weaving")
-    private static class OnlyForThePointcutTraceMetric {}
+    @Pointcut(className = "", methodName = "", metricName = "glowroot weaving")
+    private static class OnlyForTheMetricName {}
 }

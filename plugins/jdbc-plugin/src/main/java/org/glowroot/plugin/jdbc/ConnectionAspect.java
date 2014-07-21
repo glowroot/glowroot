@@ -20,8 +20,8 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.TraceMetricTimer;
+import org.glowroot.api.MetricName;
+import org.glowroot.api.MetricTimer;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -60,17 +60,17 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "commit", ignoreSelfNested = true,
-            traceMetric = "jdbc commit")
+            metricName = "jdbc commit")
     public static class CommitAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(CommitAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(CommitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
         public static Span onBefore() {
-            return pluginServices.startSpan(MessageSupplier.from("jdbc commit"), traceMetricName);
+            return pluginServices.startSpan(MessageSupplier.from("jdbc commit"), metricName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
@@ -83,17 +83,17 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "rollback", ignoreSelfNested = true,
-            traceMetric = "jdbc rollback")
+            metricName = "jdbc rollback")
     public static class RollbackAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(RollbackAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(RollbackAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
         public static Span onBefore() {
-            return pluginServices.startSpan(MessageSupplier.from("jdbc rollback"), traceMetricName);
+            return pluginServices.startSpan(MessageSupplier.from("jdbc rollback"), metricName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {
@@ -106,10 +106,10 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "close", ignoreSelfNested = true,
-            traceMetric = "jdbc connection close")
+            metricName = "jdbc connection close")
     public static class CloseAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(CloseAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -118,9 +118,9 @@ public class ConnectionAspect {
         public static Object onBefore() {
             if (captureConnectionCloseSpans) {
                 return pluginServices.startSpan(MessageSupplier.from("jdbc connection close"),
-                        traceMetricName);
+                        metricName);
             } else {
-                return pluginServices.startTraceMetric(traceMetricName);
+                return pluginServices.startMetric(metricName);
             }
         }
         @OnReturn
@@ -129,7 +129,7 @@ public class ConnectionAspect {
                 ((Span) spanOrTimer).endWithStackTrace(
                         JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
             } else {
-                ((TraceMetricTimer) spanOrTimer).stop();
+                ((MetricTimer) spanOrTimer).stop();
             }
         }
         @OnThrow
@@ -137,17 +137,17 @@ public class ConnectionAspect {
             if (spanOrTimer instanceof Span) {
                 ((Span) spanOrTimer).endWithError(ErrorMessage.from(t));
             } else {
-                ((TraceMetricTimer) spanOrTimer).stop();
+                ((MetricTimer) spanOrTimer).stop();
             }
         }
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "setAutoCommit",
             ignoreSelfNested = true, methodParameterTypes = {"boolean"},
-            traceMetric = "jdbc set autocommit")
+            metricName = "jdbc set autocommit")
     public static class SetAutoCommitAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(CloseAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && captureSetAutoCommitSpans;
@@ -156,7 +156,7 @@ public class ConnectionAspect {
         public static Span onBefore(@BindParameter boolean autoCommit) {
             return pluginServices.startSpan(
                     MessageSupplier.from("jdbc set autocommit: {}", Boolean.toString(autoCommit)),
-                    traceMetricName);
+                    metricName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler Span span) {

@@ -13,19 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.microbenchmarks.core.support;
+package org.glowroot.tests;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceMetricWorthy {
+class ParamObject {
 
-    public void doSomethingTraceMetricWorthy() {}
+    private final NestedParamObject nested;
 
-    public void doSomethingTraceMetricWorthyB() {}
+    ParamObject(String nestedName) {
+        nested = new NestedParamObject(nestedName);
+    }
 
-    public void doSomethingTraceMetricWorthy2() {}
-
-    public void doSomethingTraceMetricWorthy2B() {}
+    NestedParamObject getNested() {
+        return nested;
+    }
 }

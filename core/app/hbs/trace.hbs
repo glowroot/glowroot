@@ -75,10 +75,10 @@
     </tr>
     </thead>
     <tbody>
-    {{#eachTraceMetricFlattenedOrdered traceMetrics}}
+    {{#eachMetricFlattenedOrdered metrics}}
       <tr class="align-top">
         <td style="text-align: left;">
-          <div style="margin-left: {{traceMetricIndent .}}em;">
+          <div style="margin-left: {{metricIndent .}}em;">
             <div class="second-line-indent">{{name}}</div>
           </div>
         </td>
@@ -88,7 +88,7 @@
         <td>{{count}}</td>
         <td></td>
       </tr>
-    {{/eachTraceMetricFlattenedOrdered}}
+    {{/eachMetricFlattenedOrdered}}
     </tbody>
   </table>
   <table class="hide trace-metrics-table indent2" style="border-spacing: 0;">
@@ -108,10 +108,10 @@
     </tr>
     </thead>
     <tbody>
-    {{#eachTraceMetricOrdered traceMetrics}}
+    {{#eachMetricOrdered metrics}}
       <tr class="align-top">
         <td style="text-align: left;">
-          <div style="margin-left: {{traceMetricIndent .}}em;">
+          <div style="margin-left: {{metricIndent .}}em;">
             <div class="second-line-indent">{{name}}</div>
           </div>
         </td>
@@ -121,7 +121,7 @@
         <td>{{count}}</td>
         <td></td>
       </tr>
-    {{/eachTraceMetricOrdered}}
+    {{/eachMetricOrdered}}
     </tbody>
   </table>
 </div>

@@ -13,22 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.weaving;
-
-import org.glowroot.api.weaving.BindMethodName;
-import org.glowroot.api.weaving.OnBefore;
-import org.glowroot.api.weaving.Pointcut;
+package org.glowroot.api;
 
 /**
+ * See {@link PluginServices#getMetricName(Class)} for how to retrieve and use {@code MetricName}
+ * instances.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class WeavingJDK14BytecodeAspect {
-
-    @Pointcut(className = "org.apache.commons.lang.StringUtils", methodName = "isEmpty",
-            methodParameterTypes = {"java.lang.String"}, metricName = "is empty")
-    public static class BasicAdvice {
-        @OnBefore
-        public static void onBefore(@SuppressWarnings("unused") @BindMethodName String test) {}
-    }
-}
+public interface MetricName {}

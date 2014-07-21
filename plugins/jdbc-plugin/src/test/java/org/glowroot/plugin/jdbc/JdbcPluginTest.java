@@ -259,11 +259,11 @@ public class JdbcPluginTest {
                 "jdbc execution: insert into employee (name) values ('john doe')");
         Span jdbcCommitSpan = spans.get(2);
         assertThat(jdbcCommitSpan.getMessage().getText()).isEqualTo("jdbc commit");
-        assertThat(trace.getRootTraceMetric().getNestedMetrics()).hasSize(3);
+        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(3);
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)
-        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getNestedMetricNames())
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getNestedMetricNames())
                 .containsOnly("jdbc execute", "jdbc commit", "jdbc statement close");
     }
 
@@ -281,16 +281,16 @@ public class JdbcPluginTest {
                 "jdbc execution: insert into employee (name) values ('john doe')");
         Span jdbcCommitSpan = spans.get(2);
         assertThat(jdbcCommitSpan.getMessage().getText()).isEqualTo("jdbc rollback");
-        assertThat(trace.getRootTraceMetric().getNestedMetrics()).hasSize(3);
+        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(3);
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)
-        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getNestedMetricNames())
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getNestedMetricNames())
                 .containsOnly("jdbc execute", "jdbc rollback", "jdbc statement close");
     }
 
     @Test
-    public void testResultSetValueTraceMetric() throws Exception {
+    public void testResultSetValueMetric() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
         // when
@@ -298,8 +298,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         boolean found = false;
-        for (TraceMetric traceMetric : trace.getRootTraceMetric().getNestedMetrics()) {
-            if (traceMetric.getName().equals("jdbc resultset value")) {
+        for (TraceMetric metric : trace.getRootMetric().getNestedMetrics()) {
+            if (metric.getName().equals("jdbc resultset value")) {
                 found = true;
                 break;
             }
@@ -308,7 +308,7 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testMetadataTraceMetricDisabledSpan() throws Exception {
+    public void testMetadataMetricDisabledSpan() throws Exception {
         // given
         container.getConfigService()
                 .setPluginProperty(PLUGIN_ID, "captureDatabaseMetaDataSpans", false);
@@ -318,14 +318,14 @@ public class JdbcPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
         assertThat(spans).hasSize(1);
-        assertThat(trace.getRootTraceMetric().getNestedMetrics()).hasSize(1);
-        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getNestedMetrics().get(0).getName())
+        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(1);
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getNestedMetrics().get(0).getName())
                 .isEqualTo("jdbc metadata");
     }
 
     @Test
-    public void testMetadataTraceMetricEnabledSpan() throws Exception {
+    public void testMetadataMetricEnabledSpan() throws Exception {
         // given
         container.getConfigService()
                 .setPluginProperty(PLUGIN_ID, "captureDatabaseMetaDataSpans", true);
@@ -337,9 +337,9 @@ public class JdbcPluginTest {
         assertThat(spans).hasSize(2);
         assertThat(spans.get(1).getMessage().getText()).isEqualTo("jdbc metadata:"
                 + " DatabaseMetaData.getTables()");
-        assertThat(trace.getRootTraceMetric().getNestedMetrics()).hasSize(1);
-        assertThat(trace.getRootTraceMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTraceMetric().getNestedMetrics().get(0).getName())
+        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(1);
+        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootMetric().getNestedMetrics().get(0).getName())
                 .isEqualTo("jdbc metadata");
     }
 

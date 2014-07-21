@@ -88,7 +88,7 @@ public class Trace {
     @MonotonicNonNull
     private volatile SetMultimap<String, String> customAttributes;
 
-    private final TraceMetric rootTraceMetric;
+    private final TraceMetric rootMetric;
 
     @Nullable
     private final TraceThreadInfo threadInfo;
@@ -120,24 +120,24 @@ public class Trace {
     @Nullable
     private volatile ScheduledRunnable stuckScheduledRunnable;
 
-    // memory barrier is used to ensure memory visibility of spans and trace metrics at key points,
+    // memory barrier is used to ensure memory visibility of spans and metrics at key points,
     // namely after each span
     //
     // benchmarking shows this is significantly faster than ensuring memory visibility of each
-    // trace metric update, the down side is that the latest updates to trace metrics for snapshots
+    // metric update, the down side is that the latest updates to metrics for snapshots
     // that are captured in-flight (e.g. stuck traces and active traces displayed in the UI) may not
     // be visible
     private volatile boolean memoryBarrier;
 
     public Trace(long startTime, String transactionType, String transactionName,
-            MessageSupplier messageSupplier, TraceMetric rootTraceMetric, long startTick,
+            MessageSupplier messageSupplier, TraceMetric rootMetric, long startTick,
             @Nullable TraceThreadInfo threadInfo, @Nullable TraceGcInfos gcInfo, Ticker ticker) {
         this.startTime = startTime;
         this.transactionType = transactionType;
         this.transactionName = transactionName;
-        this.rootTraceMetric = rootTraceMetric;
+        this.rootMetric = rootMetric;
         id = new TraceUniqueId(startTime);
-        rootSpan = new RootSpan(messageSupplier, rootTraceMetric, startTick, ticker);
+        rootSpan = new RootSpan(messageSupplier, rootMetric, startTick, ticker);
         threadId = Thread.currentThread().getId();
         this.threadInfo = threadInfo;
         this.gcInfos = gcInfo;
@@ -228,9 +228,9 @@ public class Trace {
     }
 
     // this is called from a non-trace thread
-    public TraceMetric getRootTraceMetric() {
+    public TraceMetric getRootMetric() {
         readMemoryBarrier();
-        return rootTraceMetric;
+        return rootMetric;
     }
 
     // can be called from a non-trace thread
@@ -301,25 +301,25 @@ public class Trace {
         stuck.getAndSet(true);
     }
 
-    public void setTransactionType(String transactionType) {
-        // use the first explicit, non-null call to setTransactionType()
-        if (!explicitSetTransactionType && transactionType != null) {
+    public void setTransactionType(@Nullable String transactionType) {
+        // use the first explicit, non-null/non-empty call to setTransactionType()
+        if (!explicitSetTransactionType && transactionType != null && !transactionType.isEmpty()) {
             this.transactionType = transactionType;
             explicitSetTransactionType = true;
         }
     }
 
-    public void setTransactionName(String transactionName) {
-        // use the first explicit, non-null call to setTransactionName()
-        if (!explicitSetTransactionName && transactionName != null) {
+    public void setTransactionName(@Nullable String transactionName) {
+        // use the first explicit, non-null/non-empty call to setTransactionName()
+        if (!explicitSetTransactionName && transactionName != null && !transactionName.isEmpty()) {
             this.transactionName = transactionName;
             explicitSetTransactionName = true;
         }
     }
 
     public void setUser(@Nullable String user) {
-        // use the first non-null user
-        if (this.user == null && user != null) {
+        // use the first non-null/non-empty user
+        if (this.user == null && user != null && !user.isEmpty()) {
             this.user = user;
         }
     }
@@ -336,8 +336,8 @@ public class Trace {
     }
 
     public void setError(@Nullable String error) {
-        // use the first non-null error
-        if (this.error == null && error != null) {
+        // use the first non-null/non-empty error
+        if (this.error == null && error != null && !error.isEmpty()) {
             this.error = error;
         }
     }
@@ -377,8 +377,8 @@ public class Trace {
     }
 
     public Span pushSpan(long startTick, MessageSupplier messageSupplier,
-            TraceMetricTimerExt traceMetricTimer) {
-        return rootSpan.pushSpan(startTick, messageSupplier, traceMetricTimer);
+            MetricTimerExt metricTimer) {
+        return rootSpan.pushSpan(startTick, messageSupplier, metricTimer);
     }
 
     public Span addSpan(long startTick, long endTick, @Nullable MessageSupplier messageSupplier,
@@ -399,9 +399,9 @@ public class Trace {
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
     public void popSpan(Span span, long endTick, @Nullable ErrorMessage errorMessage) {
         rootSpan.popSpan(span, endTick, errorMessage);
-        TraceMetricTimerExt traceMetricTimer = span.getTraceMetricTimer();
-        if (traceMetricTimer != null) {
-            traceMetricTimer.end(endTick);
+        MetricTimerExt metricTimer = span.getMetricTimer();
+        if (metricTimer != null) {
+            metricTimer.end(endTick);
         }
         memoryBarrier = true;
     }
@@ -461,7 +461,7 @@ public class Trace {
                 .add("error", error)
                 .add("user", user)
                 .add("customAttributes", customAttributes)
-                .add("rootTraceMetric", rootTraceMetric)
+                .add("rootMetric", rootMetric)
                 .add("threadInfo", threadInfo)
                 .add("gcInfos", gcInfos)
                 .add("rootSpan", rootSpan)

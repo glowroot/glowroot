@@ -50,7 +50,7 @@ public class Snapshot {
     @Nullable
     private final String customAttributes; // json data
     @Nullable
-    private final String traceMetrics; // json data
+    private final String metrics; // json data
     @Nullable
     private final String threadInfo; // json data
     @Nullable
@@ -64,7 +64,7 @@ public class Snapshot {
     private Snapshot(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user, @Nullable String customAttributes,
-            @Nullable String traceMetrics, @Nullable String threadInfo, @Nullable String gcInfos,
+            @Nullable String metrics, @Nullable String threadInfo, @Nullable String gcInfos,
             Existence spansExistence, Existence profileExistence,
             Existence outlierProfileExistence,
             @Nullable ImmutableSetMultimap<String, String> customAttributesForIndexing) {
@@ -80,7 +80,7 @@ public class Snapshot {
         this.error = error;
         this.user = user;
         this.customAttributes = customAttributes;
-        this.traceMetrics = traceMetrics;
+        this.metrics = metrics;
         this.threadInfo = threadInfo;
         this.gcInfos = gcInfos;
         this.spansExistence = spansExistence;
@@ -141,8 +141,8 @@ public class Snapshot {
     }
 
     @Nullable
-    public String getTraceMetrics() {
-        return traceMetrics;
+    public String getMetrics() {
+        return metrics;
     }
 
     @Nullable
@@ -188,7 +188,7 @@ public class Snapshot {
                 .add("error", error)
                 .add("user", user)
                 .add("customAttributes", customAttributes)
-                .add("traceMetrics", traceMetrics)
+                .add("metrics", metrics)
                 .add("threadInfo", threadInfo)
                 .add("gcInfos", gcInfos)
                 .add("spansExistence", spansExistence)
@@ -224,7 +224,7 @@ public class Snapshot {
         @Nullable
         private String customAttributes;
         @Nullable
-        private String traceMetrics;
+        private String metrics;
         @Nullable
         private String threadInfo;
         @Nullable
@@ -304,8 +304,8 @@ public class Snapshot {
             return this;
         }
 
-        public Builder traceMetrics(@Nullable String traceMetrics) {
-            this.traceMetrics = traceMetrics;
+        public Builder metrics(@Nullable String metrics) {
+            this.metrics = metrics;
             return this;
         }
 
@@ -348,7 +348,7 @@ public class Snapshot {
         public Snapshot build() {
             return new Snapshot(id, active, stuck, startTime, captureTime, duration,
                     transactionType, transactionName, headline, error, user, customAttributes,
-                    traceMetrics, threadInfo, gcInfos, spansExistence, profileExistence,
+                    metrics, threadInfo, gcInfos, spansExistence, profileExistence,
                     outlierProfileExistence, customAttributesForIndexing);
         }
     }

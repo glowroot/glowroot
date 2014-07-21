@@ -16,9 +16,11 @@
 package org.glowroot.tests;
 
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -31,6 +33,7 @@ import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.OutlierProfilingConfig;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.PointcutConfig;
+import org.glowroot.container.config.PointcutConfig.AdviceKind;
 import org.glowroot.container.config.PointcutConfig.MethodModifier;
 import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
@@ -293,7 +296,7 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(AdvancedConfig config) {
-        config.setTraceMetricWrapperMethods(!config.isTraceMetricWrapperMethods());
+        config.setMetricWrapperMethods(!config.isMetricWrapperMethods());
     }
 
     private static void updateAllFields(PluginConfig config) {
@@ -316,10 +319,12 @@ public class ConfigTest {
         config.setMethodReturnType("void");
         config.setMethodModifiers(Lists
                 .newArrayList(MethodModifier.PUBLIC, MethodModifier.STATIC));
-        config.setTraceMetric("yako");
+        config.setAdviceKind(AdviceKind.TRACE);
+        config.setMetricName("yako");
         config.setMessageTemplate("yak(): {{0}}, {{1}} => {{?}}");
         config.setTransactionType("ttype");
         config.setTransactionNameTemplate("tname");
+        config.setTraceUserTemplate("");
         config.setEnabledProperty("");
         config.setSpanEnabledProperty("");
         return config;
@@ -341,8 +346,14 @@ public class ConfigTest {
             config.setMethodModifiers(ImmutableList
                     .of(MethodModifier.PUBLIC, MethodModifier.STATIC));
         }
-        config.setTraceMetric(config.getTraceMetric() + "e");
+        if (config.getAdviceKind() == AdviceKind.METRIC) {
+            config.setAdviceKind(AdviceKind.SPAN);
+        } else {
+            config.setAdviceKind(AdviceKind.METRIC);
+        }
+        config.setMetricName(config.getMetricName() + "e");
         config.setMessageTemplate(config.getMessageTemplate() + "f");
+        config.setCaptureSelfNested(!config.isCaptureSelfNested());
         Long stackTraceThresholdMillis = config.getStackTraceThresholdMillis();
         if (stackTraceThresholdMillis == null) {
             config.setStackTraceThresholdMillis(1000L);
@@ -351,5 +362,18 @@ public class ConfigTest {
         }
         config.setTransactionType(config.getTransactionType() + "g");
         config.setTransactionNameTemplate(config.getTransactionNameTemplate() + "h");
+        config.setTraceUserTemplate(config.getTraceUserTemplate() + "i");
+        Map<String, String> traceCustomAttributeTemplates =
+                Maps.newHashMap(config.getTraceCustomAttributeTemplates());
+        traceCustomAttributeTemplates.put("Test attr name", "Test attr value");
+        config.setTraceCustomAttributeTemplates(traceCustomAttributeTemplates);
+        Long storeThresholdOverrideMillis = config.getTraceStoreThresholdMillis();
+        if (storeThresholdOverrideMillis == null) {
+            config.setTraceStoreThresholdMillis(1000L);
+        } else {
+            config.setTraceStoreThresholdMillis(storeThresholdOverrideMillis + 1);
+        }
+        config.setEnabledProperty(config.getEnabledProperty() + "k");
+        config.setSpanEnabledProperty(config.getSpanEnabledProperty() + "l");
     }
 }

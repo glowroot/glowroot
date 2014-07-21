@@ -91,10 +91,10 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassVisitor.class);
 
-    private static final CharMatcher traceMetricCharMatcher =
+    private static final CharMatcher metricNameCharMatcher =
             CharMatcher.JAVA_LETTER_OR_DIGIT.or(CharMatcher.is(' '));
 
-    private static final Set<String> invalidTraceMetricSet = Sets.newConcurrentHashSet();
+    private static final Set<String> invalidMetricNameSet = Sets.newConcurrentHashSet();
 
     private static final AtomicLong metaHolderCounter = new AtomicLong();
 
@@ -107,7 +107,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private final AnalyzingClassVisitor analyzingClassVisitor;
 
-    private final boolean traceMetricWrapperMethods;
+    private final boolean metricWrapperMethods;
 
     @MonotonicNonNull
     private Type type;
@@ -127,13 +127,13 @@ class WeavingClassVisitor extends ClassVisitor {
     public WeavingClassVisitor(ClassVisitor cv, ImmutableList<Advice> advisors,
             ImmutableList<MixinType> mixinTypes, @Nullable ClassLoader loader,
             AnalyzedWorld analyzedWorld, @Nullable CodeSource codeSource,
-            boolean traceMetricWrapperMethods) {
+            boolean metricWrapperMethods) {
         super(ASM5, cv);
         this.cv = cv;
         this.loader = loader;
         analyzingClassVisitor = new AnalyzingClassVisitor(advisors, mixinTypes, loader,
                 analyzedWorld, codeSource);
-        this.traceMetricWrapperMethods = traceMetricWrapperMethods;
+        this.metricWrapperMethods = metricWrapperMethods;
     }
 
     @Override
@@ -391,8 +391,8 @@ class WeavingClassVisitor extends ClassVisitor {
         mv = new InitMixins(mv, access, name, desc, analyzingClassVisitor.getMatchedMixinTypes(),
                 type);
         for (Advice advice : matchingAdvisors) {
-            if (advice.getPointcut().traceMetric().length() != 0) {
-                logger.warn("cannot add trace metric to <clinit> or <init> methods at this time");
+            if (advice.getPointcut().metricName().length() != 0) {
+                logger.warn("cannot add metric to <clinit> or <init> methods at this time");
                 break;
             }
         }
@@ -405,8 +405,8 @@ class WeavingClassVisitor extends ClassVisitor {
             @Nullable String signature, String/*@Nullable*/[] exceptions,
             Iterable<Advice> matchingAdvisors) {
         int methodMetaUniqueNum = collectClassAndMethodMetas(matchingAdvisors, desc);
-        if (traceMetricWrapperMethods && !name.equals("<init>")) {
-            String innerWrappedName = wrapWithSyntheticTraceMetricMarkerMethods(access, name, desc,
+        if (metricWrapperMethods && !name.equals("<init>")) {
+            String innerWrappedName = wrapWithSyntheticMetricMarkerMethods(access, name, desc,
                     signature, exceptions, matchingAdvisors);
             String methodName = name;
             int methodAccess = access;
@@ -450,26 +450,26 @@ class WeavingClassVisitor extends ClassVisitor {
         return methodMetaUniqueNum;
     }
 
-    // returns null if no synthetic trace metric marker methods were needed
+    // returns null if no synthetic metric marker methods were needed
     @RequiresNonNull("type")
     @Nullable
-    private String wrapWithSyntheticTraceMetricMarkerMethods(int outerAccess, String outerName,
+    private String wrapWithSyntheticMetricMarkerMethods(int outerAccess, String outerName,
             String desc, @Nullable String signature, String/*@Nullable*/[] exceptions,
             Iterable<Advice> matchingAdvisors) {
         int innerAccess = ACC_PRIVATE + ACC_FINAL + (outerAccess & ACC_STATIC);
         boolean first = true;
         String currMethodName = outerName;
         for (Advice advice : matchingAdvisors) {
-            String traceMetric = advice.getPointcut().traceMetric();
-            if (traceMetric.isEmpty()) {
+            String metricName = advice.getPointcut().metricName();
+            if (metricName.isEmpty()) {
                 continue;
             }
-            if (!traceMetricCharMatcher.matchesAllOf(traceMetric)) {
-                logInvalidTraceMetricWarningOnce(traceMetric);
-                traceMetric = traceMetricCharMatcher.negate().replaceFrom(traceMetric, '_');
+            if (!metricNameCharMatcher.matchesAllOf(metricName)) {
+                logInvalidMetricNameWarningOnce(metricName);
+                metricName = metricNameCharMatcher.negate().replaceFrom(metricName, '_');
             }
-            String nextMethodName = outerName + "$glowroot$trace$metric$"
-                    + traceMetric.replace(' ', '$') + '$' + innerMethodCounter++;
+            String nextMethodName = outerName + "$glowroot$metric$"
+                    + metricName.replace(' ', '$') + '$' + innerMethodCounter++;
             int access = first ? outerAccess : innerAccess;
             MethodVisitor mv = cv.visitMethod(access, currMethodName, desc, signature, exceptions);
             checkNotNull(mv);
@@ -596,10 +596,10 @@ class WeavingClassVisitor extends ClassVisitor {
         mg.endMethod();
     }
 
-    private static void logInvalidTraceMetricWarningOnce(String traceMetric) {
-        if (invalidTraceMetricSet.add(traceMetric)) {
-            logger.warn("trace metric must contain only letters, digits and spaces: {}",
-                    traceMetric);
+    private static void logInvalidMetricNameWarningOnce(String metricName) {
+        if (invalidMetricNameSet.add(metricName)) {
+            logger.warn("metric name must contain only letters, digits and spaces: {}",
+                    metricName);
         }
     }
 

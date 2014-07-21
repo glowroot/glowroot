@@ -52,19 +52,19 @@ public class Span {
 
     private final int nestingLevel;
 
-    // associated trace metric, stored here so it can be accessed in PluginServices.endSpan(Span)
+    // the associated metric, stored here so it can be accessed in PluginServices.endSpan(Span)
     @Nullable
-    private final TraceMetricTimerExt traceMetricTimer;
+    private final MetricTimerExt metricTimer;
     // not volatile, so depends on memory barrier in Trace for visibility
     @Nullable
     private ImmutableList<StackTraceElement> stackTrace;
 
     Span(@Nullable MessageSupplier messageSupplier, long startTick, int nesting,
-            @Nullable TraceMetricTimerExt traceMetricTimer) {
+            @Nullable MetricTimerExt metricTimer) {
         this.messageSupplier = messageSupplier;
         this.startTick = startTick;
         this.nestingLevel = nesting;
-        this.traceMetricTimer = traceMetricTimer;
+        this.metricTimer = metricTimer;
     }
 
     @Nullable
@@ -104,8 +104,8 @@ public class Span {
     }
 
     @Nullable
-    TraceMetricTimerExt getTraceMetricTimer() {
-        return traceMetricTimer;
+    MetricTimerExt getMetricTimer() {
+        return metricTimer;
     }
 
     void setErrorMessage(@Nullable ErrorMessage errorMessage) {
@@ -129,7 +129,7 @@ public class Span {
                 .add("startTick", startTick)
                 .add("endTick", endTick)
                 .add("nestingLevel", nestingLevel)
-                .add("traceMetricTimer", traceMetricTimer)
+                .add("metricTimer", metricTimer)
                 .add("stackTrace", stackTrace)
                 .add("limitExceededMarker", isLimitExceededMarker())
                 .add("limitExtendedMarker", isLimitExtendedMarker())

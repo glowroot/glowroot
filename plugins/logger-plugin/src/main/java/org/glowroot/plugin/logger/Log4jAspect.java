@@ -21,7 +21,7 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindTraveler;
@@ -48,10 +48,10 @@ public class Log4jAspect {
     }
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "warn|error|fatal",
-            methodParameterTypes = {"java.lang.Object"}, traceMetric = TRACE_METRIC)
+            methodParameterTypes = {"java.lang.Object"}, metricName = TRACE_METRIC)
     public static class LogAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LogAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -65,7 +65,7 @@ public class Log4jAspect {
             }
             return pluginServices.startSpan(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
-                    traceMetricName);
+                    metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span, @BindParameter Object message) {
@@ -76,10 +76,10 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "warn|error|fatal",
             methodParameterTypes = {"java.lang.Object", "java.lang.Throwable"},
-            traceMetric = TRACE_METRIC)
+            metricName = TRACE_METRIC)
     public static class LogWithThrowableAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LogWithThrowableAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogWithThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -93,7 +93,7 @@ public class Log4jAspect {
             }
             return pluginServices.startSpan(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
-                    traceMetricName);
+                    metricName);
         }
         @OnAfter
         public static void onAfter(@BindParameter Object message, @BindParameter Throwable t,
@@ -109,10 +109,10 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "log",
             methodParameterTypes = {"org.apache.log4j.Priority", "java.lang.Object"},
-            traceMetric = TRACE_METRIC)
+            metricName = TRACE_METRIC)
     public static class LogWithPriorityAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LogWithPriorityAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogWithPriorityAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object priority) {
             if (!pluginServices.isEnabled() || LoggerPlugin.inAdvice.get()) {
@@ -130,7 +130,7 @@ public class Log4jAspect {
             }
             return pluginServices.startSpan(
                     MessageSupplier.from("log {}: {}", level, String.valueOf(message)),
-                    traceMetricName);
+                    metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span, @BindParameter Object message) {
@@ -141,10 +141,10 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "log",
             methodParameterTypes = {"org.apache.log4j.Priority", "java.lang.Object",
-                    "java.lang.Throwable"}, traceMetric = TRACE_METRIC)
+                    "java.lang.Throwable"}, metricName = TRACE_METRIC)
     public static class LogWithPriorityAndThrowableAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LogWithPriorityAndThrowableAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogWithPriorityAndThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object priority) {
             if (!pluginServices.isEnabled() || LoggerPlugin.inAdvice.get()) {
@@ -163,7 +163,7 @@ public class Log4jAspect {
             }
             return pluginServices.startSpan(
                     MessageSupplier.from("log {}: {}", level, String.valueOf(message)),
-                    traceMetricName);
+                    metricName);
         }
         @OnAfter
         public static void onAfter(@SuppressWarnings("unused") @BindParameter Object priority,
@@ -180,10 +180,10 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "l7dlog",
             methodParameterTypes = {"org.apache.log4j.Priority", "java.lang.String",
-                    "java.lang.Throwable"}, traceMetric = TRACE_METRIC)
+                    "java.lang.Throwable"}, metricName = TRACE_METRIC)
     public static class LocalizedLogAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LocalizedLogAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LocalizedLogAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object priority) {
             if (!pluginServices.isEnabled() || LoggerPlugin.inAdvice.get()) {
@@ -201,7 +201,7 @@ public class Log4jAspect {
                 pluginServices.setTraceError(key);
             }
             return pluginServices.startSpan(
-                    MessageSupplier.from("log {} (localized): {}", level, key), traceMetricName);
+                    MessageSupplier.from("log {} (localized): {}", level, key), metricName);
         }
         @OnAfter
         public static void onAfter(@SuppressWarnings("unused") @BindParameter Object priority,
@@ -217,10 +217,10 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "l7dlog",
             methodParameterTypes = {"org.apache.log4j.Priority", "java.lang.String",
-                    "java.lang.Object[]", "java.lang.Throwable"}, traceMetric = TRACE_METRIC)
+                    "java.lang.Object[]", "java.lang.Throwable"}, metricName = TRACE_METRIC)
     public static class LocalizedLogWithParametersAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LocalizedLogWithParametersAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LocalizedLogWithParametersAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object priority) {
             if (!pluginServices.isEnabled() || LoggerPlugin.inAdvice.get()) {
@@ -247,11 +247,11 @@ public class Log4jAspect {
                 }
                 return pluginServices.startSpan(
                         MessageSupplier.from("log {} (localized): {} [{}]", level, key,
-                                sb.toString()), traceMetricName);
+                                sb.toString()), metricName);
             } else {
                 return pluginServices.startSpan(
                         MessageSupplier.from("log {} (localized): {}", level, key),
-                        traceMetricName);
+                        metricName);
             }
         }
         @OnAfter

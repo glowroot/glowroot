@@ -44,76 +44,76 @@ TraceRenderer = (function () {
   });
 
 
-  Handlebars.registerHelper('eachTraceMetricOrdered', function (traceMetrics, options) {
+  Handlebars.registerHelper('eachMetricOrdered', function (metrics, options) {
     var buffer = '';
 
-    function traverse(traceMetric, nestingLevel) {
-      traceMetric.nestingLevel = nestingLevel;
-      buffer += options.fn(traceMetric);
-      if (traceMetric.nestedMetrics) {
-        traceMetric.nestedMetrics.sort(function (a, b) {
+    function traverse(metric, nestingLevel) {
+      metric.nestingLevel = nestingLevel;
+      buffer += options.fn(metric);
+      if (metric.nestedMetrics) {
+        metric.nestedMetrics.sort(function (a, b) {
           return b.total - a.total;
         });
-        $.each(traceMetric.nestedMetrics, function (index, nestedMetric) {
+        $.each(metric.nestedMetrics, function (index, nestedMetric) {
           traverse(nestedMetric, nestingLevel + 1);
         });
       }
     }
 
     // add the root node
-    traverse(traceMetrics, 0);
+    traverse(metrics, 0);
     return buffer;
   });
 
-  Handlebars.registerHelper('eachTraceMetricFlattenedOrdered', function (traceMetrics, options) {
-    var flattenedTraceMetricMap = {};
-    var flattenedTraceMetrics = [];
+  Handlebars.registerHelper('eachMetricFlattenedOrdered', function (metrics, options) {
+    var flattenedMetricMap = {};
+    var flattenedMetrics = [];
 
-    function traverse(traceMetric, parentMetricNames) {
-      var flattenedTraceMetric = flattenedTraceMetricMap[traceMetric.name];
-      if (!flattenedTraceMetric) {
-        flattenedTraceMetric = {
-          name: traceMetric.name,
-          total: traceMetric.total,
-          min: traceMetric.min,
-          max: traceMetric.max,
-          count: traceMetric.count,
-          active: traceMetric.active,
-          minActive: traceMetric.minActive,
-          maxActive: traceMetric.maxActive
+    function traverse(metric, parentMetricNames) {
+      var flattenedMetric = flattenedMetricMap[metric.name];
+      if (!flattenedMetric) {
+        flattenedMetric = {
+          name: metric.name,
+          total: metric.total,
+          min: metric.min,
+          max: metric.max,
+          count: metric.count,
+          active: metric.active,
+          minActive: metric.minActive,
+          maxActive: metric.maxActive
         };
-        flattenedTraceMetricMap[traceMetric.name] = flattenedTraceMetric;
-        flattenedTraceMetrics.push(flattenedTraceMetric);
-      } else if (parentMetricNames.indexOf(traceMetric.name) === -1) {
+        flattenedMetricMap[metric.name] = flattenedMetric;
+        flattenedMetrics.push(flattenedMetric);
+      } else if (parentMetricNames.indexOf(metric.name) === -1) {
         // only add to existing flattened metric if the trace metric isn't appearing under itself
         // (this is possible when they are separated by another trace metric)
-        flattenedTraceMetric.total += traceMetric.total;
-        flattenedTraceMetric.active = flattenedTraceMetric.active || traceMetric.active;
-        if (traceMetric.min < flattenedTraceMetric.min) {
-          flattenedTraceMetric.min = traceMetric.min;
-          flattenedTraceMetric.minActive = traceMetric.minActive;
+        flattenedMetric.total += metric.total;
+        flattenedMetric.active = flattenedMetric.active || metric.active;
+        if (metric.min < flattenedMetric.min) {
+          flattenedMetric.min = metric.min;
+          flattenedMetric.minActive = metric.minActive;
         }
-        if (traceMetric.max > flattenedTraceMetric.max) {
-          flattenedTraceMetric.max = traceMetric.max;
-          flattenedTraceMetric.maxActive = traceMetric.maxActive;
+        if (metric.max > flattenedMetric.max) {
+          flattenedMetric.max = metric.max;
+          flattenedMetric.maxActive = metric.maxActive;
         }
-        flattenedTraceMetric.count += traceMetric.count;
+        flattenedMetric.count += metric.count;
       }
-      if (traceMetric.nestedMetrics) {
-        $.each(traceMetric.nestedMetrics, function (index, nestedMetric) {
-          traverse(nestedMetric, parentMetricNames.concat(traceMetric));
+      if (metric.nestedMetrics) {
+        $.each(metric.nestedMetrics, function (index, nestedMetric) {
+          traverse(nestedMetric, parentMetricNames.concat(metric));
         });
       }
     }
 
     // add the root node
-    traverse(traceMetrics, []);
+    traverse(metrics, []);
 
-    flattenedTraceMetrics.sort(function (a, b) {
+    flattenedMetrics.sort(function (a, b) {
       return b.total - a.total;
     });
     var buffer = '';
-    $.each(flattenedTraceMetrics, function (index, metric) {
+    $.each(flattenedMetrics, function (index, metric) {
       buffer += options.fn(metric);
     });
     return buffer;
@@ -140,41 +140,41 @@ TraceRenderer = (function () {
     return buffer;
   });
 
-  Handlebars.registerHelper('eachTransactionMetricFlattenedOrdered', function (transactionMetrics, options) {
-    var flattenedTransactionMetricMap = {};
-    var flattenedTransactionMetrics = [];
+  Handlebars.registerHelper('eachTransactionMetricFlattenedOrdered', function (metrics, options) {
+    var flattenedMetricMap = {};
+    var flattenedMetrics = [];
 
-    function traverse(transactionMetric, parentMetricNames) {
-      var flattenedTransactionMetric = flattenedTransactionMetricMap[transactionMetric.name];
-      if (!flattenedTransactionMetric) {
-        flattenedTransactionMetric = {
-          name: transactionMetric.name,
-          totalMicros: transactionMetric.totalMicros,
-          count: transactionMetric.count
+    function traverse(metric, parentMetricNames) {
+      var flattenedMetric = flattenedMetricMap[metric.name];
+      if (!flattenedMetric) {
+        flattenedMetric = {
+          name: metric.name,
+          totalMicros: metric.totalMicros,
+          count: metric.count
         };
-        flattenedTransactionMetricMap[transactionMetric.name] = flattenedTransactionMetric;
-        flattenedTransactionMetrics.push(flattenedTransactionMetric);
-      } else if (parentMetricNames.indexOf(transactionMetric.name) === -1) {
+        flattenedMetricMap[metric.name] = flattenedMetric;
+        flattenedMetrics.push(flattenedMetric);
+      } else if (parentMetricNames.indexOf(metric.name) === -1) {
         // only add to existing flattened metric if the transaction metric isn't appearing under itself
         // (this is possible when they are separated by another transaction metric)
-        flattenedTransactionMetric.totalMicros += transactionMetric.totalMicros;
-        flattenedTransactionMetric.count += transactionMetric.count;
+        flattenedMetric.totalMicros += metric.totalMicros;
+        flattenedMetric.count += metric.count;
       }
-      if (transactionMetric.nestedMetrics) {
-        $.each(transactionMetric.nestedMetrics, function (index, nestedMetric) {
-          traverse(nestedMetric, parentMetricNames.concat(transactionMetric));
+      if (metric.nestedMetrics) {
+        $.each(metric.nestedMetrics, function (index, nestedMetric) {
+          traverse(nestedMetric, parentMetricNames.concat(metric));
         });
       }
     }
 
     // add the root node
-    traverse(transactionMetrics, []);
+    traverse(metrics, []);
 
-    flattenedTransactionMetrics.sort(function (a, b) {
+    flattenedMetrics.sort(function (a, b) {
       return b.totalMicros - a.totalMicros;
     });
     var buffer = '';
-    $.each(flattenedTransactionMetrics, function (index, metric) {
+    $.each(flattenedMetrics, function (index, metric) {
       buffer += options.fn(metric);
     });
     return buffer;
@@ -307,8 +307,8 @@ TraceRenderer = (function () {
     return indent1 * (1 + span.nestingLevel);
   });
 
-  Handlebars.registerHelper('traceMetricIndent', function (traceMetric) {
-    return indent1 * traceMetric.nestingLevel;
+  Handlebars.registerHelper('metricIndent', function (metric) {
+    return indent1 * metric.nestingLevel;
   });
 
   Handlebars.registerHelper('firstPart', function (message) {
@@ -565,12 +565,12 @@ TraceRenderer = (function () {
       return html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    function curr(node, level, traceMetric) {
+    function curr(node, level, metric) {
       var rootNodeSampleCount;
       var nodeSampleCount;
-      if (traceMetric) {
-        rootNodeSampleCount = rootNode.traceMetricCounts[traceMetric] || 0;
-        nodeSampleCount = node.traceMetricCounts[traceMetric] || 0;
+      if (metric) {
+        rootNodeSampleCount = rootNode.metricCounts[metric] || 0;
+        nodeSampleCount = node.metricCounts[metric] || 0;
         if (nodeSampleCount === 0) {
           return '';
         }
@@ -606,14 +606,14 @@ TraceRenderer = (function () {
         var childNodes = node.childNodes;
         // order child nodes by sampleCount (descending)
         childNodes.sort(function (a, b) {
-          if (traceMetric) {
-            return (b.traceMetricCounts[traceMetric] || 0) - (a.traceMetricCounts[traceMetric] || 0);
+          if (metric) {
+            return (b.traceMetricCounts[metric] || 0) - (a.traceMetricCounts[metric] || 0);
           }
           return b.sampleCount - a.sampleCount;
         });
         var i;
         for (i = 0; i < childNodes.length; i++) {
-          ret += curr(childNodes[i], level, traceMetric);
+          ret += curr(childNodes[i], level, metric);
         }
       }
       return ret;
@@ -649,14 +649,14 @@ TraceRenderer = (function () {
     }
     $selector.find('.profile-interesting').html(interestingHtml);
 
-    var mergedCounts = calculateTraceMetricCounts(rootNode);
+    var mergedCounts = calculateMetricCounts(rootNode);
     if (!$.isEmptyObject(mergedCounts)) {
       // build tree
       var tree = { name: '', childNodes: {} };
-      $.each(rootNode.traceMetricCounts, function (traceMetric) {
+      $.each(rootNode.metricCounts, function (metric) {
         // only really need to look at leafs (' / other') to hit all nodes
-        if (traceMetric.match(/ \/ other$/)) {
-          var parts = traceMetric.split(' / ');
+        if (metric.match(/ \/ other$/)) {
+          var parts = metric.split(' / ');
           var node = tree;
           var partialName = '';
           $.each(parts, function (i, part) {
@@ -679,7 +679,7 @@ TraceRenderer = (function () {
           childNodes.push(childNode);
         });
         childNodes.sort(function (a, b) {
-          return rootNode.traceMetricCounts[b.name] - rootNode.traceMetricCounts[a.name];
+          return rootNode.metricCounts[b.name] - rootNode.metricCounts[a.name];
         });
         if (childNodes.length === 1 && childNodes[0].name.match(/ \/ other$/)) {
           // skip if single 'other' node (in which case it will be represented by current node)
@@ -699,7 +699,7 @@ TraceRenderer = (function () {
       $profileFilter.removeClass('hide');
       $.each(orderedNodes, function (i, node) {
         $profileFilter.append($('<option />').val(node.name)
-            .text(node.name + ' (' + rootNode.traceMetricCounts[node.name] + ')'));
+            .text(node.name + ' (' + rootNode.metricCounts[node.name] + ')'));
       });
       $profileFilter.change(function () {
         // update merged stack tree based on filter
@@ -709,15 +709,15 @@ TraceRenderer = (function () {
     }
   }
 
-  function calculateTraceMetricCounts(node) {
+  function calculateMetricCounts(node) {
     var mergedCounts = {};
-    if (node.leafThreadState && node.traceMetrics.length) {
+    if (node.leafThreadState && node.metricNames.length) {
       var partial = '';
-      $.each(node.traceMetrics, function (i, traceMetric) {
+      $.each(node.metricNames, function (i, metricName) {
         if (i > 0) {
           partial += ' / ';
         }
-        partial += traceMetric;
+        partial += metricName;
         mergedCounts[partial] = node.sampleCount;
       });
       mergedCounts[partial + ' / other'] = node.sampleCount;
@@ -725,19 +725,19 @@ TraceRenderer = (function () {
     if (node.childNodes) {
       var childNodes = node.childNodes;
       var i;
-      var processTraceMetric = function (traceMetric, count) {
-        if (mergedCounts[traceMetric]) {
-          mergedCounts[traceMetric] += count;
+      var processMetric = function (metric, count) {
+        if (mergedCounts[metric]) {
+          mergedCounts[metric] += count;
         } else {
-          mergedCounts[traceMetric] = count;
+          mergedCounts[metric] = count;
         }
       };
       for (i = 0; i < childNodes.length; i++) {
-        var traceMetricCounts = calculateTraceMetricCounts(childNodes[i]);
-        $.each(traceMetricCounts, processTraceMetric);
+        var traceMetricCounts = calculateMetricCounts(childNodes[i]);
+        $.each(traceMetricCounts, processMetric);
       }
     }
-    node.traceMetricCounts = mergedCounts;
+    node.metricCounts = mergedCounts;
     return mergedCounts;
   }
 

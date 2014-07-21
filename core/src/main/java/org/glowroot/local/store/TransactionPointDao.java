@@ -58,7 +58,7 @@ public class TransactionPointDao implements TransactionPointRepository {
             new Column("count", Types.BIGINT),
             new Column("error_count", Types.BIGINT),
             new Column("stored_trace_count", Types.BIGINT),
-            new Column("trace_metrics", Types.VARCHAR)); // json data
+            new Column("metrics", Types.VARCHAR)); // json data
 
     private static final ImmutableList<Column> transactionPointColumns = ImmutableList.of(
             new Column("transaction_type", Types.VARCHAR),
@@ -68,7 +68,7 @@ public class TransactionPointDao implements TransactionPointRepository {
             new Column("count", Types.BIGINT),
             new Column("error_count", Types.BIGINT),
             new Column("stored_trace_count", Types.BIGINT),
-            new Column("trace_metrics", Types.VARCHAR), // json data
+            new Column("metrics", Types.VARCHAR), // json data
             new Column("profile_id", Types.VARCHAR)); // capped database id
 
     // this index includes all columns needed for the overall aggregate query so h2 can return
@@ -101,14 +101,14 @@ public class TransactionPointDao implements TransactionPointRepository {
             final Map<String, TransactionPoint> transactionPoints) {
         try {
             dataSource.update("insert into overall_point (transaction_type, capture_time,"
-                    + " total_micros, count, error_count, stored_trace_count, trace_metrics)"
-                    + " values (?, ?, ?, ?, ?, ?, ?)", transactionType,
+                    + " total_micros, count, error_count, stored_trace_count, metrics) values"
+                    + " (?, ?, ?, ?, ?, ?, ?)", transactionType,
                     overallPoint.getCaptureTime(), overallPoint.getTotalMicros(),
                     overallPoint.getCount(), overallPoint.getErrorCount(),
-                    overallPoint.getStoredTraceCount(), overallPoint.getTransactionMetrics());
+                    overallPoint.getStoredTraceCount(), overallPoint.getMetrics());
             dataSource.batchUpdate("insert into transaction_point (transaction_type,"
                     + " transaction_name, capture_time, total_micros, count, error_count,"
-                    + " stored_trace_count, trace_metrics, profile_id) values"
+                    + " stored_trace_count, metrics, profile_id) values"
                     + " (?, ?, ?, ?, ?, ?, ?, ?, ?)", new BatchAdder() {
                 @Override
                 public void addBatches(PreparedStatement preparedStatement)
@@ -128,7 +128,7 @@ public class TransactionPointDao implements TransactionPointRepository {
                         preparedStatement.setLong(6, transactionPoint.getErrorCount());
                         preparedStatement.setLong(7,
                                 transactionPoint.getStoredTraceCount());
-                        preparedStatement.setString(8, transactionPoint.getTransactionMetrics());
+                        preparedStatement.setString(8, transactionPoint.getMetrics());
                         preparedStatement.setString(9, profileId);
                         preparedStatement.addBatch();
                     }
@@ -144,7 +144,7 @@ public class TransactionPointDao implements TransactionPointRepository {
             long captureTimeFrom, long captureTimeTo) {
         try {
             return dataSource.query("select capture_time, total_micros, count, error_count,"
-                    + " stored_trace_count, trace_metrics, null from overall_point where"
+                    + " stored_trace_count, metrics, null from overall_point where"
                     + " transaction_type = ? and capture_time >= ? and capture_time <= ?"
                     + " order by capture_time",
                     ImmutableList.of(transactionType, captureTimeFrom, captureTimeTo),
@@ -158,10 +158,10 @@ public class TransactionPointDao implements TransactionPointRepository {
     public ImmutableList<TransactionPoint> readTransactionPoints(String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo) {
         try {
-            // TODO this query is a little slow because of pulling in trace_metrics for each row
-            // and sticking trace_metrics into index does not seem to help
+            // TODO this query is a little slow because of pulling in metrics for each row
+            // and sticking metrics into index does not seem to help
             return dataSource.query("select capture_time, total_micros, count, error_count,"
-                    + " stored_trace_count, trace_metrics, profile_id from transaction_point where"
+                    + " stored_trace_count, metrics, profile_id from transaction_point where"
                     + " transaction_type = ? and transaction_name = ? and capture_time >= ?"
                     + " and capture_time <= ?",
                     ImmutableList.of(transactionType, transactionName, captureTimeFrom,
@@ -273,15 +273,15 @@ public class TransactionPointDao implements TransactionPointRepository {
             long count = resultSet.getLong(3);
             long errorCount = resultSet.getLong(4);
             long storedTraceCount = resultSet.getLong(5);
-            String traceMetrics = resultSet.getString(6);
-            if (traceMetrics == null) {
+            String metrics = resultSet.getString(6);
+            if (metrics == null) {
                 // transaction_name should never be null
                 // TODO provide better fallback here
-                throw new SQLException("Found null trace_metrics in transaction_point table");
+                throw new SQLException("Found null metrics in transaction_point table");
             }
             String profileId = resultSet.getString(7);
             return new TransactionPoint(captureTime, totalMicros, count, errorCount,
-                    storedTraceCount, traceMetrics, getExistence(profileId), null);
+                    storedTraceCount, metrics, getExistence(profileId), null);
         }
 
         private Existence getExistence(@Nullable String fileBlockId) {

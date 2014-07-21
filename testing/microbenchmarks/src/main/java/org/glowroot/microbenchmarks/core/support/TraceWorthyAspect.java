@@ -19,7 +19,7 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -39,11 +39,11 @@ public class TraceWorthyAspect {
 
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TraceWorthy",
             methodName = "doSomethingTraceWorthy", methodParameterTypes = {},
-            traceMetric = "trace worthy")
+            metricName = "trace worthy")
     public static class TraceWorthyAdvice {
 
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(TraceWorthyAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(TraceWorthyAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -53,7 +53,7 @@ public class TraceWorthyAspect {
         @OnBefore
         public static Span onBefore() {
             return pluginServices.startTrace("Microbenchmark", "trace worthy",
-                    MessageSupplier.from("trace worthy"), traceMetricName);
+                    MessageSupplier.from("trace worthy"), metricName);
         }
 
         @OnReturn

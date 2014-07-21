@@ -22,7 +22,7 @@ import org.glowroot.api.CompletedSpan;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
@@ -64,10 +64,10 @@ public class ServletAspect {
 
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
             methodParameterTypes = {"javax.servlet.ServletRequest",
-                    "javax.servlet.ServletResponse"}, traceMetric = "http request")
+                    "javax.servlet.ServletResponse"}, metricName = "http request")
     public static class ServiceAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(ServiceAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ServiceAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // only enabled if it is not contained in another servlet or filter span
@@ -100,7 +100,7 @@ public class ServletAspect {
             }
             topLevel.set(messageSupplier);
             Span span = pluginServices.startTrace("Servlet", requestUri, messageSupplier,
-                    traceMetricName);
+                    metricName);
             String userPrincipalName = requestInvoker.getUserPrincipalName(request);
             if (userPrincipalName != null) {
                 pluginServices.setTraceUser(userPrincipalName);
@@ -146,7 +146,7 @@ public class ServletAspect {
 
     @Pointcut(className = "javax.servlet.http.HttpServlet", methodName = "do*",
             methodParameterTypes = {"javax.servlet.http.HttpServletRequest",
-                    "javax.servlet.http.HttpServletResponse"}, traceMetric = "http request")
+                    "javax.servlet.http.HttpServletResponse"}, metricName = "http request")
     public static class DoMethodsAdvice extends ServiceAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -170,7 +170,7 @@ public class ServletAspect {
 
     @Pointcut(className = "javax.servlet.Filter", methodName = "doFilter", methodParameterTypes = {
             "javax.servlet.ServletRequest", "javax.servlet.ServletResponse",
-            "javax.servlet.FilterChain"}, traceMetric = "http request")
+            "javax.servlet.FilterChain"}, metricName = "http request")
     public static class DoFilterAdvice extends ServiceAdvice {
         @IsEnabled
         public static boolean isEnabled() {

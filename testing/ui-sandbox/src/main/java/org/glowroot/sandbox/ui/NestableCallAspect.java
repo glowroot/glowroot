@@ -29,7 +29,7 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -49,10 +49,10 @@ public class NestableCallAspect {
     private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
 
     @Pointcut(className = "org.glowroot.sandbox.ui.NestableCall", methodName = "execute",
-            traceMetric = "nestable", ignoreSelfNested = true)
+            metricName = "nestable", ignoreSelfNested = true)
     public static class NestableCallAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(NestableCallAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(NestableCallAdvice.class);
         private static final Random random = new Random();
         @IsEnabled
         public static boolean isEnabled() {
@@ -79,10 +79,10 @@ public class NestableCallAspect {
             Span span;
             if (count % 10 == 0) {
                 span = pluginServices.startTrace("Background", transactionName,
-                        getRootMessageSupplier(headline), traceMetricName);
+                        getRootMessageSupplier(headline), metricName);
             } else {
                 span = pluginServices.startTrace("Sandbox", transactionName,
-                        getRootMessageSupplier(headline), traceMetricName);
+                        getRootMessageSupplier(headline), metricName);
             }
             int index = count % (USERS.size() + 1);
             if (index < USERS.size()) {
@@ -91,20 +91,20 @@ public class NestableCallAspect {
                 pluginServices.setTraceUser(null);
             }
             if (random.nextBoolean()) {
-                pluginServices.putTraceCustomAttribute("My First Attribute", "hello world");
-                pluginServices.putTraceCustomAttribute("My First Attribute", "hello world");
-                pluginServices.putTraceCustomAttribute("My First Attribute",
+                pluginServices.setTraceCustomAttribute("My First Attribute", "hello world");
+                pluginServices.setTraceCustomAttribute("My First Attribute", "hello world");
+                pluginServices.setTraceCustomAttribute("My First Attribute",
                         "hello world " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                pluginServices.putTraceCustomAttribute("Second", "val " + random.nextInt(10));
+                pluginServices.setTraceCustomAttribute("Second", "val " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                pluginServices.putTraceCustomAttribute("A Very Long Attribute Value",
+                pluginServices.setTraceCustomAttribute("A Very Long Attribute Value",
                         Strings.repeat("abcdefghijklmnopqrstuvwxyz", 3));
             }
             if (random.nextBoolean()) {
-                pluginServices.putTraceCustomAttribute("Another",
+                pluginServices.setTraceCustomAttribute("Another",
                         "a b c d e f g h i j k l m n o p q r s t u v w x y z"
                                 + " a b c d e f g h i j k l m n o p q r s t u v w x y z");
             }

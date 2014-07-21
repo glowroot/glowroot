@@ -79,7 +79,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1|execute2",
-            traceMetric = "xyz")
+            metricName = "xyz")
     public static class BasicAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -111,7 +111,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.weaving.SuperBasicMisc", methodName = "superBasic",
-            traceMetric = "superbasic")
+            metricName = "superbasic")
     public static class SuperBasicAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -137,7 +137,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "java.lang.Throwable", methodName = "toString",
-            traceMetric = "throwable to string")
+            metricName = "throwable to string")
     public static class ThrowableToStringAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -780,7 +780,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
-            traceMetric = "efg")
+            metricName = "efg")
     public static class BindMethodNameAdvice {
         public static final ThreadLocal<String> isEnabledMethodName = new ThreadLocal<String>();
         public static final ThreadLocal<String> onBeforeMethodName = new ThreadLocal<String>();
@@ -957,7 +957,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute*",
-            methodParameterTypes = {".."}, traceMetric = "abc xyz")
+            methodParameterTypes = {".."}, metricName = "abc xyz")
     public static class InnerMethodAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute*",
@@ -999,7 +999,7 @@ public class SomeAspect {
     public static class MethodReturnNarrowingAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "*",
-            methodParameterTypes = {".."}, traceMetric = "wild")
+            methodParameterTypes = {".."}, metricName = "wild")
     public static class WildMethodAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc", methodName = "executePrimitive",

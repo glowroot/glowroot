@@ -29,11 +29,11 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.api.CompletedSpan;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
+import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.TraceMetricTimer;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
@@ -46,11 +46,11 @@ import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.model.CurrentTraceMetricHolder;
+import org.glowroot.trace.model.MetricNameImpl;
+import org.glowroot.trace.model.MetricTimerExt;
 import org.glowroot.trace.model.Trace;
 import org.glowroot.trace.model.TraceGcInfos;
 import org.glowroot.trace.model.TraceMetric;
-import org.glowroot.trace.model.TraceMetricNameImpl;
-import org.glowroot.trace.model.TraceMetricTimerExt;
 import org.glowroot.trace.model.TraceThreadInfo;
 
 /**
@@ -70,7 +70,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final TraceRegistry traceRegistry;
     private final TraceCollector traceCollector;
     private final ConfigService configService;
-    private final TraceMetricNameCache traceMetricNameCache;
+    private final MetricNameCache metricNameCache;
     @Nullable
     private final ThreadAllocatedBytes threadAllocatedBytes;
     private final ProfileScheduler profileScheduler;
@@ -91,12 +91,12 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private volatile PluginConfig pluginConfig;
 
     static PluginServicesImpl create(TraceRegistry traceRegistry, TraceCollector traceCollector,
-            ConfigService configService, TraceMetricNameCache traceMetricNameCache,
+            ConfigService configService, MetricNameCache metricNameCache,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes, ProfileScheduler profileScheduler,
             Ticker ticker, Clock clock, PluginDescriptorCache pluginDescriptorCache,
             @Nullable String pluginId) {
         PluginServicesImpl pluginServices = new PluginServicesImpl(traceRegistry, traceCollector,
-                configService, traceMetricNameCache, threadAllocatedBytes, profileScheduler,
+                configService, metricNameCache, threadAllocatedBytes, profileScheduler,
                 ticker, clock, pluginDescriptorCache, pluginId);
         // add config listeners first before caching configuration property values to avoid a
         // (remotely) possible race condition
@@ -110,14 +110,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     private PluginServicesImpl(TraceRegistry traceRegistry, TraceCollector traceCollector,
-            ConfigService configService, TraceMetricNameCache traceMetricNameCache,
+            ConfigService configService, MetricNameCache metricNameCache,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             ProfileScheduler profileScheduler, Ticker ticker, Clock clock,
             PluginDescriptorCache pluginDescriptorCache, @Nullable String pluginId) {
         this.traceRegistry = traceRegistry;
         this.traceCollector = traceCollector;
         this.configService = configService;
-        this.traceMetricNameCache = traceMetricNameCache;
+        this.metricNameCache = metricNameCache;
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.profileScheduler = profileScheduler;
         this.clock = clock;
@@ -196,29 +196,29 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public TraceMetricName getTraceMetricName(Class<?> adviceClass) {
-        return traceMetricNameCache.getName(adviceClass);
+    public MetricName getMetricName(Class<?> adviceClass) {
+        return metricNameCache.getName(adviceClass);
     }
 
     @Override
     public Span startTrace(String transactionType, String transactionName,
-            MessageSupplier messageSupplier, TraceMetricName traceMetricName) {
+            MessageSupplier messageSupplier, MetricName metricName) {
         if (messageSupplier == null) {
             logger.error("startTrace(): argument 'messageSupplier' must be non-null");
             return NopSpan.INSTANCE;
         }
-        if (traceMetricName == null) {
-            logger.error("startTrace(): argument 'traceMetricName' must be non-null");
+        if (metricName == null) {
+            logger.error("startTrace(): argument 'metricName' must be non-null");
             return NopSpan.INSTANCE;
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
             CurrentTraceMetricHolder currentTraceMetricHolder =
                     traceRegistry.getCurrentTraceMetricHolder();
-            TraceMetric rootTraceMetric = new TraceMetric((TraceMetricNameImpl) traceMetricName,
-                    null, currentTraceMetricHolder, ticker);
+            TraceMetric rootMetric = new TraceMetric((MetricNameImpl) metricName, null,
+                    currentTraceMetricHolder, ticker);
             long startTick = ticker.read();
-            rootTraceMetric.start(startTick);
+            rootMetric.start(startTick);
             TraceThreadInfo threadInfo = null;
             TraceGcInfos gcInfo = null;
             if (threadInfoEnabled) {
@@ -228,60 +228,60 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 gcInfo = new TraceGcInfos();
             }
             trace = new Trace(clock.currentTimeMillis(), transactionType, transactionName,
-                    messageSupplier, rootTraceMetric, startTick, threadInfo, gcInfo, ticker);
+                    messageSupplier, rootMetric, startTick, threadInfo, gcInfo, ticker);
             traceRegistry.addTrace(trace);
             profileScheduler.maybeScheduleProfilingUsingPercentage(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
         } else {
-            return startSpan(trace, traceMetricName, messageSupplier);
+            return startSpan(trace, metricName, messageSupplier);
         }
     }
 
     @Override
-    public Span startSpan(MessageSupplier messageSupplier, TraceMetricName traceMetricName) {
+    public Span startSpan(MessageSupplier messageSupplier, MetricName metricName) {
         if (messageSupplier == null) {
             logger.error("startSpan(): argument 'messageSupplier' must be non-null");
             return NopSpan.INSTANCE;
         }
-        if (traceMetricName == null) {
-            logger.error("startSpan(): argument 'traceMetricName' must be non-null");
+        if (metricName == null) {
+            logger.error("startSpan(): argument 'metricName' must be non-null");
             return NopSpan.INSTANCE;
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
             return NopSpan.INSTANCE;
         } else {
-            return startSpan(trace, traceMetricName, messageSupplier);
+            return startSpan(trace, metricName, messageSupplier);
         }
     }
 
     @Override
-    public TraceMetricTimer startTraceMetric(TraceMetricName traceMetricName) {
-        if (traceMetricName == null) {
-            logger.error("startTimer(): argument 'traceMetricName' must be non-null");
-            return NopTraceMetricTimer.INSTANCE;
+    public MetricTimer startMetric(MetricName metricName) {
+        if (metricName == null) {
+            logger.error("startTimer(): argument 'metricName' must be non-null");
+            return NopMetricTimer.INSTANCE;
         }
         CurrentTraceMetricHolder currentTraceMetricHolder =
                 traceRegistry.getCurrentTraceMetricHolder();
-        TraceMetric currentTraceMetric = currentTraceMetricHolder.get();
-        if (currentTraceMetric == null) {
-            return NopTraceMetricTimer.INSTANCE;
+        TraceMetric currentMetric = currentTraceMetricHolder.get();
+        if (currentMetric == null) {
+            return NopMetricTimer.INSTANCE;
         }
-        return currentTraceMetric.startNestedMetric(traceMetricName);
+        return currentMetric.startNestedMetric(metricName);
     }
 
-    private TraceMetricTimerExt startTraceMetric(TraceMetricName traceMetricName, long startTick) {
-        if (traceMetricName == null) {
-            logger.error("startTimer(): argument 'traceMetricName' must be non-null");
-            return NopTraceMetricTimerExt.INSTANCE;
+    private MetricTimerExt startMetric(MetricName metricName, long startTick) {
+        if (metricName == null) {
+            logger.error("startTimer(): argument 'metricName' must be non-null");
+            return NopMetricTimerExt.INSTANCE;
         }
         CurrentTraceMetricHolder currentTraceMetricHolder =
                 traceRegistry.getCurrentTraceMetricHolder();
         TraceMetric currentTraceMetric = currentTraceMetricHolder.get();
         if (currentTraceMetric == null) {
-            return NopTraceMetricTimerExt.INSTANCE;
+            return NopMetricTimerExt.INSTANCE;
         }
-        return currentTraceMetric.startNestedMetric(traceMetricName, startTick);
+        return currentTraceMetric.startNestedMetric(metricName, startTick);
     }
 
     @Override
@@ -317,7 +317,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setTransactionType(String transactionType) {
+    public void setTransactionType(@Nullable String transactionType) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setTransactionType(transactionType);
@@ -325,7 +325,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setTransactionName(String transactionName) {
+    public void setTransactionName(@Nullable String transactionName) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setTransactionName(transactionName);
@@ -352,9 +352,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void putTraceCustomAttribute(String name, @Nullable String value) {
+    public void setTraceCustomAttribute(String name, @Nullable String value) {
         if (name == null) {
-            logger.error("putTraceCustomAttribute(): argument 'name' must be non-null");
+            logger.error("setTraceCustomAttribute(): argument 'name' must be non-null");
             return;
         }
         Trace trace = traceRegistry.getCurrentTrace();
@@ -402,18 +402,18 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         gcInfoEnabled = generalConfig.isGcInfoEnabled();
     }
 
-    private Span startSpan(Trace trace, TraceMetricName traceMetricName,
+    private Span startSpan(Trace trace, MetricName metricName,
             MessageSupplier messageSupplier) {
         long startTick = ticker.read();
         if (trace.getSpanCount() >= maxSpans) {
             // the span limit has been exceeded for this trace
             trace.addSpanLimitExceededMarkerIfNeeded();
-            TraceMetricTimerExt traceMetricTimer = startTraceMetric(traceMetricName, startTick);
-            return new TimerWrappedInSpan(traceMetricTimer, startTick, trace, messageSupplier);
+            MetricTimerExt metricTimer = startMetric(metricName, startTick);
+            return new TimerWrappedInSpan(metricTimer, startTick, trace, messageSupplier);
         } else {
-            TraceMetricTimerExt traceMetricTimer = startTraceMetric(traceMetricName, startTick);
+            MetricTimerExt metricTimer = startMetric(metricName, startTick);
             org.glowroot.trace.model.Span span =
-                    trace.pushSpan(startTick, messageSupplier, traceMetricTimer);
+                    trace.pushSpan(startTick, messageSupplier, metricTimer);
             return new SpanImpl(span, trace);
         }
     }
@@ -504,26 +504,26 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @NotThreadSafe
     private class TimerWrappedInSpan implements Span {
-        private final TraceMetricTimerExt traceMetric;
+        private final MetricTimerExt metricTimer;
         private final long startTick;
         private final Trace trace;
         private final MessageSupplier messageSupplier;
-        public TimerWrappedInSpan(TraceMetricTimerExt traceMetric, long startTick, Trace trace,
+        public TimerWrappedInSpan(MetricTimerExt metricTimer, long startTick, Trace trace,
                 MessageSupplier messageSupplier) {
-            this.traceMetric = traceMetric;
+            this.metricTimer = metricTimer;
             this.startTick = startTick;
             this.trace = trace;
             this.messageSupplier = messageSupplier;
         }
         @Override
         public CompletedSpan end() {
-            traceMetric.stop();
+            metricTimer.stop();
             return NopCompletedSpan.INSTANCE;
         }
         @Override
         public CompletedSpan endWithStackTrace(long threshold, TimeUnit unit) {
             long endTick = ticker.read();
-            traceMetric.end(endTick);
+            metricTimer.end(endTick);
             // use higher span limit when adding slow spans, but still need some kind of cap
             if (endTick - startTick >= unit.toNanos(threshold)
                     && trace.getSpanCount() < 2 * maxSpans) {
@@ -544,7 +544,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 return end();
             }
             long endTick = ticker.read();
-            traceMetric.end(endTick);
+            metricTimer.end(endTick);
             // use higher span limit when adding errors, but still need some kind of cap
             if (trace.getSpanCount() < 2 * maxSpans) {
                 // span won't be nested properly, but at least the error will get captured
@@ -593,15 +593,15 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @ThreadSafe
-    private static class NopTraceMetricTimer implements TraceMetricTimer {
-        private static final NopTraceMetricTimer INSTANCE = new NopTraceMetricTimer();
+    private static class NopMetricTimer implements MetricTimer {
+        private static final NopMetricTimer INSTANCE = new NopMetricTimer();
         @Override
         public void stop() {}
     }
 
     @ThreadSafe
-    public static class NopTraceMetricTimerExt implements TraceMetricTimerExt {
-        public static final NopTraceMetricTimerExt INSTANCE = new NopTraceMetricTimerExt();
+    public static class NopMetricTimerExt implements MetricTimerExt {
+        public static final NopMetricTimerExt INSTANCE = new NopMetricTimerExt();
         @Override
         public void stop() {}
         @Override

@@ -55,7 +55,7 @@ public class TraceModule {
     private final StuckTraceWatcher stuckTraceWatcher;
     private final OutlierProfilerWatcher outlierProfilerWatcher;
 
-    private final boolean traceMetricWrapperMethods;
+    private final boolean metricWrapperMethods;
     private final boolean jvmRetransformClassesSupported;
 
     private final PluginServicesFactory pluginServicesFactory;
@@ -71,18 +71,18 @@ public class TraceModule {
                 configService.getPointcutConfigs());
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
                 configModule.getPluginDescriptorCache().getMixinTypes());
-        final TraceMetricNameCache traceMetricNameCache = new TraceMetricNameCache();
-        weavingTimerService = new WeavingTimerServiceImpl(traceRegistry, traceMetricNameCache);
+        final MetricNameCache metricNameCache = new MetricNameCache();
+        weavingTimerService = new WeavingTimerServiceImpl(traceRegistry, metricNameCache);
 
-        traceMetricWrapperMethods =
-                configModule.getConfigService().getAdvancedConfig().isTraceMetricWrapperMethods();
+        metricWrapperMethods =
+                configModule.getConfigService().getAdvancedConfig().isMetricWrapperMethods();
         // instrumentation is null when debugging with IsolatedWeavingClassLoader
         // instead of javaagent
         if (instrumentation != null) {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
                     configModule.getPluginDescriptorCache().getMixinTypes(),
                     adviceCache.getAdvisorsSupplier(), analyzedWorld, weavingTimerService,
-                    traceMetricWrapperMethods);
+                    metricWrapperMethods);
             PreInitializeWeavingClasses.preInitializeClasses(TraceModule.class.getClassLoader());
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
@@ -113,7 +113,7 @@ public class TraceModule {
             @Override
             public PluginServices create(@Nullable String pluginId) {
                 return PluginServicesImpl.create(traceRegistry, traceCollector,
-                        configModule.getConfigService(), traceMetricNameCache,
+                        configModule.getConfigService(), metricNameCache,
                         threadAllocatedBytes, profileScheduler, ticker, clock,
                         configModule.getPluginDescriptorCache(), pluginId);
             }
@@ -137,8 +137,8 @@ public class TraceModule {
         return weavingTimerService;
     }
 
-    public boolean isTraceMetricWrapperMethods() {
-        return traceMetricWrapperMethods;
+    public boolean isMetricWrapperMethods() {
+        return metricWrapperMethods;
     }
 
     public boolean isJvmRetransformClassesSupported() {

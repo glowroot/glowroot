@@ -1,60 +1,62 @@
 {
-  "general" : {
-    "enabled" : true,
-    "storeThresholdMillis" : 0,
-    "stuckThresholdSeconds" : 180,
-    "maxSpans" : 2000,
-    "threadInfoEnabled" : true,
-    "gcInfoEnabled" : true
+  "general": {
+    "enabled": true,
+    "storeThresholdMillis": 0,
+    "stuckThresholdSeconds": 180,
+    "maxSpans": 2000,
+    "threadInfoEnabled": true,
+    "gcInfoEnabled": true
   },
-  "profiling" : {
-    "tracePercentage" : 0.0,
-    "intervalMillis" : 50,
-    "maxSeconds" : 30,
-    "storeThresholdMillis" : -1
+  "profiling": {
+    "tracePercentage": 0.0,
+    "intervalMillis": 50,
+    "maxSeconds": 30,
+    "storeThresholdMillis": -1
   },
-  "outlier-profiling" : {
-    "enabled" : true,
-    "initialDelayMillis" : 30000,
-    "intervalMillis" : 1000,
-    "maxSeconds" : 300
+  "outlier-profiling": {
+    "enabled": true,
+    "initialDelayMillis": 30000,
+    "intervalMillis": 1000,
+    "maxSeconds": 300
   },
-  "user-tracing" : {
-    "user" : null,
-    "storeThresholdMillis" : 0,
-    "profile" : true
+  "user-tracing": {
+    "user": null,
+    "storeThresholdMillis": 0,
+    "profile": true
   },
-  "storage" : {
-    "traceExpirationHours" : 2147483647,
-    "cappedDatabaseSizeMb" : 1000
+  "storage": {
+    "traceExpirationHours": 2147483647,
+    "cappedDatabaseSizeMb": 1000
   },
-  "ui" : {
-    "port" : 0,
-    "defaultTransactionType" : "Integration test",
-    "sessionTimeoutMinutes" : 30,
-    "passwordHash" : ""
+  "ui": {
+    "port": 0,
+    "defaultTransactionType": "Integration test",
+    "sessionTimeoutMinutes": 30,
+    "passwordHash": ""
   },
-  "advanced" : {
-    "traceMetricWrapperMethods" : false
+  "advanced": {
+    "metricWrapperMethods": false
   },
-  "pointcuts" : [ ],
-  "plugins" : [
+  "pointcuts": [ ],
+  "plugins": [
     {
-      "id" : "glowroot-integration-tests",
-      "enabled" : true,
-      "properties" : {
-        "alternateHeadline" : "",
-        "captureSpanStackTraces" : false,
-        "hasDefaultVal" : "one",
-        "levelFiveEnabled" : false,
-        "levelFiveSpanEnabled" : false,
-        "starredHeadline" : false
+      "id": "glowroot-integration-tests",
+      "enabled": true,
+      "properties": {
+        "abcEnabled": false,
+        "abcSpanEnabled": false,
+        "alternateHeadline": "",
+        "captureSpanStackTraces": false,
+        "hasDefaultVal": "one",
+        "levelFiveEnabled": false,
+        "levelFiveSpanEnabled": false,
+        "starredHeadline": false
       }
     },
     {
-      "id" : "glowroot-test-container",
-      "enabled" : true,
-      "properties" : { }
+      "id": "glowroot-test-container",
+      "enabled": true,
+      "properties": { }
     }
   ]
 }

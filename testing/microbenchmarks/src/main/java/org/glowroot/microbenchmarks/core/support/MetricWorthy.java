@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.api;
+package org.glowroot.microbenchmarks.core.support;
 
 /**
- * See {@link PluginServices#startTraceMetric(TraceMetricName)} for how to retrieve and use
- * {@code TraceMetricTimer} instances.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface TraceMetricTimer {
+public class MetricWorthy {
 
-    /**
-     * Stop the {@code TraceMetricTimer}.
-     */
-    void stop();
+    public void doSomethingMetricWorthy() {}
+
+    public void doSomethingMetricWorthyB() {}
+
+    public void doSomethingMetricWorthy2() {}
+
+    public void doSomethingMetricWorthy2B() {}
 }

@@ -23,7 +23,7 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
@@ -50,7 +50,7 @@ public class Slf4jAspect {
     }
 
     private static LogAdviceTraveler onBefore(FormattingTuple formattingTuple, String methodName,
-            TraceMetricName traceMetricName) {
+            MetricName metricName) {
         String formattedMessage = nullToEmpty(formattingTuple.getMessage());
         Throwable throwable = formattingTuple.getThrowable();
         if (markTraceAsError(methodName.equals("warn"), throwable != null)) {
@@ -58,7 +58,7 @@ public class Slf4jAspect {
         }
         Span span = pluginServices.startSpan(
                 MessageSupplier.from("log {}: {}", methodName, formattedMessage),
-                traceMetricName);
+                metricName);
         return new LogAdviceTraveler(span, formattedMessage, throwable);
     }
 
@@ -72,10 +72,10 @@ public class Slf4jAspect {
     }
 
     @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
-            methodParameterTypes = {"java.lang.String"}, traceMetric = TRACE_METRIC)
+            methodParameterTypes = {"java.lang.String"}, metricName = TRACE_METRIC)
     public static class LogNoArgAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LogNoArgAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogNoArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -89,7 +89,7 @@ public class Slf4jAspect {
             }
             return pluginServices.startSpan(
                     MessageSupplier.from("log {}: {}", methodName, message),
-                    traceMetricName);
+                    metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Span span, @BindParameter String message) {
@@ -100,10 +100,10 @@ public class Slf4jAspect {
 
     @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
             methodParameterTypes = {"java.lang.String", "java.lang.Object"},
-            traceMetric = TRACE_METRIC)
+            metricName = TRACE_METRIC)
     public static class LogOneArgAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LogOneArgAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogOneArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -113,7 +113,7 @@ public class Slf4jAspect {
                 @BindParameter Object arg, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg);
-            return Slf4jAspect.onBefore(formattingTuple, methodName, traceMetricName);
+            return Slf4jAspect.onBefore(formattingTuple, methodName, metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
@@ -124,10 +124,10 @@ public class Slf4jAspect {
 
     @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
             methodParameterTypes = {"java.lang.String", "java.lang.Throwable"},
-            traceMetric = TRACE_METRIC)
+            metricName = TRACE_METRIC)
     public static class LogOneArgThrowableAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LogOneArgThrowableAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogOneArgThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -137,7 +137,7 @@ public class Slf4jAspect {
                 @BindParameter Object arg, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg);
-            return Slf4jAspect.onBefore(formattingTuple, methodName, traceMetricName);
+            return Slf4jAspect.onBefore(formattingTuple, methodName, metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
@@ -148,10 +148,10 @@ public class Slf4jAspect {
 
     @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
             methodParameterTypes = {"java.lang.String", "java.lang.Object", "java.lang.Object"},
-            traceMetric = TRACE_METRIC)
+            metricName = TRACE_METRIC)
     public static class LogTwoArgsAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LogTwoArgsAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogTwoArgsAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -162,7 +162,7 @@ public class Slf4jAspect {
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg1, arg2);
-            return Slf4jAspect.onBefore(formattingTuple, methodName, traceMetricName);
+            return Slf4jAspect.onBefore(formattingTuple, methodName, metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
@@ -173,10 +173,10 @@ public class Slf4jAspect {
 
     @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
             methodParameterTypes = {"java.lang.String", "java.lang.Object[]"},
-            traceMetric = TRACE_METRIC)
+            metricName = TRACE_METRIC)
     public static class LogAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(LogAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
@@ -186,7 +186,7 @@ public class Slf4jAspect {
                 @BindParameter Object[] arguments, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             FormattingTuple formattingTuple = MessageFormatter.arrayFormat(format, arguments);
-            return Slf4jAspect.onBefore(formattingTuple, methodName, traceMetricName);
+            return Slf4jAspect.onBefore(formattingTuple, methodName, metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {

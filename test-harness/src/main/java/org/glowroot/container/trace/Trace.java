@@ -52,7 +52,7 @@ public class Trace {
     @Nullable
     private final String user;
     private final ImmutableSetMultimap<String, String> customAttributes;
-    private final TraceMetric rootTraceMetric;
+    private final TraceMetric rootMetric;
     @Nullable
     private final TraceThreadInfo threadInfo;
     private final ImmutableList<TraceGcInfo> gcInfos;
@@ -63,7 +63,7 @@ public class Trace {
     private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
             long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user,
-            ImmutableSetMultimap<String, String> customAttributes, TraceMetric rootTraceMetric,
+            ImmutableSetMultimap<String, String> customAttributes, TraceMetric rootMetric,
             @Nullable TraceThreadInfo threadInfo, List<TraceGcInfo> gcInfos,
             Existence spansExistence, Existence profileExistence,
             Existence outlierProfileExistence) {
@@ -79,7 +79,7 @@ public class Trace {
         this.error = error;
         this.user = user;
         this.customAttributes = customAttributes;
-        this.rootTraceMetric = rootTraceMetric;
+        this.rootMetric = rootMetric;
         this.threadInfo = threadInfo;
         this.gcInfos = ImmutableList.copyOf(gcInfos);
         this.spansExistence = spansExistence;
@@ -137,8 +137,8 @@ public class Trace {
         return customAttributes;
     }
 
-    public TraceMetric getRootTraceMetric() {
-        return rootTraceMetric;
+    public TraceMetric getRootMetric() {
+        return rootMetric;
     }
 
     @Nullable
@@ -178,7 +178,7 @@ public class Trace {
                 .add("error", error)
                 .add("user", user)
                 .add("customAttributes", customAttributes)
-                .add("rootTraceMetric", rootTraceMetric)
+                .add("rootMetric", rootMetric)
                 .add("threadInfo", threadInfo)
                 .add("gcInfos", gcInfos)
                 .add("spansExistence", spansExistence)
@@ -201,7 +201,7 @@ public class Trace {
             @JsonProperty("error") @Nullable String error,
             @JsonProperty("user") @Nullable String user,
             @JsonProperty("customAttributes") @Nullable Map<String, /*@Nullable*/List</*@Nullable*/String>> customAttributes,
-            @JsonProperty("traceMetrics") @Nullable TraceMetric rootTraceMetric,
+            @JsonProperty("metrics") @Nullable TraceMetric rootMetric,
             @JsonProperty("threadInfo") @Nullable TraceThreadInfo threadInfo,
             @JsonProperty("gcInfos") @Nullable List</*@Nullable*/TraceGcInfo> gcInfosUnchecked,
             @JsonProperty("spansExistence") @Nullable Existence spansExistence,
@@ -218,7 +218,7 @@ public class Trace {
         checkRequiredProperty(transactionType, "transactionType");
         checkRequiredProperty(transactionName, "transactionName");
         checkRequiredProperty(headline, "headline");
-        checkRequiredProperty(rootTraceMetric, "rootTraceMetric");
+        checkRequiredProperty(rootMetric, "metrics");
         checkRequiredProperty(spansExistence, "spansExistence");
         checkRequiredProperty(profileExistence, "profileExistence");
         checkRequiredProperty(outlierProfileExistence, "outlierProfileExistence");
@@ -238,8 +238,7 @@ public class Trace {
             }
         }
         return new Trace(id, active, stuck, startTime, captureTime, duration, transactionType,
-                transactionName, headline, error, user, theCustomAttributes.build(),
-                rootTraceMetric,
+                transactionName, headline, error, user, theCustomAttributes.build(), rootMetric,
                 threadInfo, nullToEmpty(gcInfos), spansExistence, profileExistence,
                 outlierProfileExistence);
     }

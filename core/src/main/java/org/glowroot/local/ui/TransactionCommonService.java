@@ -65,7 +65,7 @@ class TransactionCommonService {
             count += transactionPoint.getCount();
             errorCount += transactionPoint.getErrorCount();
             TransactionMetric toBeMergedSyntheticRootMetric = mapper.readValue(
-                    transactionPoint.getTransactionMetrics(), TransactionMetric.class);
+                    transactionPoint.getMetrics(), TransactionMetric.class);
             mergeMatchedMetric(toBeMergedSyntheticRootMetric, syntheticRootMetric);
             if (profileExistence == Existence.NO) {
                 profileExistence = transactionPoint.getProfileExistence();
@@ -74,12 +74,12 @@ class TransactionCommonService {
                 profileExistence = Existence.YES;
             }
         }
-        TransactionMetric transactionMetrics = syntheticRootMetric;
+        TransactionMetric rootMetric = syntheticRootMetric;
         if (syntheticRootMetric.getNestedMetrics().size() == 1) {
-            transactionMetrics = syntheticRootMetric.getNestedMetrics().get(0);
+            rootMetric = syntheticRootMetric.getNestedMetrics().get(0);
         }
         return new TransactionHeader(transactionType, transactionName, from, to, totalMicros,
-                count, errorCount, transactionMetrics, profileExistence);
+                count, errorCount, rootMetric, profileExistence);
     }
 
     @Nullable
@@ -139,14 +139,14 @@ class TransactionCommonService {
     private void mergeMatchedNode(TransactionProfileNode toBeMergedNode,
             TransactionProfileNode node) {
         node.incrementSampleCount(toBeMergedNode.getSampleCount());
-        // the transaction metric names for a given stack element should always match, unless
+        // the metric names for a given stack element should always match, unless
         // the line numbers aren't available and overloaded methods are matched up, or
-        // the stack trace was captured while one of the synthetic $trace$metric$ methods was
-        // executing in which case one of the trace metric names may be a subset of the other,
+        // the stack trace was captured while one of the synthetic $glowroot$metric$ methods was
+        // executing in which case one of the metric names may be a subset of the other,
         // in which case, the superset wins:
-        List<String> traceMetrics = toBeMergedNode.getTraceMetrics();
-        if (traceMetrics != null && traceMetrics.size() > node.getTraceMetrics().size()) {
-            node.setTraceMetrics(traceMetrics);
+        List<String> metricNames = toBeMergedNode.getMetricNames();
+        if (metricNames != null && metricNames.size() > node.getMetricNames().size()) {
+            node.setMetricNames(metricNames);
         }
         for (TransactionProfileNode toBeMergedChildNode : toBeMergedNode.getChildNodes()) {
             mergeChildNodeIntoParent(toBeMergedChildNode, node);
@@ -198,12 +198,12 @@ class TransactionCommonService {
         private final long totalMicros;
         private final long count;
         private final long errorCount;
-        private final TransactionMetric rootTransactionMetric;
+        private final TransactionMetric rootMetric;
         private final Existence profileExistence;
 
         private TransactionHeader(String transactionType, @Nullable String transactionName,
                 long from, long to, long totalMicros, long count, long errorCount,
-                TransactionMetric rootTransactionMetric, Existence profileExistence) {
+                TransactionMetric rootMetric, Existence profileExistence) {
             this.transactionType = transactionType;
             this.transactionName = transactionName;
             this.from = from;
@@ -211,7 +211,7 @@ class TransactionCommonService {
             this.totalMicros = totalMicros;
             this.count = count;
             this.errorCount = errorCount;
-            this.rootTransactionMetric = rootTransactionMetric;
+            this.rootMetric = rootMetric;
             this.profileExistence = profileExistence;
         }
 
@@ -244,8 +244,8 @@ class TransactionCommonService {
             return errorCount;
         }
 
-        public TransactionMetric getTransactionMetrics() {
-            return rootTransactionMetric;
+        public TransactionMetric getMetrics() {
+            return rootMetric;
         }
 
         public Existence getProfileExistence() {

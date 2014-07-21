@@ -29,6 +29,7 @@ import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.OutlierProfilingConfig;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.PointcutConfig;
+import org.glowroot.container.config.PointcutConfig.AdviceKind;
 import org.glowroot.container.config.PointcutConfig.MethodModifier;
 import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
@@ -39,6 +40,7 @@ import org.glowroot.local.ui.LocalUiModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.nullToEmpty;
+import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
 /**
  * @author Trask Stalnaker
@@ -234,14 +236,14 @@ class LocalConfigService implements ConfigService {
     public AdvancedConfig getAdvancedConfig() {
         org.glowroot.config.AdvancedConfig coreConfig = configService.getAdvancedConfig();
         AdvancedConfig config = new AdvancedConfig(coreConfig.getVersion());
-        config.setTraceMetricWrapperMethods(coreConfig.isTraceMetricWrapperMethods());
+        config.setMetricWrapperMethods(coreConfig.isMetricWrapperMethods());
         return config;
     }
 
     @Override
     public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
         org.glowroot.config.AdvancedConfig updatedConfig =
-                new org.glowroot.config.AdvancedConfig(config.isTraceMetricWrapperMethods());
+                new org.glowroot.config.AdvancedConfig(config.isMetricWrapperMethods());
         configService.updateAdvancedConfig(updatedConfig, config.getVersion());
     }
 
@@ -310,12 +312,16 @@ class LocalConfigService implements ConfigService {
         config.setMethodParameterTypes(coreConfig.getMethodParameterTypes());
         config.setMethodReturnType(coreConfig.getMethodReturnType());
         config.setMethodModifiers(methodModifiers);
-        config.setTraceMetric(coreConfig.getTraceMetric());
+        config.setAdviceKind(AdviceKind.valueOf(coreConfig.getAdviceKind().name()));
+        config.setMetricName(coreConfig.getMetricName());
         config.setMessageTemplate(coreConfig.getMessageTemplate());
         config.setStackTraceThresholdMillis(coreConfig.getStackTraceThresholdMillis());
         config.setCaptureSelfNested(coreConfig.isCaptureSelfNested());
         config.setTransactionType(coreConfig.getTransactionType());
         config.setTransactionNameTemplate(coreConfig.getTransactionNameTemplate());
+        config.setTraceUserTemplate(coreConfig.getTraceUserTemplate());
+        config.setTraceCustomAttributeTemplates(coreConfig.getTraceCustomAttributeTemplates());
+        config.setTraceStoreThresholdMillis(coreConfig.getTraceStoreThresholdMillis());
         config.setEnabledProperty(coreConfig.getEnabledProperty());
         config.setSpanEnabledProperty(coreConfig.getSpanEnabledProperty());
         return config;
@@ -330,16 +336,21 @@ class LocalConfigService implements ConfigService {
         String className = config.getClassName();
         String methodName = config.getMethodName();
         String methodReturnTypeName = config.getMethodReturnType();
+        AdviceKind adviceKind = config.getAdviceKind();
         checkNotNull(className, "PointcutConfig className is null");
         checkNotNull(methodName, "PointcutConfig methodName is null");
         checkNotNull(methodReturnTypeName, "PointcutConfig methodReturnTypeName is null");
+        checkNotNull(adviceKind, "PointcutConfig adviceKind is null");
         return new org.glowroot.config.PointcutConfig(className, methodName,
                 config.getMethodParameterTypes(), methodReturnTypeName, methodModifiers,
-                nullToEmpty(config.getTraceMetric()), nullToEmpty(config.getMessageTemplate()),
+                org.glowroot.config.PointcutConfig.AdviceKind.valueOf(adviceKind.name()),
+                nullToEmpty(config.getMetricName()), nullToEmpty(config.getMessageTemplate()),
                 config.getStackTraceThresholdMillis(), config.isCaptureSelfNested(),
                 nullToEmpty(config.getTransactionType()),
                 nullToEmpty(config.getTransactionNameTemplate()),
-                nullToEmpty(config.getEnabledProperty()),
+                nullToEmpty(config.getTraceUserTemplate()),
+                nullToEmpty(config.getTraceCustomAttributeTemplates()),
+                config.getTraceStoreThresholdMillis(), nullToEmpty(config.getEnabledProperty()),
                 nullToEmpty(config.getSpanEnabledProperty()));
     }
 }

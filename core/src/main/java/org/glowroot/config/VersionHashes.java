@@ -16,6 +16,8 @@
 package org.glowroot.config;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.google.common.base.Charsets;
 import com.google.common.hash.HashFunction;
@@ -70,6 +72,12 @@ public class VersionHashes {
             List<?> items = (List<?>) object;
             for (Object item : items) {
                 putObject(hasher, item);
+            }
+        } else if (object instanceof Map<?, ?>) {
+            Map<?, ?> items = (Map<?, ?>) object;
+            for (Entry<?, ?> entry : items.entrySet()) {
+                putObject(hasher, entry.getKey());
+                putObject(hasher, entry.getValue());
             }
         } else {
             logger.error("unsupported object type: {}", object.getClass());

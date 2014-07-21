@@ -22,8 +22,8 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
-import org.glowroot.api.TraceMetricTimer;
+import org.glowroot.api.MetricName;
+import org.glowroot.api.MetricTimer;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -52,10 +52,10 @@ public class DatabaseMetaDataAspect {
             new ThreadLocal</*@Nullable*/String>();
 
     @Pointcut(className = "java.sql.DatabaseMetaData", methodName = "*",
-            methodParameterTypes = {".."}, ignoreSelfNested = true, traceMetric = "jdbc metadata")
+            methodParameterTypes = {".."}, ignoreSelfNested = true, metricName = "jdbc metadata")
     public static class AllMethodAdvice {
-        private static final TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(AllMethodAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(AllMethodAdvice.class);
         // plugin configuration property captureDatabaseMetaDataSpans is cached to limit map lookups
         private static volatile boolean pluginEnabled;
         private static volatile boolean spanEnabled;
@@ -79,9 +79,9 @@ public class DatabaseMetaDataAspect {
             if (pluginServices.isEnabled()) {
                 if (spanEnabled) {
                     return pluginServices.startSpan(MessageSupplier.from("jdbc metadata:"
-                            + " DatabaseMetaData.{}()", methodName), traceMetricName);
+                            + " DatabaseMetaData.{}()", methodName), metricName);
                 } else {
-                    return pluginServices.startTraceMetric(traceMetricName);
+                    return pluginServices.startMetric(metricName);
                 }
             } else {
                 return null;
@@ -99,7 +99,7 @@ public class DatabaseMetaDataAspect {
                 ((Span) spanOrTimer).endWithStackTrace(
                         JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
             } else {
-                ((TraceMetricTimer) spanOrTimer).stop();
+                ((MetricTimer) spanOrTimer).stop();
             }
         }
         @OnThrow
@@ -114,7 +114,7 @@ public class DatabaseMetaDataAspect {
             if (spanOrTimer instanceof Span) {
                 ((Span) spanOrTimer).endWithError(ErrorMessage.from(t));
             } else {
-                ((TraceMetricTimer) spanOrTimer).stop();
+                ((MetricTimer) spanOrTimer).stop();
             }
         }
     }

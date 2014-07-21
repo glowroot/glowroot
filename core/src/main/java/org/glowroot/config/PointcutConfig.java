@@ -16,6 +16,7 @@
 package org.glowroot.config;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -25,6 +26,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
@@ -34,6 +36,7 @@ import org.glowroot.markers.Immutable;
 
 import static com.google.common.base.Strings.nullToEmpty;
 import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
+import static org.glowroot.common.ObjectMappers.checkNotNullValuesForProperty;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
 import static org.glowroot.common.ObjectMappers.nullToFalse;
@@ -52,13 +55,19 @@ public class PointcutConfig {
     private final ImmutableList<String> methodParameterTypes;
     private final String methodReturnType;
     private final ImmutableList<MethodModifier> methodModifiers;
-    private final String traceMetric;
+
+    private final AdviceKind adviceKind;
+    private final String metricName;
     private final String messageTemplate;
     @Nullable
     private final Long stackTraceThresholdMillis;
     private final boolean captureSelfNested;
     private final String transactionType;
     private final String transactionNameTemplate;
+    private final String traceUserTemplate;
+    private final ImmutableMap<String, String> traceCustomAttributeTemplates;
+    @Nullable
+    private final Long traceStoreThresholdMillis;
 
     // enabledProperty and spanEnabledProperty are for plugin authors
     private final String enabledProperty;
@@ -68,27 +77,35 @@ public class PointcutConfig {
 
     @VisibleForTesting
     public PointcutConfig(String className, String methodName, List<String> methodParameterTypes,
-            String methodReturnType, List<MethodModifier> methodModifiers, String traceMetric,
-            String messageTemplate, @Nullable Long stackTraceThresholdMillis,
-            boolean captureSelfNested, String transactionType, String transactionNameTemplate,
-            String enabledProperty, String spanEnabledProperty) {
+            String methodReturnType, List<MethodModifier> methodModifiers,
+            AdviceKind adviceKind, String metricName, String messageTemplate,
+            @Nullable Long stackTraceThresholdMillis, boolean captureSelfNested,
+            String transactionType, String transactionNameTemplate, String traceUserTemplate,
+            Map<String, String> traceCustomAttributeTemplates,
+            @Nullable Long traceStoreThresholdMillis, String enabledProperty,
+            String spanEnabledProperty) {
         this.className = className;
         this.methodName = methodName;
         this.methodParameterTypes = ImmutableList.copyOf(methodParameterTypes);
         this.methodReturnType = methodReturnType;
         this.methodModifiers = ImmutableList.copyOf(methodModifiers);
-        this.traceMetric = traceMetric;
+        this.adviceKind = adviceKind;
+        this.metricName = metricName;
         this.messageTemplate = messageTemplate;
         this.stackTraceThresholdMillis = stackTraceThresholdMillis;
         this.captureSelfNested = captureSelfNested;
         this.transactionType = transactionType;
         this.transactionNameTemplate = transactionNameTemplate;
+        this.traceUserTemplate = traceUserTemplate;
+        this.traceCustomAttributeTemplates = ImmutableMap.copyOf(traceCustomAttributeTemplates);
+        this.traceStoreThresholdMillis = traceStoreThresholdMillis;
         this.enabledProperty = enabledProperty;
         this.spanEnabledProperty = spanEnabledProperty;
         version = VersionHashes.sha1(className, methodName, methodParameterTypes, methodReturnType,
-                methodModifiers, traceMetric, messageTemplate, stackTraceThresholdMillis,
-                captureSelfNested, transactionType, transactionNameTemplate, enabledProperty,
-                spanEnabledProperty);
+                methodModifiers, adviceKind, metricName, messageTemplate,
+                stackTraceThresholdMillis, captureSelfNested, transactionType,
+                transactionNameTemplate, traceUserTemplate, traceCustomAttributeTemplates,
+                traceStoreThresholdMillis, enabledProperty, spanEnabledProperty);
     }
 
     public String getClassName() {
@@ -112,8 +129,12 @@ public class PointcutConfig {
         return methodModifiers;
     }
 
-    public String getTraceMetric() {
-        return traceMetric;
+    public AdviceKind getAdviceKind() {
+        return adviceKind;
+    }
+
+    public String getMetricName() {
+        return metricName;
     }
 
     public String getMessageTemplate() {
@@ -137,6 +158,19 @@ public class PointcutConfig {
         return transactionNameTemplate;
     }
 
+    public String getTraceUserTemplate() {
+        return traceUserTemplate;
+    }
+
+    public ImmutableMap<String, String> getTraceCustomAttributeTemplates() {
+        return traceCustomAttributeTemplates;
+    }
+
+    @Nullable
+    public Long getTraceStoreThresholdMillis() {
+        return traceStoreThresholdMillis;
+    }
+
     public String getEnabledProperty() {
         return enabledProperty;
     }
@@ -150,20 +184,20 @@ public class PointcutConfig {
         return version;
     }
 
-    // TODO unused because spans are currently not supported without an associated trace metric
     @JsonIgnore
-    public boolean isTraceMetric() {
-        return !traceMetric.isEmpty();
+    public boolean isMetricOrGreater() {
+        return adviceKind == AdviceKind.METRIC || adviceKind == AdviceKind.SPAN
+                || adviceKind == AdviceKind.TRACE;
     }
 
     @JsonIgnore
-    public boolean isSpan() {
-        return !messageTemplate.isEmpty();
+    public boolean isSpanOrGreater() {
+        return adviceKind == AdviceKind.SPAN || adviceKind == AdviceKind.TRACE;
     }
 
     @JsonIgnore
     public boolean isTrace() {
-        return !transactionNameTemplate.isEmpty();
+        return adviceKind == AdviceKind.TRACE;
     }
 
     @JsonCreator
@@ -173,12 +207,16 @@ public class PointcutConfig {
             @JsonProperty("methodParameterTypes") @Nullable List</*@Nullable*/String> uncheckedMethodParameterTypes,
             @JsonProperty("methodReturnType") @Nullable String methodReturnType,
             @JsonProperty("methodModifiers") @Nullable List</*@Nullable*/MethodModifier> uncheckedMethodModifiers,
-            @JsonProperty("traceMetric") @Nullable String traceMetric,
+            @JsonProperty("adviceKind") @Nullable AdviceKind adviceKind,
+            @JsonProperty("metricName") @Nullable String metricName,
             @JsonProperty("messageTemplate") @Nullable String messageTemplate,
             @JsonProperty("stackTraceThresholdMillis") @Nullable Long stackTraceThresholdMillis,
             @JsonProperty("captureSelfNested") @Nullable Boolean captureSelfNested,
             @JsonProperty("transactionType") @Nullable String transactionType,
             @JsonProperty("transactionNameTemplate") @Nullable String transactionNameTemplate,
+            @JsonProperty("traceUserTemplate") @Nullable String traceUserTemplate,
+            @JsonProperty("traceCustomAttributeTemplates") @Nullable Map<String, /*@Nullable*/String> uncheckedTraceCustomAttributeTemplates,
+            @JsonProperty("traceStoreThresholdMillis") @Nullable Long traceStoreThresholdMillis,
             @JsonProperty("enabledProperty") @Nullable String enabledProperty,
             @JsonProperty("spanEnabledProperty") @Nullable String spanEnabledProperty,
             // without including a parameter for version, jackson will use direct field access after
@@ -189,18 +227,21 @@ public class PointcutConfig {
                 checkNotNullItemsForProperty(uncheckedMethodParameterTypes, "methodParameterTypes");
         List<MethodModifier> methodModifiers =
                 checkNotNullItemsForProperty(uncheckedMethodModifiers, "methodModifiers");
+        Map<String, String> traceCustomAttributeTemplates = checkNotNullValuesForProperty(
+                uncheckedTraceCustomAttributeTemplates, "traceCustomAttributeTemplates");
         checkRequiredProperty(className, "className");
         checkRequiredProperty(methodName, "methodName");
-        checkRequiredProperty(methodReturnType, "methodReturnType");
+        checkRequiredProperty(adviceKind, "adviceKind");
         if (version != null) {
             throw new JsonMappingException("Version field is not allowed for deserialization");
         }
         return new PointcutConfig(className, methodName, nullToEmpty(methodParameterTypes),
-                methodReturnType, nullToEmpty(methodModifiers), nullToEmpty(traceMetric),
-                nullToEmpty(messageTemplate), stackTraceThresholdMillis,
+                nullToEmpty(methodReturnType), nullToEmpty(methodModifiers), adviceKind,
+                nullToEmpty(metricName), nullToEmpty(messageTemplate), stackTraceThresholdMillis,
                 nullToFalse(captureSelfNested), nullToEmpty(transactionType),
-                nullToEmpty(transactionNameTemplate), nullToEmpty(enabledProperty),
-                nullToEmpty(spanEnabledProperty));
+                nullToEmpty(transactionNameTemplate), nullToEmpty(traceUserTemplate),
+                nullToEmpty(traceCustomAttributeTemplates), traceStoreThresholdMillis,
+                nullToEmpty(enabledProperty), nullToEmpty(spanEnabledProperty));
     }
 
     @Override
@@ -212,15 +253,23 @@ public class PointcutConfig {
                 .add("methodParameterTypes", methodParameterTypes)
                 .add("methodReturnType", methodReturnType)
                 .add("methodModifiers", methodModifiers)
-                .add("traceMetric", traceMetric)
+                .add("adviceKind", adviceKind)
+                .add("metricName", metricName)
                 .add("messageTemplate", messageTemplate)
                 .add("stackTraceThresholdMillis", stackTraceThresholdMillis)
                 .add("captureSelfNested", captureSelfNested)
                 .add("transactionType", transactionType)
                 .add("transactionNameTemplate", transactionNameTemplate)
+                .add("traceUserTemplate", traceUserTemplate)
+                .add("traceCustomAttributeTemplates", traceCustomAttributeTemplates)
+                .add("traceStoreThresholdMillis", traceStoreThresholdMillis)
                 .add("enabledProperty", enabledProperty)
                 .add("spanEnabledProperty", spanEnabledProperty)
                 .add("version", version)
                 .toString();
+    }
+
+    public static enum AdviceKind {
+        METRIC, SPAN, TRACE, OTHER
     }
 }

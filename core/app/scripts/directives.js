@@ -138,7 +138,8 @@ glowroot.directive('gtFormGroup', [
         // gtRequired accepts string binding for inline patterns and RegExp binding for scope expressions
         // (same as ngPattern on angular input directive)
         gtRequired: '&',
-        gtNumber: '&'
+        gtNumber: '&',
+        gtRows: '@'
       },
       transclude: true,
       require: '^form',

@@ -44,5 +44,5 @@ public @interface Pointcut {
     // the default is false since it costs a thread local lookup to ignore self nested calls,
     // and trace metrics already handle self nested calls, so it is only needed for spans
     boolean ignoreSelfNested() default false;
-    String traceMetric() default "";
+    String metricName() default "";
 }

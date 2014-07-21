@@ -56,32 +56,48 @@ public class PointcutSection {
         clickTypeAheadItem("Method name", methodName);
     }
 
-    public WebElement getTraceMetricTextField() {
-        return withWait(xpath(".//input[@ng-model='config.traceMetric']"));
+    public WebElement getAdviceKindMetricRadioButton() {
+        return withWait(xpath(".//input[@ng-model='config.adviceKind'][@value='metric']"));
     }
 
-    public WebElement getSpanDefinitionCheckbox() {
-        return withWait(xpath(".//input[@ng-model='spanDefinition']"));
+    public WebElement getAdviceKindSpanRadioButton() {
+        return withWait(xpath(".//input[@ng-model='config.adviceKind'][@value='span']"));
+    }
+
+    public WebElement getAdviceKindTraceRadioButton() {
+        return withWait(xpath(".//input[@ng-model='config.adviceKind'][@value='trace']"));
+    }
+
+    public WebElement getAdviceKindOtherRadioButton() {
+        return withWait(xpath(".//input[@ng-model='config.adviceKind'][@value='other']"));
+    }
+
+    public WebElement getMetricNameTextField() {
+        return withWait(xpath(".//div[@gt-model='config.metricName']//input"));
     }
 
     public WebElement getMessageTemplateTextField() {
-        return withWait(xpath(".//textarea[@ng-model='config.messageTemplate']"));
+        return withWait(xpath(".//div[@gt-model='config.messageTemplate']//textarea"));
     }
 
     public WebElement getStackTraceThresholdTextTextField() {
-        return withWait(xpath(".//input[@ng-model='stackTraceThresholdMillis']"));
+        return withWait(xpath(".//div[@gt-model='config.stackTraceThresholdMillis']//input"));
     }
 
-    public WebElement getTraceDefinitionCheckbox() {
-        return withWait(xpath(".//input[@ng-model='traceDefinition']"));
+    public WebElement getCaptureSelfNestedCheckbox() {
+        return withWait(xpath(".//div[@gt-model='config.captureSelfNested']//input"));
     }
 
     public WebElement getTransactionTypeTextField() {
-        return withWait(xpath(".//input[@ng-model='config.transactionType']"));
+        return withWait(xpath(".//div[@gt-model='config.transactionType']//input"));
     }
 
     public WebElement getTransactionNameTemplateTextField() {
-        return withWait(xpath(".//input[@ng-model='config.transactionNameTemplate']"));
+        return withWait(xpath(".//div[@gt-model='config.transactionNameTemplate']//input"));
+    }
+
+    public WebElement getTraceStoreThresholdMillisTextField() {
+        return withWait(xpath(".//div[@gt-model='config.traceStoreThresholdMillis']//input"));
     }
 
     public WebElement getAddButton() {

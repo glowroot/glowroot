@@ -31,7 +31,7 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.microbenchmarks.core.support.SpanWorthy;
 
@@ -48,8 +48,8 @@ public class StoreBenchmark {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-microbenchmarks");
-    private static final TraceMetricName traceMetricName =
-            pluginServices.getTraceMetricName(OnlyForTheTraceMetricName.class);
+    private static final MetricName metricName =
+            pluginServices.getMetricName(OnlyForTheMetricName.class);
 
     @Param({"false", "true"})
     private boolean store;
@@ -78,7 +78,7 @@ public class StoreBenchmark {
     @Benchmark
     public void execute() {
         rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
-                MessageSupplier.from("micro trace"), traceMetricName);
+                MessageSupplier.from("micro trace"), metricName);
         if (store) {
             pluginServices.setTraceStoreThreshold(0, MILLISECONDS);
         }
@@ -89,6 +89,6 @@ public class StoreBenchmark {
         rootSpan.end();
     }
 
-    @Pointcut(className = "dummy", methodName = "dummy", traceMetric = "micro trace")
-    private static class OnlyForTheTraceMetricName {}
+    @Pointcut(className = "dummy", methodName = "dummy", metricName = "micro trace")
+    private static class OnlyForTheMetricName {}
 }

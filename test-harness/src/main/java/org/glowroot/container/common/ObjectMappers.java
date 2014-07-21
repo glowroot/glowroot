@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -102,6 +103,22 @@ public class ObjectMappers {
             }
         }
         return list;
+    }
+
+    @PolyNull
+    @SuppressWarnings("return.type.incompatible")
+    public static <K, V extends /*@Nullable*/Object> Map<K, /*@NonNull*/V> checkNotNullValuesForProperty(
+            @PolyNull Map<K, V> map, String fieldName) throws JsonMappingException {
+        if (map == null) {
+            return null;
+        }
+        for (Entry<K, V> entry : map.entrySet()) {
+            if (entry.getValue() == null) {
+                throw new JsonMappingException("Null values are not allowed in object: "
+                        + fieldName);
+            }
+        }
+        return map;
     }
 
     // named after guava Strings.nullToEmpty

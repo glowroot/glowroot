@@ -30,9 +30,9 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.TraceMetricName;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.microbenchmarks.core.support.TraceMetricWorthy;
+import org.glowroot.microbenchmarks.core.support.MetricWorthy;
 
 /**
  * @author Trask Stalnaker
@@ -41,7 +41,7 @@ import org.glowroot.microbenchmarks.core.support.TraceMetricWorthy;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)
-public class TraceMetricBenchmark {
+public class MetricWorstCaseBenchmark {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-microbenchmarks");
@@ -50,15 +50,15 @@ public class TraceMetricBenchmark {
     private PointcutType pointcutType;
 
     private Span rootSpan;
-    private TraceMetricWorthy traceMetricWorthy;
+    private MetricWorthy metricWorthy;
 
     @Setup
     public void setup() {
-        TraceMetricName traceMetricName =
-                pluginServices.getTraceMetricName(OnlyForTheTraceMetricName.class);
+        MetricName metricName =
+                pluginServices.getMetricName(OnlyForTheMetricName.class);
         rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
-                MessageSupplier.from("micro trace"), traceMetricName);
-        traceMetricWorthy = new TraceMetricWorthy();
+                MessageSupplier.from("micro trace"), metricName);
+        metricWorthy = new MetricWorthy();
     }
 
     @TearDown
@@ -70,14 +70,16 @@ public class TraceMetricBenchmark {
     public void execute() {
         switch (pointcutType) {
             case API:
-                traceMetricWorthy.doSomethingTraceMetricWorthy();
+                metricWorthy.doSomethingMetricWorthy();
+                metricWorthy.doSomethingMetricWorthyB();
                 break;
             case CONFIG:
-                traceMetricWorthy.doSomethingTraceMetricWorthy2();
+                metricWorthy.doSomethingMetricWorthy2();
+                metricWorthy.doSomethingMetricWorthy2B();
                 break;
         }
     }
 
-    @Pointcut(className = "dummy", methodName = "dummy", traceMetric = "micro trace")
-    private static class OnlyForTheTraceMetricName {}
+    @Pointcut(className = "dummy", methodName = "dummy", metricName = "micro trace")
+    private static class OnlyForTheMetricName {}
 }

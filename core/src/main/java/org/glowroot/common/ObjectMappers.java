@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -37,6 +39,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -114,12 +117,37 @@ public class ObjectMappers {
         return list;
     }
 
+    @PolyNull
+    @SuppressWarnings("return.type.incompatible")
+    public static <K, V extends /*@Nullable*/Object> Map<K, /*@NonNull*/V> checkNotNullValuesForProperty(
+            @PolyNull Map<K, V> map, String fieldName) throws JsonMappingException {
+        if (map == null) {
+            return null;
+        }
+        for (Entry<K, V> entry : map.entrySet()) {
+            if (entry.getValue() == null) {
+                throw new JsonMappingException("Null values are not allowed in object: "
+                        + fieldName);
+            }
+        }
+        return map;
+    }
+
     // named after guava Strings.nullToEmpty
     public static <T> List<T> nullToEmpty(@Nullable List<T> list) {
         if (list == null) {
             return Lists.newArrayList();
         } else {
             return list;
+        }
+    }
+
+    // named after guava Strings.nullToEmpty
+    public static <K, V> Map<K, V> nullToEmpty(@Nullable Map<K, V> map) {
+        if (map == null) {
+            return Maps.newHashMap();
+        } else {
+            return map;
         }
     }
 

@@ -239,7 +239,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
             case 1:
                 return ImmutableList.copyOf(matchingAdvisors);
             default:
-                return Advice.orderingTraceMetric.immutableSortedCopy(matchingAdvisors);
+                return Advice.orderingByMetricName.immutableSortedCopy(matchingAdvisors);
         }
     }
 

@@ -44,7 +44,9 @@ glowroot.controller('ConfigPointcutListCtrl', [
 
     $scope.addPointcut = function () {
       $scope.pointcuts.push({
-        config: {}
+        config: {
+          adviceKind: 'metric'
+        }
       });
     };
 
