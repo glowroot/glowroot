@@ -65,8 +65,10 @@ case "$1" in
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONARQUBE_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
+                 #
+                 # need to use real IP address for jdbc connection since sonarqube.glowroot.org points to cloudflare
                  mvn sonar:sonar -pl .,plugin-api,core,plugins/jdbc-plugin,plugins/servlet-plugin,plugins/logger-plugin \
-                                 -Dsonar.jdbc.url=jdbc:postgresql://sonarqube.glowroot.org/sonar \
+                                 -Dsonar.jdbc.url=jdbc:postgresql://54.88.183.212/sonar \
                                  -Dsonar.jdbc.username=sonar \
                                  -Dsonar.host.url=http://sonarqube.glowroot.org \
                                  -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
