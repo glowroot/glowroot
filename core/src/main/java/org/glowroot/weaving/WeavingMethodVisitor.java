@@ -202,7 +202,9 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                     "java/lang/Throwable");
             visitLabel(catchHandlerLabel2);
             visitOnThrowAdvice();
-            visitOnAfterAdvice();
+            for (Advice advice : Lists.reverse(advisors)) {
+                visitOnAfterAdvice(advice);
+            }
             resetAdviceFlowIfNecessary();
             throwException();
         }
@@ -224,8 +226,10 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 Label innerCatchEndLabel = newLabel();
 
                 visitLabel(innerCatchStartLabel);
-                visitOnReturnAdvice(opcode);
-                visitOnAfterAdvice();
+                for (Advice advice : Lists.reverse(advisors)) {
+                    visitOnReturnAdvice(advice, opcode);
+                    visitOnAfterAdvice(advice);
+                }
                 resetAdviceFlowIfNecessary();
                 goTo(continueLabel);
 
@@ -237,8 +241,10 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
                 visitLabel(continueLabel);
             } else {
-                visitOnReturnAdvice(opcode);
-                visitOnAfterAdvice();
+                for (Advice advice : Lists.reverse(advisors)) {
+                    visitOnReturnAdvice(advice, opcode);
+                    visitOnAfterAdvice(advice);
+                }
                 resetAdviceFlowIfNecessary();
             }
         }
@@ -347,23 +353,21 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         }
     }
 
-    private void visitOnReturnAdvice(int opcode) {
-        for (Advice advice : Lists.reverse(advisors)) {
-            Method onReturnAdvice = advice.getOnReturnAdvice();
-            if (onReturnAdvice == null) {
-                continue;
-            }
-            Integer enabledLocal = enabledLocals.get(advice);
-            Label onReturnBlockEnd = null;
-            if (enabledLocal != null) {
-                onReturnBlockEnd = newLabel();
-                loadLocal(enabledLocal);
-                visitJumpInsn(IFEQ, onReturnBlockEnd);
-            }
-            weaveOnReturnAdvice(opcode, advice, onReturnAdvice);
-            if (onReturnBlockEnd != null) {
-                visitLabel(onReturnBlockEnd);
-            }
+    private void visitOnReturnAdvice(Advice advice, int opcode) {
+        Method onReturnAdvice = advice.getOnReturnAdvice();
+        if (onReturnAdvice == null) {
+            return;
+        }
+        Integer enabledLocal = enabledLocals.get(advice);
+        Label onReturnBlockEnd = null;
+        if (enabledLocal != null) {
+            onReturnBlockEnd = newLabel();
+            loadLocal(enabledLocal);
+            visitJumpInsn(IFEQ, onReturnBlockEnd);
+        }
+        weaveOnReturnAdvice(opcode, advice, onReturnAdvice);
+        if (onReturnBlockEnd != null) {
+            visitLabel(onReturnBlockEnd);
         }
     }
 
@@ -465,25 +469,23 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         }
     }
 
-    private void visitOnAfterAdvice() {
-        for (Advice advice : Lists.reverse(advisors)) {
-            Method onAfterAdvice = advice.getOnAfterAdvice();
-            if (onAfterAdvice == null) {
-                continue;
-            }
-            Integer enabledLocal = enabledLocals.get(advice);
-            Label onAfterBlockEnd = null;
-            if (enabledLocal != null) {
-                onAfterBlockEnd = newLabel();
-                loadLocal(enabledLocal);
-                visitJumpInsn(IFEQ, onAfterBlockEnd);
-            }
-            loadMethodParameters(advice.getOnAfterParameters(), 0, travelerLocals.get(advice),
-                    advice.getAdviceType(), OnAfter.class);
-            invokeStatic(advice.getAdviceType(), onAfterAdvice);
-            if (onAfterBlockEnd != null) {
-                visitLabel(onAfterBlockEnd);
-            }
+    private void visitOnAfterAdvice(Advice advice) {
+        Method onAfterAdvice = advice.getOnAfterAdvice();
+        if (onAfterAdvice == null) {
+            return;
+        }
+        Integer enabledLocal = enabledLocals.get(advice);
+        Label onAfterBlockEnd = null;
+        if (enabledLocal != null) {
+            onAfterBlockEnd = newLabel();
+            loadLocal(enabledLocal);
+            visitJumpInsn(IFEQ, onAfterBlockEnd);
+        }
+        loadMethodParameters(advice.getOnAfterParameters(), 0, travelerLocals.get(advice),
+                advice.getAdviceType(), OnAfter.class);
+        invokeStatic(advice.getAdviceType(), onAfterAdvice);
+        if (onAfterBlockEnd != null) {
+            visitLabel(onAfterBlockEnd);
         }
     }
 
