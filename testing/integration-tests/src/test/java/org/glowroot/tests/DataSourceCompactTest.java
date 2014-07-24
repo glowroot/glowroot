@@ -57,7 +57,7 @@ public class DataSourceCompactTest {
     @Test
     public void shouldCompact() throws Exception {
         // given
-        File dbFile = new File(dataDir, "glowroot.h2.db");
+        File dbFile = new File(dataDir, "glowroot.mv.db");
         // when
         container.addExpectedLogMessage("org.glowroot.collector.TransactionCollectorImpl",
                 "not storing a trace because of an excessive backlog");

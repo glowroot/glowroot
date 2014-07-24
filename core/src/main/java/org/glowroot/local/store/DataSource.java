@@ -17,7 +17,6 @@ package org.glowroot.local.store;
 
 import java.io.File;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -38,6 +37,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.tainting.qual.Untainted;
+import org.h2.jdbc.JdbcConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +94,7 @@ public class DataSource {
             if (closing) {
                 return;
             }
-            execute("shutdown compact");
+            execute("shutdown defrag");
             preparedStatementCache.invalidateAll();
             connection = createConnection(dbFile);
         }
@@ -307,24 +307,18 @@ public class DataSource {
     }
 
     private static Connection createConnection(@Nullable File dbFile) throws SQLException {
-        try {
-            Class.forName("org.h2.Driver");
-        } catch (ClassNotFoundException e) {
-            throw new SQLException(e);
-        }
         if (dbFile == null) {
             // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
-            return DriverManager.getConnection("jdbc:h2:mem:;db_close_on_exit=false",
-                    new Properties());
+            return new JdbcConnection("jdbc:h2:mem:;db_close_on_exit=false", new Properties());
         } else {
             String dbPath = dbFile.getPath();
-            dbPath = dbPath.replaceFirst(".h2.db$", "");
+            dbPath = dbPath.replaceFirst(".mv.db$", "");
             Properties props = new Properties();
             props.setProperty("user", "sa");
             props.setProperty("password", "");
             // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
             String url = "jdbc:h2:" + dbPath + ";db_close_on_exit=false";
-            return DriverManager.getConnection(url, props);
+            return new JdbcConnection(url, props);
         }
     }
 

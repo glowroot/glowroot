@@ -63,7 +63,7 @@ public class StorageModule {
         if (Boolean.parseBoolean(h2MemDb)) {
             dataSource = new DataSource();
         } else {
-            dataSource = new DataSource(new File(dataDir, "glowroot.h2.db"));
+            dataSource = new DataSource(new File(dataDir, "glowroot.mv.db"));
         }
         final ConfigService configService = configModule.getConfigService();
         dataSource.setQueryTimeoutSeconds(
