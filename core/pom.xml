@@ -376,6 +376,13 @@
                       <shadedPattern>org.glowroot.shaded.slf4j</shadedPattern>
                     </relocation>
                     <relocation>
+                      <!-- this shades guava's use of java util logging which is needed to prevent
+                           java util logging from being initialized early (e.g. in the case of
+                           wildfly which wants to do some setup before jul is initialized) -->
+                      <pattern>java.util.logging</pattern>
+                      <shadedPattern>org.glowroot.shaded.jul</shadedPattern>
+                    </relocation>
+                    <relocation>
                       <pattern>ch.qos.logback.core</pattern>
                       <shadedPattern>org.glowroot.shaded.qos.logback.core</shadedPattern>
                     </relocation>
