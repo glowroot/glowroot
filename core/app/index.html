@@ -25,7 +25,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <base href="/">
-  <link rel="stylesheet" href="styles/main.css"/>
+
+  <!-- build:css({.tmp,.}) styles/main.css -->
+  <link rel="stylesheet" href="bower_components/qtip2/jquery.qtip.css">
+  <link rel="stylesheet" href="styles/main.css">
+  <!-- endbuild -->
 
   <!-- placeholder for server-side injected data, see IndexHtmlService.java -->
   <script></script>
@@ -114,7 +118,7 @@
     {{layout.footerMessage}}
   </div>
 
-  <!-- build:js({app,.tmp}) scripts/app.components.js -->
+  <!-- build:js({.tmp,.}) scripts/vendor.js -->
   <script src="bower_components/jquery/dist/jquery.js"></script>
   <script src="bower_components/angular/angular.js"></script>
   <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
@@ -147,7 +151,7 @@
   <script src="bower_components/flot/src/plugins/jquery.flot.selection.js"></script>
   <script src="bower_components/flot/src/plugins/jquery.flot.time.js"></script>
   <script src="bower_components/flot/src/plugins/jquery.flot.stack.js"></script>
-  <!-- custom built qtip using grunt --plugins="tips viewport" -->
+  <!-- TODO custom built qtip using grunt --plugins="tips viewport" -->
   <script src="bower_components/qtip2/jquery.qtip.js"></script>
   <script src="bower_components/jquery-color/jquery.color.js"></script>
   <script src="bower_components/moment/moment.js"></script>
@@ -156,7 +160,7 @@
   <script src="scripts/generated/angular-ui-bootstrap-templates.js"></script>
   <!-- endbuild -->
 
-  <!-- build:js({app,.tmp}) scripts/app.js -->
+  <!-- build:js({.tmp,app}) scripts/scripts.js -->
   <script src="scripts/app.js"></script>
   <script src="scripts/routes.js"></script>
   <script src="scripts/directives.js"></script>

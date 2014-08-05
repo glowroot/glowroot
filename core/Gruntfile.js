@@ -1,9 +1,5 @@
 /* global require, module */
 
-var LIVERELOAD_PORT = 35729;
-var mountFolder = function (connect, dir) {
-  return connect.static(require('path').resolve(dir));
-};
 var setXUACompatibleHeader = function (req, res, next) {
   // X-UA-Compatible must be set via header (as opposed to via meta tag)
   // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
@@ -13,38 +9,45 @@ var setXUACompatibleHeader = function (req, res, next) {
 
 module.exports = function (grunt) {
 
-  // load all grunt tasks
-  require('matchdep').filterDev('grunt-*').forEach(grunt.loadNpmTasks);
+  // Load grunt tasks automatically
+  require('load-grunt-tasks')(grunt);
 
-  // configurable paths
-  var yeomanConfig = {
+  // Time how long tasks take. Can help when optimizing build times
+  require('time-grunt')(grunt);
+
+  // Configurable paths for the application
+  var appConfig = {
     app: 'app',
     dist: 'target/ui-resources-dist/org/glowroot/local/ui/app-dist',
     exportDist: 'target/ui-resources-dist/org/glowroot/local/ui/export-dist'
   };
 
+  // Define the configuration for all the tasks
   grunt.initConfig({
-    yeoman: yeomanConfig,
+
+    // Project settings
+    yeoman: appConfig,
+
+    // Watches files for changes and runs tasks based on the changed files
     watch: {
       less: {
-        files: '<%= yeoman.app %>/styles/*.less',
-        tasks: 'less:server'
+        files: ['<%= yeoman.app %>/styles/*.less'],
+        tasks: ['less:dist']
       },
       handlebars: {
-        files: '<%= yeoman.app %>/hbs/*.hbs',
-        tasks: 'handlebars'
+        files: ['<%= yeoman.app %>/hbs/*.hbs'],
+        tasks: ['handlebars']
       },
-      fontawesome: {
-        files: '<%= yeoman.app %>/bower_components/fontawesome/fonts/*',
-        tasks: 'copy:server'
+      gruntfile: {
+        files: ['Gruntfile.js']
       },
       livereload: {
         options: {
-          livereload: LIVERELOAD_PORT
+          livereload: '<%= connect.options.livereload %>'
         },
         files: [
           '<%= yeoman.app %>/index.html',
-          '<%= yeoman.app %>/scripts/**/*.js',
+          '<%= yeoman.app %>/scripts/{,*/,*/*/}*.js',
           '<%= yeoman.app %>/views/**/*.html',
           '<%= yeoman.app %>/template/**/*.html',
           // watch:less output
@@ -52,16 +55,25 @@ module.exports = function (grunt) {
           // watch:handlebars output
           '.tmp/scripts/generated/handlebars-templates.js'
         ]
-      },
-      gruntfile: {
-        files: 'Gruntfile.js'
       }
     },
+
+    // The actual grunt server settings
     connect: {
       options: {
         port: 9000,
-        hostname: '0.0.0.0'
+        // Change this to '0.0.0.0' to access the server from outside.
+        hostname: 'localhost',
+        livereload: 35729
       },
+      rules: [
+        { from: '^/transactions(\\?.*)?$', to: '/index.html' },
+        { from: '^/errors(\\?.*)?$', to: '/index.html' },
+        { from: '^/traces(\\?.*)?$', to: '/index.html' },
+        { from: '^/jvm/.*$', to: '/index.html' },
+        { from: '^/config/.*$', to: '/index.html' },
+        { from: '^/login$', to: '/index.html' }
+      ],
       proxies: [
         {
           context: '/backend',
@@ -74,43 +86,52 @@ module.exports = function (grunt) {
           port: 4000
         }
       ],
-      rules: [
-        { from: '^/transactions(\\?.*)?$', to: '/index.html' },
-        { from: '^/errors(\\?.*)?$', to: '/index.html' },
-        { from: '^/traces(\\?.*)?$', to: '/index.html' },
-        { from: '^/jvm/.*$', to: '/index.html' },
-        { from: '^/config/.*$', to: '/index.html' },
-        { from: '^/login$', to: '/index.html' }
-      ],
       livereload: {
         options: {
+          open: true,
           middleware: function (connect) {
             return [
               setXUACompatibleHeader,
-              require('connect-livereload')({port: LIVERELOAD_PORT}),
               require('grunt-connect-rewrite/lib/utils').rewriteRequest,
               require('grunt-connect-proxy/lib/utils').proxyRequest,
-              mountFolder(connect, yeomanConfig.app),
-              mountFolder(connect, '.tmp'),
-              // serve angular-ui-bootstrap templates
-              mountFolder(connect, yeomanConfig.app + '/bower_components/angular-ui-bootstrap'),
-              // serve source maps
-              mountFolder(connect, '.')
+              connect.static('.tmp'),
+              connect().use('/bower_components', connect.static('bower_components')),
+              connect.static(appConfig.app),
+              connect().use('/fonts', connect.static('bower_components/fontawesome/fonts')),
+              connect().use('/template', connect.static('bower_components/angular-ui-bootstrap/template')),
             ];
           }
         }
       },
       dist: {
         options: {
+          open: true,
+          base: '<%= yeoman.dist %>',
           middleware: function (connect) {
             return [
               setXUACompatibleHeader,
-              mountFolder(connect, yeomanConfig.dist)
+              connect.static(appConfig.dist)
             ];
           }
         }
       }
     },
+
+    // Make sure code styles are up to par and there are no obvious mistakes
+    jshint: {
+      options: {
+        jshintrc: '.jshintrc',
+        reporter: require('jshint-stylish')
+      },
+      all: {
+        src: [
+          'Gruntfile.js',
+          '<%= yeoman.app %>/scripts/{,*/,*/*/}*.js'
+        ]
+      }
+    },
+
+    // Empties folders to start fresh
     clean: {
       dist: {
         files: [
@@ -126,58 +147,31 @@ module.exports = function (grunt) {
       },
       server: '.tmp'
     },
-    jshint: {
-      options: {
-        jshintrc: '.jshintrc'
-      },
-      files: [
-        'Gruntfile.js',
-        '<%= yeoman.app %>/scripts/**/*.js'
-      ]
-    },
+
     less: {
       dist: {
         files: {
-          '<%= yeoman.dist %>/styles/main.css': '<%= yeoman.app %>/styles/main.less',
-          '<%= yeoman.exportDist %>/styles/export.css': '<%= yeoman.app %>/styles/export.less'
-        }
-      },
-      server: {
-        files: {
-          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.less'
+          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.less',
+          '.tmp/styles/export.css': '<%= yeoman.app %>/styles/export.less'
         }
       }
     },
+
+    // Renames files for browser caching purposes
+    filerev: {
+      dist: {
+        src: [
+          '<%= yeoman.dist %>/scripts/{,*/,*/*/}*.js',
+          '<%= yeoman.dist %>/styles/*.css',
+          '<%= yeoman.dist %>/fonts/*'
+        ]
+      }
+    },
+
+    // Reads HTML for usemin blocks to enable smart builds that automatically
+    // concat, minify and revision files. Creates configurations in memory so
+    // additional tasks can operate on them
     useminPrepare: {
-      options: {
-        flow: {
-          steps: {
-            js: [
-              {
-                name: 'copy',
-                createConfig: function (context, block) {
-                  var cfg = {
-                    files: []
-                  };
-                  context.inFiles.forEach(function (file) {
-                    cfg.files.push({
-                      src: [
-                        context.inDir + '/' + file
-                      ],
-                      dest: '<%= yeoman.dist %>/sources/' + file
-                    });
-                  });
-                  context.outFiles = context.inFiles;
-                  context.outDir = context.inDir;
-                  return cfg;
-                }
-              },
-              'uglifyjs'
-            ]
-          },
-          post: []
-        }
-      },
       dist: {
         files: {
           '<%= yeoman.dist %>/index.html': '<%= yeoman.app %>/index.html'
@@ -196,6 +190,19 @@ module.exports = function (grunt) {
         }
       }
     },
+
+    // Performs rewrites based on filerev and the useminPrepare configuration
+    usemin: {
+      html: [
+        '<%= yeoman.dist %>/index.html',
+        '<%= yeoman.exportDist %>/*-export.html'
+      ],
+      css: ['<%= yeoman.dist %>/styles/*.css'],
+      options: {
+        assetsDirs: ['<%= yeoman.dist %>', '<%= yeoman.dist %>/fonts']
+      }
+    },
+
     handlebars: {
       dist: {
         options: {
@@ -216,12 +223,12 @@ module.exports = function (grunt) {
         }
       }
     },
+
     htmlmin: {
-      options: {
-        removeComments: true,
-        collapseWhitespace: true
-      },
-      pages: {
+      dist: {
+        options: {
+          removeComments: true
+        },
         files: [
           {
             expand: true,
@@ -238,24 +245,19 @@ module.exports = function (grunt) {
         ]
       }
     },
+
     ngtemplates: {
       options: {
         htmlmin: {
-          collapseBooleanAttributes: true,
           collapseWhitespace: true,
-          removeAttributeQuotes: true,
-          removeComments: true,
-          removeEmptyAttributes: true,
-          removeRedundantAttributes: true,
-          removeScriptTypeAttributes: true,
-          removeStyleLinkTypeAttributes: true
+          removeComments: true
         }
       },
       uiBootstrapTemplates: {
         options: {
           module: 'ui.bootstrap.typeahead'
         },
-        cwd: '<%= yeoman.app %>/bower_components/angular-ui-bootstrap',
+        cwd: 'bower_components/angular-ui-bootstrap',
         src: [
           'template/typeahead/*.html',
           'template/modal/*.html'
@@ -274,36 +276,8 @@ module.exports = function (grunt) {
         dest: '.tmp/scripts/generated/angular-templates.js'
       }
     },
-    uglify: {
-      options: {
-        preserveComments: function (node, comment) {
-          // TODO moment.js license is not currently included
-          // TODO find better way of excluding glowroot license
-          return (comment.value.indexOf('!') === 0 || comment.value.indexOf('Copyright') !== -1) &&
-              comment.value.indexOf('the original author or authors.') === -1;
-        },
-        sourceMap: function (file) {
-          if (file.indexOf('export.js') !== -1 || file.indexOf('export.components.js') !== -1) {
-            // no use in generating source maps for js that is inlined into export files
-            return undefined;
-          }
-          return file.replace(/(.*)[/\\]scripts[/\\]([^/\\]+)$/, '$1/sources/$2') + '.map';
-        },
-        sourceMapRoot: '/sources',
-        // drop app and .tmp prefixes in the source map file
-        // it's important that these two directories have the same number of path elements
-        sourceMapPrefix: 1,
-        sourceMappingURL: function (file) {
-          if (file.indexOf('export.js') !== -1 || file.indexOf('export.components.js') !== -1) {
-            // don't add sourceMappingURL to js that is inlined into export files
-            return undefined;
-          }
-          // strip path and add .map
-          // use relative url so it will work using different <base href=""> urls
-          return file.replace(/.*[/\\]scripts[/\\]([^/\\]+)$/, '../sources/$1') + '.map';
-        }
-      }
-    },
+
+    // Copies remaining files to places other tasks can use
     copy: {
       dist: {
         files: [
@@ -312,112 +286,66 @@ module.exports = function (grunt) {
             cwd: '<%= yeoman.app %>',
             dest: '<%= yeoman.dist %>',
             src: [
-              'styles/fonts/*',
               'favicon.ico',
-              'index.html'
+              'index.html',
+              'fonts/*'
             ]
           },
           {
             expand: true,
-            cwd: '<%= yeoman.app %>/bower_components/fontawesome/fonts',
-            dest: '<%= yeoman.dist %>/styles/fonts',
+            cwd: 'bower_components/fontawesome',
+            dest: '<%= yeoman.dist %>',
             src: [
-              '*'
+              'fonts/*'
             ]
           },
           {
             expand: true,
             cwd: '<%= yeoman.app %>',
             dest: '<%= yeoman.exportDist %>',
-            src: '*-export.html'
-          }
-        ]
-      },
-      server: {
-        files: [
-          {
-            expand: true,
-            cwd: '<%= yeoman.app %>/bower_components/fontawesome/fonts',
-            dest: '.tmp/styles/fonts',
             src: [
-              '*'
+              'trace-export.html',
+              'transaction-export.html'
             ]
           }
         ]
       }
-    },
-    cssmin: {
-      dist: {
-        files: {
-          '<%= yeoman.dist %>/styles/main.css': '<%= yeoman.dist %>/styles/main.css',
-          '<%= yeoman.exportDist %>/styles/export.css': '<%= yeoman.exportDist %>/styles/export.css'
-        }
-      }
-    },
-    replace: {
-      dist: {
-        src: [
-          '<%= yeoman.dist %>/sources/*.js.map'
-        ],
-        overwrite: true,
-        replacements: [
-          {
-            // strip out the file attribute
-            // if the file attribute does not matches the rev'd filename then browser won't be happy
-            // TODO make it match the rev'd filename
-            from: /"file":[^,]+,/,
-            to: ''
-          }
-        ]
-      }
-    },
-    rev: {
-      dist: {
-        files: {
-          src: [
-            '<%= yeoman.dist %>/styles/fonts/*',
-            '<%= yeoman.dist %>/scripts/*.js',
-            '<%= yeoman.dist %>/styles/main.css'
-          ]
-        }
-      }
-    },
-    usemin: {
-      html: [
-        '<%= yeoman.dist %>/index.html',
-        '<%= yeoman.exportDist %>/*-export.html'
-      ],
-      // use revved font filenames in revved main.css
-      css: '<%= yeoman.dist %>/styles/*.main.css'
     }
   });
 
-  grunt.registerTask('serve', [
-    'clean:server',
-    'less:server',
-    'handlebars',
-    'copy:server',
-    'configureRewriteRules',
-    'configureProxies',
-    'connect:livereload',
-    'watch'
-  ]);
+  grunt.registerTask('serve', 'Compile then start a connect web server', function (target) {
+    if (target === 'dist') {
+      return grunt.task.run(['build', 'connect:dist:keepalive']);
+    }
+
+    grunt.task.run([
+      'clean:server',
+      'less',
+      'handlebars',
+      'configureRewriteRules',
+      'configureProxies',
+      'connect:livereload',
+      'watch'
+    ]);
+  });
 
   grunt.registerTask('build', [
     'clean:dist',
-    'jshint',
-    'less:dist',
     'useminPrepare',
+    'less',
     'ngtemplates',
     'handlebars',
+    'concat',
     'copy:dist',
     'cssmin',
     'uglify',
-    'replace',
-    'rev',
+    'filerev',
     'usemin',
     'htmlmin'
   ]);
 
-  grunt.registerTask('default', 'build');
+  grunt.registerTask('default', [
+    'newer:jshint',
+    'build'
+  ]);
 };

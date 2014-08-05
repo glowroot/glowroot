@@ -229,9 +229,8 @@ public class LocalUiModule {
         // internal resources
         uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");
         uriMappings.put(Pattern.compile("^/styles/(.*)$"), resourceBase + "/styles/$1");
+        uriMappings.put(Pattern.compile("^/fonts/(.*)$"), resourceBase + "/fonts/$1");
         uriMappings.put(Pattern.compile("^/favicon\\.ico$"), resourceBase + "/favicon.ico");
-        uriMappings.put(Pattern.compile("^/bower_components/(.*)$"),
-                resourceBase + "/bower_components/$1");
         uriMappings.put(Pattern.compile("^/sources/(.*)$"), resourceBase + "/sources/$1");
         // services
         // export services are not bound under /backend since the export urls are visible to users

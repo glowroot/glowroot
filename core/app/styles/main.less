@@ -14,46 +14,43 @@
  * limitations under the License.
  */
 
-@import (less) "../bower_components/qtip2/jquery.qtip.css";
+@import "../../bower_components/bootstrap-datepicker/less/datepicker3";
 
-@import "../bower_components/bootstrap-datepicker/less/datepicker3";
+@import "../../bower_components/bootstrap/less/variables";
+@import "../../bower_components/bootstrap/less/mixins";
 
-@import "../bower_components/bootstrap/less/variables";
-@import "../bower_components/bootstrap/less/mixins";
-
-@import "../bower_components/bootstrap/less/buttons";
+@import "../../bower_components/bootstrap/less/buttons";
 // close is used by trace modal
-@import "../bower_components/bootstrap/less/close";
+@import "../../bower_components/bootstrap/less/close";
 // component-animations is used by mobile navbar expanding/collapsing
-@import "../bower_components/bootstrap/less/component-animations";
+@import "../../bower_components/bootstrap/less/component-animations";
 // dropdowns is used by the trace search form (e.g. begins with / equals / ends with / contains)
-@import "../bower_components/bootstrap/less/dropdowns";
-@import "../bower_components/bootstrap/less/forms";
-@import "../bower_components/bootstrap/less/input-groups";
+@import "../../bower_components/bootstrap/less/dropdowns";
+@import "../../bower_components/bootstrap/less/forms";
+@import "../../bower_components/bootstrap/less/input-groups";
 // list-group is used by configuration sidebar
-@import "../bower_components/bootstrap/less/list-group";
-@import "../bower_components/bootstrap/less/modals";
+@import "../../bower_components/bootstrap/less/list-group";
+@import "../../bower_components/bootstrap/less/modals";
 // navs import needs to be before navbar import, othewise navbar is messed up
-@import "../bower_components/bootstrap/less/navs";
-@import "../bower_components/bootstrap/less/navbar";
+@import "../../bower_components/bootstrap/less/navs";
+@import "../../bower_components/bootstrap/less/navbar";
 // panels are used by config views
-@import "../bower_components/bootstrap/less/panels";
+@import "../../bower_components/bootstrap/less/panels";
 // panels are used by heapdump view
-@import "../bower_components/bootstrap/less/wells";
+@import "../../bower_components/bootstrap/less/wells";
 
 // basic bootstrap foundation
-@import "../bower_components/bootstrap/less/grid";
-@import "../bower_components/bootstrap/less/normalize";
-@import "../bower_components/bootstrap/less/scaffolding";
-@import "../bower_components/bootstrap/less/type";
-@import "../bower_components/bootstrap/less/utilities";
-@import "../bower_components/bootstrap/less/responsive-utilities";
+@import "../../bower_components/bootstrap/less/grid";
+@import "../../bower_components/bootstrap/less/normalize";
+@import "../../bower_components/bootstrap/less/scaffolding";
+@import "../../bower_components/bootstrap/less/type";
+@import "../../bower_components/bootstrap/less/utilities";
+@import "../../bower_components/bootstrap/less/responsive-utilities";
 // tables are used on misc/heap-histogram
-@import "../bower_components/bootstrap/less/tables";
+@import "../../bower_components/bootstrap/less/tables";
 
 // fontawesome currently only used for gear icon in top right of navbar
-@import "../bower_components/fontawesome/less/font-awesome";
-@fa-font-path: "fonts";
+@import "../../bower_components/fontawesome/less/font-awesome";
 
 @import "common-trace";
 @import "chart";
@@ -113,10 +110,10 @@ body {
   font-family: 'Love Ya Like A Sister';
   font-style: normal;
   font-weight: 400;
-  src: url(fonts/love-ya-like-a-sister.eot);
-  src: url(fonts/love-ya-like-a-sister.eot?#iefix) format("embedded-opentype"),
-       url(fonts/love-ya-like-a-sister.woff) format("woff"),
-       url(fonts/love-ya-like-a-sister.ttf) format("truetype");
+  src: url(../fonts/love-ya-like-a-sister.eot);
+  src: url(../fonts/love-ya-like-a-sister.eot?#iefix) format("embedded-opentype"),
+       url(../fonts/love-ya-like-a-sister.woff) format("woff"),
+       url(../fonts/love-ya-like-a-sister.ttf) format("truetype");
 }
 
 .navbar-brand {

@@ -136,11 +136,11 @@ public class TransactionExportHttpService implements HttpService {
 
     private static CharSource render(TransactionHeader transactionHeader,
             @Nullable TransactionProfileNode profile) throws IOException {
-        String exportCssPlaceholder =
-                "<link rel=\"stylesheet\" type=\"text/css\" href=\"styles/export.css\">";
+        String exportCssPlaceholder = "<link rel=\"stylesheet\" href=\"styles/export-main.css\">";
         String exportComponentsJsPlaceholder =
-                "<script src=\"scripts/export.components.js\"></script>";
-        String exportJsPlaceholder = "<script src=\"scripts/transaction-export.js\"></script>";
+                "<script src=\"scripts/export-vendor.js\"></script>";
+        String exportJsPlaceholder =
+                "<script src=\"scripts/export-transaction-scripts.js\"></script>";
         String transactionPlaceholder =
                 "<script type=\"text/json\" id=\"transactionJson\"></script>";
         String profilePlaceholder = "<script type=\"text/json\" id=\"profileJson\"></script>";
@@ -159,15 +159,15 @@ public class TransactionExportHttpService implements HttpService {
             String match = matcher.group();
             if (match.equals(exportCssPlaceholder)) {
                 charSources.add(CharSource.wrap("<style>"));
-                charSources.add(asCharSource("styles/export.css"));
+                charSources.add(asCharSource("styles/export-main.css"));
                 charSources.add(CharSource.wrap("</style>"));
             } else if (match.equals(exportComponentsJsPlaceholder)) {
                 charSources.add(CharSource.wrap("<script>"));
-                charSources.add(asCharSource("scripts/export.components.js"));
+                charSources.add(asCharSource("scripts/export-vendor.js"));
                 charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(exportJsPlaceholder)) {
                 charSources.add(CharSource.wrap("<script>"));
-                charSources.add(asCharSource("scripts/transaction-export.js"));
+                charSources.add(asCharSource("scripts/export-transaction-scripts.js"));
                 charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(transactionPlaceholder)) {
                 charSources.add(CharSource.wrap(

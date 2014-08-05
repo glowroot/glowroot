@@ -127,11 +127,10 @@ public class TraceExportHttpService implements HttpService {
     }
 
     private static CharSource render(TraceExport traceExport) throws IOException {
-        String exportCssPlaceholder =
-                "<link rel=\"stylesheet\" type=\"text/css\" href=\"styles/export.css\">";
+        String exportCssPlaceholder = "<link rel=\"stylesheet\" href=\"styles/export-main.css\">";
         String exportComponentsJsPlaceholder =
-                "<script src=\"scripts/export.components.js\"></script>";
-        String exportJsPlaceholder = "<script src=\"scripts/trace-export.js\"></script>";
+                "<script src=\"scripts/export-vendor.js\"></script>";
+        String exportJsPlaceholder = "<script src=\"scripts/export-trace-scripts.js\"></script>";
         String tracePlaceholder = "<script type=\"text/json\" id=\"traceJson\"></script>";
         String spansPlaceholder = "<script type=\"text/json\" id=\"spansJson\"></script>";
         String profilePlaceholder = "<script type=\"text/json\" id=\"profileJson\"></script>";
@@ -153,15 +152,15 @@ public class TraceExportHttpService implements HttpService {
             String match = matcher.group();
             if (match.equals(exportCssPlaceholder)) {
                 charSources.add(CharSource.wrap("<style>"));
-                charSources.add(asCharSource("styles/export.css"));
+                charSources.add(asCharSource("styles/export-main.css"));
                 charSources.add(CharSource.wrap("</style>"));
             } else if (match.equals(exportComponentsJsPlaceholder)) {
                 charSources.add(CharSource.wrap("<script>"));
-                charSources.add(asCharSource("scripts/export.components.js"));
+                charSources.add(asCharSource("scripts/export-vendor.js"));
                 charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(exportJsPlaceholder)) {
                 charSources.add(CharSource.wrap("<script>"));
-                charSources.add(asCharSource("scripts/trace-export.js"));
+                charSources.add(asCharSource("scripts/export-trace-scripts.js"));
                 charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(tracePlaceholder)) {
                 charSources.add(CharSource.wrap(
