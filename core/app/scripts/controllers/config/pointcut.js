@@ -58,7 +58,8 @@ glowroot.controller('ConfigPointcutCtrl', [
     onNewData($scope.pointcut.config);
 
     $scope.hasChanges = function () {
-      return $scope.selectedMethodSignature && !angular.equals($scope.config, $scope.originalConfig);
+      return ($scope.config.className || $scope.originalConfig.className) &&
+          !angular.equals($scope.config, $scope.originalConfig);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
