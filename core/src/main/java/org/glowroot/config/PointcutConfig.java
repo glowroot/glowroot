@@ -28,7 +28,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.api.weaving.MethodModifier;
 import org.glowroot.config.JsonViews.UiView;
@@ -245,7 +244,6 @@ public class PointcutConfig {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("className", className)

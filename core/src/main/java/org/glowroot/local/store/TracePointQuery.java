@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToFalse;
@@ -187,7 +186,6 @@ public class TracePointQuery {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("from", from)

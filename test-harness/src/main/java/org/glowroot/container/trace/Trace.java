@@ -26,7 +26,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
@@ -163,7 +162,6 @@ public class Trace {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)

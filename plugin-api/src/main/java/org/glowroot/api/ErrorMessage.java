@@ -20,7 +20,6 @@ import java.util.Map;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,7 +145,6 @@ public abstract class ErrorMessage {
         }
 
         @Override
-        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("text", text)

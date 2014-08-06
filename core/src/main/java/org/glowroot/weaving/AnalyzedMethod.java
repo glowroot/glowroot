@@ -22,7 +22,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.Type;
 
 import org.glowroot.markers.Immutable;
@@ -136,7 +135,6 @@ public class AnalyzedMethod {
     // this is currently important because AnalyzedMethod is used as a map key in
     // WeavingClassVisitor
     @Override
-    @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj == this) {
             return true;
@@ -154,13 +152,11 @@ public class AnalyzedMethod {
     // this is currently important because AnalyzedMethod is used as a map key in
     // WeavingClassVisitor
     @Override
-    @Pure
     public int hashCode() {
         return Objects.hashCode(name, parameterTypes);
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)

@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
@@ -47,7 +46,6 @@ public class ErrorMessage extends Message {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("text", getText())

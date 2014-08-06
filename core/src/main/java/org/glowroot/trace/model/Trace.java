@@ -29,7 +29,6 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -448,7 +447,6 @@ public class Trace {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)

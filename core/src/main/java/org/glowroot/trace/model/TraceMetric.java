@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.api.MetricName;
 import org.glowroot.common.Ticker;
@@ -75,7 +74,7 @@ public class TraceMetric implements MetricTimerExt {
     // trace viewer)
     //
     // lazy initialize to save memory in common case where this is a leaf metric
-    @Nullable
+    @MonotonicNonNull
     private volatile List<TraceMetric> threadSafeNestedMetrics;
 
     // parent and currentTraceMetricHolder don't need to be thread safe as they are only accessed by
@@ -87,7 +86,7 @@ public class TraceMetric implements MetricTimerExt {
     private final Ticker ticker;
 
     // optimization for common case of re-requesting same nested metric over and over
-    @Nullable
+    @MonotonicNonNull
     private TraceMetric cachedNestedMetric;
 
     public TraceMetric(MetricNameImpl metricName, @Nullable TraceMetric parent,
@@ -286,7 +285,6 @@ public class TraceMetric implements MetricTimerExt {
     }
 
     @Override
-    @Pure
     public String toString() {
         ImmutableList<TraceMetric> copyOfNestedMetrics = null;
         if (threadSafeNestedMetrics != null) {

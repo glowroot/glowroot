@@ -20,8 +20,8 @@ import java.util.List;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +48,7 @@ class RootSpan {
 
     private final long startTick;
     // not volatile, so depends on memory barrier in Trace for visibility
-    @Nullable
+    @MonotonicNonNull
     private Long endTick;
 
     private final Span rootSpan;
@@ -193,7 +193,6 @@ class RootSpan {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("spanStack", spanStack)

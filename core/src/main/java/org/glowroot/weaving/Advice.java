@@ -30,7 +30,6 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -266,7 +265,6 @@ public class Advice {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("pointcut", pointcut)

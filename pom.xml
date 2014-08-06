@@ -343,7 +343,7 @@
       <properties>
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
-        <checker.qual.version>1.8.3</checker.qual.version>
+        <checker.qual.version>1.8.4</checker.qual.version>
       </properties>
       <dependencies>
         <dependency>

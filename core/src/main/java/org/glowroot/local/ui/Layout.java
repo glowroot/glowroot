@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
-import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.config.VersionHashes;
 import org.glowroot.markers.Immutable;
@@ -110,7 +109,6 @@ public class Layout {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("jvmHeapHistogram", jvmHeapHistogram)

@@ -16,7 +16,6 @@
 package org.glowroot.trace;
 
 import com.google.common.base.Objects;
-import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +65,6 @@ class StuckTraceScheduledRunnable extends ScheduledRunnable {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("trace", trace)

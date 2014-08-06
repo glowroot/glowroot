@@ -27,8 +27,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +45,7 @@ public class TraceGcInfos {
     private final ImmutableMap<String, GarbageCollectorInfo> garbageCollectorInfos;
 
     @GuardedBy("lock")
-    @Nullable
+    @MonotonicNonNull
     private volatile String completedJsonValue;
 
     private final Object lock = new Object();
@@ -126,7 +125,6 @@ public class TraceGcInfos {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("garbageCollectorInfos", garbageCollectorInfos)
@@ -152,7 +150,6 @@ public class TraceGcInfos {
         }
 
         @Override
-        @Pure
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("collectionCountStart", collectionCountStart)

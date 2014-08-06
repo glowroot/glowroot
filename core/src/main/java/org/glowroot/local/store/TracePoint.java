@@ -16,7 +16,6 @@
 package org.glowroot.local.store;
 
 import com.google.common.base.Objects;
-import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.markers.Immutable;
 
@@ -60,7 +59,6 @@ public class TracePoint {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)

@@ -25,7 +25,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkNotNullValuesForProperty;
@@ -240,7 +239,6 @@ public class PointcutConfig {
     }
 
     @Override
-    @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof PointcutConfig) {
             PointcutConfig that = (PointcutConfig) obj;
@@ -270,7 +268,6 @@ public class PointcutConfig {
     }
 
     @Override
-    @Pure
     public int hashCode() {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
@@ -283,7 +280,6 @@ public class PointcutConfig {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("className", className)

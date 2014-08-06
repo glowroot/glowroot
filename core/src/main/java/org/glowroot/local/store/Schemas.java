@@ -39,7 +39,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -322,7 +321,6 @@ class Schemas {
         // equals/hashCode are used in Schema.syncIndexes() to diff list of indexes with list of
         // existing indexes
         @Override
-        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof Index) {
                 Index that = (Index) obj;
@@ -332,7 +330,6 @@ class Schemas {
             return false;
         }
         @Override
-        @Pure
         public int hashCode() {
             return Objects.hashCode(nameUpper, columnUppers);
         }

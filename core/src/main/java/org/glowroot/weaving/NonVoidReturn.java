@@ -17,7 +17,6 @@ package org.glowroot.weaving;
 
 import com.google.common.base.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.api.OptionalReturn;
 import org.glowroot.markers.UsedByGeneratedBytecode;
@@ -52,7 +51,6 @@ public class NonVoidReturn implements OptionalReturn {
     }
 
     @Override
-    @Pure
     public boolean equals(@Nullable Object o) {
         if (o instanceof NonVoidReturn) {
             NonVoidReturn that = (NonVoidReturn) o;
@@ -62,7 +60,6 @@ public class NonVoidReturn implements OptionalReturn {
     }
 
     @Override
-    @Pure
     public int hashCode() {
         return Objects.hashCode(returnValue);
     }

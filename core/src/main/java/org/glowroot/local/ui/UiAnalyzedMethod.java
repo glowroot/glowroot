@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.Type;
 
 import org.glowroot.markers.Immutable;
@@ -99,7 +98,6 @@ public class UiAnalyzedMethod {
     // this is currently important because UiAnalyzedMethod is used in a set to filter out
     // duplicates in PointcutConfigJsonService
     @Override
-    @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj == this) {
             return true;
@@ -117,13 +115,11 @@ public class UiAnalyzedMethod {
     // this is currently important because UiAnalyzedMethod is used in a set to filter out
     // duplicates in PointcutConfigJsonService
     @Override
-    @Pure
     public int hashCode() {
         return Objects.hashCode(name, parameterTypes);
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)

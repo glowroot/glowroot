@@ -25,7 +25,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
@@ -120,7 +119,6 @@ public class PluginDescriptor {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)

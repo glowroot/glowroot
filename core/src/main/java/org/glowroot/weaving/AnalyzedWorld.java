@@ -35,7 +35,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
@@ -400,7 +399,6 @@ public class AnalyzedWorld {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("world", world)
@@ -469,7 +467,6 @@ public class AnalyzedWorld {
         }
         // toString() is used in logger warning construction
         @Override
-        @Pure
         public String toString() {
             if (codeSource == null) {
                 return className;

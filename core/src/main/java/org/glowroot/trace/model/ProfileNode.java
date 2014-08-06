@@ -21,8 +21,8 @@ import java.util.List;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * Element of {@link Profile}.
@@ -40,7 +40,7 @@ public class ProfileNode {
     // using List over Set in order to preserve ordering
     // may contain duplicates (common from weaving groups of overloaded methods), these are filtered
     // out later when profile is written to json
-    @Nullable
+    @MonotonicNonNull
     private ImmutableList<String> metricNames;
     // nodes mostly have a single child node, and rarely have more than two child nodes
     private final List<ProfileNode> childNodes = Lists.newArrayListWithCapacity(2);
@@ -104,7 +104,6 @@ public class ProfileNode {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("stackTraceElement", stackTraceElement)

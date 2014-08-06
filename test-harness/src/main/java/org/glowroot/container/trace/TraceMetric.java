@@ -28,7 +28,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
@@ -135,7 +134,6 @@ public class TraceMetric {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)

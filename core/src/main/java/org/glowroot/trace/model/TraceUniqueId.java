@@ -19,7 +19,6 @@ import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
-import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.markers.Immutable;
 
@@ -66,7 +65,6 @@ class TraceUniqueId {
     }
 
     @Override
-    @Pure
     public String toString() {
         return get();
     }

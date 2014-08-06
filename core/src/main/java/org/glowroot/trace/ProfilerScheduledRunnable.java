@@ -16,7 +16,6 @@
 package org.glowroot.trace;
 
 import com.google.common.base.Objects;
-import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
@@ -64,7 +63,6 @@ class ProfilerScheduledRunnable extends ScheduledRunnable {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("trace", trace)

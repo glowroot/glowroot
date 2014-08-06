@@ -18,7 +18,6 @@ package org.glowroot.collector;
 import java.util.List;
 
 import com.google.common.base.Objects;
-import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.trace.model.Profile;
@@ -94,7 +93,6 @@ class TransactionProfileBuilder {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("syntheticRootNode", syntheticRootNode)

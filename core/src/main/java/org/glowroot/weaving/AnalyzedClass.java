@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 import org.objectweb.asm.Type;
 
 import org.glowroot.markers.Immutable;
@@ -124,7 +123,6 @@ public class AnalyzedClass {
     }
 
     @Override
-    @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof AnalyzedClass) {
             AnalyzedClass that = (AnalyzedClass) obj;
@@ -138,13 +136,11 @@ public class AnalyzedClass {
     }
 
     @Override
-    @Pure
     public int hashCode() {
         return Objects.hashCode(modifiers, name, superName, interfaceNames, analyzedMethods);
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("modifiers", modifiers)

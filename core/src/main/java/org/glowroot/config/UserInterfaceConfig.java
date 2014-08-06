@@ -23,7 +23,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 
 import org.glowroot.config.JsonViews.FileView;
 import org.glowroot.config.JsonViews.UiView;
@@ -119,7 +118,6 @@ public class UserInterfaceConfig {
     }
 
     @Override
-    @Pure
     public String toString() {
         // don't expose passwordHash
         return Objects.toStringHelper(this)

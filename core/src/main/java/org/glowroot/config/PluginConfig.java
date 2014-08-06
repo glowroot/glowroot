@@ -33,7 +33,6 @@ import com.google.common.collect.Ordering;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,7 +177,6 @@ public class PluginConfig {
     }
 
     @Override
-    @Pure
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", pluginDescriptor.getId())

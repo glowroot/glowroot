@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -102,7 +101,6 @@ public class UserInterfaceConfig {
     }
 
     @Override
-    @Pure
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof UserInterfaceConfig) {
             UserInterfaceConfig that = (UserInterfaceConfig) obj;
@@ -121,7 +119,6 @@ public class UserInterfaceConfig {
     }
 
     @Override
-    @Pure
     public int hashCode() {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
@@ -134,7 +131,6 @@ public class UserInterfaceConfig {
     }
 
     @Override
-    @Pure
     public String toString() {
         // leaving off currentPassword and newPassword since those are plain text passwords
         return Objects.toStringHelper(this)
