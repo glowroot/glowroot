@@ -18,7 +18,7 @@ package org.glowroot.weaving;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -105,7 +105,7 @@ public class MixinType {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("targets", targets)
                 .add("implementation", implementation)
                 .add("interfaces", interfaces)

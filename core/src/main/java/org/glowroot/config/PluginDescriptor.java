@@ -21,7 +21,7 @@ import java.util.Locale;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -120,7 +120,7 @@ public class PluginDescriptor {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("name", name)
                 .add("id", id)
                 .add("version", version)

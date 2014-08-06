@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -34,11 +34,11 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
 import org.glowroot.api.weaving.BindClassMeta;
-import org.glowroot.api.weaving.BindParameter;
-import org.glowroot.api.weaving.BindParameterArray;
 import org.glowroot.api.weaving.BindMethodMeta;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindOptionalReturn;
+import org.glowroot.api.weaving.BindParameter;
+import org.glowroot.api.weaving.BindParameterArray;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
@@ -266,7 +266,7 @@ public class Advice {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("pointcut", pointcut)
                 .add("adviceType", adviceType)
                 .add("pointcutClassNamePattern", pointcutClassNamePattern)

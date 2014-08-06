@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -133,7 +134,7 @@ public class UserInterfaceConfig {
     @Override
     public String toString() {
         // leaving off currentPassword and newPassword since those are plain text passwords
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("port", port)
                 .add("defaultTransactionType", defaultTransactionType)
                 .add("passwordEnabled", passwordEnabled)

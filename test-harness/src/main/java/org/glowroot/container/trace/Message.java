@@ -20,7 +20,7 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
@@ -53,7 +53,7 @@ public class Message {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("text", text)
                 .add("detail", detail)
                 .toString();

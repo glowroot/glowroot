@@ -21,8 +21,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.base.Objects;
-import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -245,7 +245,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
     @Override
     public String toString() {
         // not including fields that are just direct copies from Weaver
-        ToStringHelper toStringHelper = Objects.toStringHelper(this)
+        ToStringHelper toStringHelper = MoreObjects.toStringHelper(this)
                 .add("codeSource", codeSource)
                 .add("adviceMatchers", adviceMatchers)
                 .add("matchedMixinTypes", matchedMixinTypes)

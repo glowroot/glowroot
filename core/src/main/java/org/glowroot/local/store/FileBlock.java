@@ -15,7 +15,7 @@
  */
 package org.glowroot.local.store;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import org.glowroot.markers.Immutable;
 
@@ -72,7 +72,7 @@ class FileBlock {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("startIndex", startIndex)
                 .add("length", length)
                 .toString();

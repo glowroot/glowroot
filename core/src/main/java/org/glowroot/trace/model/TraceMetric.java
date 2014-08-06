@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -292,7 +292,7 @@ public class TraceMetric implements MetricTimerExt {
                 copyOfNestedMetrics = ImmutableList.copyOf(threadSafeNestedMetrics);
             }
         }
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("name", getName())
                 .add("total", total)
                 .add("min", min)

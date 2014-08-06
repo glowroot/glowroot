@@ -20,7 +20,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -120,7 +120,7 @@ public class UserInterfaceConfig {
     @Override
     public String toString() {
         // don't expose passwordHash
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("port", port)
                 .add("defaultTransactionType", defaultTransactionType)
                 .add("sessionTimeoutMinutes", sessionTimeoutMinutes)

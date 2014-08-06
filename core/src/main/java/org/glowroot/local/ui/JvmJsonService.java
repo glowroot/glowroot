@@ -47,7 +47,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -136,7 +136,7 @@ class JvmJsonService {
         jg.writeStartObject();
         jg.writeNumberField("startTime", runtimeMXBean.getStartTime());
         jg.writeNumberField("uptime", runtimeMXBean.getUptime());
-        jg.writeStringField("pid", Objects.firstNonNull(pid, "<unknown>"));
+        jg.writeStringField("pid", MoreObjects.firstNonNull(pid, "<unknown>"));
         jg.writeStringField("mainClass", mainClass);
         jg.writeFieldName("mainClassArguments");
         mapper.writeValue(jg, arguments);

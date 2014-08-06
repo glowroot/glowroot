@@ -23,7 +23,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
@@ -126,7 +126,7 @@ public class TraceGcInfos {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("garbageCollectorInfos", garbageCollectorInfos)
                 .toString();
     }
@@ -151,7 +151,7 @@ public class TraceGcInfos {
 
         @Override
         public String toString() {
-            return Objects.toStringHelper(this)
+            return MoreObjects.toStringHelper(this)
                     .add("collectionCountStart", collectionCountStart)
                     .add("collectionTimeStart", collectionTimeStart)
                     .toString();

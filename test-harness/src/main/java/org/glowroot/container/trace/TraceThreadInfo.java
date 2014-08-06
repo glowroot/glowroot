@@ -18,7 +18,7 @@ package org.glowroot.container.trace;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -66,7 +66,7 @@ public class TraceThreadInfo {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("threadCpuTime", threadCpuTime)
                 .add("threadBlockedTime", threadBlockedTime)
                 .add("threadWaitedTime", threadWaitedTime)

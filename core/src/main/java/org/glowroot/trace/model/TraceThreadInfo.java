@@ -20,12 +20,11 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.io.CharStreams;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,7 +164,7 @@ public class TraceThreadInfo {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("threadId", threadId)
                 .add("threadCpuTimeStart", threadCpuTimeStart)
                 .add("threadBlockedTimeStart", threadBlockedTimeStart)

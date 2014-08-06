@@ -21,7 +21,7 @@ import java.security.CodeSource;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -134,7 +134,7 @@ class Weaver {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("advisors", advisors)
                 .add("mixinTypes", mixinTypes)
                 .add("analyzedWorld", analyzedWorld)

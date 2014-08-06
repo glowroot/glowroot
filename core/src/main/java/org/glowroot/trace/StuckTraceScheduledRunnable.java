@@ -15,7 +15,7 @@
  */
 package org.glowroot.trace;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +66,7 @@ class StuckTraceScheduledRunnable extends ScheduledRunnable {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("trace", trace)
                 .add("tracePreviouslyCompleted", tracePreviouslyCompleted)
                 .toString();

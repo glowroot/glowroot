@@ -16,9 +16,9 @@
 package org.glowroot.container;
 
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;

@@ -17,7 +17,7 @@ package org.glowroot.api;
 
 import java.util.Map;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -146,7 +146,7 @@ public abstract class ErrorMessage {
 
         @Override
         public String toString() {
-            return Objects.toStringHelper(this)
+            return MoreObjects.toStringHelper(this)
                     .add("text", text)
                     .add("exception", exceptionInfo)
                     .add("detail", detail)

@@ -17,7 +17,7 @@ package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.markers.Immutable;
@@ -86,7 +86,7 @@ public class OutlierProfilingConfig {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("enabled", enabled)
                 .add("initialDelayMillis", initialDelayMillis)
                 .add("intervalMillis", intervalMillis)

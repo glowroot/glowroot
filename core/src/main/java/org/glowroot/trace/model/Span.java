@@ -15,7 +15,7 @@
  */
 package org.glowroot.trace.model;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -121,7 +121,7 @@ public class Span {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("message", messageSupplier == null ? null : messageSupplier.get())
                 .add("errorMessage", errorMessage)
                 .add("startTick", startTick)

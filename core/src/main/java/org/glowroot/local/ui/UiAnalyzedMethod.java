@@ -18,6 +18,7 @@ package org.glowroot.local.ui;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
@@ -121,7 +122,7 @@ public class UiAnalyzedMethod {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("name", name)
                 .add("parameterTypes", parameterTypes)
                 .add("returnType", returnType)

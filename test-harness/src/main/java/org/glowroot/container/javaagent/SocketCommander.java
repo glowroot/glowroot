@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -124,7 +124,7 @@ class SocketCommander {
         }
         @Override
         public String toString() {
-            return Objects.toStringHelper(this)
+            return MoreObjects.toStringHelper(this)
                     .add("commandNum", commandNum)
                     .add("commandName", commandName)
                     .add("args", args)
@@ -150,7 +150,7 @@ class SocketCommander {
         }
         @Override
         public String toString() {
-            return Objects.toStringHelper(this)
+            return MoreObjects.toStringHelper(this)
                     .add("commandNum", commandNum)
                     .add("response", response)
                     .toString();

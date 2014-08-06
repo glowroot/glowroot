@@ -19,8 +19,8 @@ import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.List;
 
-import com.google.common.base.Objects;
-import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -219,7 +219,7 @@ public class Threads {
             return sb.toString();
         }
         private static String threadToString(Thread thread) {
-            ToStringHelper toStringHelper = Objects.toStringHelper(thread)
+            ToStringHelper toStringHelper = MoreObjects.toStringHelper(thread)
                     .add("name", thread.getName())
                     .add("class", thread.getClass().getName())
                     .add("state", thread.getState());

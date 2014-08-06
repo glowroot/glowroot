@@ -17,7 +17,7 @@ package org.glowroot.local.ui;
 
 import java.util.List;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -110,7 +110,7 @@ public class Layout {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("jvmHeapHistogram", jvmHeapHistogram)
                 .add("jvmHeapDump", jvmHeapDump)
                 .add("footerMessage", footerMessage)

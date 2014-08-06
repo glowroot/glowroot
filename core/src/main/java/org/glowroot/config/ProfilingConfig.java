@@ -17,7 +17,7 @@ package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.markers.Immutable;
@@ -91,7 +91,7 @@ public class ProfilingConfig {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("tracePercentage", tracePercentage)
                 .add("intervalMillis", intervalMillis)
                 .add("maxSeconds", maxSeconds)

@@ -15,7 +15,7 @@
  */
 package org.glowroot.local.store;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import org.glowroot.markers.Immutable;
 
@@ -60,7 +60,7 @@ public class TracePoint {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("id", id)
                 .add("captureTime", captureTime)
                 .add("duration", duration)

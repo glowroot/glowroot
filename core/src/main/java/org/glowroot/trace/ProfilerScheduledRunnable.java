@@ -15,7 +15,7 @@
  */
 package org.glowroot.trace;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
@@ -64,7 +64,7 @@ class ProfilerScheduledRunnable extends ScheduledRunnable {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("trace", trace)
                 .add("endTick", endTick)
                 .add("outlier", outlier)

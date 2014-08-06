@@ -17,6 +17,7 @@ package org.glowroot.collector;
 
 import java.util.List;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
 import org.glowroot.markers.GuardedBy;
@@ -94,7 +95,7 @@ class TransactionProfileBuilder {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("syntheticRootNode", syntheticRootNode)
                 .toString();
     }

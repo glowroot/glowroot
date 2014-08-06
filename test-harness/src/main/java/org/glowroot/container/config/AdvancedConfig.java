@@ -18,6 +18,7 @@ package org.glowroot.container.config;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -71,7 +72,7 @@ public class AdvancedConfig {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("metricWrapperMethods", metricWrapperMethods)
                 .add("version", version)
                 .toString();
