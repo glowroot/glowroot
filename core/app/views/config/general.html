@@ -28,7 +28,7 @@
       <div gt-form-group
            gt-label="Enabled"
            gt-model="config.enabled"
-           gt-type="checkbox"
+           gt-type="switch"
            class="gt-form-group-without-help-block">
       </div>
       <div gt-form-group
@@ -75,7 +75,8 @@
         </div>
       </div>
       <div gt-form-group
-           gt-label="Thread info enabled"
+           gt-label="Thread info"
+           gt-checkbox-label="Capture thread info per trace"
            gt-model="config.threadInfoEnabled"
            gt-type="checkbox">
         <div class="help-block">
@@ -84,7 +85,8 @@
         </div>
       </div>
       <div gt-form-group
-           gt-label="GC info enabled"
+           gt-label="GC info"
+           gt-checkbox-label="Capture garbage collection info per trace"
            gt-model="config.gcInfoEnabled"
            gt-type="checkbox">
         <div class="help-block">

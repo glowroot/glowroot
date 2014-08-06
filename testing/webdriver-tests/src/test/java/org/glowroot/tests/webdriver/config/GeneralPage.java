@@ -35,8 +35,14 @@ public class GeneralPage {
         this.driver = driver;
     }
 
-    public WebElement getEnabledCheckbox() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Enabled']//input"));
+    public WebElement getEnabledSwitchOn() {
+        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Enabled']"
+                + "//label[@btn-radio='true']"));
+    }
+
+    public WebElement getEnabledSwitchOff() {
+        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Enabled']"
+                + "//label[@btn-radio='false']"));
     }
 
     public WebElement getStoreThresholdTextField() {

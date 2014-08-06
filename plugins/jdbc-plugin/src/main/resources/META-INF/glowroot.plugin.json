@@ -4,10 +4,11 @@
   "version": "0.5-SNAPSHOT",
   "properties": [
     {
-      "prompt": "Capture bind parameters",
       "name": "captureBindParameters",
       "type": "boolean",
       "default": true,
+      "label": "Bind parameters",
+      "checkboxLabel": "Capture jdbc bind parameters",
       "description": [
         "Capture jdbc bind parameters for PreparedStatement executions. This is disabled by",
         " default as it can cause Glowroot to capture potentially secure data, e.g. account",
@@ -15,22 +16,25 @@
       ]
     },
     {
-      "prompt": "ResultSet.next() metrics",
-      "name": "captureResultSetNext",
+      "name": "captureResultSetNavigate",
       "type": "boolean",
       "default": true,
+      "label": "ResultSet navigation",
+      "checkboxLabel": "Capture timing metrics for ResultSet navigation",
       "description": [
-        "Capture timing metrics for executions of ResultSet.next() to read the next record in a",
-        " result set. This defaults to true since the timing for this metric is a good indication",
-        " of jdbc fetch size issues and database latency, but it can be disabled if it is common",
-        " to return millions of records and the overhead of System.nanoTime() becomes relevant."
+        "Capture timing metrics for executions of ResultSet.next()/previous()/relative()/etc",
+        " to read the next record in a result set. This defaults to true since the timing for",
+        " this metric is a good indication of jdbc fetch size issues and database latency,",
+        " but it can be disabled if it is common to return millions of records and the overhead",
+        " of System.nanoTime() becomes relevant."
       ]
     },
     {
-      "prompt": "ResultSet.get*() metrics",
       "name": "captureResultSetGet",
       "type": "boolean",
       "default": false,
+      "label": "ResultSet values",
+      "checkboxLabel": "Capture timing metrics for ResultSet value retrieval",
       "description": [
         "Capture timing metrics for executions of ResultSet.get*() to read the individual column",
         " values out of a result set record. This defaults to false since the number of calls can",
@@ -39,34 +43,34 @@
       ]
     },
     {
-      "prompt": "Connection.setAutoCommit() spans",
-      "name": "captureSetAutoCommitSpans",
+      "name": "captureTransactionLifecycleSpans",
       "type": "boolean",
+      "label": "Transaction lifecycle",
+      "checkboxLabel": "Capture spans for Connection.setAutoCommit()",
       "description": "Capture spans for executions of Connection.setAutoCommit()"
     },
     {
-      "prompt": "Connection.close() spans",
-      "name": "captureConnectionCloseSpans",
+      "name": "captureConnectionLifecycleSpans",
       "type": "boolean",
-      "description": "Capture spans for executions of Connection.close()"
+      "label": "Connection lifecycle",
+      "checkboxLabel": "Capture spans for Connection opening and closing",
+      "description": [
+        "Capture spans for executions of DataSource.getConnection()",
+        " and Connection.close()"
+      ]
     },
     {
-      "prompt": "DataSource.getConnection() spans",
-      "name": "captureGetConnectionSpans",
-      "type": "boolean",
-      "description": "Capture spans for executions of DataSource.getConnection()"
-    },
-    {
-      "prompt": "DatabaseMetaData.*() spans",
       "name": "captureDatabaseMetaDataSpans",
       "type": "boolean",
+      "label": "DatabaseMetaData",
+      "checkboxLabel": "Capture spans for DatabaseMetaData calls",
       "description": "Capture spans for executions of DatabaseMetaData.*()"
     },
     {
-      "prompt": "Stack trace threshold (millis)",
       "name": "stackTraceThresholdMillis",
       "type": "double",
       "default": 1000.0,
+      "label": "Stack trace threshold (millis)",
       "description": [
         "Any jdbc call that exceeds this threshold will have a stack trace captured and attached",
         " to it. An empty value will not collect any stack traces, a zero value will collect a",

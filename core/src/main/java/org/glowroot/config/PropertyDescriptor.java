@@ -30,6 +30,7 @@ import org.glowroot.markers.UsedByJsonBinding;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.common.ObjectMappers.nullToFalse;
 
 /**
  * @author Trask Stalnaker
@@ -52,16 +53,16 @@ public abstract class PropertyDescriptor {
 
     private final String name;
     private final boolean hidden;
-    @Nullable
-    private final String prompt;
-    @Nullable
+    private final String label;
+    private final String checkboxLabel;
     private final String description;
 
-    private PropertyDescriptor(String name, boolean hidden, @Nullable String prompt,
-            @Nullable String description) {
+    private PropertyDescriptor(String name, boolean hidden, String label, String checkboxLabel,
+            String description) {
         this.name = name;
         this.hidden = hidden;
-        this.prompt = prompt;
+        this.label = label;
+        this.checkboxLabel = checkboxLabel;
         this.description = description;
     }
 
@@ -78,12 +79,14 @@ public abstract class PropertyDescriptor {
         return hidden;
     }
 
-    @Nullable
-    public String getPrompt() {
-        return prompt;
+    public String getLabel() {
+        return label;
     }
 
-    @Nullable
+    public String getCheckboxLabel() {
+        return checkboxLabel;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -96,28 +99,10 @@ public abstract class PropertyDescriptor {
                 .add("type", getType())
                 .add("default", getDefault())
                 .add("hidden", hidden)
-                .add("prompt", prompt)
+                .add("label", label)
+                .add("checkboxLabel", checkboxLabel)
                 .add("description", description)
                 .toString();
-    }
-
-    // visible for packager-maven-plugin
-    public static PropertyDescriptor create(String name, boolean hidden,
-            @Nullable String prompt, @Nullable String description, PropertyType type,
-            @Nullable Object defaultValue) {
-        if (type == PropertyType.STRING) {
-            return new StringPropertyDescriptor(name, defaultValue, hidden, prompt,
-                    description);
-        }
-        if (type == PropertyType.BOOLEAN) {
-            return new BooleanPropertyDescriptor(name, defaultValue, hidden, prompt,
-                    description);
-        }
-        if (type == PropertyType.DOUBLE) {
-            return new DoublePropertyDescriptor(name, defaultValue, hidden, prompt,
-                    description);
-        }
-        throw new AssertionError("Unknown PropertyType enum: " + type);
     }
 
     @JsonCreator
@@ -125,15 +110,28 @@ public abstract class PropertyDescriptor {
             @JsonProperty("type") @Nullable PropertyType type,
             @JsonProperty("default") @Nullable Object defaultValue,
             @JsonProperty("hidden") @Nullable Boolean hidden,
-            @JsonProperty("prompt") @Nullable String prompt,
-            @JsonProperty("description") @Nullable Multiline description)
+            @JsonProperty("label") @Nullable String label,
+            @JsonProperty("checkboxLabel") @Nullable String checkboxLabel,
+            @JsonProperty("description") @Nullable Multiline descriptionMultiline)
             throws JsonMappingException {
         checkRequiredProperty(name, "name");
         checkRequiredProperty(type, "type");
-        checkRequiredProperty(prompt, "prompt");
-        return create(name, hidden != null && hidden, prompt,
-                description == null ? null : description.getJoined(),
-                type, defaultValue);
+        checkRequiredProperty(label, "label");
+        String description = descriptionMultiline == null ? "" : descriptionMultiline.getJoined();
+        if (type == PropertyType.STRING) {
+            return new StringPropertyDescriptor(name, defaultValue, nullToFalse(hidden), label,
+                    description);
+        }
+        if (type == PropertyType.BOOLEAN) {
+            checkRequiredProperty(checkboxLabel, "checkboxLabel");
+            return new BooleanPropertyDescriptor(name, defaultValue, nullToFalse(hidden), label,
+                    checkboxLabel, description);
+        }
+        if (type == PropertyType.DOUBLE) {
+            return new DoublePropertyDescriptor(name, defaultValue, nullToFalse(hidden), label,
+                    description);
+        }
+        throw new AssertionError("Unknown PropertyType enum: " + type);
     }
 
     enum PropertyType {
@@ -146,8 +144,8 @@ public abstract class PropertyDescriptor {
         private final String defaultValue;
 
         private StringPropertyDescriptor(String name, @Nullable Object defaultValue,
-                boolean hidden, @Nullable String prompt, @Nullable String description) {
-            super(name, hidden, prompt, description);
+                boolean hidden, String label, String description) {
+            super(name, hidden, label, "", description);
             if (defaultValue instanceof String) {
                 this.defaultValue = (String) defaultValue;
             } else if (defaultValue == null) {
@@ -175,8 +173,8 @@ public abstract class PropertyDescriptor {
         private final boolean defaultValue;
 
         private BooleanPropertyDescriptor(String name, @Nullable Object defaultValue,
-                boolean hidden, @Nullable String prompt, @Nullable String description) {
-            super(name, hidden, prompt, description);
+                boolean hidden, String label, String checkboxLabel, String description) {
+            super(name, hidden, label, checkboxLabel, description);
             if (defaultValue instanceof Boolean) {
                 this.defaultValue = (Boolean) defaultValue;
             } else if (defaultValue == null) {
@@ -205,8 +203,8 @@ public abstract class PropertyDescriptor {
         private final Double defaultValue;
 
         private DoublePropertyDescriptor(String name, @Nullable Object defaultValue,
-                boolean hidden, @Nullable String prompt, @Nullable String description) {
-            super(name, hidden, prompt, description);
+                boolean hidden, String label, String description) {
+            super(name, hidden, label, "", description);
             if (defaultValue instanceof Double || defaultValue == null) {
                 this.defaultValue = (Double) defaultValue;
             } else {

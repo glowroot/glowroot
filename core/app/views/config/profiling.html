@@ -67,20 +67,15 @@
       <div class="form-group"
            ng-class="{'has-error': formCtrl.profiledStoreThresholdMillis.$invalid}">
         <label class="col-lg-3 control-label" for="profiledStoreThresholdMillis">
-          Store threshold
+          Store threshold override
         </label>
-        <div class="col-lg-9"
-             style="padding-top: 1px;">
-          <div class="checkbox gt-form-checkbox">
-            <label>
-              <input type="checkbox"
-                     ng-model="page.profiledStoreThresholdOverride"
-                     id="profiledStoreThresholdOverride"
-                     style="margin-top: 3px;">
-              Override general store threshold
-            </label>
-          </div>
+        <div class="col-lg-9">
           <div class="input-group">
+            <div class="input-group-addon"
+                 style="padding-top: 8px;">
+              <input type="checkbox"
+                     ng-model="page.profiledStoreThresholdOverride">
+            </div>
             <input type="text"
                    class="form-control"
                    ng-model="page.profiledStoreThresholdMillis"
@@ -95,6 +90,7 @@
             </span>
           </div>
           <div class="help-block">
+            Override the general store threshold for profiled traces.
             After going through the trouble of collecting profiling info,
             it may be worth while to store the given trace even if it doesn't hit the
             general store threshold.

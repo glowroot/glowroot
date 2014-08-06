@@ -4,23 +4,44 @@
   "version": "0.5-SNAPSHOT",
   "properties": [
     {
-      "prompt": "Mark trace as error on error log with no throwable",
-      "name": "traceErrorOnErrorWithNoThrowable",
+      "name": "traceErrorOnErrorWithThrowable",
       "type": "boolean",
-      "default": false,
+      "default": true,
+      "label": "Error with throwable",
+      "checkboxLabel": "Mark trace as error when an error is logged with a throwable",
       "description": [
-        "Mark the entire trace as an error any time an error message is logged inside the trace",
-        " using a supported logger."
+        "Mark the entire trace as an error any time an error message is logged with a throwable."
       ]
     },
     {
-      "prompt": "Mark trace as error on warn log",
-      "name": "traceErrorOnWarn",
+      "name": "traceErrorOnErrorWithoutThrowable",
       "type": "boolean",
       "default": false,
+      "label": "Error without throwable",
+      "checkboxLabel": "Mark trace as error when an error is logged without a throwable",
       "description": [
-        "Mark the entire trace as an error any time a warning message is logged inside the trace",
-        " using a supported logger."
+        "Mark the entire trace as an error any time an error message is logged without a throwable."
+      ]
+    },
+    {
+      "name": "traceErrorOnWarningWithThrowable",
+      "type": "boolean",
+      "default": false,
+      "label": "Warning with throwable",
+      "checkboxLabel": "Mark trace as error when a warning is logged with a throwable",
+      "description": [
+        "Mark the entire trace as an error any time a warning message is logged with a throwable."
+      ]
+    },
+    {
+      "name": "traceErrorOnWarningWithoutThrowable",
+      "type": "boolean",
+      "default": false,
+      "label": "Warning without throwable",
+      "checkboxLabel": "Mark trace as error when a warning is logged without a throwable",
+      "description": [
+        "Mark the entire trace as an error any time a warning message is logged without a",
+        " throwable."
       ]
     }
   ],

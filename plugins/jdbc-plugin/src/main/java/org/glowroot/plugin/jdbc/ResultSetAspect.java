@@ -55,7 +55,7 @@ public class ResultSetAspect {
         private static final MetricName metricName =
                 pluginServices.getMetricName(NavigateAdvice.class);
         private static volatile boolean pluginEnabled;
-        // plugin configuration property captureResultSetNext is cached to limit map lookups
+        // plugin configuration property captureResultSetNavigate is cached to limit map lookups
         private static volatile boolean metricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
@@ -63,12 +63,12 @@ public class ResultSetAspect {
                 public void onChange() {
                     pluginEnabled = pluginServices.isEnabled();
                     metricEnabled = pluginEnabled
-                            && pluginServices.getBooleanProperty("captureResultSetNext");
+                            && pluginServices.getBooleanProperty("captureResultSetNavigate");
                 }
             });
             pluginEnabled = pluginServices.isEnabled();
             metricEnabled = pluginEnabled
-                    && pluginServices.getBooleanProperty("captureResultSetNext");
+                    && pluginServices.getBooleanProperty("captureResultSetNavigate");
         }
         @IsEnabled
         public static boolean isEnabled() {

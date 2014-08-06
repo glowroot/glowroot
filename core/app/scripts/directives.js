@@ -131,13 +131,15 @@ glowroot.directive('gtFormGroup', [
       scope: {
         gtType: '@',
         gtLabel: '@',
+        gtCheckboxLabel: '@',
         gtModel: '=',
         gtWidth: '@',
         gtAddon: '@',
-        gtPattern: '@',
-        // gtRequired accepts string binding for inline patterns and RegExp binding for scope expressions
+        // gtPattern accepts string binding for inline patterns and RegExp binding for scope expressions
         // (same as ngPattern on angular input directive)
+        gtPattern: '@',
         gtRequired: '&',
+        gtDisabled: '&',
         gtNumber: '&',
         gtRows: '@'
       },

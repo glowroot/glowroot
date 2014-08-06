@@ -18,6 +18,7 @@
 
 var glowroot = angular.module('glowroot', [
   'ui.router',
+  'ui.bootstrap.buttons',
   'ui.bootstrap.dropdown',
   'ui.bootstrap.typeahead',
   'ui.bootstrap.bindHtml',

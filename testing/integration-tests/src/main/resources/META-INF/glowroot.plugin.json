@@ -14,45 +14,40 @@
   ],
   "properties": [
     {
-      "prompt": "Starred headline",
       "name": "starredHeadline",
-      "type": "boolean"
+      "type": "boolean",
+      "label": "Starred headline",
+      "checkboxLabel": "Add asterisk to end of headline"
     },
     {
-      "prompt": "Alternate headline",
       "name": "alternateHeadline",
-      "type": "string"
+      "type": "string",
+      "label": "Alternate headline"
     },
     {
-      "prompt": "Has default val",
       "name": "hasDefaultVal",
       "type": "string",
-      "default": "one"
+      "default": "one",
+      "label": "Has default val"
     },
     {
-      "prompt": "Capture span stack traces",
       "name": "captureSpanStackTraces",
-      "type": "boolean"
+      "type": "boolean",
+      "label": "Stack trace",
+      "checkboxLabel": "Capture stack trace at pauseOneMillisecond() span"
     },
     {
-      "prompt": "Capture LevelFive",
       "name": "levelFiveEnabled",
-      "type": "boolean"
+      "type": "boolean",
+      "label": "LevelFive",
+      "checkboxLabel": "Capture metrics for LevelFive.call()"
     },
     {
-      "prompt": "Capture LevelFive spans",
       "name": "levelFiveSpanEnabled",
-      "type": "boolean"
-    },
-    {
-      "prompt": "Test enabled property",
-      "name": "abcEnabled",
-      "type": "boolean"
-    },
-    {
-      "prompt": "Test span enabled property",
-      "name": "abcSpanEnabled",
-      "type": "boolean"
+      "type": "boolean",
+      "label": "LevelFive spans",
+      "checkboxLabel": "Capture spans for LevelFive.call()",
+      "description": "LevelFive property above must be enabled also in order to capture spans."
     }
   ],
   "aspects": [

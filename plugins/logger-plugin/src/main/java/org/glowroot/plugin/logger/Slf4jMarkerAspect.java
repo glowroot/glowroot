@@ -21,9 +21,9 @@ import org.slf4j.helpers.MessageFormatter;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
@@ -42,18 +42,11 @@ public class Slf4jMarkerAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("logger");
 
-    private static boolean markTraceAsError(boolean warn, boolean throwable) {
-        boolean traceErrorOnErrorWithNoThrowable =
-                pluginServices.getBooleanProperty("traceErrorOnErrorWithNoThrowable");
-        boolean traceErrorOnWarn = pluginServices.getBooleanProperty("traceErrorOnWarn");
-        return (!warn || traceErrorOnWarn) && (throwable || traceErrorOnErrorWithNoThrowable);
-    }
-
     private static LogAdviceTraveler onBefore(FormattingTuple formattingTuple, String methodName,
             MetricName metricName) {
         String formattedMessage = nullToEmpty(formattingTuple.getMessage());
         Throwable throwable = formattingTuple.getThrowable();
-        if (markTraceAsError(methodName.equals("warn"), throwable != null)) {
+        if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), throwable != null)) {
             pluginServices.setTraceError(formattedMessage);
         }
         Span span = pluginServices.startSpan(
@@ -85,7 +78,7 @@ public class Slf4jMarkerAspect {
         public static Span onBefore(@SuppressWarnings("unused") @BindParameter Object marker,
                 @BindParameter String message, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
-            if (markTraceAsError(methodName.equals("warn"), false)) {
+            if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
                 pluginServices.setTraceError(message);
             }
             return pluginServices.startSpan(

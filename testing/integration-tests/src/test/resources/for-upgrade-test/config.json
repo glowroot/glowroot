@@ -43,8 +43,6 @@
       "id": "glowroot-integration-tests",
       "enabled": true,
       "properties": {
-        "abcEnabled": false,
-        "abcSpanEnabled": false,
         "alternateHeadline": "",
         "captureSpanStackTraces": false,
         "hasDefaultVal": "one",

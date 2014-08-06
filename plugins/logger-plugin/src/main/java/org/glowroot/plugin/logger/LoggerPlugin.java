@@ -15,11 +15,15 @@
  */
 package org.glowroot.plugin.logger;
 
+import org.glowroot.api.PluginServices;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 class LoggerPlugin {
+
+    private static final PluginServices pluginServices = PluginServices.get("logger");
 
     private LoggerPlugin() {}
 
@@ -30,4 +34,16 @@ class LoggerPlugin {
             return false;
         }
     };
+
+    static boolean markTraceAsError(boolean warn, boolean throwable) {
+        if (warn && throwable) {
+            return pluginServices.getBooleanProperty("traceErrorOnWarningWithThrowable");
+        } else if (warn && !throwable) {
+            return pluginServices.getBooleanProperty("traceErrorOnWarningWithoutThrowable");
+        } else if (!warn && throwable) {
+            return pluginServices.getBooleanProperty("traceErrorOnErrorWithThrowable");
+        } else {
+            return pluginServices.getBooleanProperty("traceErrorOnErrorWithoutThrowable");
+        }
+    }
 }

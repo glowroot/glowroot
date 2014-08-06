@@ -63,7 +63,8 @@
         </div>
       </div>
       <div gt-form-group
-           gt-label="Password enabled"
+           gt-label="Password"
+           gt-checkbox-label="Require a password to access the UI"
            gt-model="config.passwordEnabled"
            gt-type="checkbox"
            class="gt-form-group-without-help-block">
@@ -98,7 +99,8 @@
            gt-pattern="pattern.integer"
            gt-required="loaded"
            gt-width="7em"
-           gt-addon="minutes">
+           gt-addon="minutes"
+           gt-disabled="!config.passwordEnabled">
         <div class="help-block">
           Session timeout only applies if password is enabled. Session timeout <code>0</code> means sessions do not time
           out, except on jvm restart at which time all sessions time out.

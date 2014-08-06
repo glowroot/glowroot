@@ -25,11 +25,11 @@ import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
+import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
-import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -53,21 +53,23 @@ public class DataSourceAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    private static volatile boolean captureGetConnectionSpans;
-    private static volatile boolean captureSetAutoCommitSpans;
+    private static volatile boolean captureConnectionLifecycleSpans;
+    private static volatile boolean captureTransactionLifecycleSpans;
 
     static {
         pluginServices.registerConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
-                captureGetConnectionSpans =
-                        pluginServices.getBooleanProperty("captureGetConnectionSpans");
-                captureSetAutoCommitSpans =
-                        pluginServices.getBooleanProperty("captureSetAutoCommitSpans");
+                captureConnectionLifecycleSpans =
+                        pluginServices.getBooleanProperty("captureConnectionLifecycleSpans");
+                captureTransactionLifecycleSpans =
+                        pluginServices.getBooleanProperty("captureTransactionLifecycleSpans");
             }
         });
-        captureGetConnectionSpans = pluginServices.getBooleanProperty("captureGetConnectionSpans");
-        captureSetAutoCommitSpans = pluginServices.getBooleanProperty("captureSetAutoCommitSpans");
+        captureConnectionLifecycleSpans =
+                pluginServices.getBooleanProperty("captureConnectionLifecycleSpans");
+        captureTransactionLifecycleSpans =
+                pluginServices.getBooleanProperty("captureTransactionLifecycleSpans");
     }
 
     @Pointcut(className = "javax.sql.DataSource", methodName = "getConnection",
@@ -82,7 +84,7 @@ public class DataSourceAspect {
         }
         @OnBefore
         public static Object onBefore() {
-            if (captureGetConnectionSpans) {
+            if (captureConnectionLifecycleSpans) {
                 return pluginServices.startSpan(new GetConnectionMessageSupplier(),
                         metricName);
             } else {
@@ -94,7 +96,7 @@ public class DataSourceAspect {
                 @BindTraveler Object spanOrTimer) {
             if (spanOrTimer instanceof Span) {
                 Span span = (Span) spanOrTimer;
-                if (captureSetAutoCommitSpans) {
+                if (captureTransactionLifecycleSpans) {
                     String autoCommit;
                     try {
                         autoCommit = Boolean.toString(connection.getAutoCommit());

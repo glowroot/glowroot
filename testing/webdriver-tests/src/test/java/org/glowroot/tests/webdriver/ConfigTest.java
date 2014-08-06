@@ -159,7 +159,7 @@ public class ConfigTest {
         globalNavbar.getConfigurationLink().click();
 
         // when
-        generalPage.getEnabledCheckbox().click();
+        generalPage.getEnabledSwitchOff().click();
         generalPage.getStoreThresholdTextField().clear();
         generalPage.getStoreThresholdTextField().sendKeys("2345");
         generalPage.getStuckThresholdTextField().clear();
@@ -176,7 +176,10 @@ public class ConfigTest {
         globalNavbar.getConfigurationLink().click();
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(generalPage.getEnabledCheckbox().isSelected()).isFalse();
+        assertThat(generalPage.getEnabledSwitchOn().getAttribute("class").split(" "))
+                .doesNotContain("active");
+        assertThat(generalPage.getEnabledSwitchOff().getAttribute("class").split(" "))
+                .contains("active");
         assertThat(generalPage.getStoreThresholdTextField().getAttribute("value"))
                 .isEqualTo("2345");
         assertThat(generalPage.getStuckThresholdTextField().getAttribute("value"))

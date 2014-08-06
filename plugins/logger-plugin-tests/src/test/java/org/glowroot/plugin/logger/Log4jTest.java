@@ -62,7 +62,7 @@ public class Log4jTest {
     public void testLog() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
@@ -79,7 +79,7 @@ public class Log4jTest {
     public void testLogWithThrowable() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
         // then
@@ -113,7 +113,7 @@ public class Log4jTest {
     public void testLogWithNullThrowable() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
         // then
@@ -137,7 +137,7 @@ public class Log4jTest {
     public void testLogWithPriority() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithPriority.class);
         // then
@@ -187,7 +187,7 @@ public class Log4jTest {
     public void testLogWithPriorityAndNullThrowable() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithPriorityAndNullThrowable.class);
         // then
@@ -244,7 +244,7 @@ public class Log4jTest {
     public void testLocalizedLogWithNullThrowable() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLocalizedLogWithNullThrowable.class);
         // then
@@ -306,7 +306,7 @@ public class Log4jTest {
     public void testLocalizedLogWithParametersAndNullThrowable() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLocalizedLogWithParametersAndNullThrowable.class);
         // then

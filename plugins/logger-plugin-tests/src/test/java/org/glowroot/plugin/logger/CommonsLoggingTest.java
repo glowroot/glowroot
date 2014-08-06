@@ -62,7 +62,7 @@ public class CommonsLoggingTest {
     public void testLog() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
@@ -79,7 +79,7 @@ public class CommonsLoggingTest {
     public void testLogWithThrowable() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
         // then
@@ -113,7 +113,7 @@ public class CommonsLoggingTest {
     public void testLogWithNullThrowable() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
         // then

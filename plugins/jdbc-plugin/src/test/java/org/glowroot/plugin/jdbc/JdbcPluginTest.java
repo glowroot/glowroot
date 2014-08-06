@@ -431,42 +431,10 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testDataSourceGetConnection() throws Exception {
+    public void testConnectionLifecycle() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureGetConnectionSpans", true);
-        // when
-        container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
-        assertThat(spans).hasSize(2);
-        Span jdbcSpan = spans.get(1);
-        assertThat(jdbcSpan.getMessage().getText()).isEqualTo("jdbc get connection");
-    }
-
-    @Test
-    public void testConnectionClose() throws Exception {
-        // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureConnectionCloseSpans", true);
-        // when
-        container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
-        assertThat(spans).hasSize(2);
-        Span jdbcSpan = spans.get(1);
-        assertThat(jdbcSpan.getMessage().getText()).isEqualTo("jdbc connection close");
-    }
-
-    @Test
-    public void testGetConnectionAndConnectionCloseTogether() throws Exception {
-        // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureGetConnectionSpans", true);
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureConnectionCloseSpans", true);
+                .setPluginProperty(PLUGIN_ID, "captureConnectionLifecycleSpans", true);
         // when
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
@@ -480,10 +448,10 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testSetAutoCommit() throws Exception {
+    public void testTransactionLifecycle() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSetAutoCommitSpans", true);
+                .setPluginProperty(PLUGIN_ID, "captureTransactionLifecycleSpans", true);
         // when
         container.executeAppUnderTest(ExecuteSetAutoCommit.class);
         // then
@@ -497,18 +465,18 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testGetConnectionAndSetAutoCommitTogether() throws Exception {
+    public void testConnectionLifecycleAndTransactionLifecycleTogether() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureGetConnectionSpans", true);
+                .setPluginProperty(PLUGIN_ID, "captureConnectionLifecycleSpans", true);
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSetAutoCommitSpans", true);
+                .setPluginProperty(PLUGIN_ID, "captureTransactionLifecycleSpans", true);
         // when
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<Span> spans = container.getTraceService().getSpans(trace.getId());
-        assertThat(spans).hasSize(2);
+        assertThat(spans).hasSize(3);
         Span span1 = spans.get(1);
         assertThat(span1.getMessage().getText())
                 .isEqualTo("jdbc get connection (autocommit: true)");

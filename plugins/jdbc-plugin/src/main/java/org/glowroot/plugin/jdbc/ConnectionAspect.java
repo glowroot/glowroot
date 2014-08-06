@@ -17,11 +17,11 @@ package org.glowroot.plugin.jdbc;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
+import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.Span;
-import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -41,22 +41,23 @@ public class ConnectionAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    private static volatile boolean captureConnectionCloseSpans;
-    private static volatile boolean captureSetAutoCommitSpans;
+    private static volatile boolean captureConnectionLifecycleSpans;
+    private static volatile boolean captureTransactionLifecycleSpans;
 
     static {
         pluginServices.registerConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
-                captureConnectionCloseSpans =
-                        pluginServices.getBooleanProperty("captureConnectionCloseSpans");
-                captureSetAutoCommitSpans =
-                        pluginServices.getBooleanProperty("captureSetAutoCommitSpans");
+                captureConnectionLifecycleSpans =
+                        pluginServices.getBooleanProperty("captureConnectionLifecycleSpans");
+                captureTransactionLifecycleSpans =
+                        pluginServices.getBooleanProperty("captureTransactionLifecycleSpans");
             }
         });
-        captureConnectionCloseSpans =
-                pluginServices.getBooleanProperty("captureConnectionCloseSpans");
-        captureSetAutoCommitSpans = pluginServices.getBooleanProperty("captureSetAutoCommitSpans");
+        captureConnectionLifecycleSpans =
+                pluginServices.getBooleanProperty("captureConnectionLifecycleSpans");
+        captureTransactionLifecycleSpans =
+                pluginServices.getBooleanProperty("captureTransactionLifecycleSpans");
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "commit", ignoreSelfNested = true,
@@ -116,7 +117,7 @@ public class ConnectionAspect {
         }
         @OnBefore
         public static Object onBefore() {
-            if (captureConnectionCloseSpans) {
+            if (captureConnectionLifecycleSpans) {
                 return pluginServices.startSpan(MessageSupplier.from("jdbc connection close"),
                         metricName);
             } else {
@@ -150,7 +151,7 @@ public class ConnectionAspect {
                 pluginServices.getMetricName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && captureSetAutoCommitSpans;
+            return pluginServices.isEnabled() && captureTransactionLifecycleSpans;
         }
         @OnBefore
         public static Span onBefore(@BindParameter boolean autoCommit) {

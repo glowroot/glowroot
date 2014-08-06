@@ -1,23 +1,41 @@
+<!--
+  From http://docs.angularjs.org/api/ng.directive:form
+    "Since you cannot dynamically generate the name attribute of input elements using interpolation, you have
+     to wrap each set of repeated inputs in an ngForm directive and nest these in an outer form element."
+-->
 <div ng-form="formGroupCtrl" class="form-group" ng-class="{'has-error': formGroupCtrl['property'].$invalid}">
-  <label class="control-label col-lg-3"
-         ng-class="{ 'checkbox-control-label': gtType === 'checkbox' }"
-         for="{{gtId}}">
-    {{gtLabel}}
-  </label>
+  <div ng-switch="gtType">
+    <div ng-switch-when="checkbox">
+      <label class="control-label col-lg-3"
+             style="margin-top: -7px;">
+        {{gtLabel}}
+      </label>
+    </div>
+    <div ng-switch-default>
+      <label class="control-label col-lg-3"
+             for="{{gtId}}">
+        {{gtLabel}}
+      </label>
+    </div>
+  </div>
   <div class="col-lg-9">
     <div ng-switch="gtType">
+      <div ng-switch-when="switch">
+        <div class="btn-group">
+          <label class="btn gt-btn-switch" ng-model="$parent.ngModel" btn-radio="true">On</label>
+          <label class="btn gt-btn-switch" ng-model="$parent.ngModel" btn-radio="false">Off</label>
+        </div>
+      </div>
       <div ng-switch-when="checkbox">
-        <div class="checkbox gt-form-checkbox">
-          <!--
-            From http://docs.angularjs.org/api/ng.directive:form
-              "Since you cannot dynamically generate the name attribute of input elements using interpolation, you have
-               to wrap each set of repeated inputs in an ngForm directive and nest these in an outer form element."
-          -->
-          <input type="checkbox"
-                 class="gt-form-checkbox"
-                 ng-model="$parent.ngModel"
-                 name="property"
-                 id="{{gtId}}">
+        <div class="checkbox"
+             style="margin-top: -7px;">
+          <label>
+            <input type="checkbox"
+                   ng-model="$parent.ngModel"
+                   name="property"
+                   id="{{gtId}}">
+            {{gtCheckboxLabel}}
+          </label>
         </div>
       </div>
       <div ng-switch-when="textarea">
@@ -26,6 +44,7 @@
                   name="property"
                   id="{{gtId}}"
                   ng-required="gtRequired()"
+                  ng-disabled="gtDisabled()"
                   ng-style="{'max-width': gtWidth ? gtWidth : 'none'}"
                   rows="{{gtRows ? gtRows : ''}}">
         </textarea>
@@ -42,6 +61,7 @@
                    id="{{gtId}}"
                    ng-pattern="ngPattern"
                    ng-required="gtRequired()"
+                   ng-disabled="gtDisabled()"
                    ng-style="{'max-width': gtWidth ? gtWidth : 'none'}">
             <span ng-if="gtAddon" class="input-group-addon">{{gtAddon}}</span>
           </div>

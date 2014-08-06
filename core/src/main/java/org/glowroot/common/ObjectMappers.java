@@ -153,7 +153,7 @@ public class ObjectMappers {
 
     // named after guava Strings.nullToEmpty
     public static boolean nullToFalse(@Nullable Boolean value) {
-        return value == null ? false : value;
+        return value != null && value;
     }
 
     // named after guava Strings.nullToEmpty

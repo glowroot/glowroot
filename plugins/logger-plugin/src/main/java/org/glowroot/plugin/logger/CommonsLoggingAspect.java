@@ -17,11 +17,11 @@ package org.glowroot.plugin.logger;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.MetricName;
-import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindMethodName;
+import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -38,13 +38,6 @@ public class CommonsLoggingAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("logger");
 
-    private static boolean markTraceAsError(boolean warn, boolean throwable) {
-        boolean traceErrorOnErrorWithNoThrowable =
-                pluginServices.getBooleanProperty("traceErrorOnErrorWithNoThrowable");
-        boolean traceErrorOnWarn = pluginServices.getBooleanProperty("traceErrorOnWarn");
-        return (!warn || traceErrorOnWarn) && (throwable || traceErrorOnErrorWithNoThrowable);
-    }
-
     @Pointcut(className = "org.apache.commons.logging.Log", methodName = "warn|error|fatal",
             methodParameterTypes = {"java.lang.Object"}, metricName = TRACE_METRIC)
     public static class LogAdvice {
@@ -58,7 +51,7 @@ public class CommonsLoggingAspect {
         public static Span onBefore(@BindParameter Object message,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
-            if (markTraceAsError(methodName.equals("warn"), false)) {
+            if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
                 pluginServices.setTraceError(String.valueOf(message));
             }
             return pluginServices.startSpan(
@@ -86,7 +79,7 @@ public class CommonsLoggingAspect {
         public static Span onBefore(@BindParameter Object message, @BindParameter Throwable t,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
-            if (markTraceAsError(methodName.equals("warn"), t != null)) {
+            if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {
                 pluginServices.setTraceError(String.valueOf(message));
             }
             return pluginServices.startSpan(

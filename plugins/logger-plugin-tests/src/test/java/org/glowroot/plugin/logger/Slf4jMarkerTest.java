@@ -70,7 +70,7 @@ public class Slf4jMarkerTest {
     public void testLog() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
@@ -86,7 +86,7 @@ public class Slf4jMarkerTest {
     public void testLogWithThrowable() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
         // then
@@ -112,7 +112,7 @@ public class Slf4jMarkerTest {
     public void testLogWithNullThrowable() throws Exception {
         // given
         container.getConfigService().setPluginProperty("logger",
-                "traceErrorOnErrorWithNoThrowable", true);
+                "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
         // then
