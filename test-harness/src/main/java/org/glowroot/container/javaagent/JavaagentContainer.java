@@ -31,6 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
@@ -40,6 +41,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.Agent;
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.common.SpyingLogbackFilter;
@@ -47,7 +49,6 @@ import org.glowroot.common.SpyingLogbackFilter.MessageCount;
 import org.glowroot.config.ConfigService.OptimisticLockException;
 import org.glowroot.config.GeneralConfig;
 import org.glowroot.container.AppUnderTest;
-import org.glowroot.container.ClassPath;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.ConfigService;
@@ -321,15 +322,23 @@ public class JavaagentContainer implements Container {
         command.add(javaExecutable);
         command.addAll(extraJvmArgs);
         String classpath = System.getProperty("java.class.path");
-        command.add("-cp");
-        command.add(classpath);
+        List<String> paths = Lists.newArrayList();
+        File javaagentJarFile = null;
+        for (String path : Splitter.on(File.pathSeparatorChar).splitToList(classpath)) {
+            File file = new File(path);
+            if (file.getName().matches("glowroot-core-[0-9.]+(-SNAPSHOT)?.jar")) {
+                javaagentJarFile = file;
+            } else {
+                paths.add(path);
+            }
+        }
+        command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(paths));
         command.addAll(getJavaAgentsFromCurrentJvm());
-        File javaagentJarFile = ClassPath.getGlowrootCoreJarFile();
         if (javaagentJarFile == null) {
             // create jar file in data dir since that gets cleaned up at end of test already
             javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(dataDir);
             command.add("-javaagent:" + javaagentJarFile);
-            command.add("-DdelegateJavaagent=" + MainEntryPoint.class.getName());
+            command.add("-DdelegateJavaagent=" + Agent.class.getName());
         } else {
             command.add("-javaagent:" + javaagentJarFile);
         }

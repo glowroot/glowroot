@@ -16,11 +16,12 @@
 package org.glowroot.dynamicadvice;
 
 import java.io.PrintWriter;
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.objectweb.asm.AnnotationVisitor;
@@ -33,14 +34,13 @@ import org.objectweb.asm.util.TraceClassVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.config.PointcutConfig;
 import org.glowroot.config.PointcutConfig.AdviceKind;
-import org.glowroot.jvm.ClassLoaders;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.Advice.AdviceConstructionException;
-import org.glowroot.weaving.ClassNames;
+import org.glowroot.weaving.AdviceFlowOuterHolder;
+import org.glowroot.weaving.LazyDefinedClass;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
@@ -99,28 +99,23 @@ public class DynamicAdviceGenerator {
     @Nullable
     private final String methodMetaInternalName;
 
-    public static ImmutableList<Advice> createAdvisors(
+    public static ImmutableMap<Advice, LazyDefinedClass> createAdvisors(
             ImmutableList<PointcutConfig> pointcutConfigs, @Nullable String pluginId) {
-        List<Advice> advisors = Lists.newArrayList();
+        Map<Advice, LazyDefinedClass> advisors = Maps.newHashMap();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
             try {
-                Class<?> dynamicAdviceClass =
+                LazyDefinedClass lazyAdviceClass =
                         new DynamicAdviceGenerator(pointcutConfig, pluginId).generate();
-                Pointcut pointcut = dynamicAdviceClass.getAnnotation(Pointcut.class);
-                if (pointcut == null) {
-                    logger.error("class was generated without @Pointcut annotation");
-                    continue;
-                }
                 boolean reweavable = pluginId == null;
-                Advice advice = Advice.from(pointcut, dynamicAdviceClass, reweavable);
-                advisors.add(advice);
+                Advice advice = Advice.from(lazyAdviceClass, reweavable);
+                advisors.put(advice, lazyAdviceClass);
             } catch (ReflectiveException e) {
                 logger.error("error creating advice for pointcut config: {}", pointcutConfig, e);
             } catch (AdviceConstructionException e) {
                 logger.error("error creating advice for pointcut config: {}", pointcutConfig, e);
             }
         }
-        return ImmutableList.copyOf(advisors);
+        return ImmutableMap.copyOf(advisors);
     }
 
     private DynamicAdviceGenerator(PointcutConfig pointcutConfig, @Nullable String pluginId) {
@@ -139,9 +134,10 @@ public class DynamicAdviceGenerator {
         }
     }
 
-    private Class<?> generate() throws ReflectiveException {
+    private LazyDefinedClass generate() throws ReflectiveException {
+        LazyDefinedClass methodMetaClass = null;
         if (methodMetaInternalName != null) {
-            generateMethodMetaClass(pointcutConfig);
+            methodMetaClass = generateMethodMetaClass(pointcutConfig);
         }
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         String[] interfaces = null;
@@ -179,8 +175,12 @@ public class DynamicAdviceGenerator {
             TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
             cr.accept(tcv, ClassReader.SKIP_FRAMES);
         }
-        return ClassLoaders.defineClass(ClassNames.fromInternalName(adviceInternalName), bytes,
-                DynamicAdviceGenerator.class.getClassLoader());
+        if (methodMetaClass == null) {
+            return new LazyDefinedClass(Type.getObjectType(adviceInternalName), bytes);
+        } else {
+            return new LazyDefinedClass(Type.getObjectType(adviceInternalName), bytes,
+                    ImmutableList.of(methodMetaClass));
+        }
     }
 
     private void addClassAnnotation(ClassWriter cw) {
@@ -209,6 +209,11 @@ public class DynamicAdviceGenerator {
     }
 
     private void addStaticFields(ClassWriter cw) {
+        // some of these classes are generated before weaving is set up, so need to add
+        // glowroot$advice$flow$outer$holder in same way as PointcutClassVisitor
+        cw.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC, "glowroot$advice$flow$outer$holder",
+                Type.getDescriptor(AdviceFlowOuterHolder.class), null, null)
+                .visitEnd();
         cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;", null, null)
                 .visitEnd();
@@ -230,6 +235,10 @@ public class DynamicAdviceGenerator {
     private void addStaticInitializer(ClassWriter cw) {
         MethodVisitor mv = cw.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
         mv.visitCode();
+        mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(AdviceFlowOuterHolder.class),
+                "create", "()" + Type.getDescriptor(AdviceFlowOuterHolder.class), false);
+        mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "glowroot$advice$flow$outer$holder",
+                Type.getDescriptor(AdviceFlowOuterHolder.class));
         if (pluginId == null) {
             mv.visitInsn(ACONST_NULL);
         } else {
@@ -242,7 +251,7 @@ public class DynamicAdviceGenerator {
         if (pointcutConfig.isMetricOrGreater()) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
                     "Lorg/glowroot/api/PluginServices;");
-            mv.visitLdcInsn(Type.getType("L" + adviceInternalName + ";"));
+            mv.visitLdcInsn(Type.getObjectType(adviceInternalName));
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", "getMetricName",
                     "(Ljava/lang/Class;)Lorg/glowroot/api/MetricName;", false);
             mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "metricName",
@@ -672,7 +681,8 @@ public class DynamicAdviceGenerator {
     }
 
     @RequiresNonNull("methodMetaInternalName")
-    private void generateMethodMetaClass(PointcutConfig pointcutConfig) throws ReflectiveException {
+    private LazyDefinedClass generateMethodMetaClass(PointcutConfig pointcutConfig)
+            throws ReflectiveException {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, methodMetaInternalName, null, "java/lang/Object",
                 null);
@@ -708,8 +718,7 @@ public class DynamicAdviceGenerator {
         }
         cw.visitEnd();
         byte[] bytes = cw.toByteArray();
-        ClassLoaders.defineClass(ClassNames.fromInternalName(methodMetaInternalName), bytes,
-                DynamicAdviceGenerator.class.getClassLoader());
+        return new LazyDefinedClass(Type.getObjectType(methodMetaInternalName), bytes);
     }
 
     @RequiresNonNull("methodMetaInternalName")

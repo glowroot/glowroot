@@ -115,10 +115,19 @@ public class AnalyzedWorld {
             for (Entry<String, AnalyzedClass> innerEntry : outerEntry.getValue().entrySet()) {
                 if (innerEntry.getValue().hasReweavableAdvice()) {
                     try {
-                        classes.add(outerEntry.getKey().loadClass(innerEntry.getKey()));
+                        classes.add(Class.forName(innerEntry.getKey(), false, outerEntry.getKey()));
                     } catch (ClassNotFoundException e) {
                         logger.warn(e.getMessage(), e);
                     }
+                }
+            }
+        }
+        for (Entry<String, AnalyzedClass> entry : bootstrapLoaderWorld.entrySet()) {
+            if (entry.getValue().hasReweavableAdvice()) {
+                try {
+                    classes.add(Class.forName(entry.getKey(), false, null));
+                } catch (ClassNotFoundException e) {
+                    logger.warn(e.getMessage(), e);
                 }
             }
         }

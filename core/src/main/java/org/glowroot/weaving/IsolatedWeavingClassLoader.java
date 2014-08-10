@@ -186,8 +186,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                 return true;
             }
         }
-        if (name.matches("org.glowroot.weaving.GeneratedAdviceFlow[0-9]+")
-                || name.equals(AdviceFlowOuterHolder.class.getName())
+        if (name.equals(AdviceFlowOuterHolder.class.getName())
                 || name.equals(AdviceFlowOuterHolder.AdviceFlowHolder.class.getName())) {
             return true;
         }

@@ -19,12 +19,10 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.net.URISyntaxException;
-import java.util.jar.JarFile;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.markers.ThreadSafe;
-import org.glowroot.weaving.WeavingClassFileTransformer;
 
 /**
  * @author Trask Stalnaker
@@ -36,17 +34,14 @@ public class ConfigModule {
     private final PluginDescriptorCache pluginDescriptorCache;
     private final ConfigService configService;
 
-    public ConfigModule(@Nullable Instrumentation instrumentation, File dataDir,
-            boolean viewerModeEnabled) throws IOException, URISyntaxException {
-        // instrumentation is null when debugging with IsolatedWeavingClassLoader instead of
-        // javaagent
-        if (instrumentation != null) {
-            addPluginJarsToClasspath(instrumentation);
-        }
+    public ConfigModule(File dataDir, @Nullable Instrumentation instrumentation,
+            @Nullable PluginResourceFinder pluginResourceFinder, boolean viewerModeEnabled)
+            throws IOException, URISyntaxException {
         if (viewerModeEnabled) {
-            pluginDescriptorCache = PluginDescriptorCache.createInViewerMode();
+            pluginDescriptorCache = PluginDescriptorCache.createInViewerMode(pluginResourceFinder);
         } else {
-            pluginDescriptorCache = PluginDescriptorCache.create();
+            pluginDescriptorCache =
+                    PluginDescriptorCache.create(pluginResourceFinder, instrumentation, dataDir);
         }
         configService = new ConfigService(dataDir, pluginDescriptorCache);
     }
@@ -57,17 +52,5 @@ public class ConfigModule {
 
     public ConfigService getConfigService() {
         return configService;
-    }
-
-    private static void addPluginJarsToClasspath(Instrumentation instrumentation)
-            throws URISyntaxException, IOException {
-        boolean useBootstrapClassLoader = WeavingClassFileTransformer.isInBootstrapClassLoader();
-        for (File pluginJar : Plugins.getPluginJars()) {
-            if (useBootstrapClassLoader) {
-                instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(pluginJar));
-            } else {
-                instrumentation.appendToSystemClassLoaderSearch(new JarFile(pluginJar));
-            }
-        }
     }
 }

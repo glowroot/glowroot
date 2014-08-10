@@ -87,7 +87,7 @@ class AdminJsonService {
     }
 
     @POST("/backend/admin/reweave-pointcuts")
-    String reweavePointcuts() throws UnmodifiableClassException {
+    String reweavePointcuts() throws IOException, UnmodifiableClassException {
         if (instrumentation == null) {
             logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
             return "{}";

@@ -249,7 +249,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
                 .add("codeSource", codeSource)
                 .add("adviceMatchers", adviceMatchers)
                 .add("matchedMixinTypes", matchedMixinTypes)
-                .add("nothingAtAllToWeave", nothingInterestingHere);
+                .add("nothingInterestingHere", nothingInterestingHere);
         if (analyzedClassBuilder != null) {
             toStringHelper.add("analyzedClass", analyzedClassBuilder.build());
         }

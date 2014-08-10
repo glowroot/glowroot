@@ -217,6 +217,6 @@ public class AnalyzedMethod {
             sb.append(elementType.getDescriptor());
             return Type.getType(sb.toString());
         }
-        return Type.getType('L' + type.replace('.', '/') + ';');
+        return Type.getObjectType(type.replace('.', '/'));
     }
 }

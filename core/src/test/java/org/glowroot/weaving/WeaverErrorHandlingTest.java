@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
 import org.glowroot.api.weaving.Mixin;
-import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.weaving.SomeAspect.BindPrimitiveBooleanTravelerBadAdvice;
 import org.glowroot.weaving.SomeAspect.BindPrimitiveTravelerBadAdvice;
 import org.glowroot.weaving.SomeAspect.MoreVeryBadAdvice;
@@ -38,44 +37,44 @@ public class WeaverErrorHandlingTest {
     @Test
     public void shouldHandleVoidPrimitiveTravelerGracefully() throws Exception {
         // given
-        BindPrimitiveTravelerBadAdvice.resetThreadLocals();
+        SomeAspectThreadLocals.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class,
                 BindPrimitiveTravelerBadAdvice.class);
         // when
         test.execute1();
         // then
-        assertThat(BindPrimitiveTravelerBadAdvice.onReturnTraveler.get()).isEqualTo(0);
-        assertThat(BindPrimitiveTravelerBadAdvice.onThrowTraveler.get()).isNull();
-        assertThat(BindPrimitiveTravelerBadAdvice.onAfterTraveler.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onReturnTraveler.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onThrowTraveler.get()).isNull();
+        assertThat(SomeAspectThreadLocals.onAfterTraveler.get()).isEqualTo(0);
     }
 
     @Test
     public void shouldHandleVoidPrimitiveBooleanTravelerGracefully() throws Exception {
         // given
-        BindPrimitiveBooleanTravelerBadAdvice.resetThreadLocals();
+        SomeAspectThreadLocals.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class,
                 BindPrimitiveBooleanTravelerBadAdvice.class);
         // when
         test.execute1();
         // then
-        assertThat(BindPrimitiveBooleanTravelerBadAdvice.onReturnTraveler.get()).isEqualTo(false);
-        assertThat(BindPrimitiveBooleanTravelerBadAdvice.onThrowTraveler.get()).isNull();
-        assertThat(BindPrimitiveBooleanTravelerBadAdvice.onAfterTraveler.get()).isEqualTo(false);
+        assertThat(SomeAspectThreadLocals.onReturnTraveler.get()).isEqualTo(false);
+        assertThat(SomeAspectThreadLocals.onThrowTraveler.get()).isNull();
+        assertThat(SomeAspectThreadLocals.onAfterTraveler.get()).isEqualTo(false);
     }
 
     @Test
     public void shouldNotCallOnThrowForOnBeforeException() throws Exception {
         // given
-        VeryBadAdvice.resetThreadLocals();
+        SomeAspectThreadLocals.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, VeryBadAdvice.class);
         // when
         try {
             test.executeWithArgs("one", 2);
         } catch (IllegalStateException e) {
             assertThat(e.getMessage()).isEqualTo("Sorry");
-            assertThat(SomeAspect.onBeforeCount.get()).isEqualTo(1);
-            assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
-            assertThat(SomeAspect.onAfterCount.get()).isEqualTo(0);
+            assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+            assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+            assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
             return;
         }
         throw new AssertionError("Expecting IllegalStateException");
@@ -84,16 +83,16 @@ public class WeaverErrorHandlingTest {
     @Test
     public void shouldNotCallOnThrowForOnReturnException() throws Exception {
         // given
-        MoreVeryBadAdvice.resetThreadLocals();
+        SomeAspectThreadLocals.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, MoreVeryBadAdvice.class);
         // when
         try {
             test.executeWithArgs("one", 2);
         } catch (IllegalStateException e) {
             assertThat(e.getMessage()).isEqualTo("Sorry");
-            assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
-            assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
-            assertThat(SomeAspect.onAfterCount.get()).isEqualTo(0);
+            assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+            assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+            assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
             return;
         }
         throw new AssertionError("Expecting IllegalStateException");
@@ -103,16 +102,16 @@ public class WeaverErrorHandlingTest {
     @Test
     public void shouldNotCallOnThrowForOnReturnException2() throws Exception {
         // given
-        MoreVeryBadAdvice2.resetThreadLocals();
+        SomeAspectThreadLocals.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, MoreVeryBadAdvice2.class);
         // when
         try {
             test.executeWithReturn();
         } catch (IllegalStateException e) {
             assertThat(e.getMessage()).isEqualTo("Sorry");
-            assertThat(SomeAspect.onReturnCount.get()).isEqualTo(1);
-            assertThat(SomeAspect.onThrowCount.get()).isEqualTo(0);
-            assertThat(SomeAspect.onAfterCount.get()).isEqualTo(0);
+            assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+            assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+            assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
             return;
         }
         throw new AssertionError("Expecting IllegalStateException");
@@ -122,10 +121,7 @@ public class WeaverErrorHandlingTest {
             Class<?> adviceClass, Class<?>... extraBridgeClasses) throws Exception {
 
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
-        if (pointcut != null) {
-            loader.setAdvisors(ImmutableList.of(Advice.from(pointcut, adviceClass, false)));
-        }
+        loader.setAdvisors(ImmutableList.of(Advice.from(adviceClass, false)));
         Mixin mixin = adviceClass.getAnnotation(Mixin.class);
         if (mixin != null) {
             loader.setMixinTypes(ImmutableList.of(MixinType.from(mixin, adviceClass)));

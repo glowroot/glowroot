@@ -20,27 +20,64 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.glowroot.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
-class Plugins {
+public class PluginResourceFinder {
 
-    private static final Logger logger = LoggerFactory.getLogger(Plugins.class);
+    private static final Logger logger = LoggerFactory.getLogger(PluginResourceFinder.class);
 
-    private Plugins() {}
+    private final ImmutableList<File> pluginJars;
+    private final ImmutableList<URL> descriptorURLs;
 
-    static ImmutableList<File> getPluginJars() throws URISyntaxException, IOException {
-        File pluginsDir = getPluginsDir();
+    public PluginResourceFinder(File glowrootJarFile) throws URISyntaxException, IOException {
+        pluginJars = getPluginJars(glowrootJarFile);
+        List<URL> descriptorURLs = Lists.newArrayList();
+        for (File pluginJar : pluginJars) {
+            descriptorURLs.add(new URL("jar:" + pluginJar.toURI()
+                    + "!/META-INF/glowroot.plugin.json"));
+        }
+        for (File file : getStandaloneDescriptors(glowrootJarFile)) {
+            descriptorURLs.add(file.toURI().toURL());
+        }
+        this.descriptorURLs = ImmutableList.copyOf(descriptorURLs);
+    }
+
+    public ImmutableList<File> getPluginJars() {
+        return pluginJars;
+    }
+
+    @Nullable
+    URL findResource(String name) {
+        for (File pluginJar : pluginJars) {
+            try {
+                URL url = new URL("jar:" + pluginJar.toURI() + "!/" + name);
+                // call openStream() to test if this exists
+                url.openStream();
+                return url;
+            } catch (IOException e) {
+                logger.debug(e.getMessage(), e);
+            }
+        }
+        return null;
+    }
+
+    ImmutableList<URL> getDescriptorURLs() {
+        return descriptorURLs;
+    }
+
+    private static ImmutableList<File> getPluginJars(File glowrootJarFile)
+            throws URISyntaxException, IOException {
+        File pluginsDir = getPluginsDir(glowrootJarFile);
         if (pluginsDir == null) {
             return ImmutableList.of();
         }
@@ -57,9 +94,9 @@ class Plugins {
         return ImmutableList.copyOf(pluginJars);
     }
 
-    static ImmutableList<File> getStandalonePluginDescriptorFiles() throws IOException,
-            URISyntaxException {
-        File pluginsDir = getPluginsDir();
+    private static ImmutableList<File> getStandaloneDescriptors(File glowrootJarFile)
+            throws IOException, URISyntaxException {
+        File pluginsDir = getPluginsDir(glowrootJarFile);
         if (pluginsDir == null) {
             return ImmutableList.of();
         }
@@ -77,36 +114,13 @@ class Plugins {
     }
 
     @Nullable
-    private static File getPluginsDir() throws IOException, URISyntaxException {
-        URL agentJarLocation = Plugins.class.getProtectionDomain().getCodeSource().getLocation();
-        if (agentJarLocation == null) {
-            throw new IOException("Could not determine glowroot jar location");
-        }
-        File agentJarFile = new File(agentJarLocation.toURI());
-        if (!agentJarFile.getName().endsWith(".jar")) {
-            if (isRunningDelegatingJavaagent()) {
-                // this is ok, running tests under delegating javaagent
-                return null;
-            }
-            throw new IOException("Could not determine glowroot jar location");
-        }
-        File pluginsDir = new File(agentJarFile.getParentFile(), "plugins");
+    private static File getPluginsDir(File glowrootJarFile) throws IOException,
+            URISyntaxException {
+        File pluginsDir = new File(glowrootJarFile.getParentFile(), "plugins");
         if (!pluginsDir.exists()) {
             // it is ok to run without any plugins
             return null;
         }
         return pluginsDir;
-    }
-
-    private static boolean isRunningDelegatingJavaagent() {
-        try {
-            // TODO check javaagent arg instead of just checking if it is somewhere on the classpath
-            Class.forName("org.glowroot.container.javaagent.DelegatingJavaagent");
-            return true;
-        } catch (ClassNotFoundException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            return false;
-        }
     }
 }

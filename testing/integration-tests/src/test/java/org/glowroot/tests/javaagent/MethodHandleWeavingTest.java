@@ -79,13 +79,13 @@ public class MethodHandleWeavingTest {
     public static class ShouldDefineAnonymousClass implements AppUnderTest {
         @Override
         public void executeApp() throws Exception {
-            Class<?> methodHandlesClass = Reflection.type("java.lang.invoke.MethodHandles").load();
+            Class<?> methodHandlesClass = Class.forName("java.lang.invoke.MethodHandles");
 
             Object lookup = Reflection.staticMethod("lookup")
                     .in(methodHandlesClass)
                     .invoke();
 
-            Class<?> methodTypeClass = Reflection.type("java.lang.invoke.MethodType").load();
+            Class<?> methodTypeClass = Class.forName("java.lang.invoke.MethodType");
 
             Object methodType = Reflection.staticMethod("methodType")
                     .withParameterTypes(Class.class)

@@ -99,7 +99,7 @@ public class AnalyzedClassPlanBTest {
                     throw new ClassNotFoundException("Error loading class", e);
                 }
             } else {
-                return DelegatingClassLoader.class.getClassLoader().loadClass(name);
+                return Class.forName(name, resolve, DelegatingClassLoader.class.getClassLoader());
             }
         }
         protected Class<?> load(String name) throws IOException {
@@ -131,7 +131,7 @@ public class AnalyzedClassPlanBTest {
                     throw new ClassNotFoundException("Error loading class", e);
                 }
             } else {
-                return DelegatingClassLoader.class.getClassLoader().loadClass(name);
+                return Class.forName(name, resolve, DelegatingClassLoader.class.getClassLoader());
             }
         }
     }

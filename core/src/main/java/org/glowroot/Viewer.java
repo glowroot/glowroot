@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,12 @@
  */
 package org.glowroot;
 
-import org.glowroot.GlowrootModule.StartupFailedException;
+import java.io.File;
+import java.net.URISyntaxException;
+import java.security.CodeSource;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import org.glowroot.markers.Static;
 
 /**
@@ -27,7 +32,20 @@ class Viewer {
 
     private Viewer() {}
 
-    public static void main(String... args) throws StartupFailedException, InterruptedException {
-        MainEntryPoint.runViewer();
+    public static void main(String... args) throws Exception {
+        MainEntryPoint.runViewer(getGlowrootJarFile());
+    }
+
+    @Nullable
+    public static File getGlowrootJarFile() throws URISyntaxException {
+        CodeSource codeSource = Viewer.class.getProtectionDomain().getCodeSource();
+        if (codeSource == null) {
+            return null;
+        }
+        File glowrootJarFile = new File(codeSource.getLocation().toURI());
+        if (glowrootJarFile.getName().equals("glowroot.jar")) {
+            return glowrootJarFile;
+        }
+        return null;
     }
 }

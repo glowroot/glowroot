@@ -30,6 +30,7 @@ public class Lists {
             int initialArraySize);
     public static <E extends @Nullable Object> ArrayList<E> newArrayList(
             Iterable<? extends E> elements);
+    public static <E extends @Nullable Object> ArrayList<E> newCopyOnWriteArrayList();
 }
 
 public class Maps {

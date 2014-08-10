@@ -15,10 +15,6 @@
  */
 package org.glowroot.weaving;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.OptionalReturn;
@@ -48,65 +44,35 @@ import org.glowroot.api.weaving.Pointcut;
  */
 public class SomeAspect {
 
-    public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
-        @Override
-        protected Boolean initialValue() {
-            return true;
-        }
-    };
-    public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-    public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
-    public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-    public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-    public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
-
-    public static final ThreadLocal<List<String>> orderedEvents =
-            new ThreadLocal<List<String>>() {
-                @Override
-                protected List<String> initialValue() {
-                    return Lists.newArrayList();
-                }
-            };
-
-    public static void resetThreadLocals() {
-        enabled.set(true);
-        enabledCount.set(0);
-        onBeforeCount.set(0);
-        onReturnCount.set(0);
-        onThrowCount.set(0);
-        onAfterCount.set(0);
-        orderedEvents.set(new ArrayList<String>());
-    }
-
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1|execute2",
             metricName = "xyz")
     public static class BasicAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            enabledCount.increment();
-            return enabled.get();
+            SomeAspectThreadLocals.enabledCount.increment();
+            return SomeAspectThreadLocals.enabled.get();
         }
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
         @OnReturn
         public static void onReturn() {
-            onReturnCount.increment();
+            SomeAspectThreadLocals.onReturnCount.increment();
         }
         @OnThrow
         public static void onThrow() {
-            onThrowCount.increment();
+            SomeAspectThreadLocals.onThrowCount.increment();
         }
         @OnAfter
         public static void onAfter() {
-            onAfterCount.increment();
+            SomeAspectThreadLocals.onAfterCount.increment();
         }
         public static void enable() {
-            enabled.set(true);
+            SomeAspectThreadLocals.enabled.set(true);
         }
         public static void disable() {
-            enabled.set(false);
+            SomeAspectThreadLocals.enabled.set(false);
         }
     }
 
@@ -115,24 +81,24 @@ public class SomeAspect {
     public static class SuperBasicAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            enabledCount.increment();
-            return enabled.get();
+            SomeAspectThreadLocals.enabledCount.increment();
+            return SomeAspectThreadLocals.enabled.get();
         }
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
         @OnReturn
         public static void onReturn() {
-            onReturnCount.increment();
+            SomeAspectThreadLocals.onReturnCount.increment();
         }
         @OnThrow
         public static void onThrow() {
-            onThrowCount.increment();
+            SomeAspectThreadLocals.onThrowCount.increment();
         }
         @OnAfter
         public static void onAfter() {
-            onAfterCount.increment();
+            SomeAspectThreadLocals.onAfterCount.increment();
         }
     }
 
@@ -141,24 +107,24 @@ public class SomeAspect {
     public static class ThrowableToStringAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            enabledCount.increment();
-            return enabled.get();
+            SomeAspectThreadLocals.enabledCount.increment();
+            return SomeAspectThreadLocals.enabled.get();
         }
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
         @OnReturn
         public static void onReturn() {
-            onReturnCount.increment();
+            SomeAspectThreadLocals.onReturnCount.increment();
         }
         @OnThrow
         public static void onThrow() {
-            onThrowCount.increment();
+            SomeAspectThreadLocals.onThrowCount.increment();
         }
         @OnAfter
         public static void onAfter() {
-            onAfterCount.increment();
+            SomeAspectThreadLocals.onAfterCount.increment();
         }
     }
 
@@ -166,24 +132,24 @@ public class SomeAspect {
     public static class BasicMiscConstructorAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            enabledCount.increment();
-            return enabled.get();
+            SomeAspectThreadLocals.enabledCount.increment();
+            return SomeAspectThreadLocals.enabled.get();
         }
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
         @OnReturn
         public static void onReturn() {
-            onReturnCount.increment();
+            SomeAspectThreadLocals.onReturnCount.increment();
         }
         @OnThrow
         public static void onThrow() {
-            onThrowCount.increment();
+            SomeAspectThreadLocals.onThrowCount.increment();
         }
         @OnAfter
         public static void onAfter() {
-            onAfterCount.increment();
+            SomeAspectThreadLocals.onAfterCount.increment();
         }
     }
 
@@ -192,29 +158,29 @@ public class SomeAspect {
     public static class BasicMiscAllConstructorAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            orderedEvents.get().add("isEnabled");
-            enabledCount.increment();
-            return enabled.get();
+            SomeAspectThreadLocals.orderedEvents.get().add("isEnabled");
+            SomeAspectThreadLocals.enabledCount.increment();
+            return SomeAspectThreadLocals.enabled.get();
         }
         @OnBefore
         public static void onBefore() {
-            orderedEvents.get().add("onBefore");
-            onBeforeCount.increment();
+            SomeAspectThreadLocals.orderedEvents.get().add("onBefore");
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
         @OnReturn
         public static void onReturn() {
-            orderedEvents.get().add("onReturn");
-            onReturnCount.increment();
+            SomeAspectThreadLocals.orderedEvents.get().add("onReturn");
+            SomeAspectThreadLocals.onReturnCount.increment();
         }
         @OnThrow
         public static void onThrow() {
-            orderedEvents.get().add("onThrow");
-            onThrowCount.increment();
+            SomeAspectThreadLocals.orderedEvents.get().add("onThrow");
+            SomeAspectThreadLocals.onThrowCount.increment();
         }
         @OnAfter
         public static void onAfter() {
-            orderedEvents.get().add("onAfter");
-            onAfterCount.increment();
+            SomeAspectThreadLocals.orderedEvents.get().add("onAfter");
+            SomeAspectThreadLocals.onAfterCount.increment();
         }
     }
 
@@ -223,24 +189,24 @@ public class SomeAspect {
     public static class BasicWithInnerClassArgAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            enabledCount.increment();
-            return enabled.get();
+            SomeAspectThreadLocals.enabledCount.increment();
+            return SomeAspectThreadLocals.enabled.get();
         }
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
         @OnReturn
         public static void onReturn() {
-            onReturnCount.increment();
+            SomeAspectThreadLocals.onReturnCount.increment();
         }
         @OnThrow
         public static void onThrow() {
-            onThrowCount.increment();
+            SomeAspectThreadLocals.onThrowCount.increment();
         }
         @OnAfter
         public static void onAfter() {
-            onAfterCount.increment();
+            SomeAspectThreadLocals.onAfterCount.increment();
         }
     }
 
@@ -248,572 +214,385 @@ public class SomeAspect {
     public static class BasicWithInnerClassAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            enabledCount.increment();
-            return enabled.get();
+            SomeAspectThreadLocals.enabledCount.increment();
+            return SomeAspectThreadLocals.enabled.get();
         }
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
         @OnReturn
         public static void onReturn() {
-            onReturnCount.increment();
+            SomeAspectThreadLocals.onReturnCount.increment();
         }
         @OnThrow
         public static void onThrow() {
-            onThrowCount.increment();
+            SomeAspectThreadLocals.onThrowCount.increment();
         }
         @OnAfter
         public static void onAfter() {
-            onAfterCount.increment();
+            SomeAspectThreadLocals.onAfterCount.increment();
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindReceiverAdvice {
-        public static final ThreadLocal<Misc> isEnabledReceiver = new ThreadLocal<Misc>();
-        public static final ThreadLocal<Misc> onBeforeReceiver = new ThreadLocal<Misc>();
-        public static final ThreadLocal<Misc> onReturnReceiver = new ThreadLocal<Misc>();
-        public static final ThreadLocal<Misc> onThrowReceiver = new ThreadLocal<Misc>();
-        public static final ThreadLocal<Misc> onAfterReceiver = new ThreadLocal<Misc>();
         @IsEnabled
         public static boolean isEnabled(@BindReceiver Misc receiver) {
-            isEnabledReceiver.set(receiver);
+            SomeAspectThreadLocals.isEnabledReceiver.set(receiver);
             return true;
         }
         @OnBefore
         public static void onBefore(@BindReceiver Misc receiver) {
-            onBeforeReceiver.set(receiver);
+            SomeAspectThreadLocals.onBeforeReceiver.set(receiver);
         }
         @OnReturn
         public static void onReturn(@BindReceiver Misc receiver) {
-            onReturnReceiver.set(receiver);
+            SomeAspectThreadLocals.onReturnReceiver.set(receiver);
         }
         @OnThrow
         public static void onThrow(@BindReceiver Misc receiver) {
-            onThrowReceiver.set(receiver);
+            SomeAspectThreadLocals.onThrowReceiver.set(receiver);
         }
         @OnAfter
         public static void onAfter(@BindReceiver Misc receiver) {
-            onAfterReceiver.set(receiver);
-        }
-        public static void resetThreadLocals() {
-            isEnabledReceiver.remove();
-            onBeforeReceiver.remove();
-            onReturnReceiver.remove();
-            onThrowReceiver.remove();
-            onAfterReceiver.remove();
+            SomeAspectThreadLocals.onAfterReceiver.set(receiver);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
             methodParameterTypes = {"java.lang.String", "int"})
     public static class BindParameterAdvice {
-        public static final ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
-        public static final ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
-        public static final ThreadLocal<Object[]> onReturnParams = new ThreadLocal<Object[]>();
-        public static final ThreadLocal<Object[]> onThrowParams = new ThreadLocal<Object[]>();
-        public static final ThreadLocal<Object[]> onAfterParams = new ThreadLocal<Object[]>();
         @IsEnabled
         public static boolean isEnabled(@BindParameter String one, @BindParameter int two) {
-            isEnabledParams.set(new Object[] {one, two});
+            SomeAspectThreadLocals.isEnabledParams.set(new Object[] {one, two});
             return true;
         }
         @OnBefore
         public static void onBefore(@BindParameter String one, @BindParameter int two) {
-            onBeforeParams.set(new Object[] {one, two});
+            SomeAspectThreadLocals.onBeforeParams.set(new Object[] {one, two});
         }
         @OnReturn
         public static void onReturn(@BindParameter String one, @BindParameter int two) {
-            onReturnParams.set(new Object[] {one, two});
+            SomeAspectThreadLocals.onReturnParams.set(new Object[] {one, two});
         }
         @OnThrow
         public static void onThrow(@BindParameter String one, @BindParameter int two) {
-            onThrowParams.set(new Object[] {one, two});
+            SomeAspectThreadLocals.onThrowParams.set(new Object[] {one, two});
         }
         @OnAfter
         public static void onAfter(@BindParameter String one, @BindParameter int two) {
-            onAfterParams.set(new Object[] {one, two});
-        }
-        public static void resetThreadLocals() {
-            isEnabledParams.remove();
-            onBeforeParams.remove();
-            onReturnParams.remove();
-            onThrowParams.remove();
-            onAfterParams.remove();
+            SomeAspectThreadLocals.onAfterParams.set(new Object[] {one, two});
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
             methodParameterTypes = {"java.lang.String", "int"})
     public static class BindParameterArrayAdvice {
-        public static final ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
-        public static final ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
-        public static final ThreadLocal<Object[]> onReturnParams = new ThreadLocal<Object[]>();
-        public static final ThreadLocal<Object[]> onThrowParams = new ThreadLocal<Object[]>();
-        public static final ThreadLocal<Object[]> onAfterParams = new ThreadLocal<Object[]>();
         @IsEnabled
         public static boolean isEnabled(@BindParameterArray Object[] args) {
-            isEnabledParams.set(args);
+            SomeAspectThreadLocals.isEnabledParams.set(args);
             return true;
         }
         @OnBefore
         public static void onBefore(@BindParameterArray Object[] args) {
-            onBeforeParams.set(args);
+            SomeAspectThreadLocals.onBeforeParams.set(args);
         }
         @OnReturn
         public static void onReturn(@BindParameterArray Object[] args) {
-            onReturnParams.set(args);
+            SomeAspectThreadLocals.onReturnParams.set(args);
         }
         @OnThrow
         public static void onThrow(@BindParameterArray Object[] args) {
-            onThrowParams.set(args);
+            SomeAspectThreadLocals.onThrowParams.set(args);
         }
         @OnAfter
         public static void onAfter(@BindParameterArray Object[] args) {
-            onAfterParams.set(args);
-        }
-        public static void resetThreadLocals() {
-            isEnabledParams.remove();
-            onBeforeParams.remove();
-            onReturnParams.remove();
-            onThrowParams.remove();
-            onAfterParams.remove();
+            SomeAspectThreadLocals.onAfterParams.set(args);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindTravelerAdvice {
-        public static final ThreadLocal<String> onReturnTraveler = new ThreadLocal<String>();
-        public static final ThreadLocal<String> onThrowTraveler = new ThreadLocal<String>();
-        public static final ThreadLocal<String> onAfterTraveler = new ThreadLocal<String>();
         @OnBefore
         public static String onBefore() {
             return "a traveler";
         }
         @OnReturn
         public static void onReturn(@BindTraveler String traveler) {
-            onReturnTraveler.set(traveler);
+            SomeAspectThreadLocals.onReturnTraveler.set(traveler);
         }
         @OnThrow
         public static void onThrow(@BindTraveler String traveler) {
-            onThrowTraveler.set(traveler);
+            SomeAspectThreadLocals.onThrowTraveler.set(traveler);
         }
         @OnAfter
         public static void onAfter(@BindTraveler String traveler) {
-            onAfterTraveler.set(traveler);
-        }
-        public static void resetThreadLocals() {
-            onReturnTraveler.remove();
-            onThrowTraveler.remove();
-            onAfterTraveler.remove();
+            SomeAspectThreadLocals.onAfterTraveler.set(traveler);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindPrimitiveTravelerAdvice {
-        public static final ThreadLocal<Integer> onReturnTraveler = new ThreadLocal<Integer>();
-        public static final ThreadLocal<Integer> onThrowTraveler = new ThreadLocal<Integer>();
-        public static final ThreadLocal<Integer> onAfterTraveler = new ThreadLocal<Integer>();
         @OnBefore
         public static int onBefore() {
             return 3;
         }
         @OnReturn
         public static void onReturn(@BindTraveler int traveler) {
-            onReturnTraveler.set(traveler);
+            SomeAspectThreadLocals.onReturnTraveler.set(traveler);
         }
         @OnThrow
         public static void onThrow(@BindTraveler int traveler) {
-            onThrowTraveler.set(traveler);
+            SomeAspectThreadLocals.onThrowTraveler.set(traveler);
         }
         @OnAfter
         public static void onAfter(@BindTraveler int traveler) {
-            onAfterTraveler.set(traveler);
-        }
-        public static void resetThreadLocals() {
-            onReturnTraveler.remove();
-            onThrowTraveler.remove();
-            onAfterTraveler.remove();
+            SomeAspectThreadLocals.onAfterTraveler.set(traveler);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindPrimitiveBooleanTravelerAdvice {
-        public static final ThreadLocal<Boolean> onReturnTraveler = new ThreadLocal<Boolean>();
-        public static final ThreadLocal<Boolean> onThrowTraveler = new ThreadLocal<Boolean>();
-        public static final ThreadLocal<Boolean> onAfterTraveler = new ThreadLocal<Boolean>();
         @OnBefore
         public static boolean onBefore() {
             return true;
         }
         @OnReturn
         public static void onReturn(@BindTraveler boolean traveler) {
-            onReturnTraveler.set(traveler);
+            SomeAspectThreadLocals.onReturnTraveler.set(traveler);
         }
         @OnThrow
         public static void onThrow(@BindTraveler boolean traveler) {
-            onThrowTraveler.set(traveler);
+            SomeAspectThreadLocals.onThrowTraveler.set(traveler);
         }
         @OnAfter
         public static void onAfter(@BindTraveler boolean traveler) {
-            onAfterTraveler.set(traveler);
-        }
-        public static void resetThreadLocals() {
-            onReturnTraveler.remove();
-            onThrowTraveler.remove();
-            onAfterTraveler.remove();
+            SomeAspectThreadLocals.onAfterTraveler.set(traveler);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindPrimitiveTravelerBadAdvice {
-        public static final ThreadLocal<Integer> onReturnTraveler = new ThreadLocal<Integer>();
-        public static final ThreadLocal<Integer> onThrowTraveler = new ThreadLocal<Integer>();
-        public static final ThreadLocal<Integer> onAfterTraveler = new ThreadLocal<Integer>();
         @OnBefore
         public static void onBefore() {}
         @OnReturn
         public static void onReturn(@BindTraveler int traveler) {
-            onReturnTraveler.set(traveler);
+            SomeAspectThreadLocals.onReturnTraveler.set(traveler);
         }
         @OnThrow
         public static void onThrow(@BindTraveler int traveler) {
-            onThrowTraveler.set(traveler);
+            SomeAspectThreadLocals.onThrowTraveler.set(traveler);
         }
         @OnAfter
         public static void onAfter(@BindTraveler int traveler) {
-            onAfterTraveler.set(traveler);
-        }
-        public static void resetThreadLocals() {
-            onReturnTraveler.remove();
-            onThrowTraveler.remove();
-            onAfterTraveler.remove();
+            SomeAspectThreadLocals.onAfterTraveler.set(traveler);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindPrimitiveBooleanTravelerBadAdvice {
-        public static final ThreadLocal<Boolean> onReturnTraveler = new ThreadLocal<Boolean>();
-        public static final ThreadLocal<Boolean> onThrowTraveler = new ThreadLocal<Boolean>();
-        public static final ThreadLocal<Boolean> onAfterTraveler = new ThreadLocal<Boolean>();
         @OnBefore
         public static void onBefore() {}
         @OnReturn
         public static void onReturn(@BindTraveler boolean traveler) {
-            onReturnTraveler.set(traveler);
+            SomeAspectThreadLocals.onReturnTraveler.set(traveler);
         }
         @OnThrow
         public static void onThrow(@BindTraveler boolean traveler) {
-            onThrowTraveler.set(traveler);
+            SomeAspectThreadLocals.onThrowTraveler.set(traveler);
         }
         @OnAfter
         public static void onAfter(@BindTraveler boolean traveler) {
-            onAfterTraveler.set(traveler);
-        }
-        public static void resetThreadLocals() {
-            onReturnTraveler.remove();
-            onThrowTraveler.remove();
-            onAfterTraveler.remove();
+            SomeAspectThreadLocals.onAfterTraveler.set(traveler);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindClassMetaAdvice {
-        public static final ThreadLocal<TestClassMeta> isEnabledClassMeta =
-                new ThreadLocal<TestClassMeta>();
-        public static final ThreadLocal<TestClassMeta> onBeforeClassMeta =
-                new ThreadLocal<TestClassMeta>();
-        public static final ThreadLocal<TestClassMeta> onReturnClassMeta =
-                new ThreadLocal<TestClassMeta>();
-        public static final ThreadLocal<TestClassMeta> onThrowClassMeta =
-                new ThreadLocal<TestClassMeta>();
-        public static final ThreadLocal<TestClassMeta> onAfterClassMeta =
-                new ThreadLocal<TestClassMeta>();
         @IsEnabled
         public static boolean isEnabled(@BindClassMeta TestClassMeta meta) {
-            isEnabledClassMeta.set(meta);
+            SomeAspectThreadLocals.isEnabledClassMeta.set(meta);
             return true;
         }
         @OnBefore
         public static void onBefore(@BindClassMeta TestClassMeta meta) {
-            onBeforeClassMeta.set(meta);
+            SomeAspectThreadLocals.onBeforeClassMeta.set(meta);
         }
         @OnReturn
         public static void onReturn(@BindClassMeta TestClassMeta meta) {
-            onReturnClassMeta.set(meta);
+            SomeAspectThreadLocals.onReturnClassMeta.set(meta);
         }
         @OnThrow
         public static void onThrow(@BindClassMeta TestClassMeta meta) {
-            onThrowClassMeta.set(meta);
+            SomeAspectThreadLocals.onThrowClassMeta.set(meta);
         }
         @OnAfter
         public static void onAfter(@BindClassMeta TestClassMeta meta) {
-            onAfterClassMeta.set(meta);
-        }
-        public static void resetThreadLocals() {
-            isEnabledClassMeta.remove();
-            onBeforeClassMeta.remove();
-            onReturnClassMeta.remove();
-            onThrowClassMeta.remove();
-            onAfterClassMeta.remove();
+            SomeAspectThreadLocals.onAfterClassMeta.set(meta);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithArgs",
             methodParameterTypes = {".."})
     public static class BindMethodMetaAdvice {
-        public static final ThreadLocal<TestMethodMeta> isEnabledMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
-        public static final ThreadLocal<TestMethodMeta> onBeforeMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
-        public static final ThreadLocal<TestMethodMeta> onReturnMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
-        public static final ThreadLocal<TestMethodMeta> onThrowMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
-        public static final ThreadLocal<TestMethodMeta> onAfterMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
         @IsEnabled
         public static boolean isEnabled(@BindMethodMeta TestMethodMeta meta) {
-            isEnabledMethodMeta.set(meta);
+            SomeAspectThreadLocals.isEnabledMethodMeta.set(meta);
             return true;
         }
         @OnBefore
         public static void onBefore(@BindMethodMeta TestMethodMeta meta) {
-            onBeforeMethodMeta.set(meta);
+            SomeAspectThreadLocals.onBeforeMethodMeta.set(meta);
         }
         @OnReturn
         public static void onReturn(@BindMethodMeta TestMethodMeta meta) {
-            onReturnMethodMeta.set(meta);
+            SomeAspectThreadLocals.onReturnMethodMeta.set(meta);
         }
         @OnThrow
         public static void onThrow(@BindMethodMeta TestMethodMeta meta) {
-            onThrowMethodMeta.set(meta);
+            SomeAspectThreadLocals.onThrowMethodMeta.set(meta);
         }
         @OnAfter
         public static void onAfter(@BindMethodMeta TestMethodMeta meta) {
-            onAfterMethodMeta.set(meta);
-        }
-        public static void resetThreadLocals() {
-            isEnabledMethodMeta.remove();
-            onBeforeMethodMeta.remove();
-            onReturnMethodMeta.remove();
-            onThrowMethodMeta.remove();
-            onAfterMethodMeta.remove();
+            SomeAspectThreadLocals.onAfterMethodMeta.set(meta);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.other.ArrayMisc", methodName = "executeArray",
             methodParameterTypes = {".."})
     public static class BindMethodMetaArrayAdvice {
-        public static final ThreadLocal<TestMethodMeta> isEnabledMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
-        public static final ThreadLocal<TestMethodMeta> onBeforeMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
-        public static final ThreadLocal<TestMethodMeta> onReturnMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
-        public static final ThreadLocal<TestMethodMeta> onThrowMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
-        public static final ThreadLocal<TestMethodMeta> onAfterMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
         @IsEnabled
         public static boolean isEnabled(@BindMethodMeta TestMethodMeta meta) {
-            isEnabledMethodMeta.set(meta);
+            SomeAspectThreadLocals.isEnabledMethodMeta.set(meta);
             return true;
         }
         @OnBefore
         public static void onBefore(@BindMethodMeta TestMethodMeta meta) {
-            onBeforeMethodMeta.set(meta);
+            SomeAspectThreadLocals.onBeforeMethodMeta.set(meta);
         }
         @OnReturn
         public static void onReturn(@BindMethodMeta TestMethodMeta meta) {
-            onReturnMethodMeta.set(meta);
+            SomeAspectThreadLocals.onReturnMethodMeta.set(meta);
         }
         @OnThrow
         public static void onThrow(@BindMethodMeta TestMethodMeta meta) {
-            onThrowMethodMeta.set(meta);
+            SomeAspectThreadLocals.onThrowMethodMeta.set(meta);
         }
         @OnAfter
         public static void onAfter(@BindMethodMeta TestMethodMeta meta) {
-            onAfterMethodMeta.set(meta);
-        }
-        public static void resetThreadLocals() {
-            isEnabledMethodMeta.remove();
-            onBeforeMethodMeta.remove();
-            onReturnMethodMeta.remove();
-            onThrowMethodMeta.remove();
-            onAfterMethodMeta.remove();
+            SomeAspectThreadLocals.onAfterMethodMeta.set(meta);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.other.ArrayMisc",
             methodName = "executeWithArrayReturn", methodParameterTypes = {".."})
     public static class BindMethodMetaReturnArrayAdvice {
-        public static final ThreadLocal<TestMethodMeta> isEnabledMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
-        public static final ThreadLocal<TestMethodMeta> onBeforeMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
-        public static final ThreadLocal<TestMethodMeta> onReturnMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
-        public static final ThreadLocal<TestMethodMeta> onThrowMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
-        public static final ThreadLocal<TestMethodMeta> onAfterMethodMeta =
-                new ThreadLocal<TestMethodMeta>();
         @IsEnabled
         public static boolean isEnabled(@BindMethodMeta TestMethodMeta meta) {
-            isEnabledMethodMeta.set(meta);
+            SomeAspectThreadLocals.isEnabledMethodMeta.set(meta);
             return true;
         }
         @OnBefore
         public static void onBefore(@BindMethodMeta TestMethodMeta meta) {
-            onBeforeMethodMeta.set(meta);
+            SomeAspectThreadLocals.onBeforeMethodMeta.set(meta);
         }
         @OnReturn
         public static void onReturn(@BindMethodMeta TestMethodMeta meta) {
-            onReturnMethodMeta.set(meta);
+            SomeAspectThreadLocals.onReturnMethodMeta.set(meta);
         }
         @OnThrow
         public static void onThrow(@BindMethodMeta TestMethodMeta meta) {
-            onThrowMethodMeta.set(meta);
+            SomeAspectThreadLocals.onThrowMethodMeta.set(meta);
         }
         @OnAfter
         public static void onAfter(@BindMethodMeta TestMethodMeta meta) {
-            onAfterMethodMeta.set(meta);
-        }
-        public static void resetThreadLocals() {
-            isEnabledMethodMeta.remove();
-            onBeforeMethodMeta.remove();
-            onReturnMethodMeta.remove();
-            onThrowMethodMeta.remove();
-            onAfterMethodMeta.remove();
+            SomeAspectThreadLocals.onAfterMethodMeta.set(meta);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
     public static class BindReturnAdvice {
-        public static final ThreadLocal<String> returnValue = new ThreadLocal<String>();
         @OnReturn
         public static void onReturn(@BindReturn String value) {
-            returnValue.set(value);
-        }
-        public static void resetThreadLocals() {
-            returnValue.remove();
+            SomeAspectThreadLocals.returnValue.set(value);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc",
             methodName = "executeWithIntReturn")
     public static class BindPrimitiveReturnAdvice {
-        public static final ThreadLocal<Integer> returnValue = new ThreadLocal<Integer>();
         @OnReturn
         public static void onReturn(@BindReturn int value) {
-            returnValue.set(value);
-        }
-        public static void resetThreadLocals() {
-            returnValue.remove();
+            SomeAspectThreadLocals.returnValue.set(value);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc",
             methodName = "executeWithIntReturn")
     public static class BindAutoboxedReturnAdvice {
-        public static final ThreadLocal<Object> returnValue = new ThreadLocal<Object>();
         @OnReturn
         public static void onReturn(@BindReturn Object value) {
-            returnValue.set(value);
-        }
-        public static void resetThreadLocals() {
-            returnValue.remove();
+            SomeAspectThreadLocals.returnValue.set(value);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
     public static class BindOptionalReturnAdvice {
-        public static final ThreadLocal<OptionalReturn> returnValue =
-                new ThreadLocal<OptionalReturn>();
         @OnReturn
         public static void onReturn(@BindOptionalReturn OptionalReturn optionalReturn) {
-            returnValue.set(optionalReturn);
-        }
-        public static void resetThreadLocals() {
-            returnValue.remove();
+            SomeAspectThreadLocals.optionalReturnValue.set(optionalReturn);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindOptionalVoidReturnAdvice {
-        public static final ThreadLocal<OptionalReturn> returnValue =
-                new ThreadLocal<OptionalReturn>();
         @OnReturn
         public static void onReturn(@BindOptionalReturn OptionalReturn optionalReturn) {
-            returnValue.set(optionalReturn);
-        }
-        public static void resetThreadLocals() {
-            returnValue.remove();
+            SomeAspectThreadLocals.optionalReturnValue.set(optionalReturn);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc",
             methodName = "executeWithIntReturn")
     public static class BindOptionalPrimitiveReturnAdvice {
-        public static final ThreadLocal<OptionalReturn> returnValue =
-                new ThreadLocal<OptionalReturn>();
         @OnReturn
         public static void onReturn(@BindOptionalReturn OptionalReturn optionalReturn) {
-            returnValue.set(optionalReturn);
-        }
-        public static void resetThreadLocals() {
-            returnValue.remove();
+            SomeAspectThreadLocals.optionalReturnValue.set(optionalReturn);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
     public static class BindThrowableAdvice {
-        public static final ThreadLocal<Throwable> throwable = new ThreadLocal<Throwable>();
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t) {
-            throwable.set(t);
-        }
-        public static void resetThreadLocals() {
-            throwable.remove();
+            SomeAspectThreadLocals.throwable.set(t);
         }
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
             metricName = "efg")
     public static class BindMethodNameAdvice {
-        public static final ThreadLocal<String> isEnabledMethodName = new ThreadLocal<String>();
-        public static final ThreadLocal<String> onBeforeMethodName = new ThreadLocal<String>();
-        public static final ThreadLocal<String> onReturnMethodName = new ThreadLocal<String>();
-        public static final ThreadLocal<String> onThrowMethodName = new ThreadLocal<String>();
-        public static final ThreadLocal<String> onAfterMethodName = new ThreadLocal<String>();
         @IsEnabled
         public static boolean isEnabled(@BindMethodName String methodName) {
-            isEnabledMethodName.set(methodName);
+            SomeAspectThreadLocals.isEnabledMethodName.set(methodName);
             return true;
         }
         @OnBefore
         public static void onBefore(@BindMethodName String methodName) {
-            onBeforeMethodName.set(methodName);
+            SomeAspectThreadLocals.onBeforeMethodName.set(methodName);
         }
         @OnReturn
         public static void onReturn(@BindMethodName String methodName) {
-            onReturnMethodName.set(methodName);
+            SomeAspectThreadLocals.onReturnMethodName.set(methodName);
         }
         @OnThrow
         public static void onThrow(@BindMethodName String methodName) {
-            onThrowMethodName.set(methodName);
+            SomeAspectThreadLocals.onThrowMethodName.set(methodName);
         }
         @OnAfter
         public static void onAfter(@BindMethodName String methodName) {
-            onAfterMethodName.set(methodName);
-        }
-        public static void resetThreadLocals() {
-            isEnabledMethodName.remove();
-            onBeforeMethodName.remove();
-            onReturnMethodName.remove();
-            onThrowMethodName.remove();
-            onAfterMethodName.remove();
+            SomeAspectThreadLocals.onAfterMethodName.set(methodName);
         }
     }
 
@@ -834,10 +613,7 @@ public class SomeAspect {
     public static class MethodParametersDotDotAdvice1 {
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
-        }
-        public static void resetThreadLocals() {
-            onBeforeCount.set(0);
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
     }
 
@@ -846,10 +622,7 @@ public class SomeAspect {
     public static class MethodParametersDotDotAdvice2 {
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
-        }
-        public static void resetThreadLocals() {
-            onBeforeCount.set(0);
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
     }
 
@@ -858,10 +631,7 @@ public class SomeAspect {
     public static class MethodParametersDotDotAdvice3 {
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
-        }
-        public static void resetThreadLocals() {
-            onBeforeCount.set(0);
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
     }
 
@@ -934,25 +704,19 @@ public class SomeAspect {
     public static class NotNestingWithNoIsEnabledAdvice {
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
         @OnReturn
         public static void onReturn() {
-            onReturnCount.increment();
+            SomeAspectThreadLocals.onReturnCount.increment();
         }
         @OnThrow
         public static void onThrow() {
-            onThrowCount.increment();
+            SomeAspectThreadLocals.onThrowCount.increment();
         }
         @OnAfter
         public static void onAfter() {
-            onAfterCount.increment();
-        }
-        public static void resetThreadLocals() {
-            onBeforeCount.set(0);
-            onReturnCount.set(0);
-            onThrowCount.set(0);
-            onAfterCount.set(0);
+            SomeAspectThreadLocals.onAfterCount.increment();
         }
     }
 
@@ -1011,16 +775,12 @@ public class SomeAspect {
     public static class PrimitiveWithWildcardAdvice {
         @IsEnabled
         public static boolean isEnabled(@SuppressWarnings("unused") @BindParameter int x) {
-            enabledCount.increment();
+            SomeAspectThreadLocals.enabledCount.increment();
             return true;
         }
         @OnBefore
         public static void onBefore(@SuppressWarnings("unused") @BindParameter int x) {
-            onBeforeCount.increment();
-        }
-        public static void resetThreadLocals() {
-            enabledCount.set(0);
-            onBeforeCount.set(0);
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
     }
 
@@ -1029,11 +789,8 @@ public class SomeAspect {
     public static class PrimitiveWithAutoboxAdvice {
         @IsEnabled
         public static boolean isEnabled(@SuppressWarnings("unused") @BindParameter Object x) {
-            enabledCount.increment();
+            SomeAspectThreadLocals.enabledCount.increment();
             return true;
-        }
-        public static void resetThreadLocals() {
-            enabledCount.set(0);
         }
     }
 
@@ -1058,23 +815,18 @@ public class SomeAspect {
     public static class VeryBadAdvice {
         @OnBefore
         public static Object onBefore() {
-            onBeforeCount.increment();
+            SomeAspectThreadLocals.onBeforeCount.increment();
             throw new IllegalStateException("Sorry");
         }
         @OnThrow
         public static void onThrow() {
             // should not get called
-            onThrowCount.increment();
+            SomeAspectThreadLocals.onThrowCount.increment();
         }
         @OnAfter
         public static void onAfter() {
             // should not get called
-            onAfterCount.increment();
-        }
-        public static void resetThreadLocals() {
-            onBeforeCount.set(0);
-            onThrowCount.set(0);
-            onAfterCount.set(0);
+            SomeAspectThreadLocals.onAfterCount.increment();
         }
     }
 
@@ -1083,23 +835,18 @@ public class SomeAspect {
     public static class MoreVeryBadAdvice {
         @OnReturn
         public static void onReturn() {
-            onReturnCount.increment();
+            SomeAspectThreadLocals.onReturnCount.increment();
             throw new IllegalStateException("Sorry");
         }
         @OnThrow
         public static void onThrow() {
             // should not get called
-            onThrowCount.increment();
+            SomeAspectThreadLocals.onThrowCount.increment();
         }
         @OnAfter
         public static void onAfter() {
             // should not get called
-            onAfterCount.increment();
-        }
-        public static void resetThreadLocals() {
-            onReturnCount.set(0);
-            onThrowCount.set(0);
-            onAfterCount.set(0);
+            SomeAspectThreadLocals.onAfterCount.increment();
         }
     }
 
@@ -1108,23 +855,18 @@ public class SomeAspect {
     public static class MoreVeryBadAdvice2 {
         @OnReturn
         public static void onReturn() {
-            onReturnCount.increment();
+            SomeAspectThreadLocals.onReturnCount.increment();
             throw new IllegalStateException("Sorry");
         }
         @OnThrow
         public static void onThrow() {
             // should not get called
-            onThrowCount.increment();
+            SomeAspectThreadLocals.onThrowCount.increment();
         }
         @OnAfter
         public static void onAfter() {
             // should not get called
-            onAfterCount.increment();
-        }
-        public static void resetThreadLocals() {
-            onReturnCount.set(0);
-            onThrowCount.set(0);
-            onAfterCount.set(0);
+            SomeAspectThreadLocals.onAfterCount.increment();
         }
     }
 
@@ -1133,10 +875,7 @@ public class SomeAspect {
     public static class CircularClassDependencyAdvice {
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
-        }
-        public static void resetThreadLocals() {
-            onBeforeCount.set(0);
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
     }
 
@@ -1144,10 +883,7 @@ public class SomeAspect {
     public static class InterfaceAppearsTwiceInHierarchyAdvice {
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
-        }
-        public static void resetThreadLocals() {
-            onBeforeCount.set(0);
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
     }
 
@@ -1156,10 +892,7 @@ public class SomeAspect {
     public static class FinalMethodAdvice {
         @OnBefore
         public static void onBefore() {
-            onBeforeCount.increment();
-        }
-        public static void resetThreadLocals() {
-            onBeforeCount.set(0);
+            SomeAspectThreadLocals.onBeforeCount.increment();
         }
     }
 
@@ -1168,16 +901,6 @@ public class SomeAspect {
             methodName = "loadBundle",
             methodParameterTypes = {"org.apache.jackrabbit.core.id.NodeId"})
     public static class TestJSRInlinedMethodAdvice {}
-
-    static class IntegerThreadLocal extends ThreadLocal<Integer> {
-        @Override
-        protected Integer initialValue() {
-            return 0;
-        }
-        private void increment() {
-            set(get() + 1);
-        }
-    }
 
     public static class TestClassMeta {
 

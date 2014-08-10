@@ -44,12 +44,6 @@ import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Static;
 
 /**
- * This class is registered as the Premain-Class in the MANIFEST.MF of glowroot.jar:
- * 
- * Premain-Class: org.glowroot.MainEntryPoint
- * 
- * This defines the entry point when the JVM is launched via -javaagent:glowroot.jar.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
@@ -65,17 +59,14 @@ public class MainEntryPoint {
 
     private MainEntryPoint() {}
 
-    // javaagent entry point
-    public static void premain(@SuppressWarnings("unused") @Nullable String agentArgs,
-            Instrumentation instrumentation) {
+    public static void premain(Instrumentation instrumentation, @Nullable File glowrootJarFile) {
         ImmutableMap<String, String> properties = getGlowrootProperties();
-        // ...WithNoWarning since warning is displayed during start so no need for it twice
-        File dataDir = DataDir.getDataDir(properties);
+        File dataDir = DataDir.getDataDir(properties, glowrootJarFile);
         if (isShaded()) {
             reconfigureLogging(dataDir);
         }
         try {
-            start(dataDir, properties, instrumentation);
+            start(dataDir, properties, instrumentation, glowrootJarFile);
         } catch (StartupFailedException e) {
             if (e.isDataSourceLocked()) {
                 logDataSourceLockedException(dataDir);
@@ -89,15 +80,17 @@ public class MainEntryPoint {
         }
     }
 
-    static void runViewer() throws StartupFailedException, InterruptedException {
+    static void runViewer(@Nullable File glowrootJarFile) throws StartupFailedException,
+            InterruptedException {
         ImmutableMap<String, String> properties = getGlowrootProperties();
-        File dataDir = DataDir.getDataDir(properties);
+        File dataDir = DataDir.getDataDir(properties, glowrootJarFile);
         if (isShaded()) {
             reconfigureLogging(dataDir);
         }
         String version = Version.getVersion();
         try {
-            glowrootModule = new GlowrootModule(dataDir, properties, null, version, true);
+            glowrootModule = new GlowrootModule(dataDir, properties, null, glowrootJarFile,
+                    version, true);
         } catch (StartupFailedException e) {
             if (e.isDataSourceLocked()) {
                 // log nice message without stack trace for this common case
@@ -123,11 +116,13 @@ public class MainEntryPoint {
 
     @EnsuresNonNull("glowrootModule")
     private static void start(File dataDir, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation) throws StartupFailedException {
+            @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile)
+            throws StartupFailedException {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
-        glowrootModule = new GlowrootModule(dataDir, properties, instrumentation, version, false);
+        glowrootModule = new GlowrootModule(dataDir, properties, instrumentation, glowrootJarFile,
+                version, false);
         startupLogger.info("Glowroot started (version {})", version);
         startupLogger.info("Glowroot listening at http://localhost:{}",
                 glowrootModule.getUiModule().getPort());
@@ -213,10 +208,9 @@ public class MainEntryPoint {
 
     @OnlyUsedByTests
     @EnsuresNonNull("glowrootModule")
-    public static void start(Map<String, String> properties)
-            throws StartupFailedException {
-        File dataDir = DataDir.getDataDir(properties);
-        start(dataDir, properties, null);
+    public static void start(Map<String, String> properties) throws StartupFailedException {
+        File dataDir = DataDir.getDataDir(properties, null);
+        start(dataDir, properties, null, null);
     }
 
     @OnlyUsedByTests

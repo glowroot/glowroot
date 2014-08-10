@@ -121,6 +121,23 @@ class ClasspathCache {
         for (URLClassLoader loader : getKnownURLClassLoaders()) {
             updateCache(loader);
         }
+        updateCacheWithBootstrapClasses();
+    }
+
+    private void updateCacheWithBootstrapClasses() {
+        String bootClassPath = System.getProperty("sun.boot.class.path");
+        if (bootClassPath == null) {
+            return;
+        }
+        for (String path : Splitter.on(File.pathSeparatorChar).split(bootClassPath)) {
+            URI uri = new File(path).toURI();
+            synchronized (classpathURIs) {
+                if (!classpathURIs.contains(uri)) {
+                    loadClassNames(uri);
+                    classpathURIs.add(uri);
+                }
+            }
+        }
     }
 
     private List<UiAnalyzedMethod> getAnalyzedMethods(URI uri) throws IOException {

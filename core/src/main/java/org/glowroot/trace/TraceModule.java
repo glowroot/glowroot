@@ -15,6 +15,8 @@
  */
 package org.glowroot.trace;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.Random;
@@ -63,12 +65,13 @@ public class TraceModule {
     public TraceModule(final Clock clock, final Ticker ticker, final ConfigModule configModule,
             final TraceCollector traceCollector,
             final @Nullable ThreadAllocatedBytes threadAllocatedBytes,
-            @Nullable Instrumentation instrumentation, ScheduledExecutorService scheduledExecutor) {
+            @Nullable Instrumentation instrumentation, File dataDir,
+            ScheduledExecutorService scheduledExecutor) throws IOException {
         this.threadAllocatedBytes = threadAllocatedBytes;
         ConfigService configService = configModule.getConfigService();
         traceRegistry = new TraceRegistry();
         adviceCache = new AdviceCache(configModule.getPluginDescriptorCache().getAdvisors(),
-                configService.getPointcutConfigs());
+                configService.getPointcutConfigs(), instrumentation, dataDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
                 configModule.getPluginDescriptorCache().getMixinTypes());
         final MetricNameCache metricNameCache = new MetricNameCache();

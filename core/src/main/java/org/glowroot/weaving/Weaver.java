@@ -36,7 +36,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.AnalyzedWorld.ParseContext;
-import org.glowroot.weaving.WeavingClassVisitor.AbortWeavingException;
+import org.glowroot.weaving.WeavingClassVisitor.PointcutClassFoundException;
+import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
 import org.glowroot.weaving.WeavingTimerService.WeavingTimer;
 
 import static org.objectweb.asm.Opcodes.ASM5;
@@ -109,16 +110,28 @@ class Weaver {
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors.get(), mixinTypes,
                     loader, analyzedWorld, codeSource, metricWrapperMethods);
             ClassReader cr = new ClassReader(classBytes);
+            boolean shortCircuitException = false;
+            boolean pointcutClassFoundException = false;
             try {
                 cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
-            } catch (AbortWeavingException e) {
-                // ok
+            } catch (ShortCircuitException e) {
+                shortCircuitException = true;
+            } catch (PointcutClassFoundException e) {
+                pointcutClassFoundException = true;
             } catch (ClassCircularityError e) {
                 logger.error(e.getMessage(), e);
                 return null;
             }
-            if (cv.isNothingAtAllToWeave()) {
+            if (shortCircuitException || cv.isInterfaceSoNothingToWeave()) {
                 return null;
+            } else if (pointcutClassFoundException) {
+                ClassWriter cw2 = new ComputeFramesClassWriter(
+                        ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES,
+                        analyzedWorld, loader, codeSource, className);
+                PointcutClassVisitor cv2 = new PointcutClassVisitor(cw2);
+                ClassReader cr2 = new ClassReader(classBytes);
+                cr2.accept(new JSRInlinerClassVisitor(cv2), ClassReader.SKIP_FRAMES);
+                return cw2.toByteArray();
             } else {
                 byte[] wovenBytes = cw.toByteArray();
                 if (verifyWeaving) {

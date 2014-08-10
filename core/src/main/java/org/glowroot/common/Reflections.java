@@ -15,6 +15,7 @@
  */
 package org.glowroot.common;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -55,6 +56,17 @@ public class Reflections {
         }
     }
 
+    public static <T> Constructor<T> getConstructor(Class<T> clazz, Class<?>... parameterTypes)
+            throws ReflectiveException {
+        try {
+            return clazz.getConstructor(parameterTypes);
+        } catch (NoSuchMethodException e) {
+            throw new ReflectiveException(e);
+        } catch (SecurityException e) {
+            throw new ReflectiveException(e);
+        }
+    }
+
     @Nullable
     public static Object invoke(Method method, Object obj, @Nullable Object... args)
             throws ReflectiveException {
@@ -82,6 +94,26 @@ public class Reflections {
         } catch (IllegalAccessException e) {
             throw new ReflectiveException(e);
         } catch (IllegalArgumentException e) {
+            throw new ReflectiveException(e);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause == null) {
+                // this shouldn't really happen
+                throw new ReflectiveException(e);
+            }
+            throw new ReflectiveTargetException(cause);
+        }
+    }
+
+    public static <T> T invoke(Constructor<T> constructor, @Nullable Object... args)
+            throws ReflectiveException {
+        try {
+            return constructor.newInstance(args);
+        } catch (IllegalAccessException e) {
+            throw new ReflectiveException(e);
+        } catch (IllegalArgumentException e) {
+            throw new ReflectiveException(e);
+        } catch (InstantiationException e) {
             throw new ReflectiveException(e);
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();

@@ -17,12 +17,13 @@ package org.glowroot.config;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.lang.instrument.Instrumentation;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,7 +31,8 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import com.google.common.io.Closer;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -44,6 +46,8 @@ import org.glowroot.markers.Immutable;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.Advice.AdviceConstructionException;
+import org.glowroot.weaving.ClassLoaders;
+import org.glowroot.weaving.LazyDefinedClass;
 import org.glowroot.weaving.MixinType;
 
 /**
@@ -60,47 +64,53 @@ public class PluginDescriptorCache {
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
 
-    static PluginDescriptorCache create() {
-        List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
-        try {
-            pluginDescriptors.addAll(readClasspathPluginDescriptors());
-            pluginDescriptors.addAll(readStandalonePluginDescriptors());
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        } catch (URISyntaxException e) {
-            logger.error(e.getMessage(), e);
-        }
+    static PluginDescriptorCache create(@Nullable PluginResourceFinder pluginResourceFinder,
+            @Nullable Instrumentation instrumentation, File dataDir) throws IOException,
+            URISyntaxException {
+        List<PluginDescriptor> pluginDescriptors = readPluginDescriptors(pluginResourceFinder);
         List<MixinType> mixinTypes = Lists.newArrayList();
         List<Advice> advisors = Lists.newArrayList();
+        Map<Advice, LazyDefinedClass> lazyAdvisors = Maps.newHashMap();
+        // use temporary class loader so @Pointcut classes won't be defined for real until
+        // PointcutClassVisitor is ready to weave them
+        ClassLoader tempIsolatedClassLoader = new IsolatedClassLoader(pluginResourceFinder);
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             for (String aspect : pluginDescriptor.getAspects()) {
                 try {
-                    // don't initialize the aspect since that will trigger static initializers which
-                    // will probably call PluginServices.get()
-                    Class<?> aspectClass = Class.forName(aspect, false,
-                            PluginDescriptor.class.getClassLoader());
+                    Class<?> aspectClass = Class.forName(aspect, false, tempIsolatedClassLoader);
                     advisors.addAll(getAdvisors(aspectClass));
                     mixinTypes.addAll(getMixinTypes(aspectClass));
                 } catch (ClassNotFoundException e) {
                     logger.warn("aspect not found: {}", aspect, e);
                 }
             }
-            advisors.addAll(DynamicAdviceGenerator.createAdvisors(pluginDescriptor.getPointcuts(),
-                    pluginDescriptor.getId()));
+            lazyAdvisors.putAll(DynamicAdviceGenerator.createAdvisors(
+                    pluginDescriptor.getPointcuts(), pluginDescriptor.getId()));
+        }
+        for (Entry<Advice, LazyDefinedClass> entry : lazyAdvisors.entrySet()) {
+            advisors.add(entry.getKey());
+        }
+        if (instrumentation == null) {
+            // this is for tests that don't run with javaagent container
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            if (loader == null) {
+                throw new AssertionError("Context class loader must be set");
+            }
+            ClassLoaders.defineClassesInClassLoader(lazyAdvisors.values(), loader);
+        } else {
+            File generatedJarDir = new File(dataDir, "tmp");
+            ClassLoaders.cleanPreviouslyGeneratedJars(generatedJarDir, "plugin-pointcuts.jar");
+            File jarFile = new File(generatedJarDir, "plugin-pointcuts.jar");
+            ClassLoaders.defineClassesInBootstrapClassLoader(lazyAdvisors.values(),
+                    instrumentation, jarFile);
         }
         return new PluginDescriptorCache(pluginDescriptors, mixinTypes, advisors);
     }
 
-    static PluginDescriptorCache createInViewerMode() {
-        List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
-        try {
-            pluginDescriptors.addAll(readClasspathPluginDescriptorsViewerMode());
-            pluginDescriptors.addAll(readStandalonePluginDescriptors());
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        } catch (URISyntaxException e) {
-            logger.error(e.getMessage(), e);
-        }
+    static PluginDescriptorCache createInViewerMode(
+            @Nullable PluginResourceFinder pluginResourceFinder) throws IOException,
+            URISyntaxException {
+        List<PluginDescriptor> pluginDescriptors = readPluginDescriptors(pluginResourceFinder);
         List<PluginDescriptor> pluginDescriptorsWithoutAdvice = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             pluginDescriptorsWithoutAdvice.add(pluginDescriptor.copyWithoutAdvice());
@@ -156,10 +166,16 @@ public class PluginDescriptorCache {
         return getAdvisors();
     }
 
-    private static List<PluginDescriptor> readClasspathPluginDescriptors()
-            throws IOException {
+    private static List<PluginDescriptor> readPluginDescriptors(
+            @Nullable PluginResourceFinder pluginResourceFinder) throws IOException,
+            URISyntaxException {
+        Set<URL> urls = Sets.newHashSet();
+        // add descriptors on the class path, this is primarily for integration tests
+        urls.addAll(getResources("META-INF/glowroot.plugin.json"));
+        if (pluginResourceFinder != null) {
+            urls.addAll(pluginResourceFinder.getDescriptorURLs());
+        }
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
-        List<URL> urls = getResources("META-INF/glowroot.plugin.json");
         for (URL url : urls) {
             try {
                 String content = Resources.toString(url, Charsets.UTF_8);
@@ -173,52 +189,12 @@ public class PluginDescriptorCache {
         return pluginDescriptors;
     }
 
-    private static List<PluginDescriptor> readStandalonePluginDescriptors() throws IOException,
-            URISyntaxException {
-        List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
-        for (File pluginDescriptorFile : Plugins.getStandalonePluginDescriptorFiles()) {
-            PluginDescriptor pluginDescriptor = ObjectMappers.readRequiredValue(mapper,
-                    pluginDescriptorFile, PluginDescriptor.class);
-            pluginDescriptors.add(pluginDescriptor);
-        }
-        return pluginDescriptors;
-    }
-
-    // plugin descriptors aren't really on classpath in viewer mode
-    // so need to read them directly from the jar files
-    private static List<PluginDescriptor> readClasspathPluginDescriptorsViewerMode()
-            throws IOException, URISyntaxException {
-        List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
-        for (File pluginJar : Plugins.getPluginJars()) {
-            // Closer is used to simulate Java 7 try-with-resources
-            Closer closer = Closer.create();
-            JarFile jarFile = new JarFile(pluginJar);
-            closer.register(new JarFileCloseable(jarFile));
-            try {
-                JarEntry jarEntry = jarFile.getJarEntry("META-INF/glowroot.plugin.json");
-                if (jarEntry == null) {
-                    continue;
-                }
-                InputStream jarEntryIn = jarFile.getInputStream(jarEntry);
-                PluginDescriptor pluginDescriptor =
-                        mapper.readValue(jarEntryIn, PluginDescriptor.class);
-                pluginDescriptors.add(pluginDescriptor);
-            } catch (Throwable t) {
-                throw closer.rethrow(t);
-            } finally {
-                closer.close();
-            }
-        }
-        return pluginDescriptors;
-    }
-
     private static List<Advice> getAdvisors(Class<?> aspectClass) {
         List<Advice> advisors = Lists.newArrayList();
         for (Class<?> memberClass : aspectClass.getClasses()) {
-            Pointcut pointcut = memberClass.getAnnotation(Pointcut.class);
-            if (pointcut != null) {
+            if (memberClass.isAnnotationPresent(Pointcut.class)) {
                 try {
-                    advisors.add(Advice.from(pointcut, memberClass, false));
+                    advisors.add(Advice.from(memberClass, false));
                 } catch (AdviceConstructionException e) {
                     logger.error("error creating advice: {}", memberClass.getName(), e);
                 }
@@ -227,7 +203,7 @@ public class PluginDescriptorCache {
         return advisors;
     }
 
-    private static List<MixinType> getMixinTypes(Class<?> aspectClass) {
+    private static List<MixinType> getMixinTypes(Class<?> aspectClass) throws IOException {
         List<MixinType> mixinTypes = Lists.newArrayList();
         for (Class<?> memberClass : aspectClass.getClasses()) {
             Mixin mixin = memberClass.getAnnotation(Mixin.class);
@@ -241,8 +217,6 @@ public class PluginDescriptorCache {
     private static ImmutableList<URL> getResources(String resourceName) throws IOException {
         ClassLoader loader = PluginDescriptorCache.class.getClassLoader();
         if (loader == null) {
-            // highly unlikely that this class is loaded by the bootstrap class loader,
-            // but handling anyways
             return ImmutableList.copyOf(Iterators.forEnumeration(
                     ClassLoader.getSystemResources(resourceName)));
         }

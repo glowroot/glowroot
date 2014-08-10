@@ -109,8 +109,7 @@ public class LocalContainer implements Container {
         // performance
         loader.addExcludePackages("org.glowroot.api", "org.glowroot.collector",
                 "org.glowroot.common", "org.glowroot.config", "org.glowroot.dynamicadvice",
-                "org.glowroot.local", "org.glowroot.trace", "org.glowroot.weaving",
-                "org.glowroot.shaded");
+                "org.glowroot.local", "org.glowroot.trace", "org.glowroot.shaded");
         isolatedWeavingClassLoader = loader.build();
         configService = new LocalConfigService(glowrootModule);
         traceService = new LocalTraceService(glowrootModule);

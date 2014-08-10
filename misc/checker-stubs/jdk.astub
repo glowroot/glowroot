@@ -4,6 +4,7 @@ import org.checkerframework.checker.nullness.qual.*;
 package java.lang;
 
 public class ClassLoader {
+    protected @Nullable URL findResource(String name);
     protected Package definePackage(String name, @Nullable String specTitle,
             @Nullable String specVersion, @Nullable String specVendor, @Nullable String implTitle,
             @Nullable String implVersion, @Nullable String implVendor, @Nullable URL sealBase);
@@ -19,6 +20,13 @@ public interface ClassFileTransformer {
 }
 
 /* ========================================================================== */
+package java.lang.reflect;
+
+public class Constructor<T> {
+    public T newInstance(@Nullable Object... initargs);
+}
+
+/* ========================================================================== */
 package java.net;
 
 public class URL {
@@ -27,11 +35,6 @@ public class URL {
 
 /* ========================================================================== */
 package java.sql;
-
-public interface PreparedStatement {
-    void setString(int parameterIndex, @Nullable String x);
-    void setObject(int parameterIndex, @Nullable Object x);
-}
 
 public interface ResultSet {
     @Nullable String getString(int columnIndex);

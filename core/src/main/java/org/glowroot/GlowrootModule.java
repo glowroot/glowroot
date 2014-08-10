@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.jar.JarFile;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -36,6 +37,7 @@ import org.glowroot.collector.CollectorModule;
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
+import org.glowroot.config.PluginResourceFinder;
 import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.DataSource.DataSourceLockedException;
 import org.glowroot.local.store.StorageModule;
@@ -69,8 +71,9 @@ public class GlowrootModule {
     private final File dataDir;
 
     GlowrootModule(File dataDir, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, String version, boolean viewerModeEnabled)
-            throws StartupFailedException {
+            @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
+            String version, boolean viewerModeEnabled) throws StartupFailedException {
+
         if (dummyTicker) {
             ticker = new Ticker() {
                 @Override
@@ -83,12 +86,27 @@ public class GlowrootModule {
         }
         clock = Clock.systemClock();
 
+        PluginResourceFinder pluginResourceFinder = null;
+        if (instrumentation != null && glowrootJarFile != null) {
+            try {
+                pluginResourceFinder = new PluginResourceFinder(glowrootJarFile);
+                for (File pluginJar : pluginResourceFinder.getPluginJars()) {
+                    instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(pluginJar));
+                }
+            } catch (IOException e) {
+                throw new StartupFailedException(e);
+            } catch (URISyntaxException e) {
+                throw new StartupFailedException(e);
+            }
+        }
+
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
                 .setNameFormat("Glowroot-Background-%d").build();
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
         JvmModule jvmModule = new JvmModule();
         try {
-            configModule = new ConfigModule(instrumentation, dataDir, viewerModeEnabled);
+            configModule = new ConfigModule(dataDir, instrumentation, pluginResourceFinder,
+                    viewerModeEnabled);
         } catch (IOException e) {
             throw new StartupFailedException(e);
         } catch (URISyntaxException e) {
@@ -100,9 +118,13 @@ public class GlowrootModule {
         // loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
         // services/java.sql.Driver, and those drivers need to be woven
         TraceCollectorProxy traceCollectorProxy = new TraceCollectorProxy();
-        traceModule = new TraceModule(clock, ticker, configModule, traceCollectorProxy,
-                jvmModule.getThreadAllocatedBytes().getService(), instrumentation,
-                scheduledExecutor);
+        try {
+            traceModule = new TraceModule(clock, ticker, configModule, traceCollectorProxy,
+                    jvmModule.getThreadAllocatedBytes().getService(), instrumentation, dataDir,
+                    scheduledExecutor);
+        } catch (IOException e) {
+            throw new StartupFailedException(e);
+        }
         try {
             storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
                     scheduledExecutor, viewerModeEnabled);
@@ -123,7 +145,6 @@ public class GlowrootModule {
                 storageModule, collectorModule, traceModule, instrumentation, properties, version);
         this.dataDir = dataDir;
     }
-
     @OnlyUsedByTests
     public Clock getClock() {
         return clock;
@@ -182,6 +203,11 @@ public class GlowrootModule {
 
         private StartupFailedException(Throwable cause) {
             super(cause);
+            this.dataSourceLocked = false;
+        }
+
+        private StartupFailedException(String message) {
+            super(message);
             this.dataSourceLocked = false;
         }
 

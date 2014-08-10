@@ -235,7 +235,7 @@
             <manifestEntries>
               <Build-Time>${maven.build.timestamp}</Build-Time>
               <Main-Class>org.glowroot.Viewer</Main-Class>
-              <Premain-Class>org.glowroot.MainEntryPoint</Premain-Class>
+              <Premain-Class>org.glowroot.Agent</Premain-Class>
               <Can-Redefine-Classes>true</Can-Redefine-Classes>
               <Can-Retransform-Classes>true</Can-Retransform-Classes>
             </manifestEntries>

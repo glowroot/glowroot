@@ -16,6 +16,8 @@
 package org.glowroot.weaving;
 
 import java.lang.annotation.Annotation;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -49,6 +51,7 @@ import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.Immutable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -127,15 +130,19 @@ public class Advice {
     private final ImmutableList<AdviceParameter> onThrowParameters;
     private final ImmutableList<AdviceParameter> onAfterParameters;
 
-    private final Class<?> generatedAdviceFlowClass;
     private final boolean reweavable;
 
-    private final ImmutableSet<Class<?>> classMetas;
-    private final ImmutableSet<Class<?>> methodMetas;
+    private final ImmutableSet<Type> classMetaTypes;
+    private final ImmutableSet<Type> methodMetaTypes;
 
-    public static Advice from(Pointcut pointcut, Class<?> adviceClass, boolean reweavable)
+    public static Advice from(Class<?> adviceClass, boolean reweavable)
             throws AdviceConstructionException {
-        return new Builder(pointcut, adviceClass, reweavable).build();
+        return new Builder(adviceClass, reweavable).build();
+    }
+
+    public static Advice from(LazyDefinedClass adviceClass, boolean reweavable)
+            throws AdviceConstructionException {
+        return new Builder(adviceClass, reweavable).build();
     }
 
     private Advice(Pointcut pointcut, Type adviceType, @Nullable Pattern pointcutClassNamePattern,
@@ -145,8 +152,7 @@ public class Advice {
             @Nullable Type travelerType, List<AdviceParameter> isEnabledParameters,
             List<AdviceParameter> onBeforeParameters, List<AdviceParameter> onReturnParameters,
             List<AdviceParameter> onThrowParameterKinds,
-            List<AdviceParameter> onAfterParameterKinds, Class<?> generatedAdviceFlowClass,
-            boolean reweavable) {
+            List<AdviceParameter> onAfterParameterKinds, boolean reweavable) {
         this.pointcut = pointcut;
         this.adviceType = adviceType;
         this.pointcutClassNamePattern = pointcutClassNamePattern;
@@ -162,26 +168,29 @@ public class Advice {
         this.onReturnParameters = ImmutableList.copyOf(onReturnParameters);
         this.onThrowParameters = ImmutableList.copyOf(onThrowParameterKinds);
         this.onAfterParameters = ImmutableList.copyOf(onAfterParameterKinds);
-        this.generatedAdviceFlowClass = generatedAdviceFlowClass;
         this.reweavable = reweavable;
-        Set<Class<?>> classMetas = Sets.newHashSet();
+        Set<Type> classMetas = Sets.newHashSet();
         classMetas.addAll(getClassMetas(isEnabledParameters));
         classMetas.addAll(getClassMetas(onBeforeParameters));
         classMetas.addAll(getClassMetas(onReturnParameters));
         classMetas.addAll(getClassMetas(onThrowParameterKinds));
         classMetas.addAll(getClassMetas(onAfterParameterKinds));
-        this.classMetas = ImmutableSet.copyOf(classMetas);
-        Set<Class<?>> methodMetas = Sets.newHashSet();
+        this.classMetaTypes = ImmutableSet.copyOf(classMetas);
+        Set<Type> methodMetas = Sets.newHashSet();
         methodMetas.addAll(getMethodMetas(isEnabledParameters));
         methodMetas.addAll(getMethodMetas(onBeforeParameters));
         methodMetas.addAll(getMethodMetas(onReturnParameters));
         methodMetas.addAll(getMethodMetas(onThrowParameterKinds));
         methodMetas.addAll(getMethodMetas(onAfterParameterKinds));
-        this.methodMetas = ImmutableSet.copyOf(methodMetas);
+        this.methodMetaTypes = ImmutableSet.copyOf(methodMetas);
     }
 
     Pointcut getPointcut() {
         return pointcut;
+    }
+
+    Type getAdviceType() {
+        return adviceType;
     }
 
     @Nullable
@@ -192,10 +201,6 @@ public class Advice {
     @Nullable
     Pattern getPointcutMethodNamePattern() {
         return pointcutMethodNamePattern;
-    }
-
-    Type getAdviceType() {
-        return adviceType;
     }
 
     @Nullable
@@ -248,20 +253,16 @@ public class Advice {
         return onAfterParameters;
     }
 
-    Class<?> getGeneratedAdviceFlowClass() {
-        return generatedAdviceFlowClass;
-    }
-
     boolean isReweavable() {
         return reweavable;
     }
 
-    Set<Class<?>> getClassMetas() {
-        return classMetas;
+    Set<Type> getClassMetaTypes() {
+        return classMetaTypes;
     }
 
-    Set<Class<?>> getMethodMetas() {
-        return methodMetas;
+    Set<Type> getMethodMetaTypes() {
+        return methodMetaTypes;
     }
 
     @Override
@@ -282,44 +283,43 @@ public class Advice {
                 .add("onReturnParameters", onReturnParameters)
                 .add("onThrowParameters", onThrowParameters)
                 .add("onAfterParameters", onAfterParameters)
-                .add("generatedAdviceFlowClass", generatedAdviceFlowClass)
                 .add("reweavable", reweavable)
-                .add("classMetas", classMetas)
-                .add("methodMetas", methodMetas)
+                .add("classMetas", classMetaTypes)
+                .add("methodMetas", methodMetaTypes)
                 .toString();
     }
 
-    private static Set<Class<?>> getClassMetas(List<AdviceParameter> parameters) {
-        Set<Class<?>> classes = Sets.newHashSet();
+    private static Set<Type> getClassMetas(List<AdviceParameter> parameters) {
+        Set<Type> types = Sets.newHashSet();
         for (AdviceParameter parameter : parameters) {
             if (parameter.getKind() == ParameterKind.CLASS_META) {
-                classes.add(parameter.getType());
+                types.add(parameter.getType());
             }
         }
-        return classes;
+        return types;
     }
 
-    private static Set<Class<?>> getMethodMetas(List<AdviceParameter> parameters) {
-        Set<Class<?>> classes = Sets.newHashSet();
+    private static Set<Type> getMethodMetas(List<AdviceParameter> parameters) {
+        Set<Type> types = Sets.newHashSet();
         for (AdviceParameter parameter : parameters) {
             if (parameter.getKind() == ParameterKind.METHOD_META) {
-                classes.add(parameter.getType());
+                types.add(parameter.getType());
             }
         }
-        return classes;
+        return types;
     }
 
     static class AdviceParameter {
         private final ParameterKind kind;
-        private final Class<?> type;
-        private AdviceParameter(ParameterKind kind, Class<?> type) {
+        private final Type type;
+        private AdviceParameter(ParameterKind kind, Type type) {
             this.kind = kind;
             this.type = type;
         }
         ParameterKind getKind() {
             return kind;
         }
-        Class<?> getType() {
+        Type getType() {
             return type;
         }
     }
@@ -341,8 +341,10 @@ public class Advice {
 
     private static class Builder {
 
-        private final Pointcut pointcut;
+        @Nullable
         private final Class<?> adviceClass;
+        @Nullable
+        private final LazyDefinedClass lazyAdviceClass;
         private final boolean reweavable;
 
         @MonotonicNonNull
@@ -370,16 +372,35 @@ public class Advice {
         private List<AdviceParameter> onThrowParameters = Lists.newArrayList();
         private List<AdviceParameter> onAfterParameters = Lists.newArrayList();
 
-        @MonotonicNonNull
-        private Class<?> generatedAdviceFlowClass;
-
-        private Builder(Pointcut pointcut, Class<?> adviceClass, boolean reweavable) {
-            this.pointcut = pointcut;
+        private Builder(Class<?> adviceClass, boolean reweavable) {
             this.adviceClass = adviceClass;
+            this.lazyAdviceClass = null;
+            this.reweavable = reweavable;
+        }
+
+        private Builder(LazyDefinedClass lazyAdviceClass, boolean reweavable) {
+            this.adviceClass = null;
+            this.lazyAdviceClass = lazyAdviceClass;
             this.reweavable = reweavable;
         }
 
         private Advice build() throws AdviceConstructionException {
+            Class<?> adviceClass = this.adviceClass;
+            if (adviceClass == null) {
+                // safe check, if adviceClass is null then lazyAdviceClass is non-null
+                checkNotNull(lazyAdviceClass);
+                ClassLoader tempClassLoader = new URLClassLoader(new URL[0]);
+                try {
+                    adviceClass = ClassLoaders.defineClass(lazyAdviceClass, tempClassLoader);
+                } catch (ReflectiveException e) {
+                    throw new AdviceConstructionException(e);
+                }
+            }
+            Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
+            if (pointcut == null) {
+                throw new AdviceConstructionException(
+                        "Class was generated without @Pointcut annotation");
+            }
             adviceType = Type.getType(adviceClass);
             pointcutClassNamePattern = buildPattern(pointcut.className());
             pointcutMethodNamePattern = buildPattern(pointcut.methodName());
@@ -396,12 +417,11 @@ public class Advice {
                     initOnAfterAdvice(adviceClass, method);
                 }
             }
-            generatedAdviceFlowClass = AdviceFlowGenerator.generate();
             return new Advice(pointcut, adviceType, pointcutClassNamePattern,
                     pointcutMethodNamePattern, isEnabledAdvice, onBeforeAdvice, onReturnAdvice,
                     onThrowAdvice, onAfterAdvice, travelerType, isEnabledParameters,
                     onBeforeParameters, onReturnParameters, onThrowParameters, onAfterParameters,
-                    generatedAdviceFlowClass, reweavable);
+                    reweavable);
         }
 
         private void initIsEnabledAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
@@ -594,7 +614,7 @@ public class Advice {
                 throw new AssertionError("Annotation not found in parameterKindMap: "
                         + validBindAnnotationType.getName());
             }
-            return new AdviceParameter(parameterKind, parameterType);
+            return new AdviceParameter(parameterKind, Type.getType(parameterType));
         }
     }
 }

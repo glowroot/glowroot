@@ -21,15 +21,12 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.Reflections.ReflectiveException;
-import org.glowroot.jvm.ClassLoaders;
 import org.glowroot.weaving.Advice.AdviceConstructionException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
@@ -44,33 +41,26 @@ import static org.objectweb.asm.Opcodes.V1_5;
  */
 class AdviceFlowGenerator {
 
-    private static final Logger logger = LoggerFactory.getLogger(AdviceFlowGenerator.class);
-
     private static final AtomicInteger counter = new AtomicInteger();
 
+    private static final Type adviceFlowType = Type.getType(AdviceFlow.class);
     private static final Type adviceFlowOuterHolderType = Type.getType(AdviceFlowOuterHolder.class);
 
     private AdviceFlowGenerator() {}
 
-    static Class<?> generate() throws AdviceConstructionException {
+    static LazyDefinedClass generate() throws AdviceConstructionException {
         String generatedInternalName = "org/glowroot/weaving/GeneratedAdviceFlow"
                 + counter.incrementAndGet();
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, generatedInternalName, null, "java/lang/Object",
-                null);
+                new String[] {adviceFlowType.getInternalName()});
         writeThreadLocalFields(cw);
         writeThreadLocalInitialization(cw, generatedInternalName);
-        try {
-            return ClassLoaders.defineClass(ClassNames.fromInternalName(generatedInternalName),
-                    cw.toByteArray(), AdviceFlowGenerator.class.getClassLoader());
-        } catch (ReflectiveException e) {
-            logger.error(e.getMessage(), e);
-            throw new AdviceConstructionException(e);
-        }
+        return new LazyDefinedClass(Type.getObjectType(generatedInternalName), cw.toByteArray());
     }
 
     private static void writeThreadLocalFields(ClassVisitor cv) {
-        cv.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC, "adviceFlow",
+        cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "adviceFlow",
                 adviceFlowOuterHolderType.getDescriptor(), null, null);
     }
 
@@ -82,7 +72,7 @@ class AdviceFlowGenerator {
         mv.visitMethodInsn(INVOKESTATIC, holderInternalName, "create",
                 "()L" + holderInternalName + ";", false);
         mv.visitFieldInsn(PUTSTATIC, ownerInternalName, "adviceFlow",
-                adviceFlowOuterHolderType.getDescriptor());
+                adviceFlowOuterHolderType.getInternalName());
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();

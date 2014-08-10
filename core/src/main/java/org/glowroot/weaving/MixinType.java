@@ -15,13 +15,17 @@
  */
 package org.glowroot.weaving;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.List;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.io.Resources;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,15 +41,18 @@ public class MixinType {
     private static final Logger logger = LoggerFactory.getLogger(MixinType.class);
 
     private final ImmutableList<String> targets;
-    private final Class<?> implementation;
-    private final ImmutableList<Class<?>> interfaces;
-    private final ImmutableList<String> interfaceNames;
+    private final Type implementation;
+    private final ImmutableList<Type> interfaces;
     @Nullable
     private final String initMethodName;
+    private final byte[] implementationBytes;
 
-    public static MixinType from(Mixin mixin, Class<?> implementation) {
+    public static MixinType from(Mixin mixin, Class<?> implementation) throws IOException {
         ImmutableList<String> targets = ImmutableList.copyOf(mixin.target());
-        ImmutableList<Class<?>> interfaces = ImmutableList.copyOf(implementation.getInterfaces());
+        List<Type> interfaces = Lists.newArrayList();
+        for (Class<?> iface : implementation.getInterfaces()) {
+            interfaces.add(Type.getType(iface));
+        }
         String initMethodName = null;
         for (Method method : implementation.getDeclaredMethods()) {
             if (method.getAnnotation(MixinInit.class) != null) {
@@ -66,41 +73,50 @@ public class MixinType {
                 initMethodName = method.getName();
             }
         }
-        return new MixinType(targets, implementation, interfaces, initMethodName);
+        ClassLoader loader = implementation.getClassLoader();
+        String resourceName = implementation.getName().replace('.', '/') + ".class";
+        URL url;
+        if (loader == null) {
+            url = ClassLoader.getSystemResource(resourceName);
+        } else {
+            url = loader.getResource(resourceName);
+        }
+        if (url == null) {
+            throw new IllegalStateException("Could not find resource: " + resourceName);
+        }
+        byte[] implementationBytes = Resources.toByteArray(url);
+        return new MixinType(targets, Type.getType(implementation), interfaces, initMethodName,
+                implementationBytes);
     }
 
-    private MixinType(List<String> targets, Class<?> implementation,
-            List<Class<?>> interfaces, @Nullable String initMethodName) {
+    private MixinType(List<String> targets, Type implementation, List<Type> interfaces,
+            @Nullable String initMethodName, byte[] implementationBytes) {
         this.targets = ImmutableList.copyOf(targets);
         this.implementation = implementation;
         this.interfaces = ImmutableList.copyOf(interfaces);
-        List<String> interfaceNames = Lists.newArrayList();
-        for (Class<?> iface : interfaces) {
-            interfaceNames.add(iface.getName());
-        }
-        this.interfaceNames = ImmutableList.copyOf(interfaceNames);
         this.initMethodName = initMethodName;
+        this.implementationBytes = implementationBytes;
     }
 
     ImmutableList<String> getTargets() {
         return targets;
     }
 
-    Class<?> getImplementation() {
+    Type getImplementation() {
         return implementation;
     }
 
-    ImmutableList<Class<?>> getInterfaces() {
+    ImmutableList<Type> getInterfaces() {
         return interfaces;
-    }
-
-    ImmutableList<String> getInterfaceNames() {
-        return interfaceNames;
     }
 
     @Nullable
     String getInitMethodName() {
         return initMethodName;
+    }
+
+    byte[] getImplementationBytes() {
+        return implementationBytes;
     }
 
     @Override
@@ -109,7 +125,6 @@ public class MixinType {
                 .add("targets", targets)
                 .add("implementation", implementation)
                 .add("interfaces", interfaces)
-                .add("interfaceNames", interfaceNames)
                 .add("initMethodName", initMethodName)
                 .toString();
     }
