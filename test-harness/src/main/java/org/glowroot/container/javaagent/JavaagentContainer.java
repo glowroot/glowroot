@@ -33,7 +33,9 @@ import java.util.regex.Pattern;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
@@ -317,14 +319,14 @@ public class JavaagentContainer implements Container {
     private static List<String> buildCommand(int containerPort, File dataDir, boolean useFileDb,
             List<String> extraJvmArgs) throws Exception {
         List<String> command = Lists.newArrayList();
-        String javaExecutable = System.getProperty("java.home") + File.separator + "bin"
+        String javaExecutable = StandardSystemProperty.JAVA_HOME.value() + File.separator + "bin"
                 + File.separator + "java";
         command.add(javaExecutable);
         command.addAll(extraJvmArgs);
-        String classpath = System.getProperty("java.class.path");
+        String classpath = Strings.nullToEmpty(StandardSystemProperty.JAVA_CLASS_PATH.value());
         List<String> paths = Lists.newArrayList();
         File javaagentJarFile = null;
-        for (String path : Splitter.on(File.pathSeparatorChar).splitToList(classpath)) {
+        for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
             File file = new File(path);
             if (file.getName().matches("glowroot-core-[0-9.]+(-SNAPSHOT)?.jar")) {
                 javaagentJarFile = file;

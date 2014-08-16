@@ -17,6 +17,7 @@ package org.glowroot.tests.javaagent;
 
 import java.lang.instrument.ClassFileTransformer;
 
+import com.google.common.base.StandardSystemProperty;
 import org.fest.reflect.core.Reflection;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -100,6 +101,6 @@ public class MethodHandleWeavingTest {
     }
 
     private static void assumeJdk7() {
-        Assume.assumeFalse(System.getProperty("java.version").startsWith("1.6"));
+        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
     }
 }

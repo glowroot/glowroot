@@ -49,6 +49,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -124,12 +125,12 @@ class JvmJsonService {
             }
         }
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-        String jvm = System.getProperty("java.vm.name") + " ("
-                + System.getProperty("java.vm.version") + ", " + System.getProperty("java.vm.info")
-                + ")";
-        String java = "version " + System.getProperty("java.version") + ", vendor "
-                + System.getProperty("java.vm.vendor");
-        String javaHome = System.getProperty("java.home");
+        String jvm = StandardSystemProperty.JAVA_VM_NAME.value() + " ("
+                + StandardSystemProperty.JAVA_VM_VERSION.value() + ", "
+                + System.getProperty("java.vm.info") + ")";
+        String java = "version " + StandardSystemProperty.JAVA_VERSION.value() + ", vendor "
+                + StandardSystemProperty.JAVA_VM_VENDOR.value();
+        String javaHome = StandardSystemProperty.JAVA_HOME.value();
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -290,7 +291,9 @@ class JvmJsonService {
         logger.debug("getHeapDumpDefaults()");
         String heapDumpPath = getHeapDumpPathFromCommandLine();
         if (Strings.isNullOrEmpty(heapDumpPath)) {
-            heapDumpPath = new File(System.getProperty("java.io.tmpdir")).getAbsolutePath();
+            String javaTempDir =
+                    MoreObjects.firstNonNull(StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
+            heapDumpPath = new File(javaTempDir).getAbsolutePath();
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));

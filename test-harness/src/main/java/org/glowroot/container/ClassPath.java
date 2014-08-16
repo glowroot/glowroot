@@ -17,6 +17,8 @@ package org.glowroot.container;
 
 import java.io.File;
 
+import com.google.common.base.Splitter;
+import com.google.common.base.StandardSystemProperty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -34,12 +36,14 @@ public class ClassPath {
 
     @Nullable
     private static File getJarFile(String pattern) {
-        String classpath = System.getProperty("java.class.path");
-        String[] classpathElements = classpath.split(File.pathSeparator);
-        for (String classpathElement : classpathElements) {
-            File classpathElementFile = new File(classpathElement);
-            if (classpathElementFile.getName().matches(pattern)) {
-                return classpathElementFile;
+        String classpath = StandardSystemProperty.JAVA_CLASS_PATH.value();
+        if (classpath == null) {
+            return null;
+        }
+        for (String path : Splitter.on(File.pathSeparator).split(classpath)) {
+            File file = new File(path);
+            if (file.getName().matches(pattern)) {
+                return file;
             }
         }
         return null;

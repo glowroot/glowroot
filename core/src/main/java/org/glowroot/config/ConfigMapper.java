@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -52,7 +53,7 @@ import org.glowroot.markers.Immutable;
 @Immutable
 class ConfigMapper {
 
-    private static final String NEWLINE = System.getProperty("line.separator");
+    private static final String NEWLINE;
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapper.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
@@ -66,6 +67,15 @@ class ConfigMapper {
     private static final String ADVANCED = "advanced";
     private static final String POINTCUTS = "pointcuts";
     private static final String PLUGINS = "plugins";
+
+    static {
+        String newline = StandardSystemProperty.LINE_SEPARATOR.value();
+        if (newline == null) {
+            NEWLINE = "\n";
+        } else {
+            NEWLINE = newline;
+        }
+    }
 
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
 

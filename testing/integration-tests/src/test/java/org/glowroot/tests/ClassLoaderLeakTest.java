@@ -18,6 +18,7 @@ package org.glowroot.tests;
 import java.io.IOException;
 import java.util.List;
 
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.io.Resources;
 import org.assertj.core.util.Lists;
 import org.junit.After;
@@ -42,7 +43,7 @@ public class ClassLoaderLeakTest {
     public static void setUp() throws Exception {
         // need memory limited javaagent
         List<String> extraJvmArgs = Lists.newArrayList();
-        String javaVersion = System.getProperty("java.version");
+        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
         if (javaVersion.startsWith("1.6") || javaVersion.startsWith("1.7")) {
             // limit MaxPermSize for ClassLoaderLeakTest
             extraJvmArgs.add("-XX:MaxPermSize=64m");

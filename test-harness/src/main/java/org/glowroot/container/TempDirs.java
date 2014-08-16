@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@ package org.glowroot.container;
 import java.io.File;
 import java.io.IOException;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.StandardSystemProperty;
+
 import org.glowroot.markers.Static;
 
 /**
@@ -32,7 +35,9 @@ public class TempDirs {
     // copied from guava's Files.createTempDir, with added prefix
     public static File createTempDir(String prefix) throws IOException {
         final int tempDirAttempts = 10000;
-        File baseDir = new File(System.getProperty("java.io.tmpdir"));
+        String javaTempDir =
+                MoreObjects.firstNonNull(StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
+        File baseDir = new File(javaTempDir);
         String baseName = prefix + "-" + System.currentTimeMillis() + "-";
         for (int counter = 0; counter < tempDirAttempts; counter++) {
             File tempDir = new File(baseDir, baseName + counter);
