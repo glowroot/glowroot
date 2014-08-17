@@ -15,6 +15,8 @@
  */
 package org.glowroot.jvm;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.markers.Immutable;
@@ -24,33 +26,24 @@ import org.glowroot.markers.UsedByJsonBinding;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class OptionalService<T> {
-
-    private final Availability availability;
-    @Nullable
-    private final T service;
+public abstract class OptionalService<T> {
 
     static <T> OptionalService<T> available(T service) {
-        return new OptionalService<T>(new Availability(true, ""), service);
+        return new NonLazyOptionalService<T>(new Availability(true, ""), service);
     }
 
     static <T> OptionalService<T> unavailable(String reason) {
-        return new OptionalService<T>(new Availability(false, reason), null);
+        return new NonLazyOptionalService<T>(new Availability(false, reason), null);
     }
 
-    public OptionalService(Availability availability, @Nullable T service) {
-        this.availability = availability;
-        this.service = service;
+    static <T> OptionalService<T> lazy(Supplier<OptionalService<T>> supplier) {
+        return new LazyOptionalService<T>(supplier);
     }
 
-    public Availability getAvailability() {
-        return availability;
-    }
+    public abstract Availability getAvailability();
 
     @Nullable
-    public T getService() {
-        return service;
-    }
+    public abstract T getService();
 
     @UsedByJsonBinding
     @Immutable
@@ -71,6 +64,49 @@ public class OptionalService<T> {
 
         public String getReason() {
             return reason;
+        }
+    }
+
+    private static class NonLazyOptionalService<T> extends OptionalService<T> {
+
+        private final Availability availability;
+        @Nullable
+        private final T service;
+
+        public NonLazyOptionalService(Availability availability, @Nullable T service) {
+            this.availability = availability;
+            this.service = service;
+        }
+
+        @Override
+        public Availability getAvailability() {
+            return availability;
+        }
+
+        @Override
+        @Nullable
+        public T getService() {
+            return service;
+        }
+    }
+
+    private static class LazyOptionalService<T> extends OptionalService<T> {
+
+        private final Supplier<OptionalService<T>> supplier;
+
+        LazyOptionalService(Supplier<OptionalService<T>> supplier) {
+            this.supplier = Suppliers.memoize(supplier);
+        }
+
+        @Override
+        public Availability getAvailability() {
+            return supplier.get().getAvailability();
+        }
+
+        @Override
+        @Nullable
+        public T getService() {
+            return supplier.get().getService();
         }
     }
 }

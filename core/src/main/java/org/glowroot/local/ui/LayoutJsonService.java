@@ -38,6 +38,7 @@ import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.config.PointcutConfig;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.HeapHistograms;
+import org.glowroot.jvm.OptionalService;
 import org.glowroot.local.ui.Layout.LayoutPlugin;
 import org.glowroot.markers.Singleton;
 
@@ -55,23 +56,31 @@ class LayoutJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final String version;
+    private final ConfigService configService;
+    private final PluginDescriptorCache pluginDescriptorCache;
+    private final OptionalService<HeapHistograms> heapHistograms;
+    private final OptionalService<HeapDumps> heapDumps;
+    private final long fixedTransactionPointIntervalSeconds;
 
+    @Nullable
     private volatile Layout layout;
 
-    LayoutJsonService(final String version, final ConfigService configService,
-            final PluginDescriptorCache pluginDescriptorCache,
-            final @Nullable HeapHistograms heapHistograms, final @Nullable HeapDumps heapDumps,
-            final long fixedTransactionPointIntervalSeconds) {
+    LayoutJsonService(String version, ConfigService configService,
+            PluginDescriptorCache pluginDescriptorCache,
+            OptionalService<HeapHistograms> heapHistograms, OptionalService<HeapDumps> heapDumps,
+            long fixedTransactionPointIntervalSeconds) {
         this.version = version;
+        this.configService = configService;
+        this.pluginDescriptorCache = pluginDescriptorCache;
+        this.heapHistograms = heapHistograms;
+        this.heapDumps = heapDumps;
+        this.fixedTransactionPointIntervalSeconds = fixedTransactionPointIntervalSeconds;
         configService.addConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
-                layout = buildLayout(version, configService, pluginDescriptorCache, heapHistograms,
-                        heapDumps, fixedTransactionPointIntervalSeconds);
+                layout = null;
             }
         });
-        layout = buildLayout(version, configService, pluginDescriptorCache, heapHistograms,
-                heapDumps, fixedTransactionPointIntervalSeconds);
     }
 
     // this is only accessed from the url when running under 'grunt server' and is just to get back
@@ -79,11 +88,25 @@ class LayoutJsonService {
     @GET("/backend/layout")
     String getLayout() throws IOException {
         logger.debug("getLayout()");
-        return mapper.writeValueAsString(layout);
+        Layout localLayout = layout;
+        if (localLayout == null) {
+            localLayout = buildLayout(version, configService, pluginDescriptorCache,
+                    heapHistograms.getService(), heapDumps.getService(),
+                    fixedTransactionPointIntervalSeconds);
+            layout = localLayout;
+        }
+        return mapper.writeValueAsString(localLayout);
     }
 
     String getLayoutVersion() {
-        return layout.getVersion();
+        Layout localLayout = layout;
+        if (localLayout == null) {
+            localLayout = buildLayout(version, configService, pluginDescriptorCache,
+                    heapHistograms.getService(), heapDumps.getService(),
+                    fixedTransactionPointIntervalSeconds);
+            layout = localLayout;
+        }
+        return localLayout.getVersion();
     }
 
     String getUnauthenticatedLayout() throws IOException {

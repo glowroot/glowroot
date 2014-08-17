@@ -94,8 +94,7 @@ public class LocalUiModule {
         TraceRegistry traceRegistry = traceModule.getTraceRegistry();
 
         LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
-                pluginDescriptorCache, jvmModule.getHeapHistograms().getService(),
-                jvmModule.getHeapDumps().getService(),
+                pluginDescriptorCache, jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),
                 collectorModule.getFixedTransactionPointIntervalSeconds());
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configService, clock, layoutJsonService);
@@ -116,8 +115,9 @@ public class LocalUiModule {
         transactionExportHttpService = new TransactionExportHttpService(transactionCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
         ErrorJsonService errorJsonService = new ErrorJsonService(snapshotDao);
-        JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getThreadAllocatedBytes(),
-                jvmModule.getHeapHistograms(), jvmModule.getHeapDumps());
+        JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
+                jvmModule.getThreadAllocatedBytes(), jvmModule.getHeapHistograms(),
+                jvmModule.getHeapDumps());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
                 pluginDescriptorCache, dataDir, httpSessionManager, traceModule);
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld);

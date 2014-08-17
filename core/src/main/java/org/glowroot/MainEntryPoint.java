@@ -28,6 +28,7 @@ import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.GlowrootModule.StartupFailedException;
 import org.glowroot.config.PluginDescriptor;
+import org.glowroot.jvm.LazyPlatformMBeanServer;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Static;
 
@@ -60,6 +62,15 @@ public class MainEntryPoint {
     private MainEntryPoint() {}
 
     public static void premain(Instrumentation instrumentation, @Nullable File glowrootJarFile) {
+        if (LazyPlatformMBeanServer.isJbossModules()) {
+            String jbossModulesSystemPkgs = System.getProperty("jboss.modules.system.pkgs");
+            if (!Strings.isNullOrEmpty(jbossModulesSystemPkgs)) {
+                jbossModulesSystemPkgs = "org.glowroot";
+            } else {
+                jbossModulesSystemPkgs += ",org.glowroot";
+            }
+            System.setProperty("jboss.modules.system.pkgs", jbossModulesSystemPkgs);
+        }
         ImmutableMap<String, String> properties = getGlowrootProperties();
         File dataDir = DataDir.getDataDir(properties, glowrootJarFile);
         if (isShaded()) {

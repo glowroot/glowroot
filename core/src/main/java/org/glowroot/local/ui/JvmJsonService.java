@@ -35,7 +35,6 @@ import java.util.TreeMap;
 import javax.management.JMException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
-import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
@@ -65,6 +64,7 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.HeapHistograms;
 import org.glowroot.jvm.HeapHistograms.HeapHistogramException;
+import org.glowroot.jvm.LazyPlatformMBeanServer;
 import org.glowroot.jvm.OptionalService;
 import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.ProcessId;
@@ -98,12 +98,15 @@ class JvmJsonService {
         }
     };
 
+    private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapHistograms> heapHistograms;
     private final OptionalService<HeapDumps> heapDumps;
 
-    JvmJsonService(OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
+    JvmJsonService(LazyPlatformMBeanServer lazyPlatformMBeanServer,
+            OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
             OptionalService<HeapHistograms> heapHistograms, OptionalService<HeapDumps> heapDumps) {
+        this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.heapHistograms = heapHistograms;
         this.heapDumps = heapDumps;
@@ -184,15 +187,14 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/mbean-tree")
-    String getMBeanTree(String content) throws IOException, JMException {
+    String getMBeanTree(String content) throws IOException, JMException, InterruptedException {
         logger.debug("getMBeanTree(): {}", content);
         // ACCEPT_SINGLE_VALUE_AS_ARRAY needed to map expanded whether it is single value or array
         ObjectMapper mapper =
                 new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
         MBeanTreeRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, MBeanTreeRequest.class);
-        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
-        Set<ObjectName> objectNames = platformMBeanServer.queryNames(null, null);
+        Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null, null);
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
         Map<String, MBeanTreeInnerNode> sortedRootNodes =
@@ -227,7 +229,8 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/mbean-attribute-map")
-    String getMBeanAttributeMap(String content) throws IOException, JMException {
+    String getMBeanAttributeMap(String content) throws IOException, JMException,
+            InterruptedException {
         logger.debug("getMBeanAttributeMap(): content={}", content);
         MBeanAttributeMapRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, MBeanAttributeMapRequest.class);
@@ -321,7 +324,7 @@ class JvmJsonService {
     }
 
     @POST("/backend/jvm/dump-heap")
-    String dumpHeap(String content) throws IOException, JMException {
+    String dumpHeap(String content) throws IOException, JMException, InterruptedException {
         logger.debug("dumpHeap(): content={}", content);
         HeapDumps service = OptionalJsonServices.validateAvailability(heapDumps);
         RequestWithDirectory request =
@@ -412,9 +415,8 @@ class JvmJsonService {
     }
 
     private Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(ObjectName objectName)
-            throws JMException {
-        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
-        MBeanInfo mBeanInfo = platformMBeanServer.getMBeanInfo(objectName);
+            throws JMException, InterruptedException {
+        MBeanInfo mBeanInfo = lazyPlatformMBeanServer.getMBeanInfo(objectName);
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
         Map<String, /*@Nullable*/Object> sortedAttributeMap =
@@ -422,7 +424,7 @@ class JvmJsonService {
         for (MBeanAttributeInfo attribute : mBeanInfo.getAttributes()) {
             Object value;
             try {
-                value = platformMBeanServer.getAttribute(objectName, attribute.getName());
+                value = lazyPlatformMBeanServer.getAttribute(objectName, attribute.getName());
             } catch (Exception e) {
                 // log exception at debug level
                 logger.debug(e.getMessage(), e);

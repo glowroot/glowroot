@@ -15,13 +15,12 @@
  */
 package org.glowroot.jvm;
 
-import java.lang.management.ManagementFactory;
-
 import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
+import com.google.common.base.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,34 +37,49 @@ public class HeapDumps {
 
     private static final Logger logger = LoggerFactory.getLogger(HeapDumps.class);
 
+    private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final ObjectName objectName;
 
-    private HeapDumps(ObjectName objectName) {
+    private HeapDumps(LazyPlatformMBeanServer lazyPlatformMBeanServer, ObjectName objectName) {
+        this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         this.objectName = objectName;
     }
 
-    public void dumpHeap(String path) throws JMException {
-        ManagementFactory.getPlatformMBeanServer().invoke(objectName, "dumpHeap",
+    public void dumpHeap(String path) throws JMException, InterruptedException {
+        lazyPlatformMBeanServer.invoke(objectName, "dumpHeap",
                 new Object[] {path, false}, new String[] {"java.lang.String", "boolean"});
     }
 
-    static OptionalService<HeapDumps> create() {
-        ObjectName objectName;
+    static OptionalService<HeapDumps> create(
+            final LazyPlatformMBeanServer lazyPlatformMBeanServer) {
+        final ObjectName objectName;
         try {
             objectName = ObjectName.getInstance(MBEAN_NAME);
         } catch (MalformedObjectNameException e) {
             logger.error(e.getMessage(), e);
             return OptionalService.unavailable("<see error log for detail>");
         }
-        // verify that mbean exists
-        try {
-            ManagementFactory.getPlatformMBeanServer().getObjectInstance(objectName);
-        } catch (InstanceNotFoundException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            return OptionalService.unavailable("No such MBean " + MBEAN_NAME
-                    + " (introduced in Oracle Java SE 6)");
-        }
-        return OptionalService.available(new HeapDumps(objectName));
+
+        return OptionalService.lazy(new Supplier<OptionalService<HeapDumps>>() {
+            @Override
+            public OptionalService<HeapDumps> get() {
+                // verify that mbean exists
+                try {
+                    lazyPlatformMBeanServer.getObjectInstance(objectName);
+                } catch (InterruptedException e) {
+                    logger.error(e.getMessage(), e);
+                    return OptionalService.unavailable("Interrupted while initializing: "
+                            + e.getMessage());
+                } catch (InstanceNotFoundException e) {
+                    // log exception at debug level
+                    logger.debug(e.getMessage(), e);
+                    return OptionalService.unavailable("No such MBean " + MBEAN_NAME
+                            + " (introduced in Oracle Java SE 6)");
+                }
+                return OptionalService.available(new HeapDumps(lazyPlatformMBeanServer,
+                        objectName));
+            }
+        });
+
     }
 }

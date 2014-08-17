@@ -24,14 +24,20 @@ import org.glowroot.markers.ThreadSafe;
 @ThreadSafe
 public class JvmModule {
 
+    private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapHistograms> heapHistograms;
     private final OptionalService<HeapDumps> heapDumps;
 
     public JvmModule() {
+        lazyPlatformMBeanServer = new LazyPlatformMBeanServer();
         threadAllocatedBytes = ThreadAllocatedBytes.create();
         heapHistograms = HeapHistograms.create();
-        heapDumps = HeapDumps.create();
+        heapDumps = HeapDumps.create(lazyPlatformMBeanServer);
+    }
+
+    public LazyPlatformMBeanServer getLazyPlatformMBeanServer() {
+        return lazyPlatformMBeanServer;
     }
 
     public OptionalService<ThreadAllocatedBytes> getThreadAllocatedBytes() {
