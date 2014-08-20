@@ -250,10 +250,6 @@ glowroot.controller('ConfigPointcutCtrl', [
       if (!$scope.span) {
         $scope.config.stackTraceThresholdMillis = '';
       }
-      if (!$scope.trace) {
-        $scope.config.transactionType = '';
-        $scope.config.transactionNameTemplate = '';
-      }
     });
 
     $scope.$watch('selectedMethodSignature', function (newValue) {
