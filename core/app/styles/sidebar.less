@@ -67,11 +67,21 @@
 
 @media screen and (min-width: @screen-md-min) {
   .gt-sidebar {
-    position: absolute;
+    display: inline-block;
     width: 220px;
+    vertical-align: top;
   }
 
   .gt-main-column {
-    margin-left: 240px;
+    display: inline-block;
+    width: 730px;
+    // this makes total 20px gap between sidebar and main
+    margin-left: 16px;
+  }
+}
+
+@media screen and (min-width: @screen-lg-min) {
+  .gt-main-column {
+    width: 930px;
   }
 }
