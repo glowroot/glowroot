@@ -335,7 +335,7 @@ public class JavaagentContainer implements Container {
             }
         }
         command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(paths));
-        command.addAll(getJavaAgentsFromCurrentJvm());
+        command.addAll(getJacocoArgsFromCurrentJvm());
         if (javaagentJarFile == null) {
             // create jar file in data dir since that gets cleaned up at end of test already
             javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(dataDir);
@@ -359,17 +359,17 @@ public class JavaagentContainer implements Container {
         return command;
     }
 
-    private static List<String> getJavaAgentsFromCurrentJvm() {
+    private static List<String> getJacocoArgsFromCurrentJvm() {
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         List<String> arguments = runtimeMXBean.getInputArguments();
-        List<String> javaAgents = Lists.newArrayList();
+        List<String> jacocoArgs = Lists.newArrayList();
         for (String argument : arguments) {
-            if (argument.startsWith("-javaagent:")) {
-                // pass on the jacoco agent in particular
-                javaAgents.add(argument);
+            if (argument.startsWith("-javaagent:") && argument.contains("jacoco")) {
+                jacocoArgs.add(argument);
+                jacocoArgs.add("-Djacoco.inclBootstrapClasses=true");
             }
         }
-        return javaAgents;
+        return jacocoArgs;
     }
 
     private static class JavaagentContainerGetUiPort implements GetUiPortCommand {

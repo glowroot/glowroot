@@ -16,6 +16,7 @@
 
   <properties>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
+    <sonar.sources>src/main/java,app</sonar.sources>
   </properties>
 
   <dependencies>

@@ -52,14 +52,11 @@ case "$1" in
                  #
                  # using local test harness since that falls back to javaagent for a few tests and
                  # hitting both harnesses gives the best code coverage
-                 mvn org.jacoco:jacoco-maven-plugin:prepare-agent clean install \
+                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install \
                                  -Dglowroot.shading.skip=true \
                                  -Dglowroot.test.harness=local \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -B
-                 # re-using jacoco code coverage reports from above, but sonar still runs the tests
-                 # to report on timings and failure rates
-                 #
                  # using local harness since it is faster (and the default anyways)
                  #
                  # the sonar.jdbc.password system property is set in the pom.xml using the
