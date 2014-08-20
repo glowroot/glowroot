@@ -1,7 +1,7 @@
 {
   "name": "glowroot",
   "dependencies": {
-    "angular": "1.2.21",
+    "angular": "1.2.22",
     "angular-ui-bootstrap": "9030d2c9713b675b8675bcb064fdc93e4c624de0",
     "angular-ui-router": "0.2.10",
     "bootstrap": "3.2.0",

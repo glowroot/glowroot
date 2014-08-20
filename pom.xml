@@ -76,7 +76,7 @@
         <groupId>io.netty</groupId>
         <artifactId>netty</artifactId>
         <!-- TODO upgrade to netty 4 -->
-        <version>3.9.2.Final</version>
+        <version>3.9.3.Final</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -99,29 +99,24 @@
         <version>4.11</version>
       </dependency>
       <dependency>
-        <groupId>com.google.code.findbugs</groupId>
-        <artifactId>jsr305</artifactId>
-        <version>3.0.0</version>
-      </dependency>
-      <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>18.0-rc1</version>
+        <version>18.0-rc2</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
-        <version>2.4.1.1</version>
+        <version>2.4.2</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>2.4.1.3</version>
+        <version>2.4.2</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-annotations</artifactId>
-        <version>2.4.1</version>
+        <version>2.4.2</version>
       </dependency>
       <dependency>
         <groupId>org.assertj</groupId>
@@ -141,12 +136,12 @@
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-core</artifactId>
-        <version>0.9.5</version>
+        <version>0.9.7</version>
       </dependency>
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-generator-annprocess</artifactId>
-        <version>0.9.5</version>
+        <version>0.9.7</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -310,8 +305,11 @@
                 </goals>
                 <configuration>
                   <resourceBundles>
+                    <!-- need to use explicit version below instead of ${project.version}
+                         since when plugins inherit this pom ${project.version} is replaced
+                         by the plugin's version -->
                     <resourceBundle>
-                      org.glowroot.misc:glowroot-license-resource-bundle:${project.version}
+                      org.glowroot.misc:glowroot-license-resource-bundle:0.5-SNAPSHOT
                     </resourceBundle>
                   </resourceBundles>
                 </configuration>
@@ -347,13 +345,11 @@
       </properties>
       <dependencies>
         <dependency>
-          <!-- guava uses these annotations but makes the dependency optional so
-               they need to be explicitly added when running the checker framework
-               otherwise it errors on code that invokes Splitter.omitEmptyStrings()
-               (e.g. org.glowroot.jvm.HeapHistograms) and probably elsewhere -->
+          <!-- this is needed due to
+               https://code.google.com/p/checker-framework/issues/detail?id=348 -->
           <groupId>com.google.code.findbugs</groupId>
           <artifactId>jsr305</artifactId>
-          <version>2.0.3</version>
+          <version>3.0.0</version>
           <optional>true</optional>
         </dependency>
       </dependencies>
