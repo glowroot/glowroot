@@ -81,11 +81,10 @@ public class LocalContainer implements Container {
         }
         Map<String, String> properties = Maps.newHashMap();
         properties.put("data.dir", this.dataDir.getAbsolutePath());
+        properties.put("internal.logging.spy", "true");
         if (!useFileDb) {
             properties.put("internal.h2.memdb", "true");
         }
-        // TODO move SpyingLogbackFilter init to MainEntryPoint, based on system property
-        SpyingLogbackFilter.init();
         try {
             MainEntryPoint.start(properties);
         } catch (org.glowroot.GlowrootModule.StartupFailedException e) {
@@ -197,6 +196,6 @@ public class LocalContainer implements Container {
 
     // this is used to re-open a shared container after a non-shared container was used
     public void reopen() {
-        MainEntryPoint.initStaticState(glowrootModule);
+        MainEntryPoint.reopen(glowrootModule);
     }
 }

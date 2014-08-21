@@ -149,7 +149,7 @@ public class TraceModule {
     }
 
     @OnlyUsedByTests
-    public void initStaticState() {
+    public void reopen() {
         PluginServicesRegistry.initStaticState(pluginServicesFactory);
     }
 

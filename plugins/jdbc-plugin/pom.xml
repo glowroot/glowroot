@@ -77,11 +77,6 @@
       <version>8.0.9</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>

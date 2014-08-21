@@ -26,7 +26,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.jar.JarFile;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.core.joran.spi.JoranException;
+import ch.qos.logback.core.util.StatusPrinter;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.io.Resources;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -35,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.CollectorModule;
 import org.glowroot.common.Clock;
+import org.glowroot.common.SpyingLogbackFilter;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.PluginResourceFinder;
@@ -70,10 +76,15 @@ public class GlowrootModule {
     private final LocalUiModule uiModule;
     private final File dataDir;
 
+    // this is used by tests to check that no warnings/errors are logged during tests
+    private final boolean loggingSpy;
+
     GlowrootModule(File dataDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
             String version, boolean viewerModeEnabled) throws StartupFailedException {
 
+        loggingSpy = Boolean.valueOf(properties.get("internal.logging.spy"));
+        initStaticLoggerState(dataDir, loggingSpy);
         if (dummyTicker) {
             ticker = new Ticker() {
                 @Override
@@ -145,6 +156,7 @@ public class GlowrootModule {
                 storageModule, collectorModule, traceModule, instrumentation, properties, version);
         this.dataDir = dataDir;
     }
+
     @OnlyUsedByTests
     public Clock getClock() {
         return clock;
@@ -186,6 +198,12 @@ public class GlowrootModule {
     }
 
     @OnlyUsedByTests
+    public void reopen() {
+        initStaticLoggerState(dataDir, loggingSpy);
+        traceModule.reopen();
+    }
+
+    @OnlyUsedByTests
     public void close() {
         logger.debug("close()");
         uiModule.close();
@@ -193,6 +211,54 @@ public class GlowrootModule {
         traceModule.close();
         storageModule.close();
         scheduledExecutor.shutdownNow();
+        // finally, close logger
+        if (shouldOverrideLogging()) {
+            ((LoggerContext) LoggerFactory.getILoggerFactory()).reset();
+        }
+    }
+
+    private static void initStaticLoggerState(File dataDir, boolean loggingSpy) {
+        if (shouldOverrideLogging()) {
+            overrideLogging(dataDir);
+        }
+        if (loggingSpy) {
+            SpyingLogbackFilter.init();
+        }
+    }
+
+    private static boolean shouldOverrideLogging() {
+        // don't override glowroot.logback-test.xml
+        return isShaded() && ClassLoader.getSystemResource("glowroot.logback-test.xml") == null;
+    }
+
+    private static void overrideLogging(File dataDir) {
+        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        try {
+            JoranConfigurator configurator = new JoranConfigurator();
+            configurator.setContext(context);
+            context.reset();
+            context.putProperty("glowroot.data.dir", dataDir.getPath());
+            File logbackXmlFile = new File(dataDir, "glowroot.logback.xml");
+            if (logbackXmlFile.exists()) {
+                configurator.doConfigure(logbackXmlFile);
+            } else {
+                configurator.doConfigure(Resources.getResource("glowroot.logback-override.xml"));
+            }
+        } catch (JoranException je) {
+            // any errors are printed below by StatusPrinter
+        }
+        StatusPrinter.printInCaseOfErrorsOrWarnings(context);
+    }
+
+    private static boolean isShaded() {
+        try {
+            Class.forName("org.glowroot.shaded.slf4j.Logger");
+            return true;
+        } catch (ClassNotFoundException e) {
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
+            return false;
+        }
     }
 
     @VisibleForTesting

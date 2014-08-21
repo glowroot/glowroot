@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.Agent;
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
-import org.glowroot.common.SpyingLogbackFilter;
 import org.glowroot.common.SpyingLogbackFilter.MessageCount;
 import org.glowroot.config.ConfigService.OptimisticLockException;
 import org.glowroot.config.GeneralConfig;
@@ -270,8 +269,6 @@ public class JavaagentContainer implements Container {
     }
 
     public static void main(String... args) throws Exception {
-        // TODO move SpyingLogbackFilter init to MainEntryPoint, based on system property
-        SpyingLogbackFilter.init();
         // storeThresholdMillis=0 is the default for testing
         setStoreThresholdMillisToZero();
         int port = Integer.parseInt(args[0]);
@@ -345,6 +342,7 @@ public class JavaagentContainer implements Container {
             command.add("-javaagent:" + javaagentJarFile);
         }
         command.add("-Dglowroot.data.dir=" + dataDir.getAbsolutePath());
+        command.add("-Dglowroot.internal.logging.spy=true");
         if (!useFileDb) {
             command.add("-Dglowroot.internal.h2.memdb=true");
         }

@@ -22,16 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
-import ch.qos.logback.core.util.StatusPrinter;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.io.Resources;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -73,9 +68,6 @@ public class MainEntryPoint {
         }
         ImmutableMap<String, String> properties = getGlowrootProperties();
         File dataDir = DataDir.getDataDir(properties, glowrootJarFile);
-        if (isShaded()) {
-            reconfigureLogging(dataDir);
-        }
         try {
             start(dataDir, properties, instrumentation, glowrootJarFile);
         } catch (StartupFailedException e) {
@@ -95,9 +87,6 @@ public class MainEntryPoint {
             InterruptedException {
         ImmutableMap<String, String> properties = getGlowrootProperties();
         File dataDir = DataDir.getDataDir(properties, glowrootJarFile);
-        if (isShaded()) {
-            reconfigureLogging(dataDir);
-        }
         String version = Version.getVersion();
         try {
             glowrootModule = new GlowrootModule(dataDir, properties, null, glowrootJarFile,
@@ -178,40 +167,6 @@ public class MainEntryPoint {
         }
     }
 
-    private static void reconfigureLogging(File dataDir) {
-        if (ClassLoader.getSystemResource("glowroot.logback-test.xml") != null) {
-            // don't override glowroot.logback-test.xml
-            return;
-        }
-        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        try {
-            JoranConfigurator configurator = new JoranConfigurator();
-            configurator.setContext(context);
-            context.reset();
-            context.putProperty("glowroot.data.dir", dataDir.getPath());
-            File logbackXmlFile = new File(dataDir, "glowroot.logback.xml");
-            if (logbackXmlFile.exists()) {
-                configurator.doConfigure(logbackXmlFile);
-            } else {
-                configurator.doConfigure(Resources.getResource("glowroot.logback-override.xml"));
-            }
-        } catch (JoranException je) {
-            // any errors are printed below by StatusPrinter
-        }
-        StatusPrinter.printInCaseOfErrorsOrWarnings(context);
-    }
-
-    private static boolean isShaded() {
-        try {
-            Class.forName("org.glowroot.shaded.slf4j.Logger");
-            return true;
-        } catch (ClassNotFoundException e) {
-            // log exception at debug level
-            startupLogger.debug(e.getMessage(), e);
-            return false;
-        }
-    }
-
     private static boolean isTomcatStop() {
         return Objects.equal(System.getProperty("sun.java.command"),
                 "org.apache.catalina.startup.Bootstrap stop");
@@ -230,12 +185,10 @@ public class MainEntryPoint {
         return glowrootModule;
     }
 
+    // this is used to re-open a shared container after a non-shared container was used
     @OnlyUsedByTests
-    public static void initStaticState(GlowrootModule glowrootModule) {
-        glowrootModule.getTraceModule().initStaticState();
-        if (isShaded()) {
-            reconfigureLogging(glowrootModule.getDataDir());
-        }
+    public static void reopen(GlowrootModule glowrootModule) {
+        glowrootModule.reopen();
         MainEntryPoint.glowrootModule = glowrootModule;
     }
 }
