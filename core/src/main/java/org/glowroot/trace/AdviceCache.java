@@ -64,9 +64,7 @@ public class AdviceCache {
         this.pluginAdvisors = pluginAdvisors;
         this.instrumentation = instrumentation;
         this.dataDir = dataDir;
-        File generatedJarDir = new File(dataDir, "tmp");
-        ClassLoaders.cleanPreviouslyGeneratedJars(generatedJarDir, "config-pointcuts");
-        updateAdvisors(reweavablePointcutConfigs);
+        updateAdvisors(reweavablePointcutConfigs, true);
     }
 
     Supplier<ImmutableList<Advice>> getAdvisorsSupplier() {
@@ -80,19 +78,23 @@ public class AdviceCache {
 
     @EnsuresNonNull({"reweavableAdvisors", "reweavablePointcutConfigVersions", "allAdvisors"})
     public void updateAdvisors(/*>>>@org.checkerframework.checker.initialization.qual.UnknownInitialization(AdviceCache.class) AdviceCache this,*/
-            ImmutableList<PointcutConfig> reweavablePointcutConfigs) throws IOException {
+            ImmutableList<PointcutConfig> reweavablePointcutConfigs, boolean cleanTmpDir)
+            throws IOException {
         ImmutableMap<Advice, LazyDefinedClass> advisors =
                 DynamicAdviceGenerator.createAdvisors(reweavablePointcutConfigs, null);
-        if (!advisors.isEmpty()) {
-            if (instrumentation == null) {
-                // this is for tests that don't run with javaagent container
-                ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                if (loader == null) {
-                    throw new AssertionError("Context class loader must be set");
-                }
-                ClassLoaders.defineClassesInClassLoader(advisors.values(), loader);
-            } else {
-                File generatedJarDir = new File(dataDir, "tmp");
+        if (instrumentation == null) {
+            // this is for tests that don't run with javaagent container
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            if (loader == null) {
+                throw new AssertionError("Context class loader must be set");
+            }
+            ClassLoaders.defineClassesInClassLoader(advisors.values(), loader);
+        } else {
+            File generatedJarDir = new File(dataDir, "tmp");
+            if (cleanTmpDir) {
+                ClassLoaders.cleanPreviouslyGeneratedJars(generatedJarDir, "config-pointcuts");
+            }
+            if (!advisors.isEmpty()) {
                 String suffix = "";
                 int count = jarFileCounter.incrementAndGet();
                 if (count > 1) {

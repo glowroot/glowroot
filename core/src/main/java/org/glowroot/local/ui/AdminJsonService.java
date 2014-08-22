@@ -97,7 +97,7 @@ class AdminJsonService {
             return "{}";
         }
         ImmutableList<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
-        adviceCache.updateAdvisors(pointcutConfigs);
+        adviceCache.updateAdvisors(pointcutConfigs, false);
         Set<String> classNames = Sets.newHashSet();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
             classNames.add(pointcutConfig.getClassName());

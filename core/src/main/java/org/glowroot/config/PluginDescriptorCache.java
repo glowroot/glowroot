@@ -100,9 +100,11 @@ public class PluginDescriptorCache {
         } else {
             File generatedJarDir = new File(dataDir, "tmp");
             ClassLoaders.cleanPreviouslyGeneratedJars(generatedJarDir, "plugin-pointcuts.jar");
-            File jarFile = new File(generatedJarDir, "plugin-pointcuts.jar");
-            ClassLoaders.defineClassesInBootstrapClassLoader(lazyAdvisors.values(),
-                    instrumentation, jarFile);
+            if (!lazyAdvisors.isEmpty()) {
+                File jarFile = new File(generatedJarDir, "plugin-pointcuts.jar");
+                ClassLoaders.defineClassesInBootstrapClassLoader(lazyAdvisors.values(),
+                        instrumentation, jarFile);
+            }
         }
         return new PluginDescriptorCache(pluginDescriptors, mixinTypes, advisors);
     }
