@@ -23,13 +23,10 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
@@ -37,8 +34,10 @@ import java.util.jar.Manifest;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
+import com.google.common.collect.TreeMultimap;
 import com.google.common.io.Closer;
 import com.google.common.io.Resources;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -69,41 +68,56 @@ class ClasspathCache {
 
     // using sets of URIs because URLs have expensive equals and hashcode methods
     // see http://michaelscharf.blogspot.com/2006/11/javaneturlequals-and-hashcode-make.html
-    private final Set<URI> classpathURIs =
-            Sets.newSetFromMap(Maps.<URI, Boolean>newConcurrentMap());
-    private final Map<String, Set<URI>> classNames = Maps.newConcurrentMap();
+    @GuardedBy("this")
+    private final Set<URI> classpathURIs = Sets.newHashSet();
 
-    @GuardedBy("classNameUppers")
-    private final SortedMap<String, SortedSet<String>> classNameUppers = Maps.newTreeMap();
+    @GuardedBy("this")
+    private final Multimap<String, URI> classNames =
+            TreeMultimap.create(String.CASE_INSENSITIVE_ORDER, Ordering.natural());
 
     ClasspathCache(AnalyzedWorld analyzedWorld) {
         this.analyzedWorld = analyzedWorld;
     }
 
-    List<String> getMatchingClassNames(String partialClassName, int limit) {
+    // using synchronization over concurrent structures in this cache to conserve memory
+    synchronized List<String> getMatchingClassNames(String partialClassName, int limit) {
         // update cache before proceeding
         updateCache();
         String partialClassNameUpper = partialClassName.toUpperCase(Locale.ENGLISH);
-        Set<String> classNames = Sets.newTreeSet();
-        synchronized (classNameUppers) {
-            for (Entry<String, SortedSet<String>> entry : classNameUppers.entrySet()) {
-                String classNameUpper = entry.getKey();
-                if (classNameUpper.contains(partialClassNameUpper)) {
-                    classNames.addAll(entry.getValue());
-                    if (classNames.size() >= limit) {
-                        return Lists.newArrayList(classNames).subList(0, limit);
-                    }
+        String prefixedPartialClassNameUpper = '.' + partialClassNameUpper;
+        List<String> fullMatchingClassNames = Lists.newArrayList();
+        List<String> matchingClassNames = Lists.newArrayList();
+        for (String className : classNames.keys()) {
+            String classNameUpper = className.toUpperCase(Locale.ENGLISH);
+            boolean potentialFullMatch = classNameUpper.equals(partialClassNameUpper)
+                    || classNameUpper.endsWith(prefixedPartialClassNameUpper);
+            if (matchingClassNames.size() == limit && !potentialFullMatch) {
+                // once limit reached, only consider full matches
+                continue;
+            }
+            if (classNameUpper.startsWith(partialClassNameUpper)
+                    || classNameUpper.contains(prefixedPartialClassNameUpper)) {
+                if (potentialFullMatch) {
+                    fullMatchingClassNames.add(className);
+                } else {
+                    matchingClassNames.add(className);
                 }
             }
         }
-        return Lists.newArrayList(classNames);
+        if (fullMatchingClassNames.size() < limit) {
+            int space = limit - fullMatchingClassNames.size();
+            int numToAdd = Math.min(space, matchingClassNames.size());
+            fullMatchingClassNames.addAll(matchingClassNames.subList(0, numToAdd));
+        }
+        return fullMatchingClassNames;
     }
 
-    ImmutableList<UiAnalyzedMethod> getAnalyzedMethods(String className) {
+    // using synchronization over concurrent structures in this cache to conserve memory
+    synchronized ImmutableList<UiAnalyzedMethod> getAnalyzedMethods(String className) {
         // update cache before proceeding
         updateCache();
         List<UiAnalyzedMethod> analyzedMethods = Lists.newArrayList();
-        Set<URI> uris = classNames.get(className);
+        Collection<URI> uris = classNames.get(className);
         if (uris == null) {
             return ImmutableList.of();
         }
@@ -117,7 +131,8 @@ class ClasspathCache {
         return ImmutableList.copyOf(analyzedMethods);
     }
 
-    void updateCache() {
+    // using synchronization over concurrent structures in this cache to conserve memory
+    synchronized void updateCache() {
         for (URLClassLoader loader : getKnownURLClassLoaders()) {
             updateCache(loader);
         }
@@ -131,11 +146,9 @@ class ClasspathCache {
         }
         for (String path : Splitter.on(File.pathSeparatorChar).split(bootClassPath)) {
             URI uri = new File(path).toURI();
-            synchronized (classpathURIs) {
-                if (!classpathURIs.contains(uri)) {
-                    loadClassNames(uri);
-                    classpathURIs.add(uri);
-                }
+            if (!classpathURIs.contains(uri)) {
+                loadClassNames(uri);
+                classpathURIs.add(uri);
             }
         }
     }
@@ -173,11 +186,9 @@ class ClasspathCache {
             }
         }
         for (URI uri : uris) {
-            synchronized (classpathURIs) {
-                if (!classpathURIs.contains(uri)) {
-                    loadClassNames(uri);
-                    classpathURIs.add(uri);
-                }
+            if (!classpathURIs.contains(uri)) {
+                loadClassNames(uri);
+                classpathURIs.add(uri);
             }
         }
     }
@@ -236,7 +247,7 @@ class ClasspathCache {
             String name = file.getName();
             if (file.isFile() && name.endsWith(".class")) {
                 URI fileUri = new File(dir, name).toURI();
-                addClassName(prefix + name.substring(0, name.lastIndexOf('.')), fileUri);
+                classNames.put(prefix + name.substring(0, name.lastIndexOf('.')), fileUri);
             } else if (file.isDirectory()) {
                 loadClassNamesFromDirectory(file, prefix + name + ".");
             }
@@ -269,7 +280,7 @@ class ClasspathCache {
                     try {
                         URI fileURI = new URI("jar", jarUri.getScheme() + ":" + jarUri.getPath()
                                 + "!/" + name, "");
-                        addClassName(className, fileURI);
+                        classNames.put(className, fileURI);
                     } catch (URISyntaxException e) {
                         logger.error(e.getMessage(), e);
                     }
@@ -279,28 +290,6 @@ class ClasspathCache {
             throw closer.rethrow(t);
         } finally {
             closer.close();
-        }
-    }
-
-    private void addClassName(String className, URI uri) {
-        Set<URI> uris = classNames.get(className);
-        if (uris == null) {
-            uris = Sets.newCopyOnWriteArraySet();
-            classNames.put(className, uris);
-        }
-        uris.add(uri);
-        addClassNameUpper(className);
-    }
-
-    private void addClassNameUpper(String className) {
-        String classNameUpper = className.toUpperCase(Locale.ENGLISH);
-        synchronized (classNameUppers) {
-            SortedSet<String> classNames = classNameUppers.get(classNameUpper);
-            if (classNames == null) {
-                classNames = Sets.newTreeSet();
-                classNameUppers.put(classNameUpper, classNames);
-            }
-            classNames.add(className);
         }
     }
 

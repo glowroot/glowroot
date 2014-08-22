@@ -120,8 +120,8 @@ class PointcutConfigJsonService {
         logger.debug("getMatchingClassNames(): content={}", content);
         ClassNamesRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, ClassNamesRequest.class);
-        List<String> matchingClassNames =
-                getMatchingClassNames(request.getPartialClassName(), request.getLimit());
+        List<String> matchingClassNames = classpathCache.getMatchingClassNames(
+                request.getPartialClassName(), request.getLimit());
         return mapper.writeValueAsString(matchingClassNames);
     }
 
@@ -200,19 +200,6 @@ class PointcutConfigJsonService {
         logger.debug("removePointcutConfig(): content={}", content);
         String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
         configService.deletePointcutConfig(version);
-    }
-
-    // returns the first <limit> matching class names, ordered alphabetically (case-insensitive)
-    private ImmutableList<String> getMatchingClassNames(String partialClassName, int limit) {
-        Set<String> classNames = Sets.newHashSet();
-        classNames.addAll(classpathCache.getMatchingClassNames(partialClassName, limit));
-        ImmutableList<String> sortedClassNames =
-                Ordering.from(String.CASE_INSENSITIVE_ORDER).immutableSortedCopy(classNames);
-        if (sortedClassNames.size() > limit) {
-            return sortedClassNames.subList(0, limit);
-        } else {
-            return sortedClassNames;
-        }
     }
 
     // returns the first <limit> matching method names, ordered alphabetically (case-insensitive)
