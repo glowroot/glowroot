@@ -258,9 +258,9 @@ glowroot.controller('ConfigPointcutCtrl', [
         $scope.config.methodReturnType = newValue.returnType;
         $scope.config.methodModifiers = newValue.modifiers;
       } else {
-        $scope.config.methodParameterTypes = '';
+        $scope.config.methodParameterTypes = [];
         $scope.config.methodReturnType = '';
-        $scope.config.methodModifiers = '';
+        $scope.config.methodModifiers = [];
       }
     });
 
