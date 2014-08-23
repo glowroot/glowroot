@@ -31,6 +31,7 @@ import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -43,7 +44,6 @@ import org.glowroot.common.Clock;
 import org.glowroot.common.SpyingLogbackFilter;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
-import org.glowroot.config.PluginResourceFinder;
 import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.DataSource.DataSourceLockedException;
 import org.glowroot.local.store.StorageModule;
@@ -53,6 +53,7 @@ import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.TraceCollector;
 import org.glowroot.trace.TraceModule;
 import org.glowroot.trace.model.Trace;
+import org.glowroot.weaving.ExtraBootResourceFinder;
 
 /**
  * @author Trask Stalnaker
@@ -85,6 +86,17 @@ public class GlowrootModule {
 
         loggingSpy = Boolean.valueOf(properties.get("internal.logging.spy"));
         initStaticLoggerState(dataDir, loggingSpy);
+
+        // init config module first
+        try {
+            configModule = new ConfigModule(dataDir, instrumentation, glowrootJarFile,
+                    viewerModeEnabled);
+        } catch (IOException e) {
+            throw new StartupFailedException(e);
+        } catch (URISyntaxException e) {
+            throw new StartupFailedException(e);
+        }
+
         if (dummyTicker) {
             ticker = new Ticker() {
                 @Override
@@ -97,16 +109,15 @@ public class GlowrootModule {
         }
         clock = Clock.systemClock();
 
-        PluginResourceFinder pluginResourceFinder = null;
+        ExtraBootResourceFinder extraBootResourceFinder = null;
         if (instrumentation != null && glowrootJarFile != null) {
             try {
-                pluginResourceFinder = new PluginResourceFinder(glowrootJarFile);
-                for (File pluginJar : pluginResourceFinder.getPluginJars()) {
+                ImmutableList<File> pluginJars = configModule.getPluginJars();
+                for (File pluginJar : pluginJars) {
                     instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(pluginJar));
                 }
+                extraBootResourceFinder = new ExtraBootResourceFinder(pluginJars);
             } catch (IOException e) {
-                throw new StartupFailedException(e);
-            } catch (URISyntaxException e) {
                 throw new StartupFailedException(e);
             }
         }
@@ -115,14 +126,6 @@ public class GlowrootModule {
                 .setNameFormat("Glowroot-Background-%d").build();
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
         JvmModule jvmModule = new JvmModule();
-        try {
-            configModule = new ConfigModule(dataDir, instrumentation, pluginResourceFinder,
-                    viewerModeEnabled);
-        } catch (IOException e) {
-            throw new StartupFailedException(e);
-        } catch (URISyntaxException e) {
-            throw new StartupFailedException(e);
-        }
         // trace module needs to be started as early as possible, so that weaving will be applied to
         // as many classes as possible
         // in particular, it needs to be started before StorageModule which uses shaded H2, which
@@ -132,7 +135,7 @@ public class GlowrootModule {
         try {
             traceModule = new TraceModule(clock, ticker, configModule, traceCollectorProxy,
                     jvmModule.getThreadAllocatedBytes().getService(), instrumentation, dataDir,
-                    scheduledExecutor);
+                    extraBootResourceFinder, scheduledExecutor);
         } catch (IOException e) {
             throw new StartupFailedException(e);
         }
@@ -155,6 +158,50 @@ public class GlowrootModule {
         uiModule = new LocalUiModule(ticker, clock, dataDir, jvmModule, configModule,
                 storageModule, collectorModule, traceModule, instrumentation, properties, version);
         this.dataDir = dataDir;
+    }
+
+    private static void initStaticLoggerState(File dataDir, boolean loggingSpy) {
+        if (shouldOverrideLogging()) {
+            overrideLogging(dataDir);
+        }
+        if (loggingSpy) {
+            SpyingLogbackFilter.init();
+        }
+    }
+
+    private static boolean shouldOverrideLogging() {
+        // don't override glowroot.logback-test.xml
+        return isShaded() && ClassLoader.getSystemResource("glowroot.logback-test.xml") == null;
+    }
+
+    private static void overrideLogging(File dataDir) {
+        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        try {
+            JoranConfigurator configurator = new JoranConfigurator();
+            configurator.setContext(context);
+            context.reset();
+            context.putProperty("glowroot.data.dir", dataDir.getPath());
+            File logbackXmlFile = new File(dataDir, "glowroot.logback.xml");
+            if (logbackXmlFile.exists()) {
+                configurator.doConfigure(logbackXmlFile);
+            } else {
+                configurator.doConfigure(Resources.getResource("glowroot.logback-override.xml"));
+            }
+        } catch (JoranException je) {
+            // any errors are printed below by StatusPrinter
+        }
+        StatusPrinter.printInCaseOfErrorsOrWarnings(context);
+    }
+
+    private static boolean isShaded() {
+        try {
+            Class.forName("org.glowroot.shaded.slf4j.Logger");
+            return true;
+        } catch (ClassNotFoundException e) {
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
+            return false;
+        }
     }
 
     @OnlyUsedByTests
@@ -214,50 +261,6 @@ public class GlowrootModule {
         // finally, close logger
         if (shouldOverrideLogging()) {
             ((LoggerContext) LoggerFactory.getILoggerFactory()).reset();
-        }
-    }
-
-    private static void initStaticLoggerState(File dataDir, boolean loggingSpy) {
-        if (shouldOverrideLogging()) {
-            overrideLogging(dataDir);
-        }
-        if (loggingSpy) {
-            SpyingLogbackFilter.init();
-        }
-    }
-
-    private static boolean shouldOverrideLogging() {
-        // don't override glowroot.logback-test.xml
-        return isShaded() && ClassLoader.getSystemResource("glowroot.logback-test.xml") == null;
-    }
-
-    private static void overrideLogging(File dataDir) {
-        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        try {
-            JoranConfigurator configurator = new JoranConfigurator();
-            configurator.setContext(context);
-            context.reset();
-            context.putProperty("glowroot.data.dir", dataDir.getPath());
-            File logbackXmlFile = new File(dataDir, "glowroot.logback.xml");
-            if (logbackXmlFile.exists()) {
-                configurator.doConfigure(logbackXmlFile);
-            } else {
-                configurator.doConfigure(Resources.getResource("glowroot.logback-override.xml"));
-            }
-        } catch (JoranException je) {
-            // any errors are printed below by StatusPrinter
-        }
-        StatusPrinter.printInCaseOfErrorsOrWarnings(context);
-    }
-
-    private static boolean isShaded() {
-        try {
-            Class.forName("org.glowroot.shaded.slf4j.Logger");
-            return true;
-        } catch (ClassNotFoundException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            return false;
         }
     }
 

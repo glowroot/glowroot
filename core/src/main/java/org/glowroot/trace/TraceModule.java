@@ -34,6 +34,7 @@ import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.trace.PluginServicesRegistry.PluginServicesFactory;
 import org.glowroot.weaving.AnalyzedWorld;
+import org.glowroot.weaving.ExtraBootResourceFinder;
 import org.glowroot.weaving.PreInitializeWeavingClasses;
 import org.glowroot.weaving.WeavingClassFileTransformer;
 import org.glowroot.weaving.WeavingTimerService;
@@ -66,6 +67,7 @@ public class TraceModule {
             final TraceCollector traceCollector,
             final @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             @Nullable Instrumentation instrumentation, File dataDir,
+            @Nullable ExtraBootResourceFinder extraBootResourceFinder,
             ScheduledExecutorService scheduledExecutor) throws IOException {
         this.threadAllocatedBytes = threadAllocatedBytes;
         ConfigService configService = configModule.getConfigService();
@@ -73,7 +75,7 @@ public class TraceModule {
         adviceCache = new AdviceCache(configModule.getPluginDescriptorCache().getAdvisors(),
                 configService.getPointcutConfigs(), instrumentation, dataDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
-                configModule.getPluginDescriptorCache().getMixinTypes());
+                configModule.getPluginDescriptorCache().getMixinTypes(), extraBootResourceFinder);
         final MetricNameCache metricNameCache = new MetricNameCache();
         weavingTimerService = new WeavingTimerServiceImpl(traceRegistry, metricNameCache);
 

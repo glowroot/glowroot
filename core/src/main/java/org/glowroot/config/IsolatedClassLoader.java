@@ -18,26 +18,23 @@ package org.glowroot.config;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-class IsolatedClassLoader extends ClassLoader {
-
-    @Nullable
-    private final PluginResourceFinder pluginResourceFinder;
-
-    IsolatedClassLoader(@Nullable PluginResourceFinder pluginResourceFinder) {
-        this.pluginResourceFinder = pluginResourceFinder;
-    }
+class IsolatedClassLoader extends URLClassLoader {
 
     private final Map<String, Class<?>> classes = Maps.newConcurrentMap();
+
+    IsolatedClassLoader(URL[] urls) {
+        super(urls);
+    }
 
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
@@ -77,15 +74,6 @@ class IsolatedClassLoader extends ClassLoader {
         c = findClass(name);
         classes.put(name, c);
         return c;
-    }
-
-    @Override
-    @Nullable
-    protected URL findResource(String name) {
-        if (pluginResourceFinder == null) {
-            return null;
-        }
-        return pluginResourceFinder.findResource(name);
     }
 
     private boolean useBootstrapClassLoader(String name) {

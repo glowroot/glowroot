@@ -23,6 +23,7 @@ import java.net.URL;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -32,43 +33,34 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class PluginResourceFinder {
+class PluginCache {
 
-    private static final Logger logger = LoggerFactory.getLogger(PluginResourceFinder.class);
+    private static final Logger logger = LoggerFactory.getLogger(PluginCache.class);
 
     private final ImmutableList<File> pluginJars;
     private final ImmutableList<URL> descriptorURLs;
 
-    public PluginResourceFinder(File glowrootJarFile) throws URISyntaxException, IOException {
-        pluginJars = getPluginJars(glowrootJarFile);
+    PluginCache(@Nullable File glowrootJarFile) throws URISyntaxException, IOException {
         List<URL> descriptorURLs = Lists.newArrayList();
-        for (File pluginJar : pluginJars) {
-            descriptorURLs.add(new URL("jar:" + pluginJar.toURI()
-                    + "!/META-INF/glowroot.plugin.json"));
+        if (glowrootJarFile == null) {
+            pluginJars = ImmutableList.of();
+        } else {
+            pluginJars = getPluginJars(glowrootJarFile);
+            for (File pluginJar : pluginJars) {
+                descriptorURLs.add(new URL("jar:" + pluginJar.toURI()
+                        + "!/META-INF/glowroot.plugin.json"));
+            }
+            for (File file : getStandaloneDescriptors(glowrootJarFile)) {
+                descriptorURLs.add(file.toURI().toURL());
+            }
         }
-        for (File file : getStandaloneDescriptors(glowrootJarFile)) {
-            descriptorURLs.add(file.toURI().toURL());
-        }
+        // also add descriptors on the class path (this is primarily for integration tests)
+        descriptorURLs.addAll(getResources("META-INF/glowroot.plugin.json"));
         this.descriptorURLs = ImmutableList.copyOf(descriptorURLs);
     }
 
-    public ImmutableList<File> getPluginJars() {
+    ImmutableList<File> getPluginJars() {
         return pluginJars;
-    }
-
-    @Nullable
-    URL findResource(String name) {
-        for (File pluginJar : pluginJars) {
-            try {
-                URL url = new URL("jar:" + pluginJar.toURI() + "!/" + name);
-                // call openStream() to test if this exists
-                url.openStream();
-                return url;
-            } catch (IOException e) {
-                logger.debug(e.getMessage(), e);
-            }
-        }
-        return null;
     }
 
     ImmutableList<URL> getDescriptorURLs() {
@@ -122,5 +114,14 @@ public class PluginResourceFinder {
             return null;
         }
         return pluginsDir;
+    }
+
+    private static ImmutableList<URL> getResources(String resourceName) throws IOException {
+        ClassLoader loader = PluginDescriptorCache.class.getClassLoader();
+        if (loader == null) {
+            return ImmutableList.copyOf(Iterators.forEnumeration(
+                    ClassLoader.getSystemResources(resourceName)));
+        }
+        return ImmutableList.copyOf(Iterators.forEnumeration(loader.getResources(resourceName)));
     }
 }

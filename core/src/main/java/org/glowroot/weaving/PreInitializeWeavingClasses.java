@@ -371,6 +371,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.BootstrapMetaHolders$MethodMetaHolder");
         types.add("org.glowroot.weaving.ClassLoaders");
         types.add("org.glowroot.weaving.ClassNames");
+        types.add("org.glowroot.weaving.ExtraBootResourceFinder");
         types.add("org.glowroot.weaving.GeneratedBytecodeUtil");
         types.add("org.glowroot.weaving.MixinMatcher");
         types.add("org.glowroot.weaving.MixinType");

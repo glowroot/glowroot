@@ -44,7 +44,8 @@ public class PreInitializeWeavingClassesTest {
         // (so these types will be in the list of possible subtypes later on)
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/glowroot/weaving/AnalyzedWorld", "<init>",
-                "(Lcom/google/common/base/Supplier;Ljava/util/List;)V"));
+                "(Lcom/google/common/base/Supplier;Ljava/util/List;"
+                        + "Lorg/glowroot/weaving/ExtraBootResourceFinder;)V"));
         // "call" WeavingClassFileTransformer constructor
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/glowroot/weaving/WeavingClassFileTransformer", "<init>",

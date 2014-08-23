@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.net.URISyntaxException;
 
+import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.markers.ThreadSafe;
@@ -31,17 +32,19 @@ import org.glowroot.markers.ThreadSafe;
 @ThreadSafe
 public class ConfigModule {
 
+    private final PluginCache pluginCache;
     private final PluginDescriptorCache pluginDescriptorCache;
     private final ConfigService configService;
 
     public ConfigModule(File dataDir, @Nullable Instrumentation instrumentation,
-            @Nullable PluginResourceFinder pluginResourceFinder, boolean viewerModeEnabled)
-            throws IOException, URISyntaxException {
+            @Nullable File glowrootJarFile, boolean viewerModeEnabled) throws IOException,
+            URISyntaxException {
+        pluginCache = new PluginCache(glowrootJarFile);
         if (viewerModeEnabled) {
-            pluginDescriptorCache = PluginDescriptorCache.createInViewerMode(pluginResourceFinder);
+            pluginDescriptorCache = PluginDescriptorCache.createInViewerMode(pluginCache);
         } else {
-            pluginDescriptorCache =
-                    PluginDescriptorCache.create(pluginResourceFinder, instrumentation, dataDir);
+            pluginDescriptorCache = PluginDescriptorCache.create(pluginCache, instrumentation,
+                    dataDir);
         }
         configService = new ConfigService(dataDir, pluginDescriptorCache);
     }
@@ -52,5 +55,9 @@ public class ConfigModule {
 
     public ConfigService getConfigService() {
         return configService;
+    }
+
+    public ImmutableList<File> getPluginJars() {
+        return pluginCache.getPluginJars();
     }
 }

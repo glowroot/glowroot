@@ -83,7 +83,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         Supplier<ImmutableList<Advice>> advisorsSupplier =
                 Suppliers.ofInstance(ImmutableList.copyOf(advisors));
         Weaver weaver = new Weaver(advisorsSupplier, mixinTypes,
-                new AnalyzedWorld(advisorsSupplier, mixinTypes), weavingTimerService,
+                new AnalyzedWorld(advisorsSupplier, mixinTypes, null), weavingTimerService,
                 metricWrapperMethods);
         this.weaver = weaver;
     }

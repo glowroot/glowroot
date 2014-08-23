@@ -23,16 +23,13 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -64,16 +61,20 @@ public class PluginDescriptorCache {
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
 
-    static PluginDescriptorCache create(@Nullable PluginResourceFinder pluginResourceFinder,
+    static PluginDescriptorCache create(PluginCache pluginCache,
             @Nullable Instrumentation instrumentation, File dataDir) throws IOException,
             URISyntaxException {
-        List<PluginDescriptor> pluginDescriptors = readPluginDescriptors(pluginResourceFinder);
+        List<PluginDescriptor> pluginDescriptors = readPluginDescriptors(pluginCache);
         List<MixinType> mixinTypes = Lists.newArrayList();
         List<Advice> advisors = Lists.newArrayList();
         Map<Advice, LazyDefinedClass> lazyAdvisors = Maps.newHashMap();
         // use temporary class loader so @Pointcut classes won't be defined for real until
         // PointcutClassVisitor is ready to weave them
-        ClassLoader tempIsolatedClassLoader = new IsolatedClassLoader(pluginResourceFinder);
+        URL[] pluginJars = new URL[pluginCache.getPluginJars().size()];
+        for (int i = 0; i < pluginCache.getPluginJars().size(); i++) {
+            pluginJars[i] = pluginCache.getPluginJars().get(i).toURI().toURL();
+        }
+        ClassLoader tempIsolatedClassLoader = new IsolatedClassLoader(pluginJars);
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             for (String aspect : pluginDescriptor.getAspects()) {
                 try {
@@ -109,10 +110,9 @@ public class PluginDescriptorCache {
         return new PluginDescriptorCache(pluginDescriptors, mixinTypes, advisors);
     }
 
-    static PluginDescriptorCache createInViewerMode(
-            @Nullable PluginResourceFinder pluginResourceFinder) throws IOException,
+    static PluginDescriptorCache createInViewerMode(PluginCache pluginCache) throws IOException,
             URISyntaxException {
-        List<PluginDescriptor> pluginDescriptors = readPluginDescriptors(pluginResourceFinder);
+        List<PluginDescriptor> pluginDescriptors = readPluginDescriptors(pluginCache);
         List<PluginDescriptor> pluginDescriptorsWithoutAdvice = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             pluginDescriptorsWithoutAdvice.add(pluginDescriptor.copyWithoutAdvice());
@@ -168,17 +168,10 @@ public class PluginDescriptorCache {
         return getAdvisors();
     }
 
-    private static List<PluginDescriptor> readPluginDescriptors(
-            @Nullable PluginResourceFinder pluginResourceFinder) throws IOException,
-            URISyntaxException {
-        Set<URL> urls = Sets.newHashSet();
-        // add descriptors on the class path, this is primarily for integration tests
-        urls.addAll(getResources("META-INF/glowroot.plugin.json"));
-        if (pluginResourceFinder != null) {
-            urls.addAll(pluginResourceFinder.getDescriptorURLs());
-        }
+    private static List<PluginDescriptor> readPluginDescriptors(PluginCache pluginCache)
+            throws IOException, URISyntaxException {
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
-        for (URL url : urls) {
+        for (URL url : pluginCache.getDescriptorURLs()) {
             try {
                 String content = Resources.toString(url, Charsets.UTF_8);
                 PluginDescriptor pluginDescriptor =
@@ -214,14 +207,5 @@ public class PluginDescriptorCache {
             }
         }
         return mixinTypes;
-    }
-
-    private static ImmutableList<URL> getResources(String resourceName) throws IOException {
-        ClassLoader loader = PluginDescriptorCache.class.getClassLoader();
-        if (loader == null) {
-            return ImmutableList.copyOf(Iterators.forEnumeration(
-                    ClassLoader.getSystemResources(resourceName)));
-        }
-        return ImmutableList.copyOf(Iterators.forEnumeration(loader.getResources(resourceName)));
     }
 }

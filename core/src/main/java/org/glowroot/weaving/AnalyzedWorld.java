@@ -100,11 +100,16 @@ public class AnalyzedWorld {
     private final Supplier<ImmutableList<Advice>> advisors;
     private final ImmutableList<MixinType> mixinTypes;
 
+    @Nullable
+    private final ExtraBootResourceFinder extraBootResourceFinder;
+
     private final AnalyzedClass javaLangObjectAnalyzedClass;
 
-    public AnalyzedWorld(Supplier<ImmutableList<Advice>> advisors, List<MixinType> mixinTypes) {
+    public AnalyzedWorld(Supplier<ImmutableList<Advice>> advisors, List<MixinType> mixinTypes,
+            @Nullable ExtraBootResourceFinder extraBootResourceFinder) {
         this.advisors = advisors;
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
+        this.extraBootResourceFinder = extraBootResourceFinder;
         javaLangObjectAnalyzedClass = createAnalyzedClassPlanC(Object.class, advisors.get());
     }
 
@@ -358,6 +363,9 @@ public class AnalyzedWorld {
                     tempLoader = parentLoader;
                 }
             }
+        }
+        if (url == null && extraBootResourceFinder != null) {
+            url = extraBootResourceFinder.findResource(path);
         }
         if (url == null) {
             // what follows is just a best attempt in the sort-of-rare case when a custom class
