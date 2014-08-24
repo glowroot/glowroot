@@ -607,7 +607,7 @@ TraceRenderer = (function () {
         // order child nodes by sampleCount (descending)
         childNodes.sort(function (a, b) {
           if (metric) {
-            return (b.traceMetricCounts[metric] || 0) - (a.traceMetricCounts[metric] || 0);
+            return (b.metricCounts[metric] || 0) - (a.metricCounts[metric] || 0);
           }
           return b.sampleCount - a.sampleCount;
         });
@@ -733,8 +733,8 @@ TraceRenderer = (function () {
         }
       };
       for (i = 0; i < childNodes.length; i++) {
-        var traceMetricCounts = calculateMetricCounts(childNodes[i]);
-        $.each(traceMetricCounts, processMetric);
+        var metricCounts = calculateMetricCounts(childNodes[i]);
+        $.each(metricCounts, processMetric);
       }
     }
     node.metricCounts = mergedCounts;

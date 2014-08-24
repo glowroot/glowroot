@@ -96,7 +96,7 @@ glowroot.controller('TransactionsCtrl', [
             angular.forEach(data, function (dataSeries) {
               plotData.push({
                 data: dataSeries.data,
-                label: dataSeries.name ? dataSeries.name : 'Other'
+                label: dataSeries.metricName ? dataSeries.metricName : 'Other'
               });
             });
             plot.setData(plotData);
