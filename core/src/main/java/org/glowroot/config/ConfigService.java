@@ -363,6 +363,16 @@ public class ConfigService {
         notifyAllPluginConfigListeners();
     }
 
+    // the method below is only used by test harness (LocalContainer), so that tests will still
+    // succeed even if core is shaded (e.g. compiled from maven) and test-harness is compiled
+    // against unshaded core (e.g. compiled previously in IDE)
+    //
+    // don't return ImmutableList
+    @OnlyUsedByTests
+    public List<PointcutConfig> getPointcutConfigsNeverShaded() {
+        return config.getPointcutConfigs();
+    }
+
     private static Config loadConfig(File configFile, PluginDescriptorCache pluginDescriptorCache)
             throws IOException {
         if (!configFile.exists()) {

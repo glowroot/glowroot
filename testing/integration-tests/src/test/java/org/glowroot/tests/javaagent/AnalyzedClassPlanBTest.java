@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -28,6 +30,9 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
+import org.glowroot.container.config.PointcutConfig;
+import org.glowroot.container.config.PointcutConfig.AdviceKind;
+import org.glowroot.container.config.PointcutConfig.MethodModifier;
 import org.glowroot.weaving.AnalyzedWorld;
 import org.glowroot.weaving.ClassNames;
 
@@ -42,10 +47,15 @@ public class AnalyzedClassPlanBTest {
     @BeforeClass
     public static void setUp() throws Exception {
         container = Containers.getSharedJavaagentContainer();
+        addPointcutConfig();
+        container.getConfigService().reweavePointcuts();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
+        // afterEachTest() will remove the pointcut configs, but still need to reweave here
+        // in order to get back to square one
+        container.getConfigService().reweavePointcuts();
         container.close();
     }
 
@@ -66,11 +76,23 @@ public class AnalyzedClassPlanBTest {
     @Test
     public void shouldLogWarningInAnalyzedWorldPlanB() throws Exception {
         // given
-        container.addExpectedLogMessage(AnalyzedWorld.class.getName(), "could not find resource "
-                + ClassNames.toInternalName(Y.class.getName()) + ".class");
+        container.addExpectedLogMessage(AnalyzedWorld.class.getName(),
+                Y.class.getName() + " was not woven with requested advice");
         // when
         container.executeAppUnderTest(ShouldLogWarningInAnalyzedWorldPlanB.class);
         // then
+    }
+
+    private static void addPointcutConfig() throws Exception {
+        PointcutConfig config = new PointcutConfig();
+        config.setClassName("org.glowroot.tests.javaagent.AnalyzedClassPlanBTest$Y");
+        config.setMethodName("y");
+        config.setMethodParameterTypes(ImmutableList.<String>of());
+        config.setMethodReturnType("");
+        config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
+        config.setAdviceKind(AdviceKind.METRIC);
+        config.setMetricName("y");
+        container.getConfigService().addPointcutConfig(config);
     }
 
     public static class ShouldNotLogWarningInAnalyzedWorldPlanB implements AppUnderTest {
@@ -136,7 +158,9 @@ public class AnalyzedClassPlanBTest {
         }
     }
 
-    public static class Y {}
+    public static class Y {
+        public void y() {}
+    }
 
     public static class Z extends Y {}
 }

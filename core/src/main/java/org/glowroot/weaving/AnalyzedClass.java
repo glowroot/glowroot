@@ -21,17 +21,13 @@ import java.util.List;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.Type;
 
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.NotThreadSafe;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker
@@ -92,16 +88,6 @@ public class AnalyzedClass {
 
     ImmutableList<String> getInterfaceNames() {
         return interfaceNames;
-    }
-
-    public Iterable<AnalyzedMethod> getMethodsExcludingNative() {
-        return Iterables.filter(analyzedMethods, new Predicate<AnalyzedMethod>() {
-            @Override
-            public boolean apply(@Nullable AnalyzedMethod analyzedMethod) {
-                checkNotNull(analyzedMethod);
-                return !Modifier.isNative(analyzedMethod.getModifiers());
-            }
-        });
     }
 
     List<AnalyzedMethod> getAnalyzedMethods() {

@@ -103,20 +103,24 @@ class AdminJsonService {
             classNames.add(pointcutConfig.getClassName());
         }
         Set<Class<?>> classes = Sets.newHashSet();
-        List<Class<?>> existingReweavableClasses = analyzedWorld.getClassesWithReweavableAdvice();
+        // need to remove these classes from AnalyzedWorld, otherwise if a subclass and its parent
+        // class are both in the list and the subclass is re-transformed first, it will use the
+        // old cached AnalyzedClass for its parent which will have the old AnalyzedMethod advisors
+        List<Class<?>> existingReweavableClasses =
+                analyzedWorld.getClassesWithReweavableAdvice(true);
+        // need to remove these classes from AnalyzedWorld, otherwise if a subclass and its parent
+        // class are both in the list and the subclass is re-transformed first, it will use the
+        // old cached AnalyzedClass for its parent which will have the old AnalyzedMethod advisors
         List<Class<?>> possibleNewReweavableClasses =
-                analyzedWorld.getExistingSubClasses(classNames);
+                analyzedWorld.getExistingSubClasses(classNames, true);
         classes.addAll(existingReweavableClasses);
         classes.addAll(possibleNewReweavableClasses);
         if (classes.isEmpty()) {
             return "{\"classes\":0}";
         }
-        // need to clear these classes from AnalyzedWorld, otherwise if a subclass and its parent
-        // class are both in the list and the subclass is re-transformed first, it will use the
-        // old cached AnalyzedClass for its parent which will have the old AnalyzedMethod advisors
-        analyzedWorld.clearClassesBeforeReweaving(classes);
         instrumentation.retransformClasses(Iterables.toArray(classes, Class.class));
-        List<Class<?>> updatedReweavableClasses = analyzedWorld.getClassesWithReweavableAdvice();
+        List<Class<?>> updatedReweavableClasses =
+                analyzedWorld.getClassesWithReweavableAdvice(false);
         // all existing reweavable classes were woven
         int count = existingReweavableClasses.size();
         // now add newly reweavable classes

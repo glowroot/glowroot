@@ -113,49 +113,21 @@ public class AnalyzedWorld {
         javaLangObjectAnalyzedClass = createAnalyzedClassPlanC(Object.class, advisors.get());
     }
 
-    public List<Class<?>> getClassesWithReweavableAdvice() {
+    public List<Class<?>> getClassesWithReweavableAdvice(boolean remove) {
         List<Class<?>> classes = Lists.newArrayList();
-        for (Entry<ClassLoader, ConcurrentMap<String, AnalyzedClass>> outerEntry : world
-                .asMap().entrySet()) {
-            for (Entry<String, AnalyzedClass> innerEntry : outerEntry.getValue().entrySet()) {
-                if (innerEntry.getValue().hasReweavableAdvice()) {
-                    try {
-                        classes.add(Class.forName(innerEntry.getKey(), false, outerEntry.getKey()));
-                    } catch (ClassNotFoundException e) {
-                        logger.warn(e.getMessage(), e);
-                    }
-                }
-            }
+        for (ClassLoader loader : world.asMap().keySet()) {
+            classes.addAll(getClassesWithReweavableAdvice(loader, remove));
         }
-        for (Entry<String, AnalyzedClass> entry : bootstrapLoaderWorld.entrySet()) {
-            if (entry.getValue().hasReweavableAdvice()) {
-                try {
-                    classes.add(Class.forName(entry.getKey(), false, null));
-                } catch (ClassNotFoundException e) {
-                    logger.warn(e.getMessage(), e);
-                }
-            }
-        }
+        classes.addAll(getClassesWithReweavableAdvice(null, remove));
         return classes;
     }
 
-    public void clearClassesBeforeReweaving(Iterable<Class<?>> classes) {
-        for (Class<?> clazz : classes) {
-            ClassLoader loader = clazz.getClassLoader();
-            if (loader == null) {
-                bootstrapLoaderWorld.remove(clazz.getName());
-            } else {
-                world.getUnchecked(loader).remove(clazz.getName());
-            }
-        }
-    }
-
-    public List<Class<?>> getExistingSubClasses(Set<String> rootClassNames) {
+    public List<Class<?>> getExistingSubClasses(Set<String> rootClassNames, boolean remove) {
         List<Class<?>> classes = Lists.newArrayList();
         for (ClassLoader loader : world.asMap().keySet()) {
-            classes.addAll(getExistingSubClasses(rootClassNames, loader));
+            classes.addAll(getExistingSubClasses(rootClassNames, loader, remove));
         }
-        classes.addAll(getExistingSubClasses(rootClassNames, null));
+        classes.addAll(getExistingSubClasses(rootClassNames, null, remove));
         return classes;
     }
 
@@ -251,16 +223,43 @@ public class AnalyzedWorld {
         return analyzedClass;
     }
 
-    private List<Class<?>> getExistingSubClasses(Set<String> rootClassNames,
-            @Nullable ClassLoader loader) {
+    private List<Class<?>> getClassesWithReweavableAdvice(@Nullable ClassLoader loader,
+            boolean remove) {
         List<Class<?>> classes = Lists.newArrayList();
-        for (AnalyzedClass analyzedClass : getAnalyzedClasses(loader).values()) {
+        ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses = getAnalyzedClasses(loader);
+        for (Entry<String, AnalyzedClass> innerEntry : loaderAnalyzedClasses.entrySet()) {
+            if (innerEntry.getValue().hasReweavableAdvice()) {
+                try {
+                    classes.add(Class.forName(innerEntry.getKey(), false, loader));
+                } catch (ClassNotFoundException e) {
+                    logger.warn(e.getMessage(), e);
+                }
+            }
+        }
+        if (remove) {
+            for (Class<?> clazz : classes) {
+                loaderAnalyzedClasses.remove(clazz.getName());
+            }
+        }
+        return classes;
+    }
+
+    private List<Class<?>> getExistingSubClasses(Set<String> rootClassNames,
+            @Nullable ClassLoader loader, boolean remove) {
+        List<Class<?>> classes = Lists.newArrayList();
+        ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses = getAnalyzedClasses(loader);
+        for (AnalyzedClass analyzedClass : loaderAnalyzedClasses.values()) {
             if (isSubClass(analyzedClass, rootClassNames, loader)) {
                 try {
                     classes.add(Class.forName(analyzedClass.getName(), false, loader));
                 } catch (ClassNotFoundException e) {
                     logger.warn(e.getMessage(), e);
                 }
+            }
+        }
+        if (remove) {
+            for (Class<?> clazz : classes) {
+                loaderAnalyzedClasses.remove(clazz.getName());
             }
         }
         return classes;
@@ -393,18 +392,23 @@ public class AnalyzedWorld {
         if (analyzedClass == null) {
             // a class was loaded by Class.forName() above that was not previously loaded which
             // means weaving was bypassed since ClassFileTransformer.transform() is not re-entrant
-
-            // TODO inspect the class after loading to see if any advice even applies to it, if not
-            // then no need to log warning
-            logger.warn("could not find resource {}.class in class loader {}, so the class"
-                    + " had to be loaded using Class.forName() during weaving of one of its"
-                    + " subclasses, which means it was not woven itself since weaving is not"
-                    + " re-entrant", ClassNames.toInternalName(clazz.getName()), loader);
-            return createAnalyzedClassPlanC(clazz, advisors.get());
-        } else {
-            // the type was previously loaded so weaving was not bypassed, yay!
-            return analyzedClass;
+            analyzedClass = createAnalyzedClassPlanC(clazz, advisors.get());
+            for (AnalyzedMethod analyzedMethod : analyzedClass.getAnalyzedMethods()) {
+                if (!analyzedMethod.getAdvisors().isEmpty()) {
+                    logger.warn("{} was not woven with requested advice (it was first encountered"
+                            + " during the weaving of one of its {} and the resource {}.class"
+                            + " could not be found in class loader {}, so {} had to be explicitly"
+                            + " loaded using Class.forName() in the middle of weaving the {},"
+                            + " which means it was not woven itself since weaving is not"
+                            + " re-entrant)", clazz.getName(),
+                            analyzedClass.isInterface() ? "implementations" : "subclasses",
+                            ClassNames.toInternalName(clazz.getName()), loader, clazz.getName(),
+                            analyzedClass.isInterface() ? "implementation" : "subclass");
+                    break;
+                }
+            }
         }
+        return analyzedClass;
     }
 
     private ConcurrentMap<String, AnalyzedClass> getAnalyzedClasses(@Nullable ClassLoader loader) {
@@ -448,8 +452,8 @@ public class AnalyzedWorld {
                     exceptions.add(Type.getInternalName(exceptionType));
                 }
                 AnalyzedMethod analyzedMethod = AnalyzedMethod.from(method.getName(),
-                        parameterTypes,
-                        returnType, method.getModifiers(), null, exceptions, matchingAdvisors);
+                        parameterTypes, returnType, method.getModifiers(), null, exceptions,
+                        matchingAdvisors);
                 analyzedMethods.add(analyzedMethod);
             }
         }

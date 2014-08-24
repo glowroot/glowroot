@@ -44,13 +44,15 @@ public class ReweaveCountTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
+        // afterEachTest() will remove the pointcut configs, but still need to reweave here
+        // in order to get back to square one
+        container.getConfigService().reweavePointcuts();
         container.close();
     }
 
     @After
     public void afterEachTest() throws Exception {
         container.checkAndReset();
-        container.getConfigService().reweavePointcuts();
     }
 
     @Test
