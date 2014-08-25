@@ -108,13 +108,7 @@
     <select class="form-control profile-filter input-xlarge hide" onchange="this.blur()"
             style="margin: 4px;">
     </select>
-    <div class="profile-common hide">
-      <span class="inline-block unexpanded-content glowroot-link-color">common base</span>
-      {{! standard expanded-content bottom margin is not needed since nothing can be expanded
-          directly below using span so background will stretch beyond page border if needed }}
-      <span class="inline-block expanded-content hide" style="margin-bottom: 0;"></span>
-    </div>
-    <div class="profile-interesting indent1"></div>
+    <div class="profile indent1"></div>
   </div>
 {{/ifExistenceYes}}
 {{#ifExistenceExpired profileExistence}}

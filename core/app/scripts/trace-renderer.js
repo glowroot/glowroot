@@ -578,10 +578,12 @@ TraceRenderer = (function () {
         rootNodeSampleCount = rootNode.sampleCount;
         nodeSampleCount = node.sampleCount;
       }
-      if (nodeSampleCount < rootNodeSampleCount) {
-        level++;
+      var nodes = [ node ];
+      while (node.childNodes && node.childNodes.length === 1) {
+        node = node.childNodes[0];
+        nodes.push(node);
       }
-      var ret = '<span class="inline-block" style="width: 4em; margin-left: ' + ((level / 3)) + 'em;">';
+      var ret = '<span class="inline-block" style="width: 4em; margin-left: ' + level + 'em;">';
       var samplePercentage = (nodeSampleCount / rootNodeSampleCount) * 100;
       ret += samplePercentage.toFixed(1);
       // the space after the % is actually important when highlighting a block of stack trace
@@ -589,17 +591,35 @@ TraceRenderer = (function () {
       // space gives separation between the percentage and the stack trace element and so eclipse is
       // still able to understand the stack trace
       ret += '% </span>';
-      ret += escapeHtml(node.stackTraceElement) + '<br>';
-      if (node.leafThreadState) {
-        // each indent is 1/3em, so adding extra .333em to indent thread state
-        ret += '<span class="inline-block" style="width: 4.333em; margin-left: ' + ((level / 3)) + 'em;">';
+      if (nodes.length === 1) {
+        ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
+        ret += '<span class="inline-block" style="padding: 1px 1em;">';
+        ret += escapeHtml(node.stackTraceElement);
+        ret += '</span><br>';
+      } else {
+        ret += '<span>';
+        ret += '<span class="inline-block unexpanded-content" style="vertical-align: top;">';
+        ret += '<span class="glowroot-link-color"><strong>...</strong> </span>';
+        ret += escapeHtml(nodes[nodes.length - 1].stackTraceElement) + '<br>';
         ret += '</span>';
+        ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
+        ret += '<span class="inline-block expanded-content hide" style="vertical-align: top;">';
+        $.each(nodes, function (index, node) {
+          ret += escapeHtml(node.stackTraceElement) + '<br>';
+        });
+        ret += '</span>';
+        ret += '</span><br>';
+      }
+      if (node.leafThreadState) {
+        ret += '<span class="inline-block" style="width: 4em; margin-left: ' + (level + 2) + 'em;">';
+        ret += '</span>';
+        ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
+        ret += '<span class="inline-block" style="padding: 1px 1em;">';
         ret += escapeHtml(node.leafThreadState);
-        ret += '<br>';
+        ret += '</span><br>';
       }
       if (node.ellipsed) {
-        // each indent is 1/3em, so adding extra .333em to indent thread state
-        ret += '<span class="inline-block" style="width: 4.666em; margin-left: ' + ((level / 3)) + 'em;">';
+        ret += '<span class="inline-block" style="width: 4em; margin-left: ' + (level + 3) + 'em;">';
         ret += '</span>...<br>';
       }
       if (node.childNodes) {
@@ -611,9 +631,8 @@ TraceRenderer = (function () {
           }
           return b.sampleCount - a.sampleCount;
         });
-        var i;
-        for (i = 0; i < childNodes.length; i++) {
-          ret += curr(childNodes[i], level, metric);
+        for (var i = 0; i < childNodes.length; i++) {
+          ret += curr(childNodes[i], level + 1, metric);
         }
       }
       return ret;
@@ -621,33 +640,9 @@ TraceRenderer = (function () {
 
     var $selector = $(selector);
     // first time only, process merged stack tree and populate dropdown
-    var interestingRootNode = rootNode;
-    var uninterestingHtml = '';
-    while (true) {
-      if (interestingRootNode.childNodes.length > 1) {
-        break;
-      }
-      var childNode = interestingRootNode.childNodes[0];
-      if (childNode.leafThreadState) {
-        interestingRootNode = rootNode;
-        uninterestingHtml = '';
-        break;
-      }
-      // the space after the % is actually important when highlighting a block of stack trace
-      // elements in the ui and copy pasting into the eclipse java stack trace console, because
-      // the space gives separation between the percentage and the stack trace element and so
-      // eclipse is still able to understand the stack trace
-      uninterestingHtml += '<span class="inline-block" style="width: 4em;">100.0% </span>' +
-          interestingRootNode.stackTraceElement + '<br>';
-      interestingRootNode = childNode;
-    }
     // build initial merged stack tree
-    var interestingHtml = curr(interestingRootNode, 0);
-    if (uninterestingHtml) {
-      $selector.find('.profile-common .expanded-content').html(uninterestingHtml);
-      $selector.find('.profile-common').removeClass('hide');
-    }
-    $selector.find('.profile-interesting').html(interestingHtml);
+    var html = curr(rootNode, 0);
+    $selector.find('.profile').html(html);
 
     var mergedCounts = calculateMetricCounts(rootNode);
     if (!$.isEmptyObject(mergedCounts)) {
@@ -703,8 +698,8 @@ TraceRenderer = (function () {
       });
       $profileFilter.change(function () {
         // update merged stack tree based on filter
-        var interestingHtml = curr(interestingRootNode, 0, $(this).val());
-        $selector.find('.profile-interesting').html(interestingHtml);
+        var html = curr(rootNode, 0, $(this).val());
+        $selector.find('.profile').html(html);
       });
     }
   }
