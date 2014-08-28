@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class DataSourceLockTest {
+public class DataDirLockTest {
 
     @Test
     public void shouldShutdown() throws Exception {
@@ -41,9 +41,8 @@ public class DataSourceLockTest {
         // when
         boolean exception = false;
         try {
-            // this test is only relevant using an external jvm for one of containers since H2
-            // transparently handles two connections to the same file inside the same jvm with no
-            // problem
+            // this test is only relevant using an external jvm for one of containers
+            // since the data dir lock is held globally by the jvm
             JavaagentContainer.createWithFileDb(dataDir);
         } catch (StartupFailedException e) {
             exception = true;

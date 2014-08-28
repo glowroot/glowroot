@@ -16,9 +16,12 @@
 package org.glowroot;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
 import java.net.URISyntaxException;
+import java.nio.channels.FileLock;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -32,6 +35,7 @@ import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -45,7 +49,6 @@ import org.glowroot.common.SpyingLogbackFilter;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.jvm.JvmModule;
-import org.glowroot.local.store.DataSource.DataSourceLockedException;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.ui.LocalUiModule;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -77,6 +80,9 @@ public class GlowrootModule {
     private final LocalUiModule uiModule;
     private final File dataDir;
 
+    private final RandomAccessFile dataDirLockFile;
+    private final FileLock dataDirFileLock;
+
     // this is used by tests to check that no warnings/errors are logged during tests
     private final boolean loggingSpy;
 
@@ -87,7 +93,30 @@ public class GlowrootModule {
         loggingSpy = Boolean.valueOf(properties.get("internal.logging.spy"));
         initStaticLoggerState(dataDir, loggingSpy);
 
-        // init config module first
+        // lock data dir
+        File tmpDir = new File(dataDir, "tmp");
+        File lockFile = new File(tmpDir, ".lock");
+        try {
+            Files.createParentDirs(lockFile);
+            Files.touch(lockFile);
+        } catch (IOException e) {
+            throw new StartupFailedException(e);
+        }
+        try {
+            dataDirLockFile = new RandomAccessFile(lockFile, "rw");
+            FileLock dataDirFileLock = dataDirLockFile.getChannel().tryLock();
+            if (dataDirFileLock == null) {
+                throw new DataDirLockedException();
+            }
+            this.dataDirFileLock = dataDirFileLock;
+        } catch (FileNotFoundException e) {
+            throw new StartupFailedException(e);
+        } catch (IOException e) {
+            throw new StartupFailedException(e);
+        }
+        lockFile.deleteOnExit();
+
+        // init config module
         try {
             configModule = new ConfigModule(dataDir, instrumentation, glowrootJarFile,
                     viewerModeEnabled);
@@ -142,8 +171,6 @@ public class GlowrootModule {
         try {
             storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
                     scheduledExecutor, viewerModeEnabled);
-        } catch (DataSourceLockedException e) {
-            throw new StartupFailedException(e, true);
         } catch (SQLException e) {
             throw new StartupFailedException(e);
         } catch (IOException e) {
@@ -251,7 +278,7 @@ public class GlowrootModule {
     }
 
     @OnlyUsedByTests
-    public void close() {
+    public void close() throws IOException {
         logger.debug("close()");
         uiModule.close();
         collectorModule.close();
@@ -262,31 +289,33 @@ public class GlowrootModule {
         if (shouldOverrideLogging()) {
             ((LoggerContext) LoggerFactory.getILoggerFactory()).reset();
         }
+        dataDirFileLock.release();
+        dataDirLockFile.close();
     }
 
     @VisibleForTesting
     @SuppressWarnings("serial")
     public static class StartupFailedException extends Exception {
 
-        private final boolean dataSourceLocked;
-
         private StartupFailedException(Throwable cause) {
             super(cause);
-            this.dataSourceLocked = false;
         }
 
         private StartupFailedException(String message) {
             super(message);
-            this.dataSourceLocked = false;
         }
 
-        private StartupFailedException(Throwable cause, boolean dataSourceLocked) {
-            super(cause);
-            this.dataSourceLocked = dataSourceLocked;
+        private StartupFailedException() {
+            super();
         }
+    }
 
-        public boolean isDataSourceLocked() {
-            return dataSourceLocked;
+    @VisibleForTesting
+    @SuppressWarnings("serial")
+    public static class DataDirLockedException extends StartupFailedException {
+
+        private DataDirLockedException() {
+            super();
         }
     }
 

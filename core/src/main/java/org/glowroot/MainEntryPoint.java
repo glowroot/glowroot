@@ -34,6 +34,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.GlowrootModule.DataDirLockedException;
 import org.glowroot.GlowrootModule.StartupFailedException;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
@@ -70,37 +71,23 @@ public class MainEntryPoint {
         File dataDir = DataDir.getDataDir(properties, glowrootJarFile);
         try {
             start(dataDir, properties, instrumentation, glowrootJarFile);
-        } catch (StartupFailedException e) {
-            if (e.isDataSourceLocked()) {
-                logDataSourceLockedException(dataDir);
-            } else {
-                // log error but don't re-throw which would prevent monitored app from starting
-                startupLogger.error("Glowroot not started: {}", e.getMessage(), e);
-            }
+        } catch (DataDirLockedException e) {
+            logDataDirLockedException(dataDir);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
         }
     }
 
-    static void runViewer(@Nullable File glowrootJarFile) throws StartupFailedException,
-            InterruptedException {
+    static void runViewer(@Nullable File glowrootJarFile) throws InterruptedException {
         ImmutableMap<String, String> properties = getGlowrootProperties();
         File dataDir = DataDir.getDataDir(properties, glowrootJarFile);
         String version = Version.getVersion();
         try {
             glowrootModule = new GlowrootModule(dataDir, properties, null, glowrootJarFile,
                     version, true);
-        } catch (StartupFailedException e) {
-            if (e.isDataSourceLocked()) {
-                // log nice message without stack trace for this common case
-                startupLogger.error("Viewer cannot start: database file {} is locked by another"
-                        + " process.", dataDir.getAbsolutePath());
-                // log stack trace at debug level
-                startupLogger.debug(e.getMessage(), e);
-            } else {
-                startupLogger.error("Viewer cannot start: {}", e.getMessage(), e);
-            }
+        } catch (DataDirLockedException e) {
+            logDataDirLockedException(dataDir);
             return;
         } catch (Throwable t) {
             startupLogger.error("Viewer cannot start: {}", t.getMessage(), t);
@@ -149,7 +136,7 @@ public class MainEntryPoint {
         return builder.build();
     }
 
-    private static void logDataSourceLockedException(File dataDir) {
+    private static void logDataDirLockedException(File dataDir) {
         // this is common when stopping tomcat since 'catalina.sh stop' launches a java process
         // to stop the tomcat jvm, and it uses the same JAVA_OPTS environment variable that may
         // have been used to specify '-javaagent:glowroot.jar', in which case Glowroot tries
@@ -162,8 +149,8 @@ public class MainEntryPoint {
         //
         // no need for logging in the special (but common) case described above
         if (!isTomcatStop()) {
-            startupLogger.error("Glowroot not started: database file {} is locked by another"
-                    + " process.", dataDir.getAbsolutePath());
+            startupLogger.error("Glowroot not started: data dir in used by another jvm process",
+                    dataDir.getAbsolutePath());
         }
     }
 
