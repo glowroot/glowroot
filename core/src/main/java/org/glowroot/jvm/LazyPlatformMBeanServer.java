@@ -55,7 +55,8 @@ public class LazyPlatformMBeanServer {
             if (index != -1) {
                 command = command.substring(0, index);
             }
-            jbossModules = command.endsWith("jboss-modules.jar");
+            jbossModules = command.equals("org.jboss.modules.Main")
+                    || command.endsWith("jboss-modules.jar");
         }
     }
 

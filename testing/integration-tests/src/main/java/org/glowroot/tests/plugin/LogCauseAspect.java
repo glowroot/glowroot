@@ -17,9 +17,9 @@ package org.glowroot.tests.plugin;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.Span;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -35,10 +35,6 @@ public class LogCauseAspect {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
-
-    private static final Exception cause1 = new NullPointerException("Cause 1");
-    private static final Exception cause2 = new IllegalStateException("Cause 2", cause1);
-    private static final Exception cause3 = new IllegalArgumentException("Cause 3", cause2);
 
     @Pointcut(className = "org.glowroot.tests.LogCause", methodName = "log",
             methodParameterTypes = {"java.lang.String"}, metricName = "log error")
@@ -60,6 +56,9 @@ public class LogCauseAspect {
 
         @OnAfter
         public static void onAfter(@BindTraveler Span span) {
+            Exception cause1 = new NullPointerException("Cause 1");
+            Exception cause2 = new IllegalStateException("Cause 2", cause1);
+            Exception cause3 = new IllegalArgumentException("Cause 3", cause2);
             span.endWithError(ErrorMessage.from(new IllegalStateException(cause3)));
         }
     }

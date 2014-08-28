@@ -34,7 +34,6 @@ import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.trace.ExceptionInfo;
 import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.tests.plugin.LogCauseAspect;
 import org.glowroot.tests.plugin.LogCauseAspect.LogCauseAdvice;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -122,20 +121,20 @@ public class ErrorCaptureTest {
         ExceptionInfo cause = exception.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
         assertThat(cause.getStackTrace().get(0)).startsWith(
-                LogCauseAspect.class.getName() + ".<clinit>(");
+                LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
         Set<Integer> causeLineNumbers = Sets.newHashSet();
         causeLineNumbers.add(getFirstLineNumber(cause));
         cause = cause.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: Cause 2");
         assertThat(cause.getStackTrace().get(0)).startsWith(
-                LogCauseAspect.class.getName() + ".<clinit>(");
+                LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
         causeLineNumbers.add(getFirstLineNumber(cause));
         cause = cause.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.NullPointerException: Cause 1");
         assertThat(cause.getStackTrace().get(0)).startsWith(
-                LogCauseAspect.class.getName() + ".<clinit>(");
+                LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
         causeLineNumbers.add(getFirstLineNumber(cause));
         // make sure they are all different line numbers

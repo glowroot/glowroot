@@ -60,7 +60,7 @@ public class MainEntryPoint {
     public static void premain(Instrumentation instrumentation, @Nullable File glowrootJarFile) {
         if (LazyPlatformMBeanServer.isJbossModules()) {
             String jbossModulesSystemPkgs = System.getProperty("jboss.modules.system.pkgs");
-            if (!Strings.isNullOrEmpty(jbossModulesSystemPkgs)) {
+            if (Strings.isNullOrEmpty(jbossModulesSystemPkgs)) {
                 jbossModulesSystemPkgs = "org.glowroot";
             } else {
                 jbossModulesSystemPkgs += ",org.glowroot";

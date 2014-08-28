@@ -48,6 +48,7 @@ import org.glowroot.common.Clock;
 import org.glowroot.common.SpyingLogbackFilter;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
+import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.ui.LocalUiModule;
@@ -182,6 +183,19 @@ public class GlowrootModule {
                 viewerModeEnabled);
         // now inject the real TraceCollector into the proxy
         traceCollectorProxy.setInstance(collectorModule.getTraceCollector());
+        // now init plugins to give them a chance to do something in their static initializer
+        // e.g. append their package to jboss.modules.system.pkgs
+        for (PluginDescriptor pluginDescriptor : configModule.getPluginDescriptorCache()
+                .getPluginDescriptors()) {
+            for (String aspect : pluginDescriptor.getAspects()) {
+                try {
+                    Class.forName(aspect, true, GlowrootModule.class.getClassLoader());
+                } catch (ClassNotFoundException e) {
+                    // this would have already been logged as a warning during advice construction
+                    logger.debug(e.getMessage(), e);
+                }
+            }
+        }
         uiModule = new LocalUiModule(ticker, clock, dataDir, jvmModule, configModule,
                 storageModule, collectorModule, traceModule, instrumentation, properties, version);
         this.dataDir = dataDir;

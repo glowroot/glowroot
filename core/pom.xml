@@ -382,6 +382,11 @@
                            wildfly which wants to do some setup before jul is initialized) -->
                       <pattern>java.util.logging</pattern>
                       <shadedPattern>org.glowroot.shaded.jul</shadedPattern>
+                      <excludes>
+                        <!-- don't shade the system property key "java.util.logging.manager"
+                             (unshaded string is needed in LazyPlatformMBeanServer) -->
+                        <exclude>java.util.logging.manager</exclude>
+                      </excludes>
                     </relocation>
                     <relocation>
                       <pattern>ch.qos.logback.core</pattern>
