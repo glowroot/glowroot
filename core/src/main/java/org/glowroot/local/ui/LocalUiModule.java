@@ -98,9 +98,8 @@ public class LocalUiModule {
                 collectorModule.getFixedTransactionPointIntervalSeconds());
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configService, clock, layoutJsonService);
-        String baseHref = getBaseHref(properties);
-        IndexHtmlService indexHtmlService =
-                new IndexHtmlService(baseHref, httpSessionManager, layoutJsonService);
+        IndexHtmlHttpService indexHtmlHttpService =
+                new IndexHtmlHttpService(httpSessionManager, layoutJsonService);
         transactionCommonService = new TransactionCommonService(transactionPointDao);
         traceCommonService =
                 new TraceCommonService(snapshotDao, traceRegistry, traceCollector, clock, ticker);
@@ -148,7 +147,7 @@ public class LocalUiModule {
         }
         String bindAddress = getBindAddress(properties);
         httpServer = buildHttpServer(bindAddress, port, numWorkerThreads, httpSessionManager,
-                indexHtmlService, layoutJsonService, traceDetailHttpService,
+                indexHtmlHttpService, layoutJsonService, traceDetailHttpService,
                 transactionExportHttpService, traceExportHttpService, jsonServices);
         if (httpServer != null) {
             configJsonService.setHttpServer(httpServer);
@@ -188,16 +187,6 @@ public class LocalUiModule {
         }
     }
 
-    private static String getBaseHref(Map<String, String> properties) {
-        // empty check to support parameterized script, e.g. -Dglowroot.ui.base=${somevar}
-        String baseHref = properties.get("ui.base");
-        if (Strings.isNullOrEmpty(baseHref)) {
-            return "/";
-        } else {
-            return baseHref;
-        }
-    }
-
     private static String getBindAddress(Map<String, String> properties) {
         // empty check to support parameterized script, e.g. -Dglowroot.ui.bind.address=${somevar}
         String bindAddress = properties.get("ui.bind.address");
@@ -210,7 +199,7 @@ public class LocalUiModule {
 
     @Nullable
     private static HttpServer buildHttpServer(String bindAddress, int port, int numWorkerThreads,
-            HttpSessionManager httpSessionManager, IndexHtmlService indexHtmlService,
+            HttpSessionManager httpSessionManager, IndexHtmlHttpService indexHtmlHttpService,
             LayoutJsonService layoutJsonService, TraceDetailHttpService snapshotHttpService,
             TransactionExportHttpService transactionExportHttpService,
             TraceExportHttpService traceExportHttpService, List<Object> jsonServices) {
@@ -219,18 +208,19 @@ public class LocalUiModule {
 
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
-        uriMappings.put(Pattern.compile("^/$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/transactions$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/errors$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/traces$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/jvm/.*$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/config/.*$"), resourceBase + "/index.html");
-        uriMappings.put(Pattern.compile("^/login$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/$"), indexHtmlHttpService);
+        uriMappings.put(Pattern.compile("^/transactions$"), indexHtmlHttpService);
+        uriMappings.put(Pattern.compile("^/errors$"), indexHtmlHttpService);
+        uriMappings.put(Pattern.compile("^/traces$"), indexHtmlHttpService);
+        uriMappings.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
+        uriMappings.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
+        uriMappings.put(Pattern.compile("^/login$"), indexHtmlHttpService);
         // internal resources
         uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");
         uriMappings.put(Pattern.compile("^/styles/(.*)$"), resourceBase + "/styles/$1");
         uriMappings.put(Pattern.compile("^/fonts/(.*)$"), resourceBase + "/fonts/$1");
-        uriMappings.put(Pattern.compile("^/favicon\\.ico$"), resourceBase + "/favicon.ico");
+        uriMappings.put(Pattern.compile("^/favicon\\.([0-9a-f]+)\\.ico$"),
+                resourceBase + "/favicon.$1.ico");
         uriMappings.put(Pattern.compile("^/sources/(.*)$"), resourceBase + "/sources/$1");
         // services
         // export services are not bound under /backend since the export urls are visible to users
@@ -241,8 +231,8 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/backend/trace/profile$"), snapshotHttpService);
         uriMappings.put(Pattern.compile("^/backend/trace/outlier-profile$"), snapshotHttpService);
         try {
-            return new HttpServer(bindAddress, port, numWorkerThreads, indexHtmlService,
-                    layoutJsonService, uriMappings.build(), httpSessionManager, jsonServices);
+            return new HttpServer(bindAddress, port, numWorkerThreads, layoutJsonService,
+                    uriMappings.build(), httpSessionManager, jsonServices);
         } catch (ChannelException e) {
             // binding to the specified port failed and binding to port 0 (any port) failed
             logger.error("error binding to any port, the user interface will not be available", e);

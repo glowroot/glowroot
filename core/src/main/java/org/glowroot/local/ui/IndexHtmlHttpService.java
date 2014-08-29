@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,12 @@ import java.util.regex.Pattern;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -35,23 +37,22 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class IndexHtmlService {
+class IndexHtmlHttpService implements HttpService {
 
-    private final String baseHref;
     private final HttpSessionManager httpSessionManager;
     private final LayoutJsonService layoutJsonService;
 
-    IndexHtmlService(String baseHref, HttpSessionManager httpSessionManager,
+    IndexHtmlHttpService(HttpSessionManager httpSessionManager,
             LayoutJsonService layoutJsonService) {
-        this.baseHref = baseHref;
         this.httpSessionManager = httpSessionManager;
         this.layoutJsonService = layoutJsonService;
     }
 
-    HttpResponse handleRequest(HttpRequest request) throws IOException {
+    @Override
+    public HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
         URL url = Resources.getResource("org/glowroot/local/ui/app-dist/index.html");
         String indexHtml = Resources.toString(url, Charsets.UTF_8);
-        Pattern scriptPattern = Pattern.compile("<script></script>");
+        Pattern scriptPattern = Pattern.compile("<base href=\"/\">");
         Matcher scriptMatcher = scriptPattern.matcher(indexHtml);
         String layout;
         if (httpSessionManager.needsAuthentication(request)) {
@@ -59,12 +60,21 @@ class IndexHtmlService {
         } else {
             layout = layoutJsonService.getLayout();
         }
-        indexHtml = scriptMatcher.replaceFirst("<script>var layout=" + layout + ";</script>");
-        if (!baseHref.equals("/")) {
-            Pattern baseHrefPattern = Pattern.compile("<base href=\"/\">");
-            Matcher baseHrefMatcher = baseHrefPattern.matcher(indexHtml);
-            indexHtml = baseHrefMatcher.replaceFirst("<base href=\"" + baseHref + "\">");
+        QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
+        String requestPath = decoder.getPath();
+        String baseHrefScript = "var path=location.pathname;";
+        if (requestPath.equals("/")) {
+            // edge case, if request uri is "/", the location.pathname may end with "/" or not
+            baseHrefScript += "if(!path||path.slice(-1)!=='/')path+='/';";
         }
+        baseHrefScript += "var base=path.substring(0,path.length-" + requestPath.length() + ");"
+                + "document.write('<base href=\"'+location.protocol+'//'"
+                + "+location.host+base+'/\"/>');";
+        // embed script in IIFE to not polute global vars
+        baseHrefScript = "(function(){" + baseHrefScript + "}());";
+        String layoutScript = "var layout=" + layout + ";";
+        indexHtml = scriptMatcher.replaceFirst("<script>" + baseHrefScript + layoutScript
+                + "</script>");
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         HttpServices.preventCaching(response);
         response.headers().set(Names.CONTENT_TYPE, "text/html; charset=UTF-8");

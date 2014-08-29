@@ -24,15 +24,17 @@
   <title>Glowroot</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- this base href tag is replaced with server-side dynamic base href tag plus layout json object
+       (see IndexHtmlService.java) -->
   <base href="/">
+
+  <!-- this is needed when base href is not / -->
+  <link rel="shortcut icon" href="favicon.ico">
 
   <!-- build:css({.tmp,.}) styles/main.css -->
   <link rel="stylesheet" href="bower_components/qtip2/jquery.qtip.css">
   <link rel="stylesheet" href="styles/main.css">
   <!-- endbuild -->
-
-  <!-- placeholder for server-side injected data, see IndexHtmlService.java -->
-  <script></script>
 </head>
 <body ng-app="glowroot"
       id="ng-app">

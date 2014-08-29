@@ -114,7 +114,6 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
 
     private final ChannelGroup allChannels;
 
-    private final IndexHtmlService indexHtmlService;
     private final LayoutJsonService layoutJsonService;
     private final ImmutableMap<Pattern, Object> uriMappings;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
@@ -123,10 +122,9 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     private final ThreadLocal</*@Nullable*/Channel> currentChannel =
             new ThreadLocal</*@Nullable*/Channel>();
 
-    HttpServerHandler(IndexHtmlService indexHtmlService, LayoutJsonService layoutJsonService,
+    HttpServerHandler(LayoutJsonService layoutJsonService,
             ImmutableMap<Pattern, Object> uriMappings, HttpSessionManager httpSessionManager,
             List<Object> jsonServices) {
-        this.indexHtmlService = indexHtmlService;
         this.layoutJsonService = layoutJsonService;
         this.uriMappings = uriMappings;
         this.httpSessionManager = httpSessionManager;
@@ -305,11 +303,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             logger.warn("path {} has unexpected extension: {}", path, extension);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
-        if (path.endsWith("/ui/app-dist/index.html")) {
-            return indexHtmlService.handleRequest(request);
-        }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        if (path.endsWith("/ui/app-dist/favicon.ico")) {
+        if (path.startsWith("org/glowroot/local/ui/app-dist/favicon.")) {
             response.headers().add(Names.EXPIRES, new Date(System.currentTimeMillis() + ONE_DAY));
         } else if (path.endsWith(".js.map") || path.startsWith("/sources/")) {
             // javascript source maps and source files are not versioned
