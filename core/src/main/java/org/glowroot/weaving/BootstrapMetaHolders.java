@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Lists;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.objectweb.asm.Type;
 
 import org.glowroot.common.Reflections;
@@ -141,7 +141,7 @@ public class BootstrapMetaHolders {
 
         private final Type classMetaType;
         private final Type type;
-        @Nullable
+        @MonotonicNonNull
         private volatile Object classMeta;
 
         private ClassMetaHolder(Type classMetaType, Type type) {
@@ -184,7 +184,7 @@ public class BootstrapMetaHolders {
         private final Type type;
         private final Type returnType;
         private final List<Type> parameterTypes;
-        @Nullable
+        @MonotonicNonNull
         private volatile Object methodMeta;
 
         private MethodMetaHolder(Type methodMetaType, Type type, Type returnType,

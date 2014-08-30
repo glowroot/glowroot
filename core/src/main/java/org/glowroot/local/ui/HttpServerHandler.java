@@ -417,11 +417,13 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         try {
             JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
-            Throwable rootCause = e;
-            while (rootCause.getCause() != null) {
-                rootCause = rootCause.getCause();
+            Throwable cause = e;
+            Throwable childCause = cause.getCause();
+            while (childCause != null) {
+                cause = childCause;
+                childCause = cause.getCause();
             }
-            jg.writeStringField("message", rootCause.getMessage());
+            jg.writeStringField("message", cause.getMessage());
             jg.writeStringField("stackTrace", sw.toString());
             jg.writeEndObject();
             jg.close();

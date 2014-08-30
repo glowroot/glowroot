@@ -68,10 +68,11 @@ public class PluginServicesRegistry {
     @UsedByReflection
     @Nullable
     public static PluginServices get(@Nullable String pluginId) {
-        if (INSTANCE == null) {
+        PluginServicesRegistry instanceLocal = INSTANCE;
+        if (instanceLocal == null) {
             return null;
         }
-        return INSTANCE.getPluginServices(pluginId);
+        return instanceLocal.getPluginServices(pluginId);
     }
 
     static void initStaticState(PluginServicesFactory pluginServicesFactory) {

@@ -173,19 +173,19 @@ class Weaver {
 
     private static class JSRInlinerClassVisitor extends ClassVisitor {
 
+        private final ClassVisitor cv;
+
         private JSRInlinerClassVisitor(ClassVisitor cv) {
             super(ASM5, cv);
+            this.cv = cv;
         }
 
         @Override
         @Nullable
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String/*@Nullable*/[] exceptions) {
-            if (cv != null) {
-                MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
-                return new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
-            }
-            return null;
+            MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
+            return new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
         }
     }
 

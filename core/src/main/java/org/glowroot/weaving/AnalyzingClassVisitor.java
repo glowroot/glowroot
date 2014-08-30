@@ -26,6 +26,7 @@ import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -59,7 +60,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     private AnalyzedClass./*@MonotonicNonNull*/Builder analyzedClassBuilder;
 
-    @Nullable
+    @MonotonicNonNull
     private AnalyzedClass analyzedClass;
 
     public AnalyzingClassVisitor(ImmutableList<Advice> advisors,

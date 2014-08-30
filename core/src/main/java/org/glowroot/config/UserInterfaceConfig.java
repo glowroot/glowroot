@@ -201,9 +201,11 @@ public class UserInterfaceConfig {
         public UserInterfaceConfig build() throws GeneralSecurityException,
                 CurrentPasswordIncorrectException {
             String passwordHash;
-            if (currentPassword != null && newPassword != null) {
-                passwordHash = verifyAndGenerateNewPasswordHash(currentPassword, newPassword,
-                        originalPasswordHash);
+            String currentPasswordLocal = currentPassword;
+            String newPasswordLocal = newPassword;
+            if (currentPasswordLocal != null && newPasswordLocal != null) {
+                passwordHash = verifyAndGenerateNewPasswordHash(currentPasswordLocal,
+                        newPasswordLocal, originalPasswordHash);
             } else {
                 // no change
                 passwordHash = originalPasswordHash;

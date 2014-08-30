@@ -29,6 +29,7 @@ import javax.management.QueryExp;
 import javax.management.ReflectionException;
 
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +61,7 @@ public class LazyPlatformMBeanServer {
         }
     }
 
-    @Nullable
+    @MonotonicNonNull
     private volatile MBeanServer mbeanServer;
 
     public void getObjectInstance(ObjectName name) throws InstanceNotFoundException,

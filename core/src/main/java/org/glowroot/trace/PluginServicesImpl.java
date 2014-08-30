@@ -22,6 +22,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +88,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private volatile int maxSpans;
     private volatile boolean threadInfoEnabled;
     private volatile boolean gcInfoEnabled;
-    @Nullable
+    @MonotonicNonNull
     private volatile PluginConfig pluginConfig;
 
     static PluginServicesImpl create(TraceRegistry traceRegistry, TraceCollector traceCollector,
@@ -394,8 +395,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 enabled = generalConfig.isEnabled();
             } else {
                 enabled = generalConfig.isEnabled() && pluginConfig.isEnabled();
+                this.pluginConfig = pluginConfig;
             }
-            this.pluginConfig = pluginConfig;
         }
         maxSpans = generalConfig.getMaxSpans();
         threadInfoEnabled = generalConfig.isThreadInfoEnabled();

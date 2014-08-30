@@ -37,7 +37,7 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
     private final DynamicAdviceMessageTemplate template;
     private final String[] resolvedReceiverPathParts;
     private final String[] resolvedArgPathParts;
-    private volatile String/*@Nullable*/[] resolvedReturnValuePathParts;
+    private volatile String/*@MonotonicNonNull*/[] resolvedReturnValuePathParts;
     private final String methodName;
 
     @UsedByGeneratedBytecode
