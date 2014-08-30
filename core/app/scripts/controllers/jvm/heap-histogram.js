@@ -148,13 +148,14 @@ glowroot.controller('JvmHeapHistogramCtrl', [
 
     function matchesFilter(className) {
       if ($scope.filterComparator === 'begins') {
-        return className.indexOf($scope.filterValue) === 0;
+        return className.toLowerCase().indexOf($scope.filterValue.toLowerCase()) === 0;
       }
       if ($scope.filterComparator === 'ends') {
-        return className.indexOf($scope.filterValue, className.length - $scope.filterValue.length) !== -1;
+        return className.toLowerCase().indexOf($scope.filterValue.toLowerCase(),
+                className.length - $scope.filterValue.length) !== -1;
       }
       // filterComparator === 'contains'
-      return className.indexOf($scope.filterValue) !== -1;
+      return className.toLowerCase().indexOf($scope.filterValue.toLowerCase()) !== -1;
     }
 
     $scope.$watch('filterComparator', function (newValue) {
