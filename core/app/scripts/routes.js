@@ -45,11 +45,12 @@ glowroot.config([
         };
       }
     ]);
-    $urlRouterProvider.otherwise('/transactions');
-    $stateProvider.state('transactions', {
-      url: '/transactions',
-      templateUrl: 'views/transactions.html',
-      controller: 'TransactionsCtrl',
+    $urlRouterProvider.otherwise('/performance');
+    $stateProvider.state('performance', {
+      url: '/performance',
+      templateUrl: 'views/performance.html',
+      controller: 'PerformanceCtrl',
+      // performance controllers needs to wait for layout when running under grunt serve
       resolve: waitForLayout
     });
     $stateProvider.state('errors', {

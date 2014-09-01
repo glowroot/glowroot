@@ -16,7 +16,7 @@
 
 /* global glowroot, angular, $ */
 
-glowroot.controller('TransactionsCtrl', [
+glowroot.controller('PerformanceCtrl', [
   '$scope',
   '$location',
   '$filter',
@@ -28,9 +28,9 @@ glowroot.controller('TransactionsCtrl', [
   'httpErrors',
   function ($scope, $location, $filter, $http, $q, $timeout, $modal, queryStrings, httpErrors) {
     // \u00b7 is &middot;
-    document.title = 'Transactions \u00b7 Glowroot';
-    $scope.$parent.title = 'Transactions';
-    $scope.$parent.activeNavbarItem = 'transactions';
+    document.title = 'Performance \u00b7 Glowroot';
+    $scope.$parent.title = 'Performance';
+    $scope.$parent.activeNavbarItem = 'performance';
 
     var plot;
     // plotTransactionName is only updated when the plot is updated

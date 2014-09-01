@@ -67,7 +67,7 @@ module.exports = function (grunt) {
         livereload: 35729
       },
       rules: [
-        { from: '^/transactions(\\?.*)?$', to: '/index.html' },
+        { from: '^/performance(\\?.*)?$', to: '/index.html' },
         { from: '^/errors(\\?.*)?$', to: '/index.html' },
         { from: '^/traces(\\?.*)?$', to: '/index.html' },
         { from: '^/jvm/.*$', to: '/index.html' },

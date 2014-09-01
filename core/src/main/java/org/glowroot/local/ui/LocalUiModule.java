@@ -209,7 +209,7 @@ public class LocalUiModule {
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
         uriMappings.put(Pattern.compile("^/$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/transactions$"), indexHtmlHttpService);
+        uriMappings.put(Pattern.compile("^/performance$"), indexHtmlHttpService);
         uriMappings.put(Pattern.compile("^/errors$"), indexHtmlHttpService);
         uriMappings.put(Pattern.compile("^/traces$"), indexHtmlHttpService);
         uriMappings.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
