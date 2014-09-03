@@ -40,6 +40,8 @@ import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
 import org.jboss.netty.handler.stream.ChunkedWriteHandler;
+import org.jboss.netty.logging.InternalLoggerFactory;
+import org.jboss.netty.logging.Slf4JLoggerFactory;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +69,8 @@ public class HttpServer {
     HttpServer(String bindAddress, int port, int numWorkerThreads,
             LayoutJsonService layoutJsonService, ImmutableMap<Pattern, Object> uriMappings,
             HttpSessionManager httpSessionManager, List<Object> jsonServices) {
+
+        InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
         ExecutorService bossExecutor = Executors.newCachedThreadPool(threadFactory);
