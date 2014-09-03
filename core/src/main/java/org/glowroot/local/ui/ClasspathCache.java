@@ -17,6 +17,8 @@ package org.glowroot.local.ui;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -24,6 +26,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -48,10 +51,13 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Reflections;
+import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.Singleton;
 import org.glowroot.weaving.AnalyzedWorld;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ASM5;
 
@@ -133,7 +139,7 @@ class ClasspathCache {
 
     // using synchronization over concurrent structures in this cache to conserve memory
     synchronized void updateCache() {
-        for (URLClassLoader loader : getKnownURLClassLoaders()) {
+        for (ClassLoader loader : getKnownClassLoaders()) {
             updateCache(loader);
         }
         updateCacheWithBootstrapClasses();
@@ -161,28 +167,27 @@ class ClasspathCache {
         return cv.getAnalyzedMethods();
     }
 
-    private void updateCache(URLClassLoader loader) {
-        URL[] urls;
-        try {
-            urls = loader.getURLs();
-        } catch (Exception e) {
-            // tomcat WebappClassLoader.getURLs() throws NullPointerException after stop() has been
-            // called on the WebappClassLoader
-            // (this happens, for example, after a webapp fails to load)
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            return;
-        }
-        if (urls == null) {
-            return;
-        }
+    private void updateCache(ClassLoader loader) {
+        List<URL> urls = getURLs(loader);
         List<URI> uris = Lists.newArrayList();
         for (URL url : urls) {
-            try {
-                uris.add(url.toURI());
-            } catch (URISyntaxException e) {
-                // log exception at debug level
-                logger.debug(e.getMessage(), e);
+            if (url.getProtocol().equals("vfs")) {
+                try {
+                    uris.add(getFileFromJBossVfsURL(url, loader).toURI());
+                } catch (ClassNotFoundException e) {
+                    logger.warn(e.getMessage(), e);
+                } catch (IOException e) {
+                    logger.warn(e.getMessage(), e);
+                } catch (ReflectiveException e) {
+                    logger.warn(e.getMessage(), e);
+                }
+            } else {
+                try {
+                    uris.add(url.toURI());
+                } catch (URISyntaxException e) {
+                    // log exception at debug level
+                    logger.debug(e.getMessage(), e);
+                }
             }
         }
         for (URI uri : uris) {
@@ -193,17 +198,26 @@ class ClasspathCache {
         }
     }
 
-    private Set<URLClassLoader> getKnownURLClassLoaders() {
-        Set<URLClassLoader> loaders = Sets.newHashSet();
-        for (ClassLoader loader : getKnownClassLoaders()) {
-            while (loader != null) {
-                if (loader instanceof URLClassLoader) {
-                    loaders.add((URLClassLoader) loader);
-                }
-                loader = loader.getParent();
+    private List<URL> getURLs(ClassLoader loader) {
+        if (loader instanceof URLClassLoader) {
+            try {
+                return Lists.newArrayList(((URLClassLoader) loader).getURLs());
+            } catch (Exception e) {
+                // tomcat WebappClassLoader.getURLs() throws NullPointerException after stop() has
+                // been called on the WebappClassLoader
+                // (this happens, for example, after a webapp fails to load)
+                // log exception at debug level
+                logger.debug(e.getMessage(), e);
+                return ImmutableList.of();
             }
         }
-        return loaders;
+        // special case for jboss/wildfly
+        try {
+            return Collections.list(loader.getResources("/"));
+        } catch (IOException e) {
+            logger.warn(e.getMessage(), e);
+            return ImmutableList.of();
+        }
     }
 
     private List<ClassLoader> getKnownClassLoaders() {
@@ -256,7 +270,8 @@ class ClasspathCache {
 
     private void loadClassNamesFromJarFile(URI jarUri) throws IOException {
         Closer closer = Closer.create();
-        JarInputStream jarIn = closer.register(new JarInputStream(jarUri.toURL().openStream()));
+        InputStream s = jarUri.toURL().openStream();
+        JarInputStream jarIn = closer.register(new JarInputStream(s));
         try {
             Manifest manifest = jarIn.getManifest();
             if (manifest != null) {
@@ -278,7 +293,11 @@ class ClasspathCache {
                     String className = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
                     // TODO test if this works with jar loaded over http protocol
                     try {
-                        URI fileURI = new URI("jar", jarUri.getScheme() + ":" + jarUri.getPath()
+                        String path = jarUri.getPath();
+                        if (path.endsWith("/")) {
+                            path = path.substring(0, path.length() - 1);
+                        }
+                        URI fileURI = new URI("jar", jarUri.getScheme() + ":" + path
                                 + "!/" + name, "");
                         classNames.put(className, fileURI);
                     } catch (URISyntaxException e) {
@@ -291,6 +310,19 @@ class ClasspathCache {
         } finally {
             closer.close();
         }
+    }
+
+    private static File getFileFromJBossVfsURL(URL url, ClassLoader loader) throws IOException,
+            ClassNotFoundException, ReflectiveException {
+        Object virtualFile = url.openConnection().getContent();
+        Class<?> virtualFileClass = loader.loadClass("org.jboss.vfs.VirtualFile");
+        Method getPhysicalFileMethod = Reflections.getMethod(virtualFileClass, "getPhysicalFile");
+        Method getNameMethod = Reflections.getMethod(virtualFileClass, "getName");
+        File physicalFile = (File) Reflections.invoke(getPhysicalFileMethod, virtualFile);
+        checkNotNull(physicalFile, "org.jboss.vfs.VirtualFile.getPhysicalFile() returned null");
+        String name = (String) Reflections.invoke(getNameMethod, virtualFile);
+        checkNotNull(name, "org.jboss.vfs.VirtualFile.getName() returned null");
+        return new File(physicalFile.getParentFile(), name);
     }
 
     private static class AnalyzingClassVisitor extends ClassVisitor {
