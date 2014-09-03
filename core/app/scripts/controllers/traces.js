@@ -58,6 +58,9 @@ glowroot.controller('TracesCtrl', [
       if (query.durationHigh) {
         query.durationHigh = Math.floor(query.durationHigh * 1000000000);
       }
+      if (query.transactionType === '(any)') {
+        query.transactionType = '';
+      }
       $http.get('backend/trace/points?' + queryStrings.encodeObject(query))
           .success(function (data) {
             if (refreshId !== currentRefreshId) {
@@ -324,7 +327,7 @@ glowroot.controller('TracesCtrl', [
     }
     appliedFilter.durationLow = Number($location.search().durationLow) || 0;
     appliedFilter.durationHigh = Number($location.search().durationHigh) || undefined;
-    appliedFilter.transactionType = $location.search()['transaction-type'] || '';
+    appliedFilter.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
     appliedFilter.transactionNameComparator = $location.search()['transaction-name-comparator'] || 'begins';
     appliedFilter.transactionName = $location.search()['transaction-name'] || '';
     appliedFilter.headlineComparator = $location.search()['headline-comparator'] || 'begins';
@@ -383,7 +386,7 @@ glowroot.controller('TracesCtrl', [
       if (Number(appliedFilter.durationHigh)) {
         query['duration-high'] = appliedFilter.durationHigh;
       }
-      if (appliedFilter.transactionType) {
+      if (appliedFilter.transactionType !== $scope.layout.defaultTransactionType) {
         query['transaction-type'] = appliedFilter.transactionType;
       }
       if (appliedFilter.headline) {
