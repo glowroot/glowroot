@@ -17,9 +17,9 @@ package org.glowroot.sandbox.ui;
 
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
+import org.glowroot.api.TransactionMetric;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -51,15 +51,15 @@ public class ExternalJvmMainAspect {
         }
 
         @OnBefore
-        public static Span onBefore() {
-            return pluginServices.startTrace("Sandbox", "javaagent container main",
+        public static TraceEntry onBefore() {
+            return pluginServices.startTransaction("Sandbox", "javaagent container main",
                     MessageSupplier.from("org.glowroot.container.javaagent.JavaagentContainer"
                             + ".main()"), metricName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            span.end();
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
         }
     }
 
@@ -76,13 +76,13 @@ public class ExternalJvmMainAspect {
         }
 
         @OnBefore
-        public static MetricTimer onBefore() {
-            return pluginServices.startMetric(metricName);
+        public static TransactionMetric onBefore() {
+            return pluginServices.startTransactionMetric(metricName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
-            metricTimer.stop();
+        public static void onAfter(@BindTraveler TransactionMetric transactionMetric) {
+            transactionMetric.stop();
         }
     }
 
@@ -99,13 +99,13 @@ public class ExternalJvmMainAspect {
         }
 
         @OnBefore
-        public static MetricTimer onBefore() {
-            return pluginServices.startMetric(metricName);
+        public static TransactionMetric onBefore() {
+            return pluginServices.startTransactionMetric(metricName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
-            metricTimer.stop();
+        public static void onAfter(@BindTraveler TransactionMetric transactionMetric) {
+            transactionMetric.stop();
         }
     }
 }

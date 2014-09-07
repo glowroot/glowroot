@@ -204,8 +204,9 @@ class ClasspathCache {
                 return Lists.newArrayList(((URLClassLoader) loader).getURLs());
             } catch (Exception e) {
                 // tomcat WebappClassLoader.getURLs() throws NullPointerException after stop() has
-                // been called on the WebappClassLoader
-                // (this happens, for example, after a webapp fails to load)
+                // been called on the WebappClassLoader (this happens, for example, after a webapp
+                // fails to load)
+                //
                 // log exception at debug level
                 logger.debug(e.getMessage(), e);
                 return ImmutableList.of();
@@ -297,8 +298,8 @@ class ClasspathCache {
                         if (path.endsWith("/")) {
                             path = path.substring(0, path.length() - 1);
                         }
-                        URI fileURI = new URI("jar", jarUri.getScheme() + ":" + path
-                                + "!/" + name, "");
+                        URI fileURI =
+                                new URI("jar", jarUri.getScheme() + ":" + path + "!/" + name, "");
                         classNames.put(className, fileURI);
                     } catch (URISyntaxException e) {
                         logger.error(e.getMessage(), e);

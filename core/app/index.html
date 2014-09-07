@@ -89,7 +89,7 @@
           </ul>
           <ul class="nav navbar-nav navbar-right">
             <li ng-class="{active: activeNavbarItem === 'config'}">
-              <a href="/config/general"
+              <a href="/config/traces"
                  style="padding-top: 14px; padding-bottom: 0; height: 50px;">
                 <i title="Configuration" class="fa fa-gears" style="font-size: 24px;"></i>
               </a>
@@ -137,7 +137,7 @@
   <script src="bower_components/angular-ui-bootstrap/src/dropdown/dropdown.js"></script>
   <!-- collapse is used by the user interface config for toggling password fields on enable/disable password -->
   <script src="bower_components/angular-ui-bootstrap/src/collapse/collapse.js"></script>
-  <!-- typeahead is used by pointcut config view -->
+  <!-- typeahead is used by capture pointcut view -->
   <script src="bower_components/angular-ui-bootstrap/src/typeahead/typeahead.js"></script>
   <!-- position is needed by typeahead -->
   <script src="bower_components/angular-ui-bootstrap/src/position/position.js"></script>
@@ -169,15 +169,15 @@
   <script src="scripts/routes.js"></script>
   <script src="scripts/directives.js"></script>
   <script src="scripts/filters.js"></script>
-  <script src="scripts/trace-renderer.js"></script>
+  <script src="scripts/handlebars-rendering.js"></script>
   <script src="scripts/services/trace-modal.js"></script>
   <script src="scripts/services/confirm-if-has-changes.js"></script>
   <script src="scripts/services/http-errors.js"></script>
   <script src="scripts/services/login.js"></script>
   <script src="scripts/services/query-strings.js"></script>
   <script src="scripts/services/conversions.js"></script>
-  <script src="scripts/controllers/performance.js"></script>
-  <script src="scripts/controllers/transaction-detail.js"></script>
+  <script src="scripts/controllers/aggregates.js"></script>
+  <script src="scripts/controllers/aggregate-detail.js"></script>
   <script src="scripts/controllers/traces.js"></script>
   <script src="scripts/controllers/errors.js"></script>
   <script src="scripts/controllers/jvm.js"></script>
@@ -189,15 +189,14 @@
   <script src="scripts/controllers/jvm/system-properties.js"></script>
   <script src="scripts/controllers/jvm/capabilities.js"></script>
   <script src="scripts/controllers/config.js"></script>
-  <script src="scripts/controllers/config/general.js"></script>
-  <script src="scripts/controllers/config/pointcut-list.js"></script>
-  <script src="scripts/controllers/config/pointcut.js"></script>
+  <script src="scripts/controllers/config/traces.js"></script>
   <script src="scripts/controllers/config/profiling.js"></script>
-  <script src="scripts/controllers/config/outlier-profiling.js"></script>
-  <script src="scripts/controllers/config/user-tracing.js"></script>
+  <script src="scripts/controllers/config/user-recording.js"></script>
+  <script src="scripts/controllers/config/capture-point-list.js"></script>
+  <script src="scripts/controllers/config/capture-point.js"></script>
   <script src="scripts/controllers/config/advanced.js"></script>
-  <script src="scripts/controllers/config/storage.js"></script>
   <script src="scripts/controllers/config/user-interface.js"></script>
+  <script src="scripts/controllers/config/storage.js"></script>
   <script src="scripts/controllers/config/plugin.js"></script>
   <script src="scripts/controllers/login.js"></script>
   <!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->

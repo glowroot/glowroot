@@ -40,7 +40,7 @@ import org.jboss.netty.handler.stream.ChunkedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.Snapshot;
+import org.glowroot.collector.Trace;
 import org.glowroot.local.ui.TraceCommonService.TraceExport;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
@@ -51,8 +51,8 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
- * Http service to export a trace snapshot as a complete html page, bound to /export/trace. It is
- * not bound under /backend since it is visible to users as the download url for the export file.
+ * Http service to export a trace as a complete html page, bound to /export/trace. It is not bound
+ * under /backend since it is visible to users as the download url for the export file.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -84,7 +84,7 @@ public class TraceExportHttpService implements HttpService {
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.headers().set(CONTENT_TYPE, MediaType.ZIP.toString());
         response.headers().set("Content-Disposition",
-                "attachment; filename=" + getFilename(export.getSnapshot()) + ".zip");
+                "attachment; filename=" + getFilename(export.getTrace()) + ".zip");
         HttpServices.preventCaching(response);
         response.setChunked(true);
         channel.write(response);
@@ -96,7 +96,7 @@ public class TraceExportHttpService implements HttpService {
     private ChunkedInput getExportChunkedInput(TraceExport export) throws IOException {
         CharSource charSource = render(export);
         return ChunkedInputs.fromReaderToZipFileDownload(charSource.openStream(),
-                getFilename(export.getSnapshot()));
+                getFilename(export.getTrace()));
     }
 
     // this method exists because tests cannot use (sometimes) shaded netty ChunkedInput
@@ -120,9 +120,8 @@ public class TraceExportHttpService implements HttpService {
         return baos.toByteArray();
     }
 
-    private static String getFilename(Snapshot snapshot) {
-        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss-SSS")
-                .format(snapshot.getStartTime());
+    private static String getFilename(Trace trace) {
+        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss-SSS").format(trace.getStartTime());
         return "trace-" + timestamp;
     }
 
@@ -132,7 +131,7 @@ public class TraceExportHttpService implements HttpService {
                 "<script src=\"scripts/export-vendor.js\"></script>";
         String exportJsPlaceholder = "<script src=\"scripts/export-trace-scripts.js\"></script>";
         String tracePlaceholder = "<script type=\"text/json\" id=\"traceJson\"></script>";
-        String spansPlaceholder = "<script type=\"text/json\" id=\"spansJson\"></script>";
+        String entriesPlaceholder = "<script type=\"text/json\" id=\"entriesJson\"></script>";
         String profilePlaceholder = "<script type=\"text/json\" id=\"profileJson\"></script>";
         String outlierProfilePlaceholder =
                 "<script type=\"text/json\" id=\"outlierProfileJson\"></script>";
@@ -140,7 +139,7 @@ public class TraceExportHttpService implements HttpService {
         String templateContent = asCharSource("trace-export.html").read();
         Pattern pattern = Pattern.compile("(" + exportCssPlaceholder + "|"
                 + exportComponentsJsPlaceholder + "|" + exportJsPlaceholder + "|"
-                + tracePlaceholder + "|" + spansPlaceholder + "|" + profilePlaceholder + "|"
+                + tracePlaceholder + "|" + entriesPlaceholder + "|" + profilePlaceholder + "|"
                 + outlierProfilePlaceholder + ")");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
@@ -163,21 +162,18 @@ public class TraceExportHttpService implements HttpService {
                 charSources.add(asCharSource("scripts/export-trace-scripts.js"));
                 charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(tracePlaceholder)) {
-                charSources.add(CharSource.wrap(
-                        "<script type=\"text/json\" id=\"traceJson\">"));
-                charSources.add(CharSource.wrap(traceExport.getSnapshotJson()));
+                charSources.add(CharSource.wrap("<script type=\"text/json\" id=\"traceJson\">"));
+                charSources.add(CharSource.wrap(traceExport.getTraceJson()));
                 charSources.add(CharSource.wrap("</script>"));
-            } else if (match.equals(spansPlaceholder)) {
-                charSources.add(CharSource.wrap(
-                        "<script type=\"text/json\" id=\"spansJson\">"));
-                CharSource spans = traceExport.getSpans();
-                if (spans != null) {
-                    charSources.add(spans);
+            } else if (match.equals(entriesPlaceholder)) {
+                charSources.add(CharSource.wrap("<script type=\"text/json\" id=\"entriesJson\">"));
+                CharSource entries = traceExport.getEntries();
+                if (entries != null) {
+                    charSources.add(entries);
                 }
                 charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(profilePlaceholder)) {
-                charSources.add(CharSource.wrap(
-                        "<script type=\"text/json\" id=\"profileJson\">"));
+                charSources.add(CharSource.wrap("<script type=\"text/json\" id=\"profileJson\">"));
                 CharSource profile = traceExport.getProfile();
                 if (profile != null) {
                     charSources.add(profile);

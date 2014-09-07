@@ -17,24 +17,25 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Collection;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.CharSource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.glowroot.collector.EntriesCharSourceCreator;
 import org.glowroot.collector.ProfileCharSourceCreator;
-import org.glowroot.collector.Snapshot;
-import org.glowroot.collector.SnapshotCreator;
-import org.glowroot.collector.SnapshotWriter;
-import org.glowroot.collector.SpansCharSourceCreator;
-import org.glowroot.collector.TraceCollectorImpl;
+import org.glowroot.collector.Trace;
+import org.glowroot.collector.TraceCreator;
+import org.glowroot.collector.TraceWriter;
+import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
-import org.glowroot.local.store.SnapshotDao;
+import org.glowroot.local.store.TraceDao;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
-import org.glowroot.trace.TraceRegistry;
-import org.glowroot.trace.model.Trace;
+import org.glowroot.transaction.TransactionRegistry;
+import org.glowroot.transaction.model.Transaction;
 
 /**
  * @author Trask Stalnaker
@@ -44,60 +45,62 @@ import org.glowroot.trace.model.Trace;
 @VisibleForTesting
 public class TraceCommonService {
 
-    private final SnapshotDao snapshotDao;
-    private final TraceRegistry traceRegistry;
-    private final TraceCollectorImpl traceCollectorImpl;
+    private final TraceDao traceDao;
+    private final TransactionRegistry transactionRegistry;
+    private final TransactionCollectorImpl transactionCollectorImpl;
     private final Clock clock;
     private final Ticker ticker;
 
-    TraceCommonService(SnapshotDao snapshotDao, TraceRegistry traceRegistry,
-            TraceCollectorImpl traceCollectorImpl, Clock clock, Ticker ticker) {
-        this.snapshotDao = snapshotDao;
-        this.traceRegistry = traceRegistry;
-        this.traceCollectorImpl = traceCollectorImpl;
+    TraceCommonService(TraceDao traceDao, TransactionRegistry transactionRegistry,
+            TransactionCollectorImpl transactionCollectorImpl, Clock clock, Ticker ticker) {
+        this.traceDao = traceDao;
+        this.transactionRegistry = transactionRegistry;
+        this.transactionCollectorImpl = transactionCollectorImpl;
         this.clock = clock;
         this.ticker = ticker;
     }
 
     @VisibleForTesting
     @Nullable
-    public Snapshot getSnapshot(String traceId) throws IOException {
+    public Trace getTrace(String traceId) throws IOException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
-        for (Trace active : traceRegistry.getTraces()) {
+        for (Transaction active : transactionRegistry.getTransactions()) {
             if (active.getId().equals(traceId)) {
-                return createActiveSnapshot(active);
+                return createActiveTrace(active);
             }
         }
-        // then check pending traces to make sure the trace is not missed if it is in between active
-        // and stored
-        for (Trace pending : traceCollectorImpl.getPendingCompleteTraces()) {
-            if (pending.getId().equals(traceId)) {
-                return createPendingSnapshot(pending);
+        // then check pending transactions to make sure the trace is not missed if it is in between
+        // active and stored
+        Collection<Transaction> pendingCompleteTransactions =
+                transactionCollectorImpl.getPendingCompleteTransactions();
+        for (Transaction pendingComplete : pendingCompleteTransactions) {
+            if (pendingComplete.getId().equals(traceId)) {
+                return createPendingCompleteTrace(pendingComplete);
             }
         }
-        return snapshotDao.readSnapshot(traceId);
+        return traceDao.readTrace(traceId);
     }
 
-    // overwritten spans will return {"overwritten":true}
+    // overwritten entries will return {"overwritten":true}
     // expired trace will return {"expired":true}
     @Nullable
-    CharSource getSpans(String traceId) throws SQLException {
+    CharSource getEntries(String traceId) throws SQLException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
-        for (Trace active : traceRegistry.getTraces()) {
+        for (Transaction active : transactionRegistry.getTransactions()) {
             if (active.getId().equals(traceId)) {
-                return createTraceSpans(active);
+                return createEntries(active);
             }
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
         // and stored
-        for (Trace pending : traceCollectorImpl.getPendingCompleteTraces()) {
+        for (Transaction pending : transactionCollectorImpl.getPendingCompleteTransactions()) {
             if (pending.getId().equals(traceId)) {
-                return createTraceSpans(pending);
+                return createEntries(pending);
             }
         }
-        return snapshotDao.readSpans(traceId);
+        return traceDao.readEntries(traceId);
     }
 
     // overwritten profile will return {"overwritten":true}
@@ -106,19 +109,19 @@ public class TraceCommonService {
     CharSource getProfile(String traceId) throws SQLException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
-        for (Trace active : traceRegistry.getTraces()) {
+        for (Transaction active : transactionRegistry.getTransactions()) {
             if (active.getId().equals(traceId)) {
                 return createProfile(active);
             }
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
         // and stored
-        for (Trace pending : traceCollectorImpl.getPendingCompleteTraces()) {
+        for (Transaction pending : transactionCollectorImpl.getPendingCompleteTransactions()) {
             if (pending.getId().equals(traceId)) {
                 return createProfile(pending);
             }
         }
-        return snapshotDao.readProfile(traceId);
+        return traceDao.readProfile(traceId);
     }
 
     // overwritten profile will return {"overwritten":true}
@@ -127,114 +130,112 @@ public class TraceCommonService {
     CharSource getOutlierProfile(String traceId) throws SQLException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
-        for (Trace active : traceRegistry.getTraces()) {
+        for (Transaction active : transactionRegistry.getTransactions()) {
             if (active.getId().equals(traceId)) {
                 return createOutlierProfile(active);
             }
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
         // and stored
-        for (Trace pending : traceCollectorImpl.getPendingCompleteTraces()) {
+        for (Transaction pending : transactionCollectorImpl.getPendingCompleteTransactions()) {
             if (pending.getId().equals(traceId)) {
                 return createOutlierProfile(pending);
             }
         }
-        return snapshotDao.readOutlierProfile(traceId);
+        return traceDao.readOutlierProfile(traceId);
     }
 
     @Nullable
     TraceExport getExport(String traceId) throws IOException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
-        for (Trace active : traceRegistry.getTraces()) {
+        for (Transaction active : transactionRegistry.getTransactions()) {
             if (active.getId().equals(traceId)) {
-                Snapshot snapshot = createActiveSnapshot(active);
-                return new TraceExport(snapshot, SnapshotWriter.toString(snapshot),
-                        createTraceSpans(active), createProfile(active),
-                        createOutlierProfile(active));
+                Trace trace = createActiveTrace(active);
+                return new TraceExport(trace, TraceWriter.toString(trace), createEntries(active),
+                        createProfile(active), createOutlierProfile(active));
             }
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
         // and stored
-        for (Trace pending : traceCollectorImpl.getPendingCompleteTraces()) {
+        for (Transaction pending : transactionCollectorImpl.getPendingCompleteTransactions()) {
             if (pending.getId().equals(traceId)) {
-                Snapshot snapshot = createPendingSnapshot(pending);
-                return new TraceExport(snapshot, SnapshotWriter.toString(snapshot),
-                        createTraceSpans(pending), createProfile(pending),
-                        createOutlierProfile(pending));
+                Trace trace = createPendingCompleteTrace(pending);
+                return new TraceExport(trace, TraceWriter.toString(trace), createEntries(pending),
+                        createProfile(pending), createOutlierProfile(pending));
             }
         }
-        Snapshot snapshot = snapshotDao.readSnapshot(traceId);
-        if (snapshot == null) {
+        Trace trace = traceDao.readTrace(traceId);
+        if (trace == null) {
             return null;
         }
         try {
-            return new TraceExport(snapshot, SnapshotWriter.toString(snapshot),
-                    snapshotDao.readSpans(traceId), snapshotDao.readProfile(traceId),
-                    snapshotDao.readOutlierProfile(traceId));
+            return new TraceExport(trace, TraceWriter.toString(trace),
+                    traceDao.readEntries(traceId), traceDao.readProfile(traceId),
+                    traceDao.readOutlierProfile(traceId));
         } catch (SQLException e) {
             throw new IOException(e);
         }
     }
 
-    private Snapshot createPendingSnapshot(Trace pending) throws IOException {
-        return SnapshotCreator.createPendingSnapshot(pending, clock.currentTimeMillis(),
+    private Trace createPendingCompleteTrace(Transaction pending) throws IOException {
+        return TraceCreator.createPendingTrace(pending, clock.currentTimeMillis(),
                 ticker.read());
     }
 
-    private Snapshot createActiveSnapshot(Trace active) throws IOException {
-        return SnapshotCreator.createActiveSnapshot(active, clock.currentTimeMillis(),
+    private Trace createActiveTrace(Transaction active) throws IOException {
+        return TraceCreator.createActiveTrace(active, clock.currentTimeMillis(),
                 ticker.read());
     }
 
-    private CharSource createTraceSpans(Trace active) {
-        return SpansCharSourceCreator.createSpansCharSource(active.getSpansCopy(),
+    private CharSource createEntries(Transaction active) {
+        return EntriesCharSourceCreator.createEntriesCharSource(active.getEntriesCopy(),
                 active.getStartTick(), ticker.read());
     }
 
     @Nullable
-    private CharSource createOutlierProfile(Trace active) {
+    private CharSource createOutlierProfile(Transaction active) {
         return ProfileCharSourceCreator.createProfileCharSource(
                 active.getOutlierProfile());
     }
 
     @Nullable
-    private CharSource createProfile(Trace active) {
+    private CharSource createProfile(Transaction active) {
         return ProfileCharSourceCreator.createProfileCharSource(
                 active.getProfile());
     }
 
     static class TraceExport {
 
-        private final Snapshot snapshot;
-        private final String snapshotJson;
+        private final Trace trace;
+        private final String traceJson;
         @Nullable
-        private final CharSource spans;
+        private final CharSource entries;
         @Nullable
         private final CharSource profile;
         @Nullable
         private final CharSource outlierProfile;
 
-        private TraceExport(Snapshot snapshot, String snapshotJson, @Nullable CharSource spans,
+        private TraceExport(Trace trace, String traceJson, @Nullable CharSource entries,
                 @Nullable CharSource profile, @Nullable CharSource outlierProfile) {
-            this.snapshot = snapshot;
-            this.snapshotJson = snapshotJson;
-            this.spans = spans;
+            this.trace = trace;
+            this.traceJson = traceJson;
+            this.entries = entries;
             this.profile = profile;
             this.outlierProfile = outlierProfile;
         }
 
-        Snapshot getSnapshot() {
-            return snapshot;
+        Trace getTrace() {
+            return trace;
         }
 
-        String getSnapshotJson() {
-            return snapshotJson;
+        String getTraceJson() {
+            return traceJson;
         }
 
         @Nullable
-        CharSource getSpans() {
-            return spans;
+        CharSource getEntries() {
+            return entries;
         }
 
         @Nullable
@@ -251,12 +252,12 @@ public class TraceCommonService {
     // this method exists because tests cannot use (sometimes) shaded guava CharSource
     @OnlyUsedByTests
     @Nullable
-    public String getSpansString(String traceId) throws SQLException, IOException {
-        CharSource spans = getSpans(traceId);
-        if (spans == null) {
+    public String getEntriesString(String traceId) throws SQLException, IOException {
+        CharSource entries = getEntries(traceId);
+        if (entries == null) {
             return null;
         }
-        return spans.read();
+        return entries.read();
     }
 
     // this method exists because tests cannot use (sometimes) shaded guava CharSource

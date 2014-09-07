@@ -29,58 +29,50 @@ import org.glowroot.markers.Immutable;
 @Immutable
 class Config {
 
-    private final GeneralConfig generalConfig;
+    private final TraceConfig traceConfig;
     private final ProfilingConfig profilingConfig;
-    private final OutlierProfilingConfig outlierProfilingConfig;
-    private final UserTracingConfig userTracingConfig;
+    private final UserRecordingConfig userRecordingConfig;
     private final StorageConfig storageConfig;
     private final UserInterfaceConfig userInterfaceConfig;
     private final AdvancedConfig advancedConfig;
-    private final ImmutableList<PointcutConfig> pointcutConfigs;
     private final ImmutableList<PluginConfig> pluginConfigs;
+    private final ImmutableList<CapturePoint> capturePoints;
 
     static Config getDefault(ImmutableList<PluginDescriptor> pluginDescriptors) {
-        return new Config(GeneralConfig.getDefault(), ProfilingConfig.getDefault(),
-                OutlierProfilingConfig.getDefault(), UserTracingConfig.getDefault(),
-                StorageConfig.getDefault(), UserInterfaceConfig.getDefault(pluginDescriptors),
-                AdvancedConfig.getDefault(), ImmutableList.<PointcutConfig>of(),
-                createPluginConfigs(pluginDescriptors));
+        return new Config(TraceConfig.getDefault(), ProfilingConfig.getDefault(),
+                UserRecordingConfig.getDefault(), StorageConfig.getDefault(),
+                UserInterfaceConfig.getDefault(pluginDescriptors), AdvancedConfig.getDefault(),
+                createPluginConfigs(pluginDescriptors), ImmutableList.<CapturePoint>of());
     }
 
     static Builder builder(Config base) {
         return new Builder(base);
     }
 
-    Config(GeneralConfig generalConfig, ProfilingConfig profilingConfig,
-            OutlierProfilingConfig outlierProfilingConfig, UserTracingConfig userTracingConfig,
-            StorageConfig storageConfig, UserInterfaceConfig userInterfaceConfig,
-            AdvancedConfig advancedConfig, List<PointcutConfig> pointcutConfigs,
-            List<PluginConfig> pluginConfigs) {
-        this.generalConfig = generalConfig;
+    Config(TraceConfig traceConfig, ProfilingConfig profilingConfig,
+            UserRecordingConfig userRecordingConfig, StorageConfig storageConfig,
+            UserInterfaceConfig userInterfaceConfig, AdvancedConfig advancedConfig,
+            List<PluginConfig> pluginConfigs, List<CapturePoint> capturePoints) {
+        this.traceConfig = traceConfig;
         this.profilingConfig = profilingConfig;
-        this.outlierProfilingConfig = outlierProfilingConfig;
-        this.userTracingConfig = userTracingConfig;
+        this.userRecordingConfig = userRecordingConfig;
         this.storageConfig = storageConfig;
         this.userInterfaceConfig = userInterfaceConfig;
         this.advancedConfig = advancedConfig;
-        this.pointcutConfigs = ImmutableList.copyOf(pointcutConfigs);
         this.pluginConfigs = ImmutableList.copyOf(pluginConfigs);
+        this.capturePoints = ImmutableList.copyOf(capturePoints);
     }
 
-    GeneralConfig getGeneralConfig() {
-        return generalConfig;
+    TraceConfig getTraceConfig() {
+        return traceConfig;
     }
 
     ProfilingConfig getProfilingConfig() {
         return profilingConfig;
     }
 
-    OutlierProfilingConfig getOutlierProfilingConfig() {
-        return outlierProfilingConfig;
-    }
-
-    UserTracingConfig getUserTracingConfig() {
-        return userTracingConfig;
+    UserRecordingConfig getUserRecordingConfig() {
+        return userRecordingConfig;
     }
 
     StorageConfig getStorageConfig() {
@@ -91,16 +83,16 @@ class Config {
         return userInterfaceConfig;
     }
 
-    ImmutableList<PointcutConfig> getPointcutConfigs() {
-        return pointcutConfigs;
-    }
-
     AdvancedConfig getAdvancedConfig() {
         return advancedConfig;
     }
 
     ImmutableList<PluginConfig> getPluginConfigs() {
         return pluginConfigs;
+    }
+
+    ImmutableList<CapturePoint> getCapturePoints() {
+        return capturePoints;
     }
 
     private static List<PluginConfig> createPluginConfigs(
@@ -114,41 +106,35 @@ class Config {
 
     static class Builder {
 
-        private GeneralConfig generalConfig;
+        private TraceConfig traceConfig;
         private ProfilingConfig profilingConfig;
-        private OutlierProfilingConfig outlierProfilingConfig;
-        private UserTracingConfig userTracingConfig;
+        private UserRecordingConfig userRecordingConfig;
         private StorageConfig storageConfig;
         private UserInterfaceConfig userInterfaceConfig;
         private AdvancedConfig advancedConfig;
-        private List<PointcutConfig> pointcutConfigs;
         private List<PluginConfig> pluginConfigs;
+        private List<CapturePoint> capturePoints;
 
         private Builder(Config base) {
-            generalConfig = base.generalConfig;
+            traceConfig = base.traceConfig;
             profilingConfig = base.profilingConfig;
-            outlierProfilingConfig = base.outlierProfilingConfig;
-            userTracingConfig = base.userTracingConfig;
+            userRecordingConfig = base.userRecordingConfig;
             storageConfig = base.storageConfig;
             userInterfaceConfig = base.userInterfaceConfig;
             advancedConfig = base.advancedConfig;
-            pointcutConfigs = base.pointcutConfigs;
             pluginConfigs = base.pluginConfigs;
+            capturePoints = base.capturePoints;
         }
-        Builder generalConfig(GeneralConfig generalConfig) {
-            this.generalConfig = generalConfig;
+        Builder traceConfig(TraceConfig traceConfig) {
+            this.traceConfig = traceConfig;
             return this;
         }
         Builder profilingConfig(ProfilingConfig profilingConfig) {
             this.profilingConfig = profilingConfig;
             return this;
         }
-        Builder outlierProfilingConfig(OutlierProfilingConfig outlierProfilingConfig) {
-            this.outlierProfilingConfig = outlierProfilingConfig;
-            return this;
-        }
-        Builder userTracingConfig(UserTracingConfig userTracingConfig) {
-            this.userTracingConfig = userTracingConfig;
+        Builder userRecordingConfig(UserRecordingConfig userRecordingConfig) {
+            this.userRecordingConfig = userRecordingConfig;
             return this;
         }
         Builder storageConfig(StorageConfig storageConfig) {
@@ -163,18 +149,17 @@ class Config {
             this.advancedConfig = advancedConfig;
             return this;
         }
-        Builder pointcutConfigs(List<PointcutConfig> pointcutConfigs) {
-            this.pointcutConfigs = pointcutConfigs;
-            return this;
-        }
         Builder pluginConfigs(List<PluginConfig> pluginConfigs) {
             this.pluginConfigs = pluginConfigs;
             return this;
         }
+        Builder capturePoints(List<CapturePoint> capturePoints) {
+            this.capturePoints = capturePoints;
+            return this;
+        }
         Config build() {
-            return new Config(generalConfig, profilingConfig, outlierProfilingConfig,
-                    userTracingConfig, storageConfig, userInterfaceConfig, advancedConfig,
-                    pointcutConfigs, pluginConfigs);
+            return new Config(traceConfig, profilingConfig, userRecordingConfig, storageConfig,
+                    userInterfaceConfig, advancedConfig, pluginConfigs, capturePoints);
         }
     }
 }

@@ -183,8 +183,8 @@ module.exports = function (grunt) {
       },
       exportDist: {
         files: {
-          '<%= yeoman.exportDist %>/trace-export.html': '<%= yeoman.app %>/trace-export.html',
-          '<%= yeoman.exportDist %>/transaction-export.html': '<%= yeoman.app %>/transaction-export.html'
+          '<%= yeoman.exportDist %>/aggregate-export.html': '<%= yeoman.app %>/aggregate-export.html',
+          '<%= yeoman.exportDist %>/trace-export.html': '<%= yeoman.app %>/trace-export.html'
         },
         options: {
           dest: '<%= yeoman.exportDist %>'
@@ -305,8 +305,8 @@ module.exports = function (grunt) {
             cwd: '<%= yeoman.app %>',
             dest: '<%= yeoman.exportDist %>',
             src: [
-              'trace-export.html',
-              'transaction-export.html'
+              'aggregate-export.html',
+              'trace-export.html'
             ]
           }
         ]

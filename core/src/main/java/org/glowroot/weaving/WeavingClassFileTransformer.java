@@ -88,7 +88,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         if (className.startsWith("org/glowroot/collector/")
                 || className.startsWith("org/glowroot/common/")
                 || className.startsWith("org/glowroot/config/")
-                || className.startsWith("org/glowroot/dynamicadvice/")
+                || className.startsWith("org/glowroot/advicegen/")
                 || className.startsWith("org/glowroot/local/")
                 || className.startsWith("org/glowroot/shaded/")
                 || className.startsWith("org/glowroot/trace/")

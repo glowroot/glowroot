@@ -155,16 +155,16 @@ public class DataSource {
         }
     }
 
-    <T extends /*@NonNull*/Object> ImmutableList<T> query(String sql, ImmutableList<?> args,
-            RowMapper<T> rowMapper) throws SQLException {
+    <T extends /*@NonNull*/Object> ImmutableList<T> query(String sql, RowMapper<T> rowMapper,
+            Object... args) throws SQLException {
         debug(sql, args);
         synchronized (lock) {
             if (closing) {
                 return ImmutableList.of();
             }
             PreparedStatement preparedStatement = prepareStatement(sql);
-            for (int i = 0; i < args.size(); i++) {
-                preparedStatement.setObject(i + 1, args.get(i));
+            for (int i = 0; i < args.length; i++) {
+                preparedStatement.setObject(i + 1, args[i]);
             }
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetCloser closer = new ResultSetCloser(resultSet);
@@ -184,15 +184,15 @@ public class DataSource {
     }
 
     @Nullable
-    <T> T query(String sql, ImmutableList<?> args, ResultSetExtractor<T> rse) throws SQLException {
+    <T> T query(String sql, ResultSetExtractor<T> rse, Object... args) throws SQLException {
         debug(sql, args);
         synchronized (lock) {
             if (closing) {
                 return null;
             }
             PreparedStatement preparedStatement = prepareStatement(sql);
-            for (int i = 0; i < args.size(); i++) {
-                preparedStatement.setObject(i + 1, args.get(i));
+            for (int i = 0; i < args.length; i++) {
+                preparedStatement.setObject(i + 1, args[i]);
             }
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetCloser closer = new ResultSetCloser(resultSet);
@@ -210,9 +210,10 @@ public class DataSource {
     int update(String sql, @Nullable Object... args) throws SQLException {
         debug(sql, args);
         if (closing) {
-            // this can get called a lot inserting trace snapshots, and these can get backlogged
+            // this can get called a lot inserting traces, and these can get backlogged
             // on the lock below during jvm shutdown without pre-checking here (and backlogging
-            // ends up generating warning messages from TraceCollectorImpl.logPendingLimitWarning())
+            // ends up generating warning messages from
+            // TransactionCollectorImpl.logPendingLimitWarning())
             return 0;
         }
         synchronized (lock) {
@@ -232,9 +233,10 @@ public class DataSource {
             throws SQLException {
         debug(sql);
         if (closing) {
-            // this can get called a lot inserting trace snapshots, and these can get backlogged
+            // this can get called a lot inserting traces, and these can get backlogged
             // on the lock below during jvm shutdown without pre-checking here (and backlogging
-            // ends up generating warning messages from TraceCollectorImpl.logPendingLimitWarning())
+            // ends up generating warning messages from
+            // TransactionCollectorImpl.logPendingLimitWarning())
             return new int[0];
         }
         synchronized (lock) {

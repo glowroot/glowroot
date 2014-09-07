@@ -26,7 +26,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
-import org.glowroot.microbenchmarks.core.support.TraceWorthy;
+import org.glowroot.microbenchmarks.core.support.TransactionWorthy;
 
 /**
  * @author Trask Stalnaker
@@ -40,21 +40,21 @@ public class TraceBenchmark {
     @Param
     private PointcutType pointcutType;
 
-    private TraceWorthy traceWorthy;
+    private TransactionWorthy traceWorthy;
 
     @Setup
     public void setup() {
-        traceWorthy = new TraceWorthy();
+        traceWorthy = new TransactionWorthy();
     }
 
     @Benchmark
     public void execute() {
         switch (pointcutType) {
             case API:
-                traceWorthy.doSomethingTraceWorthy();
+                traceWorthy.doSomethingTransactionWorthy();
                 break;
             case CONFIG:
-                traceWorthy.doSomethingTraceWorthy2();
+                traceWorthy.doSomethingTransactionWorthy2();
                 break;
         }
     }

@@ -35,9 +35,9 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
 import org.glowroot.api.MetricName;
+import org.glowroot.api.PluginServices;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.microbenchmarks.jdbc.support.MockConnection;
 
@@ -91,20 +91,20 @@ public class ResultSetBenchmark {
     @Benchmark
     @OperationsPerInvocation(10000)
     public void next() throws Exception {
-        Span rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
-                MessageSupplier.from("micro trace"), metricName);
+        TraceEntry traceEntry = pluginServices.startTransaction("Microbenchmark",
+                "micro transaction", MessageSupplier.from("micro transaction"), metricName);
         ResultSet resultSet = preparedStatement.executeQuery();
         for (int i = 0; i < 10000; i++) {
             resultSet.next();
         }
         resultSet.close();
-        rootSpan.end();
+        traceEntry.end();
     }
 
     public static enum Database {
         HSQLDB, MOCK
     }
 
-    @Pointcut(className = "dummy", methodName = "dummy", metricName = "micro trace")
+    @Pointcut(className = "dummy", methodName = "dummy", metricName = "micro transaction")
     private static class OnlyForTheMetricName {}
 }

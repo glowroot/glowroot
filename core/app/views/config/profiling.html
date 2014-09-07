@@ -26,15 +26,21 @@
          class="form-horizontal"
          name="formCtrl">
       <div gt-form-group
-           gt-label="Trace percentage"
-           gt-model="config.tracePercentage"
+           gt-label="Enabled"
+           gt-model="config.enabled"
+           gt-type="switch"
+           class="gt-form-group-without-help-block">
+      </div>
+      <div gt-form-group
+           gt-label="Transaction percentage"
+           gt-model="config.transactionPercentage"
            gt-number="true"
            gt-pattern="pattern.percentage"
            gt-required="loaded"
            gt-width="7em"
            gt-addon="%">
         <div class="help-block">
-          The percentage of traces to profile.
+          The percentage of transactions to profile.
         </div>
       </div>
       <div gt-form-group
@@ -49,42 +55,27 @@
           The interval at which the profiler captures stack traces.
         </div>
       </div>
-      <div gt-form-group
-           gt-label="Max time"
-           gt-model="config.maxSeconds"
-           gt-number="true"
-           gt-pattern="pattern.integer"
-           gt-required="loaded"
-           gt-width="7em"
-           gt-addon="seconds">
-        <div class="help-block">
-          The maximum amount of time that a given trace will be profiled. This is used to
-          limit the memory requirement of very long traces that would capture
-          potentially many thousands of stack traces (e.g. large batch or background
-          operations).
-        </div>
-      </div>
       <div class="form-group"
-           ng-class="{'has-error': formCtrl.profiledStoreThresholdMillis.$invalid}">
-        <label class="col-lg-3 control-label" for="profiledStoreThresholdMillis">
-          Store threshold override
+           ng-class="{'has-error': formCtrl.traceStoreThresholdOverrideMillis.$invalid}">
+        <label class="col-lg-3 control-label" for="traceStoreThresholdOverrideMillis">
+          Trace store threshold override
         </label>
         <div class="col-lg-9">
           <div class="input-group">
             <div class="input-group-addon"
                  style="padding-top: 8px;">
               <input type="checkbox"
-                     ng-model="page.profiledStoreThresholdOverride">
+                     ng-model="page.traceStoreThresholdOverride">
             </div>
             <input type="text"
                    class="form-control"
-                   ng-model="page.profiledStoreThresholdMillis"
+                   ng-model="page.traceStoreThresholdOverrideMillis"
                    ng-pattern="pattern.integer"
-                   id="profiledStoreThresholdMillis"
-                   name="profiledStoreThresholdMillis"
+                   id="traceStoreThresholdOverrideMillis"
+                   name="traceStoreThresholdOverrideMillis"
                    style="width: 7em;"
-                   ng-readonly="!page.profiledStoreThresholdOverride"
-                   ng-required="page.profiledStoreThresholdOverride">
+                   ng-readonly="!page.traceStoreThresholdOverride"
+                   ng-required="page.traceStoreThresholdOverride">
             <span class="input-group-addon">
               milliseconds
             </span>

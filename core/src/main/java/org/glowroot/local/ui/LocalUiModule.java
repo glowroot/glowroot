@@ -30,23 +30,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.CollectorModule;
-import org.glowroot.collector.TraceCollectorImpl;
+import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.jvm.JvmModule;
+import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.store.DataSource;
-import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.local.store.StorageModule;
-import org.glowroot.local.store.TransactionPointDao;
+import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
-import org.glowroot.trace.TraceModule;
-import org.glowroot.trace.TraceRegistry;
+import org.glowroot.transaction.TransactionModule;
+import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.weaving.AnalyzedWorld;
 
 /**
@@ -67,9 +67,9 @@ public class LocalUiModule {
     private final HttpServer httpServer;
 
     // only stored/exposed for tests
-    private final TransactionCommonService transactionCommonService;
+    private final AggregateCommonService aggregateCommonService;
     // only stored/exposed for tests
-    private final TransactionExportHttpService transactionExportHttpService;
+    private final AggregateExportHttpService transactionExportHttpService;
     // only stored/exposed for tests
     private final TraceCommonService traceCommonService;
     // only stored/exposed for tests
@@ -77,64 +77,64 @@ public class LocalUiModule {
 
     public LocalUiModule(Ticker ticker, Clock clock, File dataDir, JvmModule jvmModule,
             ConfigModule configModule, StorageModule storageModule,
-            CollectorModule collectorModule, TraceModule traceModule,
+            CollectorModule collectorModule, TransactionModule traceModule,
             @Nullable Instrumentation instrumentation, Map<String, String> properties,
             String version) {
 
         ConfigService configService = configModule.getConfigService();
         PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();
 
-        TransactionPointDao transactionPointDao = storageModule.getTransactionPointDao();
-        SnapshotDao snapshotDao = storageModule.getSnapshotDao();
+        AggregateDao aggregateDao = storageModule.getAggregateDao();
+        TraceDao traceDao = storageModule.getTraceDao();
         DataSource dataSource = storageModule.getDataSource();
         CappedDatabase cappedDatabase = storageModule.getCappedDatabase();
-        TraceCollectorImpl traceCollector = collectorModule.getTraceCollector();
+        TransactionCollectorImpl transactionCollector = collectorModule.getTransactionCollector();
         AnalyzedWorld analyzedWorld = traceModule.getAnalyzedWorld();
 
-        TraceRegistry traceRegistry = traceModule.getTraceRegistry();
+        TransactionRegistry transactionRegistry = traceModule.getTraceRegistry();
 
         LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
                 pluginDescriptorCache, jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),
-                collectorModule.getFixedTransactionPointIntervalSeconds());
+                collectorModule.getFixedAggregateIntervalSeconds());
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configService, clock, layoutJsonService);
         IndexHtmlHttpService indexHtmlHttpService =
                 new IndexHtmlHttpService(httpSessionManager, layoutJsonService);
-        transactionCommonService = new TransactionCommonService(transactionPointDao);
-        traceCommonService =
-                new TraceCommonService(snapshotDao, traceRegistry, traceCollector, clock, ticker);
-        TransactionJsonService transactionJsonService = new TransactionJsonService(
-                transactionCommonService, storageModule.getTransactionPointDao(), clock,
-                collectorModule.getFixedTransactionPointIntervalSeconds());
-        TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,
-                traceRegistry, traceCollector, ticker, clock);
+        aggregateCommonService = new AggregateCommonService(aggregateDao);
+        traceCommonService = new TraceCommonService(traceDao, transactionRegistry,
+                transactionCollector, clock, ticker);
+        AggregateJsonService aggregateJsonService = new AggregateJsonService(
+                aggregateCommonService, storageModule.getAggregateDao(), clock,
+                collectorModule.getFixedAggregateIntervalSeconds());
+        TracePointJsonService tracePointJsonService = new TracePointJsonService(traceDao,
+                transactionRegistry, transactionCollector, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
         TraceDetailHttpService traceDetailHttpService =
                 new TraceDetailHttpService(traceCommonService);
-        transactionExportHttpService = new TransactionExportHttpService(transactionCommonService);
+        transactionExportHttpService = new AggregateExportHttpService(aggregateCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
-        ErrorJsonService errorJsonService = new ErrorJsonService(snapshotDao);
+        ErrorJsonService errorJsonService = new ErrorJsonService(traceDao);
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 jvmModule.getThreadAllocatedBytes(), jvmModule.getHeapHistograms(),
                 jvmModule.getHeapDumps());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
                 pluginDescriptorCache, dataDir, httpSessionManager, traceModule);
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld);
-        PointcutConfigJsonService pointcutConfigJsonService = new PointcutConfigJsonService(
+        CapturePointJsonService capturePointJsonService = new CapturePointJsonService(
                 configService, traceModule.getAdviceCache(), classpathCache, traceModule);
-        AdminJsonService adminJsonService = new AdminJsonService(transactionPointDao, snapshotDao,
+        AdminJsonService adminJsonService = new AdminJsonService(aggregateDao, traceDao,
                 configService, traceModule.getAdviceCache(), analyzedWorld,
-                instrumentation, traceCollector, dataSource, traceRegistry);
+                instrumentation, transactionCollector, dataSource, transactionRegistry);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(layoutJsonService);
-        jsonServices.add(transactionJsonService);
+        jsonServices.add(aggregateJsonService);
         jsonServices.add(tracePointJsonService);
         jsonServices.add(traceJsonService);
         jsonServices.add(errorJsonService);
         jsonServices.add(jvmJsonService);
         jsonServices.add(configJsonService);
-        jsonServices.add(pointcutConfigJsonService);
+        jsonServices.add(capturePointJsonService);
         jsonServices.add(adminJsonService);
 
         // for now only a single http worker thread to keep # of threads down
@@ -200,8 +200,8 @@ public class LocalUiModule {
     @Nullable
     private static HttpServer buildHttpServer(String bindAddress, int port, int numWorkerThreads,
             HttpSessionManager httpSessionManager, IndexHtmlHttpService indexHtmlHttpService,
-            LayoutJsonService layoutJsonService, TraceDetailHttpService snapshotHttpService,
-            TransactionExportHttpService transactionExportHttpService,
+            LayoutJsonService layoutJsonService, TraceDetailHttpService traceDetailHttpService,
+            AggregateExportHttpService aggregateExportHttpService,
             TraceExportHttpService traceExportHttpService, List<Object> jsonServices) {
 
         String resourceBase = "org/glowroot/local/ui/app-dist";
@@ -225,11 +225,12 @@ public class LocalUiModule {
         // services
         // export services are not bound under /backend since the export urls are visible to users
         // as the download url for the export file
-        uriMappings.put(Pattern.compile("^/export/transaction.*$"), transactionExportHttpService);
+        uriMappings.put(Pattern.compile("^/export/performance.*$"), aggregateExportHttpService);
         uriMappings.put(Pattern.compile("^/export/trace/.*$"), traceExportHttpService);
-        uriMappings.put(Pattern.compile("^/backend/trace/spans$"), snapshotHttpService);
-        uriMappings.put(Pattern.compile("^/backend/trace/profile$"), snapshotHttpService);
-        uriMappings.put(Pattern.compile("^/backend/trace/outlier-profile$"), snapshotHttpService);
+        uriMappings.put(Pattern.compile("^/backend/trace/entries$"), traceDetailHttpService);
+        uriMappings.put(Pattern.compile("^/backend/trace/profile$"), traceDetailHttpService);
+        uriMappings.put(Pattern.compile("^/backend/trace/outlier-profile$"),
+                traceDetailHttpService);
         try {
             return new HttpServer(bindAddress, port, numWorkerThreads, layoutJsonService,
                     uriMappings.build(), httpSessionManager, jsonServices);

@@ -39,8 +39,8 @@ public class ConfigSidebar {
         return Utils.withWait(driver, getSidebar(), linkText("General"));
     }
 
-    public WebElement getPointcutsLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Pointcuts"));
+    public WebElement getCapturePointsLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Capture points"));
     }
 
     private WebElement getSidebar() {

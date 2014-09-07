@@ -61,8 +61,8 @@ public class AnalyzedMethod {
     }
 
     private AnalyzedMethod(String name, List<String> parameterTypes, String returnType,
-            int modifiers,
-            @Nullable String signature, List<String> exceptions, List<Advice> advisors) {
+            int modifiers, @Nullable String signature, List<String> exceptions,
+            List<Advice> advisors) {
         this.name = name.intern();
         this.parameterTypes = internStringList(parameterTypes);
         this.returnType = returnType.intern();

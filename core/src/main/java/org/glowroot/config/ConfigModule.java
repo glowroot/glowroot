@@ -43,8 +43,8 @@ public class ConfigModule {
         if (viewerModeEnabled) {
             pluginDescriptorCache = PluginDescriptorCache.createInViewerMode(pluginCache);
         } else {
-            pluginDescriptorCache = PluginDescriptorCache.create(pluginCache, instrumentation,
-                    dataDir);
+            pluginDescriptorCache =
+                    PluginDescriptorCache.create(pluginCache, instrumentation, dataDir);
         }
         configService = new ConfigService(dataDir, pluginDescriptorCache);
     }

@@ -104,9 +104,8 @@ class Weaver {
             // stackmap information to be consistent with the bytecode in order to pass
             // verification."
             //
-            ClassWriter cw = new ComputeFramesClassWriter(
-                    ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES,
-                    analyzedWorld, loader, codeSource, className);
+            ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_MAXS
+                    + ClassWriter.COMPUTE_FRAMES, analyzedWorld, loader, codeSource, className);
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors.get(), mixinTypes,
                     loader, analyzedWorld, codeSource, metricWrapperMethods);
             ClassReader cr = new ClassReader(classBytes);
@@ -125,9 +124,8 @@ class Weaver {
             if (shortCircuitException || cv.isInterfaceSoNothingToWeave()) {
                 return null;
             } else if (pointcutClassFoundException) {
-                ClassWriter cw2 = new ComputeFramesClassWriter(
-                        ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES,
-                        analyzedWorld, loader, codeSource, className);
+                ClassWriter cw2 = new ComputeFramesClassWriter(ClassWriter.COMPUTE_MAXS
+                        + ClassWriter.COMPUTE_FRAMES, analyzedWorld, loader, codeSource, className);
                 PointcutClassVisitor cv2 = new PointcutClassVisitor(cw2);
                 ClassReader cr2 = new ClassReader(classBytes);
                 cr2.accept(new JSRInlinerClassVisitor(cv2), ClassReader.SKIP_FRAMES);
@@ -213,8 +211,8 @@ class Weaver {
             }
             AnalyzedClass analyzedClass1;
             try {
-                analyzedClass1 = analyzedWorld.getAnalyzedClass(ClassNames.fromInternalName(type1),
-                        loader);
+                analyzedClass1 =
+                        analyzedWorld.getAnalyzedClass(ClassNames.fromInternalName(type1), loader);
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 return "java/lang/Object";
@@ -226,8 +224,8 @@ class Weaver {
             }
             AnalyzedClass analyzedClass2;
             try {
-                analyzedClass2 = analyzedWorld.getAnalyzedClass(ClassNames.fromInternalName(type2),
-                        loader);
+                analyzedClass2 =
+                        analyzedWorld.getAnalyzedClass(ClassNames.fromInternalName(type2), loader);
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 return "java/lang/Object";

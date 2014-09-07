@@ -166,8 +166,7 @@ public class AnalyzedClass {
                 @Nullable String signature, List<String> exceptions, List<Advice> advisors) {
             List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
             AnalyzedMethod method = AnalyzedMethod.from(name, parameterTypes,
-                    Type.getReturnType(desc),
-                    access, signature, exceptions, advisors);
+                    Type.getReturnType(desc), access, signature, exceptions, advisors);
             methods.add(method);
             return method;
         }

@@ -53,7 +53,8 @@ public class ThreadInterruptTest {
     public void shouldNotInterfereWithInterrupt() throws Exception {
         // given
         ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-        profilingConfig.setTracePercentage(100);
+        profilingConfig.setEnabled(true);
+        profilingConfig.setTransactionPercentage(100);
         profilingConfig.setIntervalMillis(10);
         container.getConfigService().updateProfilingConfig(profilingConfig);
         // when

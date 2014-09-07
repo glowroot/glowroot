@@ -19,9 +19,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
 import org.glowroot.api.MetricName;
+import org.glowroot.api.PluginServices;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -55,20 +55,21 @@ public class ServletInitAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindReceiver Object listener) {
+        public static TraceEntry onBefore(@BindReceiver Object listener) {
             String transactionName =
                     "servlet context initialized / " + listener.getClass().getName();
-            return pluginServices.startTrace("Startup", transactionName,
+            return pluginServices.startTransaction("Startup", transactionName,
                     MessageSupplier.from(listener.getClass().getName() + ".contextInitialized()"),
                     metricName);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler Span span) {
-            span.end();
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            span.endWithError(ErrorMessage.from(t));
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(ErrorMessage.from(t));
         }
     }
 
@@ -82,19 +83,20 @@ public class ServletInitAspect {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object servlet) {
+        public static TraceEntry onBefore(@BindReceiver Object servlet) {
             String transactionName = "servlet init / " + servlet.getClass().getName();
-            return pluginServices.startTrace("Startup", transactionName,
+            return pluginServices.startTransaction("Startup", transactionName,
                     MessageSupplier.from(servlet.getClass().getName() + ".init()"),
                     metricName);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler Span span) {
-            span.end();
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            span.endWithError(ErrorMessage.from(t));
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(ErrorMessage.from(t));
         }
     }
 
@@ -108,18 +110,19 @@ public class ServletInitAspect {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object filter) {
+        public static TraceEntry onBefore(@BindReceiver Object filter) {
             String transactionName = "filter init / " + filter.getClass().getName();
-            return pluginServices.startTrace("Startup", transactionName,
+            return pluginServices.startTransaction("Startup", transactionName,
                     MessageSupplier.from(filter.getClass().getName() + ".init()"), metricName);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler Span span) {
-            span.end();
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            span.endWithError(ErrorMessage.from(t));
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(ErrorMessage.from(t));
         }
     }
 }

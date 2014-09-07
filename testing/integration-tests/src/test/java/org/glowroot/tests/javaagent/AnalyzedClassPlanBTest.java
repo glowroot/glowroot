@@ -30,9 +30,9 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.config.PointcutConfig;
-import org.glowroot.container.config.PointcutConfig.AdviceKind;
-import org.glowroot.container.config.PointcutConfig.MethodModifier;
+import org.glowroot.container.config.CapturePoint;
+import org.glowroot.container.config.CapturePoint.CaptureKind;
+import org.glowroot.container.config.CapturePoint.MethodModifier;
 import org.glowroot.weaving.AnalyzedWorld;
 import org.glowroot.weaving.ClassNames;
 
@@ -47,7 +47,7 @@ public class AnalyzedClassPlanBTest {
     @BeforeClass
     public static void setUp() throws Exception {
         container = Containers.getSharedJavaagentContainer();
-        addPointcutConfig();
+        addCapturePoint();
         container.getConfigService().reweavePointcuts();
     }
 
@@ -83,16 +83,16 @@ public class AnalyzedClassPlanBTest {
         // then
     }
 
-    private static void addPointcutConfig() throws Exception {
-        PointcutConfig config = new PointcutConfig();
+    private static void addCapturePoint() throws Exception {
+        CapturePoint config = new CapturePoint();
         config.setClassName("org.glowroot.tests.javaagent.AnalyzedClassPlanBTest$Y");
         config.setMethodName("y");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setAdviceKind(AdviceKind.METRIC);
+        config.setCaptureKind(CaptureKind.METRIC);
         config.setMetricName("y");
-        container.getConfigService().addPointcutConfig(config);
+        container.getConfigService().addCapturePoint(config);
     }
 
     public static class ShouldNotLogWarningInAnalyzedWorldPlanB implements AppUnderTest {

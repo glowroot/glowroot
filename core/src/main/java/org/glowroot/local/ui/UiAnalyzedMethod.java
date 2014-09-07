@@ -97,7 +97,7 @@ public class UiAnalyzedMethod {
     // equals and hashCode are only defined in terms of name and parameterTypes since those uniquely
     // identify a method within a given class
     // this is currently important because UiAnalyzedMethod is used in a set to filter out
-    // duplicates in PointcutConfigJsonService
+    // duplicates in CapturePointJsonService
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj == this) {
@@ -114,7 +114,7 @@ public class UiAnalyzedMethod {
     // equals and hashCode are only defined in terms of name and parameterTypes since those uniquely
     // identify a method within a given class
     // this is currently important because UiAnalyzedMethod is used in a set to filter out
-    // duplicates in PointcutConfigJsonService
+    // duplicates in CapturePointJsonService
     @Override
     public int hashCode() {
         return Objects.hashCode(name, parameterTypes);

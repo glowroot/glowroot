@@ -18,6 +18,7 @@ package org.glowroot.tests;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -29,16 +30,15 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.AdvancedConfig;
-import org.glowroot.container.config.GeneralConfig;
-import org.glowroot.container.config.OutlierProfilingConfig;
+import org.glowroot.container.config.CapturePoint;
+import org.glowroot.container.config.CapturePoint.CaptureKind;
+import org.glowroot.container.config.CapturePoint.MethodModifier;
 import org.glowroot.container.config.PluginConfig;
-import org.glowroot.container.config.PointcutConfig;
-import org.glowroot.container.config.PointcutConfig.AdviceKind;
-import org.glowroot.container.config.PointcutConfig.MethodModifier;
 import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
+import org.glowroot.container.config.TraceConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
-import org.glowroot.container.config.UserTracingConfig;
+import org.glowroot.container.config.UserRecordingConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,14 +68,14 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldUpdateGeneralConfig() throws Exception {
+    public void shouldUpdateTraceConfig() throws Exception {
         // given
-        GeneralConfig config = container.getConfigService().getGeneralConfig();
+        TraceConfig config = container.getConfigService().getTraceConfig();
         // when
         updateAllFields(config);
-        container.getConfigService().updateGeneralConfig(config);
+        container.getConfigService().updateTraceConfig(config);
         // then
-        GeneralConfig updatedConfig = container.getConfigService().getGeneralConfig();
+        TraceConfig updatedConfig = container.getConfigService().getTraceConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
@@ -92,27 +92,14 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldUpdateOutlierProfilingConfig() throws Exception {
+    public void shouldUpdateUserRecordingConfig() throws Exception {
         // given
-        OutlierProfilingConfig config = container.getConfigService().getOutlierProfilingConfig();
+        UserRecordingConfig config = container.getConfigService().getUserRecordingConfig();
         // when
         updateAllFields(config);
-        container.getConfigService().updateOutlierProfilingConfig(config);
+        container.getConfigService().updateUserRecordingConfig(config);
         // then
-        OutlierProfilingConfig updatedConfig = container.getConfigService()
-                .getOutlierProfilingConfig();
-        assertThat(updatedConfig).isEqualTo(config);
-    }
-
-    @Test
-    public void shouldUpdateUserTracingConfig() throws Exception {
-        // given
-        UserTracingConfig config = container.getConfigService().getUserTracingConfig();
-        // when
-        updateAllFields(config);
-        container.getConfigService().updateUserTracingConfig(config);
-        // then
-        UserTracingConfig updatedConfig = container.getConfigService().getUserTracingConfig();
+        UserRecordingConfig updatedConfig = container.getConfigService().getUserRecordingConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
@@ -197,40 +184,40 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldInsertPointcutConfig() throws Exception {
+    public void shouldInsertCapturePoint() throws Exception {
         // given
-        PointcutConfig config = createPointcutConfig();
+        CapturePoint config = createCapturePoint();
         // when
-        container.getConfigService().addPointcutConfig(config);
+        container.getConfigService().addCapturePoint(config);
         // then
-        List<PointcutConfig> configs = container.getConfigService().getPointcutConfigs();
+        List<CapturePoint> configs = container.getConfigService().getCapturePoints();
         assertThat(configs).hasSize(1);
         assertThat(configs.get(0)).isEqualTo(config);
     }
 
     @Test
-    public void shouldUpdatePointcutConfig() throws Exception {
+    public void shouldUpdateCapturePoint() throws Exception {
         // given
-        PointcutConfig config = createPointcutConfig();
-        String version = container.getConfigService().addPointcutConfig(config);
+        CapturePoint config = createCapturePoint();
+        String version = container.getConfigService().addCapturePoint(config);
         // when
         updateAllFields(config);
-        container.getConfigService().updatePointcutConfig(version, config);
+        container.getConfigService().updateCapturePoint(version, config);
         // then
-        List<PointcutConfig> configs = container.getConfigService().getPointcutConfigs();
+        List<CapturePoint> configs = container.getConfigService().getCapturePoints();
         assertThat(configs).hasSize(1);
         assertThat(configs.get(0)).isEqualTo(config);
     }
 
     @Test
-    public void shouldDeletePointcutConfig() throws Exception {
+    public void shouldDeleteCapturePoint() throws Exception {
         // given
-        PointcutConfig config = createPointcutConfig();
-        String version = container.getConfigService().addPointcutConfig(config);
+        CapturePoint config = createCapturePoint();
+        String version = container.getConfigService().addCapturePoint(config);
         // when
-        container.getConfigService().removePointcutConfig(version);
+        container.getConfigService().removeCapturePoint(version);
         // then
-        List<PointcutConfig> configs = container.getConfigService().getPointcutConfigs();
+        List<CapturePoint> configs = container.getConfigService().getCapturePoints();
         assertThat(configs).isEmpty();
     }
 
@@ -258,33 +245,31 @@ public class ConfigTest {
         assertThat(updatedConfig).isEqualTo(config);
     }
 
-    private static void updateAllFields(GeneralConfig config) {
+    private static void updateAllFields(TraceConfig config) {
         config.setEnabled(!config.isEnabled());
         config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
-        config.setStuckThresholdSeconds(config.getStuckThresholdSeconds() + 1);
-        config.setMaxSpans(config.getMaxSpans() + 1);
+        config.setOutlierProfilingEnabled(!config.isOutlierProfilingEnabled());
+        config.setOutlierProfilingInitialDelayMillis(
+                config.getOutlierProfilingInitialDelayMillis() + 1);
+        config.setOutlierProfilingIntervalMillis(config.getOutlierProfilingIntervalMillis() + 1);
     }
 
     private static void updateAllFields(ProfilingConfig config) {
-        config.setTracePercentage(config.getTracePercentage() + 1);
-        config.setIntervalMillis(config.getIntervalMillis() + 1);
-        config.setMaxSeconds(config.getMaxSeconds() + 1);
-    }
-
-    private static void updateAllFields(OutlierProfilingConfig config) {
         config.setEnabled(!config.isEnabled());
-        config.setInitialDelayMillis(config.getInitialDelayMillis() + 1);
+        config.setTransactionPercentage(config.getTransactionPercentage() + 1);
         config.setIntervalMillis(config.getIntervalMillis() + 1);
-        config.setMaxSeconds(config.getMaxSeconds() + 1);
+        config.setTraceStoreThresholdOverrideMillis(
+                config.getTraceStoreThresholdOverrideMillis() + 1);
     }
 
-    private static void updateAllFields(UserTracingConfig config) {
-        config.setUser(config.getUser() + "x");
-        config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
-        config.setProfile(!config.isProfile());
+    private static void updateAllFields(UserRecordingConfig config) {
+        config.setEnabled(!config.isEnabled());
+        config.setUser(Strings.nullToEmpty(config.getUser()) + "x");
+        config.setProfileIntervalMillis(config.getProfileIntervalMillis() + 1);
     }
 
     private static void updateAllFields(StorageConfig config) {
+        config.setAggregateExpirationHours(config.getAggregateExpirationHours() + 1);
         config.setTraceExpirationHours(config.getTraceExpirationHours() + 1);
         config.setCappedDatabaseSizeMb(config.getCappedDatabaseSizeMb() + 1);
     }
@@ -297,6 +282,11 @@ public class ConfigTest {
 
     private static void updateAllFields(AdvancedConfig config) {
         config.setMetricWrapperMethods(!config.isMetricWrapperMethods());
+        config.setImmediatePartialStoreThresholdSeconds(
+                config.getImmediatePartialStoreThresholdSeconds() + 1);
+        config.setMaxEntriesPerTrace(config.getMaxEntriesPerTrace() + 1);
+        config.setCaptureThreadInfo(!config.isCaptureThreadInfo());
+        config.setCaptureGcInfo(!config.isCaptureGcInfo());
     }
 
     private static void updateAllFields(PluginConfig config) {
@@ -307,73 +297,73 @@ public class ConfigTest {
         config.setProperty("alternateHeadline", alternateHeadline + "x");
         String hasDefaultVal = (String) config.getProperty("hasDefaultVal");
         config.setProperty("hasDefaultVal", hasDefaultVal + "x");
-        boolean captureSpanStackTraces = (Boolean) config.getProperty("captureSpanStackTraces");
-        config.setProperty("captureSpanStackTraces", !captureSpanStackTraces);
+        boolean captureTraceEntryStackTraces =
+                (Boolean) config.getProperty("captureTraceEntryStackTraces");
+        config.setProperty("captureTraceEntryStackTraces", !captureTraceEntryStackTraces);
     }
 
-    private static PointcutConfig createPointcutConfig() {
-        PointcutConfig config = new PointcutConfig();
+    private static CapturePoint createCapturePoint() {
+        CapturePoint config = new CapturePoint();
         config.setClassName("java.util.Collections");
         config.setMethodName("yak");
         config.setMethodParameterTypes(Lists.newArrayList("java.lang.String", "java.util.List"));
         config.setMethodReturnType("void");
-        config.setMethodModifiers(Lists
-                .newArrayList(MethodModifier.PUBLIC, MethodModifier.STATIC));
-        config.setAdviceKind(AdviceKind.TRACE);
+        config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC, MethodModifier.STATIC));
+        config.setCaptureKind(CaptureKind.TRANSACTION);
         config.setMetricName("yako");
-        config.setMessageTemplate("yak(): {{0}}, {{1}} => {{?}}");
+        config.setTraceEntryTemplate("yak(): {{0}}, {{1}} => {{?}}");
         config.setTransactionType("ttype");
         config.setTransactionNameTemplate("tname");
-        config.setTraceUserTemplate("");
+        config.setTransactionUserTemplate("");
         config.setEnabledProperty("");
-        config.setSpanEnabledProperty("");
+        config.setTraceEntryEnabledProperty("");
         return config;
     }
 
-    private static void updateAllFields(PointcutConfig config) {
+    private static void updateAllFields(CapturePoint config) {
         config.setClassName(config.getClassName() + "a");
         config.setMethodName(config.getMethodName() + "b");
         if (config.getMethodParameterTypes().size() == 0) {
             config.setMethodParameterTypes(ImmutableList.of("java.lang.String"));
         } else {
-            config.setMethodParameterTypes(ImmutableList.of(config.getMethodParameterTypes().get(0)
-                    + "c"));
+            config.setMethodParameterTypes(
+                    ImmutableList.of(config.getMethodParameterTypes().get(0) + "c"));
         }
         config.setMethodReturnType(config.getMethodReturnType() + "d");
         if (config.getMethodModifiers().contains(MethodModifier.PUBLIC)) {
             config.setMethodModifiers(ImmutableList.of(MethodModifier.PRIVATE));
         } else {
-            config.setMethodModifiers(ImmutableList
-                    .of(MethodModifier.PUBLIC, MethodModifier.STATIC));
+            config.setMethodModifiers(
+                    ImmutableList.of(MethodModifier.PUBLIC, MethodModifier.STATIC));
         }
-        if (config.getAdviceKind() == AdviceKind.METRIC) {
-            config.setAdviceKind(AdviceKind.SPAN);
+        if (config.getCaptureKind() == CaptureKind.METRIC) {
+            config.setCaptureKind(CaptureKind.TRACE_ENTRY);
         } else {
-            config.setAdviceKind(AdviceKind.METRIC);
+            config.setCaptureKind(CaptureKind.METRIC);
         }
         config.setMetricName(config.getMetricName() + "e");
-        config.setMessageTemplate(config.getMessageTemplate() + "f");
-        config.setCaptureSelfNested(!config.isCaptureSelfNested());
-        Long stackTraceThresholdMillis = config.getStackTraceThresholdMillis();
-        if (stackTraceThresholdMillis == null) {
-            config.setStackTraceThresholdMillis(1000L);
+        config.setTraceEntryTemplate(config.getTraceEntryTemplate() + "f");
+        config.setTraceEntryCaptureSelfNested(!config.isTraceEntryCaptureSelfNested());
+        Long traceEntryStackThresholdMillis = config.getTraceEntryStackThresholdMillis();
+        if (traceEntryStackThresholdMillis == null) {
+            config.setTraceEntryStackThresholdMillis(1000L);
         } else {
-            config.setStackTraceThresholdMillis(stackTraceThresholdMillis + 1);
+            config.setTraceEntryStackThresholdMillis(traceEntryStackThresholdMillis + 1);
         }
         config.setTransactionType(config.getTransactionType() + "g");
         config.setTransactionNameTemplate(config.getTransactionNameTemplate() + "h");
-        config.setTraceUserTemplate(config.getTraceUserTemplate() + "i");
-        Map<String, String> traceCustomAttributeTemplates =
-                Maps.newHashMap(config.getTraceCustomAttributeTemplates());
-        traceCustomAttributeTemplates.put("Test attr name", "Test attr value");
-        config.setTraceCustomAttributeTemplates(traceCustomAttributeTemplates);
         Long storeThresholdOverrideMillis = config.getTraceStoreThresholdMillis();
         if (storeThresholdOverrideMillis == null) {
             config.setTraceStoreThresholdMillis(1000L);
         } else {
             config.setTraceStoreThresholdMillis(storeThresholdOverrideMillis + 1);
         }
+        config.setTransactionUserTemplate(config.getTransactionUserTemplate() + "i");
+        Map<String, String> transactionCustomAttributeTemplates =
+                Maps.newHashMap(config.getTransactionCustomAttributeTemplates());
+        transactionCustomAttributeTemplates.put("Test attr name", "Test attr value");
+        config.setTransactionCustomAttributeTemplates(transactionCustomAttributeTemplates);
         config.setEnabledProperty(config.getEnabledProperty() + "k");
-        config.setSpanEnabledProperty(config.getSpanEnabledProperty() + "l");
+        config.setTraceEntryEnabledProperty(config.getTraceEntryEnabledProperty() + "l");
     }
 }

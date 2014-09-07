@@ -39,14 +39,63 @@
           </div>
           <p>
             When enabled, all methods that are woven for trace metric timing are renamed with suffix
-            <code>$glowroot$trace$metric$&lt;trace metric name&gt;</code>
+            <code>$glowroot$metric$&lt;metric name&gt;</code>
             and a new method is generated in its place that simply calls the renamed method. The purpose of this is so
-            that stack traces gathered by the profiler can see what trace metric timings are active, and the resulting
-            trace profiles can be filtered in the UI by trace metric names. For example, a trace profile can be filtered
-            to see only the profile of code that is executing jdbc queries. Or, even more useful, filter to see only the
-            profile of code that has no trace metric timings, which helps to discover new bottlenecks that would be
-            worth timing via pointcuts. <em>Changes to this setting will take effect on next JVM restart.</em>
+            that stack traces gathered by the profiler can see what metric timings are active, and the resulting
+            profiles can be filtered in the UI by metric names. For example, a profile can be filtered
+            to see only the profile of code that is executing jdbc queries. Or, even more useful, filter to see only
+            the profile of code that has no metric timings, which helps to discover new bottlenecks that would be
+            worth timing via capture points. <em>Changes to this setting will take effect on next JVM restart.</em>
           </p>
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Immediate partial trace store threshold"
+           gt-model="config.immediatePartialStoreThresholdSeconds"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-addon="seconds">
+        <div class="help-block">
+          Any transaction that exceeds this amount of time will have its partial trace stored to
+          disk immediately (prior to its completion).
+          This is to guard against transactions which never complete (or at least run long
+          enough and do enough harm to hang the jvm).
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Max entries per trace"
+           gt-model="config.maxEntriesPerTrace"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em">
+        <div class="help-block">
+          Maximum number of entries collected for a given trace. This is used to
+          limit the memory requirement of very long transactions that would capture
+          potentially hundreds of thousands of trace entries (e.g. large batch or background
+          operations).
+          Also, the UI is not really optimized for viewing super large numbers of trace entries.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Thread info"
+           gt-checkbox-label="Capture thread info per transaction"
+           gt-model="config.captureThreadInfo"
+           gt-type="checkbox">
+        <div class="help-block">
+          Capture thread info per transaction (CPU time, blocked time, waited time and allocated memory) if available.
+          See <a href="/jvm/capabilities">JVM Capabilities</a>.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="GC info"
+           gt-checkbox-label="Capture garbage collection info per trace"
+           gt-model="config.captureGcInfo"
+           gt-type="checkbox">
+        <div class="help-block">
+          Capture global garbage collection info per trace.
         </div>
       </div>
       <div class="form-group form-buttons">

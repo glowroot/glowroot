@@ -5,7 +5,7 @@
   "transactionTypes": [
     "Integration test"
   ],
-  "traceCustomAttributes": [
+  "transactionCustomAttributes": [
     "Zee One",
     "Yee Two",
     "Xee Three",
@@ -31,10 +31,10 @@
       "label": "Has default val"
     },
     {
-      "name": "captureSpanStackTraces",
+      "name": "captureTraceEntryStackTraces",
       "type": "boolean",
       "label": "Stack trace",
-      "checkboxLabel": "Capture stack trace at pauseOneMillisecond() span"
+      "checkboxLabel": "Capture stack trace at pauseOneMillisecond() trace entry"
     },
     {
       "name": "levelFiveEnabled",
@@ -43,11 +43,54 @@
       "checkboxLabel": "Capture metrics for LevelFive.call()"
     },
     {
-      "name": "levelFiveSpanEnabled",
+      "name": "levelFiveEntryEnabled",
       "type": "boolean",
-      "label": "LevelFive spans",
-      "checkboxLabel": "Capture spans for LevelFive.call()",
-      "description": "LevelFive property above must be enabled also in order to capture spans."
+      "label": "LevelFive trace entries",
+      "checkboxLabel": "Capture trace entries for LevelFive.call()",
+      "description": [
+        "LevelFive property above must be enabled also in order to capture trace entries."
+      ]
+    }
+  ],
+  "capturePoints": [
+    {
+      "className": "org.glowroot.tests.LevelFour",
+      "methodName": "call",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.String"
+      ],
+      "captureKind": "trace_entry",
+      "metricName": "level four",
+      "traceEntryTemplate": "Level Four: {{0}}, {{1}}"
+    },
+    {
+      "className": "org.glowroot.tests.LevelFive",
+      "methodName": "call",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.String"
+      ],
+      "captureKind": "trace_entry",
+      "metricName": "level five",
+      "traceEntryTemplate": "Level Five: {{0}}, {{1}}",
+      "enabledProperty": "levelFiveEnabled",
+      "traceEntryEnabledProperty": "levelFiveEntryEnabled"
+    },
+    {
+      "className": "org.glowroot.tests.AAA",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "java.lang.String",
+        ".."
+      ],
+      "captureKind": "other",
+      "transactionNameTemplate": "{{0}} {{1.nested.name}}",
+      "transactionUserTemplate": "u{{1.nested.name}}",
+      "transactionCustomAttributeTemplates": {
+        "View": "v{{0}}",
+        "Z": "z{{0}}"
+      }
     }
   ],
   "aspects": [
@@ -59,60 +102,5 @@
     "org.glowroot.tests.plugin.PauseAspect",
     "org.glowroot.tests.plugin.MatchAllTypesAspect",
     "org.glowroot.tests.plugin.MockDriverAspect"
-  ],
-  "pointcuts": [
-    {
-      "className": "org.glowroot.tests.LevelFour",
-      "methodName": "call",
-      "methodParameterTypes": [
-        "java.lang.String",
-        "java.lang.String"
-      ],
-      "methodReturnType": "void",
-      "methodModifiers": [ ],
-      "adviceKind": "span",
-      "metricName": "level four",
-      "messageTemplate": "Level Four: {{0}}, {{1}}",
-      "transactionNameTemplate": "",
-      "enabledProperty": "",
-      "spanEnabledProperty": ""
-    },
-    {
-      "className": "org.glowroot.tests.LevelFive",
-      "methodName": "call",
-      "methodParameterTypes": [
-        "java.lang.String",
-        "java.lang.String"
-      ],
-      "methodReturnType": "void",
-      "methodModifiers": [ ],
-      "adviceKind": "span",
-      "metricName": "level five",
-      "messageTemplate": "Level Five: {{0}}, {{1}}",
-      "transactionNameTemplate": "",
-      "enabledProperty": "levelFiveEnabled",
-      "spanEnabledProperty": "levelFiveSpanEnabled"
-    },
-    {
-      "className": "org.glowroot.tests.AAA",
-      "methodName": "execute",
-      "methodParameterTypes": [
-        "java.lang.String",
-        ".."
-      ],
-      "methodReturnType": "void",
-      "methodModifiers": [ ],
-      "adviceKind": "other",
-      "metricName": "",
-      "messageTemplate": "",
-      "transactionNameTemplate": "{{0}} {{1.nested.name}}",
-      "traceUserTemplate": "u{{1.nested.name}}",
-      "traceCustomAttributeTemplates": {
-        "View": "v{{0}}",
-        "Z": "z{{0}}"
-      },
-      "enabledProperty": "",
-      "spanEnabledProperty": ""
-    }
   ]
 }

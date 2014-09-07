@@ -33,9 +33,9 @@ import org.glowroot.api.Optional;
  * Similar thread safety issues as {@link JdbcMessageSupplier}, see documentation in that class for
  * more info.
  * 
- * This span gets to piggyback on the happens-before relationships created by putting other spans
- * into the concurrent queue which ensures that session state is visible at least up to the start of
- * the most recent span.
+ * This trace entry gets to piggyback on the happens-before relationships created by putting other
+ * trace entries into the concurrent queue which ensures that session state is visible at least up
+ * to the start of the most recent trace entry.
  * 
  * @author Trask Stalnaker
  * @since 0.5

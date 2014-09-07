@@ -37,8 +37,8 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
- * Http service to read trace snapshot spans, bound to /backend/trace/spans, /backend/trace/profile
- * and /backend/trace/outlier-profile.
+ * Http service to read trace detail, bound to /backend/trace/entries, /backend/trace/profile and
+ * /backend/trace/outlier-profile.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -74,8 +74,8 @@ class TraceDetailHttpService implements HttpService {
         response.headers().set(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
         CharSource charSource;
         try {
-            if (traceComponent.equals("spans")) {
-                charSource = traceCommonService.getSpans(traceId);
+            if (traceComponent.equals("entries")) {
+                charSource = traceCommonService.getEntries(traceId);
             } else if (traceComponent.equals("profile")) {
                 charSource = traceCommonService.getProfile(traceId);
             } else if (traceComponent.equals("outlier-profile")) {
@@ -90,8 +90,8 @@ class TraceDetailHttpService implements HttpService {
         response.setChunked(true);
         channel.write(response);
         if (charSource == null) {
-            // UI checks spansExistence/outlierProfileExistence/traceProfileExistence so should not
-            // end up here, but tests don't, send json null value to them
+            // UI checks entriesExistence/outlierProfileExistence/traceProfileExistence so should
+            // not end up here, but tests don't, send json null value to them
             channel.write(ChunkedInputs.fromReader(new StringReader("null")));
         } else {
             channel.write(ChunkedInputs.fromReader(charSource.openStream()));

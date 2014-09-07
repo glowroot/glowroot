@@ -23,7 +23,7 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
@@ -47,20 +47,20 @@ public class Slf4jMarkerAspect {
         String formattedMessage = nullToEmpty(formattingTuple.getMessage());
         Throwable throwable = formattingTuple.getThrowable();
         if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), throwable != null)) {
-            pluginServices.setTraceError(formattedMessage);
+            pluginServices.setTransactionError(formattedMessage);
         }
-        Span span = pluginServices.startSpan(
+        TraceEntry traceEntry = pluginServices.startTraceEntry(
                 MessageSupplier.from("log {}: {}", methodName, formattedMessage),
                 metricName);
-        return new LogAdviceTraveler(span, formattedMessage, throwable);
+        return new LogAdviceTraveler(traceEntry, formattedMessage, throwable);
     }
 
     private static void onAfter(LogAdviceTraveler traveler) {
         Throwable t = traveler.throwable;
         if (t == null) {
-            traveler.span.endWithError(ErrorMessage.from(traveler.formattedMessage));
+            traveler.traceEntry.endWithError(ErrorMessage.from(traveler.formattedMessage));
         } else {
-            traveler.span.endWithError(ErrorMessage.from(t.getMessage(), t));
+            traveler.traceEntry.endWithError(ErrorMessage.from(t.getMessage(), t));
         }
     }
 
@@ -75,22 +75,22 @@ public class Slf4jMarkerAspect {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
         }
         @OnBefore
-        public static Span onBefore(@SuppressWarnings("unused") @BindParameter Object marker,
+        public static TraceEntry onBefore(@SuppressWarnings("unused") @BindParameter Object marker,
                 @BindParameter String message, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
-                pluginServices.setTraceError(message);
+                pluginServices.setTransactionError(message);
             }
-            return pluginServices.startSpan(
+            return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, message),
                     metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span,
+        public static void onAfter(@BindTraveler TraceEntry traceEntry,
                 @SuppressWarnings("unused") @BindParameter Object marker,
                 @BindParameter String message) {
             LoggerPlugin.inAdvice.set(false);
-            span.endWithError(ErrorMessage.from(message));
+            traceEntry.endWithError(ErrorMessage.from(message));
         }
     }
 
@@ -203,13 +203,13 @@ public class Slf4jMarkerAspect {
     }
 
     private static class LogAdviceTraveler {
-        private final Span span;
+        private final TraceEntry traceEntry;
         private final String formattedMessage;
         @Nullable
         private final Throwable throwable;
-        private LogAdviceTraveler(Span span, String formattedMessage,
+        private LogAdviceTraveler(TraceEntry traceEntry, String formattedMessage,
                 @Nullable Throwable throwable) {
-            this.span = span;
+            this.traceEntry = traceEntry;
             this.formattedMessage = formattedMessage;
             this.throwable = throwable;
         }

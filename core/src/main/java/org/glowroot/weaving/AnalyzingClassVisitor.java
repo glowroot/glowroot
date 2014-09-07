@@ -85,8 +85,8 @@ class AnalyzingClassVisitor extends ClassVisitor {
         }
         String className = ClassNames.fromInternalName(internalName);
         String superClassName = ClassNames.fromInternalName(superInternalName);
-        analyzedClassBuilder = AnalyzedClass.builder(access, className, superClassName,
-                interfaceNames);
+        analyzedClassBuilder =
+                AnalyzedClass.builder(access, className, superClassName, interfaceNames);
         adviceMatchers = AdviceMatcher.getAdviceMatchers(className, advisors);
         if (Modifier.isInterface(access)) {
             ImmutableList<MixinType> matchedMixinTypes = getMatchedMixinTypes(className,
@@ -107,8 +107,8 @@ class AnalyzingClassVisitor extends ClassVisitor {
         superAnalyzedClasses = Lists.newArrayList();
         superAnalyzedClasses.addAll(superAnalyzedHierarchy);
         superAnalyzedClasses.addAll(interfaceAnalyzedHierarchy);
-        matchedMixinTypes = getMatchedMixinTypes(className, superAnalyzedHierarchy,
-                interfaceAnalyzedHierarchy);
+        matchedMixinTypes =
+                getMatchedMixinTypes(className, superAnalyzedHierarchy, interfaceAnalyzedHierarchy);
         analyzedClassBuilder.addMixinTypes(matchedMixinTypes);
 
         boolean hasSuperAdvice = false;
@@ -186,8 +186,8 @@ class AnalyzingClassVisitor extends ClassVisitor {
             ParseContext parseContext) {
         List<AnalyzedClass> analyzedHierarchy = Lists.newArrayList();
         for (String className : classNames) {
-            analyzedHierarchy.addAll(
-                    analyzedWorld.getAnalyzedHierarchy(className, loader, parseContext));
+            analyzedHierarchy.addAll(analyzedWorld.getAnalyzedHierarchy(className, loader,
+                    parseContext));
         }
         return analyzedHierarchy;
     }

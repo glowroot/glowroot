@@ -46,8 +46,8 @@ public class HeapDumps {
     }
 
     public void dumpHeap(String path) throws JMException, InterruptedException {
-        lazyPlatformMBeanServer.invoke(objectName, "dumpHeap",
-                new Object[] {path, false}, new String[] {"java.lang.String", "boolean"});
+        lazyPlatformMBeanServer.invoke(objectName, "dumpHeap", new Object[] {path, false},
+                new String[] {"java.lang.String", "boolean"});
     }
 
     static OptionalService<HeapDumps> create(

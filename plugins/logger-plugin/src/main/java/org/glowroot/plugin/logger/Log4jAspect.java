@@ -21,7 +21,7 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
@@ -50,20 +50,21 @@ public class Log4jAspect {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
         }
         @OnBefore
-        public static Span onBefore(@BindParameter Object message,
+        public static TraceEntry onBefore(@BindParameter Object message,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
-                pluginServices.setTraceError(String.valueOf(message));
+                pluginServices.setTransactionError(String.valueOf(message));
             }
-            return pluginServices.startSpan(
+            return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
                     metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span, @BindParameter Object message) {
+        public static void onAfter(@BindTraveler TraceEntry traceEntry,
+                @BindParameter Object message) {
             LoggerPlugin.inAdvice.set(false);
-            span.endWithError(ErrorMessage.from(String.valueOf(message)));
+            traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
         }
     }
 
@@ -78,24 +79,25 @@ public class Log4jAspect {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
         }
         @OnBefore
-        public static Span onBefore(@BindParameter Object message, @BindParameter Throwable t,
+        public static TraceEntry onBefore(@BindParameter Object message,
+                @BindParameter Throwable t,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {
-                pluginServices.setTraceError(String.valueOf(message));
+                pluginServices.setTransactionError(String.valueOf(message));
             }
-            return pluginServices.startSpan(
+            return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
                     metricName);
         }
         @OnAfter
         public static void onAfter(@BindParameter Object message, @BindParameter Throwable t,
-                @BindTraveler Span span) {
+                @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice.set(false);
             if (t == null) {
-                span.endWithError(ErrorMessage.from(String.valueOf(message)));
+                traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
             } else {
-                span.endWithError(ErrorMessage.from(t.getMessage(), t));
+                traceEntry.endWithError(ErrorMessage.from(t.getMessage(), t));
             }
         }
     }
@@ -115,20 +117,22 @@ public class Log4jAspect {
             return level.equals("FATAL") || level.equals("ERROR") || level.equals("WARN");
         }
         @OnBefore
-        public static Span onBefore(@BindParameter Object priority, @BindParameter Object message) {
+        public static TraceEntry onBefore(@BindParameter Object priority,
+                @BindParameter Object message) {
             LoggerPlugin.inAdvice.set(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), false)) {
-                pluginServices.setTraceError(String.valueOf(message));
+                pluginServices.setTransactionError(String.valueOf(message));
             }
-            return pluginServices.startSpan(
+            return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", level, String.valueOf(message)),
                     metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span, @BindParameter Object message) {
+        public static void onAfter(@BindTraveler TraceEntry traceEntry,
+                @BindParameter Object message) {
             LoggerPlugin.inAdvice.set(false);
-            span.endWithError(ErrorMessage.from(String.valueOf(message)));
+            traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
         }
     }
 
@@ -147,26 +151,27 @@ public class Log4jAspect {
             return level.equals("FATAL") || level.equals("ERROR") || level.equals("WARN");
         }
         @OnBefore
-        public static Span onBefore(@BindParameter Object priority, @BindParameter Object message,
+        public static TraceEntry onBefore(@BindParameter Object priority,
+                @BindParameter Object message,
                 @BindParameter Throwable t) {
             LoggerPlugin.inAdvice.set(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
-                pluginServices.setTraceError(String.valueOf(message));
+                pluginServices.setTransactionError(String.valueOf(message));
             }
-            return pluginServices.startSpan(
+            return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", level, String.valueOf(message)),
                     metricName);
         }
         @OnAfter
         public static void onAfter(@SuppressWarnings("unused") @BindParameter Object priority,
                 @BindParameter Object message, @BindParameter Throwable t,
-                @BindTraveler Span span) {
+                @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice.set(false);
             if (t == null) {
-                span.endWithError(ErrorMessage.from(String.valueOf(message)));
+                traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
             } else {
-                span.endWithError(ErrorMessage.from(t.getMessage(), t));
+                traceEntry.endWithError(ErrorMessage.from(t.getMessage(), t));
             }
         }
     }
@@ -186,24 +191,26 @@ public class Log4jAspect {
             return level.equals("FATAL") || level.equals("ERROR") || level.equals("WARN");
         }
         @OnBefore
-        public static Span onBefore(@BindParameter Object priority, @BindParameter String key,
+        public static TraceEntry onBefore(@BindParameter Object priority,
+                @BindParameter String key,
                 @BindParameter Throwable t) {
             LoggerPlugin.inAdvice.set(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
-                pluginServices.setTraceError(key);
+                pluginServices.setTransactionError(key);
             }
-            return pluginServices.startSpan(
+            return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {} (localized): {}", level, key), metricName);
         }
         @OnAfter
         public static void onAfter(@SuppressWarnings("unused") @BindParameter Object priority,
-                @BindParameter String key, @BindParameter Throwable t, @BindTraveler Span span) {
+                @BindParameter String key, @BindParameter Throwable t,
+                @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice.set(false);
             if (t == null) {
-                span.endWithError(ErrorMessage.from(key));
+                traceEntry.endWithError(ErrorMessage.from(key));
             } else {
-                span.endWithError(ErrorMessage.from(t.getMessage(), t));
+                traceEntry.endWithError(ErrorMessage.from(t.getMessage(), t));
             }
         }
     }
@@ -223,12 +230,13 @@ public class Log4jAspect {
             return level.equals("FATAL") || level.equals("ERROR") || level.equals("WARN");
         }
         @OnBefore
-        public static Span onBefore(@BindParameter Object priority, @BindParameter String key,
+        public static TraceEntry onBefore(@BindParameter Object priority,
+                @BindParameter String key,
                 @BindParameter Object[] params, @BindParameter Throwable t) {
             LoggerPlugin.inAdvice.set(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
-                pluginServices.setTraceError(key);
+                pluginServices.setTransactionError(key);
             }
             if (params.length > 0) {
                 StringBuilder sb = new StringBuilder();
@@ -238,11 +246,11 @@ public class Log4jAspect {
                     }
                     sb.append(params[i]);
                 }
-                return pluginServices.startSpan(
+                return pluginServices.startTraceEntry(
                         MessageSupplier.from("log {} (localized): {} [{}]", level, key,
                                 sb.toString()), metricName);
             } else {
-                return pluginServices.startSpan(
+                return pluginServices.startTraceEntry(
                         MessageSupplier.from("log {} (localized): {}", level, key),
                         metricName);
             }
@@ -250,7 +258,7 @@ public class Log4jAspect {
         @OnAfter
         public static void onAfter(@SuppressWarnings("unused") @BindParameter Object priority,
                 @BindParameter String key, @BindParameter Object[] params,
-                @BindParameter Throwable t, @BindTraveler Span span) {
+                @BindParameter Throwable t, @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice.set(false);
             StringBuilder sb = new StringBuilder();
             sb.append(key);
@@ -265,9 +273,9 @@ public class Log4jAspect {
                 sb.append("]");
             }
             if (t == null) {
-                span.endWithError(ErrorMessage.from(sb.toString()));
+                traceEntry.endWithError(ErrorMessage.from(sb.toString()));
             } else {
-                span.endWithError(ErrorMessage.from(t.getMessage(), t));
+                traceEntry.endWithError(ErrorMessage.from(t.getMessage(), t));
             }
         }
     }

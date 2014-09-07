@@ -30,10 +30,10 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.TraceConfig;
 import org.glowroot.container.trace.ExceptionInfo;
-import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.container.trace.TraceEntry;
 import org.glowroot.tests.plugin.LogCauseAspect.LogCauseAdvice;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,39 +64,39 @@ public class ErrorCaptureTest {
     @Test
     public void shouldCaptureError() throws Exception {
         // given
-        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setStoreThresholdMillis(10000);
-        container.getConfigService().updateGeneralConfig(generalConfig);
+        TraceConfig traceConfig = container.getConfigService().getTraceConfig();
+        traceConfig.setStoreThresholdMillis(10000);
+        container.getConfigService().updateTraceConfig(traceConfig);
         // when
         container.executeAppUnderTest(ShouldCaptureError.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getError()).isNotNull();
-        assertThat(spans).hasSize(4);
-        Span rootSpan = spans.get(0);
-        assertThat(rootSpan.getError()).isNotNull();
-        assertThat(rootSpan.getError().getDetail()).isNotNull();
-        assertThat(rootSpan.getError().getDetail()).isEqualTo(
+        assertThat(entries).hasSize(4);
+        TraceEntry rootEntry = entries.get(0);
+        assertThat(rootEntry.getError()).isNotNull();
+        assertThat(rootEntry.getError().getDetail()).isNotNull();
+        assertThat(rootEntry.getError().getDetail()).isEqualTo(
                 mapOf("erra", null, "errb", mapOf("errc", null, "errd", "xyz")));
-        assertThat(spans.get(1).getError()).isNull();
-        assertThat(spans.get(2).getError()).isNull();
-        assertThat(spans.get(3).getError()).isNull();
+        assertThat(entries.get(1).getError()).isNull();
+        assertThat(entries.get(2).getError()).isNull();
+        assertThat(entries.get(3).getError()).isNull();
     }
 
     @Test
-    public void shouldCaptureErrorWithSpanStackTrace() throws Exception {
+    public void shouldCaptureErrorWithTraceEntryStackTrace() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldCaptureErrorWithSpanStackTrace.class);
+        container.executeAppUnderTest(ShouldCaptureErrorWithTraceEntryStackTrace.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getError()).isNull();
-        assertThat(spans).hasSize(2);
-        assertThat(spans.get(1).getError()).isNotNull();
-        assertThat(spans.get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
-        List<String> stackTrace = spans.get(1).getStackTrace();
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(1).getError()).isNotNull();
+        assertThat(entries.get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
+        List<String> stackTrace = entries.get(1).getStackTrace();
         assertThat(stackTrace.get(0)).startsWith(LogError.class.getName() + ".log(");
     }
 
@@ -107,12 +107,12 @@ public class ErrorCaptureTest {
         container.executeAppUnderTest(ShouldCaptureErrorWithCausalChain.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getError()).isNull();
-        assertThat(spans).hasSize(2);
-        assertThat(spans.get(1).getError()).isNotNull();
-        assertThat(spans.get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
-        ExceptionInfo exception = spans.get(1).getError().getException();
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(1).getError()).isNotNull();
+        assertThat(entries.get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
+        ExceptionInfo exception = entries.get(1).getError().getException();
         assertThat(exception.getDisplay()).isEqualTo(
                 "java.lang.IllegalStateException: java.lang.IllegalArgumentException: Cause 3");
         assertThat(exception.getStackTrace().get(0)).startsWith(
@@ -142,24 +142,24 @@ public class ErrorCaptureTest {
     }
 
     @Test
-    public void shouldAddNestedErrorSpan() throws Exception {
+    public void shouldAddNestedErrorEntry() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldAddNestedErrorSpan.class);
+        container.executeAppUnderTest(ShouldAddNestedErrorEntry.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getError()).isNull();
-        assertThat(spans).hasSize(3);
-        assertThat(spans.get(0).getNestingLevel())
+        assertThat(entries).hasSize(3);
+        assertThat(entries.get(0).getNestingLevel())
                 .isEqualTo(0);
-        assertThat(spans.get(1).getMessage().getText())
-                .isEqualTo("outer span to test nesting level");
-        assertThat(spans.get(1).getNestingLevel())
+        assertThat(entries.get(1).getMessage().getText())
+                .isEqualTo("outer entry to test nesting level");
+        assertThat(entries.get(1).getNestingLevel())
                 .isEqualTo(1);
-        assertThat(spans.get(2).getError().getText())
-                .isEqualTo("test add nested error span message");
-        assertThat(spans.get(2).getNestingLevel())
+        assertThat(entries.get(2).getError().getText())
+                .isEqualTo("test add nested error entry message");
+        assertThat(entries.get(2).getNestingLevel())
                 .isEqualTo(2);
     }
 
@@ -191,7 +191,8 @@ public class ErrorCaptureTest {
         }
     }
 
-    public static class ShouldCaptureErrorWithSpanStackTrace implements AppUnderTest, TraceMarker {
+    public static class ShouldCaptureErrorWithTraceEntryStackTrace implements AppUnderTest,
+            TraceMarker {
         @Override
         public void executeApp() throws Exception {
             traceMarker();
@@ -213,14 +214,14 @@ public class ErrorCaptureTest {
         }
     }
 
-    public static class ShouldAddNestedErrorSpan implements AppUnderTest, TraceMarker {
+    public static class ShouldAddNestedErrorEntry implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() throws Exception {
             traceMarker();
         }
         @Override
         public void traceMarker() throws Exception {
-            new LogError().addNestedErrorSpan();
+            new LogError().addNestedErrorEntry();
         }
     }
 }

@@ -38,16 +38,15 @@ import org.glowroot.markers.UsedByJsonBinding;
 @Immutable
 public class UserInterfaceConfig {
 
-    private final int port;
     private final String defaultTransactionType;
+    private final int port;
+    private final String passwordHash;
     // timeout 0 means sessions do not time out (except on jvm restart)
     private final int sessionTimeoutMinutes;
-    private final String passwordHash;
 
     private final String version;
 
     static UserInterfaceConfig getDefault(List<PluginDescriptor> pluginDescriptors) {
-        final int port = 4000;
         String defaultTransactionType = "";
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             ImmutableList<String> transactionTypes = pluginDescriptor.getTransactionTypes();
@@ -56,10 +55,11 @@ public class UserInterfaceConfig {
                 break;
             }
         }
-        final int sessionTimeoutMinutes = 30;
+        final int port = 4000;
         final String passwordHash = "";
-        return new UserInterfaceConfig(port, defaultTransactionType, sessionTimeoutMinutes,
-                passwordHash);
+        final int sessionTimeoutMinutes = 30;
+        return new UserInterfaceConfig(defaultTransactionType, port, passwordHash,
+                sessionTimeoutMinutes);
     }
 
     public static Overlay overlay(UserInterfaceConfig base) {
@@ -71,22 +71,22 @@ public class UserInterfaceConfig {
     }
 
     @VisibleForTesting
-    public UserInterfaceConfig(int port, String defaultTransactionType, int sessionTimeoutMinutes,
-            String passwordHash) {
-        this.port = port;
+    public UserInterfaceConfig(String defaultTransactionType, int port, String passwordHash,
+            int sessionTimeoutMinutes) {
         this.defaultTransactionType = defaultTransactionType;
-        this.sessionTimeoutMinutes = sessionTimeoutMinutes;
+        this.port = port;
         this.passwordHash = passwordHash;
-        this.version = VersionHashes.sha1(port, defaultTransactionType, sessionTimeoutMinutes,
-                passwordHash);
-    }
-
-    public int getPort() {
-        return port;
+        this.sessionTimeoutMinutes = sessionTimeoutMinutes;
+        this.version = VersionHashes.sha1(defaultTransactionType, port, passwordHash,
+                sessionTimeoutMinutes);
     }
 
     public String getDefaultTransactionType() {
         return defaultTransactionType;
+    }
+
+    public int getPort() {
+        return port;
     }
 
     public int getSessionTimeoutMinutes() {
@@ -121,10 +121,10 @@ public class UserInterfaceConfig {
     public String toString() {
         // don't expose passwordHash
         return MoreObjects.toStringHelper(this)
-                .add("port", port)
                 .add("defaultTransactionType", defaultTransactionType)
-                .add("sessionTimeoutMinutes", sessionTimeoutMinutes)
+                .add("port", port)
                 .add("passwordEnabled", isPasswordEnabled())
+                .add("sessionTimeoutMinutes", sessionTimeoutMinutes)
                 .add("version", version)
                 .toString();
     }
@@ -133,32 +133,32 @@ public class UserInterfaceConfig {
     @UsedByJsonBinding
     static class FileOverlay {
 
-        private int port;
-        private int sessionTimeoutMinutes;
-        private String passwordHash;
         private String defaultTransactionType;
+        private int port;
+        private String passwordHash;
+        private int sessionTimeoutMinutes;
 
         private FileOverlay(UserInterfaceConfig base) {
-            port = base.port;
             defaultTransactionType = base.defaultTransactionType;
-            sessionTimeoutMinutes = base.sessionTimeoutMinutes;
+            port = base.port;
             passwordHash = base.passwordHash;
-        }
-        void setPort(int port) {
-            this.port = port;
+            sessionTimeoutMinutes = base.sessionTimeoutMinutes;
         }
         void setDefaultTransactionType(String defaultTransactionType) {
             this.defaultTransactionType = defaultTransactionType;
         }
-        void setSessionTimeoutMinutes(int sessionTimeoutMinutes) {
-            this.sessionTimeoutMinutes = sessionTimeoutMinutes;
+        void setPort(int port) {
+            this.port = port;
         }
         void setPasswordHash(String passwordHash) {
             this.passwordHash = passwordHash;
         }
+        void setSessionTimeoutMinutes(int sessionTimeoutMinutes) {
+            this.sessionTimeoutMinutes = sessionTimeoutMinutes;
+        }
         UserInterfaceConfig build() {
-            return new UserInterfaceConfig(port, defaultTransactionType, sessionTimeoutMinutes,
-                    passwordHash);
+            return new UserInterfaceConfig(defaultTransactionType, port, passwordHash,
+                    sessionTimeoutMinutes);
         }
     }
 
@@ -166,37 +166,36 @@ public class UserInterfaceConfig {
     @UsedByJsonBinding
     public static class Overlay {
 
-        private int port;
-        private String defaultTransactionType;
-        private int sessionTimeoutMinutes;
-
         private final String originalPasswordHash;
 
+        private String defaultTransactionType;
+        private int port;
         @Nullable
         private String currentPassword;
         @Nullable
         private String newPassword;
+        private int sessionTimeoutMinutes;
 
         private Overlay(UserInterfaceConfig base) {
-            port = base.port;
-            defaultTransactionType = base.defaultTransactionType;
             originalPasswordHash = base.passwordHash;
+            defaultTransactionType = base.defaultTransactionType;
+            port = base.port;
             sessionTimeoutMinutes = base.sessionTimeoutMinutes;
-        }
-        public void setPort(int port) {
-            this.port = port;
         }
         public void setDefaultTransactionType(String defaultTransactionType) {
             this.defaultTransactionType = defaultTransactionType;
         }
-        public void setSessionTimeoutMinutes(int sessionTimeoutMinutes) {
-            this.sessionTimeoutMinutes = sessionTimeoutMinutes;
+        public void setPort(int port) {
+            this.port = port;
         }
         public void setCurrentPassword(@Nullable String currentPassword) {
             this.currentPassword = currentPassword;
         }
         public void setNewPassword(@Nullable String newPassword) {
             this.newPassword = newPassword;
+        }
+        public void setSessionTimeoutMinutes(int sessionTimeoutMinutes) {
+            this.sessionTimeoutMinutes = sessionTimeoutMinutes;
         }
         public UserInterfaceConfig build() throws GeneralSecurityException,
                 CurrentPasswordIncorrectException {
@@ -210,8 +209,8 @@ public class UserInterfaceConfig {
                 // no change
                 passwordHash = originalPasswordHash;
             }
-            return new UserInterfaceConfig(port, defaultTransactionType, sessionTimeoutMinutes,
-                    passwordHash);
+            return new UserInterfaceConfig(defaultTransactionType, port, passwordHash,
+                    sessionTimeoutMinutes);
         }
         private static String verifyAndGenerateNewPasswordHash(String currentPassword,
                 String newPassword, String originalPasswordHash) throws GeneralSecurityException,

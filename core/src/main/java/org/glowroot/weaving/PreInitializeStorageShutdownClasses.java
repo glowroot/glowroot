@@ -40,8 +40,8 @@ public class PreInitializeStorageShutdownClasses {
 
     private PreInitializeStorageShutdownClasses() {}
 
-    // null loader means the bootstrap class loader
-    public static void preInitializeClasses(@Nullable ClassLoader loader) {
+    public static void preInitializeClasses() {
+        ClassLoader loader = PreInitializeStorageShutdownClasses.class.getClassLoader();
         for (String type : usedTypes()) {
             initialize(type, loader);
         }
@@ -238,7 +238,7 @@ public class PreInitializeStorageShutdownClasses {
         types.add("org.glowroot.local.store.CappedDatabase");
         types.add("org.glowroot.local.store.CappedDatabase$ShutdownHookThread");
         types.add("org.glowroot.local.store.CappedDatabaseOutputStream");
-        types.add("org.glowroot.local.store.CappedDatabaseOutputStream$FsyncScheduledRunnable");
+        types.add("org.glowroot.local.store.CappedDatabaseOutputStream$FsyncRunnable");
         types.add("org.glowroot.local.store.DataSource");
         types.add("org.glowroot.local.store.DataSource$1");
         types.add("org.glowroot.local.store.DataSource$DataSourceLockedException");

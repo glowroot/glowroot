@@ -40,7 +40,7 @@ class ParameterizedSql {
         return sql;
     }
 
-    ImmutableList<Object> getArgs() {
-        return args;
+    Object[] getArgs() {
+        return args.toArray(new Object[args.size()]);
     }
 }

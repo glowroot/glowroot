@@ -53,8 +53,8 @@ class Version {
         Attributes mainAttributes = manifest.getMainAttributes();
         String version = mainAttributes.getValue("Implementation-Version");
         if (version == null) {
-            logger.warn("could not find Implementation-Version attribute in"
-                    + " META-INF/MANIFEST.MF file");
+            logger.warn("could not find Implementation-Version attribute in META-INF/MANIFEST.MF"
+                    + " file");
             return "unknown";
         }
         if (version.endsWith("-SNAPSHOT")) {

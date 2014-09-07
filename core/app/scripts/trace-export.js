@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-/* global TraceRenderer, $ */
+/* global HandlebarsRendering, $ */
 
 $(document).ready(function () {
   var trace = JSON.parse($('#traceJson').html());
-  var spans = JSON.parse($('#spansJson').html());
+  var entries = JSON.parse($('#entriesJson').html());
   var profileJson = $('#profileJson').html();
   var profile;
   if (profileJson) {
@@ -29,5 +29,5 @@ $(document).ready(function () {
   if (outlierProfileJson) {
     outlierProfile = JSON.parse(outlierProfileJson);
   }
-  TraceRenderer.renderTraceFromExport(trace, $('#tracePlaceholder'), spans, profile, outlierProfile);
+  HandlebarsRendering.renderTraceFromExport(trace, $('#tracePlaceholder'), entries, profile, outlierProfile);
 });

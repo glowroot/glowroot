@@ -48,7 +48,7 @@ import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.common.SpyingLogbackFilter.MessageCount;
 import org.glowroot.config.ConfigService.OptimisticLockException;
-import org.glowroot.config.GeneralConfig;
+import org.glowroot.config.TraceConfig;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
@@ -165,7 +165,8 @@ public class JavaagentContainer implements Container {
                 appUnderTestClass.getName());
         // wait for all traces to be stored
         Stopwatch stopwatch = Stopwatch.createStarted();
-        while (traceService.getNumPendingCompleteTraces() > 0 && stopwatch.elapsed(SECONDS) < 5) {
+        while (traceService.getNumPendingCompleteTransactions() > 0
+                && stopwatch.elapsed(SECONDS) < 5) {
             Thread.sleep(10);
         }
     }
@@ -187,11 +188,11 @@ public class JavaagentContainer implements Container {
 
     @Override
     public void checkAndReset() throws Exception {
-        traceService.assertNoActiveTraces();
+        traceService.assertNoActiveTransactions();
         traceService.deleteAll();
         configService.resetAllConfig();
-        // storeThresholdMillis=0 is the default for testing
-        configService.setStoreThresholdMillis(0);
+        // traceStoreThresholdMillis=0 is the default for testing
+        configService.setTraceStoreThresholdMillis(0);
         // check and reset log messages
         MessageCount logMessageCount = (MessageCount) socketCommander
                 .sendCommand(SocketCommandProcessor.CLEAR_LOG_MESSAGES);
@@ -269,8 +270,8 @@ public class JavaagentContainer implements Container {
     }
 
     public static void main(String... args) throws Exception {
-        // storeThresholdMillis=0 is the default for testing
-        setStoreThresholdMillisToZero();
+        // traceStoreThresholdMillis=0 is the default for testing
+        setTraceStoreThresholdMillisToZero();
         int port = Integer.parseInt(args[0]);
         // socket is never closed since program is still running after main returns
         Socket socket = new Socket((String) null, port);
@@ -287,7 +288,8 @@ public class JavaagentContainer implements Container {
         // non-daemon threads started above keep jvm alive after main returns
     }
 
-    public static void setStoreThresholdMillisToZero() throws OptimisticLockException, IOException {
+    public static void setTraceStoreThresholdMillisToZero() throws OptimisticLockException,
+            IOException {
         GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
         if (glowrootModule == null) {
             // failed to start, e.g. DataSourceLockTest
@@ -295,13 +297,13 @@ public class JavaagentContainer implements Container {
         }
         org.glowroot.config.ConfigService configService =
                 glowrootModule.getConfigModule().getConfigService();
-        GeneralConfig generalConfig = configService.getGeneralConfig();
+        TraceConfig traceConfig = configService.getTraceConfig();
         // conditional check is needed to prevent config file timestamp update when testing
         // ConfigFileLastModifiedTest.shouldNotUpdateFileOnStartupIfNoChanges()
-        if (generalConfig.getStoreThresholdMillis() != 0) {
-            GeneralConfig.Overlay overlay = GeneralConfig.overlay(generalConfig);
+        if (traceConfig.getStoreThresholdMillis() != 0) {
+            TraceConfig.Overlay overlay = TraceConfig.overlay(traceConfig);
             overlay.setStoreThresholdMillis(0);
-            configService.updateGeneralConfig(overlay.build(), generalConfig.getVersion());
+            configService.updateTraceConfig(overlay.build(), traceConfig.getVersion());
         }
     }
 
@@ -346,11 +348,10 @@ public class JavaagentContainer implements Container {
         if (!useFileDb) {
             command.add("-Dglowroot.internal.h2.memdb=true");
         }
-        Integer transactionPointInterval =
-                Integer.getInteger("glowroot.internal.collector.transactionPointInterval");
-        if (transactionPointInterval != null) {
-            command.add("-Dglowroot.internal.collector.transactionPointInterval="
-                    + transactionPointInterval);
+        Integer aggregateInterval =
+                Integer.getInteger("glowroot.internal.collector.aggregateInterval");
+        if (aggregateInterval != null) {
+            command.add("-Dglowroot.internal.collector.aggregateInterval=" + aggregateInterval);
         }
         command.add(JavaagentContainer.class.getName());
         command.add(Integer.toString(containerPort));

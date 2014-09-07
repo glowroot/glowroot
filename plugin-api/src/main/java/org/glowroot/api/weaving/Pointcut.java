@@ -41,8 +41,8 @@ public @interface Pointcut {
     String[] methodParameterTypes() default {};
     String methodReturnType() default "";
     MethodModifier[] methodModifiers() default {};
-    // the default is false since it costs a thread local lookup to ignore self nested calls,
-    // and trace metrics already handle self nested calls, so it is only needed for spans
+    // the default is false since it costs a thread local lookup to ignore self nested calls, and
+    // transaction metrics already handle self nested calls, so it is only needed for trace entries
     boolean ignoreSelfNested() default false;
     String metricName() default "";
 }

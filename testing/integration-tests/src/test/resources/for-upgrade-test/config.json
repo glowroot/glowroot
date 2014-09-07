@@ -1,53 +1,49 @@
 {
-  "general": {
+  "traces": {
     "enabled": true,
     "storeThresholdMillis": 0,
-    "stuckThresholdSeconds": 180,
-    "maxSpans": 2000,
-    "threadInfoEnabled": true,
-    "gcInfoEnabled": true
+    "outlierProfilingEnabled": true,
+    "outlierProfilingInitialDelayMillis": 10000,
+    "outlierProfilingIntervalMillis": 1000
   },
   "profiling": {
-    "tracePercentage": 0.0,
+    "enabled": false,
+    "transactionPercentage": 5.0,
     "intervalMillis": 50,
-    "maxSeconds": 30,
-    "storeThresholdMillis": -1
+    "traceStoreThresholdOverrideMillis": -1
   },
-  "outlier-profiling": {
-    "enabled": true,
-    "initialDelayMillis": 30000,
-    "intervalMillis": 1000,
-    "maxSeconds": 300
-  },
-  "user-tracing": {
+  "userRecording": {
+    "enabled": false,
     "user": null,
-    "storeThresholdMillis": 0,
-    "profile": true
+    "profileIntervalMillis": 20
+  },
+  "ui": {
+    "defaultTransactionType": "Integration test",
+    "port": 0,
+    "passwordHash": "",
+    "sessionTimeoutMinutes": 30
   },
   "storage": {
     "traceExpirationHours": 2147483647,
     "cappedDatabaseSizeMb": 1000
   },
-  "ui": {
-    "port": 0,
-    "defaultTransactionType": "Integration test",
-    "sessionTimeoutMinutes": 30,
-    "passwordHash": ""
-  },
   "advanced": {
-    "metricWrapperMethods": false
+    "metricWrapperMethods": true,
+    "immediatePartialStoreThresholdSeconds": 60,
+    "maxEntriesPerTrace": 2000,
+    "captureThreadInfo": true,
+    "captureGcInfo": true
   },
-  "pointcuts": [ ],
   "plugins": [
     {
       "id": "glowroot-integration-tests",
       "enabled": true,
       "properties": {
         "alternateHeadline": "",
-        "captureSpanStackTraces": false,
+        "captureTraceEntryStackTraces": false,
         "hasDefaultVal": "one",
         "levelFiveEnabled": false,
-        "levelFiveSpanEnabled": false,
+        "levelFiveEntryEnabled": false,
         "starredHeadline": false
       }
     },
@@ -56,5 +52,6 @@
       "enabled": true,
       "properties": { }
     }
-  ]
+  ],
+  "capturePoints": [ ]
 }

@@ -31,8 +31,8 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
  */
 public class UserInterfaceConfig {
 
-    private int port;
     private String defaultTransactionType = "";
+    private int port;
     private final boolean passwordEnabled;
     private int sessionTimeoutMinutes;
 
@@ -50,20 +50,20 @@ public class UserInterfaceConfig {
         this.version = version;
     }
 
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
     public String getDefaultTransactionType() {
         return defaultTransactionType;
     }
 
     public void setDefaultTransactionType(String defaultTransactionType) {
         this.defaultTransactionType = defaultTransactionType;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
     }
 
     public int getSessionTimeoutMinutes() {
@@ -111,8 +111,8 @@ public class UserInterfaceConfig {
             //
             // also intentionally leaving off currentPassword and newPassword since those are just
             // used as a temporary messaging mechanism
-            return Objects.equal(port, that.port)
-                    && Objects.equal(defaultTransactionType, that.defaultTransactionType)
+            return Objects.equal(defaultTransactionType, that.defaultTransactionType)
+                    && Objects.equal(port, that.port)
                     && Objects.equal(passwordEnabled, that.passwordEnabled)
                     && Objects.equal(sessionTimeoutMinutes, that.sessionTimeoutMinutes);
         }
@@ -127,7 +127,7 @@ public class UserInterfaceConfig {
         //
         // also intentionally leaving off currentPassword and newPassword since those are just used
         // as a temporary messaging mechanism
-        return Objects.hashCode(port, defaultTransactionType, passwordEnabled,
+        return Objects.hashCode(defaultTransactionType, port, passwordEnabled,
                 sessionTimeoutMinutes);
     }
 
@@ -135,8 +135,8 @@ public class UserInterfaceConfig {
     public String toString() {
         // leaving off currentPassword and newPassword since those are plain text passwords
         return MoreObjects.toStringHelper(this)
-                .add("port", port)
                 .add("defaultTransactionType", defaultTransactionType)
+                .add("port", port)
                 .add("passwordEnabled", passwordEnabled)
                 .add("sessionTimeoutMinutes", sessionTimeoutMinutes)
                 .add("version", version)
@@ -145,19 +145,19 @@ public class UserInterfaceConfig {
 
     @JsonCreator
     static UserInterfaceConfig readValue(
-            @JsonProperty("port") @Nullable Integer port,
             @JsonProperty("defaultTransactionType") @Nullable String defaultTransactionType,
+            @JsonProperty("port") @Nullable Integer port,
             @JsonProperty("passwordEnabled") @Nullable Boolean passwordEnabled,
             @JsonProperty("sessionTimeoutMinutes") @Nullable Integer sessionTimeoutMinutes,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(port, "port");
         checkRequiredProperty(defaultTransactionType, "defaultTransactionType");
+        checkRequiredProperty(port, "port");
         checkRequiredProperty(passwordEnabled, "passwordEnabled");
         checkRequiredProperty(sessionTimeoutMinutes, "sessionTimeoutMinutes");
         checkRequiredProperty(version, "version");
         UserInterfaceConfig config = new UserInterfaceConfig(passwordEnabled, version);
-        config.setPort(port);
         config.setDefaultTransactionType(defaultTransactionType);
+        config.setPort(port);
         config.setSessionTimeoutMinutes(sessionTimeoutMinutes);
         return config;
     }

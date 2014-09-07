@@ -41,10 +41,10 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.UserInterfaceConfig;
+import org.glowroot.tests.webdriver.config.CapturePointListPage;
+import org.glowroot.tests.webdriver.config.CapturePointSection;
 import org.glowroot.tests.webdriver.config.ConfigSidebar;
-import org.glowroot.tests.webdriver.config.GeneralPage;
-import org.glowroot.tests.webdriver.config.PointcutListPage;
-import org.glowroot.tests.webdriver.config.PointcutSection;
+import org.glowroot.tests.webdriver.config.TraceConfigPage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -81,7 +81,7 @@ public class ConfigTest {
             // single webdriver instance for much better performance
             if (USE_LOCAL_IE) {
                 // currently tests fail with default nativeEvents=true
-                // (can't select radio buttons on pointcut config page)
+                // (can't select radio buttons on capture point page)
                 DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
                 capabilities.setCapability("nativeEvents", false);
                 driver = new InternetExplorerDriver(capabilities);
@@ -149,230 +149,224 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldUpdateGeneral() throws Exception {
+    public void shouldUpdateTraceConfig() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
-        GeneralPage generalPage = new GeneralPage(driver);
+        TraceConfigPage page = new TraceConfigPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
 
         // when
-        generalPage.getEnabledSwitchOff().click();
-        generalPage.getStoreThresholdTextField().clear();
-        generalPage.getStoreThresholdTextField().sendKeys("2345");
-        generalPage.getStuckThresholdTextField().clear();
-        generalPage.getStuckThresholdTextField().sendKeys("3456");
-        generalPage.getMaxSpansTextField().clear();
-        generalPage.getMaxSpansTextField().sendKeys("4567");
-        generalPage.getSaveButton().click();
+        page.getEnabledSwitchOff().click();
+        page.getStoreThresholdTextField().clear();
+        page.getStoreThresholdTextField().sendKeys("2345");
+        page.getSaveButton().click();
         // wait for save to complete
         new WebDriverWait(driver, 30).until(ExpectedConditions.not(
-                ExpectedConditions.elementToBeClickable(generalPage.getSaveButton())));
+                ExpectedConditions.elementToBeClickable(page.getSaveButton())));
 
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(generalPage.getEnabledSwitchOn().getAttribute("class").split(" "))
+        assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
                 .doesNotContain("active");
-        assertThat(generalPage.getEnabledSwitchOff().getAttribute("class").split(" "))
+        assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" "))
                 .contains("active");
-        assertThat(generalPage.getStoreThresholdTextField().getAttribute("value"))
+        assertThat(page.getStoreThresholdTextField().getAttribute("value"))
                 .isEqualTo("2345");
-        assertThat(generalPage.getStuckThresholdTextField().getAttribute("value"))
-                .isEqualTo("3456");
-        assertThat(generalPage.getMaxSpansTextField().getAttribute("value")).isEqualTo("4567");
     }
 
     @Test
-    public void shouldAddPointcut() throws Exception {
+    public void shouldAddTraceCapturePoint() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        PointcutListPage pointcutListPage = new PointcutListPage(driver);
+        CapturePointListPage capturePointListPage = new CapturePointListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getPointcutsLink().click();
+        configSidebar.getCapturePointsLink().click();
 
         // when
-        createTracePointcut(pointcutListPage);
+        createTraceCapturePoint(capturePointListPage);
 
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getPointcutsLink().click();
-        PointcutSection pointcutSection = pointcutListPage.getSection(0);
+        configSidebar.getCapturePointsLink().click();
+        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(pointcutSection.getClassNameTextField().getAttribute("value"))
+        assertThat(capturePointSection.getClassNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.AppUnderTest");
-        assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
+        assertThat(capturePointSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(pointcutSection.getAdviceKindTraceRadioButton().isSelected()).isTrue();
-        assertThat(pointcutSection.getMetricNameTextField().getAttribute("value"))
+        assertThat(capturePointSection.getCaptureKindTransactionRadioButton().isSelected())
+                .isTrue();
+        assertThat(capturePointSection.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
-        assertThat(pointcutSection.getMessageTemplateTextField().getAttribute("value"))
-                .isEqualTo("a span");
-        assertThat(pointcutSection.getStackTraceThresholdTextTextField()
+        assertThat(capturePointSection.getTraceEntryTemplateTextField().getAttribute("value"))
+                .isEqualTo("a trace entry");
+        assertThat(capturePointSection.getTraceEntryStackThresholdTextField()
                 .getAttribute("value")).isEqualTo("");
-        assertThat(pointcutSection.getTransactionTypeTextField().getAttribute("value"))
+        assertThat(capturePointSection.getTransactionTypeTextField().getAttribute("value"))
                 .isEqualTo("a type");
-        assertThat(pointcutSection.getTransactionNameTemplateTextField().getAttribute("value"))
+        assertThat(capturePointSection.getTransactionNameTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace");
-        assertThat(pointcutSection.getTraceStoreThresholdMillisTextField().getAttribute("value"))
-                .isEqualTo("123");
+        assertThat(capturePointSection.getTraceStoreThresholdMillisTextField()
+                .getAttribute("value")).isEqualTo("123");
     }
 
     @Test
-    public void shouldNotValidateOnDeletePointcut() throws Exception {
+    public void shouldNotValidateOnDeleteCapturePoint() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        PointcutListPage pointcutListPage = new PointcutListPage(driver);
+        CapturePointListPage capturePointListPage = new CapturePointListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getPointcutsLink().click();
-        createTracePointcut(pointcutListPage);
+        configSidebar.getCapturePointsLink().click();
+        createTraceCapturePoint(capturePointListPage);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getPointcutsLink().click();
-        PointcutSection pointcutSection = pointcutListPage.getSection(0);
-        WebElement classNameTextField = pointcutSection.getClassNameTextField();
+        configSidebar.getCapturePointsLink().click();
+        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
+        WebElement classNameTextField = capturePointSection.getClassNameTextField();
 
         // when
-        Utils.clearInput(pointcutSection.getMetricNameTextField());
-        pointcutSection.getDeleteButton().click();
+        Utils.clearInput(capturePointSection.getMetricNameTextField());
+        capturePointSection.getDeleteButton().click();
 
         // then
         new WebDriverWait(driver, 30).until(ExpectedConditions.stalenessOf(classNameTextField));
     }
 
     @Test
-    public void shouldAddMetricOnlyPointcut() throws Exception {
+    public void shouldAddTraceEntryCapturePoint() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        PointcutListPage pointcutPage = new PointcutListPage(driver);
+        CapturePointListPage capturePointListPage = new CapturePointListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getPointcutsLink().click();
+        configSidebar.getCapturePointsLink().click();
 
         // when
-        createMetricPointcut(pointcutPage);
+        createTraceEntryCapturePoint(capturePointListPage);
 
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getPointcutsLink().click();
-        PointcutSection pointcutSection = pointcutPage.getSection(0);
+        configSidebar.getCapturePointsLink().click();
+        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(pointcutSection.getClassNameTextField().getAttribute("value"))
+        assertThat(capturePointSection.getClassNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.AppUnderTest");
-        assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
+        assertThat(capturePointSection.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeApp");
-        assertThat(pointcutSection.getAdviceKindMetricRadioButton().isSelected()).isTrue();
-        assertThat(pointcutSection.getMetricNameTextField().getAttribute("value"))
+        assertThat(capturePointSection.getCaptureKindTraceEntryRadioButton().isSelected()).isTrue();
+        assertThat(capturePointSection.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
-    }
-
-    @Test
-    public void shouldAddMetricAndSpanOnlyPointcut() throws Exception {
-        // given
-        App app = new App(driver, "http://localhost:" + container.getUiPort());
-        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
-        ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        PointcutListPage pointcutListPage = new PointcutListPage(driver);
-
-        app.open();
-        globalNavbar.getConfigurationLink().click();
-        configSidebar.getPointcutsLink().click();
-
-        // when
-        createSpanPointcut(pointcutListPage);
-
-        // then
-        app.open();
-        globalNavbar.getConfigurationLink().click();
-        configSidebar.getPointcutsLink().click();
-        PointcutSection pointcutSection = pointcutListPage.getSection(0);
-        // need to give angular view a chance to render before assertions
-        Thread.sleep(100);
-        assertThat(pointcutSection.getClassNameTextField().getAttribute("value"))
-                .isEqualTo("org.glowroot.container.AppUnderTest");
-        assertThat(pointcutSection.getMethodNameTextField().getAttribute("value"))
-                .isEqualTo("executeApp");
-        assertThat(pointcutSection.getAdviceKindSpanRadioButton().isSelected()).isTrue();
-        assertThat(pointcutSection.getMetricNameTextField().getAttribute("value"))
-                .isEqualTo("a metric");
-        assertThat(pointcutSection.getMessageTemplateTextField().getAttribute("value"))
-                .isEqualTo("a span");
-        assertThat(pointcutSection.getStackTraceThresholdTextTextField()
+        assertThat(capturePointSection.getTraceEntryTemplateTextField().getAttribute("value"))
+                .isEqualTo("a trace entry");
+        assertThat(capturePointSection.getTraceEntryStackThresholdTextField()
                 .getAttribute("value")).isEqualTo("");
     }
 
-    private void createTracePointcut(PointcutListPage pointcutListPage) {
-        pointcutListPage.getAddPointcutButton().click();
-        PointcutSection pointcutSection = pointcutListPage.getSection(0);
-        pointcutSection.getClassNameTextField().sendKeys("container.AppUnderTest");
-        pointcutSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
-        pointcutSection.getMethodNameTextField().sendKeys("exec");
-        pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
-        pointcutSection.getAdviceKindTraceRadioButton().click();
-        pointcutSection.getMetricNameTextField().clear();
-        pointcutSection.getMetricNameTextField().sendKeys("a metric");
-        pointcutSection.getMessageTemplateTextField().clear();
-        pointcutSection.getMessageTemplateTextField().sendKeys("a span");
-        pointcutSection.getTransactionTypeTextField().clear();
-        pointcutSection.getTransactionTypeTextField().sendKeys("a type");
-        pointcutSection.getTransactionNameTemplateTextField().clear();
-        pointcutSection.getTransactionNameTemplateTextField().sendKeys("a trace");
-        pointcutSection.getTraceStoreThresholdMillisTextField().clear();
-        pointcutSection.getTraceStoreThresholdMillisTextField().sendKeys("123");
-        pointcutSection.getAddButton().click();
-        // getSaveButton() waits for the Save button to become visible (after adding is successful)
-        pointcutSection.getSaveButton();
+    @Test
+    public void shouldAddMetricCapturePoint() throws Exception {
+        // given
+        App app = new App(driver, "http://localhost:" + container.getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        CapturePointListPage capturePointListPage = new CapturePointListPage(driver);
+
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getCapturePointsLink().click();
+
+        // when
+        createMetricCapturePoint(capturePointListPage);
+
+        // then
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getCapturePointsLink().click();
+        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
+        // need to give angular view a chance to render before assertions
+        Thread.sleep(100);
+        assertThat(capturePointSection.getClassNameTextField().getAttribute("value"))
+                .isEqualTo("org.glowroot.container.AppUnderTest");
+        assertThat(capturePointSection.getMethodNameTextField().getAttribute("value"))
+                .isEqualTo("executeApp");
+        assertThat(capturePointSection.getCaptureKindMetricRadioButton().isSelected()).isTrue();
+        assertThat(capturePointSection.getMetricNameTextField().getAttribute("value"))
+                .isEqualTo("a metric");
     }
 
-    private void createMetricPointcut(PointcutListPage pointcutListPage) {
-        pointcutListPage.getAddPointcutButton().click();
-        PointcutSection pointcutSection = pointcutListPage.getSection(0);
-        pointcutSection.getClassNameTextField().sendKeys("container.AppUnderTest");
-        pointcutSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
-        pointcutSection.getMethodNameTextField().sendKeys("exec");
-        pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
-        pointcutSection.getAdviceKindMetricRadioButton().click();
-        pointcutSection.getMetricNameTextField().clear();
-        pointcutSection.getMetricNameTextField().sendKeys("a metric");
-        pointcutSection.getAddButton().click();
+    private void createTraceCapturePoint(CapturePointListPage capturePointListPage) {
+        capturePointListPage.getAddCapturePointButton().click();
+        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
+        capturePointSection.getClassNameTextField().sendKeys("container.AppUnderTest");
+        capturePointSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
+        capturePointSection.getMethodNameTextField().sendKeys("exec");
+        capturePointSection.clickMethodNameAutoCompleteItem("executeApp");
+        capturePointSection.getCaptureKindTransactionRadioButton().click();
+        capturePointSection.getMetricNameTextField().clear();
+        capturePointSection.getMetricNameTextField().sendKeys("a metric");
+        capturePointSection.getTraceEntryTemplateTextField().clear();
+        capturePointSection.getTraceEntryTemplateTextField().sendKeys("a trace entry");
+        capturePointSection.getTransactionTypeTextField().clear();
+        capturePointSection.getTransactionTypeTextField().sendKeys("a type");
+        capturePointSection.getTransactionNameTemplateTextField().clear();
+        capturePointSection.getTransactionNameTemplateTextField().sendKeys("a trace");
+        capturePointSection.getTraceStoreThresholdMillisTextField().clear();
+        capturePointSection.getTraceStoreThresholdMillisTextField().sendKeys("123");
+        capturePointSection.getAddButton().click();
         // getSaveButton() waits for the Save button to become visible (after adding is successful)
-        pointcutSection.getSaveButton();
+        capturePointSection.getSaveButton();
     }
 
-    private void createSpanPointcut(PointcutListPage pointcutListPage) {
-        pointcutListPage.getAddPointcutButton().click();
-        PointcutSection pointcutSection = pointcutListPage.getSection(0);
-        pointcutSection.getClassNameTextField().sendKeys("container.AppUnderTest");
-        pointcutSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
-        pointcutSection.getMethodNameTextField().sendKeys("exec");
-        pointcutSection.clickMethodNameAutoCompleteItem("executeApp");
-        pointcutSection.getAdviceKindSpanRadioButton().click();
-        pointcutSection.getMetricNameTextField().clear();
-        pointcutSection.getMetricNameTextField().sendKeys("a metric");
-        pointcutSection.getMessageTemplateTextField().clear();
-        pointcutSection.getMessageTemplateTextField().sendKeys("a span");
-        pointcutSection.getAddButton().click();
+    private void createTraceEntryCapturePoint(CapturePointListPage capturePointListPage) {
+        capturePointListPage.getAddCapturePointButton().click();
+        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
+        capturePointSection.getClassNameTextField().sendKeys("container.AppUnderTest");
+        capturePointSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
+        capturePointSection.getMethodNameTextField().sendKeys("exec");
+        capturePointSection.clickMethodNameAutoCompleteItem("executeApp");
+        capturePointSection.getCaptureKindTraceEntryRadioButton().click();
+        capturePointSection.getMetricNameTextField().clear();
+        capturePointSection.getMetricNameTextField().sendKeys("a metric");
+        capturePointSection.getTraceEntryTemplateTextField().clear();
+        capturePointSection.getTraceEntryTemplateTextField().sendKeys("a trace entry");
+        capturePointSection.getAddButton().click();
         // getSaveButton() waits for the Save button to become visible (after adding is successful)
-        pointcutSection.getSaveButton();
+        capturePointSection.getSaveButton();
+    }
+
+    private void createMetricCapturePoint(CapturePointListPage capturePointListPage) {
+        capturePointListPage.getAddCapturePointButton().click();
+        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
+        capturePointSection.getClassNameTextField().sendKeys("container.AppUnderTest");
+        capturePointSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
+        capturePointSection.getMethodNameTextField().sendKeys("exec");
+        capturePointSection.clickMethodNameAutoCompleteItem("executeApp");
+        capturePointSection.getCaptureKindMetricRadioButton().click();
+        capturePointSection.getMetricNameTextField().clear();
+        capturePointSection.getMetricNameTextField().sendKeys("a metric");
+        capturePointSection.getAddButton().click();
+        // getSaveButton() waits for the Save button to become visible (after adding is successful)
+        capturePointSection.getSaveButton();
     }
 }

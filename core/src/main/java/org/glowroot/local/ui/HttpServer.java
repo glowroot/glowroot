@@ -122,8 +122,10 @@ public class HttpServer {
         // http request) calls awaitUninterruptibly(), which is called by bind() below
         Channel previousServerChannel = this.serverChannel;
         ChangePort changePort = new ChangePort(newPort);
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                .setNameFormat("Glowroot-Temporary-Thread").build();
+        ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat("Glowroot-Temporary-Thread")
+                .build();
         ExecutorService executor = Executors.newSingleThreadExecutor(threadFactory);
         try {
             // calling get() will wait until ChangePort is complete and will re-throw any exceptions

@@ -5,63 +5,42 @@
   "transactionTypes": [
     "Microbenchmark"
   ],
-  "aspects": [
-    "org.glowroot.microbenchmarks.core.support.TraceWorthyAspect",
-    "org.glowroot.microbenchmarks.core.support.SpanWorthyAspect",
-    "org.glowroot.microbenchmarks.core.support.MetricWorthyAspect"
-  ],
-  "pointcuts": [
+  "capturePoints": [
     {
-      "className": "org.glowroot.microbenchmarks.core.support.TraceWorthy",
-      "methodName": "doSomethingTraceWorthy2",
+      "className": "org.glowroot.microbenchmarks.core.support.TransactionWorthy",
+      "methodName": "doSomethingTransactionWorthy2",
       "methodParameterTypes": [ ],
-      "methodReturnType": "void",
-      "methodModifiers": [ ],
-      "adviceKind": "trace",
-      "metricName": "trace worthy",
-      "messageTemplate": "trace worthy",
-      "transactionNameTemplate": "trace worthy",
-      "enabledProperty": "",
-      "spanEnabledProperty": ""
+      "captureKind": "transaction",
+      "transactionNameTemplate": "transaction worthy",
+      "metricName": "transaction worthy",
+      "traceEntryTemplate": "transaction worthy"
     },
     {
-      "className": "org.glowroot.microbenchmarks.core.support.SpanWorthy",
-      "methodName": "doSomethingSpanWorthy2",
+      "className": "org.glowroot.microbenchmarks.core.support.TraceEntryWorthy",
+      "methodName": "doSomethingTraceEntryWorthy2",
       "methodParameterTypes": [ ],
-      "methodReturnType": "void",
-      "methodModifiers": [ ],
-      "adviceKind": "span",
-      "metricName": "span worthy",
-      "messageTemplate": "span worthy: {{this.name}}",
-      "transactionNameTemplate": "",
-      "enabledProperty": "",
-      "spanEnabledProperty": ""
+      "captureKind": "trace_entry",
+      "metricName": "trace entry worthy",
+      "traceEntryTemplate": "trace entry worthy: {{this.name}}"
     },
     {
       "className": "org.glowroot.microbenchmarks.core.support.MetricWorthy",
       "methodName": "doSomethingMetricWorthy2",
       "methodParameterTypes": [ ],
-      "methodReturnType": "void",
-      "methodModifiers": [ ],
-      "adviceKind": "metric",
-      "metricName": "trace metric worthy",
-      "messageTemplate": "",
-      "transactionNameTemplate": "",
-      "enabledProperty": "",
-      "spanEnabledProperty": ""
+      "captureKind": "metric",
+      "metricName": "metric worthy"
     },
     {
       "className": "org.glowroot.microbenchmarks.core.support.MetricWorthy",
       "methodName": "doSomethingMetricWorthy2B",
       "methodParameterTypes": [ ],
-      "methodReturnType": "void",
-      "methodModifiers": [ ],
-      "adviceKind": "metric",
-      "metricName": "trace metric worthy B",
-      "messageTemplate": "",
-      "transactionNameTemplate": "",
-      "enabledProperty": "",
-      "spanEnabledProperty": ""
+      "captureKind": "metric",
+      "metricName": "metric worthy B"
     }
+  ],
+  "aspects": [
+    "org.glowroot.microbenchmarks.core.support.TransactionWorthyAspect",
+    "org.glowroot.microbenchmarks.core.support.TraceEntryWorthyAspect",
+    "org.glowroot.microbenchmarks.core.support.MetricWorthyAspect"
   ]
 }

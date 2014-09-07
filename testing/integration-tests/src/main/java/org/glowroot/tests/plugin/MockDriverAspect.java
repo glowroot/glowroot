@@ -16,9 +16,9 @@
 package org.glowroot.tests.plugin;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
 import org.glowroot.api.MetricName;
+import org.glowroot.api.PluginServices;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
@@ -41,13 +41,14 @@ public class MockDriverAspect {
                 pluginServices.getMetricName(GetMajorVersionAdvice.class);
 
         @OnBefore
-        public static Span onBefore() {
-            return pluginServices.startSpan(MessageSupplier.from("major version"), metricName);
+        public static TraceEntry onBefore() {
+            return pluginServices.startTraceEntry(MessageSupplier.from("major version"),
+                    metricName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            span.end();
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
         }
     }
 }

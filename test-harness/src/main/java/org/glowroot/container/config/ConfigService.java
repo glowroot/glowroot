@@ -28,21 +28,17 @@ public interface ConfigService {
     void setPluginProperty(String pluginId, String propertyName, @Nullable Object propertyValue)
             throws Exception;
 
-    GeneralConfig getGeneralConfig() throws Exception;
+    TraceConfig getTraceConfig() throws Exception;
 
-    void updateGeneralConfig(GeneralConfig config) throws Exception;
+    void updateTraceConfig(TraceConfig config) throws Exception;
 
     ProfilingConfig getProfilingConfig() throws Exception;
 
     void updateProfilingConfig(ProfilingConfig config) throws Exception;
 
-    OutlierProfilingConfig getOutlierProfilingConfig() throws Exception;
+    UserRecordingConfig getUserRecordingConfig() throws Exception;
 
-    void updateOutlierProfilingConfig(OutlierProfilingConfig config) throws Exception;
-
-    UserTracingConfig getUserTracingConfig() throws Exception;
-
-    void updateUserTracingConfig(UserTracingConfig config) throws Exception;
+    void updateUserRecordingConfig(UserRecordingConfig config) throws Exception;
 
     StorageConfig getStorageConfig() throws Exception;
 
@@ -53,14 +49,6 @@ public interface ConfigService {
     // throws CurrentPasswordIncorrectException
     void updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception;
 
-    List<PointcutConfig> getPointcutConfigs() throws Exception;
-
-    String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception;
-
-    void updatePointcutConfig(String version, PointcutConfig pointcutConfig) throws Exception;
-
-    void removePointcutConfig(String version) throws Exception;
-
     AdvancedConfig getAdvancedConfig() throws Exception;
 
     void updateAdvancedConfig(AdvancedConfig config) throws Exception;
@@ -69,6 +57,14 @@ public interface ConfigService {
     PluginConfig getPluginConfig(String pluginId) throws Exception;
 
     void updatePluginConfig(String pluginId, PluginConfig config) throws Exception;
+
+    List<CapturePoint> getCapturePoints() throws Exception;
+
+    String addCapturePoint(CapturePoint capturePoint) throws Exception;
+
+    void updateCapturePoint(String version, CapturePoint capturePoint) throws Exception;
+
+    void removeCapturePoint(String version) throws Exception;
 
     int reweavePointcuts() throws Exception;
 

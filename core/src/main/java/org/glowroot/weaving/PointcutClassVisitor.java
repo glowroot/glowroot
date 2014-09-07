@@ -63,8 +63,7 @@ class PointcutClassVisitor extends ClassVisitor {
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
         if (name.equals("<clinit>")) {
             clinit = true;
-            return cw.visitMethod(ACC_PRIVATE + ACC_STATIC, "glowroot$clinit", "()V", null,
-                    null);
+            return cw.visitMethod(ACC_PRIVATE + ACC_STATIC, "glowroot$clinit", "()V", null, null);
         } else {
             return cw.visitMethod(access, name, desc, signature, exceptions);
         }

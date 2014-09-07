@@ -16,9 +16,9 @@
 package org.glowroot.tests.plugin;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
 import org.glowroot.api.MetricName;
+import org.glowroot.api.PluginServices;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -50,23 +50,23 @@ public class PauseAspect {
         }
 
         @OnBefore
-        public static Span onBefore() {
-            return pluginServices.startSpan(MessageSupplier.from("Pause.pauseOneMillisecond()"),
-                    metricName);
+        public static TraceEntry onBefore() {
+            return pluginServices.startTraceEntry(
+                    MessageSupplier.from("Pause.pauseOneMillisecond()"), metricName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            if (pluginServices.getBooleanProperty("captureSpanStackTraces")) {
-                span.endWithStackTrace(0, NANOSECONDS);
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            if (pluginServices.getBooleanProperty("captureTraceEntryStackTraces")) {
+                traceEntry.endWithStackTrace(0, NANOSECONDS);
             } else {
-                span.end();
+                traceEntry.end();
             }
         }
     }
 
     // this is just to generate an additional $glowroot$ method to test that consecutive
-    // $glowroot$ methods in a span stack trace are stripped out correctly
+    // $glowroot$ methods in an entry stack trace are stripped out correctly
     @Pointcut(className = "org.glowroot.tests.LogError", methodName = "pause",
             methodParameterTypes = {"int"}, metricName = "pause 2")
     public static class PauseAdvice2 {}

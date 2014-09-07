@@ -50,14 +50,14 @@ import org.glowroot.api.weaving.Pointcut;
  *             return pluginServices.isEnabled();
  *         }
  *         &#064;OnBefore
- *         public static Span onBefore(@BindReceiver Object validator) {
- *             return pluginServices.startSpan(
+ *         public static TraceEntry onBefore(@BindReceiver Object validator) {
+ *             return pluginServices.startTraceEntry(
  *                     MessageSupplier.from(&quot;spring validator: {}&quot;, validator.getClass().getName()),
  *                     metricName);
  *         }
  *         &#064;OnAfter
- *         public static void onAfter(@BindTraveler Span span) {
- *             span.end();
+ *         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+ *             traceEntry.end();
  *         }
  *     }
  * }
@@ -70,7 +70,8 @@ public abstract class PluginServices {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServices.class);
 
-    private static final String HANDLE_CLASS_NAME = "org.glowroot.trace.PluginServicesRegistry";
+    private static final String HANDLE_CLASS_NAME =
+            "org.glowroot.transaction.PluginServicesRegistry";
     private static final String HANDLE_METHOD_NAME = "get";
 
     /**
@@ -178,95 +179,99 @@ public abstract class PluginServices {
     public abstract MetricName getMetricName(Class<?> adviceClass);
 
     /**
-     * If there is no active trace, a new trace is started.
+     * If there is no active transaction, a new transaction is started.
      * 
-     * If there is already an active trace, this method acts the same as
-     * {@link #startSpan(MessageSupplier, MetricName)} (the transaction name and type are not
-     * modified on the existing trace).
+     * If there is already an active transaction, this method acts the same as
+     * {@link #startTraceEntry(MessageSupplier, MetricName)} (the transaction name and type are not
+     * modified on the existing transaction).
      * 
      * @param transactionName
      * @param messageSupplier
      * @param metricName
      * @return
      */
-    public abstract Span startTrace(String transactionType, String transactionName,
+    public abstract TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, MetricName metricName);
 
     /**
-     * Creates and starts a span with the given {@code messageSupplier}. A metric timer for the
-     * specified metric is also started.
+     * Creates and starts a trace entry with the given {@code messageSupplier}. A transaction metric
+     * for the specified metric is also started.
      * 
-     * Since spans can be expensive in great quantities, there is a {@code maxSpans} property on the
-     * configuration page to limit the number of spans created for any given trace.
+     * Since entries can be expensive in great quantities, there is a {@code maxEntriesPerTrace}
+     * property on the configuration page to limit the number of entries captured for any given
+     * trace.
      * 
-     * Once a trace has accumulated {@code maxSpans} spans, this method doesn't add new spans to the
-     * trace, but instead returns a dummy span. A metric timer for the specified metric is still
-     * started, since metrics are very cheap, even in great quantities. The dummy span adhere to the
-     * {@link Span} contract and return the specified {@link MessageSupplier} in response to
-     * {@link Span#getMessageSupplier()}. Calling {@link Span#end()} on the dummy span ends the
-     * metric timer. If {@link Span#endWithError(ErrorMessage)} is called on the dummy span, then
-     * the dummy span will be escalated to a real span. If
-     * {@link Span#endWithStackTrace(long, TimeUnit)} is called on the dummy span and the dummy span
-     * duration exceeds the specified threshold, then the dummy span will be escalated to a real
-     * span. If {@link Span#captureSpanStackTrace()} is called on the dummy span, then the dummy
-     * span will be escalated to a real span. A hard cap ({@code maxSpans * 2}) on the total number
-     * of (real) spans is applied when escalating dummy spans to real spans.
+     * Once a trace has accumulated {@code maxEntriesPerTrace} entries, this method doesn't add new
+     * entries to the trace, but instead returns a dummy entry. A transaction metric for the
+     * specified metric is still started, since metrics are very cheap, even in great quantities.
+     * The dummy entry adhere to the {@link TraceEntry} contract and return the specified
+     * {@link MessageSupplier} in response to {@link TraceEntry#getMessageSupplier()}. Calling
+     * {@link TraceEntry#end()} on the dummy entry ends the transaction metric. If
+     * {@link TraceEntry#endWithError(ErrorMessage)} is called on the dummy entry, then the dummy
+     * entry will be escalated to a real entry. If
+     * {@link TraceEntry#endWithStackTrace(long, TimeUnit)} is called on the dummy entry and the
+     * dummy entry duration exceeds the specified threshold, then the dummy entry will be escalated
+     * to a real entry. If {@link TraceEntry#captureStackTrace()} is called on the dummy entry, then
+     * the dummy entry will be escalated to a real entry. A hard cap (
+     * {@code maxEntriesPerTrace * 2}) on the total number of (real) entries is applied when
+     * escalating dummy entries to real entries.
      * 
-     * If there is no current trace, this method does nothing, and returns a no-op instance of
-     * {@link Span}.
+     * If there is no current transaction, this method does nothing, and returns a no-op instance of
+     * {@link TraceEntry}.
      * 
      * @param messageSupplier
      * @param metricName
      * @return
      */
-    public abstract Span startSpan(MessageSupplier messageSupplier,
+    public abstract TraceEntry startTraceEntry(MessageSupplier messageSupplier,
             MetricName metricName);
 
     /**
-     * Starts a timer for the specified metric. If a timer is already running for the specified
-     * metric, it will keep an internal counter of the number of starts, and it will only end the
-     * timer after the corresponding number of ends.
+     * Starts a transaction metric for the specified metric. If a transaction metric is already
+     * running for the specified metric, it will keep an internal counter of the number of starts,
+     * and it will only end the transaction metric after the corresponding number of ends.
      * 
-     * If there is no current trace, this method does nothing, and returns a no-op instance of
-     * {@link MetricTimer}.
+     * If there is no current transaction, this method does nothing, and returns a no-op instance of
+     * {@link TransactionMetric}.
      * 
      * @param metricName
-     * @return the timer for calling stop
+     * @return the transaction metric for calling stop
      */
-    public abstract MetricTimer startMetric(MetricName metricName);
+    public abstract TransactionMetric startTransactionMetric(MetricName metricName);
 
     /**
-     * Adds a span with duration zero.
+     * Adds a trace entry with duration zero.
      * 
-     * Once a trace has accumulated {@code maxSpans} spans, this method does nothing, and returns a
-     * no-op instance of {@link CompletedSpan}.
+     * Once a trace has accumulated {@code maxEntriesPerTrace} entries, this method does nothing,
+     * and returns a no-op instance of {@link CompletedTraceEntry}.
      * 
-     * If there is no current trace, this method does nothing, and returns a no-op instance of
-     * {@link CompletedSpan}.
+     * If there is no current transaction, this method does nothing, and returns a no-op instance of
+     * {@link CompletedTraceEntry}.
      * 
      * @param messageSupplier
      */
-    public abstract CompletedSpan addSpan(MessageSupplier messageSupplier);
+    public abstract CompletedTraceEntry addTraceEntry(MessageSupplier messageSupplier);
 
     /**
-     * Adds an error span with duration zero. It does not set the error attribute on the trace,
-     * which must be done with {@link Span#endWithError(ErrorMessage)} on the root span.
+     * Adds a trace entry with duration zero. It does not set the error attribute on the trace,
+     * which must be done with {@link TraceEntry#endWithError(ErrorMessage)} on the root entry.
      * 
-     * This method bypasses the regular {@code maxSpans} check so that errors after {@code maxSpans}
-     * will still be included in the trace. A hard cap ({@code maxSpans * 2}) on the total number of
-     * spans is still applied, after which this method does nothing.
+     * This method bypasses the regular {@code maxEntriesPerTrace} check so that errors after
+     * {@code maxEntriesPerTrace} will still be included in the trace. A hard cap (
+     * {@code maxEntriesPerTrace * 2}) on the total number of entries is still applied, after which
+     * this method does nothing.
      * 
-     * If there is no current trace, this method does nothing, and returns a no-op instance of
-     * {@link CompletedSpan}.
+     * If there is no current transaction, this method does nothing, and returns a no-op instance of
+     * {@link CompletedTraceEntry}.
      * 
      * @param errorMessage
      */
-    public abstract CompletedSpan addErrorSpan(ErrorMessage errorMessage);
+    public abstract CompletedTraceEntry addTraceEntry(ErrorMessage errorMessage);
 
     /**
      * Set the transaction type that is used for aggregation.
      * 
-     * If there is no current trace, this method does nothing.
+     * If there is no current transaction, this method does nothing.
      * 
      * @param transactionName
      */
@@ -275,34 +280,35 @@ public abstract class PluginServices {
     /**
      * Set the transaction name that is used for aggregation.
      * 
-     * If there is no current trace, this method does nothing.
+     * If there is no current transaction, this method does nothing.
      * 
      * @param transactionName
      */
     public abstract void setTransactionName(@Nullable String transactionName);
 
     /**
-     * Marks the trace as an error with the given message. Normally traces are only marked as an
-     * error if {@link Span#endWithError(ErrorMessage)} is called on the root span. This method can
-     * be used to mark the entire trace as an error from a nested span.
+     * Marks the transaction as an error with the given message. Normally transactions are only
+     * marked as an error if {@link TraceEntry#endWithError(ErrorMessage)} is called on the root
+     * entry. This method can be used to mark the entire transaction as an error from a nested
+     * entry.
      * 
-     * This should be used sparingly. Normally, spans should only mark themselves (using
-     * {@link Span#endWithError(ErrorMessage)}), and let the root span determine if the transaction
-     * as a whole should be marked as an error.
+     * This should be used sparingly. Normally, entries should only mark themselves (using
+     * {@link TraceEntry#endWithError(ErrorMessage)}), and let the root entry determine if the
+     * transaction as a whole should be marked as an error.
      * 
-     * E.g., this method is called from the logger plugin, to mark the entire trace as an error if
-     * an error is logged through one of the supported logger APIs.
+     * E.g., this method is called from the logger plugin, to mark the entire transaction as an
+     * error if an error is logged through one of the supported logger APIs.
      * 
-     * If this is called multiple times within a single trace, only the first call has any effect,
-     * and subsequent calls are ignored.
+     * If this is called multiple times within a single transaction, only the first call has any
+     * effect, and subsequent calls are ignored.
      * 
-     * If there is no current trace, this method does nothing.
+     * If there is no current transaction, this method does nothing.
      */
-    public abstract void setTraceError(@Nullable String error);
+    public abstract void setTransactionError(@Nullable String error);
 
     /**
-     * Sets the user attribute on the trace. This attribute is shared across all plugins, and is
-     * generally set by the plugin that initiated the trace, but can be set by other plugins if
+     * Sets the user attribute on the transaction. This attribute is shared across all plugins, and
+     * is generally set by the plugin that initiated the trace, but can be set by other plugins if
      * needed.
      * 
      * The user is used in a few ways:
@@ -313,44 +319,46 @@ public abstract class PluginServices {
      * specific user using a lower threshold than normal (e.g. threshold=0 to capture all requests
      * for a specific user)
      * <li>Glowroot can be configured (using the configuration page) to perform profiling on all
-     * traces for a specific user
+     * transactions for a specific user
      * </ul>
      * 
      * If profiling is enabled for a specific user, this is activated (if the {@code user} matches)
-     * at the time that this method is called, so it is best to call this method early in the trace.
+     * at the time that this method is called, so it is best to call this method early in the
+     * transaction.
      * 
-     * If there is no current trace, this method does nothing.
+     * If there is no current transaction, this method does nothing.
      * 
      * @param user
      */
-    public abstract void setTraceUser(@Nullable String user);
+    public abstract void setTransactionUser(@Nullable String user);
 
     /**
-     * Adds an attribute on the current trace with the specified {@code name} and {@code value}. A
-     * trace's attributes are displayed when viewing a trace on the trace explorer page.
+     * Adds an attribute on the current transaction with the specified {@code name} and
+     * {@code value}. A transaction's attributes are displayed when viewing a trace on the trace
+     * explorer page.
      * 
-     * Subsequent calls to this method with the same {@code name} on the same trace will add an
-     * additional attribute if there is not already an attribute with the same {@code name} and
+     * Subsequent calls to this method with the same {@code name} on the same transaction will add
+     * an additional attribute if there is not already an attribute with the same {@code name} and
      * {@code value}.
      * 
-     * If there is no current trace, this method does nothing.
+     * If there is no current transaction, this method does nothing.
      * 
      * @param name
      *            name of the attribute
      * @param value
      *            value of the attribute, null values will be normalized to the empty string
      */
-    public abstract void setTraceCustomAttribute(String name, @Nullable String value);
+    public abstract void setTransactionCustomAttribute(String name, @Nullable String value);
 
     /**
-     * Overrides the general store threshold (Configuration &gt; General &gt; Store threshold) for
-     * the current trace. This can be used to store particular traces at a lower or higher threshold
-     * than the general threshold.
+     * Overrides the default trace store threshold (Configuration &gt; Traces &gt; Default store
+     * threshold) for the current transaction. This can be used to store particular traces at a
+     * lower or higher threshold than the general threshold.
      * 
-     * If this is called multiple times for a give trace, the minimum {@code threshold} will be
-     * used.
+     * If this is called multiple times for a given transaction, the minimum {@code threshold} will
+     * be used.
      * 
-     * If there is no current trace, this method does nothing.
+     * If there is no current transaction, this method does nothing.
      * 
      * @param threshold
      * @param unit
@@ -358,14 +366,15 @@ public abstract class PluginServices {
     public abstract void setTraceStoreThreshold(long threshold, TimeUnit unit);
 
     /**
-     * Returns whether a trace is already being captured.
+     * Returns whether a transaction is already being captured.
      * 
      * This method has very limited use. It should only be used by top-level pointcuts that define a
-     * trace, and that do not want to create a span if they are already inside of an existing trace.
+     * transaction, and that do not want to create a entry if they are already inside of an existing
+     * transaction.
      * 
-     * @return whether a trace is already being captured
+     * @return whether a transaction is already being captured
      */
-    public abstract boolean isInTrace();
+    public abstract boolean isInTransaction();
 
     private static PluginServices getPluginServices(String pluginId) {
         try {
@@ -440,40 +449,40 @@ public abstract class PluginServices {
             return NopMetricName.INSTANCE;
         }
         @Override
-        public Span startTrace(String transactionType, String transactionName,
+        public TraceEntry startTransaction(String transactionType, String transactionName,
                 MessageSupplier messageSupplier, MetricName metricName) {
-            return NopSpan.INSTANCE;
+            return NopTraceEntry.INSTANCE;
         }
         @Override
-        public Span startSpan(MessageSupplier messageSupplier, MetricName metricName) {
-            return NopSpan.INSTANCE;
+        public TraceEntry startTraceEntry(MessageSupplier messageSupplier, MetricName metricName) {
+            return NopTraceEntry.INSTANCE;
         }
         @Override
-        public MetricTimer startMetric(MetricName metricName) {
-            return NopMetricTimer.INSTANCE;
+        public TransactionMetric startTransactionMetric(MetricName metricName) {
+            return NopTransactionMetric.INSTANCE;
         }
         @Override
-        public CompletedSpan addSpan(MessageSupplier messageSupplier) {
-            return NopCompletedSpan.INSTANCE;
+        public CompletedTraceEntry addTraceEntry(MessageSupplier messageSupplier) {
+            return NopCompletedEntry.INSTANCE;
         }
         @Override
-        public CompletedSpan addErrorSpan(ErrorMessage errorMessage) {
-            return NopCompletedSpan.INSTANCE;
+        public CompletedTraceEntry addTraceEntry(ErrorMessage errorMessage) {
+            return NopCompletedEntry.INSTANCE;
         }
         @Override
         public void setTransactionType(@Nullable String transactionType) {}
         @Override
         public void setTransactionName(@Nullable String transactionName) {}
         @Override
-        public void setTraceError(@Nullable String error) {}
+        public void setTransactionError(@Nullable String error) {}
         @Override
-        public void setTraceUser(@Nullable String user) {}
+        public void setTransactionUser(@Nullable String user) {}
         @Override
-        public void setTraceCustomAttribute(String name, @Nullable String value) {}
+        public void setTransactionCustomAttribute(String name, @Nullable String value) {}
         @Override
         public void setTraceStoreThreshold(long threshold, TimeUnit unit) {}
         @Override
-        public boolean isInTrace() {
+        public boolean isInTransaction() {
             return false;
         }
 
@@ -482,20 +491,20 @@ public abstract class PluginServices {
             private NopMetricName() {}
         }
 
-        private static class NopSpan implements Span {
-            private static final NopSpan INSTANCE = new NopSpan();
-            private NopSpan() {}
+        private static class NopTraceEntry implements TraceEntry {
+            private static final NopTraceEntry INSTANCE = new NopTraceEntry();
+            private NopTraceEntry() {}
             @Override
-            public CompletedSpan end() {
-                return NopCompletedSpan.INSTANCE;
+            public CompletedTraceEntry end() {
+                return NopCompletedEntry.INSTANCE;
             }
             @Override
-            public CompletedSpan endWithStackTrace(long threshold, TimeUnit unit) {
-                return NopCompletedSpan.INSTANCE;
+            public CompletedTraceEntry endWithStackTrace(long threshold, TimeUnit unit) {
+                return NopCompletedEntry.INSTANCE;
             }
             @Override
-            public CompletedSpan endWithError(ErrorMessage errorMessage) {
-                return NopCompletedSpan.INSTANCE;
+            public CompletedTraceEntry endWithError(ErrorMessage errorMessage) {
+                return NopCompletedEntry.INSTANCE;
             }
             @Override
             @Nullable
@@ -504,18 +513,18 @@ public abstract class PluginServices {
             }
         }
 
-        private static class NopMetricTimer implements MetricTimer {
-            private static final NopMetricTimer INSTANCE = new NopMetricTimer();
-            private NopMetricTimer() {}
+        private static class NopTransactionMetric implements TransactionMetric {
+            private static final NopTransactionMetric INSTANCE = new NopTransactionMetric();
+            private NopTransactionMetric() {}
             @Override
             public void stop() {}
         }
 
-        private static class NopCompletedSpan implements CompletedSpan {
-            private static final NopCompletedSpan INSTANCE = new NopCompletedSpan();
-            private NopCompletedSpan() {}
+        private static class NopCompletedEntry implements CompletedTraceEntry {
+            private static final NopCompletedEntry INSTANCE = new NopCompletedEntry();
+            private NopCompletedEntry() {}
             @Override
-            public void captureSpanStackTrace() {}
+            public void captureStackTrace() {}
         }
     }
 }

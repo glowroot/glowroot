@@ -35,10 +35,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.advicegen.AdviceGenerator;
 import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.common.ObjectMappers;
-import org.glowroot.dynamicadvice.DynamicAdviceGenerator;
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.weaving.Advice;
@@ -85,8 +85,8 @@ public class PluginDescriptorCache {
                     logger.warn("aspect not found: {}", aspect, e);
                 }
             }
-            lazyAdvisors.putAll(DynamicAdviceGenerator.createAdvisors(
-                    pluginDescriptor.getPointcuts(), pluginDescriptor.getId()));
+            lazyAdvisors.putAll(AdviceGenerator.createAdvisors(
+                    pluginDescriptor.getCapturePoints(), pluginDescriptor.getId()));
         }
         for (Entry<Advice, LazyDefinedClass> entry : lazyAdvisors.entrySet()) {
             advisors.add(entry.getKey());

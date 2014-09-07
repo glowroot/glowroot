@@ -30,6 +30,12 @@ glowroot.controller('ConfigStorageCtrl', [
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
+    $scope.$watch('page.aggregateExpirationDays', function (newValue) {
+      if ($scope.config) {
+        $scope.config.aggregateExpirationHours = newValue * 24;
+      }
+    });
+
     $scope.$watch('page.traceExpirationDays', function (newValue) {
       if ($scope.config) {
         $scope.config.traceExpirationHours = newValue * 24;
@@ -42,6 +48,7 @@ glowroot.controller('ConfigStorageCtrl', [
       $scope.originalConfig = angular.copy(data.config);
 
       $scope.dataDir = data.dataDir;
+      $scope.page.aggregateExpirationDays = data.config.aggregateExpirationHours / 24;
       $scope.page.traceExpirationDays = data.config.traceExpirationHours / 24;
     }
 
@@ -54,8 +61,16 @@ glowroot.controller('ConfigStorageCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $scope.deleteAll = function (deferred) {
-      $http.post('backend/admin/delete-all-data')
+    $scope.deleteAllAggregates = function (deferred) {
+      $http.post('backend/admin/delete-all-aggregates')
+          .success(function () {
+            deferred.resolve('Deleted');
+          })
+          .error(httpErrors.handler($scope, deferred));
+    };
+
+    $scope.deleteAllTraces = function (deferred) {
+      $http.post('backend/admin/delete-all-traces')
           .success(function () {
             deferred.resolve('Deleted');
           })

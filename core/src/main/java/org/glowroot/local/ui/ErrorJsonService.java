@@ -26,7 +26,7 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.ErrorAggregate;
 import org.glowroot.local.store.ErrorAggregateQuery;
 import org.glowroot.local.store.QueryResult;
-import org.glowroot.local.store.SnapshotDao;
+import org.glowroot.local.store.TraceDao;
 import org.glowroot.markers.Singleton;
 
 /**
@@ -41,10 +41,10 @@ class ErrorJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(ErrorJsonService.class);
 
-    private final SnapshotDao snapshotDao;
+    private final TraceDao traceDao;
 
-    ErrorJsonService(SnapshotDao snapshotDao) {
-        this.snapshotDao = snapshotDao;
+    ErrorJsonService(TraceDao traceDao) {
+        this.traceDao = traceDao;
     }
 
     @GET("/backend/error/aggregates")
@@ -54,7 +54,7 @@ class ErrorJsonService {
         mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         ErrorAggregateQuery query =
                 ObjectMappers.readRequiredValue(mapper, content, ErrorAggregateQuery.class);
-        QueryResult<ErrorAggregate> queryResult = snapshotDao.readErrorAggregates(query);
+        QueryResult<ErrorAggregate> queryResult = traceDao.readErrorAggregates(query);
         return mapper.writeValueAsString(queryResult);
     }
 }

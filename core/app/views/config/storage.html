@@ -25,6 +25,40 @@
          gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl">
+      <div class="form-group" ng-class="{'has-error': formCtrl.aggregateExpirationDays.$invalid}">
+        <label class="col-lg-3 control-label" for="aggregateExpirationDays">
+          Keep aggregates for
+        </label>
+        <div class="col-lg-9">
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="input-group">
+                <input type="text"
+                       class="form-control"
+                       ng-model="page.aggregateExpirationDays"
+                       name="aggregateExpirationDays"
+                       id="aggregateExpirationDays"
+                       ng-pattern="pattern.integer"
+                       ng-required="loaded"
+                       style="width: 7em;">
+                <span class="input-group-addon">days</span>
+              </div>
+            </div>
+            <div class="col-sm-8">
+              <div gt-button
+                   gt-label="Delete All"
+                   gt-click="deleteAllAggregates(deferred)"
+                   gt-btn-class="btn-config-delete-all"
+                   gt-dont-validate-form="true">
+              </div>
+            </div>
+          </div>
+          <div class="help-block">
+            Defines how long aggregates should be retained.
+            Aggregate profiles may expire sooner than this, see <em>Profiles/trace entries capped db</em> below.
+          </div>
+        </div>
+      </div>
       <div class="form-group" ng-class="{'has-error': formCtrl.traceExpirationDays.$invalid}">
         <label class="col-lg-3 control-label" for="traceExpirationDays">
           Keep traces for
@@ -47,21 +81,20 @@
             <div class="col-sm-8">
               <div gt-button
                    gt-label="Delete All"
-                   gt-click="deleteAll(deferred)"
-                   gt-btn-class="btn-config-delete-all-traces"
+                   gt-click="deleteAllTraces(deferred)"
+                   gt-btn-class="btn-config-delete-all"
                    gt-dont-validate-form="true">
               </div>
             </div>
           </div>
           <div class="help-block">
             Defines how long traces should be retained.
-            The spans and profiles trace components may expire sooner than this,
-            see <em>Spans/profiles capped db</em> below.
+            Profiles and trace entries may expire sooner than this, see <em>Profiles/trace entries capped db</em> below.
           </div>
         </div>
       </div>
       <div gt-form-group
-           gt-label="Spans/profiles capped db"
+           gt-label="Profiles/trace entries capped db"
            gt-model="config.cappedDatabaseSizeMb"
            gt-number="true"
            gt-pattern="pattern.integer"
@@ -69,9 +102,10 @@
            gt-width="7em"
            gt-addon="MB">
         <div class="help-block">
-          Trace spans and profiles can be large, and are stored in a capped database for efficient access
+          Profiles and trace entries can be large, and are stored in a capped database for efficient access
           and capped disk usage.
-          Once this capped database grows to its maximum size, new spans and profiles start overwriting the oldest ones.
+          Once this capped database grows to its maximum size, new profiles and trace entries start overwriting
+          the oldest ones.
         </div>
       </div>
       <div class="form-group">
@@ -81,8 +115,7 @@
             {{dataDir}}
           </p>
           <div class="help-block">
-            The data directory where the H2 data file and the rolling database are
-            stored.
+            The data directory where the H2 data file and the capped database are stored.
             The default value is the directory where the glowroot.jar resides.
             This can only be changed on the command line, using
             <span class="nowrap">-Dglowroot.data.dir=&lt;folder&gt;</span>.

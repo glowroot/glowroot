@@ -62,23 +62,23 @@ public class PluginDescriptor {
     private final String id;
     private final String version;
     private final ImmutableList<String> transactionTypes;
-    private final ImmutableList<String> traceCustomAttributes;
+    private final ImmutableList<String> transactionCustomAttributes;
     private final ImmutableList<PropertyDescriptor> properties;
+    private final ImmutableList<CapturePoint> capturePoints;
     private final ImmutableList<String> aspects;
-    private final ImmutableList<PointcutConfig> pointcuts;
 
     private PluginDescriptor(String name, String id, String version,
-            List<String> transactionTypes, List<String> traceCustomAttributes,
-            List<PropertyDescriptor> properties, List<String> aspects,
-            List<PointcutConfig> pointcuts) {
+            List<String> transactionTypes, List<String> transactionCustomAttributes,
+            List<PropertyDescriptor> properties, List<CapturePoint> pointcuts,
+            List<String> aspects) {
         this.name = name;
         this.id = id;
         this.version = version;
         this.transactionTypes = ImmutableList.copyOf(transactionTypes);
-        this.traceCustomAttributes = ImmutableList.copyOf(traceCustomAttributes);
+        this.transactionCustomAttributes = ImmutableList.copyOf(transactionCustomAttributes);
         this.properties = ImmutableList.copyOf(properties);
+        this.capturePoints = ImmutableList.copyOf(pointcuts);
         this.aspects = ImmutableList.copyOf(aspects);
-        this.pointcuts = ImmutableList.copyOf(pointcuts);
     }
 
     public String getName() {
@@ -97,25 +97,26 @@ public class PluginDescriptor {
         return transactionTypes;
     }
 
-    public ImmutableList<String> getTraceCustomAttributes() {
-        return traceCustomAttributes;
+    public ImmutableList<String> getTransactionCustomAttributes() {
+        return transactionCustomAttributes;
     }
 
     public ImmutableList<PropertyDescriptor> getProperties() {
         return properties;
     }
 
+    public ImmutableList<CapturePoint> getCapturePoints() {
+        return capturePoints;
+    }
+
     public ImmutableList<String> getAspects() {
         return aspects;
     }
 
-    public ImmutableList<PointcutConfig> getPointcuts() {
-        return pointcuts;
-    }
-
     public PluginDescriptor copyWithoutAdvice() {
-        return new PluginDescriptor(name, id, version, transactionTypes, traceCustomAttributes,
-                properties, ImmutableList.<String>of(), ImmutableList.<PointcutConfig>of());
+        return new PluginDescriptor(name, id, version, transactionTypes,
+                transactionCustomAttributes, properties, ImmutableList.<CapturePoint>of(),
+                ImmutableList.<String>of());
     }
 
     @Override
@@ -125,10 +126,10 @@ public class PluginDescriptor {
                 .add("id", id)
                 .add("version", version)
                 .add("transactionTypes", transactionTypes)
-                .add("traceCustomAttributes", traceCustomAttributes)
+                .add("transactionCustomAttributes", transactionCustomAttributes)
                 .add("properties", properties)
+                .add("capturePoints", capturePoints)
                 .add("aspects", aspects)
-                .add("pointcuts", pointcuts)
                 .toString();
     }
 
@@ -138,27 +139,27 @@ public class PluginDescriptor {
             @JsonProperty("id") @Nullable String id,
             @JsonProperty("version") @Nullable String version,
             @JsonProperty("transactionTypes") @Nullable List</*@Nullable*/String> uncheckedTransactionTypes,
-            @JsonProperty("traceCustomAttributes") @Nullable List</*@Nullable*/String> uncheckedTraceCustomAttributes,
+            @JsonProperty("transactionCustomAttributes") @Nullable List</*@Nullable*/String> uncheckedTransactionCustomAttributes,
             @JsonProperty("properties") @Nullable List</*@Nullable*/PropertyDescriptor> uncheckedProperties,
-            @JsonProperty("aspects") @Nullable List</*@Nullable*/String> uncheckedAspects,
-            @JsonProperty("pointcuts") @Nullable List</*@Nullable*/PointcutConfig> uncheckedPointcuts)
+            @JsonProperty("capturePoints") @Nullable List</*@Nullable*/CapturePoint> uncheckedCapturePoints,
+            @JsonProperty("aspects") @Nullable List</*@Nullable*/String> uncheckedAspects)
             throws JsonMappingException {
-        List<String> traceCustomAttributes = checkNotNullItemsForProperty(
-                uncheckedTraceCustomAttributes, "traceCustomAttributes");
+        List<String> transactionCustomAttributes = checkNotNullItemsForProperty(
+                uncheckedTransactionCustomAttributes, "transactionCustomAttributes");
         List<String> transactionTypes =
                 checkNotNullItemsForProperty(uncheckedTransactionTypes, "transactionTypes");
         List<PropertyDescriptor> properties =
                 checkNotNullItemsForProperty(uncheckedProperties, "properties");
+        List<CapturePoint> capturePoints =
+                checkNotNullItemsForProperty(uncheckedCapturePoints, "capturePoints");
         List<String> aspects =
                 checkNotNullItemsForProperty(uncheckedAspects, "aspects");
-        List<PointcutConfig> pointcuts =
-                checkNotNullItemsForProperty(uncheckedPointcuts, "pointcuts");
         checkRequiredProperty(name, "name");
         checkRequiredProperty(id, "id");
         checkRequiredProperty(version, "version");
         return new PluginDescriptor(name, id, version, nullToEmpty(transactionTypes),
-                nullToEmpty(traceCustomAttributes), nullToEmpty(properties), nullToEmpty(aspects),
-                nullToEmpty(pointcuts));
+                nullToEmpty(transactionCustomAttributes), nullToEmpty(properties),
+                nullToEmpty(capturePoints), nullToEmpty(aspects));
     }
 
     private static String stripEndingIgnoreCase(String original, String ending) {

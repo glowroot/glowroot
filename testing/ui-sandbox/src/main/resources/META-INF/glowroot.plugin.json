@@ -6,7 +6,7 @@
     "Sandbox",
     "Background"
   ],
-  "traceCustomAttributes": [
+  "transactionCustomAttributes": [
     "My First Attribute",
     "Second",
     "A Very Long Attribute Value",

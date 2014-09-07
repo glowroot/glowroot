@@ -27,8 +27,8 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.container.trace.TraceEntry;
 import org.glowroot.container.trace.TraceMetric;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,10 +60,10 @@ public class BasicTest {
     public void shouldReadTraces() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
         assertThat(trace.getRootMetric().getName()).isEqualTo("level one");
@@ -73,23 +73,23 @@ public class BasicTest {
         assertThat(levelTwoMetric.getNestedMetricNames()).containsOnly("level three");
         TraceMetric levelThreeMetric = levelTwoMetric.getNestedMetrics().get(0);
         assertThat(levelThreeMetric.getNestedMetricNames()).containsOnly("level four");
-        assertThat(spans).hasSize(4);
-        Span span1 = spans.get(0);
-        assertThat(span1.getMessage().getText()).isEqualTo("Level One");
-        assertThat(span1.getMessage().getDetail()).isEqualTo(mapOf("arg1", "a", "arg2", "b",
+        assertThat(entries).hasSize(4);
+        TraceEntry entry1 = entries.get(0);
+        assertThat(entry1.getMessage().getText()).isEqualTo("Level One");
+        assertThat(entry1.getMessage().getDetail()).isEqualTo(mapOf("arg1", "a", "arg2", "b",
                 "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
                         "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
                 "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b")));
-        Span span2 = spans.get(1);
-        assertThat(span2.getMessage().getText()).isEqualTo("Level Two");
-        assertThat(span2.getMessage().getDetail()).isEqualTo(mapOf("arg1", "ax", "arg2", "bx"));
-        Span span3 = spans.get(2);
-        assertThat(span3.getMessage().getText()).isEqualTo("Level Three");
-        assertThat(span3.getMessage().getDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
+        TraceEntry entry2 = entries.get(1);
+        assertThat(entry2.getMessage().getText()).isEqualTo("Level Two");
+        assertThat(entry2.getMessage().getDetail()).isEqualTo(mapOf("arg1", "ax", "arg2", "bx"));
+        TraceEntry entry3 = entries.get(2);
+        assertThat(entry3.getMessage().getText()).isEqualTo("Level Three");
+        assertThat(entry3.getMessage().getDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
         // offset is measured in nanoseconds so there's no way this should be 0
-        assertThat(span3.getOffset()).isGreaterThan(0);
-        Span span4 = spans.get(3);
-        assertThat(span4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
+        assertThat(entry3.getOffset()).isGreaterThan(0);
+        TraceEntry entry4 = entries.get(3);
+        assertThat(entry4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
     }
 
     private static Map<String, Object> mapOf(String k1, Object v1, String k2, Object v2) {
@@ -108,7 +108,7 @@ public class BasicTest {
         return ImmutableMap.of(k1, v1, k2, v2, k3, v3, k4, v4);
     }
 
-    public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {
+    public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {
         @Override
         public void executeApp() {
             new LevelOne().call("a", "b");

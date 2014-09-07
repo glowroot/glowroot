@@ -26,22 +26,21 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.GlowrootModule;
-import org.glowroot.collector.Snapshot;
-import org.glowroot.collector.SnapshotCreator;
-import org.glowroot.collector.SnapshotWriter;
-import org.glowroot.collector.TraceCollectorImpl;
+import org.glowroot.collector.TraceCreator;
+import org.glowroot.collector.TraceWriter;
+import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.trace.ProfileNode;
-import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.container.trace.TraceEntry;
 import org.glowroot.container.trace.TraceService;
-import org.glowroot.local.store.SnapshotDao;
-import org.glowroot.local.store.TransactionPointDao;
+import org.glowroot.local.store.TraceDao;
+import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.ui.TraceCommonService;
 import org.glowroot.local.ui.TraceExportHttpService;
-import org.glowroot.trace.TraceRegistry;
+import org.glowroot.transaction.TransactionRegistry;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -55,34 +54,34 @@ class LocalTraceService extends TraceService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final TransactionPointDao transactionPointDao;
-    private final SnapshotDao snapshotDao;
+    private final AggregateDao aggregateDao;
+    private final TraceDao traceDao;
     private final TraceCommonService traceCommonService;
     private final TraceExportHttpService traceExportHttpService;
-    private final TraceCollectorImpl traceCollector;
-    private final TraceRegistry traceRegistry;
+    private final TransactionCollectorImpl transactionCollector;
+    private final TransactionRegistry transactionRegistry;
     private final Clock clock;
     private final Ticker ticker;
 
     LocalTraceService(GlowrootModule glowrootModule) {
-        transactionPointDao = glowrootModule.getStorageModule().getTransactionPointDao();
-        snapshotDao = glowrootModule.getStorageModule().getSnapshotDao();
+        aggregateDao = glowrootModule.getStorageModule().getAggregateDao();
+        traceDao = glowrootModule.getStorageModule().getTraceDao();
         traceCommonService = glowrootModule.getUiModule().getTraceCommonService();
         traceExportHttpService = glowrootModule.getUiModule().getTraceExportHttpService();
-        traceCollector = glowrootModule.getCollectorModule().getTraceCollector();
-        traceRegistry = glowrootModule.getTraceModule().getTraceRegistry();
+        transactionCollector = glowrootModule.getCollectorModule().getTransactionCollector();
+        transactionRegistry = glowrootModule.getTraceModule().getTraceRegistry();
         clock = glowrootModule.getClock();
         ticker = glowrootModule.getTicker();
     }
 
     @Override
-    public int getNumPendingCompleteTraces() {
-        return traceCollector.getPendingCompleteTraces().size();
+    public int getNumPendingCompleteTransactions() {
+        return transactionCollector.getPendingCompleteTransactions().size();
     }
 
     @Override
-    public long getNumStoredSnapshots() {
-        return snapshotDao.count();
+    public long getNumTraces() {
+        return traceDao.count();
     }
 
     @Override
@@ -94,33 +93,33 @@ class LocalTraceService extends TraceService {
     @Nullable
     public Trace getLastTrace() throws Exception {
         // check pending traces first
-        List<org.glowroot.trace.model.Trace> pendingTraces =
-                Lists.newArrayList(traceCollector.getPendingCompleteTraces());
-        if (pendingTraces.size() > 1) {
+        List<org.glowroot.transaction.model.Transaction> pendingTransactions =
+                Lists.newArrayList(transactionCollector.getPendingCompleteTransactions());
+        if (pendingTransactions.size() > 1) {
             throw new AssertionError("Unexpected multiple pending traces during test");
         }
-        Snapshot snapshot = null;
-        if (pendingTraces.size() == 1) {
-            snapshot = traceCommonService.getSnapshot(pendingTraces.get(0).getId());
+        org.glowroot.collector.Trace trace = null;
+        if (pendingTransactions.size() == 1) {
+            trace = traceCommonService.getTrace(pendingTransactions.get(0).getId());
         } else {
-            // no pending traces, so check stored snapshots
-            snapshot = snapshotDao.getLastSnapshot();
+            // no pending traces, so check stored traces
+            trace = traceDao.getLastTrace();
         }
-        if (snapshot == null) {
+        if (trace == null) {
             return null;
         }
-        return ObjectMappers.readRequiredValue(mapper, SnapshotWriter.toString(snapshot),
+        return ObjectMappers.readRequiredValue(mapper, TraceWriter.toString(trace),
                 Trace.class);
     }
 
     @Override
     @Nullable
-    public List<Span> getSpans(String traceId) throws Exception {
-        String spans = traceCommonService.getSpansString(traceId);
-        if (spans == null) {
+    public List<TraceEntry> getEntries(String traceId) throws Exception {
+        String entries = traceCommonService.getEntriesString(traceId);
+        if (entries == null) {
             return null;
         }
-        return mapper.readValue(spans, new TypeReference<List<Span>>() {});
+        return mapper.readValue(entries, new TypeReference<List<TraceEntry>>() {});
     }
 
     @Override
@@ -145,35 +144,36 @@ class LocalTraceService extends TraceService {
 
     @Override
     public void deleteAll() {
-        transactionPointDao.deleteAll();
-        snapshotDao.deleteAll();
+        aggregateDao.deleteAll();
+        traceDao.deleteAll();
     }
 
     @Override
     @Nullable
     protected Trace getActiveTrace() throws Exception {
-        List<org.glowroot.trace.model.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
+        List<org.glowroot.transaction.model.Transaction> traces =
+                Lists.newArrayList(transactionRegistry.getTransactions());
         if (traces.isEmpty()) {
             return null;
         } else if (traces.size() > 1) {
             throw new IllegalStateException("Unexpected number of active traces");
         } else {
-            Snapshot snapshot = SnapshotCreator.createActiveSnapshot(traces.get(0),
+            org.glowroot.collector.Trace trace = TraceCreator.createActiveTrace(traces.get(0),
                     clock.currentTimeMillis(), ticker.read());
-            return ObjectMappers.readRequiredValue(mapper, SnapshotWriter.toString(snapshot),
+            return ObjectMappers.readRequiredValue(mapper, TraceWriter.toString(trace),
                     Trace.class);
         }
     }
 
-    void assertNoActiveTraces() throws Exception {
+    void assertNoActiveTransactions() throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        // if interruptAppUnderTest() was used to terminate an active trace, it may take a few
-        // milliseconds to interrupt the thread and end the active trace
+        // if interruptAppUnderTest() was used to terminate an active transaction, it may take a few
+        // milliseconds to interrupt the thread and end the active transaction
         while (stopwatch.elapsed(SECONDS) < 2) {
-            if (traceRegistry.getTraces().isEmpty()) {
+            if (transactionRegistry.getTransactions().isEmpty()) {
                 return;
             }
         }
-        throw new AssertionError("There are still active traces");
+        throw new AssertionError("There are still active transactions");
     }
 }

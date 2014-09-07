@@ -418,8 +418,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                     "getInstance", "()Lorg/glowroot/api/OptionalReturn;", false);
         } else {
             loadReturnValue(opcode, true);
-            mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/NonVoidReturn",
-                    "create", "(Ljava/lang/Object;)Lorg/glowroot/api/OptionalReturn;", false);
+            mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/NonVoidReturn", "create",
+                    "(Ljava/lang/Object;)Lorg/glowroot/api/OptionalReturn;", false);
         }
     }
 
@@ -553,9 +553,9 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                     break;
                 default:
                     // this should have been caught during Advice construction, but just in case:
-                    logger.warn("the @{} method in {} has an unexpected parameter kind {}"
-                            + " at index {}", annotationType.getSimpleName(),
-                            adviceType.getClassName(), parameter.getKind(), i);
+                    logger.warn("the @{} method in {} has an unexpected parameter kind {} at index"
+                            + " {}", annotationType.getSimpleName(), adviceType.getClassName(),
+                            parameter.getKind(), i);
                     pushDefault(parameter.getType());
                     break;
             }
@@ -577,8 +577,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private void loadMethodParameters(Type adviceType, Class<? extends Annotation> annotationType,
             int argIndex, AdviceParameter parameter) {
         if (argIndex >= argumentTypes.length) {
-            logger.warn("the @{} method in {} has more @{} arguments than the number of args"
-                    + " in the target method", annotationType.getSimpleName(),
+            logger.warn("the @{} method in {} has more @{} arguments than the number of args in"
+                    + " the target method", annotationType.getSimpleName(),
                     adviceType.getClassName(), BindParameter.class.getSimpleName());
             pushDefault(parameter.getType());
             return;

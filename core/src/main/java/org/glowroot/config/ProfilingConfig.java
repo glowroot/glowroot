@@ -34,23 +34,23 @@ public class ProfilingConfig {
 
     public static final int USE_GENERAL_STORE_THRESHOLD = -1;
 
-    // percentage of traces to apply profiling, between 0.0 and 100.0
-    private final double tracePercentage;
+    private final boolean enabled;
+    // percentage of transactions to apply profiling, between 0.0 and 100.0
+    private final double transactionPercentage;
     private final int intervalMillis;
-    private final int maxSeconds;
-    // store threshold of -1 means use general config store threshold for profiled traces,
-    // the real threshold is the minimum of this and the general threshold
-    private final int storeThresholdMillis;
+    // trace store threshold of -1 means use default trace store threshold for profiled
+    // transactions (the real threshold is the minimum of this and the default threshold)
+    private final int traceStoreThresholdOverrideMillis;
 
     private final String version;
 
     static ProfilingConfig getDefault() {
-        final double tracePercentage = 0;
+        final boolean enabled = true;
+        final double transactionPercentage = 2;
         final int intervalMillis = 50;
-        final int maxSeconds = 30;
-        final int storeThresholdMillis = USE_GENERAL_STORE_THRESHOLD;
-        return new ProfilingConfig(tracePercentage, intervalMillis, maxSeconds,
-                storeThresholdMillis);
+        final int traceStoreThresholdMillis = USE_GENERAL_STORE_THRESHOLD;
+        return new ProfilingConfig(enabled, transactionPercentage, intervalMillis,
+                traceStoreThresholdMillis);
     }
 
     public static Overlay overlay(ProfilingConfig base) {
@@ -58,30 +58,30 @@ public class ProfilingConfig {
     }
 
     @VisibleForTesting
-    public ProfilingConfig(double tracePercentage, int intervalMillis, int maxSeconds,
-            int storeThresholdMillis) {
-        this.tracePercentage = tracePercentage;
+    public ProfilingConfig(boolean enabled, double transactionPercentage, int intervalMillis,
+            int traceStoreThresholdOverrideMillis) {
+        this.enabled = enabled;
+        this.transactionPercentage = transactionPercentage;
         this.intervalMillis = intervalMillis;
-        this.maxSeconds = maxSeconds;
-        this.storeThresholdMillis = storeThresholdMillis;
-        version = VersionHashes.sha1(tracePercentage, intervalMillis, maxSeconds,
-                storeThresholdMillis);
+        this.traceStoreThresholdOverrideMillis = traceStoreThresholdOverrideMillis;
+        version = VersionHashes.sha1(transactionPercentage, intervalMillis,
+                traceStoreThresholdOverrideMillis);
     }
 
-    public double getTracePercentage() {
-        return tracePercentage;
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public double getTransactionPercentage() {
+        return transactionPercentage;
     }
 
     public int getIntervalMillis() {
         return intervalMillis;
     }
 
-    public int getMaxSeconds() {
-        return maxSeconds;
-    }
-
-    public int getStoreThresholdMillis() {
-        return storeThresholdMillis;
+    public int getTraceStoreThresholdOverrideMillis() {
+        return traceStoreThresholdOverrideMillis;
     }
 
     @JsonView(UiView.class)
@@ -92,10 +92,10 @@ public class ProfilingConfig {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("tracePercentage", tracePercentage)
+                .add("enabled", enabled)
+                .add("transactionPercentage", transactionPercentage)
                 .add("intervalMillis", intervalMillis)
-                .add("maxSeconds", maxSeconds)
-                .add("storeThresholdMillis", storeThresholdMillis)
+                .add("traceStoreThresholdOverrideMillis", traceStoreThresholdOverrideMillis)
                 .add("version", version)
                 .toString();
     }
@@ -104,32 +104,32 @@ public class ProfilingConfig {
     @UsedByJsonBinding
     public static class Overlay {
 
-        private double tracePercentage;
+        private boolean enabled;
+        private double transactionPercentage;
         private int intervalMillis;
-        private int maxSeconds;
-        private int storeThresholdMillis;
+        private int traceStoreThresholdOverrideMillis;
 
         private Overlay(ProfilingConfig base) {
-            tracePercentage = base.tracePercentage;
+            enabled = base.enabled;
+            transactionPercentage = base.transactionPercentage;
             intervalMillis = base.intervalMillis;
-            maxSeconds = base.maxSeconds;
-            storeThresholdMillis = base.storeThresholdMillis;
+            traceStoreThresholdOverrideMillis = base.traceStoreThresholdOverrideMillis;
         }
-        public void setTracePercentage(double tracePercentage) {
-            this.tracePercentage = tracePercentage;
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+        public void setTransactionPercentage(double transactionPercentage) {
+            this.transactionPercentage = transactionPercentage;
         }
         public void setIntervalMillis(int intervalMillis) {
             this.intervalMillis = intervalMillis;
         }
-        public void setMaxSeconds(int maxSeconds) {
-            this.maxSeconds = maxSeconds;
-        }
-        public void setStoreThresholdMillis(int storeThresholdMillis) {
-            this.storeThresholdMillis = storeThresholdMillis;
+        public void setTraceStoreThresholdOverrideMillis(int traceStoreThresholdOverrideMillis) {
+            this.traceStoreThresholdOverrideMillis = traceStoreThresholdOverrideMillis;
         }
         public ProfilingConfig build() {
-            return new ProfilingConfig(tracePercentage, intervalMillis, maxSeconds,
-                    storeThresholdMillis);
+            return new ProfilingConfig(enabled, transactionPercentage, intervalMillis,
+                    traceStoreThresholdOverrideMillis);
         }
     }
 }

@@ -24,8 +24,8 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.config.PointcutConfig;
-import org.glowroot.container.config.PointcutConfig.AdviceKind;
+import org.glowroot.container.config.CapturePoint;
+import org.glowroot.container.config.CapturePoint.CaptureKind;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,17 +58,17 @@ public class ReweaveCountTest {
     @Test
     public void shouldCalculateCorrectReweaveCount() throws Exception {
         container.executeAppUnderTest(ShouldLoadClassesForWeaving.class);
-        PointcutConfig config = new PointcutConfig();
+        CapturePoint config = new CapturePoint();
         config.setClassName("org.glowroot.tests.javaagent.ReweaveCountTest$AAA");
         config.setMethodName("x");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
-        config.setAdviceKind(AdviceKind.METRIC);
+        config.setCaptureKind(CaptureKind.METRIC);
         config.setMetricName("x");
-        String configVersion = container.getConfigService().addPointcutConfig(config);
+        String configVersion = container.getConfigService().addCapturePoint(config);
         int reweaveCount = container.getConfigService().reweavePointcuts();
         assertThat(reweaveCount).isEqualTo(2);
-        container.getConfigService().removePointcutConfig(configVersion);
+        container.getConfigService().removeCapturePoint(configVersion);
         reweaveCount = container.getConfigService().reweavePointcuts();
         assertThat(reweaveCount).isEqualTo(2);
     }

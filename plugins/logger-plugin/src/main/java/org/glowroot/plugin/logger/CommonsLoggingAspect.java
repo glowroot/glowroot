@@ -19,7 +19,7 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
@@ -48,20 +48,21 @@ public class CommonsLoggingAspect {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
         }
         @OnBefore
-        public static Span onBefore(@BindParameter Object message,
+        public static TraceEntry onBefore(@BindParameter Object message,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
-                pluginServices.setTraceError(String.valueOf(message));
+                pluginServices.setTransactionError(String.valueOf(message));
             }
-            return pluginServices.startSpan(
+            return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
                     metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span, @BindParameter Object message) {
+        public static void onAfter(@BindTraveler TraceEntry traceEntry,
+                @BindParameter Object message) {
             LoggerPlugin.inAdvice.set(false);
-            span.endWithError(ErrorMessage.from(String.valueOf(message)));
+            traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
         }
     }
 
@@ -76,24 +77,25 @@ public class CommonsLoggingAspect {
             return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
         }
         @OnBefore
-        public static Span onBefore(@BindParameter Object message, @BindParameter Throwable t,
+        public static TraceEntry onBefore(@BindParameter Object message,
+                @BindParameter Throwable t,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {
-                pluginServices.setTraceError(String.valueOf(message));
+                pluginServices.setTransactionError(String.valueOf(message));
             }
-            return pluginServices.startSpan(
+            return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
                     metricName);
         }
         @OnAfter
         public static void onAfter(@BindParameter Object message, @BindParameter Throwable t,
-                @BindTraveler Span span) {
+                @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice.set(false);
             if (t == null) {
-                span.endWithError(ErrorMessage.from(String.valueOf(message)));
+                traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
             } else {
-                span.endWithError(ErrorMessage.from(t.getMessage(), t));
+                traceEntry.endWithError(ErrorMessage.from(t.getMessage(), t));
             }
         }
     }

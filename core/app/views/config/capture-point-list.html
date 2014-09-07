@@ -1,0 +1,369 @@
+<!--
+  Copyright 2012-2014 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div gt-spinner
+     gt-show="!loaded && !httpError"
+     class="plugin-list-spinner">
+</div>
+<div ng-include src="'template/gt-http-error.html'"></div>
+<div ng-repeat="capturePoint in capturePoints"
+     ng-controller="ConfigCapturePointCtrl"
+     class="panel panel-default">
+  <div class="panel-heading">
+    <h2>
+      Capture point: {{config.methodName}}
+      <span style="font-size: 24px;"
+            ng-show="config.className && config.methodName">
+        ({{config.className}})
+      </span>
+    </h2>
+  </div>
+  <div class="panel-body">
+    <div ng-form
+         gt-form-with-primary-button
+         class="form-horizontal"
+         name="formCtrl">
+      <fieldset>
+        <legend>Where to capture</legend>
+        <div class="form-group"
+             ng-class="{'has-error': formCtrl.className.$invalid}">
+          <label class="col-lg-3 control-label"
+                 for="className{{$id}}">
+            Class name
+          </label>
+          <div class="col-lg-9">
+            <input type="text"
+                   class="form-control"
+                   ng-model="config.className"
+                   ng-required="true"
+                   typeahead="suggestion for suggestion in classNames($viewValue)"
+                   typeahead-on-select="onSelectClassName()"
+                   typeahead-loading="classNamesLoading"
+                   typeahead-template-url="template/gt-typeahead-class-match.html"
+                   name="className"
+                   id="className{{$id}}"
+                   gt-set-focus="isFocus"
+                   style="max-width: 40em; display: inline-block">
+            <div gt-spinner
+                 gt-spinner-inline="true"
+                 gt-show="classNamesLoading"
+                 class="inline-spinner">
+            </div>
+            <div class="help-block">
+              The class or interface containing the method(s) where the capture point will be applied.
+            </div>
+          </div>
+        </div>
+        <div class="form-group"
+             ng-class="{'has-error': formCtrl.methodName.$invalid}">
+          <label class="col-lg-3 control-label"
+                 for="methodName{{$id}}">
+            Method name
+          </label>
+          <div class="col-lg-9">
+            <input type="text"
+                   class="form-control"
+                   ng-model="config.methodName"
+                   ng-required="true"
+                   typeahead="suggestion for suggestion in methodNames($viewValue)"
+                   typeahead-on-select="onSelectMethodName()"
+                   typeahead-loading="methodNamesLoading"
+                   gt-typeahead-open-on-empty
+                   ng-blur="onSelectMethodName()"
+                   name="methodName"
+                   id="methodName{{$id}}"
+                   style="max-width: 40em; display: inline-block;">
+            <div gt-spinner
+                 gt-spinner-inline="true"
+                 gt-show="methodNamesLoading"
+                 class="inline-spinner">
+            </div>
+            <div class="help-block">
+              The method(s) where the capture point will be applied.
+              The capture point will also be applied to all overriding methods
+              (including all implementations of the method if the class above is an interface).
+            </div>
+            <div class="help-block">
+              The wildcard <code style="font-size: 120%;">*</code> is supported anywhere in the method name.
+              Multiple method names (including multiple method names with the wildcard
+              <code style="font-size: 120%;">*</code> in them)
+              can be listed with the <code style="font-size: 120%;">|</code> separator between them.
+            </div>
+          </div>
+        </div>
+        <div class="form-group"
+             ng-class="{'has-error': formCtrl.selectedMethodSignature.$invalid}">
+          <label class="col-lg-3 control-label">
+            Method signature
+          </label>
+          <div class="col-lg-9">
+            <div gt-spinner
+                 gt-show="methodSignaturesLoading && !httpError"
+                 class="inline-spinner hide"
+                 style="height: 50px;">
+            </div>
+            <div ng-repeat="methodSignature in methodSignatures">
+              <div class="radio">
+                <label>
+                  <!-- need $parent.selectedSignature since ng-repeat creates a new scope
+                    see https://github.com/angular/angular.js/issues/1100 -->
+                  <input type="radio"
+                         ng-model="$parent.selectedMethodSignature"
+                         ng-value="methodSignature"
+                         name="selectedMethodSignature"
+                         ng-required="true">
+                  {{methodSignatureText(methodSignature)}}
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend style="margin-bottom: 15px;">What to capture</legend>
+        <div class="form-group">
+          <div class="col-lg-offset-3 col-lg-9">
+            <div class="radio">
+              <label>
+                <input type="radio"
+                       ng-model="config.captureKind"
+                       name="capture"
+                       value="metric">
+                Metric
+              </label>
+            </div>
+            <div class="radio">
+              <label>
+                <input type="radio"
+                       ng-model="config.captureKind"
+                       name="capture"
+                       value="trace_entry">
+                Trace entry
+              </label>
+            </div>
+            <div class="radio">
+              <label>
+                <input type="radio"
+                       ng-model="config.captureKind"
+                       name="capture"
+                       value="transaction">
+                Transaction
+              </label>
+            </div>
+            <div class="radio">
+              <label>
+                <input type="radio"
+                       ng-model="config.captureKind"
+                       name="capture"
+                       value="other">
+                Other (used for optional items only)
+              </label>
+            </div>
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="{{captureKindTransaction ? 'Root metric name' : 'Metric name'}}"
+             gt-model="config.metricName"
+             gt-pattern="/^[a-zA-Z0-9 ]*$/"
+             gt-required="showMetric"
+             gt-width="20em"
+             ng-show="showMetric"
+             style="margin-top: 40px;">
+          <div class="help-block">
+            Multiple capturePoints can share the same metric name, in which case their metrics are aggregated together.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-type="textarea"
+             gt-label="{{captureKindTransaction ? 'Root trace entry' : 'Trace entry'}}"
+             gt-model="config.traceEntryTemplate"
+             gt-required="showTraceEntry"
+             gt-width="40em"
+             gt-rows="2"
+             ng-show="showTraceEntry">
+          <div class="help-block">
+
+          </div>
+          <div ng-non-bindable
+               class="help-block">
+            This is a template which can be populated with values from the method invocation:
+            <ul>
+              <li>
+                {{0}}, {{1}}, ... resolve to the method parameters
+              </li>
+              <li>
+                {{this}} resolves to the object that the method is invoked on (except for static methods)
+              </li>
+              <li>
+                {{_}} resolves to the return value (if not void)
+              </li>
+              <li>
+                {{methodName}} resolves to the method name, which can be useful if
+                <code style="font-size: 120%;">*</code> or <code style="font-size: 120%;">|</code>
+                are used to define the method name above
+              </li>
+            </ul>
+          </div>
+          <div ng-non-bindable
+               class="help-block">
+            Nested paths are resolved as well, e.g. {{0.size}} and {{this.class.name}}.
+            If a path resolves to <code>null</code> at any point,
+            then the entire path will resolve to <code>null</code>.
+            Finally, resolved value is rendered into the template using <code>String.valueOf()</code>.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Self nesting"
+             gt-checkbox-label="Capture self nested trace entries"
+             gt-model="config.traceEntryCaptureSelfNested"
+             gt-type="checkbox"
+             ng-show="showTraceEntry">
+          <div class="help-block">
+            If checked, and the capture point is encountered within one of its own trace entries,
+            a nested trace entry <em>will</em> be captured.
+            This can sometimes lead to a lot of extra noise, e.g. in a fairly common case where the capture point
+            matches several overloaded methods that cascade to each other.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Trace entry stack threshold"
+             gt-model="config.traceEntryStackThresholdMillis"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-width="7em"
+             gt-addon="milliseconds"
+             ng-show="showTraceEntryStackThreshold">
+          <div class="help-block">
+            Any trace entry that exceeds this threshold will have a stack trace captured and attached to it.
+            Empty means never capture a stack trace for this trace entry.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Transaction type"
+             gt-model="config.transactionType"
+             gt-width="40em"
+             gt-required="captureKindTransaction"
+             ng-show="captureKindTransaction">
+          <div class="help-block">
+            The transaction type is used for aggregation and filtering.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Transaction name"
+             gt-model="config.transactionNameTemplate"
+             gt-width="40em"
+             gt-required="captureKindTransaction"
+             ng-show="captureKindTransaction">
+          <div class="help-block">
+            The transaction name is used for aggregation and filtering.
+          </div>
+          <div ng-non-bindable
+               class="help-block">
+            This is a template which can be populated with values from the method invocation.
+            The same rules apply as for the trace entry template, except that the return value {{_}} cannot be used.
+          </div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Optional items to override</legend>
+        <div gt-form-group
+             gt-label="Transaction type"
+             gt-model="config.transactionType"
+             gt-width="40em"
+             ng-hide="captureKindTransaction">
+          <div class="help-block">
+            This will override the transaction type for the containing transaction.
+            If more than one capture point overrides the transaction type for a given transaction,
+            the first non-null/non-empty value will be used.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Transaction name"
+             gt-model="config.transactionNameTemplate"
+             gt-width="40em"
+             ng-hide="captureKindTransaction">
+          <div class="help-block">
+            This will override the transaction name for the containing transaction.
+            If more than one capture point overrides the transaction name for a given transaction,
+            the first non-null/non-empty value will be used.
+          </div>
+          <div ng-non-bindable
+               class="help-block">
+            This is a template which can be populated with values from the method invocation.
+            The same rules apply as for the trace entry template, except that the return value {{_}} cannot be used.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Trace store threshold"
+             gt-model="config.traceStoreThresholdMillis"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-width="7em"
+             gt-addon="milliseconds">
+          <div class="help-block">
+            This will override the general trace store threshold for the containing transaction.
+            The value can be smaller than the general threshold to force transaction traces to be stored more often,
+            or larger to force transaction traces to be stored less often.
+            If more than one capture point overrides the trace store threshold for a given transaction,
+            the smallest override value will be used.
+          </div>
+        </div>
+      </fieldset>
+      <div class="form-group form-buttons">
+        <div class="col-lg-offset-2 col-lg-9">
+          <div gt-button-group>
+            <div gt-button
+                 gt-label="{{config.version ? 'Save' : 'Add'}}"
+                 gt-click="save(deferred)"
+                 gt-disabled="!hasChanges() || formCtrl.$invalid"
+                 class="inline-block">
+            </div>
+            <div gt-button
+                 gt-label="Delete"
+                 gt-click="delete(deferred)"
+                 gt-btn-class="btn-default"
+                 class="inline-block"
+                 style="margin-left: 5px;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ng-show="loaded" is used to jitter of seeing this section very briefly
+     before it gets pushed down by existing capture point sections -->
+<div class="panel panel-default" ng-show="loaded">
+  <div class="panel-heading">
+    <h2>Add capture point</h2>
+  </div>
+  <!-- override .panel-body min-height: 150px, not needed anyway since no loading spinner in this panel -->
+  <div class="panel-body" style="min-height: 0;">
+    <button type="button" class="btn btn-primary" ng-click="addCapturePoint()">
+      New
+    </button>
+  </div>
+</div>
+<br>
+<div ng-show="jvmRetransformClassesSupported">
+  <div gt-button
+       gt-label="Apply changes to running JVM"
+       gt-click="retransformClasses(deferred)"
+       gt-show="page.dirty">
+  </div>
+</div>
+<div ng-show="!jvmRetransformClassesSupported && page.dirty">
+  JVM restart is required to apply changes
+</div>

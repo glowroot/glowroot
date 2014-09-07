@@ -23,7 +23,6 @@ import java.util.concurrent.Executors;
 
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -31,7 +30,6 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.trace.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -53,13 +51,6 @@ public class TraceThreadInfoTest {
     @AfterClass
     public static void tearDown() throws Exception {
         container.close();
-    }
-
-    @Before
-    public void beforeEachTest() throws Exception {
-        GeneralConfig config = container.getConfigService().getGeneralConfig();
-        config.setThreadInfoEnabled(true);
-        container.getConfigService().updateGeneralConfig(config);
     }
 
     @After
@@ -164,7 +155,7 @@ public class TraceThreadInfoTest {
                 synchronized (notify) {
                     notify.notify();
                 }
-                // sleeping here while holding lock causes thread blocked time in trace thread
+                // sleeping here while holding lock causes thread blocked time in transaction thread
                 Thread.sleep(20);
             }
             return null;

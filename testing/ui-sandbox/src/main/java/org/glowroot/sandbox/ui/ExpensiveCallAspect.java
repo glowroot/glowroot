@@ -24,10 +24,10 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
-import org.glowroot.api.MetricName;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindTraveler;
@@ -62,21 +62,23 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensiveCall,
+        public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
-            // not delegating to onBeforeInternal(), this span returns message supplier with detail
+            // not delegating to onBeforeInternal(), this pointcut returns message supplier with
+            // detail
             MessageSupplier messageSupplier =
                     getMessageSupplierWithDetail(expensiveCall, expensiveCallInvoker);
-            return pluginServices.startSpan(messageSupplier, metricName);
+            return pluginServices.startTraceEntry(messageSupplier, metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
             if (random.nextDouble() < 0.05) {
-                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
+                // can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, NANOSECONDS);
+                traceEntry.endWithStackTrace(0, NANOSECONDS);
             } else {
-                onAfterInternal(span, 0);
+                onAfterInternal(traceEntry, 0);
             }
         }
     }
@@ -91,18 +93,19 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensiveCall,
+        public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
             return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            if (span != null && random.nextDouble() < 0.05) {
-                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            if (traceEntry != null && random.nextDouble() < 0.05) {
+                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
+                // can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, NANOSECONDS);
+                traceEntry.endWithStackTrace(0, NANOSECONDS);
             } else {
-                onAfterInternal(span, 1);
+                onAfterInternal(traceEntry, 1);
             }
         }
     }
@@ -117,18 +120,19 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensiveCall,
+        public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
             return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            if (span != null && random.nextDouble() < 0.05) {
-                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            if (traceEntry != null && random.nextDouble() < 0.05) {
+                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
+                // can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, NANOSECONDS);
+                traceEntry.endWithStackTrace(0, NANOSECONDS);
             } else {
-                onAfterInternal(span, 2);
+                onAfterInternal(traceEntry, 2);
             }
         }
     }
@@ -143,18 +147,19 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensiveCall,
+        public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
             return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            if (span != null && random.nextDouble() < 0.05) {
-                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            if (traceEntry != null && random.nextDouble() < 0.05) {
+                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
+                // can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, NANOSECONDS);
+                traceEntry.endWithStackTrace(0, NANOSECONDS);
             } else {
-                onAfterInternal(span, 3);
+                onAfterInternal(traceEntry, 3);
             }
         }
     }
@@ -169,18 +174,19 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensiveCall,
+        public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
             return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            if (span != null && random.nextDouble() < 0.05) {
-                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            if (traceEntry != null && random.nextDouble() < 0.05) {
+                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
+                // can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, NANOSECONDS);
+                traceEntry.endWithStackTrace(0, NANOSECONDS);
             } else {
-                onAfterInternal(span, 4);
+                onAfterInternal(traceEntry, 4);
             }
         }
     }
@@ -195,18 +201,19 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensiveCall,
+        public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
             return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            if (span != null && random.nextDouble() < 0.05) {
-                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            if (traceEntry != null && random.nextDouble() < 0.05) {
+                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
+                // can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, NANOSECONDS);
+                traceEntry.endWithStackTrace(0, NANOSECONDS);
             } else {
-                onAfterInternal(span, 5);
+                onAfterInternal(traceEntry, 5);
             }
         }
     }
@@ -221,18 +228,19 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensiveCall,
+        public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
             return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            if (span != null && random.nextDouble() < 0.05) {
-                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            if (traceEntry != null && random.nextDouble() < 0.05) {
+                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
+                // can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, NANOSECONDS);
+                traceEntry.endWithStackTrace(0, NANOSECONDS);
             } else {
-                onAfterInternal(span, 6);
+                onAfterInternal(traceEntry, 6);
             }
         }
     }
@@ -247,18 +255,19 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensiveCall,
+        public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
             return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            if (span != null && random.nextDouble() < 0.05) {
-                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            if (traceEntry != null && random.nextDouble() < 0.05) {
+                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
+                // can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, NANOSECONDS);
+                traceEntry.endWithStackTrace(0, NANOSECONDS);
             } else {
-                onAfterInternal(span, 7);
+                onAfterInternal(traceEntry, 7);
             }
         }
     }
@@ -273,18 +282,19 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensiveCall,
+        public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
             return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            if (span != null && random.nextDouble() < 0.05) {
-                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            if (traceEntry != null && random.nextDouble() < 0.05) {
+                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
+                // can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, NANOSECONDS);
+                traceEntry.endWithStackTrace(0, NANOSECONDS);
             } else {
-                onAfterInternal(span, 8);
+                onAfterInternal(traceEntry, 8);
             }
         }
     }
@@ -299,64 +309,66 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindReceiver Object expensiveCall,
+        public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
             return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            if (span != null && random.nextDouble() < 0.05) {
-                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            if (traceEntry != null && random.nextDouble() < 0.05) {
+                // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
+                // can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, NANOSECONDS);
+                traceEntry.endWithStackTrace(0, NANOSECONDS);
             } else {
-                onAfterInternal(span, 9);
+                onAfterInternal(traceEntry, 9);
             }
         }
     }
 
-    private static Span onBeforeInternal(Object expensiveCall,
+    private static TraceEntry onBeforeInternal(Object expensiveCall,
             ExpensiveCallInvoker expensiveCallInvoker, MetricName metricName) {
         if (random.nextDouble() < 0.05) {
             return null;
         }
         MessageSupplier messageSupplier =
-                MessageSupplier.from(expensiveCallInvoker.getSpanMessage(expensiveCall));
-        return pluginServices.startSpan(messageSupplier, metricName);
+                MessageSupplier.from(expensiveCallInvoker.getTraceEntryMessage(expensiveCall));
+        return pluginServices.startTraceEntry(messageSupplier, metricName);
     }
 
-    private static void onAfterInternal(Span span, int num) {
+    private static void onAfterInternal(TraceEntry traceEntry, int num) {
         double value = random.nextDouble();
-        if (span == null) {
+        if (traceEntry == null) {
             if (value < 0.33) {
-                pluginServices.addErrorSpan(ErrorMessage.from(
+                pluginServices.addTraceEntry(ErrorMessage.from(
                         new IllegalStateException("Exception in execute" + num
-                                + ", with no span text and no custom error message",
+                                + ", with no trace entry text and no custom error message",
                                 getRandomCause())));
             } else if (value < 0.67) {
-                pluginServices.addErrorSpan(ErrorMessage.from("randomized error with no span text",
+                pluginServices.addTraceEntry(ErrorMessage.from(
+                        "randomized error with no trace entry text",
                         new IllegalStateException("Exception in execute" + num
-                                + ", with no span text", getRandomCause())));
+                                + ", with no trace entry text", getRandomCause())));
             } else {
-                pluginServices.addErrorSpan(ErrorMessage.withDetail(
-                        "randomized error with no span text, with detail map",
+                pluginServices.addTraceEntry(ErrorMessage.withDetail(
+                        "randomized error with no trace entry text, with detail map",
                         new IllegalStateException("Exception in execute" + num, getRandomCause()),
                         ImmutableMap.of("x", Optional.absent(), "y", "a non-null value")));
             }
             return;
         }
         if (value < 0.94) {
-            span.end();
+            traceEntry.end();
         } else if (value < 0.96) {
-            span.endWithError(ErrorMessage.from(
+            traceEntry.endWithError(ErrorMessage.from(
                     new IllegalStateException("Exception in execute" + num
                             + ", with no custom error message", getRandomCause())));
         } else if (value < 0.98) {
-            span.endWithError(ErrorMessage.from("randomized error",
+            traceEntry.endWithError(ErrorMessage.from("randomized error",
                     new IllegalStateException("Exception in execute" + num, getRandomCause())));
         } else {
             // add detail map to half of randomized errors
-            span.endWithError(ErrorMessage.withDetail("randomized error with detail map",
+            traceEntry.endWithError(ErrorMessage.withDetail("randomized error with detail map",
                     new IllegalStateException("Exception in execute" + num, getRandomCause()),
                     ImmutableMap.of("x", Optional.absent(), "y", "a non-null value")));
         }
@@ -371,8 +383,8 @@ public class ExpensiveCallAspect {
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", ImmutableList.of("v311aa", "v311bb")),
                                 "attr32", "value32", "attr33", "value33"));
-                String spanMessage = expensiveCallInvoker.getSpanMessage(expensiveCall);
-                return Message.withDetail(spanMessage, detail);
+                String traceEntryMessage = expensiveCallInvoker.getTraceEntryMessage(expensiveCall);
+                return Message.withDetail(traceEntryMessage, detail);
             }
         };
     }

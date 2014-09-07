@@ -30,6 +30,7 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
  */
 public class StorageConfig {
 
+    private int aggregateExpirationHours;
     private int traceExpirationHours;
     private int cappedDatabaseSizeMb;
 
@@ -37,6 +38,14 @@ public class StorageConfig {
 
     public StorageConfig(String version) {
         this.version = version;
+    }
+
+    public int getAggregateExpirationHours() {
+        return aggregateExpirationHours;
+    }
+
+    public void setAggregateExpirationHours(int aggregateExpirationHours) {
+        this.aggregateExpirationHours = aggregateExpirationHours;
     }
 
     public int getTraceExpirationHours() {
@@ -66,7 +75,8 @@ public class StorageConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(traceExpirationHours, that.traceExpirationHours)
+            return Objects.equal(aggregateExpirationHours, that.aggregateExpirationHours)
+                    && Objects.equal(traceExpirationHours, that.traceExpirationHours)
                     && Objects.equal(cappedDatabaseSizeMb, that.cappedDatabaseSizeMb);
         }
         return false;
@@ -77,12 +87,14 @@ public class StorageConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(traceExpirationHours, cappedDatabaseSizeMb);
+        return Objects.hashCode(aggregateExpirationHours, traceExpirationHours,
+                cappedDatabaseSizeMb);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
+                .add("aggregateExpirationHours", aggregateExpirationHours)
                 .add("traceExpirationHours", traceExpirationHours)
                 .add("cappedDatabaseSizeMb", cappedDatabaseSizeMb)
                 .add("version", version)
@@ -91,13 +103,16 @@ public class StorageConfig {
 
     @JsonCreator
     static StorageConfig readValue(
+            @JsonProperty("aggregateExpirationHours") @Nullable Integer aggregateExpirationHours,
             @JsonProperty("traceExpirationHours") @Nullable Integer traceExpirationHours,
             @JsonProperty("cappedDatabaseSizeMb") @Nullable Integer cappedDatabaseSizeMb,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
+        checkRequiredProperty(aggregateExpirationHours, "aggregateExpirationHours");
         checkRequiredProperty(traceExpirationHours, "traceExpirationHours");
         checkRequiredProperty(cappedDatabaseSizeMb, "cappedDatabaseSizeMb");
         checkRequiredProperty(version, "version");
         StorageConfig config = new StorageConfig(version);
+        config.setAggregateExpirationHours(aggregateExpirationHours);
         config.setTraceExpirationHours(traceExpirationHours);
         config.setCappedDatabaseSizeMb(cappedDatabaseSizeMb);
         return config;

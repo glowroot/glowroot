@@ -26,11 +26,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
-import org.glowroot.api.Span;
-import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
+import org.glowroot.api.TraceEntry;
+import org.glowroot.api.TransactionMetric;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
@@ -111,12 +111,12 @@ public class StatementAspect {
                 pluginServices.getMetricName(PrepareAdvice.class);
         @OnBefore
         @Nullable
-        public static MetricTimer onBefore() {
+        public static TransactionMetric onBefore() {
             // don't capture if implementation detail of a DatabaseMetaData method
             // (can't use @IsEnabled since need @OnReturn to always execute)
             if (pluginServices.isEnabled()
                     && !DatabaseMetaDataAspect.isCurrentlyExecuting()) {
-                return pluginServices.startMetric(metricName);
+                return pluginServices.startTransactionMetric(metricName);
             } else {
                 return null;
             }
@@ -128,9 +128,9 @@ public class StatementAspect {
                     .setGlowrootStatementMirror(new PreparedStatementMirror(sql));
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable MetricTimer metricTimer) {
-            if (metricTimer != null) {
-                metricTimer.stop();
+        public static void onAfter(@BindTraveler @Nullable TransactionMetric transactionMetric) {
+            if (transactionMetric != null) {
+                transactionMetric.stop();
             }
         }
     }
@@ -218,13 +218,13 @@ public class StatementAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindReceiver Statement statement,
+        public static TraceEntry onBefore(@BindReceiver Statement statement,
                 @BindParameter String sql) {
             StatementMirror mirror = getStatementMirror(statement);
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.create(sql);
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startSpan(jdbcMessageSupplier, metricName);
+                return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
@@ -233,17 +233,17 @@ public class StatementAspect {
             }
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable Span span) {
-            if (span != null) {
-                span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                         MILLISECONDS);
             }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable Span span) {
-            if (span != null) {
-                span.endWithError(ErrorMessage.from(t));
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithError(ErrorMessage.from(t));
             }
         }
     }
@@ -262,7 +262,7 @@ public class StatementAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindReceiver PreparedStatement preparedStatement) {
+        public static TraceEntry onBefore(@BindReceiver PreparedStatement preparedStatement) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier;
@@ -272,7 +272,7 @@ public class StatementAspect {
                     jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
                 }
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startSpan(jdbcMessageSupplier, metricName);
+                return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
@@ -281,17 +281,17 @@ public class StatementAspect {
             }
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable Span span) {
-            if (span != null) {
-                span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                         MILLISECONDS);
             }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable Span span) {
-            if (span != null) {
-                span.endWithError(ErrorMessage.from(t));
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithError(ErrorMessage.from(t));
             }
         }
     }
@@ -308,7 +308,7 @@ public class StatementAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@BindReceiver Statement statement) {
+        public static TraceEntry onBefore(@BindReceiver Statement statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror =
                         getPreparedStatementMirror((PreparedStatement) statement);
@@ -321,7 +321,7 @@ public class StatementAspect {
                         jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
                     }
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                    return pluginServices.startSpan(jdbcMessageSupplier, metricName);
+                    return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
                 } else {
                     // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
                     // plugin is re-enabled in the middle of iterating over a different result set
@@ -334,7 +334,7 @@ public class StatementAspect {
                     JdbcMessageSupplier jdbcMessageSupplier =
                             JdbcMessageSupplier.createWithBatchedSqls(mirror);
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                    return pluginServices.startSpan(jdbcMessageSupplier, metricName);
+                    return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
                 } else {
                     // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
                     // plugin is re-enabled in the middle of iterating over a different result set
@@ -344,17 +344,17 @@ public class StatementAspect {
             }
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable Span span) {
-            if (span != null) {
-                span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                         MILLISECONDS);
             }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable Span span) {
-            if (span != null) {
-                span.endWithError(ErrorMessage.from(t));
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithError(ErrorMessage.from(t));
             }
         }
     }
@@ -373,16 +373,16 @@ public class StatementAspect {
                     && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
-        public static MetricTimer onBefore(@BindReceiver Statement statement) {
+        public static TransactionMetric onBefore(@BindReceiver Statement statement) {
             // help out gc a little by clearing the weak reference, don't want to solely rely on
             // this (and use strong reference) in case a jdbc driver implementation closes
             // statements in finalize by calling an internal method and not calling public close()
             getStatementMirror(statement).setLastJdbcMessageSupplier(null);
-            return pluginServices.startMetric(metricName);
+            return pluginServices.startTransactionMetric(metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
-            metricTimer.stop();
+        public static void onAfter(@BindTraveler TransactionMetric transactionMetric) {
+            transactionMetric.stop();
         }
     }
 

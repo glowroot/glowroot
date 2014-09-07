@@ -38,20 +38,19 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.OptimisticLockException;
-import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.JsonViews.UiView;
-import org.glowroot.config.OutlierProfilingConfig;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.config.ProfilingConfig;
 import org.glowroot.config.StorageConfig;
+import org.glowroot.config.TraceConfig;
 import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.config.UserInterfaceConfig.CurrentPasswordIncorrectException;
-import org.glowroot.config.UserTracingConfig;
+import org.glowroot.config.UserRecordingConfig;
 import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.markers.Singleton;
-import org.glowroot.trace.TraceModule;
+import org.glowroot.transaction.TransactionModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
@@ -75,14 +74,14 @@ class ConfigJsonService {
     private final PluginDescriptorCache pluginDescriptorCache;
     private final File dataDir;
     private final HttpSessionManager httpSessionManager;
-    private final TraceModule traceModule;
+    private final TransactionModule traceModule;
 
     @MonotonicNonNull
     private volatile HttpServer httpServer;
 
     ConfigJsonService(ConfigService configService, CappedDatabase cappedDatabase,
             PluginDescriptorCache pluginDescriptorCache, File dataDir,
-            HttpSessionManager httpSessionManager, TraceModule traceModule) {
+            HttpSessionManager httpSessionManager, TransactionModule traceModule) {
         this.configService = configService;
         this.cappedDatabase = cappedDatabase;
         this.pluginDescriptorCache = pluginDescriptorCache;
@@ -95,15 +94,15 @@ class ConfigJsonService {
         this.httpServer = httpServer;
     }
 
-    @GET("/backend/config/general")
-    String getGeneralConfig() throws IOException, SQLException {
-        logger.debug("getGeneralConfig()");
+    @GET("/backend/config/trace")
+    String getTraceConfig() throws IOException, SQLException {
+        logger.debug("getTraceConfig()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
         jg.writeStartObject();
         jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getGeneralConfig());
+        writer.writeValue(jg, configService.getTraceConfig());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -118,36 +117,23 @@ class ConfigJsonService {
         jg.writeStartObject();
         jg.writeFieldName("config");
         writer.writeValue(jg, configService.getProfilingConfig());
-        jg.writeNumberField("generalStoreThresholdMillis",
-                configService.getGeneralConfig().getStoreThresholdMillis());
+        jg.writeNumberField("defaultTraceStoreThresholdMillis",
+                configService.getTraceConfig().getStoreThresholdMillis());
+        jg.writeBooleanField("metricWrapperMethodsActive", traceModule.isMetricWrapperMethods());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
-    @GET("/backend/config/outlier-profiling")
-    String getOutlierProfilingConfig() throws IOException, SQLException {
-        logger.debug("getOutlierProfilingConfig()");
+    @GET("/backend/config/user-recording")
+    String getUserRecordingConfig() throws IOException, SQLException {
+        logger.debug("getUserRecordingConfig()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         ObjectWriter writer = mapper.writerWithView(UiView.class);
         jg.writeStartObject();
         jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getOutlierProfilingConfig());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
-    }
-
-    @GET("/backend/config/user-tracing")
-    String getUserTracingConfig() throws IOException, SQLException {
-        logger.debug("getUserTracingConfig()");
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getUserTracingConfig());
+        writer.writeValue(jg, configService.getUserRecordingConfig());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -183,11 +169,19 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @RequiresNonNull("httpServer")
-    private void writeUserInterface(JsonGenerator jg, ObjectWriter writer) throws IOException {
+    @GET("/backend/config/advanced")
+    String getAdvanced() throws IOException, SQLException {
+        logger.debug("getAdvanced()");
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(UiView.class);
+        jg.writeStartObject();
         jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getUserInterfaceConfig());
-        jg.writeNumberField("activePort", httpServer.getPort());
+        writer.writeValue(jg, configService.getAdvancedConfig());
+        jg.writeBooleanField("metricWrapperMethodsActive", traceModule.isMetricWrapperMethods());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
     }
 
     @GET("/backend/config/plugin/(.+)")
@@ -206,35 +200,20 @@ class ConfigJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/config/advanced")
-    String getAdvanced() throws IOException, SQLException {
-        logger.debug("getAdvanced()");
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getAdvancedConfig());
-        jg.writeBooleanField("metricWrapperMethodsActive", traceModule.isMetricWrapperMethods());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
-    }
-
-    @POST("/backend/config/general")
-    String updateGeneralConfig(String content) throws IOException, SQLException {
-        logger.debug("updateGeneralConfig(): content={}", content);
+    @POST("/backend/config/trace")
+    String updateTraceConfig(String content) throws IOException, SQLException {
+        logger.debug("updateTraceConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         String priorVersion = getAndRemoveVersionNode(configNode);
-        GeneralConfig config = configService.getGeneralConfig();
-        GeneralConfig.Overlay overlay = GeneralConfig.overlay(config);
+        TraceConfig config = configService.getTraceConfig();
+        TraceConfig.Overlay overlay = TraceConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
         try {
-            configService.updateGeneralConfig(overlay.build(), priorVersion);
+            configService.updateTraceConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getGeneralConfig();
+        return getTraceConfig();
     }
 
     @POST("/backend/config/profiling")
@@ -253,36 +232,20 @@ class ConfigJsonService {
         return getProfilingConfig();
     }
 
-    @POST("/backend/config/outlier-profiling")
-    String updateOutlierProfilingConfig(String content) throws IOException, SQLException {
-        logger.debug("updateOutlierProfilingConfig(): content={}", content);
+    @POST("/backend/config/user-recording")
+    String updateUserRecordingConfig(String content) throws IOException, SQLException {
+        logger.debug("updateUserRecordingConfig(): content={}", content);
         ObjectNode configNode = (ObjectNode) mapper.readTree(content);
         String priorVersion = getAndRemoveVersionNode(configNode);
-        OutlierProfilingConfig config = configService.getOutlierProfilingConfig();
-        OutlierProfilingConfig.Overlay overlay = OutlierProfilingConfig.overlay(config);
+        UserRecordingConfig config = configService.getUserRecordingConfig();
+        UserRecordingConfig.Overlay overlay = UserRecordingConfig.overlay(config);
         mapper.readerForUpdating(overlay).readValue(configNode);
         try {
-            configService.updateOutlierProfilingConfig(overlay.build(), priorVersion);
+            configService.updateUserRecordingConfig(overlay.build(), priorVersion);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getOutlierProfilingConfig();
-    }
-
-    @POST("/backend/config/user-tracing")
-    String updateUserTracingConfig(String content) throws IOException, SQLException {
-        logger.debug("updateUserTracingConfig(): content={}", content);
-        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        String priorVersion = getAndRemoveVersionNode(configNode);
-        UserTracingConfig config = configService.getUserTracingConfig();
-        UserTracingConfig.Overlay overlay = UserTracingConfig.overlay(config);
-        mapper.readerForUpdating(overlay).readValue(configNode);
-        try {
-            configService.updateUserTracingConfig(overlay.build(), priorVersion);
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
-        }
-        return getUserTracingConfig();
+        return getUserRecordingConfig();
     }
 
     @POST("/backend/config/storage")
@@ -392,6 +355,13 @@ class ConfigJsonService {
         jg.writeEndObject();
         jg.close();
         return sb.toString();
+    }
+
+    @RequiresNonNull("httpServer")
+    private void writeUserInterface(JsonGenerator jg, ObjectWriter writer) throws IOException {
+        jg.writeFieldName("config");
+        writer.writeValue(jg, configService.getUserInterfaceConfig());
+        jg.writeNumberField("activePort", httpServer.getPort());
     }
 
     private String getAndRemoveVersionNode(ObjectNode configNode) {

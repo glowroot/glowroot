@@ -27,16 +27,16 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import org.junit.Test;
 
-import org.glowroot.collector.TraceCollectorImpl;
+import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.Ticker;
 import org.glowroot.local.store.QueryResult;
-import org.glowroot.local.store.SnapshotDao;
+import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TracePoint;
 import org.glowroot.local.store.TracePointQuery;
-import org.glowroot.trace.TraceRegistry;
-import org.glowroot.trace.model.Trace;
+import org.glowroot.transaction.TransactionRegistry;
+import org.glowroot.transaction.model.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,13 +61,13 @@ public class TracePointJsonServiceTest {
     @Test
     public void shouldReturnCompletedStoredPointInPlaceOfActivePoint() throws IOException {
         // given
-        List<Trace> activeTraces = Lists.newArrayList();
-        activeTraces.add(mockActiveTrace("id1", 500));
-        List<Trace> pendingTraces = Lists.newArrayList();
+        List<Transaction> activeTransactions = Lists.newArrayList();
+        activeTransactions.add(mockActiveTransaction("id1", 500));
+        List<Transaction> pendingTransactions = Lists.newArrayList();
         List<TracePoint> points = Lists.newArrayList();
         points.add(mockPoint("id1", 123, 500));
         TracePointJsonService tracePointJsonService =
-                buildTracePointJsonService(activeTraces, pendingTraces, points);
+                buildTracePointJsonService(activeTransactions, pendingTransactions, points);
         // when
         String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
@@ -79,13 +79,13 @@ public class TracePointJsonServiceTest {
     @Test
     public void shouldReturnCompletedPendingPointInPlaceOfActivePoint() throws IOException {
         // given
-        List<Trace> activeTraces = Lists.newArrayList();
-        activeTraces.add(mockActiveTrace("id1", 500));
-        List<Trace> pendingTraces = Lists.newArrayList();
-        pendingTraces.add(mockPendingTrace("id1", 500));
+        List<Transaction> activeTransactions = Lists.newArrayList();
+        activeTransactions.add(mockActiveTransaction("id1", 500));
+        List<Transaction> pendingTransactions = Lists.newArrayList();
+        pendingTransactions.add(mockPendingTransaction("id1", 500));
         List<TracePoint> points = Lists.newArrayList();
         TracePointJsonService tracePointJsonService =
-                buildTracePointJsonService(activeTraces, pendingTraces, points);
+                buildTracePointJsonService(activeTransactions, pendingTransactions, points);
         // when
         String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
@@ -99,13 +99,13 @@ public class TracePointJsonServiceTest {
     @Test
     public void shouldReturnStoredTraceInPlaceOfPendingTrace() throws IOException {
         // given
-        List<Trace> activeTraces = Lists.newArrayList();
-        List<Trace> pendingTraces = Lists.newArrayList();
-        pendingTraces.add(mockPendingTrace("id1", 500));
+        List<Transaction> activeTransactions = Lists.newArrayList();
+        List<Transaction> pendingTransactions = Lists.newArrayList();
+        pendingTransactions.add(mockPendingTransaction("id1", 500));
         List<TracePoint> points = Lists.newArrayList();
         points.add(mockPoint("id1", 10001, 500));
-        TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
-                pendingTraces, points, 10000, DEFAULT_CURRENT_TICK);
+        TracePointJsonService tracePointJsonService = buildTracePointJsonService(
+                activeTransactions, pendingTransactions, points, 10000, DEFAULT_CURRENT_TICK);
         // when
         String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
@@ -118,20 +118,20 @@ public class TracePointJsonServiceTest {
     @Test
     public void shouldReturnOrderedByDurationDesc() throws IOException {
         // given
-        List<Trace> activeTraces = Lists.newArrayList();
+        List<Transaction> activeTransactions = Lists.newArrayList();
         for (int i = 0; i < 100; i++) {
-            activeTraces.add(mockActiveTrace("id" + i, random.nextInt(1000)));
+            activeTransactions.add(mockActiveTransaction("id" + i, random.nextInt(1000)));
         }
-        List<Trace> pendingTraces = Lists.newArrayList();
+        List<Transaction> pendingTransactions = Lists.newArrayList();
         for (int i = 100; i < 200; i++) {
-            pendingTraces.add(mockPendingTrace("id" + i, random.nextInt(1000)));
+            pendingTransactions.add(mockPendingTransaction("id" + i, random.nextInt(1000)));
         }
         List<TracePoint> points = Lists.newArrayList();
         for (int i = 200; i < 300; i++) {
             points.add(mockPoint("id" + i, 1, random.nextInt(1000)));
         }
         TracePointJsonService tracePointJsonService =
-                buildTracePointJsonService(activeTraces, pendingTraces, points);
+                buildTracePointJsonService(activeTransactions, pendingTransactions, points);
         // when
         String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":1000}");
         // then
@@ -150,14 +150,14 @@ public class TracePointJsonServiceTest {
     @Test
     public void shouldHandleCaseWithMoreActiveTracesThanLimit() throws IOException {
         // given
-        List<Trace> activeTraces = Lists.newArrayList();
+        List<Transaction> activeTransactions = Lists.newArrayList();
         for (int i = 0; i < 110; i++) {
-            activeTraces.add(mockActiveTrace("id" + i, 500));
+            activeTransactions.add(mockActiveTransaction("id" + i, 500));
         }
-        List<Trace> pendingTraces = Lists.newArrayList();
+        List<Transaction> pendingTransactions = Lists.newArrayList();
         List<TracePoint> points = Lists.newArrayList();
-        TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
-                pendingTraces, points);
+        TracePointJsonService tracePointJsonService = buildTracePointJsonService(
+                activeTransactions, pendingTransactions, points);
         // when
         String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
@@ -166,15 +166,17 @@ public class TracePointJsonServiceTest {
         assertThat(response.getNormalPoints().size()).isEqualTo(0);
     }
 
-    private static TracePointJsonService buildTracePointJsonService(List<Trace> activeTraces,
-            List<Trace> pendingTraces, List<TracePoint> points) {
+    private static TracePointJsonService buildTracePointJsonService(
+            List<Transaction> activeTransactions, List<Transaction> pendingTransactions,
+            List<TracePoint> points) {
 
-        return buildTracePointJsonService(activeTraces, pendingTraces, points,
+        return buildTracePointJsonService(activeTransactions, pendingTransactions, points,
                 DEFAULT_CURRENT_TIME_MILLIS, DEFAULT_CURRENT_TICK);
     }
 
-    private static TracePointJsonService buildTracePointJsonService(List<Trace> activeTraces,
-            List<Trace> pendingTraces, List<TracePoint> points, long currentTimeMillis,
+    private static TracePointJsonService buildTracePointJsonService(
+            List<Transaction> activeTransactions, List<Transaction> pendingTransactions,
+            List<TracePoint> points, long currentTimeMillis,
             long currentTick) {
 
         Ordering<TracePoint> durationDescOrdering = Ordering.natural().reverse()
@@ -188,40 +190,42 @@ public class TracePointJsonServiceTest {
         ImmutableList<TracePoint> orderedPoints = durationDescOrdering.immutableSortedCopy(points);
         QueryResult<TracePoint> queryResult = new QueryResult<TracePoint>(orderedPoints, false);
 
-        SnapshotDao snapshotDao = mock(SnapshotDao.class);
-        TraceRegistry traceRegistry = mock(TraceRegistry.class);
-        TraceCollectorImpl traceCollector = mock(TraceCollectorImpl.class);
+        TraceDao traceDao = mock(TraceDao.class);
+        TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
+        TransactionCollectorImpl transactionCollector = mock(TransactionCollectorImpl.class);
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
 
-        when(snapshotDao.readPoints(any(TracePointQuery.class))).thenReturn(queryResult);
-        when(traceRegistry.getTraces()).thenReturn(activeTraces);
+        when(traceDao.readPoints(any(TracePointQuery.class))).thenReturn(queryResult);
+        when(transactionRegistry.getTransactions()).thenReturn(activeTransactions);
         // for now, assume all active traces will be stored
-        when(traceCollector.shouldStore(any(Trace.class))).thenReturn(true);
-        when(traceCollector.getPendingCompleteTraces()).thenReturn(pendingTraces);
+        when(transactionCollector.shouldStore(any(Transaction.class))).thenReturn(true);
+        when(transactionCollector.getPendingCompleteTransactions()).thenReturn(pendingTransactions);
         when(ticker.read()).thenReturn(currentTick);
         when(clock.currentTimeMillis()).thenReturn(currentTimeMillis);
 
-        return new TracePointJsonService(snapshotDao, traceRegistry, traceCollector,
+        return new TracePointJsonService(traceDao, transactionRegistry, transactionCollector,
                 ticker, clock);
     }
 
-    private static Trace mockActiveTrace(String id, long durationMillis) {
-        Trace trace = mock(Trace.class);
-        when(trace.getId()).thenReturn(id);
-        when(trace.getStartTick()).thenReturn(
+    private static Transaction mockActiveTransaction(String id, long durationMillis) {
+        Transaction transaction = mock(Transaction.class);
+        when(transaction.getId()).thenReturn(id);
+        when(transaction.getStartTick()).thenReturn(
                 DEFAULT_CURRENT_TICK - MILLISECONDS.toNanos(durationMillis));
-        when(trace.getCustomAttributes()).thenReturn(ImmutableSetMultimap.<String, String>of());
-        return trace;
+        when(transaction.getCustomAttributes())
+                .thenReturn(ImmutableSetMultimap.<String, String>of());
+        return transaction;
     }
 
-    private static Trace mockPendingTrace(String id, long durationMillis) {
-        Trace trace = mock(Trace.class);
-        when(trace.getId()).thenReturn(id);
-        when(trace.getDuration()).thenReturn(MILLISECONDS.toNanos(durationMillis));
-        when(trace.isCompleted()).thenReturn(true);
-        when(trace.getCustomAttributes()).thenReturn(ImmutableSetMultimap.<String, String>of());
-        return trace;
+    private static Transaction mockPendingTransaction(String id, long durationMillis) {
+        Transaction transaction = mock(Transaction.class);
+        when(transaction.getId()).thenReturn(id);
+        when(transaction.getDuration()).thenReturn(MILLISECONDS.toNanos(durationMillis));
+        when(transaction.isCompleted()).thenReturn(true);
+        when(transaction.getCustomAttributes())
+                .thenReturn(ImmutableSetMultimap.<String, String>of());
+        return transaction;
     }
 
     private static TracePoint mockPoint(String id, long end, long durationMillis) {

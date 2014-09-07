@@ -25,15 +25,14 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.config.AdvancedConfig;
+import org.glowroot.container.config.CapturePoint;
 import org.glowroot.container.config.ConfigService;
-import org.glowroot.container.config.GeneralConfig;
-import org.glowroot.container.config.OutlierProfilingConfig;
 import org.glowroot.container.config.PluginConfig;
-import org.glowroot.container.config.PointcutConfig;
 import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
+import org.glowroot.container.config.TraceConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
-import org.glowroot.container.config.UserTracingConfig;
+import org.glowroot.container.config.UserRecordingConfig;
 
 /**
  * @author Trask Stalnaker
@@ -63,13 +62,13 @@ class JavaagentConfigService implements ConfigService {
     }
 
     @Override
-    public GeneralConfig getGeneralConfig() throws Exception {
-        return getConfig("/backend/config/general", GeneralConfig.class);
+    public TraceConfig getTraceConfig() throws Exception {
+        return getConfig("/backend/config/trace", TraceConfig.class);
     }
 
     @Override
-    public void updateGeneralConfig(GeneralConfig config) throws Exception {
-        httpClient.post("/backend/config/general", mapper.writeValueAsString(config));
+    public void updateTraceConfig(TraceConfig config) throws Exception {
+        httpClient.post("/backend/config/trace", mapper.writeValueAsString(config));
     }
 
     @Override
@@ -83,23 +82,13 @@ class JavaagentConfigService implements ConfigService {
     }
 
     @Override
-    public OutlierProfilingConfig getOutlierProfilingConfig() throws Exception {
-        return getConfig("/backend/config/outlier-profiling", OutlierProfilingConfig.class);
+    public UserRecordingConfig getUserRecordingConfig() throws Exception {
+        return getConfig("/backend/config/user-recording", UserRecordingConfig.class);
     }
 
     @Override
-    public void updateOutlierProfilingConfig(OutlierProfilingConfig config) throws Exception {
-        httpClient.post("/backend/config/outlier-profiling", mapper.writeValueAsString(config));
-    }
-
-    @Override
-    public UserTracingConfig getUserTracingConfig() throws Exception {
-        return getConfig("/backend/config/user-tracing", UserTracingConfig.class);
-    }
-
-    @Override
-    public void updateUserTracingConfig(UserTracingConfig config) throws Exception {
-        httpClient.post("/backend/config/user-tracing", mapper.writeValueAsString(config));
+    public void updateUserRecordingConfig(UserRecordingConfig config) throws Exception {
+        httpClient.post("/backend/config/user-recording", mapper.writeValueAsString(config));
     }
 
     @Override
@@ -134,37 +123,6 @@ class JavaagentConfigService implements ConfigService {
     }
 
     @Override
-    public List<PointcutConfig> getPointcutConfigs() throws Exception {
-        String response = httpClient.get("/backend/config/pointcut");
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        JsonNode configsNode = ObjectMappers.getRequiredChildNode(rootNode, "configs");
-        return mapper.readValue(mapper.treeAsTokens(configsNode),
-                new TypeReference<List<PointcutConfig>>() {});
-    }
-
-    // returns new version
-    @Override
-    public String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception {
-        String response = httpClient.post("/backend/config/pointcut/+",
-                mapper.writeValueAsString(pointcutConfig));
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        JsonNode versionNode = ObjectMappers.getRequiredChildNode(rootNode, "version");
-        return versionNode.asText();
-    }
-
-    @Override
-    public void updatePointcutConfig(String version, PointcutConfig pointcutConfig)
-            throws Exception {
-        httpClient.post("/backend/config/pointcut/" + version,
-                mapper.writeValueAsString(pointcutConfig));
-    }
-
-    @Override
-    public void removePointcutConfig(String version) throws Exception {
-        httpClient.post("/backend/config/pointcut/-", mapper.writeValueAsString(version));
-    }
-
-    @Override
     public AdvancedConfig getAdvancedConfig() throws Exception {
         return getConfig("/backend/config/advanced", AdvancedConfig.class);
     }
@@ -186,8 +144,39 @@ class JavaagentConfigService implements ConfigService {
     }
 
     @Override
+    public List<CapturePoint> getCapturePoints() throws Exception {
+        String response = httpClient.get("/backend/config/capture-points");
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        JsonNode configsNode = ObjectMappers.getRequiredChildNode(rootNode, "configs");
+        return mapper.readValue(mapper.treeAsTokens(configsNode),
+                new TypeReference<List<CapturePoint>>() {});
+    }
+
+    // returns new version
+    @Override
+    public String addCapturePoint(CapturePoint capturePoint) throws Exception {
+        String response = httpClient.post("/backend/config/capture-points/+",
+                mapper.writeValueAsString(capturePoint));
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        JsonNode versionNode = ObjectMappers.getRequiredChildNode(rootNode, "version");
+        return versionNode.asText();
+    }
+
+    @Override
+    public void updateCapturePoint(String version, CapturePoint capturePoint)
+            throws Exception {
+        httpClient.post("/backend/config/capture-points/" + version,
+                mapper.writeValueAsString(capturePoint));
+    }
+
+    @Override
+    public void removeCapturePoint(String version) throws Exception {
+        httpClient.post("/backend/config/capture-points/-", mapper.writeValueAsString(version));
+    }
+
+    @Override
     public int reweavePointcuts() throws Exception {
-        String response = httpClient.post("/backend/admin/reweave-pointcuts", "");
+        String response = httpClient.post("/backend/admin/reweave-capture-points", "");
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         JsonNode classesNode = ObjectMappers.getRequiredChildNode(rootNode, "classes");
         return classesNode.asInt();
@@ -200,14 +189,14 @@ class JavaagentConfigService implements ConfigService {
 
     void resetAllConfig() throws Exception {
         httpClient.post("/backend/admin/reset-all-config", "");
-        // storeThresholdMillis=0 is by far the most useful setting for testing
-        setStoreThresholdMillis(0);
+        // traceStoreThresholdMillis=0 is by far the most useful setting for testing
+        setTraceStoreThresholdMillis(0);
     }
 
-    void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
-        GeneralConfig generalConfig = getGeneralConfig();
-        generalConfig.setStoreThresholdMillis(storeThresholdMillis);
-        updateGeneralConfig(generalConfig);
+    void setTraceStoreThresholdMillis(int traceStoreThresholdMillis) throws Exception {
+        TraceConfig traceConfig = getTraceConfig();
+        traceConfig.setStoreThresholdMillis(traceStoreThresholdMillis);
+        updateTraceConfig(traceConfig);
     }
 
     private <T> T getConfig(String url, Class<T> valueType) throws Exception {

@@ -22,6 +22,4 @@ import org.glowroot.markers.UsedByGeneratedBytecode;
  * @since 0.5
  */
 @UsedByGeneratedBytecode
-public interface AdviceFlow {
-
-}
+public interface AdviceFlow {}

@@ -250,8 +250,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                     if (httpSessionManager.needsAuthentication(request)) {
                         return handleUnauthorized(request);
                     }
-                    return ((HttpService) uriMappingEntry.getValue())
-                            .handleRequest(request, channel);
+                    return ((HttpService) uriMappingEntry.getValue()).handleRequest(request,
+                            channel);
                 } else {
                     // only other value type is String
                     String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
@@ -275,8 +275,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                     checkNotNull(group);
                     args[i] = group;
                 }
-                return handleJsonRequest(jsonServiceMapping.service,
-                        jsonServiceMapping.methodName, args, requestText);
+                return handleJsonRequest(jsonServiceMapping.service, jsonServiceMapping.methodName,
+                        args, requestText);
             }
         }
         logger.warn("unexpected uri: {}", request.getUri());

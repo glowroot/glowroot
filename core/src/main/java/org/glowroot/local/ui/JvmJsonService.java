@@ -123,8 +123,8 @@ class JvmJsonService {
             int index = command.indexOf(' ');
             if (index > 0) {
                 mainClass = command.substring(0, index);
-                arguments =
-                        Lists.newArrayList(Splitter.on(' ').split(command.substring(index + 1)));
+                arguments = Lists.newArrayList(
+                        Splitter.on(' ').split(command.substring(index + 1)));
             }
         }
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
@@ -210,8 +210,8 @@ class JvmJsonService {
             for (int i = 0; i < propertyValues.size(); i++) {
                 String value = propertyValues.get(i);
                 if (i == propertyValues.size() - 1) {
-                    String name =
-                            objectName.getDomain() + ":" + objectName.getKeyPropertyListString();
+                    String name = objectName.getDomain() + ":"
+                            + objectName.getKeyPropertyListString();
                     if (request.getExpanded().contains(name)) {
                         Map<String, /*@Nullable*/Object> sortedAttributeMap =
                                 getMBeanSortedAttributeMap(objectName);
@@ -294,8 +294,8 @@ class JvmJsonService {
         logger.debug("getHeapDumpDefaults()");
         String heapDumpPath = getHeapDumpPathFromCommandLine();
         if (Strings.isNullOrEmpty(heapDumpPath)) {
-            String javaTempDir =
-                    MoreObjects.firstNonNull(StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
+            String javaTempDir = MoreObjects.firstNonNull(
+                    StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
             heapDumpPath = new File(javaTempDir).getAbsolutePath();
         }
         StringBuilder sb = new StringBuilder();
@@ -310,8 +310,8 @@ class JvmJsonService {
     @POST("/backend/jvm/check-disk-space")
     String checkDiskSpace(String content) throws IOException {
         logger.debug("checkDiskSpace(): content={}", content);
-        RequestWithDirectory request =
-                ObjectMappers.readRequiredValue(mapper, content, RequestWithDirectory.class);
+        RequestWithDirectory request = ObjectMappers.readRequiredValue(mapper, content,
+                RequestWithDirectory.class);
         File dir = new File(request.getDirectory());
         if (!dir.exists()) {
             return "{\"error\": \"Directory doesn't exist\"}";
@@ -327,8 +327,8 @@ class JvmJsonService {
     String dumpHeap(String content) throws IOException, JMException, InterruptedException {
         logger.debug("dumpHeap(): content={}", content);
         HeapDumps service = OptionalJsonServices.validateAvailability(heapDumps);
-        RequestWithDirectory request =
-                ObjectMappers.readRequiredValue(mapper, content, RequestWithDirectory.class);
+        RequestWithDirectory request = ObjectMappers.readRequiredValue(mapper, content,
+                RequestWithDirectory.class);
         File dir = new File(request.getDirectory());
         if (!dir.exists()) {
             return "{\"error\": \"Directory doesn't exist\"}";

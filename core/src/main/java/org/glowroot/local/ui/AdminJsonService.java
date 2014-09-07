@@ -29,16 +29,16 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.TraceCollectorImpl;
+import org.glowroot.collector.TransactionCollectorImpl;
+import org.glowroot.config.CapturePoint;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.PointcutConfig;
+import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.DataSource;
-import org.glowroot.local.store.SnapshotDao;
-import org.glowroot.local.store.TransactionPointDao;
+import org.glowroot.local.store.TraceDao;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
-import org.glowroot.trace.AdviceCache;
-import org.glowroot.trace.TraceRegistry;
+import org.glowroot.transaction.AdviceCache;
+import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.weaving.AnalyzedWorld;
 
 /**
@@ -53,41 +53,47 @@ class AdminJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
 
-    private final TransactionPointDao transactionPointDao;
-    private final SnapshotDao snapshotDao;
+    private final AggregateDao aggregateDao;
+    private final TraceDao traceDao;
     private final ConfigService configService;
     private final AdviceCache adviceCache;
     private final AnalyzedWorld analyzedWorld;
     @Nullable
     private final Instrumentation instrumentation;
-    private final TraceCollectorImpl traceCollector;
+    private final TransactionCollectorImpl transactionCollector;
     private final DataSource dataSource;
-    private final TraceRegistry traceRegistry;
+    private final TransactionRegistry transactionRegistry;
 
-    AdminJsonService(TransactionPointDao transactionPointDao, SnapshotDao snapshotDao,
+    AdminJsonService(AggregateDao aggregateDao, TraceDao traceDao,
             ConfigService configService, AdviceCache adviceCache, AnalyzedWorld analyzedWorld,
-            @Nullable Instrumentation instrumentation, TraceCollectorImpl traceCollector,
-            DataSource dataSource, TraceRegistry traceRegistry) {
-        this.transactionPointDao = transactionPointDao;
-        this.snapshotDao = snapshotDao;
+            @Nullable Instrumentation instrumentation,
+            TransactionCollectorImpl transactionCollector,
+            DataSource dataSource, TransactionRegistry transactionRegistry) {
+        this.aggregateDao = aggregateDao;
+        this.traceDao = traceDao;
         this.configService = configService;
         this.adviceCache = adviceCache;
         this.analyzedWorld = analyzedWorld;
         this.instrumentation = instrumentation;
-        this.traceCollector = traceCollector;
+        this.transactionCollector = transactionCollector;
         this.dataSource = dataSource;
-        this.traceRegistry = traceRegistry;
+        this.transactionRegistry = transactionRegistry;
     }
 
-    @POST("/backend/admin/delete-all-data")
-    void deleteAllData() {
-        logger.debug("deleteAllData()");
-        transactionPointDao.deleteAll();
-        snapshotDao.deleteAll();
+    @POST("/backend/admin/delete-all-aggregates")
+    void deleteAllAggregates() {
+        logger.debug("deleteAllAggregates()");
+        aggregateDao.deleteAll();
     }
 
-    @POST("/backend/admin/reweave-pointcuts")
-    String reweavePointcuts() throws IOException, UnmodifiableClassException {
+    @POST("/backend/admin/delete-all-traces")
+    void deleteAllTraces() {
+        logger.debug("deleteAllTraces()");
+        traceDao.deleteAll();
+    }
+
+    @POST("/backend/admin/reweave-capture-points")
+    String reweaveCapturePoints() throws IOException, UnmodifiableClassException {
         if (instrumentation == null) {
             logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
             return "{}";
@@ -96,11 +102,11 @@ class AdminJsonService {
             logger.warn("retransformClasses is not supported");
             return "{}";
         }
-        ImmutableList<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
-        adviceCache.updateAdvisors(pointcutConfigs, false);
+        ImmutableList<CapturePoint> capturePoints = configService.getCapturePoints();
+        adviceCache.updateAdvisors(capturePoints, false);
         Set<String> classNames = Sets.newHashSet();
-        for (PointcutConfig pointcutConfig : pointcutConfigs) {
-            classNames.add(pointcutConfig.getClassName());
+        for (CapturePoint capturePoint : capturePoints) {
+            classNames.add(capturePoint.getClassName());
         }
         Set<Class<?>> classes = Sets.newHashSet();
         // need to remove these classes from AnalyzedWorld, otherwise if a subclass and its parent
@@ -152,23 +158,23 @@ class AdminJsonService {
     }
 
     @OnlyUsedByTests
-    @GET("/backend/admin/num-pending-complete-traces")
-    String getNumPendingCompleteTraces() {
-        logger.debug("getNumPendingCompleteTraces()");
-        return Integer.toString(traceCollector.getPendingCompleteTraces().size());
+    @GET("/backend/admin/num-active-transactions")
+    String getNumActiveTransactions() {
+        logger.debug("getNumActiveTransactions()");
+        return Integer.toString(transactionRegistry.getTransactions().size());
     }
 
     @OnlyUsedByTests
-    @GET("/backend/admin/num-stored-snapshots")
-    String getNumStoredSnapshots() {
-        logger.debug("getNumStoredSnapshots()");
-        return Long.toString(snapshotDao.count());
+    @GET("/backend/admin/num-pending-complete-transactions")
+    String getNumPendingCompleteTransactions() {
+        logger.debug("getNumPendingCompleteTransactions()");
+        return Integer.toString(transactionCollector.getPendingCompleteTransactions().size());
     }
 
     @OnlyUsedByTests
-    @GET("/backend/admin/num-active-traces")
-    String getNumActiveTraces() {
-        logger.debug("getNumActiveTraces()");
-        return Integer.toString(traceRegistry.getTraces().size());
+    @GET("/backend/admin/num-traces")
+    String getNumTraces() {
+        logger.debug("getNumTraces()");
+        return Long.toString(traceDao.count());
     }
 }

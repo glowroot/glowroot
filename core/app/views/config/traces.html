@@ -1,0 +1,98 @@
+<!--
+  Copyright 2013-2014 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h2>Traces</h2>
+  </div>
+  <div class="panel-body">
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <div ng-form
+         gt-form-with-primary-button
+         gt-form-autofocus-on-first-input
+         class="form-horizontal"
+         name="formCtrl">
+      <div gt-form-group
+           gt-label="Enabled"
+           gt-model="config.enabled"
+           gt-type="switch"
+           class="gt-form-group-without-help-block">
+      </div>
+      <div gt-form-group
+           gt-label="Store threshold"
+           gt-model="config.storeThresholdMillis"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-addon="milliseconds">
+        <div class="help-block">
+          Any transaction that exceeds this amount of time will be viewable immediately as
+          an active trace and the trace will be stored to disk at its completion.
+        </div>
+      </div>
+      <fieldset>
+        <legend>Outlier profiling</legend>
+        <div gt-form-group
+             gt-label="Enabled"
+             gt-model="config.outlierProfilingEnabled"
+             gt-type="switch"
+             class="gt-form-group-without-help-block">
+        </div>
+        <div gt-form-group
+             gt-label="Initial delay"
+             gt-model="config.outlierProfilingInitialDelayMillis"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-width="7em"
+             gt-addon="milliseconds">
+          <div class="help-block">
+            Once a transaction exceeds this amount of time, the outlier profiler
+            captures stack traces periodically.
+            The interval between successive stack trace captures is defined by the
+            property directly below.
+            The stack traces captured for an individual trace are merged into a tree
+            view and provide a profile of the time spent in various portions of the
+            code.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Interval"
+             gt-model="config.outlierProfilingIntervalMillis"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-width="7em"
+             gt-addon="milliseconds">
+          <div class="help-block">
+            The interval at which the outlier profiler captures stack traces
+            (once a transaction exceeds the initial delay above).
+          </div>
+        </div>
+      </fieldset>
+      <div class="form-group form-buttons">
+        <div class="col-lg-offset-3 col-lg-9">
+          <div gt-button
+               gt-label="Save changes"
+               gt-click="save(deferred)"
+               gt-disabled="!hasChanges() || formCtrl.$invalid">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

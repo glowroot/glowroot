@@ -28,9 +28,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 public abstract class TraceService {
 
-    public abstract int getNumPendingCompleteTraces() throws Exception;
+    public abstract int getNumPendingCompleteTransactions() throws Exception;
 
-    public abstract long getNumStoredSnapshots() throws Exception;
+    public abstract long getNumTraces() throws Exception;
 
     public abstract InputStream getTraceExport(String string) throws Exception;
 
@@ -41,7 +41,8 @@ public abstract class TraceService {
     protected abstract Trace getActiveTrace() throws Exception;
 
     // this method blocks for an active trace to be available because
-    // sometimes need to give container enough time to start up and for the trace to get stuck
+    // sometimes need to give container enough time to start up and for the trace to hit its store
+    // threshold
     @Nullable
     public Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -60,7 +61,7 @@ public abstract class TraceService {
     }
 
     @Nullable
-    public abstract List<Span> getSpans(String traceId) throws Exception;
+    public abstract List<TraceEntry> getEntries(String traceId) throws Exception;
 
     @Nullable
     public abstract ProfileNode getProfile(String traceId) throws Exception;

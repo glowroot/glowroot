@@ -5,12 +5,12 @@
 {{/if}}
 {{#if active}}
   <div>
-    <strong>ACTIVE {{#if stuck}}/ STUCK{{/if}}</strong>
+    <strong>ACTIVE {{#if partial}}/ PARTIAL{{/if}}</strong>
   </div>
 {{^}}
-  {{#if stuck}}
+  {{#if partial}}
     <div>
-      <strong>STUCK</strong>
+      <strong>PARTIAL</strong>
     </div>
   {{/if}}
 {{/if}}
@@ -162,10 +162,10 @@
   {{/eachGcInfoOrdered}}
 {{/if}}
 <br>
-{{#ifExistenceYes spansExistence}}
+{{#ifExistenceYes entriesExistence}}
   <div>
     <button class="flat-btn flat-btn-big-pad1aligned sps-toggle">
-      <span class="glowroot-link-color">Spans</span>
+      <span class="glowroot-link-color">Trace entries</span>
     </button>
     {{! spinner is not used in export file }}
     <div>
@@ -174,10 +174,10 @@
   </div>
   <div id="sps"></div>
 {{/ifExistenceYes}}
-{{#ifExistenceExpired spansExistence}}
+{{#ifExistenceExpired entriesExistence}}
   <div>
     <strong>
-      Spans no longer exists for this trace
+      Entries no longer exists for this trace
     </strong>
     <em>(see Glowroot > Configuration &gt; Storage &gt; Spans/profiles capped db)</em>
   </div>
@@ -204,7 +204,7 @@
     <strong>
       Profile no longer exists for this trace
     </strong>
-    <em>(see Glowroot > Configuration &gt; Storage &gt; Spans/profiles capped db)</em>
+    <em>(see Glowroot > Configuration &gt; Storage &gt; Trace entries/profiles capped db)</em>
   </div>
 {{/ifExistenceExpired}}
 {{#ifExistenceYes outlierProfileExistence}}

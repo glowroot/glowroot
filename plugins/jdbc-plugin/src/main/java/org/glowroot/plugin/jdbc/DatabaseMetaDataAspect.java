@@ -19,11 +19,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
-import org.glowroot.api.Span;
-import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
+import org.glowroot.api.TraceEntry;
+import org.glowroot.api.TransactionMetric;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -56,65 +56,66 @@ public class DatabaseMetaDataAspect {
     public static class AllMethodAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(AllMethodAdvice.class);
-        // plugin configuration property captureDatabaseMetaDataSpans is cached to limit map lookups
+        // plugin configuration property captureDatabaseMetaDataTraceEntries is cached to limit map
+        // lookups
         private static volatile boolean pluginEnabled;
-        private static volatile boolean spanEnabled;
+        private static volatile boolean entryEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
                 @Override
                 public void onChange() {
                     pluginEnabled = pluginServices.isEnabled();
-                    spanEnabled = pluginEnabled
-                            && pluginServices.getBooleanProperty("captureDatabaseMetaDataSpans");
+                    entryEnabled = pluginEnabled && pluginServices
+                            .getBooleanProperty("captureDatabaseMetaDataTraceEntries");
                 }
             });
             pluginEnabled = pluginServices.isEnabled();
-            spanEnabled = pluginEnabled
-                    && pluginServices.getBooleanProperty("captureDatabaseMetaDataSpans");
+            entryEnabled = pluginEnabled
+                    && pluginServices.getBooleanProperty("captureDatabaseMetaDataTraceEntries");
         }
         @OnBefore
         @Nullable
         public static Object onBefore(@BindMethodName String methodName) {
             currentlyExecutingMethodName.set(methodName);
             if (pluginServices.isEnabled()) {
-                if (spanEnabled) {
-                    return pluginServices.startSpan(MessageSupplier.from("jdbc metadata:"
+                if (entryEnabled) {
+                    return pluginServices.startTraceEntry(MessageSupplier.from("jdbc metadata:"
                             + " DatabaseMetaData.{}()", methodName), metricName);
                 } else {
-                    return pluginServices.startMetric(metricName);
+                    return pluginServices.startTransactionMetric(metricName);
                 }
             } else {
                 return null;
             }
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable Object spanOrTimer) {
+        public static void onReturn(@BindTraveler @Nullable Object entryOrMetric) {
             // don't need to track prior value and reset to that value, since
             // @Pointcut.ignoreSelfNested = true prevents re-entrant calls
             currentlyExecutingMethodName.remove();
-            if (spanOrTimer == null) {
+            if (entryOrMetric == null) {
                 return;
             }
-            if (spanOrTimer instanceof Span) {
-                ((Span) spanOrTimer).endWithStackTrace(
+            if (entryOrMetric instanceof TraceEntry) {
+                ((TraceEntry) entryOrMetric).endWithStackTrace(
                         JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
             } else {
-                ((MetricTimer) spanOrTimer).stop();
+                ((TransactionMetric) entryOrMetric).stop();
             }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable Object spanOrTimer) {
+                @BindTraveler @Nullable Object entryOrMetric) {
             // don't need to track prior value and reset to that value, since
             // @Pointcut.ignoreSelfNested = true prevents re-entrant calls
             currentlyExecutingMethodName.remove();
-            if (spanOrTimer == null) {
+            if (entryOrMetric == null) {
                 return;
             }
-            if (spanOrTimer instanceof Span) {
-                ((Span) spanOrTimer).endWithError(ErrorMessage.from(t));
+            if (entryOrMetric instanceof TraceEntry) {
+                ((TraceEntry) entryOrMetric).endWithError(ErrorMessage.from(t));
             } else {
-                ((MetricTimer) spanOrTimer).stop();
+                ((TransactionMetric) entryOrMetric).stop();
             }
         }
     }

@@ -33,46 +33,44 @@ import org.glowroot.markers.ThreadSafe;
 @ThreadSafe
 public class CollectorModule {
 
-    private static final long fixedTransactionPointIntervalSeconds;
+    private static final long fixedAggregateIntervalSeconds;
 
     static {
-        fixedTransactionPointIntervalSeconds =
-                Long.getLong("glowroot.internal.collector.transactionPointInterval", 300);
+        fixedAggregateIntervalSeconds =
+                Long.getLong("glowroot.internal.collector.aggregateInterval", 300);
     }
 
-    private final TraceCollectorImpl traceCollector;
+    private final TransactionCollectorImpl transactionCollector;
     @Nullable
-    private final TransactionPointCollector transactionPointCollector;
+    private final AggregateCollector aggregateCollector;
 
     public CollectorModule(Clock clock, Ticker ticker, ConfigModule configModule,
-            SnapshotRepository snapshotRepository,
-            TransactionPointRepository transactionPointRepository,
-            ScheduledExecutorService scheduledExecutor,
-            boolean viewerModeEnabled) {
+            TraceRepository traceRepository, AggregateRepository aggregateRepository,
+            ScheduledExecutorService scheduledExecutor, boolean viewerModeEnabled) {
         ConfigService configService = configModule.getConfigService();
         if (viewerModeEnabled) {
-            transactionPointCollector = null;
+            aggregateCollector = null;
         } else {
-            transactionPointCollector = new TransactionPointCollector(scheduledExecutor,
-                    transactionPointRepository, clock, fixedTransactionPointIntervalSeconds);
+            aggregateCollector = new AggregateCollector(scheduledExecutor, aggregateRepository,
+                    clock, fixedAggregateIntervalSeconds);
         }
-        // TODO should be no need for trace collector in viewer mode
-        traceCollector = new TraceCollectorImpl(scheduledExecutor, configService,
-                snapshotRepository, transactionPointCollector, clock, ticker);
+        // TODO should be no need for transaction collector in viewer mode
+        transactionCollector = new TransactionCollectorImpl(scheduledExecutor, configService,
+                traceRepository, aggregateCollector, clock, ticker);
     }
 
-    public TraceCollectorImpl getTraceCollector() {
-        return traceCollector;
+    public TransactionCollectorImpl getTransactionCollector() {
+        return transactionCollector;
     }
 
-    public long getFixedTransactionPointIntervalSeconds() {
-        return fixedTransactionPointIntervalSeconds;
+    public long getFixedAggregateIntervalSeconds() {
+        return fixedAggregateIntervalSeconds;
     }
 
     @OnlyUsedByTests
     public void close() {
-        if (transactionPointCollector != null) {
-            transactionPointCollector.close();
+        if (aggregateCollector != null) {
+            aggregateCollector.close();
         }
     }
 }

@@ -32,10 +32,10 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.config.CapturePoint;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PluginDescriptorCache;
-import org.glowroot.config.PointcutConfig;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.HeapHistograms;
 import org.glowroot.jvm.OptionalService;
@@ -60,7 +60,7 @@ class LayoutJsonService {
     private final PluginDescriptorCache pluginDescriptorCache;
     private final OptionalService<HeapHistograms> heapHistograms;
     private final OptionalService<HeapDumps> heapDumps;
-    private final long fixedTransactionPointIntervalSeconds;
+    private final long fixedAggregateIntervalSeconds;
 
     @Nullable
     private volatile Layout layout;
@@ -68,13 +68,13 @@ class LayoutJsonService {
     LayoutJsonService(String version, ConfigService configService,
             PluginDescriptorCache pluginDescriptorCache,
             OptionalService<HeapHistograms> heapHistograms, OptionalService<HeapDumps> heapDumps,
-            long fixedTransactionPointIntervalSeconds) {
+            long fixedAggregateIntervalSeconds) {
         this.version = version;
         this.configService = configService;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.heapHistograms = heapHistograms;
         this.heapDumps = heapDumps;
-        this.fixedTransactionPointIntervalSeconds = fixedTransactionPointIntervalSeconds;
+        this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
         configService.addConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
@@ -92,7 +92,7 @@ class LayoutJsonService {
         if (localLayout == null) {
             localLayout = buildLayout(version, configService, pluginDescriptorCache,
                     heapHistograms.getService(), heapDumps.getService(),
-                    fixedTransactionPointIntervalSeconds);
+                    fixedAggregateIntervalSeconds);
             layout = localLayout;
         }
         return mapper.writeValueAsString(localLayout);
@@ -103,7 +103,7 @@ class LayoutJsonService {
         if (localLayout == null) {
             localLayout = buildLayout(version, configService, pluginDescriptorCache,
                     heapHistograms.getService(), heapDumps.getService(),
-                    fixedTransactionPointIntervalSeconds);
+                    fixedAggregateIntervalSeconds);
             layout = localLayout;
         }
         return localLayout.getVersion();
@@ -123,7 +123,7 @@ class LayoutJsonService {
 
     private static Layout buildLayout(String version, ConfigService configService,
             PluginDescriptorCache pluginDescriptorCache, @Nullable HeapHistograms heapHistograms,
-            @Nullable HeapDumps heapDumps, long fixedTransactionPointIntervalSeconds) {
+            @Nullable HeapDumps heapDumps, long fixedAggregateIntervalSeconds) {
         List<LayoutPlugin> plugins = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
             String id = pluginDescriptor.getId();
@@ -139,14 +139,14 @@ class LayoutJsonService {
         for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
             transactionTypes.addAll(pluginDescriptor.getTransactionTypes());
         }
-        for (PointcutConfig pointcutConfig : configService.getPointcutConfigs()) {
-            String transactionType = pointcutConfig.getTransactionType();
+        for (CapturePoint capturePoint : configService.getCapturePoints()) {
+            String transactionType = capturePoint.getTransactionType();
             if (!transactionType.isEmpty()) {
                 transactionTypes.add(transactionType);
             }
         }
-        String defaultTransactionType =
-                configService.getUserInterfaceConfig().getDefaultTransactionType();
+        String defaultTransactionType = configService.getUserInterfaceConfig()
+                .getDefaultTransactionType();
         List<String> orderedTransactionTypes = Lists.newArrayList();
         if (transactionTypes.isEmpty()) {
             defaultTransactionType = "<no transaction types defined>";
@@ -159,11 +159,11 @@ class LayoutJsonService {
         // add default transaction type first
         orderedTransactionTypes.add(defaultTransactionType);
         // add the rest alphabetical
-        orderedTransactionTypes.addAll(Ordering.from(String.CASE_INSENSITIVE_ORDER)
-                .sortedCopy(transactionTypes));
-        Set<String> traceCustomAttributes = Sets.newTreeSet();
+        orderedTransactionTypes.addAll(Ordering.from(String.CASE_INSENSITIVE_ORDER).sortedCopy(
+                transactionTypes));
+        Set<String> transactionCustomAttributes = Sets.newTreeSet();
         for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
-            traceCustomAttributes.addAll(pluginDescriptor.getTraceCustomAttributes());
+            transactionCustomAttributes.addAll(pluginDescriptor.getTransactionCustomAttributes());
         }
         return Layout.builder()
                 .jvmHeapHistogram(heapHistograms != null)
@@ -173,8 +173,8 @@ class LayoutJsonService {
                 .plugins(plugins)
                 .transactionTypes(orderedTransactionTypes)
                 .defaultTransactionType(defaultTransactionType)
-                .traceCustomAttributes(ImmutableList.copyOf(traceCustomAttributes))
-                .fixedTransactionPointIntervalSeconds(fixedTransactionPointIntervalSeconds)
+                .transactionCustomAttributes(ImmutableList.copyOf(transactionCustomAttributes))
+                .fixedAggregateIntervalSeconds(fixedAggregateIntervalSeconds)
                 .build();
     }
 }

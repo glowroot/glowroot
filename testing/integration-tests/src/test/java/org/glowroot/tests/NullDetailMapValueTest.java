@@ -27,8 +27,8 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,16 +60,16 @@ public class NullDetailMapValueTest {
     public void shouldReadTraces() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(spans).hasSize(4);
-        Span span1 = spans.get(0);
-        assertThat(span1.getMessage().getText()).isEqualTo("Level One");
-        assertThat(span1.getMessage().getDetail()).isEqualTo(mapOf("arg1", "a", "arg2", null,
+        assertThat(entries).hasSize(4);
+        TraceEntry entry1 = entries.get(0);
+        assertThat(entry1.getMessage().getText()).isEqualTo("Level One");
+        assertThat(entry1.getMessage().getDetail()).isEqualTo(mapOf("arg1", "a", "arg2", null,
                 "nested1", mapOf("nestedkey11", "a", "nestedkey12", null,
                         "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", null)),
                 "nested2", mapOf("nestedkey21", "a", "nestedkey22", null)));
@@ -101,7 +101,7 @@ public class NullDetailMapValueTest {
         return map;
     }
 
-    public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {
+    public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {
         @Override
         public void executeApp() {
             new LevelOne().call("a", null);

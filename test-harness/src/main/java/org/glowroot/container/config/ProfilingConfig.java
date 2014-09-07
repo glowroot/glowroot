@@ -30,10 +30,10 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
  */
 public class ProfilingConfig {
 
-    private double tracePercentage;
+    private boolean enabled;
+    private double transactionPercentage;
     private int intervalMillis;
-    private int maxSeconds;
-    private int storeThresholdMillis;
+    private int traceStoreThresholdOverrideMillis;
 
     private final String version;
 
@@ -41,12 +41,20 @@ public class ProfilingConfig {
         this.version = version;
     }
 
-    public double getTracePercentage() {
-        return tracePercentage;
+    public boolean isEnabled() {
+        return enabled;
     }
 
-    public void setTracePercentage(double tracePercentage) {
-        this.tracePercentage = tracePercentage;
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public double getTransactionPercentage() {
+        return transactionPercentage;
+    }
+
+    public void setTransactionPercentage(double transactionPercentage) {
+        this.transactionPercentage = transactionPercentage;
     }
 
     public int getIntervalMillis() {
@@ -57,20 +65,12 @@ public class ProfilingConfig {
         this.intervalMillis = intervalMillis;
     }
 
-    public int getMaxSeconds() {
-        return maxSeconds;
+    public int getTraceStoreThresholdOverrideMillis() {
+        return traceStoreThresholdOverrideMillis;
     }
 
-    public void setMaxSeconds(int maxSeconds) {
-        this.maxSeconds = maxSeconds;
-    }
-
-    public int getStoreThresholdMillis() {
-        return storeThresholdMillis;
-    }
-
-    public void setStoreThresholdMillis(int storeThresholdMillis) {
-        this.storeThresholdMillis = storeThresholdMillis;
+    public void setTraceStoreThresholdOverrideMillis(int traceStoreThresholdOverrideMillis) {
+        this.traceStoreThresholdOverrideMillis = traceStoreThresholdOverrideMillis;
     }
 
     public String getVersion() {
@@ -84,10 +84,11 @@ public class ProfilingConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(tracePercentage, that.tracePercentage)
+            return Objects.equal(enabled, that.enabled)
+                    && Objects.equal(transactionPercentage, that.transactionPercentage)
                     && Objects.equal(intervalMillis, that.intervalMillis)
-                    && Objects.equal(maxSeconds, that.maxSeconds)
-                    && Objects.equal(storeThresholdMillis, that.storeThresholdMillis);
+                    && Objects.equal(traceStoreThresholdOverrideMillis,
+                            that.traceStoreThresholdOverrideMillis);
         }
         return false;
     }
@@ -97,37 +98,39 @@ public class ProfilingConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(tracePercentage, intervalMillis, maxSeconds, storeThresholdMillis);
+        return Objects.hashCode(enabled, transactionPercentage, intervalMillis,
+                traceStoreThresholdOverrideMillis);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("tracePercentage", tracePercentage)
+                .add("enabled", enabled)
+                .add("transactionPercentage", transactionPercentage)
                 .add("intervalMillis", intervalMillis)
-                .add("maxSeconds", maxSeconds)
-                .add("storeThresholdMillis", storeThresholdMillis)
+                .add("traceStoreThresholdOverrideMillis", traceStoreThresholdOverrideMillis)
                 .add("version", version)
                 .toString();
     }
 
     @JsonCreator
     static ProfilingConfig readValue(
-            @JsonProperty("tracePercentage") @Nullable Double tracePercentage,
+            @JsonProperty("enabled") @Nullable Boolean enabled,
+            @JsonProperty("transactionPercentage") @Nullable Double transactionPercentage,
             @JsonProperty("intervalMillis") @Nullable Integer intervalMillis,
-            @JsonProperty("maxSeconds") @Nullable Integer maxSeconds,
-            @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
+            @JsonProperty("traceStoreThresholdOverrideMillis") @Nullable Integer traceStoreThresholdOverrideMillis,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(tracePercentage, "tracePercentage");
+        checkRequiredProperty(enabled, "enabled");
+        checkRequiredProperty(transactionPercentage, "transactionPercentage");
         checkRequiredProperty(intervalMillis, "intervalMillis");
-        checkRequiredProperty(maxSeconds, "maxSeconds");
-        checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
+        checkRequiredProperty(traceStoreThresholdOverrideMillis,
+                "traceStoreThresholdOverrideMillis");
         checkRequiredProperty(version, "version");
         ProfilingConfig config = new ProfilingConfig(version);
-        config.setTracePercentage(tracePercentage);
+        config.setEnabled(enabled);
+        config.setTransactionPercentage(transactionPercentage);
         config.setIntervalMillis(intervalMillis);
-        config.setMaxSeconds(maxSeconds);
-        config.setStoreThresholdMillis(storeThresholdMillis);
+        config.setTraceStoreThresholdOverrideMillis(traceStoreThresholdOverrideMillis);
         return config;
     }
 }

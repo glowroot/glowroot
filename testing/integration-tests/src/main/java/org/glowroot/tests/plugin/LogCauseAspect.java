@@ -19,7 +19,7 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -49,17 +49,17 @@ public class LogCauseAspect {
         }
 
         @OnBefore
-        public static Span onBefore(@BindParameter String message) {
-            return pluginServices.startSpan(MessageSupplier.from("ERROR -- {}", message),
+        public static TraceEntry onBefore(@BindParameter String message) {
+            return pluginServices.startTraceEntry(MessageSupplier.from("ERROR -- {}", message),
                     metricName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
             Exception cause1 = new NullPointerException("Cause 1");
             Exception cause2 = new IllegalStateException("Cause 2", cause1);
             Exception cause3 = new IllegalArgumentException("Cause 3", cause2);
-            span.endWithError(ErrorMessage.from(new IllegalStateException(cause3)));
+            traceEntry.endWithError(ErrorMessage.from(new IllegalStateException(cause3)));
         }
     }
 }

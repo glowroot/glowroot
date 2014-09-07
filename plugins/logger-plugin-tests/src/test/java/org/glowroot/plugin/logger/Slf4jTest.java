@@ -28,8 +28,8 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -74,11 +74,11 @@ public class Slf4jTest {
         container.executeAppUnderTest(ShouldLog.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getError()).isEqualTo("efg");
-        assertThat(spans).hasSize(3);
-        assertThat(spans.get(1).getMessage().getText()).isEqualTo("log warn: def");
-        assertThat(spans.get(2).getMessage().getText()).isEqualTo("log error: efg");
+        assertThat(entries).hasSize(3);
+        assertThat(entries.get(1).getMessage().getText()).isEqualTo("log warn: def");
+        assertThat(entries.get(2).getMessage().getText()).isEqualTo("log error: efg");
     }
 
     @Test
@@ -90,20 +90,20 @@ public class Slf4jTest {
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getError()).isEqualTo("efg_t");
-        assertThat(spans).hasSize(3);
+        assertThat(entries).hasSize(3);
 
-        Span warnSpan = spans.get(1);
-        assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn: def_t");
-        assertThat(warnSpan.getError().getText()).isEqualTo("456");
-        assertThat(warnSpan.getError().getException().getStackTrace().get(0))
+        TraceEntry warnEntry = entries.get(1);
+        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_t");
+        assertThat(warnEntry.getError().getText()).isEqualTo("456");
+        assertThat(warnEntry.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
-        Span errorSpan = spans.get(2);
-        assertThat(errorSpan.getMessage().getText()).isEqualTo("log error: efg_t");
-        assertThat(errorSpan.getError().getText()).isEqualTo("567");
-        assertThat(errorSpan.getError().getException().getStackTrace().get(0))
+        TraceEntry errorEntry = entries.get(2);
+        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_t");
+        assertThat(errorEntry.getError().getText()).isEqualTo("567");
+        assertThat(errorEntry.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
     }
 
@@ -116,16 +116,16 @@ public class Slf4jTest {
         container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getError()).isEqualTo("efg_tnull");
-        assertThat(spans).hasSize(3);
+        assertThat(entries).hasSize(3);
 
-        Span warnSpan = spans.get(1);
-        assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn: def_tnull");
-        assertThat(warnSpan.getError().getText()).isEqualTo("def_tnull");
-        Span errorSpan = spans.get(2);
-        assertThat(errorSpan.getMessage().getText()).isEqualTo("log error: efg_tnull");
-        assertThat(errorSpan.getError().getText()).isEqualTo("efg_tnull");
+        TraceEntry warnEntry = entries.get(1);
+        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_tnull");
+        assertThat(warnEntry.getError().getText()).isEqualTo("def_tnull");
+        TraceEntry errorEntry = entries.get(2);
+        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_tnull");
+        assertThat(errorEntry.getError().getText()).isEqualTo("efg_tnull");
     }
 
     @Test
@@ -135,13 +135,13 @@ public class Slf4jTest {
         container.executeAppUnderTest(ShouldLogWithOneParameter.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
-        assertThat(spans).hasSize(3);
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(3);
 
-        Span warnSpan = spans.get(1);
-        assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn: def_1 d");
-        Span errorSpan = spans.get(2);
-        assertThat(errorSpan.getMessage().getText()).isEqualTo("log error: efg_1 e");
+        TraceEntry warnEntry = entries.get(1);
+        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_1 d");
+        TraceEntry errorEntry = entries.get(2);
+        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_1 e");
     }
 
     @Test
@@ -151,20 +151,20 @@ public class Slf4jTest {
         container.executeAppUnderTest(ShouldLogWithOneParameterAndThrowable.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getError()).isEqualTo("efg_1_t e");
-        assertThat(spans).hasSize(3);
+        assertThat(entries).hasSize(3);
 
-        Span warnSpan = spans.get(1);
-        assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn: def_1_t d");
-        assertThat(warnSpan.getError().getText()).isEqualTo("456");
-        assertThat(warnSpan.getError().getException().getStackTrace().get(0))
+        TraceEntry warnEntry = entries.get(1);
+        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_1_t d");
+        assertThat(warnEntry.getError().getText()).isEqualTo("456");
+        assertThat(warnEntry.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
-        Span errorSpan = spans.get(2);
-        assertThat(errorSpan.getMessage().getText()).isEqualTo("log error: efg_1_t e");
-        assertThat(errorSpan.getError().getText()).isEqualTo("567");
-        assertThat(errorSpan.getError().getException().getStackTrace().get(0))
+        TraceEntry errorEntry = entries.get(2);
+        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_1_t e");
+        assertThat(errorEntry.getError().getText()).isEqualTo("567");
+        assertThat(errorEntry.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
     }
 
@@ -175,13 +175,13 @@ public class Slf4jTest {
         container.executeAppUnderTest(ShouldLogWithTwoParameters.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
-        assertThat(spans).hasSize(3);
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(3);
 
-        Span warnSpan = spans.get(1);
-        assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn: def_2 d e");
-        Span errorSpan = spans.get(2);
-        assertThat(errorSpan.getMessage().getText()).isEqualTo("log error: efg_2 e f");
+        TraceEntry warnEntry = entries.get(1);
+        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_2 d e");
+        TraceEntry errorEntry = entries.get(2);
+        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_2 e f");
     }
 
     @Test
@@ -191,13 +191,13 @@ public class Slf4jTest {
         container.executeAppUnderTest(ShouldLogWithMoreThanTwoParameters.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
-        assertThat(spans).hasSize(3);
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(3);
 
-        Span warnSpan = spans.get(1);
-        assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn: def_3 d e f");
-        Span errorSpan = spans.get(2);
-        assertThat(errorSpan.getMessage().getText()).isEqualTo("log error: efg_3 e f g");
+        TraceEntry warnEntry = entries.get(1);
+        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_3 d e f");
+        TraceEntry errorEntry = entries.get(2);
+        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_3 e f g");
     }
 
     @Test
@@ -207,19 +207,19 @@ public class Slf4jTest {
         container.executeAppUnderTest(ShouldLogWithParametersAndThrowable.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
-        assertThat(spans).hasSize(3);
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(3);
 
-        Span warnSpan = spans.get(1);
-        assertThat(warnSpan.getMessage().getText()).isEqualTo("log warn: def_3_t d e f");
-        assertThat(warnSpan.getError().getText()).isEqualTo("456");
-        assertThat(warnSpan.getError().getException().getStackTrace().get(0))
+        TraceEntry warnEntry = entries.get(1);
+        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_3_t d e f");
+        assertThat(warnEntry.getError().getText()).isEqualTo("456");
+        assertThat(warnEntry.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
-        Span errorSpan = spans.get(2);
-        assertThat(errorSpan.getMessage().getText()).isEqualTo("log error: efg_3_t e f g");
-        assertThat(errorSpan.getError().getText()).isEqualTo("567");
-        assertThat(errorSpan.getError().getException().getStackTrace().get(0))
+        TraceEntry errorEntry = entries.get(2);
+        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_3_t e f g");
+        assertThat(errorEntry.getError().getText()).isEqualTo("567");
+        assertThat(errorEntry.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
     }
 

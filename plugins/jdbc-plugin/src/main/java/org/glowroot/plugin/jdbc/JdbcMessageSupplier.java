@@ -47,9 +47,9 @@ class JdbcMessageSupplier extends MessageSupplier {
     @Nullable
     private final ImmutableList<String> batchedSqls;
 
-    // intentionally not volatile for performance, but it does mean stuck and active trace captures
-    // may see stale value (but stuck and active trace captures use memory barrier in Trace to
-    // ensure the values are at least visible as of the end of the last span)
+    // intentionally not volatile for performance, but it does mean partial and active trace
+    // captures may see stale value (but partial and active trace captures use memory barrier in
+    // Trace to ensure the values are at least visible as of the end of the last trace entry)
     private int numRows = NEXT_HAS_NOT_BEEN_CALLED;
 
     static JdbcMessageSupplier create(String sql) {

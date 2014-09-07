@@ -27,8 +27,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.javaagent.TracePointResponse.RawPoint;
 import org.glowroot.container.trace.ProfileNode;
-import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.container.trace.TraceEntry;
 import org.glowroot.container.trace.TraceService;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -50,16 +50,16 @@ class JavaagentTraceService extends TraceService {
     }
 
     @Override
-    public int getNumPendingCompleteTraces() throws Exception {
-        String numPendingCompleteTraces =
-                httpClient.get("/backend/admin/num-pending-complete-traces");
-        return Integer.parseInt(numPendingCompleteTraces);
+    public int getNumPendingCompleteTransactions() throws Exception {
+        String numPendingCompleteTransactions =
+                httpClient.get("/backend/admin/num-pending-complete-transactions");
+        return Integer.parseInt(numPendingCompleteTransactions);
     }
 
     @Override
-    public long getNumStoredSnapshots() throws Exception {
-        String numStoredSnapshots = httpClient.get("/backend/admin/num-stored-snapshots");
-        return Long.parseLong(numStoredSnapshots);
+    public long getNumTraces() throws Exception {
+        String numTraces = httpClient.get("/backend/admin/num-traces");
+        return Long.parseLong(numTraces);
     }
 
     @Override
@@ -106,9 +106,9 @@ class JavaagentTraceService extends TraceService {
 
     @Override
     @Nullable
-    public List<Span> getSpans(String traceId) throws Exception {
-        String content = httpClient.get("/backend/trace/spans?trace-id=" + traceId);
-        return mapper.readValue(content, new TypeReference<List<Span>>() {});
+    public List<TraceEntry> getEntries(String traceId) throws Exception {
+        String content = httpClient.get("/backend/trace/entries?trace-id=" + traceId);
+        return mapper.readValue(content, new TypeReference<List<TraceEntry>>() {});
     }
 
     @Override
@@ -127,20 +127,21 @@ class JavaagentTraceService extends TraceService {
 
     @Override
     public void deleteAll() throws Exception {
-        httpClient.post("/backend/admin/delete-all-data", "");
+        httpClient.post("/backend/admin/delete-all-aggregates", "");
+        httpClient.post("/backend/admin/delete-all-traces", "");
     }
 
-    void assertNoActiveTraces() throws Exception {
+    void assertNoActiveTransactions() throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        // if interruptAppUnderTest() was used to terminate an active trace, it may take a few
-        // milliseconds to interrupt the thread and end the active trace
+        // if interruptAppUnderTest() was used to terminate an active transaction, it may take a few
+        // milliseconds to interrupt the thread and end the active transaction
         while (stopwatch.elapsed(SECONDS) < 2) {
-            int numActiveTraces = Integer.parseInt(httpClient
-                    .get("/backend/admin/num-active-traces"));
-            if (numActiveTraces == 0) {
+            int numActiveTransactions = Integer.parseInt(httpClient
+                    .get("/backend/admin/num-active-transactions"));
+            if (numActiveTransactions == 0) {
                 return;
             }
         }
-        throw new AssertionError("There are still active traces");
+        throw new AssertionError("There are still active transactions");
     }
 }

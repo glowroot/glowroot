@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.tests.BasicTest.ShouldGenerateTraceWithNestedSpans;
+import org.glowroot.tests.BasicTest.ShouldGenerateTraceWithNestedEntries;
 
 /**
  * @author Trask Stalnaker
@@ -55,7 +55,7 @@ public class ExportTest {
     @Test
     public void shouldExportTrace() throws Exception {
         // given
-        container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // when
         Trace trace = container.getTraceService().getLastTrace();
         InputStream in = container.getTraceService().getTraceExport(trace.getId());

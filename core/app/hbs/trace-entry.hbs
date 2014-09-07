@@ -1,0 +1,73 @@
+{{#if limitExceededMarker}}
+  <div class="indent1" style="padding: 10px 0;">
+    <strong>... Entry limit exceeded ...</strong>
+  </div>
+{{^}}
+  {{#if limitExtendedMarker}}
+    <div class="indent1" style="padding: 10px 0;">
+      <strong>... Entry limit extended mid-trace ...</strong>
+    </div>
+  {{^}}
+    <div class="clearfix">
+      <div class="indent1 left-numeric-column" style="width: {{offsetColumnWidth}}em; float: left;">
+        +{{nanosToMillis offset}}
+      </div>
+      {{! +1 at the beginning is for the indent1 of the offset column }}
+      <div style="margin-left: {{traceEntryIndent .}}em; float: left;">
+        <span class="inline-block indent1 left-numeric-column" style="width: {{offsetColumnWidth}}em;">
+          {{nanosToMillis duration}}{{#if active}}..{{/if}}
+        </span>
+      </div>
+      <div style="overflow: hidden;">
+        {{#if message}}
+          {{#ifLongMessage message.text}}
+            {{! surrounding div is needed as common parent for toggling unexpanded/expanded content }}
+            <div>
+              <div class="inline-block unexpanded-content">{{firstPart message.text}}
+                <span class="glowroot-link-color"><strong>...</strong></span> {{lastPart message.text}}
+              </div>
+              <span class="inline-block expanded-content break-word hide">{{message.text}}</span>
+            </div>
+          {{^}}
+            <div class="content-padding">{{message.text}}</div>
+          {{/ifLongMessage}}
+          {{#if message.detail}}
+            <div class="content-detail">
+              <span class="inline-block unexpanded-content glowroot-link-color">detail</span>
+              <span class="inline-block expanded-content hide">{{{messageDetailHtml message.detail}}}</span>
+            </div>
+          {{/if}}
+        {{/if}}
+        {{#if error}}
+          <div class="{{{errorIndentClass message}}}">
+            <div>
+              <strong><span class="inline-block content-padding">{{error.text}}</span></strong>
+            </div>
+            {{#if error.detail}}
+              <div class="content-detail">
+                <span class="inline-block unexpanded-content glowroot-link-color">detail</span>
+                <span class="inline-block expanded-content hide">{{{messageDetailHtml error.detail}}}</span>
+              </div>
+            {{/if}}
+            {{#if error.exception}}
+              <div class="{{{exceptionIndentClass message}}}">
+                <span class="inline-block unexpanded-content glowroot-link-color">exception</span>
+                {{! using span so background will stretch beyond page border if needed }}
+                <span class="inline-block expanded-content nowrap hide">
+                  {{{exceptionHtml error.exception}}}
+                </span>
+              </div>
+            {{/if}}
+          </div>
+        {{/if}}
+        {{#if stackTrace}}
+          <div class="indent2">
+            <span class="inline-block unexpanded-content glowroot-link-color">trace entry stack trace</span>
+            {{! using span so background will stretch beyond page border if needed }}
+            <span class="inline-block expanded-content nowrap hide">{{{stackTraceHtml stackTrace}}}</span>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+  {{/if}}
+{{/if}}

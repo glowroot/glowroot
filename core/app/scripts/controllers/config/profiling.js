@@ -30,18 +30,18 @@ glowroot.controller('ConfigProfilingCtrl', [
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
-    $scope.$watchCollection('[page.profiledStoreThresholdOverride, page.profiledStoreThresholdMillis]',
+    $scope.$watchCollection('[page.traceStoreThresholdOverride, page.traceStoreThresholdOverrideMillis]',
         function (newValues) {
           if (newValues[0] === undefined) {
             // initial
             return;
           }
           if (newValues[0]) {
-            $scope.config.storeThresholdMillis = newValues[1];
+            $scope.config.traceStoreThresholdOverrideMillis = newValues[1];
           } else {
-            $scope.config.storeThresholdMillis = -1;
+            $scope.config.traceStoreThresholdOverrideMillis = -1;
             // update disabled input text to show the overridden value from general config
-            $scope.page.profiledStoreThresholdMillis = $scope.generalStoreThresholdMillis;
+            $scope.page.traceStoreThresholdOverrideMillis = $scope.defaultTraceStoreThresholdMillis;
           }
         });
 
@@ -50,12 +50,12 @@ glowroot.controller('ConfigProfilingCtrl', [
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
 
-      $scope.generalStoreThresholdMillis = data.generalStoreThresholdMillis;
-      if (data.config.storeThresholdMillis === -1) {
-        $scope.page.profiledStoreThresholdOverride = false;
+      $scope.defaultTraceStoreThresholdMillis = data.defaultTraceStoreThresholdMillis;
+      if (data.config.traceStoreThresholdOverrideMillis === -1) {
+        $scope.page.traceStoreThresholdOverride = false;
       } else {
-        $scope.page.profiledStoreThresholdOverride = true;
-        $scope.page.profiledStoreThresholdMillis = $scope.config.storeThresholdMillis;
+        $scope.page.traceStoreThresholdOverride = true;
+        $scope.page.traceStoreThresholdOverrideMillis = $scope.config.traceStoreThresholdOverrideMillis;
       }
     }
 

@@ -30,10 +30,10 @@ import org.openjdk.jmh.annotations.TearDown;
 
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.microbenchmarks.core.support.SpanWorthy;
+import org.glowroot.microbenchmarks.core.support.TraceEntryWorthy;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -55,13 +55,13 @@ public class StoreBenchmark {
     private boolean store;
 
     @Param({"0", "100", "1000"})
-    private int spanCount;
+    private int traceEntryCount;
 
-    private Span rootSpan;
+    private TraceEntry rootTraceEntry;
 
     @Setup
     public void setup() throws Exception {
-        Class<?> clazz = Class.forName("org.glowroot.collector.TraceCollectorImpl");
+        Class<?> clazz = Class.forName("org.glowroot.collector.TransactionCollectorImpl");
         Field field = clazz.getDeclaredField("useSynchronousStore");
         field.setAccessible(true);
         field.set(null, true);
@@ -69,7 +69,7 @@ public class StoreBenchmark {
 
     @TearDown
     public void tearDown() throws Exception {
-        Class<?> clazz = Class.forName("org.glowroot.collector.TraceCollectorImpl");
+        Class<?> clazz = Class.forName("org.glowroot.collector.TransactionCollectorImpl");
         Field field = clazz.getDeclaredField("useSynchronousStore");
         field.setAccessible(true);
         field.set(null, false);
@@ -77,18 +77,18 @@ public class StoreBenchmark {
 
     @Benchmark
     public void execute() {
-        rootSpan = pluginServices.startTrace("Microbenchmark", "micro trace",
-                MessageSupplier.from("micro trace"), metricName);
+        rootTraceEntry = pluginServices.startTransaction("Microbenchmark", "micro transaction",
+                MessageSupplier.from("micro transaction"), metricName);
         if (store) {
             pluginServices.setTraceStoreThreshold(0, MILLISECONDS);
         }
-        SpanWorthy spanWorthy = new SpanWorthy();
-        for (int i = 0; i < spanCount; i++) {
-            spanWorthy.doSomethingSpanWorthy();
+        TraceEntryWorthy traceEntryWorthy = new TraceEntryWorthy();
+        for (int i = 0; i < traceEntryCount; i++) {
+            traceEntryWorthy.doSomethingTraceEntryWorthy();
         }
-        rootSpan.end();
+        rootTraceEntry.end();
     }
 
-    @Pointcut(className = "dummy", methodName = "dummy", metricName = "micro trace")
+    @Pointcut(className = "dummy", methodName = "dummy", metricName = "micro transaction")
     private static class OnlyForTheMetricName {}
 }

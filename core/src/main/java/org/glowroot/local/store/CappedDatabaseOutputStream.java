@@ -68,7 +68,7 @@ class CappedDatabaseOutputStream extends OutputStream {
     private final AtomicBoolean fsyncNeeded = new AtomicBoolean();
     private final AtomicLong lastFsyncTick = new AtomicLong();
 
-    private final FsyncScheduledRunnable fsyncScheduledRunnable;
+    private final FsyncRunnable fsyncScheduledRunnable;
 
     static CappedDatabaseOutputStream create(File file, int requestedSizeKb,
             ScheduledExecutorService scheduledExecutor, Ticker ticker) throws IOException {
@@ -102,7 +102,7 @@ class CappedDatabaseOutputStream extends OutputStream {
             lastResizeBaseIndex = out.readLong();
         }
         lastFsyncTick.set(ticker.read());
-        fsyncScheduledRunnable = new FsyncScheduledRunnable();
+        fsyncScheduledRunnable = new FsyncRunnable();
     }
 
     void startBlock() {
@@ -250,7 +250,7 @@ class CappedDatabaseOutputStream extends OutputStream {
         out.getFD().sync();
     }
 
-    private class FsyncScheduledRunnable extends ScheduledRunnable {
+    private class FsyncRunnable extends ScheduledRunnable {
         @Override
         protected void runInternal() {
             fsyncIfNeeded();

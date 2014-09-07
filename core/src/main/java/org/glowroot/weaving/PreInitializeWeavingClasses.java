@@ -46,8 +46,8 @@ public class PreInitializeWeavingClasses {
 
     private PreInitializeWeavingClasses() {}
 
-    // null loader means the bootstrap class loader
-    public static void preInitializeClasses(@Nullable ClassLoader loader) {
+    public static void preInitializeClasses() {
+        ClassLoader loader = PreInitializeWeavingClasses.class.getClassLoader();
         for (String type : usedTypes()) {
             initialize(type, loader);
         }
@@ -319,7 +319,7 @@ public class PreInitializeWeavingClasses {
     private static List<String> getGlowrootUsedTypes() {
         List<String> types = Lists.newArrayList();
         types.add("org.glowroot.api.MetricName");
-        types.add("org.glowroot.api.MetricTimer");
+        types.add("org.glowroot.api.TransactionMetric");
         types.add("org.glowroot.api.weaving.BindClassMeta");
         types.add("org.glowroot.api.weaving.BindMethodMeta");
         types.add("org.glowroot.api.weaving.BindMethodName");
@@ -342,15 +342,15 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.common.Reflections$ReflectiveTargetException");
         types.add("org.glowroot.common.Ticker");
         types.add("org.glowroot.common.Ticker$1");
-        types.add("org.glowroot.trace.TraceRegistry");
-        types.add("org.glowroot.trace.TraceRegistry$1");
-        types.add("org.glowroot.trace.WeavingTimerServiceImpl");
-        types.add("org.glowroot.trace.WeavingTimerServiceImpl$1");
-        types.add("org.glowroot.trace.WeavingTimerServiceImpl$NopWeavingTimer");
-        types.add("org.glowroot.trace.model.CurrentTraceMetricHolder");
-        types.add("org.glowroot.trace.model.MetricNameImpl");
-        types.add("org.glowroot.trace.model.MetricTimerExt");
-        types.add("org.glowroot.trace.model.TraceMetric");
+        types.add("org.glowroot.transaction.TransactionRegistry");
+        types.add("org.glowroot.transaction.TransactionRegistry$1");
+        types.add("org.glowroot.transaction.WeavingTimerServiceImpl");
+        types.add("org.glowroot.transaction.WeavingTimerServiceImpl$1");
+        types.add("org.glowroot.transaction.WeavingTimerServiceImpl$NopWeavingTimer");
+        types.add("org.glowroot.transaction.model.CurrentTransactionMetricHolder");
+        types.add("org.glowroot.transaction.model.MetricNameImpl");
+        types.add("org.glowroot.transaction.model.TransactionMetricExt");
+        types.add("org.glowroot.transaction.model.TransactionMetricImpl");
         types.add("org.glowroot.weaving.Advice");
         types.add("org.glowroot.weaving.Advice$1");
         types.add("org.glowroot.weaving.Advice$AdviceParameter");
@@ -491,7 +491,7 @@ public class PreInitializeWeavingClasses {
         // accessing the private constructor in an enclosed type
         // (see http://stackoverflow.com/questions/2883181)
         types.add("org.glowroot.common.Reflections$1");
-        types.add("org.glowroot.trace.model.TraceGcInfo$1");
+        types.add("org.glowroot.transaction.model.TraceGcInfo$1");
         types.add("org.glowroot.weaving.AnalyzedClass$1");
         types.add("org.glowroot.weaving.BootstrapMetaHolders$1");
         types.add("org.glowroot.weaving.Weaver$1");

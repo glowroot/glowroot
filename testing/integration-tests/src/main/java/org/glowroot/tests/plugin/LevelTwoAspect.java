@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
@@ -52,9 +52,9 @@ public class LevelTwoAspect {
         }
 
         @OnBefore
-        public static Span onBefore(@BindParameter final String arg1,
+        public static TraceEntry onBefore(@BindParameter final String arg1,
                 @BindParameter final String arg2) {
-            return pluginServices.startSpan(new MessageSupplier() {
+            return pluginServices.startTraceEntry(new MessageSupplier() {
                 @Override
                 public Message get() {
                     return Message.withDetail("Level Two",
@@ -64,8 +64,8 @@ public class LevelTwoAspect {
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            span.end();
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
         }
     }
 }

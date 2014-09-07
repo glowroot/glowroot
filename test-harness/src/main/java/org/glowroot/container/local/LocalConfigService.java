@@ -24,17 +24,16 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.GlowrootModule;
 import org.glowroot.config.UserInterfaceConfig.Overlay;
 import org.glowroot.container.config.AdvancedConfig;
+import org.glowroot.container.config.CapturePoint;
+import org.glowroot.container.config.CapturePoint.CaptureKind;
+import org.glowroot.container.config.CapturePoint.MethodModifier;
 import org.glowroot.container.config.ConfigService;
-import org.glowroot.container.config.GeneralConfig;
-import org.glowroot.container.config.OutlierProfilingConfig;
 import org.glowroot.container.config.PluginConfig;
-import org.glowroot.container.config.PointcutConfig;
-import org.glowroot.container.config.PointcutConfig.AdviceKind;
-import org.glowroot.container.config.PointcutConfig.MethodModifier;
 import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
+import org.glowroot.container.config.TraceConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
-import org.glowroot.container.config.UserTracingConfig;
+import org.glowroot.container.config.UserRecordingConfig;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.ui.LocalUiModule;
 
@@ -70,26 +69,26 @@ class LocalConfigService implements ConfigService {
     }
 
     @Override
-    public GeneralConfig getGeneralConfig() {
-        org.glowroot.config.GeneralConfig coreConfig = configService.getGeneralConfig();
-        GeneralConfig config = new GeneralConfig(coreConfig.getVersion());
+    public TraceConfig getTraceConfig() {
+        org.glowroot.config.TraceConfig coreConfig = configService.getTraceConfig();
+        TraceConfig config = new TraceConfig(coreConfig.getVersion());
         config.setEnabled(coreConfig.isEnabled());
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
-        config.setStuckThresholdSeconds(coreConfig.getStuckThresholdSeconds());
-        config.setMaxSpans(coreConfig.getMaxSpans());
+        config.setOutlierProfilingEnabled(coreConfig.isOutlierProfilingEnabled());
+        config.setOutlierProfilingInitialDelayMillis(
+                coreConfig.getOutlierProfilingInitialDelayMillis());
+        config.setOutlierProfilingIntervalMillis(coreConfig.getOutlierProfilingIntervalMillis());
         return config;
     }
 
     @Override
-    public void updateGeneralConfig(GeneralConfig config) throws Exception {
-        org.glowroot.config.GeneralConfig updatedConfig =
-                new org.glowroot.config.GeneralConfig(config.isEnabled(),
-                        config.getStoreThresholdMillis(),
-                        config.getStuckThresholdSeconds(),
-                        config.getMaxSpans(),
-                        config.isThreadInfoEnabled(),
-                        config.isGcInfoEnabled());
-        configService.updateGeneralConfig(updatedConfig, config.getVersion());
+    public void updateTraceConfig(TraceConfig config) throws Exception {
+        org.glowroot.config.TraceConfig updatedConfig =
+                new org.glowroot.config.TraceConfig(config.isEnabled(),
+                        config.getStoreThresholdMillis(), config.isOutlierProfilingEnabled(),
+                        config.getOutlierProfilingInitialDelayMillis(),
+                        config.getOutlierProfilingIntervalMillis());
+        configService.updateTraceConfig(updatedConfig, config.getVersion());
     }
 
     @Override
@@ -97,65 +96,46 @@ class LocalConfigService implements ConfigService {
         org.glowroot.config.ProfilingConfig coreConfig =
                 configService.getProfilingConfig();
         ProfilingConfig config = new ProfilingConfig(coreConfig.getVersion());
-        config.setTracePercentage(coreConfig.getTracePercentage());
+        config.setEnabled(coreConfig.isEnabled());
+        config.setTransactionPercentage(coreConfig.getTransactionPercentage());
         config.setIntervalMillis(coreConfig.getIntervalMillis());
-        config.setMaxSeconds(coreConfig.getMaxSeconds());
-        config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
+        config.setTraceStoreThresholdOverrideMillis(
+                coreConfig.getTraceStoreThresholdOverrideMillis());
         return config;
     }
 
     @Override
     public void updateProfilingConfig(ProfilingConfig config) throws Exception {
         org.glowroot.config.ProfilingConfig updatedConfig =
-                new org.glowroot.config.ProfilingConfig(config.getTracePercentage(),
-                        config.getIntervalMillis(), config.getMaxSeconds(),
-                        config.getStoreThresholdMillis());
+                new org.glowroot.config.ProfilingConfig(config.isEnabled(),
+                        config.getTransactionPercentage(), config.getIntervalMillis(),
+                        config.getTraceStoreThresholdOverrideMillis());
         configService.updateProfilingConfig(updatedConfig, config.getVersion());
     }
 
     @Override
-    public OutlierProfilingConfig getOutlierProfilingConfig() {
-        org.glowroot.config.OutlierProfilingConfig coreConfig =
-                configService.getOutlierProfilingConfig();
-        OutlierProfilingConfig config = new OutlierProfilingConfig(coreConfig.getVersion());
+    public UserRecordingConfig getUserRecordingConfig() {
+        org.glowroot.config.UserRecordingConfig coreConfig = configService.getUserRecordingConfig();
+        UserRecordingConfig config = new UserRecordingConfig(coreConfig.getVersion());
         config.setEnabled(coreConfig.isEnabled());
-        config.setInitialDelayMillis(coreConfig.getInitialDelayMillis());
-        config.setIntervalMillis(coreConfig.getIntervalMillis());
-        config.setMaxSeconds(coreConfig.getMaxSeconds());
-        return config;
-    }
-
-    @Override
-    public void updateOutlierProfilingConfig(OutlierProfilingConfig config) throws Exception {
-        org.glowroot.config.OutlierProfilingConfig updatedConfig =
-                new org.glowroot.config.OutlierProfilingConfig(config.isEnabled(),
-                        config.getInitialDelayMillis(), config.getIntervalMillis(),
-                        config.getMaxSeconds());
-        configService.updateOutlierProfilingConfig(updatedConfig, config.getVersion());
-    }
-
-    @Override
-    public UserTracingConfig getUserTracingConfig() {
-        org.glowroot.config.UserTracingConfig coreConfig = configService.getUserTracingConfig();
-        UserTracingConfig config = new UserTracingConfig(coreConfig.getVersion());
         config.setUser(coreConfig.getUser());
-        config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
-        config.setProfile(coreConfig.isProfile());
+        config.setProfileIntervalMillis(coreConfig.getProfileIntervalMillis());
         return config;
     }
 
     @Override
-    public void updateUserTracingConfig(UserTracingConfig config) throws Exception {
-        org.glowroot.config.UserTracingConfig updatedConfig =
-                new org.glowroot.config.UserTracingConfig(config.getUser(),
-                        config.getStoreThresholdMillis(), config.isProfile());
-        configService.updateUserTracingConfig(updatedConfig, config.getVersion());
+    public void updateUserRecordingConfig(UserRecordingConfig config) throws Exception {
+        org.glowroot.config.UserRecordingConfig updatedConfig =
+                new org.glowroot.config.UserRecordingConfig(config.isEnabled(), config.getUser(),
+                        config.getProfileIntervalMillis());
+        configService.updateUserRecordingConfig(updatedConfig, config.getVersion());
     }
 
     @Override
     public StorageConfig getStorageConfig() {
         org.glowroot.config.StorageConfig coreConfig = configService.getStorageConfig();
         StorageConfig config = new StorageConfig(coreConfig.getVersion());
+        config.setAggregateExpirationHours(coreConfig.getAggregateExpirationHours());
         config.setTraceExpirationHours(coreConfig.getTraceExpirationHours());
         config.setCappedDatabaseSizeMb(coreConfig.getCappedDatabaseSizeMb());
         return config;
@@ -164,8 +144,8 @@ class LocalConfigService implements ConfigService {
     @Override
     public void updateStorageConfig(StorageConfig config) throws Exception {
         org.glowroot.config.StorageConfig updatedConfig =
-                new org.glowroot.config.StorageConfig(config.getTraceExpirationHours(),
-                        config.getCappedDatabaseSizeMb());
+                new org.glowroot.config.StorageConfig(config.getAggregateExpirationHours(),
+                        config.getTraceExpirationHours(), config.getCappedDatabaseSizeMb());
         configService.updateStorageConfig(updatedConfig, config.getVersion());
     }
 
@@ -174,8 +154,8 @@ class LocalConfigService implements ConfigService {
         org.glowroot.config.UserInterfaceConfig coreConfig = configService.getUserInterfaceConfig();
         UserInterfaceConfig config =
                 new UserInterfaceConfig(coreConfig.isPasswordEnabled(), coreConfig.getVersion());
-        config.setPort(coreConfig.getPort());
         config.setDefaultTransactionType(coreConfig.getDefaultTransactionType());
+        config.setPort(coreConfig.getPort());
         config.setSessionTimeoutMinutes(coreConfig.getSessionTimeoutMinutes());
         return config;
     }
@@ -208,42 +188,25 @@ class LocalConfigService implements ConfigService {
     }
 
     @Override
-    public List<PointcutConfig> getPointcutConfigs() {
-        List<PointcutConfig> configs = Lists.newArrayList();
-        for (org.glowroot.config.PointcutConfig coreConfig : configService
-                .getPointcutConfigs()) {
-            configs.add(convertFromCore(coreConfig));
-        }
-        return configs;
-    }
-
-    @Override
-    public String addPointcutConfig(PointcutConfig config) throws Exception {
-        return configService.insertPointcutConfig(convertToCore(config));
-    }
-
-    @Override
-    public void updatePointcutConfig(String version, PointcutConfig config) throws Exception {
-        configService.updatePointcutConfig(version, convertToCore(config));
-    }
-
-    @Override
-    public void removePointcutConfig(String version) throws Exception {
-        configService.deletePointcutConfig(version);
-    }
-
-    @Override
     public AdvancedConfig getAdvancedConfig() {
         org.glowroot.config.AdvancedConfig coreConfig = configService.getAdvancedConfig();
         AdvancedConfig config = new AdvancedConfig(coreConfig.getVersion());
         config.setMetricWrapperMethods(coreConfig.isMetricWrapperMethods());
+        config.setImmediatePartialStoreThresholdSeconds(
+                coreConfig.getImmediatePartialStoreThresholdSeconds());
+        config.setMaxEntriesPerTrace(coreConfig.getMaxEntriesPerTrace());
+        config.setCaptureThreadInfo(coreConfig.isCaptureThreadInfo());
+        config.setCaptureGcInfo(coreConfig.isCaptureGcInfo());
         return config;
     }
 
     @Override
     public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
         org.glowroot.config.AdvancedConfig updatedConfig =
-                new org.glowroot.config.AdvancedConfig(config.isMetricWrapperMethods());
+                new org.glowroot.config.AdvancedConfig(config.isMetricWrapperMethods(),
+                        config.getImmediatePartialStoreThresholdSeconds(),
+                        config.getMaxEntriesPerTrace(), config.isCaptureThreadInfo(),
+                        config.isCaptureGcInfo());
         configService.updateAdvancedConfig(updatedConfig, config.getVersion());
     }
 
@@ -278,6 +241,31 @@ class LocalConfigService implements ConfigService {
     }
 
     @Override
+    public List<CapturePoint> getCapturePoints() {
+        List<CapturePoint> configs = Lists.newArrayList();
+        for (org.glowroot.config.CapturePoint coreConfig : configService
+                .getCapturePointsNeverShaded()) {
+            configs.add(convertFromCore(coreConfig));
+        }
+        return configs;
+    }
+
+    @Override
+    public String addCapturePoint(CapturePoint config) throws Exception {
+        return configService.insertCapturePoint(convertToCore(config));
+    }
+
+    @Override
+    public void updateCapturePoint(String version, CapturePoint config) throws Exception {
+        configService.updateCapturePoint(version, convertToCore(config));
+    }
+
+    @Override
+    public void removeCapturePoint(String version) throws Exception {
+        configService.deleteCapturePoint(version);
+    }
+
+    @Override
     public int reweavePointcuts() throws Exception {
         throw new UnsupportedOperationException("Retransforming classes only works inside"
                 + " javaagent container");
@@ -292,42 +280,43 @@ class LocalConfigService implements ConfigService {
         configService.resetAllConfig();
     }
 
-    void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
-        org.glowroot.config.GeneralConfig config = configService.getGeneralConfig();
-        org.glowroot.config.GeneralConfig.Overlay overlay =
-                org.glowroot.config.GeneralConfig.overlay(config);
-        overlay.setStoreThresholdMillis(storeThresholdMillis);
-        configService.updateGeneralConfig(overlay.build(), config.getVersion());
+    void setTraceStoreThresholdMillis(int traceStoreThresholdMillis) throws Exception {
+        org.glowroot.config.TraceConfig config = configService.getTraceConfig();
+        org.glowroot.config.TraceConfig.Overlay overlay =
+                org.glowroot.config.TraceConfig.overlay(config);
+        overlay.setStoreThresholdMillis(traceStoreThresholdMillis);
+        configService.updateTraceConfig(overlay.build(), config.getVersion());
     }
 
-    private static PointcutConfig convertFromCore(org.glowroot.config.PointcutConfig coreConfig) {
+    private static CapturePoint convertFromCore(org.glowroot.config.CapturePoint coreConfig) {
         List<MethodModifier> methodModifiers = Lists.newArrayList();
         for (org.glowroot.api.weaving.MethodModifier methodModifier : coreConfig
                 .getMethodModifiers()) {
             methodModifiers.add(MethodModifier.valueOf(methodModifier.name()));
         }
-        PointcutConfig config = new PointcutConfig(coreConfig.getVersion());
+        CapturePoint config = new CapturePoint(coreConfig.getVersion());
         config.setClassName(coreConfig.getClassName());
         config.setMethodName(coreConfig.getMethodName());
         config.setMethodParameterTypes(coreConfig.getMethodParameterTypes());
         config.setMethodReturnType(coreConfig.getMethodReturnType());
         config.setMethodModifiers(methodModifiers);
-        config.setAdviceKind(AdviceKind.valueOf(coreConfig.getAdviceKind().name()));
+        config.setCaptureKind(CaptureKind.valueOf(coreConfig.getCaptureKind().name()));
         config.setMetricName(coreConfig.getMetricName());
-        config.setMessageTemplate(coreConfig.getMessageTemplate());
-        config.setStackTraceThresholdMillis(coreConfig.getStackTraceThresholdMillis());
-        config.setCaptureSelfNested(coreConfig.isCaptureSelfNested());
+        config.setTraceEntryTemplate(coreConfig.getTraceEntryTemplate());
+        config.setTraceEntryStackThresholdMillis(coreConfig.getTraceEntryStackThresholdMillis());
+        config.setTraceEntryCaptureSelfNested(coreConfig.isTraceEntryCaptureSelfNested());
         config.setTransactionType(coreConfig.getTransactionType());
         config.setTransactionNameTemplate(coreConfig.getTransactionNameTemplate());
-        config.setTraceUserTemplate(coreConfig.getTraceUserTemplate());
-        config.setTraceCustomAttributeTemplates(coreConfig.getTraceCustomAttributeTemplates());
         config.setTraceStoreThresholdMillis(coreConfig.getTraceStoreThresholdMillis());
+        config.setTransactionUserTemplate(coreConfig.getTransactionUserTemplate());
+        config.setTransactionCustomAttributeTemplates(
+                coreConfig.getTransactionCustomAttributeTemplates());
         config.setEnabledProperty(coreConfig.getEnabledProperty());
-        config.setSpanEnabledProperty(coreConfig.getSpanEnabledProperty());
+        config.setTraceEntryEnabledProperty(coreConfig.getTraceEntryEnabledProperty());
         return config;
     }
 
-    private static org.glowroot.config.PointcutConfig convertToCore(PointcutConfig config) {
+    private static org.glowroot.config.CapturePoint convertToCore(CapturePoint config) {
         List<org.glowroot.api.weaving.MethodModifier> methodModifiers = Lists.newArrayList();
         for (MethodModifier methodModifier : config.getMethodModifiers()) {
             methodModifiers.add(
@@ -336,21 +325,23 @@ class LocalConfigService implements ConfigService {
         String className = config.getClassName();
         String methodName = config.getMethodName();
         String methodReturnTypeName = config.getMethodReturnType();
-        AdviceKind adviceKind = config.getAdviceKind();
-        checkNotNull(className, "PointcutConfig className is null");
-        checkNotNull(methodName, "PointcutConfig methodName is null");
-        checkNotNull(methodReturnTypeName, "PointcutConfig methodReturnTypeName is null");
-        checkNotNull(adviceKind, "PointcutConfig adviceKind is null");
-        return new org.glowroot.config.PointcutConfig(className, methodName,
+        CaptureKind captureKind = config.getCaptureKind();
+        checkNotNull(className, "CapturePoint className is null");
+        checkNotNull(methodName, "CapturePoint methodName is null");
+        checkNotNull(methodReturnTypeName, "CapturePoint methodReturnTypeName is null");
+        checkNotNull(captureKind, "CapturePoint captureKind is null");
+        return new org.glowroot.config.CapturePoint(className, methodName,
                 config.getMethodParameterTypes(), methodReturnTypeName, methodModifiers,
-                org.glowroot.config.PointcutConfig.AdviceKind.valueOf(adviceKind.name()),
-                nullToEmpty(config.getMetricName()), nullToEmpty(config.getMessageTemplate()),
-                config.getStackTraceThresholdMillis(), config.isCaptureSelfNested(),
+                org.glowroot.config.CapturePoint.CaptureKind.valueOf(captureKind.name()),
+                nullToEmpty(config.getMetricName()),
+                nullToEmpty(config.getTraceEntryTemplate()),
+                config.getTraceEntryStackThresholdMillis(), config.isTraceEntryCaptureSelfNested(),
                 nullToEmpty(config.getTransactionType()),
                 nullToEmpty(config.getTransactionNameTemplate()),
-                nullToEmpty(config.getTraceUserTemplate()),
-                nullToEmpty(config.getTraceCustomAttributeTemplates()),
-                config.getTraceStoreThresholdMillis(), nullToEmpty(config.getEnabledProperty()),
-                nullToEmpty(config.getSpanEnabledProperty()));
+                config.getTraceStoreThresholdMillis(),
+                nullToEmpty(config.getTransactionUserTemplate()),
+                nullToEmpty(config.getTransactionCustomAttributeTemplates()),
+                nullToEmpty(config.getEnabledProperty()),
+                nullToEmpty(config.getTraceEntryEnabledProperty()));
     }
 }

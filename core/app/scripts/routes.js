@@ -48,7 +48,7 @@ glowroot.config([
     $urlRouterProvider.otherwise('/performance');
     $stateProvider.state('performance', {
       url: '/performance',
-      templateUrl: 'views/performance.html',
+      templateUrl: 'views/aggregates.html',
       controller: 'PerformanceCtrl',
       // performance controllers needs to wait for layout when running under grunt serve
       resolve: waitForLayout
@@ -108,45 +108,40 @@ glowroot.config([
       templateUrl: 'views/config.html',
       controller: 'ConfigCtrl'
     });
-    $stateProvider.state('config.general', {
-      url: '/general',
-      templateUrl: 'views/config/general.html',
-      controller: 'ConfigGeneralCtrl'
-    });
-    $stateProvider.state('config.pointcuts', {
-      url: '/pointcuts',
-      templateUrl: 'views/config/pointcut-list.html',
-      controller: 'ConfigPointcutListCtrl'
+    $stateProvider.state('config.traces', {
+      url: '/traces',
+      templateUrl: 'views/config/traces.html',
+      controller: 'ConfigTraceCtrl'
     });
     $stateProvider.state('config.profiling', {
       url: '/profiling',
       templateUrl: 'views/config/profiling.html',
       controller: 'ConfigProfilingCtrl'
     });
-    $stateProvider.state('config.outlierProfiling', {
-      url: '/outlier-profiling',
-      templateUrl: 'views/config/outlier-profiling.html',
-      controller: 'ConfigOutlierProfilingCtrl'
+    $stateProvider.state('config.userRecording', {
+      url: '/user-recording',
+      templateUrl: 'views/config/user-recording.html',
+      controller: 'ConfigUserRecordingCtrl'
     });
-    $stateProvider.state('config.userTracing', {
-      url: '/user-tracing',
-      templateUrl: 'views/config/user-tracing.html',
-      controller: 'ConfigUserTracingCtrl'
+    $stateProvider.state('config.capturePoints', {
+      url: '/capture-points',
+      templateUrl: 'views/config/capture-point-list.html',
+      controller: 'ConfigCapturePointListCtrl'
     });
     $stateProvider.state('config.advanced', {
       url: '/advanced',
       templateUrl: 'views/config/advanced.html',
       controller: 'ConfigAdvancedCtrl'
     });
-    $stateProvider.state('config.storage', {
-      url: '/storage',
-      templateUrl: 'views/config/storage.html',
-      controller: 'ConfigStorageCtrl'
-    });
     $stateProvider.state('config.userInterface', {
       url: '/user-interface',
       templateUrl: 'views/config/user-interface.html',
       controller: 'ConfigUserInterfaceCtrl'
+    });
+    $stateProvider.state('config.storage', {
+      url: '/storage',
+      templateUrl: 'views/config/storage.html',
+      controller: 'ConfigStorageCtrl'
     });
     $stateProvider.state('config.plugin', {
       url: '/plugin/:pluginId',

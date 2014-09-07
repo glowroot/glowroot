@@ -18,7 +18,7 @@ package org.glowroot.api;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * A (lazy) supplier of {@link Message} instances. Needs to be thread safe since trace thread
+ * A (lazy) supplier of {@link Message} instances. Needs to be thread safe since transaction thread
  * creates it, but trace storage (and live viewing) is done in a separate thread.
  * 
  * @author Trask Stalnaker
@@ -27,12 +27,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public abstract class MessageSupplier {
 
     /**
-     * Returns the {@code Message} for a {@link Span}.
+     * Returns the {@code Message} for a {@link TraceEntry}.
      * 
      * The {@code Message} does not need to be thread safe if it is instantiated by the
      * implementation of this method.
      * 
-     * @return the {@code Message} for a {@link Span}
+     * @return the {@code Message} for a {@link TraceEntry}
      */
     public abstract Message get();
 

@@ -25,8 +25,8 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,18 +57,18 @@ public class WeavingTest {
     public void shouldReadTraces() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
-        Span span1 = spans.get(0);
-        Span span2 = spans.get(1);
-        assertThat(span1.getMessage().getText()).isEqualTo("Level One");
-        assertThat(span2.getMessage().getText()).isEqualTo("Level Two");
+        List<TraceEntry> entry = container.getTraceService().getEntries(trace.getId());
+        TraceEntry entry1 = entry.get(0);
+        TraceEntry entry2 = entry.get(1);
+        assertThat(entry1.getMessage().getText()).isEqualTo("Level One");
+        assertThat(entry2.getMessage().getText()).isEqualTo("Level Two");
     }
 
-    public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {
-        public ShouldGenerateTraceWithNestedSpans() {
+    public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {
+        public ShouldGenerateTraceWithNestedEntries() {
             // force the subclass to be loaded first
             LevelTwoSubclass.class.getClass();
         }

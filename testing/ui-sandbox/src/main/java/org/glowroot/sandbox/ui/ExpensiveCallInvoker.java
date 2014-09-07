@@ -28,7 +28,7 @@ public class ExpensiveCallInvoker {
 
     private static final Logger logger = LoggerFactory.getLogger(ExpensiveCallInvoker.class);
 
-    private final Method getSpanMessageMethod;
+    private final Method getTraceEntryMessageMethod;
 
     public ExpensiveCallInvoker(Class<?> clazz) {
         Class<?> expensiveCallClass = null;
@@ -38,18 +38,18 @@ public class ExpensiveCallInvoker {
         } catch (ClassNotFoundException e) {
             logger.warn(e.getMessage(), e);
         }
-        getSpanMessageMethod = getMethod(expensiveCallClass, "getSpanMessage");
+        getTraceEntryMessageMethod = getMethod(expensiveCallClass, "getTraceEntryMessage");
     }
 
-    public String getSpanMessage(Object expensiveCall) {
-        if (getSpanMessageMethod == null) {
+    public String getTraceEntryMessage(Object expensiveCall) {
+        if (getTraceEntryMessageMethod == null) {
             return null;
         }
         try {
-            return (String) getSpanMessageMethod.invoke(expensiveCall);
+            return (String) getTraceEntryMessageMethod.invoke(expensiveCall);
         } catch (Throwable t) {
-            logger.warn("error calling ExpensiveCall.getSpanMessage()", t);
-            return "<error calling ExpensiveCall.getSpanMessage()>";
+            logger.warn("error calling ExpensiveCall.getTraceEntryMessage()", t);
+            return "<error calling ExpensiveCall.getTraceEntryMessage()>";
         }
     }
 

@@ -54,9 +54,9 @@ import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.ui.LocalUiModule;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
-import org.glowroot.trace.TraceCollector;
-import org.glowroot.trace.TraceModule;
-import org.glowroot.trace.model.Trace;
+import org.glowroot.transaction.TransactionCollector;
+import org.glowroot.transaction.TransactionModule;
+import org.glowroot.transaction.model.Transaction;
 import org.glowroot.weaving.ExtraBootResourceFinder;
 
 /**
@@ -77,7 +77,7 @@ public class GlowrootModule {
     private final ConfigModule configModule;
     private final StorageModule storageModule;
     private final CollectorModule collectorModule;
-    private final TraceModule traceModule;
+    private final TransactionModule traceModule;
     private final LocalUiModule uiModule;
     private final File dataDir;
 
@@ -161,11 +161,11 @@ public class GlowrootModule {
         // in particular, it needs to be started before StorageModule which uses shaded H2, which
         // loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
         // services/java.sql.Driver, and those drivers need to be woven
-        TraceCollectorProxy traceCollectorProxy = new TraceCollectorProxy();
+        TransactionCollectorProxy transactionCollectorProxy = new TransactionCollectorProxy();
         try {
-            traceModule = new TraceModule(clock, ticker, configModule, traceCollectorProxy,
-                    jvmModule.getThreadAllocatedBytes().getService(), instrumentation, dataDir,
-                    extraBootResourceFinder, scheduledExecutor);
+            traceModule = new TransactionModule(clock, ticker, configModule,
+                    transactionCollectorProxy, jvmModule.getThreadAllocatedBytes().getService(),
+                    instrumentation, dataDir, extraBootResourceFinder, scheduledExecutor);
         } catch (IOException e) {
             throw new StartupFailedException(e);
         }
@@ -178,11 +178,10 @@ public class GlowrootModule {
             throw new StartupFailedException(e);
         }
         collectorModule = new CollectorModule(clock, ticker, configModule,
-                storageModule.getSnapshotRepository(),
-                storageModule.getTransactionPointRepository(), scheduledExecutor,
-                viewerModeEnabled);
-        // now inject the real TraceCollector into the proxy
-        traceCollectorProxy.setInstance(collectorModule.getTraceCollector());
+                storageModule.getTraceRepository(), storageModule.getAggregateRepository(),
+                scheduledExecutor, viewerModeEnabled);
+        // now inject the real TransactionCollector into the proxy
+        transactionCollectorProxy.setInstance(collectorModule.getTransactionCollector());
         // now init plugins to give them a chance to do something in their static initializer
         // e.g. append their package to jboss.modules.system.pkgs
         for (PluginDescriptor pluginDescriptor : configModule.getPluginDescriptorCache()
@@ -271,7 +270,7 @@ public class GlowrootModule {
     }
 
     @OnlyUsedByTests
-    public TraceModule getTraceModule() {
+    public TransactionModule getTraceModule() {
         return traceModule;
     }
 
@@ -333,26 +332,26 @@ public class GlowrootModule {
         }
     }
 
-    private static class TraceCollectorProxy implements TraceCollector {
+    private static class TransactionCollectorProxy implements TransactionCollector {
 
         @MonotonicNonNull
-        private volatile TraceCollector instance;
+        private volatile TransactionCollector instance;
 
         @Override
-        public void onCompletedTrace(Trace trace) {
+        public void onCompletedTransaction(Transaction transaction) {
             if (instance != null) {
-                instance.onCompletedTrace(trace);
+                instance.onCompletedTransaction(transaction);
             }
         }
 
         @Override
-        public void onStuckTrace(Trace trace) {
+        public void storePartialTrace(Transaction transaction) {
             if (instance != null) {
-                instance.onStuckTrace(trace);
+                instance.storePartialTrace(transaction);
             }
         }
 
-        private void setInstance(TraceCollector instance) {
+        private void setInstance(TransactionCollector instance) {
             this.instance = instance;
         }
     }

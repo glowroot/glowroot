@@ -131,8 +131,8 @@ class WeavingClassVisitor extends ClassVisitor {
         super(ASM5, cw);
         this.cw = cw;
         this.loader = loader;
-        analyzingClassVisitor = new AnalyzingClassVisitor(advisors, mixinTypes, loader,
-                analyzedWorld, codeSource);
+        analyzingClassVisitor =
+                new AnalyzingClassVisitor(advisors, mixinTypes, loader, analyzedWorld, codeSource);
         this.metricWrapperMethods = metricWrapperMethods;
     }
 
@@ -161,8 +161,9 @@ class WeavingClassVisitor extends ClassVisitor {
             }
         }
         if (!maybeHasMetas) {
-            outer: for (AnalyzedClass analyzedClass : analyzingClassVisitor
-                    .getSuperAnalyzedClasses()) {
+            List<AnalyzedClass> superAnalyzedClasses =
+                    analyzingClassVisitor.getSuperAnalyzedClasses();
+            outer: for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
                 for (AnalyzedMethod analyzedMethod : analyzedClass.getAnalyzedMethods()) {
                     for (Advice advice : analyzedMethod.getAdvisors()) {
                         if (!advice.getClassMetaTypes().isEmpty()
@@ -175,9 +176,8 @@ class WeavingClassVisitor extends ClassVisitor {
             }
         }
         type = Type.getObjectType(internalName);
-        String/*@Nullable*/[] interfacesIncludingMixins =
-                getInterfacesIncludingMixins(interfaceInternalNamesNullable,
-                        analyzingClassVisitor.getMatchedMixinTypes());
+        String/*@Nullable*/[] interfacesIncludingMixins = getInterfacesIncludingMixins(
+                interfaceInternalNamesNullable, analyzingClassVisitor.getMatchedMixinTypes());
         cw.visit(version, access, internalName, signature, superInternalName,
                 interfacesIncludingMixins);
     }
@@ -262,8 +262,8 @@ class WeavingClassVisitor extends ClassVisitor {
             String classMetaInternalName = classMetaType.getInternalName();
             String classMetaFieldName =
                     "glowroot$class$meta$" + classMetaInternalName.replace('/', '$');
-            BootstrapMetaHolders.createClassMetaHolder(metaHolderInternalName,
-                    classMetaFieldName, classMetaType, type);
+            BootstrapMetaHolders.createClassMetaHolder(metaHolderInternalName, classMetaFieldName,
+                    classMetaType, type);
         }
         for (MethodMetaGroup methodMetaGroup : methodMetaGroups) {
             for (Type methodMetaType : methodMetaGroup.getMethodMetaTypes()) {
@@ -293,8 +293,8 @@ class WeavingClassVisitor extends ClassVisitor {
         mv.visitLabel(l0);
         for (Type classMetaType : classMetaTypes) {
             String classMetaInternalName = classMetaType.getInternalName();
-            String classMetaFieldName =
-                    "glowroot$class$meta$" + classMetaInternalName.replace('/', '$');
+            String classMetaFieldName = "glowroot$class$meta$"
+                    + classMetaInternalName.replace('/', '$');
             FieldVisitor fv = cw.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC,
                     classMetaFieldName, "L" + classMetaInternalName + ";", null, null);
             fv.visitEnd();
@@ -329,8 +329,8 @@ class WeavingClassVisitor extends ClassVisitor {
                     mv.visitInsn(AASTORE);
                 }
 
-                mv.visitMethodInsn(INVOKESPECIAL, methodMetaInternalName,
-                        "<init>", "(Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;)V", false);
+                mv.visitMethodInsn(INVOKESPECIAL, methodMetaInternalName, "<init>",
+                        "(Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;)V", false);
                 mv.visitFieldInsn(PUTSTATIC, metaHolderInternalName, methodMetaFieldName,
                         "L" + methodMetaInternalName + ";");
             }
@@ -488,8 +488,8 @@ class WeavingClassVisitor extends ClassVisitor {
         }
         if ((!classMetaTypes.isEmpty() || !methodMetaTypes.isEmpty())
                 && metaHolderInternalName == null) {
-            metaHolderInternalName = "org/glowroot/weaving/MetaHolder"
-                    + metaHolderCounter.incrementAndGet();
+            metaHolderInternalName =
+                    "org/glowroot/weaving/MetaHolder" + metaHolderCounter.incrementAndGet();
         }
         return methodMetaUniqueNum;
     }
@@ -512,8 +512,8 @@ class WeavingClassVisitor extends ClassVisitor {
                 logInvalidMetricNameWarningOnce(metricName);
                 metricName = metricNameCharMatcher.negate().replaceFrom(metricName, '_');
             }
-            String nextMethodName = outerName + "$glowroot$metric$"
-                    + metricName.replace(' ', '$') + '$' + innerMethodCounter++;
+            String nextMethodName = outerName + "$glowroot$metric$" + metricName.replace(' ', '$')
+                    + '$' + innerMethodCounter++;
             int access = first ? outerAccess : innerAccess;
             MethodVisitor mv = cw.visitMethod(access, currMethodName, desc, signature, exceptions);
             checkNotNull(mv);
@@ -556,8 +556,8 @@ class WeavingClassVisitor extends ClassVisitor {
             // SuppressWarnings because generics are explicitly removed from asm binaries
             @SuppressWarnings("unchecked")
             String[] exceptions = Iterables.toArray(mn.exceptions, String.class);
-            MethodVisitor mv = cw.visitMethod(mn.access, mn.name, mn.desc, mn.signature,
-                    exceptions);
+            MethodVisitor mv =
+                    cw.visitMethod(mn.access, mn.name, mn.desc, mn.signature, exceptions);
             checkNotNull(mv);
             mn.accept(new RemappingMethodAdapter(mn.access, mn.desc, mv,
                     new SimpleRemapper(cn.name, type.getInternalName())));
@@ -628,8 +628,8 @@ class WeavingClassVisitor extends ClassVisitor {
             superType = Type.getObjectType(ClassNames.toInternalName(superName));
         }
         // method is called invokeConstructor, but should really be called invokeSpecial
-        mg.invokeConstructor(superType,
-                new Method(inheritedMethod.getName(), inheritedMethod.getDesc()));
+        Method method = new Method(inheritedMethod.getName(), inheritedMethod.getDesc());
+        mg.invokeConstructor(superType, method);
         mg.returnValue();
         mg.endMethod();
     }
@@ -699,8 +699,8 @@ class WeavingClassVisitor extends ClassVisitor {
         private final int uniqueNum;
         private final Set<Type> methodMetaTypes;
 
-        private MethodMetaGroup(Type returnType, List<Type> parameterTypes,
-                int uniqueNum, Set<Type> methodMetaTypes) {
+        private MethodMetaGroup(Type returnType, List<Type> parameterTypes, int uniqueNum,
+                Set<Type> methodMetaTypes) {
             this.returnType = returnType;
             this.parameterTypes = parameterTypes;
             this.uniqueNum = uniqueNum;

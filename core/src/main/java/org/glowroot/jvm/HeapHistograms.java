@@ -61,8 +61,8 @@ public class HeapHistograms {
         }
         Class<?> hotSpotVirtualMachineClass;
         try {
-            hotSpotVirtualMachineClass = Class.forName(
-                    "sun.tools.attach.HotSpotVirtualMachine", true, systemToolClassLoader);
+            hotSpotVirtualMachineClass = Class.forName("sun.tools.attach.HotSpotVirtualMachine",
+                    true, systemToolClassLoader);
         } catch (ClassNotFoundException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);

@@ -96,7 +96,7 @@ public class LogManagerTest {
         @Override
         public void traceMarker() throws InterruptedException {
             // this is just to pass the log manager back to the calling test
-            pluginServices.setTraceUser(LogManager.getLogManager().getClass().getName());
+            pluginServices.setTransactionUser(LogManager.getLogManager().getClass().getName());
         }
     }
 

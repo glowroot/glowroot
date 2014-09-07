@@ -53,8 +53,8 @@ public class Agent {
                 instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(glowrootJarFile));
                 mainEntryPointClass = Class.forName("org.glowroot.MainEntryPoint", true, null);
             }
-            Method premainMethod = mainEntryPointClass
-                    .getMethod("premain", new Class<?>[] {Instrumentation.class, File.class});
+            Method premainMethod = mainEntryPointClass.getMethod("premain", new Class<?>[] {
+                    Instrumentation.class, File.class});
             premainMethod.invoke(null, instrumentation, glowrootJarFile);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting

@@ -30,8 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.Static;
-import org.glowroot.trace.model.Profile;
-import org.glowroot.trace.model.ProfileNode;
+import org.glowroot.transaction.model.Profile;
+import org.glowroot.transaction.model.ProfileNode;
 
 /**
  * @author Trask Stalnaker
@@ -87,8 +87,7 @@ public class ProfileCharSourceCreator {
         private final JsonGenerator jg;
         private final List<String> metricNameStack = Lists.newArrayList();
 
-        private ProfileWriter(ProfileNode rootNode, Writer writer)
-                throws IOException {
+        private ProfileWriter(ProfileNode rootNode, Writer writer) throws IOException {
             this.toVisit = Lists.newArrayList((Object) rootNode);
             jg = jsonFactory.createGenerator(writer);
         }

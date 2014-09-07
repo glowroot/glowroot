@@ -28,8 +28,8 @@ import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.StorageConfig;
 import org.glowroot.container.local.LocalContainer;
-import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,20 +52,20 @@ public class UpgradeTest {
         Container container = Containers.create(dataDir, true);
         // when
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         // then
         try {
             assertThat(trace.getHeadline()).isEqualTo("Level One");
             assertThat(trace.getTransactionName()).isEqualTo("basic test");
-            assertThat(spans).hasSize(4);
-            Span span1 = spans.get(0);
-            assertThat(span1.getMessage().getText()).isEqualTo("Level One");
-            Span span2 = spans.get(1);
-            assertThat(span2.getMessage().getText()).isEqualTo("Level Two");
-            Span span3 = spans.get(2);
-            assertThat(span3.getMessage().getText()).isEqualTo("Level Three");
-            Span span4 = spans.get(3);
-            assertThat(span4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
+            assertThat(entries).hasSize(4);
+            TraceEntry entry1 = entries.get(0);
+            assertThat(entry1.getMessage().getText()).isEqualTo("Level One");
+            TraceEntry entry2 = entries.get(1);
+            assertThat(entry2.getMessage().getText()).isEqualTo("Level Two");
+            TraceEntry entry3 = entries.get(2);
+            assertThat(entry3.getMessage().getText()).isEqualTo("Level Three");
+            TraceEntry entry4 = entries.get(3);
+            assertThat(entry4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
         } finally {
             // cleanup
             container.checkAndReset();
@@ -79,10 +79,11 @@ public class UpgradeTest {
         File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
         Container container = LocalContainer.createWithFileDb(dataDir);
         StorageConfig storageConfig = container.getConfigService().getStorageConfig();
-        // disable trace snapshot expiration so the test data won't expire
+        // disable expiration so the test data won't expire
+        storageConfig.setAggregateExpirationHours(Integer.MAX_VALUE);
         storageConfig.setTraceExpirationHours(Integer.MAX_VALUE);
         container.getConfigService().updateStorageConfig(storageConfig);
-        container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         container.close();
         Files.copy(new File(dataDir, "config.json"),
                 new File("src/test/resources/for-upgrade-test/config.json"));
@@ -113,7 +114,7 @@ public class UpgradeTest {
         TempDirs.deleteRecursively(dataDir);
     }
 
-    public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {
+    public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {
         @Override
         public void executeApp() {
             new LevelOne().call("a", "b");

@@ -63,7 +63,7 @@ public class DataSourceCompactTest {
         // given
         File dbFile = new File(dataDir, "glowroot.h2.db");
         // when
-        container.addExpectedLogMessage("org.glowroot.collector.TraceCollectorImpl",
+        container.addExpectedLogMessage("org.glowroot.collector.TransactionCollectorImpl",
                 "not storing a trace because of an excessive backlog");
         container.executeAppUnderTest(GenerateLotsOfTraces.class);
         long preCompactionDbSize = dbFile.length();

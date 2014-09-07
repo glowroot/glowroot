@@ -27,7 +27,7 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
   function ($scope, $http, $rootScope, $location, $timeout, confirmIfHasChanges, httpErrors) {
     // set up objects for data binding
     $scope.page = {};
-    $scope.passwordForm = {};
+    $scope.changePassword = {};
 
     $scope.hasChanges = function () {
       if (!$scope.originalConfig) {
@@ -41,10 +41,15 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
         }
       }
       if ($scope.originalConfig.passwordEnabled && !$scope.config.passwordEnabled) {
-        // disabling password, require verifyCurrentPassword field
+        // disabling password, require newPassword and verifyNewPassword field
         if (!$scope.page.verifyCurrentPassword) {
           return false;
         }
+      }
+      if ($scope.originalConfig.passwordEnabled && $scope.config.passwordEnabled &&
+          $scope.changePassword.currentPassword) {
+        // changing password, require newPassword and verifyNewPassword
+        return $scope.changePassword.newPassword && $scope.changePassword.verifyNewPassword;
       }
       return !angular.equals($scope.config, $scope.originalConfig);
     };
@@ -54,12 +59,11 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
       $scope.loaded = true;
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
-      $scope.showChangePasswordSection = data.config.passwordEnabled;
       $scope.activePort = data.activePort;
       $scope.page.initialPassword = '';
       $scope.page.verifyInitialPassword = '';
       $scope.page.verifyCurrentPassword = '';
-      $scope.passwordForm = {};
+      $scope.changePassword = {};
     }
 
     $scope.save = function (deferred) {
@@ -69,6 +73,7 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
       delete postData.passwordEnabled;
       var enablingPassword = false;
       var disablingPassword = false;
+      var changingPassword = false;
       var changingPort = false;
       var previousActivePort;
       if (!$scope.originalConfig.passwordEnabled && $scope.config.passwordEnabled) {
@@ -79,15 +84,26 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
         }
         postData.currentPassword = '';
         postData.newPassword = $scope.page.initialPassword;
-      }
-      if ($scope.originalConfig.passwordEnabled && !$scope.config.passwordEnabled) {
+      } else if ($scope.originalConfig.passwordEnabled && !$scope.config.passwordEnabled) {
         disablingPassword = true;
         postData.currentPassword = $scope.page.verifyCurrentPassword;
         postData.newPassword = '';
+      } else if ($scope.originalConfig.passwordEnabled && $scope.config.passwordEnabled &&
+          $scope.changePassword.currentPassword) {
+        changingPassword = true;
+        if ($scope.changePassword.verifyNewPassword !== $scope.changePassword.newPassword) {
+          deferred.reject('Passwords do not match');
+          return;
+        }
+        postData.currentPassword = $scope.changePassword.currentPassword;
+        postData.newPassword = $scope.changePassword.newPassword;
       }
       if ($scope.originalConfig.port !== $scope.config.port) {
         changingPort = true;
         previousActivePort = $scope.activePort;
+      }
+      if ($scope.changePassword.verifyNewPassword !== $scope.changePassword.newPassword) {
+        deferred.reject('Passwords do not match');
       }
       $http.post('backend/config/user-interface', postData)
           .success(function (data) {
@@ -116,32 +132,6 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
               } else {
                 deferred.resolve('Saved');
               }
-            }
-          })
-          .error(httpErrors.handler($scope, deferred));
-    };
-
-    $scope.changePasswordButtonDisabled = function () {
-      return !$scope.passwordForm.currentPassword || !$scope.passwordForm.newPassword ||
-          !$scope.passwordForm.verifyPassword || $scope.passwordForm.verifyPassword !== $scope.passwordForm.newPassword;
-    };
-
-    $scope.changePassword = function (deferred) {
-      if ($scope.passwordForm.verifyPassword !== $scope.passwordForm.newPassword) {
-        deferred.reject('Passwords do not match');
-      }
-      var postData = {
-        currentPassword: $scope.passwordForm.currentPassword,
-        newPassword: $scope.passwordForm.newPassword,
-        version: $scope.config.version
-      };
-      $http.post('backend/config/user-interface', postData)
-          .success(function (data) {
-            if (data.currentPasswordIncorrect) {
-              deferred.reject('Current password is incorrect');
-            } else {
-              onNewData(data);
-              deferred.resolve('Password changed');
             }
           })
           .error(httpErrors.handler($scope, deferred));

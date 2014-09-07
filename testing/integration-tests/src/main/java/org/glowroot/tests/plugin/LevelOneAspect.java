@@ -25,7 +25,7 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -58,7 +58,7 @@ public class LevelOneAspect {
         }
 
         @OnBefore
-        public static Span onBefore(@BindParameter final String arg1,
+        public static TraceEntry onBefore(@BindParameter final String arg1,
                 @BindParameter final String arg2) {
             String headline = pluginServices.getStringProperty("alternateHeadline");
             if (headline.isEmpty()) {
@@ -82,28 +82,29 @@ public class LevelOneAspect {
                     return Message.withDetail(headlineFinal, detail);
                 }
             };
-            Span span = pluginServices.startTrace("Integration test", "basic test",
-                    messageSupplier, metricName);
+            TraceEntry traceEntry = pluginServices.startTransaction("Integration test",
+                    "basic test", messageSupplier, metricName);
             // several trace attributes to test ordering
-            pluginServices.setTraceCustomAttribute("Zee One", arg2);
-            pluginServices.setTraceCustomAttribute("Yee Two", "yy3");
-            pluginServices.setTraceCustomAttribute("Yee Two", "yy");
-            pluginServices.setTraceCustomAttribute("Yee Two", "Yy2");
-            pluginServices.setTraceCustomAttribute("Xee Three", "xx");
-            pluginServices.setTraceCustomAttribute("Wee Four", "ww");
-            return span;
+            pluginServices.setTransactionCustomAttribute("Zee One", arg2);
+            pluginServices.setTransactionCustomAttribute("Yee Two", "yy3");
+            pluginServices.setTransactionCustomAttribute("Yee Two", "yy");
+            pluginServices.setTransactionCustomAttribute("Yee Two", "Yy2");
+            pluginServices.setTransactionCustomAttribute("Xee Three", "xx");
+            pluginServices.setTransactionCustomAttribute("Wee Four", "ww");
+            return traceEntry;
         }
 
         @OnReturn
-        public static void onReturn(@BindTraveler Span span) {
-            span.end();
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
         }
 
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler TraceEntry traceEntry) {
             Map<String, ?> detail = ImmutableMap.of("erra", Optional.absent(), "errb",
                     ImmutableMap.of("errc", Optional.absent(), "errd", "xyz"));
-            span.endWithError(ErrorMessage.withDetail(t, detail));
+            traceEntry.endWithError(ErrorMessage.withDetail(t, detail));
         }
     }
 }

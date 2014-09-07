@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, Glowroot, TraceRenderer, $, alert */
+/* global glowroot, Glowroot, HandlebarsRendering, $, alert */
 
 glowroot.factory('traceModal', [
   '$rootScope',
@@ -65,7 +65,7 @@ glowroot.factory('traceModal', [
             $modalContent.html('expired');
           } else {
             result.data.showExport = true;
-            TraceRenderer.renderTrace(result.data, $modalContent);
+            HandlebarsRendering.renderTrace(result.data, $modalContent);
           }
         }, function () {
           // TODO handle this better

@@ -82,9 +82,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         this.excludePackages = ImmutableList.copyOf(excludePackages);
         Supplier<ImmutableList<Advice>> advisorsSupplier =
                 Suppliers.ofInstance(ImmutableList.copyOf(advisors));
-        Weaver weaver = new Weaver(advisorsSupplier, mixinTypes,
-                new AnalyzedWorld(advisorsSupplier, mixinTypes, null), weavingTimerService,
-                metricWrapperMethods);
+        AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier, mixinTypes, null);
+        Weaver weaver = new Weaver(advisorsSupplier, mixinTypes, analyzedWorld,
+                weavingTimerService, metricWrapperMethods);
         this.weaver = weaver;
     }
 
@@ -195,8 +195,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     private static boolean isInBootstrapClassLoader(String name) {
         try {
-            Class<?> c = Class.forName(name, false, ClassLoader.getSystemClassLoader());
-            return c.getClassLoader() == null;
+            Class<?> cls = Class.forName(name, false, ClassLoader.getSystemClassLoader());
+            return cls.getClassLoader() == null;
         } catch (ClassNotFoundException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);

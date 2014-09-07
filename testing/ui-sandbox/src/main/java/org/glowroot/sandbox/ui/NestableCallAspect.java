@@ -26,10 +26,10 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
-import org.glowroot.api.MetricName;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -59,7 +59,7 @@ public class NestableCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore() {
+        public static TraceEntry onBefore() {
             int count = counter.getAndIncrement();
             String transactionName;
             String headline;
@@ -76,59 +76,59 @@ public class NestableCallAspect {
                 // create a long-tail of transaction names to simulate long-tail of urls
                 transactionName += random.nextInt(1000);
             }
-            Span span;
+            TraceEntry traceEntry;
             if (count % 10 == 0) {
-                span = pluginServices.startTrace("Background", transactionName,
+                traceEntry = pluginServices.startTransaction("Background", transactionName,
                         getRootMessageSupplier(headline), metricName);
             } else {
-                span = pluginServices.startTrace("Sandbox", transactionName,
+                traceEntry = pluginServices.startTransaction("Sandbox", transactionName,
                         getRootMessageSupplier(headline), metricName);
             }
             int index = count % (USERS.size() + 1);
             if (index < USERS.size()) {
-                pluginServices.setTraceUser(USERS.get(index));
+                pluginServices.setTransactionUser(USERS.get(index));
             } else {
-                pluginServices.setTraceUser(null);
+                pluginServices.setTransactionUser(null);
             }
             if (random.nextBoolean()) {
-                pluginServices.setTraceCustomAttribute("My First Attribute", "hello world");
-                pluginServices.setTraceCustomAttribute("My First Attribute", "hello world");
-                pluginServices.setTraceCustomAttribute("My First Attribute",
+                pluginServices.setTransactionCustomAttribute("My First Attribute", "hello world");
+                pluginServices.setTransactionCustomAttribute("My First Attribute", "hello world");
+                pluginServices.setTransactionCustomAttribute("My First Attribute",
                         "hello world " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                pluginServices.setTraceCustomAttribute("Second", "val " + random.nextInt(10));
+                pluginServices.setTransactionCustomAttribute("Second", "val " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                pluginServices.setTraceCustomAttribute("A Very Long Attribute Value",
+                pluginServices.setTransactionCustomAttribute("A Very Long Attribute Value",
                         Strings.repeat("abcdefghijklmnopqrstuvwxyz", 3));
             }
             if (random.nextBoolean()) {
-                pluginServices.setTraceCustomAttribute("Another",
+                pluginServices.setTransactionCustomAttribute("Another",
                         "a b c d e f g h i j k l m n o p q r s t u v w x y z"
                                 + " a b c d e f g h i j k l m n o p q r s t u v w x y z");
             }
-            return span;
+            return traceEntry;
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
             double value = random.nextDouble();
             if (value < 0.8) {
-                span.end();
+                traceEntry.end();
             } else if (value < 0.9) {
-                span.endWithError(ErrorMessage
-                        .from("root span randomized error", new IllegalStateException()));
+                traceEntry.endWithError(ErrorMessage
+                        .from("root entry randomized error", new IllegalStateException()));
             } else {
                 // add detail map to half of randomized errors
-                span.endWithError(ErrorMessage.withDetail(
-                        "root span randomized error with detail map",
+                traceEntry.endWithError(ErrorMessage.withDetail(
+                        "root entry randomized error with detail map",
                         new IllegalStateException(), ImmutableMap.of("roota", Optional.absent(),
                                 "rootb", "a non-null value for rootb")));
             }
         }
     }
 
-    private static MessageSupplier getRootMessageSupplier(final String spanMessage) {
+    private static MessageSupplier getRootMessageSupplier(final String traceEntryMessage) {
         return new MessageSupplier() {
             @Override
             public Message get() {
@@ -137,7 +137,7 @@ public class NestableCallAspect {
                                 ImmutableMap.of("attr311", ImmutableList.of("v311a", "v311b")),
                                 "attr32", getLongDetailValue(true),
                                 "attr33", getLongDetailValue(false)));
-                return Message.withDetail(spanMessage, detail);
+                return Message.withDetail(traceEntryMessage, detail);
             }
         };
     }

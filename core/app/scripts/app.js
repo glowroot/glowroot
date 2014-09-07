@@ -107,7 +107,7 @@ glowroot.run([
     };
 
     // qtip adds some code to the beginning of jquery's cleanData function which causes the trace
-    // modal to close slowly when it has 5000 spans
+    // modal to close slowly when it has 5000 trace entries
     // this extra cleanup code is not needed anyways since cleanup is performed explicitly
     /* jshint -W106 */ // W106 is camelcase
     $.cleanData = $.cleanData_replacedByqTip;

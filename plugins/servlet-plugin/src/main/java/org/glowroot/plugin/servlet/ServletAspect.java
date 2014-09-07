@@ -18,11 +18,11 @@ package org.glowroot.plugin.servlet;
 import com.google.common.collect.ImmutableMap;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.api.CompletedSpan;
+import org.glowroot.api.CompletedTraceEntry;
 import org.glowroot.api.ErrorMessage;
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.Span;
 import org.glowroot.api.MetricName;
+import org.glowroot.api.PluginServices;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
@@ -70,11 +70,11 @@ public class ServletAspect {
                 pluginServices.getMetricName(ServiceAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            // only enabled if it is not contained in another servlet or filter span
+            // only enabled if it is not contained in another servlet or filter
             return pluginServices.isEnabled() && topLevel.get() == null;
         }
         @OnBefore
-        public static Span onBefore(@BindParameter Object request,
+        public static TraceEntry onBefore(@BindParameter Object request,
                 @BindClassMeta RequestInvoker requestInvoker,
                 @BindClassMeta SessionInvoker sessionInvoker) {
             // request parameter map is collected in GetParameterAdvice
@@ -99,11 +99,11 @@ public class ServletAspect {
                         sessionAttributes);
             }
             topLevel.set(messageSupplier);
-            Span span = pluginServices.startTrace("Servlet", requestUri, messageSupplier,
-                    metricName);
+            TraceEntry traceEntry = pluginServices.startTransaction("Servlet", requestUri,
+                    messageSupplier, metricName);
             String userPrincipalName = requestInvoker.getUserPrincipalName(request);
             if (userPrincipalName != null) {
-                pluginServices.setTraceUser(userPrincipalName);
+                pluginServices.setTransactionUser(userPrincipalName);
             }
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction
@@ -119,27 +119,28 @@ public class ServletAspect {
                     // capture user now, don't use a lazy supplier
                     String user = HttpSessions.getSessionAttributeTextValue(session,
                             sessionUserAttributePath, sessionInvoker);
-                    pluginServices.setTraceUser(user);
+                    pluginServices.setTransactionUser(user);
                 }
             }
-            return span;
+            return traceEntry;
         }
         @OnReturn
-        public static void onReturn(@BindTraveler Span span) {
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
             ErrorMessage errorMessage = sendError.get();
             if (errorMessage != null) {
-                span.endWithError(errorMessage);
+                traceEntry.endWithError(errorMessage);
                 sendError.remove();
             } else {
-                span.end();
+                traceEntry.end();
             }
             topLevel.remove();
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler TraceEntry traceEntry) {
             // ignoring potential sendError since this seems worse
             sendError.remove();
-            span.endWithError(ErrorMessage.from(t));
+            traceEntry.endWithError(ErrorMessage.from(t));
             topLevel.remove();
         }
     }
@@ -153,18 +154,19 @@ public class ServletAspect {
             return ServiceAdvice.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindParameter Object request,
+        public static TraceEntry onBefore(@BindParameter Object request,
                 @BindClassMeta RequestInvoker requestInvoker,
                 @BindClassMeta SessionInvoker sessionInvoker) {
             return ServiceAdvice.onBefore(request, requestInvoker, sessionInvoker);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler Span span) {
-            ServiceAdvice.onReturn(span);
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            ServiceAdvice.onReturn(traceEntry);
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            ServiceAdvice.onThrow(t, span);
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler TraceEntry traceEntry) {
+            ServiceAdvice.onThrow(t, traceEntry);
         }
     }
 
@@ -177,18 +179,19 @@ public class ServletAspect {
             return ServiceAdvice.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@BindParameter Object request,
+        public static TraceEntry onBefore(@BindParameter Object request,
                 @BindClassMeta RequestInvoker requestInvoker,
                 @BindClassMeta SessionInvoker sessionInvoker) {
             return ServiceAdvice.onBefore(request, requestInvoker, sessionInvoker);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler Span span) {
-            ServiceAdvice.onReturn(span);
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            ServiceAdvice.onReturn(traceEntry);
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            ServiceAdvice.onThrow(t, span);
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler TraceEntry traceEntry) {
+            ServiceAdvice.onThrow(t, traceEntry);
         }
     }
 
@@ -201,8 +204,8 @@ public class ServletAspect {
             if (statusCode >= 500 && topLevel.get() != null) {
                 ErrorMessage errorMessage = ErrorMessage.from("sendError, HTTP status code "
                         + statusCode);
-                CompletedSpan span = pluginServices.addErrorSpan(errorMessage);
-                span.captureSpanStackTrace();
+                CompletedTraceEntry traceEntry = pluginServices.addTraceEntry(errorMessage);
+                traceEntry.captureStackTrace();
                 sendError.set(errorMessage);
             }
         }
@@ -217,8 +220,8 @@ public class ServletAspect {
             if (statusCode >= 500 && topLevel.get() != null) {
                 ErrorMessage errorMessage = ErrorMessage.from("setStatus, HTTP status code "
                         + statusCode);
-                CompletedSpan span = pluginServices.addErrorSpan(errorMessage);
-                span.captureSpanStackTrace();
+                CompletedTraceEntry traceEntry = pluginServices.addTraceEntry(errorMessage);
+                traceEntry.captureStackTrace();
                 sendError.set(errorMessage);
             }
         }

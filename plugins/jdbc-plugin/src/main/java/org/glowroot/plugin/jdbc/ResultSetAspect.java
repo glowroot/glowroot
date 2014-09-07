@@ -24,9 +24,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
 import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.TransactionMetric;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindTraveler;
@@ -77,9 +77,9 @@ public class ResultSetAspect {
         }
         @OnBefore
         @Nullable
-        public static MetricTimer onBefore() {
+        public static TransactionMetric onBefore() {
             if (metricEnabled) {
-                return pluginServices.startMetric(metricName);
+                return pluginServices.startTransactionMetric(metricName);
             } else {
                 return null;
             }
@@ -97,7 +97,7 @@ public class ResultSetAspect {
                 StatementMirror mirror = getStatementMirror(statement);
                 JdbcMessageSupplier lastJdbcMessageSupplier = mirror.getLastJdbcMessageSupplier();
                 if (lastJdbcMessageSupplier == null) {
-                    // tracing must be disabled (e.g. exceeded span limit per trace)
+                    // tracing must be disabled (e.g. exceeded trace entry limit)
                     return;
                 }
                 if (currentRowValid) {
@@ -110,9 +110,9 @@ public class ResultSetAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable MetricTimer metricTimer) {
-            if (metricTimer != null) {
-                metricTimer.stop();
+        public static void onAfter(@BindTraveler @Nullable TransactionMetric transactionMetric) {
+            if (transactionMetric != null) {
+                transactionMetric.stop();
             }
         }
     }
@@ -141,12 +141,12 @@ public class ResultSetAspect {
             return metricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
-        public static MetricTimer onBefore() {
-            return pluginServices.startMetric(metricName);
+        public static TransactionMetric onBefore() {
+            return pluginServices.startTransactionMetric(metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
-            metricTimer.stop();
+        public static void onAfter(@BindTraveler TransactionMetric transactionMetric) {
+            transactionMetric.stop();
         }
     }
 
@@ -174,12 +174,12 @@ public class ResultSetAspect {
             return metricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
-        public static MetricTimer onBefore() {
-            return pluginServices.startMetric(metricName);
+        public static TransactionMetric onBefore() {
+            return pluginServices.startTransactionMetric(metricName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
-            metricTimer.stop();
+        public static void onAfter(@BindTraveler TransactionMetric transactionMetric) {
+            transactionMetric.stop();
         }
     }
 

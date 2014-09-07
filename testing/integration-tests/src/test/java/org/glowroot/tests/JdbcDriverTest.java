@@ -26,8 +26,8 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.trace.Span;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,13 +58,13 @@ public class JdbcDriverTest {
     public void shouldNotTriggerMockJdbcDriverToLoad() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         Trace trace = container.getTraceService().getLastTrace();
-        List<Span> spans = container.getTraceService().getSpans(trace.getId());
-        assertThat(spans.get(1).getMessage().getText()).isEqualTo("major version");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries.get(1).getMessage().getText()).isEqualTo("major version");
     }
 
-    public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest, TraceMarker {
+    public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() throws Exception {
             traceMarker();

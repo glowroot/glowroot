@@ -18,10 +18,10 @@ package org.glowroot.plugin.jdbc;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
-import org.glowroot.api.Span;
+import org.glowroot.api.TraceEntry;
+import org.glowroot.api.TransactionMetric;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -41,23 +41,23 @@ public class ConnectionAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    private static volatile boolean captureConnectionLifecycleSpans;
-    private static volatile boolean captureTransactionLifecycleSpans;
+    private static volatile boolean captureConnectionLifecycleTraceEntries;
+    private static volatile boolean captureTransactionLifecycleTraceEntries;
 
     static {
         pluginServices.registerConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
-                captureConnectionLifecycleSpans =
-                        pluginServices.getBooleanProperty("captureConnectionLifecycleSpans");
-                captureTransactionLifecycleSpans =
-                        pluginServices.getBooleanProperty("captureTransactionLifecycleSpans");
+                captureConnectionLifecycleTraceEntries = pluginServices
+                        .getBooleanProperty("captureConnectionLifecycleTraceEntries");
+                captureTransactionLifecycleTraceEntries = pluginServices
+                        .getBooleanProperty("captureTransactionLifecycleTraceEntries");
             }
         });
-        captureConnectionLifecycleSpans =
-                pluginServices.getBooleanProperty("captureConnectionLifecycleSpans");
-        captureTransactionLifecycleSpans =
-                pluginServices.getBooleanProperty("captureTransactionLifecycleSpans");
+        captureConnectionLifecycleTraceEntries =
+                pluginServices.getBooleanProperty("captureConnectionLifecycleTraceEntries");
+        captureTransactionLifecycleTraceEntries =
+                pluginServices.getBooleanProperty("captureTransactionLifecycleTraceEntries");
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "commit", ignoreSelfNested = true,
@@ -70,16 +70,18 @@ public class ConnectionAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore() {
-            return pluginServices.startSpan(MessageSupplier.from("jdbc commit"), metricName);
+        public static TraceEntry onBefore() {
+            return pluginServices.startTraceEntry(MessageSupplier.from("jdbc commit"), metricName);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler Span span) {
-            span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                    MILLISECONDS);
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            span.endWithError(ErrorMessage.from(t));
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(ErrorMessage.from(t));
         }
     }
 
@@ -93,16 +95,19 @@ public class ConnectionAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore() {
-            return pluginServices.startSpan(MessageSupplier.from("jdbc rollback"), metricName);
+        public static TraceEntry onBefore() {
+            return pluginServices
+                    .startTraceEntry(MessageSupplier.from("jdbc rollback"), metricName);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler Span span) {
-            span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                    MILLISECONDS);
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            span.endWithError(ErrorMessage.from(t));
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(ErrorMessage.from(t));
         }
     }
 
@@ -117,28 +122,29 @@ public class ConnectionAspect {
         }
         @OnBefore
         public static Object onBefore() {
-            if (captureConnectionLifecycleSpans) {
-                return pluginServices.startSpan(MessageSupplier.from("jdbc connection close"),
+            if (captureConnectionLifecycleTraceEntries) {
+                return pluginServices.startTraceEntry(
+                        MessageSupplier.from("jdbc connection close"),
                         metricName);
             } else {
-                return pluginServices.startMetric(metricName);
+                return pluginServices.startTransactionMetric(metricName);
             }
         }
         @OnReturn
-        public static void onReturn(@BindTraveler Object spanOrTimer) {
-            if (spanOrTimer instanceof Span) {
-                ((Span) spanOrTimer).endWithStackTrace(
+        public static void onReturn(@BindTraveler Object entryOrMetric) {
+            if (entryOrMetric instanceof TraceEntry) {
+                ((TraceEntry) entryOrMetric).endWithStackTrace(
                         JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
             } else {
-                ((MetricTimer) spanOrTimer).stop();
+                ((TransactionMetric) entryOrMetric).stop();
             }
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Object spanOrTimer) {
-            if (spanOrTimer instanceof Span) {
-                ((Span) spanOrTimer).endWithError(ErrorMessage.from(t));
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Object entryOrMetric) {
+            if (entryOrMetric instanceof TraceEntry) {
+                ((TraceEntry) entryOrMetric).endWithError(ErrorMessage.from(t));
             } else {
-                ((MetricTimer) spanOrTimer).stop();
+                ((TransactionMetric) entryOrMetric).stop();
             }
         }
     }
@@ -151,21 +157,23 @@ public class ConnectionAspect {
                 pluginServices.getMetricName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && captureTransactionLifecycleSpans;
+            return pluginServices.isEnabled() && captureTransactionLifecycleTraceEntries;
         }
         @OnBefore
-        public static Span onBefore(@BindParameter boolean autoCommit) {
-            return pluginServices.startSpan(
+        public static TraceEntry onBefore(@BindParameter boolean autoCommit) {
+            return pluginServices.startTraceEntry(
                     MessageSupplier.from("jdbc set autocommit: {}", Boolean.toString(autoCommit)),
                     metricName);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler Span span) {
-            span.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                    MILLISECONDS);
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
-            span.endWithError(ErrorMessage.from(t));
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(ErrorMessage.from(t));
         }
     }
 }

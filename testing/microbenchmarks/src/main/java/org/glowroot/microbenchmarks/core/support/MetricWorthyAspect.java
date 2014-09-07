@@ -16,8 +16,8 @@
 package org.glowroot.microbenchmarks.core.support;
 
 import org.glowroot.api.MetricName;
-import org.glowroot.api.MetricTimer;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TransactionMetric;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
@@ -47,12 +47,12 @@ public class MetricWorthyAspect {
         }
 
         @OnBefore
-        public static MetricTimer onBefore() {
-            return pluginServices.startMetric(metricName);
+        public static TransactionMetric onBefore() {
+            return pluginServices.startTransactionMetric(metricName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer timer) {
+        public static void onAfter(@BindTraveler TransactionMetric timer) {
             timer.stop();
         }
     }
@@ -71,12 +71,12 @@ public class MetricWorthyAspect {
         }
 
         @OnBefore
-        public static MetricTimer onBefore() {
-            return pluginServices.startMetric(metricName);
+        public static TransactionMetric onBefore() {
+            return pluginServices.startTransactionMetric(metricName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer timer) {
+        public static void onAfter(@BindTraveler TransactionMetric timer) {
             timer.stop();
         }
     }

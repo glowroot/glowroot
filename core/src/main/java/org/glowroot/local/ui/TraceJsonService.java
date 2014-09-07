@@ -20,8 +20,8 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.Snapshot;
-import org.glowroot.collector.SnapshotWriter;
+import org.glowroot.collector.Trace;
+import org.glowroot.collector.TraceWriter;
 import org.glowroot.markers.Singleton;
 
 /**
@@ -45,12 +45,12 @@ class TraceJsonService {
     @GET("/backend/trace/header/(.+)")
     String getTrace(String id) throws IOException {
         logger.debug("getTrace(): id={}", id);
-        Snapshot snapshot = traceCommonService.getSnapshot(id);
-        if (snapshot == null) {
+        Trace trace = traceCommonService.getTrace(id);
+        if (trace == null) {
             logger.debug("no trace found for id: {}", id);
             return "{\"expired\":true}";
         } else {
-            return SnapshotWriter.toString(snapshot);
+            return TraceWriter.toString(trace);
         }
     }
 }

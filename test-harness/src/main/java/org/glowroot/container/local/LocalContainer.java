@@ -38,7 +38,7 @@ import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.ConfigService;
 import org.glowroot.container.javaagent.JavaagentContainer;
 import org.glowroot.container.trace.TraceService;
-import org.glowroot.trace.AdviceCache;
+import org.glowroot.transaction.AdviceCache;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.IsolatedWeavingClassLoader;
 
@@ -90,7 +90,7 @@ public class LocalContainer implements Container {
         } catch (org.glowroot.GlowrootModule.StartupFailedException e) {
             throw new StartupFailedException(e);
         }
-        JavaagentContainer.setStoreThresholdMillisToZero();
+        JavaagentContainer.setTraceStoreThresholdMillisToZero();
         glowrootModule = MainEntryPoint.getGlowrootModule();
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         PluginDescriptorCache pluginDescriptorCache =
@@ -107,7 +107,7 @@ public class LocalContainer implements Container {
         // TODO add hook to optionally exclude guava package which improves integration-test
         // performance
         loader.addExcludePackages("org.glowroot.api", "org.glowroot.collector",
-                "org.glowroot.common", "org.glowroot.config", "org.glowroot.dynamicadvice",
+                "org.glowroot.common", "org.glowroot.config", "org.glowroot.advicegen",
                 "org.glowroot.local", "org.glowroot.trace", "org.glowroot.shaded");
         isolatedWeavingClassLoader = loader.build();
         configService = new LocalConfigService(glowrootModule);
@@ -138,7 +138,8 @@ public class LocalContainer implements Container {
         }
         // wait for all traces to be stored
         Stopwatch stopwatch = Stopwatch.createStarted();
-        while (traceService.getNumPendingCompleteTraces() > 0 && stopwatch.elapsed(SECONDS) < 5) {
+        while (traceService.getNumPendingCompleteTransactions() > 0
+                && stopwatch.elapsed(SECONDS) < 5) {
             Thread.sleep(10);
         }
     }
@@ -162,11 +163,11 @@ public class LocalContainer implements Container {
 
     @Override
     public void checkAndReset() throws Exception {
-        traceService.assertNoActiveTraces();
+        traceService.assertNoActiveTransactions();
         traceService.deleteAll();
         configService.resetAllConfig();
-        // storeThresholdMillis=0 is the default for testing
-        configService.setStoreThresholdMillis(0);
+        // traceStoreThresholdMillis=0 is the default for testing
+        configService.setTraceStoreThresholdMillis(0);
         // check and reset log messages
         MessageCount logMessageCount = SpyingLogbackFilter.clearMessages();
         if (logMessageCount.getExpectedCount() > 0) {

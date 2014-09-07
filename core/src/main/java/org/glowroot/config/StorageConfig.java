@@ -34,16 +34,19 @@ import org.glowroot.markers.UsedByJsonBinding;
 @Immutable
 public class StorageConfig {
 
+    private final int aggregateExpirationHours;
     private final int traceExpirationHours;
-    // size of capped database for storing trace details (spans and merged stack traces)
+    // size of capped database for storing trace details (entries and profiles)
     private final int cappedDatabaseSizeMb;
 
     private final String version;
 
     static StorageConfig getDefault() {
+        final int aggregateExpirationHours = 24 * 7;
         final int traceExpirationHours = 24 * 7;
         final int cappedDatabaseSizeMb = 1000;
-        return new StorageConfig(traceExpirationHours, cappedDatabaseSizeMb);
+        return new StorageConfig(aggregateExpirationHours, traceExpirationHours,
+                cappedDatabaseSizeMb);
     }
 
     public static Overlay overlay(StorageConfig base) {
@@ -51,10 +54,16 @@ public class StorageConfig {
     }
 
     @VisibleForTesting
-    public StorageConfig(int traceExpirationHours, int cappedDatabaseSizeMb) {
+    public StorageConfig(int aggregateExpirationHours, int traceExpirationHours,
+            int cappedDatabaseSizeMb) {
+        this.aggregateExpirationHours = aggregateExpirationHours;
         this.traceExpirationHours = traceExpirationHours;
         this.cappedDatabaseSizeMb = cappedDatabaseSizeMb;
         this.version = VersionHashes.sha1(traceExpirationHours, cappedDatabaseSizeMb);
+    }
+
+    public int getAggregateExpirationHours() {
+        return aggregateExpirationHours;
     }
 
     public int getTraceExpirationHours() {
@@ -73,6 +82,7 @@ public class StorageConfig {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
+                .add("aggregateExpirationHours", aggregateExpirationHours)
                 .add("traceExpirationHours", traceExpirationHours)
                 .add("cappedDatabaseSizeMb", cappedDatabaseSizeMb)
                 .add("version", version)
@@ -83,12 +93,17 @@ public class StorageConfig {
     @UsedByJsonBinding
     public static class Overlay {
 
+        private int aggregateExpirationHours;
         private int traceExpirationHours;
         private int cappedDatabaseSizeMb;
 
         private Overlay(StorageConfig base) {
+            aggregateExpirationHours = base.aggregateExpirationHours;
             traceExpirationHours = base.traceExpirationHours;
             cappedDatabaseSizeMb = base.cappedDatabaseSizeMb;
+        }
+        public void setAggregateExpirationHours(int aggregateExpirationHours) {
+            this.aggregateExpirationHours = aggregateExpirationHours;
         }
         public void setTraceExpirationHours(int traceExpirationHours) {
             this.traceExpirationHours = traceExpirationHours;
@@ -97,7 +112,8 @@ public class StorageConfig {
             this.cappedDatabaseSizeMb = cappedDatabaseSizeMb;
         }
         public StorageConfig build() {
-            return new StorageConfig(traceExpirationHours, cappedDatabaseSizeMb);
+            return new StorageConfig(aggregateExpirationHours, traceExpirationHours,
+                    cappedDatabaseSizeMb);
         }
     }
 }

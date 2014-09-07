@@ -25,5 +25,5 @@ class LogError {
     void log(@SuppressWarnings("unused") String message) {}
 
     // this method corresponds to LogErrorAspect
-    void addNestedErrorSpan() {}
+    void addNestedErrorEntry() {}
 }

@@ -35,12 +35,25 @@ import org.glowroot.markers.UsedByJsonBinding;
 public class AdvancedConfig {
 
     private final boolean metricWrapperMethods;
+    // minimum is imposed because of PartialTraceStorageWatcher#PERIOD_MILLIS
+    // -1 means no partial traces are gathered, should be minimum 100 milliseconds
+    private final int immediatePartialStoreThresholdSeconds;
+    // used to limit memory requirement, also used to help limit trace capture size,
+    // 0 means don't capture any entries, -1 means no limit
+    private final int maxEntriesPerTrace;
+    private final boolean captureThreadInfo;
+    private final boolean captureGcInfo;
 
     private final String version;
 
     static AdvancedConfig getDefault() {
-        final boolean metricWrapperMethods = false;
-        return new AdvancedConfig(metricWrapperMethods);
+        final boolean metricWrapperMethods = true;
+        final int immediatePartialStoreThresholdSeconds = 60;
+        final int maxEntriesPerTrace = 2000;
+        final boolean captureThreadInfo = true;
+        final boolean captureGcInfo = true;
+        return new AdvancedConfig(metricWrapperMethods, immediatePartialStoreThresholdSeconds,
+                maxEntriesPerTrace, captureThreadInfo, captureGcInfo);
     }
 
     public static Overlay overlay(AdvancedConfig base) {
@@ -48,13 +61,36 @@ public class AdvancedConfig {
     }
 
     @VisibleForTesting
-    public AdvancedConfig(boolean metricWrapperMethods) {
+    public AdvancedConfig(boolean metricWrapperMethods, int immediatePartialStoreThresholdSeconds,
+            int maxEntriesPerTrace, boolean captureThreadInfo, boolean captureGcInfo) {
         this.metricWrapperMethods = metricWrapperMethods;
-        this.version = VersionHashes.sha1(metricWrapperMethods);
+        this.immediatePartialStoreThresholdSeconds = immediatePartialStoreThresholdSeconds;
+        this.maxEntriesPerTrace = maxEntriesPerTrace;
+        this.captureThreadInfo = captureThreadInfo;
+        this.captureGcInfo = captureGcInfo;
+        this.version = VersionHashes.sha1(metricWrapperMethods,
+                immediatePartialStoreThresholdSeconds, maxEntriesPerTrace, captureThreadInfo,
+                captureGcInfo);
     }
 
     public boolean isMetricWrapperMethods() {
         return metricWrapperMethods;
+    }
+
+    public int getImmediatePartialStoreThresholdSeconds() {
+        return immediatePartialStoreThresholdSeconds;
+    }
+
+    public int getMaxEntriesPerTrace() {
+        return maxEntriesPerTrace;
+    }
+
+    public boolean isCaptureThreadInfo() {
+        return captureThreadInfo;
+    }
+
+    public boolean isCaptureGcInfo() {
+        return captureGcInfo;
     }
 
     @JsonView(UiView.class)
@@ -66,6 +102,10 @@ public class AdvancedConfig {
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("metricWrapperMethods", metricWrapperMethods)
+                .add("immediatePartialStoreThresholdSeconds", immediatePartialStoreThresholdSeconds)
+                .add("maxEntriesPerTrace", maxEntriesPerTrace)
+                .add("captureThreadInfo", captureThreadInfo)
+                .add("captureGcInfo", captureGcInfo)
                 .add("version", version)
                 .toString();
     }
@@ -75,15 +115,37 @@ public class AdvancedConfig {
     public static class Overlay {
 
         private boolean metricWrapperMethods;
+        private int immediatePartialStoreThresholdSeconds;
+        private int maxEntriesPerTrace;
+        private boolean captureThreadInfo;
+        private boolean captureGcInfo;
 
         private Overlay(AdvancedConfig base) {
             metricWrapperMethods = base.metricWrapperMethods;
+            immediatePartialStoreThresholdSeconds = base.immediatePartialStoreThresholdSeconds;
+            maxEntriesPerTrace = base.maxEntriesPerTrace;
+            captureThreadInfo = base.captureThreadInfo;
+            captureGcInfo = base.captureGcInfo;
         }
         public void setMetricWrapperMethods(boolean metricWrapperMethods) {
             this.metricWrapperMethods = metricWrapperMethods;
         }
+        public void setImmediatePartialStoreThresholdSeconds(
+                int immediatePartialStoreThresholdSeconds) {
+            this.immediatePartialStoreThresholdSeconds = immediatePartialStoreThresholdSeconds;
+        }
+        public void setMaxEntriesPerTrace(int maxEntriesPerTrace) {
+            this.maxEntriesPerTrace = maxEntriesPerTrace;
+        }
+        public void setCaptureThreadInfo(boolean captureThreadInfo) {
+            this.captureThreadInfo = captureThreadInfo;
+        }
+        public void setCaptureGcInfo(boolean captureGcInfo) {
+            this.captureGcInfo = captureGcInfo;
+        }
         public AdvancedConfig build() {
-            return new AdvancedConfig(metricWrapperMethods);
+            return new AdvancedConfig(metricWrapperMethods, immediatePartialStoreThresholdSeconds,
+                    maxEntriesPerTrace, captureThreadInfo, captureGcInfo);
         }
     }
 }

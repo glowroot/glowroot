@@ -25,8 +25,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.SnapshotRepository;
-import org.glowroot.collector.TransactionPointRepository;
+import org.glowroot.collector.AggregateRepository;
+import org.glowroot.collector.TraceRepository;
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
@@ -50,10 +50,10 @@ public class StorageModule {
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
-    private final TransactionPointDao transactionPointDao;
-    private final SnapshotDao snapshotDao;
+    private final AggregateDao aggregateDao;
+    private final TraceDao traceDao;
     @Nullable
-    private final ReaperScheduledRunnable reaperScheduledRunnable;
+    private final ReaperRunnable reaperRunnable;
 
     public StorageModule(File dataDir, Map<String, String> properties, Ticker ticker, Clock clock,
             ConfigModule configModule, ScheduledExecutorService scheduledExecutor,
@@ -69,39 +69,36 @@ public class StorageModule {
         int cappedDatabaseSizeMb = configService.getStorageConfig().getCappedDatabaseSizeMb();
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
-        transactionPointDao = new TransactionPointDao(dataSource, cappedDatabase);
-        snapshotDao = new SnapshotDao(dataSource, cappedDatabase);
-        PreInitializeStorageShutdownClasses.preInitializeClasses(
-                StorageModule.class.getClassLoader());
-
+        aggregateDao = new AggregateDao(dataSource, cappedDatabase);
+        traceDao = new TraceDao(dataSource, cappedDatabase);
+        PreInitializeStorageShutdownClasses.preInitializeClasses();
         if (viewerModeEnabled) {
-            reaperScheduledRunnable = null;
+            reaperRunnable = null;
         } else {
-            reaperScheduledRunnable = new ReaperScheduledRunnable(configService,
-                    transactionPointDao, snapshotDao, clock);
-            reaperScheduledRunnable.scheduleWithFixedDelay(scheduledExecutor, 0,
+            reaperRunnable = new ReaperRunnable(configService, aggregateDao, traceDao, clock);
+            reaperRunnable.scheduleWithFixedDelay(scheduledExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
     }
 
-    public TransactionPointRepository getTransactionPointRepository() {
-        return transactionPointDao;
+    public AggregateRepository getAggregateRepository() {
+        return aggregateDao;
     }
 
-    public SnapshotRepository getSnapshotRepository() {
-        return snapshotDao;
+    public TraceRepository getTraceRepository() {
+        return traceDao;
     }
 
     public DataSource getDataSource() {
         return dataSource;
     }
 
-    public TransactionPointDao getTransactionPointDao() {
-        return transactionPointDao;
+    public AggregateDao getAggregateDao() {
+        return aggregateDao;
     }
 
-    public SnapshotDao getSnapshotDao() {
-        return snapshotDao;
+    public TraceDao getTraceDao() {
+        return traceDao;
     }
 
     public CappedDatabase getCappedDatabase() {
@@ -111,8 +108,8 @@ public class StorageModule {
     @OnlyUsedByTests
     public void close() {
         logger.debug("close()");
-        if (reaperScheduledRunnable != null) {
-            reaperScheduledRunnable.cancel();
+        if (reaperRunnable != null) {
+            reaperRunnable.cancel();
         }
         try {
             cappedDatabase.close();

@@ -42,8 +42,8 @@ public class Layout {
     private final ImmutableList<LayoutPlugin> plugins;
     private final ImmutableList<String> transactionTypes;
     private final String defaultTransactionType;
-    private final ImmutableList<String> traceCustomAttributes;
-    private final long fixedTransactionPointIntervalSeconds;
+    private final ImmutableList<String> transactionCustomAttributes;
+    private final long fixedAggregateIntervalSeconds;
     private final String version;
 
     static Builder builder() {
@@ -52,8 +52,8 @@ public class Layout {
 
     Layout(boolean jvmHeapHistogram, boolean jvmHeapDump, String footerMessage,
             boolean passwordEnabled, List<LayoutPlugin> plugins, List<String> transactionTypes,
-            String defaultTransactionType, List<String> traceCustomAttributes,
-            long fixedTransactionPointIntervalSeconds) {
+            String defaultTransactionType, List<String> transactionCustomAttributes,
+            long fixedAggregateIntervalSeconds) {
         this.jvmHeapHistogram = jvmHeapHistogram;
         this.jvmHeapDump = jvmHeapDump;
         this.footerMessage = footerMessage;
@@ -61,11 +61,11 @@ public class Layout {
         this.plugins = ImmutableList.copyOf(plugins);
         this.transactionTypes = ImmutableList.copyOf(transactionTypes);
         this.defaultTransactionType = defaultTransactionType;
-        this.traceCustomAttributes = ImmutableList.copyOf(traceCustomAttributes);
-        this.fixedTransactionPointIntervalSeconds = fixedTransactionPointIntervalSeconds;
+        this.transactionCustomAttributes = ImmutableList.copyOf(transactionCustomAttributes);
+        this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
         version = VersionHashes.sha1(jvmHeapHistogram, jvmHeapDump, footerMessage, passwordEnabled,
-                transactionTypes, defaultTransactionType, traceCustomAttributes,
-                fixedTransactionPointIntervalSeconds);
+                transactionTypes, defaultTransactionType, transactionCustomAttributes,
+                fixedAggregateIntervalSeconds);
     }
 
     public boolean isJvmHeapHistogram() {
@@ -96,12 +96,12 @@ public class Layout {
         return defaultTransactionType;
     }
 
-    public ImmutableList<String> getTraceCustomAttributes() {
-        return traceCustomAttributes;
+    public ImmutableList<String> getTransactionCustomAttributes() {
+        return transactionCustomAttributes;
     }
 
-    public long getFixedTransactionPointIntervalSeconds() {
-        return fixedTransactionPointIntervalSeconds;
+    public long getFixedAggregateIntervalSeconds() {
+        return fixedAggregateIntervalSeconds;
     }
 
     public String getVersion() {
@@ -118,8 +118,8 @@ public class Layout {
                 .add("plugins", plugins)
                 .add("transactionTypes", transactionTypes)
                 .add("defaultTransactionType", defaultTransactionType)
-                .add("traceCustomAttributes", traceCustomAttributes)
-                .add("fixedTransactionPointIntervalSeconds", fixedTransactionPointIntervalSeconds)
+                .add("transactionCustomAttributes", transactionCustomAttributes)
+                .add("fixedAggregateIntervalSeconds", fixedAggregateIntervalSeconds)
                 .toString();
     }
 
@@ -154,8 +154,8 @@ public class Layout {
         private List<String> transactionTypes = ImmutableList.of();
         @MonotonicNonNull
         private String defaultTransactionType;
-        private List<String> traceCustomAttributes = ImmutableList.of();
-        private long fixedTransactionPointIntervalSeconds;
+        private List<String> transactionCustomAttributes = ImmutableList.of();
+        private long fixedAggregateIntervalSeconds;
 
         private Builder() {}
 
@@ -196,21 +196,21 @@ public class Layout {
             return this;
         }
 
-        Builder traceCustomAttributes(List<String> traceCustomAttributes) {
-            this.traceCustomAttributes = traceCustomAttributes;
+        Builder transactionCustomAttributes(List<String> transactionCustomAttributes) {
+            this.transactionCustomAttributes = transactionCustomAttributes;
             return this;
         }
 
-        Builder fixedTransactionPointIntervalSeconds(long fixedTransactionPointIntervalSeconds) {
-            this.fixedTransactionPointIntervalSeconds = fixedTransactionPointIntervalSeconds;
+        Builder fixedAggregateIntervalSeconds(long fixedAggregateIntervalSeconds) {
+            this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
             return this;
         }
 
         @RequiresNonNull({"footerMessage", "defaultTransactionType"})
         Layout build() {
             return new Layout(jvmHeapHistogram, jvmHeapDump, footerMessage, passwordEnabled,
-                    plugins, transactionTypes, defaultTransactionType, traceCustomAttributes,
-                    fixedTransactionPointIntervalSeconds);
+                    plugins, transactionTypes, defaultTransactionType, transactionCustomAttributes,
+                    fixedAggregateIntervalSeconds);
         }
     }
 }

@@ -199,8 +199,8 @@ class Schemas {
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
             for (PrimaryKeyColumn primaryKeyColumn : primaryKeyColumns) {
-                if (!resultSet.next() || !primaryKeyColumn.getName()
-                        .equalsIgnoreCase(resultSet.getString("COLUMN_NAME"))) {
+                if (!resultSet.next() || !primaryKeyColumn.getName().equalsIgnoreCase(
+                        resultSet.getString("COLUMN_NAME"))) {
                     return true;
                 }
             }

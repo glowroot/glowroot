@@ -25,22 +25,6 @@
          gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl">
-      <div gt-form-group
-           gt-label="Port"
-           gt-model="config.port"
-           gt-number="true"
-           gt-pattern="pattern.integer"
-           gt-required="loaded"
-           gt-width="7em">
-        <div class="help-block">
-          <div class="glowroot-yellow"
-               ng-show="originalConfig.port !== activePort"
-               style="padding-bottom: 5px;">
-            Active value is <code>{{activePort}}</code>.
-          </div>
-          Port that the user interface listens on.
-        </div>
-      </div>
       <div class="form-group">
         <label class="col-lg-3 control-label"
                for="defaultTransactionType">
@@ -60,6 +44,22 @@
           <div class="help-block">
             The default transaction type displayed on the performance and traces page.
           </div>
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Port"
+           gt-model="config.port"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em">
+        <div class="help-block">
+          <div class="glowroot-yellow"
+               ng-show="originalConfig.port !== activePort"
+               style="padding-bottom: 5px;">
+            Active value is <code>{{activePort}}</code>.
+          </div>
+          Port that the user interface listens on.
         </div>
       </div>
       <div gt-form-group
@@ -106,6 +106,27 @@
           out, except on jvm restart at which time all sessions time out.
         </div>
       </div>
+      <fieldset ng-show="config.passwordEnabled && originalConfig.passwordEnabled">
+        <legend>Change password</legend>
+        <div gt-form-group
+             gt-label="Current password"
+             gt-model="changePassword.currentPassword"
+             gt-type="password"
+             gt-width="25em">
+        </div>
+        <div gt-form-group
+             gt-label="New password"
+             gt-model="changePassword.newPassword"
+             gt-type="password"
+             gt-width="25em">
+        </div>
+        <div gt-form-group
+             gt-label="Verify new password"
+             gt-model="changePassword.verifyNewPassword"
+             gt-type="password"
+             gt-width="25em">
+        </div>
+      </fieldset>
       <div class="form-group form-buttons">
         <div class="col-lg-offset-3 col-lg-9">
           <div gt-button
@@ -133,19 +154,19 @@
       <div class="form-group">
         <div gt-form-group
              gt-label="Current password"
-             gt-model="passwordForm.currentPassword"
+             gt-model="changePassword.currentPassword"
              gt-type="password"
              gt-width="25em">
         </div>
         <div gt-form-group
              gt-label="New password"
-             gt-model="passwordForm.newPassword"
+             gt-model="changePassword.newPassword"
              gt-type="password"
              gt-width="25em">
         </div>
         <div gt-form-group
              gt-label="Verify password"
-             gt-model="passwordForm.verifyPassword"
+             gt-model="changePassword.verifyPassword"
              gt-type="password"
              gt-width="25em">
         </div>

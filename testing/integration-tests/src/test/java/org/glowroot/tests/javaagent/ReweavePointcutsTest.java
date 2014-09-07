@@ -21,21 +21,21 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
-import org.glowroot.tests.PointcutConfigTest;
+import org.glowroot.tests.CapturePointTest;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class ReweavePointcutsTest extends PointcutConfigTest {
+public class ReweavePointcutsTest extends CapturePointTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
         container = Containers.getSharedJavaagentContainer();
-        addPointcutConfigForExecute1();
-        addPointcutConfigForExecute1MetricOnly();
-        addPointcutConfigForExecuteWithReturn();
-        addPointcutConfigForExecuteWithArgs();
+        addCapturePointForExecute1();
+        addCapturePointForExecute1MetricOnly();
+        addCapturePointForExecuteWithReturn();
+        addCapturePointForExecuteWithArgs();
         container.getConfigService().reweavePointcuts();
     }
 
@@ -61,8 +61,8 @@ public class ReweavePointcutsTest extends PointcutConfigTest {
 
     @Override
     @Test
-    public void shouldRenderMessageTemplateWithReturnValue() throws Exception {
-        super.shouldRenderMessageTemplateWithReturnValue();
+    public void shouldRenderTraceEntryTemplateWithReturnValue() throws Exception {
+        super.shouldRenderTraceEntryTemplateWithReturnValue();
     }
 
     @Override

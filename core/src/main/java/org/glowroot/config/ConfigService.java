@@ -66,27 +66,23 @@ public class ConfigService {
         this.pluginDescriptorCache = pluginDescriptorCache;
         configFile = new File(dataDir, "config.json");
         try {
-            config = loadConfig(configFile, pluginDescriptorCache);
+            config = loadConfig(configFile, pluginDescriptorCache.getPluginDescriptors());
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             config = Config.getDefault(pluginDescriptorCache.getPluginDescriptors());
         }
     }
 
-    public GeneralConfig getGeneralConfig() {
-        return config.getGeneralConfig();
+    public TraceConfig getTraceConfig() {
+        return config.getTraceConfig();
     }
 
     public ProfilingConfig getProfilingConfig() {
         return config.getProfilingConfig();
     }
 
-    public OutlierProfilingConfig getOutlierProfilingConfig() {
-        return config.getOutlierProfilingConfig();
-    }
-
-    public UserTracingConfig getUserTracingConfig() {
-        return config.getUserTracingConfig();
+    public UserRecordingConfig getUserRecordingConfig() {
+        return config.getUserRecordingConfig();
     }
 
     public StorageConfig getStorageConfig() {
@@ -95,10 +91,6 @@ public class ConfigService {
 
     public UserInterfaceConfig getUserInterfaceConfig() {
         return config.getUserInterfaceConfig();
-    }
-
-    public ImmutableList<PointcutConfig> getPointcutConfigs() {
-        return config.getPointcutConfigs();
     }
 
     public AdvancedConfig getAdvancedConfig() {
@@ -115,6 +107,10 @@ public class ConfigService {
         return null;
     }
 
+    public ImmutableList<CapturePoint> getCapturePoints() {
+        return config.getCapturePoints();
+    }
+
     public void addConfigListener(ConfigListener listener) {
         configListeners.add(listener);
     }
@@ -123,26 +119,26 @@ public class ConfigService {
         pluginConfigListeners.put(pluginId, listener);
     }
 
-    public String updateGeneralConfig(GeneralConfig generalConfig, String priorVersion)
+    public String updateTraceConfig(TraceConfig traceConfig, String priorVersion)
             throws OptimisticLockException, IOException {
         boolean notifyPluginConfigListeners;
         synchronized (writeLock) {
-            if (!config.getGeneralConfig().getVersion().equals(priorVersion)) {
+            if (!config.getTraceConfig().getVersion().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
-            boolean previousEnabled = config.getGeneralConfig().isEnabled();
+            boolean previousEnabled = config.getTraceConfig().isEnabled();
             Config updatedConfig = Config.builder(config)
-                    .generalConfig(generalConfig)
+                    .traceConfig(traceConfig)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
-            notifyPluginConfigListeners = config.getGeneralConfig().isEnabled() != previousEnabled;
+            notifyPluginConfigListeners = config.getTraceConfig().isEnabled() != previousEnabled;
         }
         notifyConfigListeners();
         if (notifyPluginConfigListeners) {
             notifyAllPluginConfigListeners();
         }
-        return generalConfig.getVersion();
+        return traceConfig.getVersion();
     }
 
     public String updateProfilingConfig(ProfilingConfig profilingConfig, String priorVersion)
@@ -161,36 +157,20 @@ public class ConfigService {
         return profilingConfig.getVersion();
     }
 
-    public String updateOutlierProfilingConfig(OutlierProfilingConfig outlierProfilingConfig,
+    public String updateUserRecordingConfig(UserRecordingConfig userRecordingConfig,
             String priorVersion) throws OptimisticLockException, IOException {
         synchronized (writeLock) {
-            if (!config.getOutlierProfilingConfig().getVersion().equals(priorVersion)) {
+            if (!config.getUserRecordingConfig().getVersion().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
             Config updatedConfig = Config.builder(config)
-                    .outlierProfilingConfig(outlierProfilingConfig)
+                    .userRecordingConfig(userRecordingConfig)
                     .build();
             ConfigMapper.writeValue(configFile, updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return outlierProfilingConfig.getVersion();
-    }
-
-    public String updateUserTracingConfig(UserTracingConfig userTracingConfig,
-            String priorVersion) throws OptimisticLockException, IOException {
-        synchronized (writeLock) {
-            if (!config.getUserTracingConfig().getVersion().equals(priorVersion)) {
-                throw new OptimisticLockException();
-            }
-            Config updatedConfig = Config.builder(config)
-                    .userTracingConfig(userTracingConfig)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
-            config = updatedConfig;
-        }
-        notifyConfigListeners();
-        return userTracingConfig.getVersion();
+        return userRecordingConfig.getVersion();
     }
 
     public String updateStorageConfig(StorageConfig storageConfig, String priorVersion)
@@ -223,73 +203,6 @@ public class ConfigService {
         }
         notifyConfigListeners();
         return userInterfaceConfig.getVersion();
-    }
-
-    public String insertPointcutConfig(PointcutConfig pointcutConfig) throws IOException {
-        synchronized (writeLock) {
-            List<PointcutConfig> pointcutConfigs =
-                    Lists.newArrayList(config.getPointcutConfigs());
-            pointcutConfigs.add(pointcutConfig);
-            Config updatedConfig = Config.builder(config)
-                    .pointcutConfigs(pointcutConfigs)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
-            config = updatedConfig;
-        }
-        notifyConfigListeners();
-        return pointcutConfig.getVersion();
-    }
-
-    public String updatePointcutConfig(String priorVersion, PointcutConfig pointcutConfig)
-            throws IOException {
-        synchronized (writeLock) {
-            List<PointcutConfig> pointcutConfigs =
-                    Lists.newArrayList(config.getPointcutConfigs());
-            boolean found = false;
-            for (ListIterator<PointcutConfig> i = pointcutConfigs.listIterator(); i.hasNext();) {
-                if (priorVersion.equals(i.next().getVersion())) {
-                    i.set(pointcutConfig);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                logger.warn("pointcut config unique hash not found: {}", priorVersion);
-                return priorVersion;
-            }
-            Config updatedConfig = Config.builder(config)
-                    .pointcutConfigs(pointcutConfigs)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
-            config = updatedConfig;
-        }
-        notifyConfigListeners();
-        return pointcutConfig.getVersion();
-    }
-
-    public void deletePointcutConfig(String version) throws IOException {
-        synchronized (writeLock) {
-            List<PointcutConfig> pointcutConfigs =
-                    Lists.newArrayList(config.getPointcutConfigs());
-            boolean found = false;
-            for (ListIterator<PointcutConfig> i = pointcutConfigs.listIterator(); i.hasNext();) {
-                if (version.equals(i.next().getVersion())) {
-                    i.remove();
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                logger.warn("pointcut config version not found: {}", version);
-                return;
-            }
-            Config updatedConfig = Config.builder(config)
-                    .pointcutConfigs(pointcutConfigs)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
-            config = updatedConfig;
-        }
-        notifyConfigListeners();
     }
 
     public String updateAdvancedConfig(AdvancedConfig advancedConfig, String priorVersion)
@@ -331,6 +244,70 @@ public class ConfigService {
         return pluginConfig.getVersion();
     }
 
+    public String insertCapturePoint(CapturePoint capturePoint) throws IOException {
+        synchronized (writeLock) {
+            List<CapturePoint> capturePoints = Lists.newArrayList(config.getCapturePoints());
+            capturePoints.add(capturePoint);
+            Config updatedConfig = Config.builder(config)
+                    .capturePoints(capturePoints)
+                    .build();
+            ConfigMapper.writeValue(configFile, updatedConfig);
+            config = updatedConfig;
+        }
+        notifyConfigListeners();
+        return capturePoint.getVersion();
+    }
+
+    public String updateCapturePoint(String priorVersion, CapturePoint capturePoint)
+            throws IOException {
+        synchronized (writeLock) {
+            List<CapturePoint> capturePoints = Lists.newArrayList(config.getCapturePoints());
+            boolean found = false;
+            for (ListIterator<CapturePoint> i = capturePoints.listIterator(); i.hasNext();) {
+                if (priorVersion.equals(i.next().getVersion())) {
+                    i.set(capturePoint);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                logger.warn("aspect config unique hash not found: {}", priorVersion);
+                return priorVersion;
+            }
+            Config updatedConfig = Config.builder(config)
+                    .capturePoints(capturePoints)
+                    .build();
+            ConfigMapper.writeValue(configFile, updatedConfig);
+            config = updatedConfig;
+        }
+        notifyConfigListeners();
+        return capturePoint.getVersion();
+    }
+
+    public void deleteCapturePoint(String version) throws IOException {
+        synchronized (writeLock) {
+            List<CapturePoint> capturePoints = Lists.newArrayList(config.getCapturePoints());
+            boolean found = false;
+            for (ListIterator<CapturePoint> i = capturePoints.listIterator(); i.hasNext();) {
+                if (version.equals(i.next().getVersion())) {
+                    i.remove();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                logger.warn("aspect config version not found: {}", version);
+                return;
+            }
+            Config updatedConfig = Config.builder(config)
+                    .capturePoints(capturePoints)
+                    .build();
+            ConfigMapper.writeValue(configFile, updatedConfig);
+            config = updatedConfig;
+        }
+        notifyConfigListeners();
+    }
+
     // the updated config is not passed to the listeners to avoid the race condition of multiple
     // config updates being sent out of order, instead listeners must call get*Config() which will
     // never return the updates out of order (at worst it may return the most recent update twice
@@ -358,7 +335,7 @@ public class ConfigService {
         if (!configFile.delete()) {
             throw new IOException("Could not delete file: " + configFile.getCanonicalPath());
         }
-        config = loadConfig(configFile, pluginDescriptorCache);
+        config = loadConfig(configFile, pluginDescriptorCache.getPluginDescriptors());
         notifyConfigListeners();
         notifyAllPluginConfigListeners();
     }
@@ -369,14 +346,14 @@ public class ConfigService {
     //
     // don't return ImmutableList
     @OnlyUsedByTests
-    public List<PointcutConfig> getPointcutConfigsNeverShaded() {
-        return config.getPointcutConfigs();
+    public List<CapturePoint> getCapturePointsNeverShaded() {
+        return config.getCapturePoints();
     }
 
-    private static Config loadConfig(File configFile, PluginDescriptorCache pluginDescriptorCache)
-            throws IOException {
+    private static Config loadConfig(File configFile,
+            ImmutableList<PluginDescriptor> pluginDescriptors) throws IOException {
         if (!configFile.exists()) {
-            Config config = Config.getDefault(pluginDescriptorCache.getPluginDescriptors());
+            Config config = Config.getDefault(pluginDescriptors);
             ConfigMapper.writeValue(configFile, config);
             return config;
         }
@@ -384,13 +361,12 @@ public class ConfigService {
         Config config;
         String warningMessage = null;
         try {
-            config = new ConfigMapper(pluginDescriptorCache.getPluginDescriptors())
-                    .readValue(content);
+            config = new ConfigMapper(pluginDescriptors).readValue(content);
         } catch (JsonProcessingException e) {
             logger.warn("error processing config file: {}", configFile.getAbsolutePath(), e);
             File backupFile = new File(configFile.getParentFile(), configFile.getName()
                     + ".invalid-orig");
-            config = Config.getDefault(pluginDescriptorCache.getPluginDescriptors());
+            config = Config.getDefault(pluginDescriptors);
             try {
                 Files.copy(configFile, backupFile);
                 warningMessage = "due to an error in the config file, it has been backed up to"

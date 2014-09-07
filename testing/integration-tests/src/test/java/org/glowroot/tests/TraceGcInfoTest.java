@@ -29,7 +29,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceGcInfo;
 
@@ -55,9 +55,9 @@ public class TraceGcInfoTest {
 
     @Before
     public void beforeEachTest() throws Exception {
-        GeneralConfig config = container.getConfigService().getGeneralConfig();
-        config.setGcInfoEnabled(true);
-        container.getConfigService().updateGeneralConfig(config);
+        AdvancedConfig config = container.getConfigService().getAdvancedConfig();
+        config.setCaptureGcInfo(true);
+        container.getConfigService().updateAdvancedConfig(config);
     }
 
     @After

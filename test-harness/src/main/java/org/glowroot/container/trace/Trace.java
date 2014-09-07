@@ -39,7 +39,7 @@ public class Trace {
 
     private final String id;
     private final boolean active;
-    private final boolean stuck;
+    private final boolean partial;
     private final long startTime;
     private final long captureTime;
     private final long duration;
@@ -55,20 +55,20 @@ public class Trace {
     @Nullable
     private final TraceThreadInfo threadInfo;
     private final ImmutableList<TraceGcInfo> gcInfos;
-    private final Existence spansExistence;
+    private final Existence entriesExistence;
     private final Existence profileExistence;
     private final Existence outlierProfileExistence;
 
-    private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
+    private Trace(String id, boolean active, boolean partial, long startTime, long captureTime,
             long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user,
             ImmutableSetMultimap<String, String> customAttributes, TraceMetric rootMetric,
             @Nullable TraceThreadInfo threadInfo, List<TraceGcInfo> gcInfos,
-            Existence spansExistence, Existence profileExistence,
+            Existence entriesExistence, Existence profileExistence,
             Existence outlierProfileExistence) {
         this.id = id;
         this.active = active;
-        this.stuck = stuck;
+        this.partial = partial;
         this.startTime = startTime;
         this.captureTime = captureTime;
         this.duration = duration;
@@ -81,7 +81,7 @@ public class Trace {
         this.rootMetric = rootMetric;
         this.threadInfo = threadInfo;
         this.gcInfos = ImmutableList.copyOf(gcInfos);
-        this.spansExistence = spansExistence;
+        this.entriesExistence = entriesExistence;
         this.profileExistence = profileExistence;
         this.outlierProfileExistence = outlierProfileExistence;
     }
@@ -94,8 +94,8 @@ public class Trace {
         return active;
     }
 
-    public boolean isStuck() {
-        return stuck;
+    public boolean isPartial() {
+        return partial;
     }
 
     public long getStartTime() {
@@ -149,8 +149,8 @@ public class Trace {
         return gcInfos;
     }
 
-    public Existence getSpansExistence() {
-        return spansExistence;
+    public Existence getEntriesExistence() {
+        return entriesExistence;
     }
 
     public Existence getProfileExistence() {
@@ -166,7 +166,7 @@ public class Trace {
         return MoreObjects.toStringHelper(this)
                 .add("id", id)
                 .add("active", active)
-                .add("stuck", stuck)
+                .add("partial", partial)
                 .add("startTime", startTime)
                 .add("captureTime", captureTime)
                 .add("duration", duration)
@@ -179,7 +179,7 @@ public class Trace {
                 .add("rootMetric", rootMetric)
                 .add("threadInfo", threadInfo)
                 .add("gcInfos", gcInfos)
-                .add("spansExistence", spansExistence)
+                .add("entriesExistence", entriesExistence)
                 .add("profileExistence", profileExistence)
                 .add("outlierProfileExistence", outlierProfileExistence)
                 .toString();
@@ -189,7 +189,7 @@ public class Trace {
     static Trace readValue(
             @JsonProperty("id") @Nullable String id,
             @JsonProperty("active") @Nullable Boolean active,
-            @JsonProperty("stuck") @Nullable Boolean stuck,
+            @JsonProperty("partial") @Nullable Boolean partial,
             @JsonProperty("startTime") @Nullable Long startTime,
             @JsonProperty("captureTime") @Nullable Long captureTime,
             @JsonProperty("duration") @Nullable Long duration,
@@ -202,14 +202,14 @@ public class Trace {
             @JsonProperty("metrics") @Nullable TraceMetric rootMetric,
             @JsonProperty("threadInfo") @Nullable TraceThreadInfo threadInfo,
             @JsonProperty("gcInfos") @Nullable List</*@Nullable*/TraceGcInfo> gcInfosUnchecked,
-            @JsonProperty("spansExistence") @Nullable Existence spansExistence,
+            @JsonProperty("entriesExistence") @Nullable Existence entriesExistence,
             @JsonProperty("profileExistence") @Nullable Existence profileExistence,
             @JsonProperty("outlierProfileExistence") @Nullable Existence outlierProfileExistence)
             throws JsonMappingException {
         List<TraceGcInfo> gcInfos = checkNotNullItemsForProperty(gcInfosUnchecked, "gcInfos");
         checkRequiredProperty(id, "id");
         checkRequiredProperty(active, "active");
-        checkRequiredProperty(stuck, "stuck");
+        checkRequiredProperty(partial, "partial");
         checkRequiredProperty(startTime, "startTime");
         checkRequiredProperty(captureTime, "captureTime");
         checkRequiredProperty(duration, "duration");
@@ -217,7 +217,7 @@ public class Trace {
         checkRequiredProperty(transactionName, "transactionName");
         checkRequiredProperty(headline, "headline");
         checkRequiredProperty(rootMetric, "metrics");
-        checkRequiredProperty(spansExistence, "spansExistence");
+        checkRequiredProperty(entriesExistence, "entriesExistence");
         checkRequiredProperty(profileExistence, "profileExistence");
         checkRequiredProperty(outlierProfileExistence, "outlierProfileExistence");
         ImmutableSetMultimap.Builder<String, String> theCustomAttributes =
@@ -235,9 +235,9 @@ public class Trace {
                 theCustomAttributes.putAll(entry.getKey(), values);
             }
         }
-        return new Trace(id, active, stuck, startTime, captureTime, duration, transactionType,
+        return new Trace(id, active, partial, startTime, captureTime, duration, transactionType,
                 transactionName, headline, error, user, theCustomAttributes.build(), rootMetric,
-                threadInfo, nullToEmpty(gcInfos), spansExistence, profileExistence,
+                threadInfo, nullToEmpty(gcInfos), entriesExistence, profileExistence,
                 outlierProfileExistence);
     }
 

@@ -23,9 +23,7 @@
       "type": "string",
       "label": "Session attributes",
       "description": [
-        "Comma-separated list of servlet session attributes to capture in the servlet span's",
-        " context map.",
-        " These captured attributes are viewable under the servlet span for any capture trace.",
+        "Comma-separated list of servlet session attributes to capture in the root trace entry.",
         " Nested paths are supported, e.g. mainObject.nestedObject.displayName.",
         " '*' at the end of a path is supported, e.g. mainObject.nestedObject.*, meaning capture",
         " all properties of mainObject.nestedObject (via reflection, looking at methods that begin",
@@ -40,9 +38,7 @@
       "label": "Session ID",
       "checkboxLabel": "Capture the servlet session ID",
       "description": [
-        "Capture the servlet session ID in the servlet span's context map.",
-        " The captured session ID is viewable under the servlet span for any trace in the trace",
-        " explorer."
+        "Capture the servlet session ID in the root trace entry."
       ]
     },
     {
@@ -62,8 +58,7 @@
       "default": "*",
       "label": "Capture request parameters",
       "description": [
-        "Comma-separated list of request parameters to capture in the servlet span's context map.",
-        " These captured parameters are viewable under the servlet span for any captured trace.",
+        "Comma-separated list of request parameters to capture in the root trace entry.",
         " The wildcard '*' is supported anywhere in the parameter."
       ]
     },
@@ -80,22 +75,18 @@
     {
       "name": "captureRequestHeaders",
       "type": "string",
-      "default": "",
       "label": "Capture request headers",
       "description": [
-        "Comma-separated list of request headers to capture in the servlet span's context map.",
-        " These captured headers are viewable under the servlet span for any captured trace.",
+        "Comma-separated list of request headers to capture in the root trace entry.",
         " The wildcard '*' is supported anywhere in the parameter."
       ]
     },
     {
       "name": "captureResponseHeaders",
       "type": "string",
-      "default": "",
       "label": "Capture response headers",
       "description": [
-        "Comma-separated list of response headers to capture in the servlet span's context map.",
-        " These captured headers are viewable under the servlet span for any captured trace.",
+        "Comma-separated list of response headers to capture in the root trace entry.",
         " The wildcard '*' is supported anywhere in the parameter."
       ]
     }

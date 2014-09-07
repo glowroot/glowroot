@@ -58,15 +58,14 @@ class ConfigMapper {
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapper.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final String GENERAL = "general";
+    private static final String TRACES = "traces";
     private static final String PROFILING = "profiling";
-    private static final String OUTLIER_PROFILING = "outlier-profiling";
-    private static final String USER_TRACING = "user-tracing";
+    private static final String USER_RECORDING = "userRecording";
     private static final String STORAGE = "storage";
     private static final String UI = "ui";
     private static final String ADVANCED = "advanced";
-    private static final String POINTCUTS = "pointcuts";
     private static final String PLUGINS = "plugins";
+    private static final String CAPTURE_POINTS = "capturePoints";
 
     static {
         String newline = StandardSystemProperty.LINE_SEPARATOR.value();
@@ -85,21 +84,19 @@ class ConfigMapper {
 
     Config readValue(String content) throws IOException {
         ObjectNode rootNode = (ObjectNode) mapper.readTree(content);
-        GeneralConfig generalConfig = readGeneralNode(rootNode);
+        TraceConfig traceConfig = readTracesNode(rootNode);
         ProfilingConfig profilingConfig = readProfilingNode(rootNode);
-        OutlierProfilingConfig outlierProfilingConfig = readOutlierProfilingNode(rootNode);
-        UserTracingConfig userTracingConfig = readUserTracingNode(rootNode);
+        UserRecordingConfig userRecordingConfig = readUserRecordingNode(rootNode);
         StorageConfig storageConfig = readStorageNode(rootNode);
         UserInterfaceConfig userInterfaceConfig =
                 readUserInterfaceNode(rootNode, pluginDescriptors);
         AdvancedConfig advancedConfig = readAdvancedNode(rootNode);
-        ImmutableList<PointcutConfig> pointcutConfigs = createPointcutConfigs(rootNode);
         ImmutableMap<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
         ImmutableList<PluginConfig> pluginConfigs =
                 createPluginConfigs(pluginNodes, pluginDescriptors);
-        return new Config(generalConfig, profilingConfig, outlierProfilingConfig,
-                userTracingConfig, storageConfig, userInterfaceConfig, advancedConfig,
-                pointcutConfigs, pluginConfigs);
+        ImmutableList<CapturePoint> capturePoints = createCapturePoints(rootNode);
+        return new Config(traceConfig, profilingConfig, userRecordingConfig, storageConfig,
+                userInterfaceConfig, advancedConfig, pluginConfigs, capturePoints);
     }
 
     static void writeValue(File configFile, Config config) throws IOException {
@@ -115,25 +112,18 @@ class ConfigMapper {
         // this view will exclude version properties
         ObjectWriter writer = mapper.writerWithView(FileView.class);
         jg.writeStartObject();
-        jg.writeFieldName(GENERAL);
-        writer.writeValue(jg, config.getGeneralConfig());
+        jg.writeFieldName(TRACES);
+        writer.writeValue(jg, config.getTraceConfig());
         jg.writeFieldName(PROFILING);
         writer.writeValue(jg, config.getProfilingConfig());
-        jg.writeFieldName(OUTLIER_PROFILING);
-        writer.writeValue(jg, config.getOutlierProfilingConfig());
-        jg.writeFieldName(USER_TRACING);
-        writer.writeValue(jg, config.getUserTracingConfig());
+        jg.writeFieldName(USER_RECORDING);
+        writer.writeValue(jg, config.getUserRecordingConfig());
         jg.writeFieldName(STORAGE);
         writer.writeValue(jg, config.getStorageConfig());
         jg.writeFieldName(UI);
         writer.writeValue(jg, config.getUserInterfaceConfig());
         jg.writeFieldName(ADVANCED);
         writer.writeValue(jg, config.getAdvancedConfig());
-        jg.writeArrayFieldStart(POINTCUTS);
-        for (PointcutConfig pointcutConfig : config.getPointcutConfigs()) {
-            writer.writeValue(jg, pointcutConfig);
-        }
-        jg.writeEndArray();
         jg.writeArrayFieldStart(PLUGINS);
         // write out plugin ordered by plugin id
         List<PluginConfig> orderedPluginConfigs =
@@ -142,27 +132,30 @@ class ConfigMapper {
             writer.writeValue(jg, pluginConfig);
         }
         jg.writeEndArray();
+        jg.writeArrayFieldStart(CAPTURE_POINTS);
+        for (CapturePoint capturePoint : config.getCapturePoints()) {
+            writer.writeValue(jg, capturePoint);
+        }
+        jg.writeEndArray();
         jg.writeEndObject();
         jg.close();
         // newline is not required, just a personal preference
         return sb.toString() + NEWLINE;
     }
 
-    private static GeneralConfig readGeneralNode(ObjectNode rootNode)
-            throws IOException {
-        ObjectNode configNode = (ObjectNode) rootNode.get(GENERAL);
-        GeneralConfig defaultConfig = GeneralConfig.getDefault();
+    private static TraceConfig readTracesNode(ObjectNode rootNode) throws IOException {
+        ObjectNode configNode = (ObjectNode) rootNode.get(TRACES);
+        TraceConfig defaultConfig = TraceConfig.getDefault();
         if (configNode == null) {
             return defaultConfig;
         } else {
-            GeneralConfig.Overlay overlay = GeneralConfig.overlay(defaultConfig);
+            TraceConfig.Overlay overlay = TraceConfig.overlay(defaultConfig);
             mapper.readerForUpdating(overlay).readValue(configNode);
             return overlay.build();
         }
     }
 
-    private static ProfilingConfig readProfilingNode(ObjectNode rootNode)
-            throws IOException {
+    private static ProfilingConfig readProfilingNode(ObjectNode rootNode) throws IOException {
         ObjectNode configNode = (ObjectNode) rootNode.get(PROFILING);
         ProfilingConfig defaultConfig = ProfilingConfig.getDefault();
         if (configNode == null) {
@@ -174,26 +167,14 @@ class ConfigMapper {
         }
     }
 
-    private static OutlierProfilingConfig readOutlierProfilingNode(ObjectNode rootNode)
+    private static UserRecordingConfig readUserRecordingNode(ObjectNode rootNode)
             throws IOException {
-        ObjectNode configNode = (ObjectNode) rootNode.get(OUTLIER_PROFILING);
-        OutlierProfilingConfig defaultConfig = OutlierProfilingConfig.getDefault();
+        ObjectNode configNode = (ObjectNode) rootNode.get(USER_RECORDING);
+        UserRecordingConfig defaultConfig = UserRecordingConfig.getDefault();
         if (configNode == null) {
             return defaultConfig;
         } else {
-            OutlierProfilingConfig.Overlay overlay = OutlierProfilingConfig.overlay(defaultConfig);
-            mapper.readerForUpdating(overlay).readValue(configNode);
-            return overlay.build();
-        }
-    }
-
-    private static UserTracingConfig readUserTracingNode(ObjectNode rootNode) throws IOException {
-        ObjectNode configNode = (ObjectNode) rootNode.get(USER_TRACING);
-        UserTracingConfig defaultConfig = UserTracingConfig.getDefault();
-        if (configNode == null) {
-            return defaultConfig;
-        } else {
-            UserTracingConfig.Overlay overlay = UserTracingConfig.overlay(defaultConfig);
+            UserRecordingConfig.Overlay overlay = UserRecordingConfig.overlay(defaultConfig);
             mapper.readerForUpdating(overlay).readValue(configNode);
             return overlay.build();
         }
@@ -261,8 +242,7 @@ class ConfigMapper {
 
     private static ImmutableList<PluginConfig> createPluginConfigs(
             ImmutableMap<String, ObjectNode> pluginNodes,
-            ImmutableList<PluginDescriptor> pluginDescriptors)
-            throws JsonMappingException {
+            ImmutableList<PluginDescriptor> pluginDescriptors) throws JsonMappingException {
         List<PluginConfig> pluginConfigs = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             ObjectNode pluginConfigNode = pluginNodes.get(pluginDescriptor.getId());
@@ -277,19 +257,19 @@ class ConfigMapper {
         return ImmutableList.copyOf(pluginConfigs);
     }
 
-    private static ImmutableList<PointcutConfig> createPointcutConfigs(ObjectNode rootNode)
+    private static ImmutableList<CapturePoint> createCapturePoints(ObjectNode rootNode)
             throws JsonProcessingException {
-        JsonNode pointcutsNode = rootNode.get(POINTCUTS);
+        JsonNode pointcutsNode = rootNode.get(CAPTURE_POINTS);
         if (pointcutsNode == null) {
             return ImmutableList.of();
         }
-        List<PointcutConfig> pointcutConfigs = Lists.newArrayList();
+        List<CapturePoint> capturePoints = Lists.newArrayList();
         for (JsonNode pointcutNode : pointcutsNode) {
-            PointcutConfig pointcutConfig =
-                    ObjectMappers.treeToRequiredValue(mapper, pointcutNode, PointcutConfig.class);
-            pointcutConfigs.add(pointcutConfig);
+            CapturePoint capturePoint =
+                    ObjectMappers.treeToRequiredValue(mapper, pointcutNode, CapturePoint.class);
+            capturePoints.add(capturePoint);
         }
-        return ImmutableList.copyOf(pointcutConfigs);
+        return ImmutableList.copyOf(capturePoints);
     }
 
     @SuppressWarnings("serial")
