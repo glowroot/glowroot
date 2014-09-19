@@ -192,100 +192,6 @@ glowroot.controller('PerformanceCtrl', [
       });
     });
 
-    var showingItemId;
-    $chart.bind('plothover', function (event, pos, item) {
-      if (item) {
-        var itemId = item.datapoint[0];
-        if (itemId !== showingItemId) {
-          showChartTooltip(item);
-          showingItemId = itemId;
-        }
-      } else {
-        hideTooltip();
-      }
-    });
-
-    function showChartTooltip(item) {
-      var x = item.pageX;
-      var y = item.pageY;
-      var captureTime = item.datapoint[0];
-      var from = $filter('date')(captureTime - fixedAggregateIntervalMillis, 'mediumTime');
-      var to = $filter('date')(captureTime, 'mediumTime');
-      var traceCount = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
-      var average;
-      if (traceCount === 0) {
-        average = '--';
-      } else {
-        average = item.datapoint[1].toFixed(2);
-      }
-      if (traceCount === 1) {
-        traceCount = traceCount + ' trace';
-      } else {
-        traceCount = traceCount + ' traces';
-      }
-      var text = '';
-      if (plotTransactionName) {
-        text += '<strong>' + plotTransactionName + '</strong><br>';
-      } else {
-        text += '<strong>All Transactions</strong><br>';
-      }
-      text += '<span class="aggregate-tooltip-label">From:</span>' + from + '<br>' +
-          '<span class="aggregate-tooltip-label">To:</span>' + to + '<br>' +
-          '<span class="aggregate-tooltip-label">Average:</span>' + average + ' seconds<br>' +
-          '<span class="aggregate-tooltip-label"></span>(' + traceCount + ')';
-      var $chartContainer = $('.chart-container');
-      var chartOffset = $chartContainer.offset();
-      var target = [ x - chartOffset.left + 1, y - chartOffset.top ];
-      $chart.qtip({
-        content: {
-          text: text
-        },
-        position: {
-          my: 'bottom center',
-          target: target,
-          adjust: {
-            y: -5
-          },
-          viewport: $(window),
-          // container is the dom node where qtip div is attached
-          // this needs to be inside the angular template so that its lifecycle is tied to the angular template
-          container: $chartContainer
-        },
-        style: {
-          classes: 'ui-tooltip-bootstrap qtip-border-color-0'
-        },
-        hide: {
-          event: false
-        },
-        show: {
-          event: false
-        },
-        events: {
-          hide: function () {
-            showingItemId = undefined;
-          }
-        }
-      });
-      $chart.qtip('show');
-    }
-
-    function hideTooltip() {
-      $chart.qtip('hide');
-    }
-
-    $chart.mousedown(function () {
-      hideTooltip();
-    });
-
-    $(document).keyup(function (e) {
-      // esc key
-      if (e.keyCode === 27 && showingItemId) {
-        // the tooltips have hide events that set showingItemId = undefined
-        // so showingItemId must be checked before calling hideTooltip()
-        hideTooltip();
-      }
-    });
-
     $scope.$watch('filterTransactionType', function (newValue, oldValue) {
       if (newValue !== oldValue) {
         $scope.selectedTransactionName = '';
@@ -505,8 +411,6 @@ glowroot.controller('PerformanceCtrl', [
     (function () {
       var options = {
         grid: {
-          hoverable: true,
-          mouseActiveRadius: 10,
           // min border margin should match trace chart so they are positioned the same from the top of page
           // without specifying min border margin, the point radius is used
           minBorderMargin: 10,
