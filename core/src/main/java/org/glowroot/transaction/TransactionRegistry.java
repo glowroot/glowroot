@@ -21,7 +21,6 @@ import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.markers.Singleton;
-import org.glowroot.transaction.model.CurrentTransactionMetricHolder;
 import org.glowroot.transaction.model.Transaction;
 
 /**
@@ -39,35 +38,21 @@ public class TransactionRegistry {
     private final Collection<Transaction> transactions = Sets.newConcurrentHashSet();
 
     // active running transaction being executed by the current thread
-    private final ThreadLocal</*@Nullable*/Transaction> currentTransactionHolder =
+    private final ThreadLocal</*@Nullable*/Transaction> currentTransaction =
             new ThreadLocal</*@Nullable*/Transaction>();
-
-    // active transaction metric being executed by the current thread
-    @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private final ThreadLocal<CurrentTransactionMetricHolder> currentTransactionMetricHolder =
-            new ThreadLocal<CurrentTransactionMetricHolder>() {
-                @Override
-                protected CurrentTransactionMetricHolder initialValue() {
-                    return new CurrentTransactionMetricHolder();
-                }
-            };
 
     @Nullable
     Transaction getCurrentTransaction() {
-        return currentTransactionHolder.get();
-    }
-
-    CurrentTransactionMetricHolder getCurrentTransactionMetricHolder() {
-        return currentTransactionMetricHolder.get();
+        return currentTransaction.get();
     }
 
     void addTransaction(Transaction transaction) {
-        currentTransactionHolder.set(transaction);
+        currentTransaction.set(transaction);
         transactions.add(transaction);
     }
 
     void removeTransaction(Transaction transaction) {
-        currentTransactionHolder.remove();
+        currentTransaction.remove();
         transactions.remove(transaction);
     }
 

@@ -43,8 +43,9 @@ public class TraceEntry {
 
     private final long startTick;
     // not volatile, so depends on memory barrier in Trace for visibility
-    @Nullable
-    private Long endTick;
+    private boolean completed;
+    // not volatile, so depends on memory barrier in Trace for visibility
+    private long endTick;
 
     private final int nestingLevel;
 
@@ -77,8 +78,11 @@ public class TraceEntry {
         return startTick;
     }
 
-    @Nullable
-    public Long getEndTick() {
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    public long getEndTick() {
         return endTick;
     }
 
@@ -110,6 +114,7 @@ public class TraceEntry {
 
     void setEndTick(long endTick) {
         this.endTick = endTick;
+        this.completed = true;
     }
 
     public void setStackTrace(ImmutableList<StackTraceElement> stackTrace) {
@@ -122,6 +127,7 @@ public class TraceEntry {
                 .add("message", messageSupplier == null ? null : messageSupplier.get())
                 .add("errorMessage", errorMessage)
                 .add("startTick", startTick)
+                .add("completed", completed)
                 .add("endTick", endTick)
                 .add("nestingLevel", nestingLevel)
                 .add("transactionMetric", transactionMetric)

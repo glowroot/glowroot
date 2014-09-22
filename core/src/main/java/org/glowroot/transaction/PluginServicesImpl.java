@@ -47,7 +47,6 @@ import org.glowroot.config.TraceConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.ThreadSafe;
-import org.glowroot.transaction.model.CurrentTransactionMetricHolder;
 import org.glowroot.transaction.model.MetricNameImpl;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.transaction.model.TransactionMetricExt;
@@ -213,11 +212,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction == null) {
-            CurrentTransactionMetricHolder currentTransactionMetricHolder =
-                    transactionRegistry.getCurrentTransactionMetricHolder();
             TransactionMetricImpl rootMetric =
-                    new TransactionMetricImpl((MetricNameImpl) metricName, null,
-                            currentTransactionMetricHolder, ticker);
+                    TransactionMetricImpl.createRootMetric((MetricNameImpl) metricName, ticker);
             long startTick = ticker.read();
             rootMetric.start(startTick);
             transaction = new Transaction(clock.currentTimeMillis(), transactionType,
@@ -255,23 +251,24 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.error("startTransactionMetric(): argument 'metricName' must be non-null");
             return NopTransactionMetric.INSTANCE;
         }
-        CurrentTransactionMetricHolder currentTransactionMetricHolder =
-                transactionRegistry.getCurrentTransactionMetricHolder();
-        TransactionMetricImpl currentMetric = currentTransactionMetricHolder.get();
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction == null) {
+            return NopTransactionMetric.INSTANCE;
+        }
+        TransactionMetricImpl currentMetric = transaction.getCurrentTransactionMetric();
         if (currentMetric == null) {
             return NopTransactionMetric.INSTANCE;
         }
         return currentMetric.startNestedMetric(metricName);
     }
 
-    private TransactionMetricExt startTransactionMetric(MetricName metricName, long startTick) {
+    private TransactionMetricExt startTransactionMetric(MetricName metricName, long startTick,
+            Transaction transaction) {
         if (metricName == null) {
             logger.error("startTransactionMetric(): argument 'metricName' must be non-null");
             return NopTransactionMetricExt.INSTANCE;
         }
-        CurrentTransactionMetricHolder currentTransactionMetricHolder =
-                transactionRegistry.getCurrentTransactionMetricHolder();
-        TransactionMetricImpl currentTransactionMetric = currentTransactionMetricHolder.get();
+        TransactionMetricImpl currentTransactionMetric = transaction.getCurrentTransactionMetric();
         if (currentTransactionMetric == null) {
             return NopTransactionMetricExt.INSTANCE;
         }
@@ -403,10 +400,12 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (transaction.getEntryCount() >= maxEntriesPerTrace) {
             // the entry limit has been exceeded for this trace
             transaction.addEntryLimitExceededMarkerIfNeeded();
-            TransactionMetricExt transactionMetric = startTransactionMetric(metricName, startTick);
+            TransactionMetricExt transactionMetric =
+                    startTransactionMetric(metricName, startTick, transaction);
             return new DummyTraceEntry(transactionMetric, startTick, transaction, messageSupplier);
         } else {
-            TransactionMetricExt transactionMetric = startTransactionMetric(metricName, startTick);
+            TransactionMetricExt transactionMetric =
+                    startTransactionMetric(metricName, startTick, transaction);
             org.glowroot.transaction.model.TraceEntry traceEntry =
                     transaction.pushEntry(startTick, messageSupplier, transactionMetric);
             return new TraceEntryImpl(traceEntry, transaction);

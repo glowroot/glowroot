@@ -15,7 +15,6 @@
  */
 package org.glowroot.plugin.jdbc;
 
-import java.lang.ref.WeakReference;
 import java.sql.Statement;
 import java.util.List;
 
@@ -40,21 +39,21 @@ class StatementMirror {
     @Nullable
     private List<String> batchedSql;
 
-    // the lastJdbcMessageSupplier is stored so that its numRows field can be incremented inside the
+    // the lastRecordCountObject is stored so that its numRows field can be incremented inside the
     // advice for ResultSet.next()
     //
     // PreparedStatementMirror objects are cached as long as the application server caches the
-    // PreparedStatement, so a weak reference is used here to allow the JdbcMessageSupplier to be
-    // collected once it is out of scope (and no longer strongly referenced via the current trace)
+    // PreparedStatement, so storing small RecordCountObject instead of JdbcMessageSupplier
+    // in order to avoid using WeakReference
     //
-    // to help out gc a little, JdbcAspect clears lastJdbcMessageSupplier on Statement.close(), but
-    // can't solely rely on this (and use strong reference) in case a jdbc driver implementation
-    // closes statements in finalize by calling an internal method and not calling public close()
+    // to help out gc a little, JdbcAspect clears lastRecordCountObject on Statement.close(), but
+    // can't solely rely on this in case a jdbc driver implementation closes statements in finalize
+    // by calling an internal method and not calling public close()
     //
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is adding batches into the statement and executing it
     @Nullable
-    private WeakReference<JdbcMessageSupplier> lastJdbcMessageSupplier;
+    private RecordCountObject lastRecordCountObject;
 
     void addBatch(String sql) {
         // synchronization isn't an issue here as this method is called only by
@@ -74,12 +73,8 @@ class StatementMirror {
     }
 
     @Nullable
-    JdbcMessageSupplier getLastJdbcMessageSupplier() {
-        if (lastJdbcMessageSupplier == null) {
-            return null;
-        } else {
-            return lastJdbcMessageSupplier.get();
-        }
+    RecordCountObject getLastRecordCountObject() {
+        return lastRecordCountObject;
     }
 
     void clearBatch() {
@@ -88,11 +83,11 @@ class StatementMirror {
         }
     }
 
-    void setLastJdbcMessageSupplier(@Nullable JdbcMessageSupplier jdbcMessageSupplier) {
-        if (jdbcMessageSupplier == null) {
-            lastJdbcMessageSupplier = null;
-        } else {
-            lastJdbcMessageSupplier = new WeakReference<JdbcMessageSupplier>(jdbcMessageSupplier);
-        }
+    void setLastRecordCountObject(RecordCountObject recordCountObject) {
+        this.lastRecordCountObject = recordCountObject;
+    }
+
+    void clearLastRecordCountObject() {
+        lastRecordCountObject = null;
     }
 }

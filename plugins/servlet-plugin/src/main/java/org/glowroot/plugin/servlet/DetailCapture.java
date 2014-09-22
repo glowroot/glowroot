@@ -78,6 +78,9 @@ class DetailCapture {
     static ImmutableMap<String, Object> captureRequestHeaders(Object request,
             RequestInvoker requestInvoker) {
         ImmutableList<Pattern> capturePatterns = ServletPluginProperties.captureRequestHeaders();
+        if (capturePatterns.isEmpty()) {
+            return ImmutableMap.of();
+        }
         ImmutableMap.Builder<String, Object> map = ImmutableMap.builder();
         Enumeration<String> headerNames = requestInvoker.getHeaderNames(request);
         if (headerNames == null) {

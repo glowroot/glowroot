@@ -47,7 +47,7 @@ public class Log4jAspect {
                 pluginServices.getMetricName(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
+            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object message,
@@ -76,7 +76,7 @@ public class Log4jAspect {
                 pluginServices.getMetricName(LogWithThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
+            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object message,
@@ -110,7 +110,7 @@ public class Log4jAspect {
                 pluginServices.getMetricName(LogWithPriorityAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object priority) {
-            if (!pluginServices.isEnabled() || LoggerPlugin.inAdvice.get()) {
+            if (LoggerPlugin.inAdvice.get() || !pluginServices.isEnabled()) {
                 return false;
             }
             String level = priority.toString();
@@ -144,7 +144,7 @@ public class Log4jAspect {
                 pluginServices.getMetricName(LogWithPriorityAndThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object priority) {
-            if (!pluginServices.isEnabled() || LoggerPlugin.inAdvice.get()) {
+            if (LoggerPlugin.inAdvice.get() || !pluginServices.isEnabled()) {
                 return false;
             }
             String level = priority.toString();
@@ -184,7 +184,7 @@ public class Log4jAspect {
                 pluginServices.getMetricName(LocalizedLogAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object priority) {
-            if (!pluginServices.isEnabled() || LoggerPlugin.inAdvice.get()) {
+            if (LoggerPlugin.inAdvice.get() || !pluginServices.isEnabled()) {
                 return false;
             }
             String level = priority.toString();
@@ -223,7 +223,7 @@ public class Log4jAspect {
                 pluginServices.getMetricName(LocalizedLogWithParametersAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object priority) {
-            if (!pluginServices.isEnabled() || LoggerPlugin.inAdvice.get()) {
+            if (LoggerPlugin.inAdvice.get() || !pluginServices.isEnabled()) {
                 return false;
             }
             String level = priority.toString();

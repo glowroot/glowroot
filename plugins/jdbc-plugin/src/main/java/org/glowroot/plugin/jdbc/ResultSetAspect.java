@@ -17,7 +17,6 @@ package org.glowroot.plugin.jdbc;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -27,6 +26,7 @@ import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.TransactionMetric;
+import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindTraveler;
@@ -47,10 +47,9 @@ public class ResultSetAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    // TODO optimization, remove ignoreSelfNested = true
     @Pointcut(className = "java.sql.ResultSet",
             methodName = "next|previous|relative|absolute|first|last", methodParameterTypes = "..",
-            ignoreSelfNested = true, metricName = "jdbc resultset navigate")
+            metricName = "jdbc resultset navigate")
     public static class NavigateAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(NavigateAdvice.class);
@@ -71,9 +70,9 @@ public class ResultSetAspect {
                     && pluginServices.getBooleanProperty("captureResultSetNavigate");
         }
         @IsEnabled
-        public static boolean isEnabled() {
+        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return pluginEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
+            return resultSet.hasGlowrootStatementMirror() && pluginEnabled;
         }
         @OnBefore
         @Nullable
@@ -86,24 +85,29 @@ public class ResultSetAspect {
         }
         @OnReturn
         public static void onReturn(@BindReturn boolean currentRowValid,
-                @BindReceiver ResultSet resultSet) {
+                @BindReceiver HasStatementMirror resultSet, @BindMethodName String methodName) {
             try {
-                Statement statement = resultSet.getStatement();
-                if (statement == null) {
-                    // this is not a statement execution, it is some other execution of
-                    // ResultSet.next(), e.g. Connection.getMetaData().getTables().next()
+                StatementMirror mirror = resultSet.getGlowrootStatementMirror();
+                if (mirror == null) {
+                    // this shouldn't happen since just checked above in isEnabled(), unless some
+                    // bizarre concurrent mis-usage of ResultSet
                     return;
                 }
-                StatementMirror mirror = getStatementMirror(statement);
-                JdbcMessageSupplier lastJdbcMessageSupplier = mirror.getLastJdbcMessageSupplier();
-                if (lastJdbcMessageSupplier == null) {
+                RecordCountObject lastRecordCountObject = mirror.getLastRecordCountObject();
+                if (lastRecordCountObject == null) {
                     // tracing must be disabled (e.g. exceeded trace entry limit)
                     return;
                 }
                 if (currentRowValid) {
-                    lastJdbcMessageSupplier.updateNumRows(resultSet.getRow());
+                    if (methodName.equals("next")) {
+                        // ResultSet.getRow() is sometimes not super duper fast due to ResultSet
+                        // wrapping and other checks, so this optimizes the common case
+                        lastRecordCountObject.incrementNumRows();
+                    } else {
+                        lastRecordCountObject.updateNumRows(((ResultSet) resultSet).getRow());
+                    }
                 } else {
-                    lastJdbcMessageSupplier.setHasPerformedNavigation();
+                    lastRecordCountObject.setHasPerformedNavigation();
                 }
             } catch (SQLException e) {
                 logger.warn(e.getMessage(), e);
@@ -136,9 +140,9 @@ public class ResultSetAspect {
                     && pluginServices.getBooleanProperty("captureResultSetGet");
         }
         @IsEnabled
-        public static boolean isEnabled() {
+        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return metricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
+            return metricEnabled && resultSet.hasGlowrootStatementMirror();
         }
         @OnBefore
         public static TransactionMetric onBefore() {
@@ -169,9 +173,9 @@ public class ResultSetAspect {
                     && pluginServices.getBooleanProperty("captureResultSetGet");
         }
         @IsEnabled
-        public static boolean isEnabled() {
+        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return metricEnabled && !DatabaseMetaDataAspect.isCurrentlyExecuting();
+            return metricEnabled && resultSet.hasGlowrootStatementMirror();
         }
         @OnBefore
         public static TransactionMetric onBefore() {
@@ -181,14 +185,5 @@ public class ResultSetAspect {
         public static void onAfter(@BindTraveler TransactionMetric transactionMetric) {
             transactionMetric.stop();
         }
-    }
-
-    private static StatementMirror getStatementMirror(Statement statement) {
-        StatementMirror mirror = ((HasStatementMirror) statement).getGlowrootStatementMirror();
-        if (mirror == null) {
-            mirror = new StatementMirror();
-            ((HasStatementMirror) statement).setGlowrootStatementMirror(mirror);
-        }
-        return mirror;
     }
 }

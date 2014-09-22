@@ -59,9 +59,11 @@ public class SessionAspect {
             // pointcut
             // after calls to the first two (no-arg, and passing true), a new session may have been
             // created (the third one -- passing false -- could be ignored but is harmless)
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
-            if (messageSupplier != null && sessionInvoker.isNew(session)) {
-                messageSupplier.setSessionIdUpdatedValue(sessionInvoker.getId(session));
+            if (sessionInvoker.isNew(session)) {
+                ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+                if (messageSupplier != null) {
+                    messageSupplier.setSessionIdUpdatedValue(sessionInvoker.getId(session));
+                }
             }
         }
     }

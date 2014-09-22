@@ -71,7 +71,7 @@ public class Slf4jAspect {
                 pluginServices.getMetricName(LogNoArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
+            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter String message,
@@ -100,7 +100,7 @@ public class Slf4jAspect {
                 pluginServices.getMetricName(LogOneArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
+            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(@BindParameter String format,
@@ -124,7 +124,7 @@ public class Slf4jAspect {
                 pluginServices.getMetricName(LogOneArgThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
+            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(@BindParameter String format,
@@ -148,7 +148,7 @@ public class Slf4jAspect {
                 pluginServices.getMetricName(LogTwoArgsAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
+            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(@BindParameter String format,
@@ -173,7 +173,7 @@ public class Slf4jAspect {
                 pluginServices.getMetricName(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
+            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(@BindParameter String format,

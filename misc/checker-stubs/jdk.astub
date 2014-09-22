@@ -45,6 +45,7 @@ package java.util;
 
 public class Arrays {
     public static <T extends @Nullable Object> List<T> asList(T... a);
+    public static void fill(@Nullable Object[] a, @Nullable Object val);
 }
 
 /* ========================================================================== */

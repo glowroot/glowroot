@@ -15,8 +15,6 @@
  */
 package org.glowroot.plugin.jdbc;
 
-import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -30,8 +28,6 @@ import org.glowroot.api.MessageSupplier;
  */
 class JdbcMessageSupplier extends MessageSupplier {
 
-    private static final int NEXT_HAS_NOT_BEEN_CALLED = -1;
-
     @Nullable
     private final String sql;
 
@@ -39,18 +35,15 @@ class JdbcMessageSupplier extends MessageSupplier {
 
     // cannot use ImmutableList for parameters since it can contain null elements
     @Nullable
-    private final List</*@Nullable*/Object> parameters;
+    private final BindParameterList parameters;
     @Nullable
-    private final ImmutableList<List</*@Nullable*/Object>> batchedParameters;
+    private final ImmutableList<BindParameterList> batchedParameters;
 
     // this is only used for batching of non-PreparedStatements
     @Nullable
     private final ImmutableList<String> batchedSqls;
 
-    // intentionally not volatile for performance, but it does mean partial and active trace
-    // captures may see stale value (but partial and active trace captures use memory barrier in
-    // Trace to ensure the values are at least visible as of the end of the last trace entry)
-    private int numRows = NEXT_HAS_NOT_BEEN_CALLED;
+    private final RecordCountObject recordCountObject = new RecordCountObject();
 
     static JdbcMessageSupplier create(String sql) {
         return new JdbcMessageSupplier(sql, null, null, null);
@@ -69,9 +62,8 @@ class JdbcMessageSupplier extends MessageSupplier {
                 null);
     }
 
-    private JdbcMessageSupplier(@Nullable String sql,
-            @Nullable List</*@Nullable*/Object> parameters,
-            @Nullable ImmutableList<List</*@Nullable*/Object>> batchedParameters,
+    private JdbcMessageSupplier(@Nullable String sql, @Nullable BindParameterList parameters,
+            @Nullable ImmutableList<BindParameterList> batchedParameters,
             @Nullable ImmutableList<String> batchedSqls) {
         if (sql == null && batchedSqls == null) {
             throw new AssertionError("Constructor args 'sql' and 'batchedSqls' cannot both"
@@ -100,7 +92,7 @@ class JdbcMessageSupplier extends MessageSupplier {
             sb.append(Integer.toString(batchedParameters.size()));
             sb.append(" x ");
         }
-        int numArgs = (numRows == NEXT_HAS_NOT_BEEN_CALLED) ? 1 : 2;
+        int numArgs = recordCountObject.hasPerformedNavigation() ? 2 : 1;
         String[] args = new String[numArgs];
         sb.append("{}");
         args[0] = sql;
@@ -109,14 +101,8 @@ class JdbcMessageSupplier extends MessageSupplier {
         return Message.from(sb.toString(), args);
     }
 
-    void setHasPerformedNavigation() {
-        if (numRows == NEXT_HAS_NOT_BEEN_CALLED) {
-            numRows = 0;
-        }
-    }
-
-    void updateNumRows(int currentRow) {
-        this.numRows = Math.max(this.numRows, currentRow);
+    RecordCountObject getRecordCountObject() {
+        return recordCountObject;
     }
 
     @EnsuresNonNullIf(expression = "parameters", result = true)
@@ -130,20 +116,21 @@ class JdbcMessageSupplier extends MessageSupplier {
     }
 
     private void appendParameters(StringBuilder sb) {
-        if (isUsingParameters() && !parameters.isEmpty()) {
+        if (isUsingParameters() && parameters.size() > 0) {
             appendParameters(sb, parameters);
         } else if (isUsingBatchedParameters()) {
-            for (List</*@Nullable*/Object> oneParameters : batchedParameters) {
+            for (BindParameterList oneParameters : batchedParameters) {
                 appendParameters(sb, oneParameters);
             }
         }
     }
 
     private void appendRowCount(StringBuilder sb, String[] args) {
-        if (numRows == NEXT_HAS_NOT_BEEN_CALLED) {
+        if (!recordCountObject.hasPerformedNavigation()) {
             return;
         }
         sb.append(" => {}");
+        int numRows = recordCountObject.getNumRows();
         if (numRows == 1) {
             sb.append(" row");
         } else {
@@ -163,7 +150,7 @@ class JdbcMessageSupplier extends MessageSupplier {
         }
     }
 
-    private static void appendParameters(StringBuilder sb, List</*@Nullable*/Object> parameters) {
+    private static void appendParameters(StringBuilder sb, BindParameterList parameters) {
         sb.append(" [");
         boolean first = true;
         for (Object parameter : parameters) {

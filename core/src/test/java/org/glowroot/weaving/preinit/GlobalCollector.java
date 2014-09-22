@@ -122,6 +122,13 @@ public class GlobalCollector {
         if (owner.startsWith("org/slf4j/") || owner.startsWith("org/glowroot/shaded/slf4j/")) {
             return;
         }
+        if (rootMethod.getOwner().startsWith("org/glowroot/transaction/model/Transaction")
+                && rootMethod.getName().equals("toString")
+                && rootMethod.getDesc().equals("()Ljava/lang/String;")) {
+            // special case since Transaction.toString() would otherwise pull in many other classes
+            // but it only exists for debugging so no need to worry about these classes
+            return;
+        }
         ClassCollector classCollector = optional.get();
         String methodId = rootMethod.getName() + ":" + rootMethod.getDesc();
         MethodCollector methodCollector = classCollector.getMethodCollector(methodId);

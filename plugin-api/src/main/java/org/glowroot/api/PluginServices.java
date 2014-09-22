@@ -86,7 +86,7 @@ public abstract class PluginServices {
     public static PluginServices get(String pluginId) {
         if (pluginId == null) {
             logger.error("get(): argument 'pluginId' must be non-null");
-            return PluginServicesNop.INSTANCE;
+            throw new AssertionError("Argument 'pluginId' must be non-null");
         }
         return getPluginServices(pluginId);
     }
@@ -385,33 +385,34 @@ public abstract class PluginServices {
                 // null return value indicates that glowroot is still starting
                 logger.error("plugin services requested while glowroot is still starting",
                         new IllegalStateException());
-                return PluginServicesNop.INSTANCE;
+                throw new AssertionError(
+                        "Plugin services requested while glowroot is still starting");
             }
             return pluginServices;
         } catch (ClassNotFoundException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return PluginServicesNop.INSTANCE;
+            throw new AssertionError(e);
         } catch (NoSuchMethodException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return PluginServicesNop.INSTANCE;
+            throw new AssertionError(e);
         } catch (SecurityException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return PluginServicesNop.INSTANCE;
+            throw new AssertionError(e);
         } catch (IllegalAccessException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return PluginServicesNop.INSTANCE;
+            throw new AssertionError(e);
         } catch (IllegalArgumentException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return PluginServicesNop.INSTANCE;
+            throw new AssertionError(e);
         } catch (InvocationTargetException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return PluginServicesNop.INSTANCE;
+            throw new AssertionError(e);
         }
     }
 
@@ -420,111 +421,5 @@ public abstract class PluginServices {
         // this avoids race condition worries that two updates may get sent to the receiver in the
         // wrong order
         void onChange();
-    }
-
-    private static class PluginServicesNop extends PluginServices {
-        private static final PluginServicesNop INSTANCE = new PluginServicesNop();
-        private PluginServicesNop() {}
-        @Override
-        public boolean isEnabled() {
-            return false;
-        }
-        @Override
-        public String getStringProperty(String name) {
-            return "";
-        }
-        @Override
-        public boolean getBooleanProperty(String name) {
-            return false;
-        }
-        @Override
-        @Nullable
-        public Double getDoubleProperty(String name) {
-            return null;
-        }
-        @Override
-        public void registerConfigListener(ConfigListener listener) {}
-        @Override
-        public MetricName getMetricName(Class<?> adviceClass) {
-            return NopMetricName.INSTANCE;
-        }
-        @Override
-        public TraceEntry startTransaction(String transactionType, String transactionName,
-                MessageSupplier messageSupplier, MetricName metricName) {
-            return NopTraceEntry.INSTANCE;
-        }
-        @Override
-        public TraceEntry startTraceEntry(MessageSupplier messageSupplier, MetricName metricName) {
-            return NopTraceEntry.INSTANCE;
-        }
-        @Override
-        public TransactionMetric startTransactionMetric(MetricName metricName) {
-            return NopTransactionMetric.INSTANCE;
-        }
-        @Override
-        public CompletedTraceEntry addTraceEntry(MessageSupplier messageSupplier) {
-            return NopCompletedEntry.INSTANCE;
-        }
-        @Override
-        public CompletedTraceEntry addTraceEntry(ErrorMessage errorMessage) {
-            return NopCompletedEntry.INSTANCE;
-        }
-        @Override
-        public void setTransactionType(@Nullable String transactionType) {}
-        @Override
-        public void setTransactionName(@Nullable String transactionName) {}
-        @Override
-        public void setTransactionError(@Nullable String error) {}
-        @Override
-        public void setTransactionUser(@Nullable String user) {}
-        @Override
-        public void setTransactionCustomAttribute(String name, @Nullable String value) {}
-        @Override
-        public void setTraceStoreThreshold(long threshold, TimeUnit unit) {}
-        @Override
-        public boolean isInTransaction() {
-            return false;
-        }
-
-        private static class NopMetricName implements MetricName {
-            private static final NopMetricName INSTANCE = new NopMetricName();
-            private NopMetricName() {}
-        }
-
-        private static class NopTraceEntry implements TraceEntry {
-            private static final NopTraceEntry INSTANCE = new NopTraceEntry();
-            private NopTraceEntry() {}
-            @Override
-            public CompletedTraceEntry end() {
-                return NopCompletedEntry.INSTANCE;
-            }
-            @Override
-            public CompletedTraceEntry endWithStackTrace(long threshold, TimeUnit unit) {
-                return NopCompletedEntry.INSTANCE;
-            }
-            @Override
-            public CompletedTraceEntry endWithError(ErrorMessage errorMessage) {
-                return NopCompletedEntry.INSTANCE;
-            }
-            @Override
-            @Nullable
-            public MessageSupplier getMessageSupplier() {
-                return null;
-            }
-        }
-
-        private static class NopTransactionMetric implements TransactionMetric {
-            private static final NopTransactionMetric INSTANCE = new NopTransactionMetric();
-            private NopTransactionMetric() {}
-            @Override
-            public void stop() {}
-        }
-
-        private static class NopCompletedEntry implements CompletedTraceEntry {
-            private static final NopCompletedEntry INSTANCE = new NopCompletedEntry();
-            private NopCompletedEntry() {}
-            @Override
-            public void captureStackTrace() {}
-        }
     }
 }

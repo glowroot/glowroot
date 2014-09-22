@@ -180,8 +180,7 @@ public class JdbcPluginTest {
         assertThat(entries).hasSize(2);
         TraceEntry jdbcEntry = entries.get(1);
         assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee"
-                        + " where name like ? ['john%'] => 1 row");
+                "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
     }
 
     @Test
@@ -317,7 +316,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
+        // may capture prepared statement used by driver internally to fetch metadata
+        assertThat(entries.size()).isGreaterThanOrEqualTo(1);
         assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(1);
         assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
         assertThat(trace.getRootMetric().getNestedMetrics().get(0).getName())
@@ -334,7 +334,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
+        // may capture prepared statement used by driver internally to fetch metadata
+        assertThat(entries.size()).isGreaterThanOrEqualTo(2);
         assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc metadata:"
                 + " DatabaseMetaData.getTables()");
         assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(1);
@@ -414,7 +415,7 @@ public class JdbcPluginTest {
                 + " insert into employee (name) values ('pig will')");
     }
 
-    // this test validates that lastJdbcMessageSupplier is cleared so that its numRows won't be
+    // this test validates that lastRecordCountObject is cleared so that its numRows won't be
     // updated if the plugin is re-enabled in the middle of iterating over a different result set
     // (see related comments in StatementAspect)
     @Test

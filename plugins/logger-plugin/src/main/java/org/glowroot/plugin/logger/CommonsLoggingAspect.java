@@ -45,7 +45,7 @@ public class CommonsLoggingAspect {
                 pluginServices.getMetricName(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
+            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object message,
@@ -74,7 +74,7 @@ public class CommonsLoggingAspect {
                 pluginServices.getMetricName(LogWithThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && !LoggerPlugin.inAdvice.get();
+            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object message,

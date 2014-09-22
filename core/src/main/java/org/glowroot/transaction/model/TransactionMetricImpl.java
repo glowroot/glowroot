@@ -16,9 +16,7 @@
 package org.glowroot.transaction.model;
 
 import java.io.IOException;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.MoreObjects;
@@ -68,7 +66,7 @@ public class TransactionMetricImpl implements TransactionMetricExt {
     //
     // lazy initialize to save memory in common case where this is a leaf metric
     @MonotonicNonNull
-    private Map<MetricNameImpl, TransactionMetricImpl> nestedMetrics;
+    private NestedMetricMap nestedMetrics;
 
     // separate list for thread safe access by other threads (e.g. partial trace capture and
     // active trace viewer)
@@ -85,11 +83,13 @@ public class TransactionMetricImpl implements TransactionMetricExt {
 
     private final Ticker ticker;
 
-    // optimization for common case of re-requesting same nested metric over and over
-    @MonotonicNonNull
-    private TransactionMetricImpl cachedNestedMetric;
+    public static TransactionMetricImpl createRootMetric(MetricNameImpl metricName, Ticker ticker) {
+        return new TransactionMetricImpl(metricName, null, new CurrentTransactionMetricHolder(),
+                ticker);
+    }
 
-    public TransactionMetricImpl(MetricNameImpl metricName, @Nullable TransactionMetricImpl parent,
+    private TransactionMetricImpl(MetricNameImpl metricName,
+            @Nullable TransactionMetricImpl parent,
             CurrentTransactionMetricHolder currentTransactionMetricHolder, Ticker ticker) {
         this.metricName = metricName;
         this.parent = parent;
@@ -102,8 +102,6 @@ public class TransactionMetricImpl implements TransactionMetricExt {
         jg.writeStartObject();
         jg.writeStringField("name", getName());
 
-        // selfNestingLevel is read first since it is used as a memory barrier so that the
-        // non-volatile fields below will be visible to this thread
         boolean active = selfNestingLevel > 0;
 
         if (active) {
@@ -173,8 +171,6 @@ public class TransactionMetricImpl implements TransactionMetricExt {
 
     public void start(long startTick) {
         this.startTick = startTick;
-        // selfNestingLevel is incremented after updating startTick since selfNestingLevel is used
-        // as a memory barrier so startTick will be visible to other threads in copyOf()
         selfNestingLevel++;
         currentTransactionMetricHolder.set(this);
     }
@@ -185,8 +181,6 @@ public class TransactionMetricImpl implements TransactionMetricExt {
             recordData(endTick - startTick);
             currentTransactionMetricHolder.set(parent);
         }
-        // selfNestingLevel is decremented after recording data since it is volatile and creates a
-        // memory barrier so that all updated fields will be visible to other threads in copyOf()
         selfNestingLevel--;
     }
 
@@ -238,26 +232,20 @@ public class TransactionMetricImpl implements TransactionMetricExt {
         return startNestedMetricInternal(metricName, startTick);
     }
 
-    private TransactionMetricImpl startNestedMetricInternal(MetricName metricName,
-            long startTick) {
-        // optimization for common case of starting same nested metric over and over
-        if (cachedNestedMetric != null && cachedNestedMetric.getMetricName() == metricName) {
-            cachedNestedMetric.start(startTick);
-            return cachedNestedMetric;
-        }
+    CurrentTransactionMetricHolder getCurrentTransactionMetricHolder() {
+        return currentTransactionMetricHolder;
+    }
+
+    private TransactionMetricImpl startNestedMetricInternal(MetricName metricName, long startTick) {
         if (nestedMetrics == null) {
-            // reduce capacity from default 32 down to 16 just to save a bit of memory
-            // don't reduce further or it will increase hash collisions and impact get performance
-            nestedMetrics = new IdentityHashMap<MetricNameImpl, TransactionMetricImpl>(16);
-        }
-        TransactionMetricImpl nestedMetric = nestedMetrics.get(metricName);
-        if (nestedMetric != null) {
-            nestedMetric.start(startTick);
-            // optimization for common case of re-requesting same nested metric over and over
-            cachedNestedMetric = nestedMetric;
-            return nestedMetric;
+            nestedMetrics = new NestedMetricMap();
         }
         MetricNameImpl metricNameImpl = (MetricNameImpl) metricName;
+        TransactionMetricImpl nestedMetric = nestedMetrics.get(metricNameImpl);
+        if (nestedMetric != null) {
+            nestedMetric.start(startTick);
+            return nestedMetric;
+        }
         nestedMetric = new TransactionMetricImpl(metricNameImpl, this,
                 currentTransactionMetricHolder, ticker);
         nestedMetric.start(startTick);
@@ -268,8 +256,6 @@ public class TransactionMetricImpl implements TransactionMetricExt {
         synchronized (threadSafeNestedMetrics) {
             threadSafeNestedMetrics.add(nestedMetric);
         }
-        // optimization for common case of re-requesting same nested metric over and over
-        cachedNestedMetric = nestedMetric;
         return nestedMetric;
     }
 

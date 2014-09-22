@@ -51,7 +51,7 @@ public class ServletInitAspect {
                 pluginServices.getMetricName(ContextInitializedAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
+            return ServletPluginProperties.captureStartup() && pluginServices.isEnabled();
         }
         @OnBefore
         @Nullable
@@ -80,7 +80,7 @@ public class ServletInitAspect {
                 pluginServices.getMetricName(ServletInitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
+            return ServletPluginProperties.captureStartup() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object servlet) {
@@ -107,7 +107,7 @@ public class ServletInitAspect {
                 pluginServices.getMetricName(FilterInitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
+            return ServletPluginProperties.captureStartup() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object filter) {

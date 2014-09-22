@@ -42,15 +42,6 @@ public class DatabaseMetaDataAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    // DatabaseMetaData method timings are captured below, so this thread local is used to
-    // avoid capturing driver-specific java.sql.Statement executions used to implement the
-    // method internally (especially since it is haphazard whether a particular driver
-    // internally uses a java.sql API that is woven, or an internal API, or even a mis-matched
-    // combination like using a PreparedStatement but not creating it via
-    // Connection.prepareStatement())
-    private static final ThreadLocal</*@Nullable*/String> currentlyExecutingMethodName =
-            new ThreadLocal</*@Nullable*/String>();
-
     @Pointcut(className = "java.sql.DatabaseMetaData", methodName = "*",
             methodParameterTypes = {".."}, ignoreSelfNested = true, metricName = "jdbc metadata")
     public static class AllMethodAdvice {
@@ -76,7 +67,6 @@ public class DatabaseMetaDataAspect {
         @OnBefore
         @Nullable
         public static Object onBefore(@BindMethodName String methodName) {
-            currentlyExecutingMethodName.set(methodName);
             if (pluginServices.isEnabled()) {
                 if (entryEnabled) {
                     return pluginServices.startTraceEntry(MessageSupplier.from("jdbc metadata:"
@@ -90,9 +80,6 @@ public class DatabaseMetaDataAspect {
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable Object entryOrMetric) {
-            // don't need to track prior value and reset to that value, since
-            // @Pointcut.ignoreSelfNested = true prevents re-entrant calls
-            currentlyExecutingMethodName.remove();
             if (entryOrMetric == null) {
                 return;
             }
@@ -106,9 +93,6 @@ public class DatabaseMetaDataAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler @Nullable Object entryOrMetric) {
-            // don't need to track prior value and reset to that value, since
-            // @Pointcut.ignoreSelfNested = true prevents re-entrant calls
-            currentlyExecutingMethodName.remove();
             if (entryOrMetric == null) {
                 return;
             }
@@ -118,14 +102,5 @@ public class DatabaseMetaDataAspect {
                 ((TransactionMetric) entryOrMetric).stop();
             }
         }
-    }
-
-    static boolean isCurrentlyExecuting() {
-        return currentlyExecutingMethodName.get() != null;
-    }
-
-    @Nullable
-    static String getCurrentlyExecutingMethodName() {
-        return currentlyExecutingMethodName.get();
     }
 }

@@ -71,7 +71,7 @@ public class ServletAspect {
         @IsEnabled
         public static boolean isEnabled() {
             // only enabled if it is not contained in another servlet or filter
-            return pluginServices.isEnabled() && topLevel.get() == null;
+            return topLevel.get() == null && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object request,

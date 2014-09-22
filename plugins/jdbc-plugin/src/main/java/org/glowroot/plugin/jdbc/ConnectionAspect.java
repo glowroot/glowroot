@@ -48,16 +48,20 @@ public class ConnectionAspect {
         pluginServices.registerConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
-                captureConnectionLifecycleTraceEntries = pluginServices
-                        .getBooleanProperty("captureConnectionLifecycleTraceEntries");
-                captureTransactionLifecycleTraceEntries = pluginServices
-                        .getBooleanProperty("captureTransactionLifecycleTraceEntries");
+                captureConnectionLifecycleTraceEntries = pluginServices.isEnabled()
+                        && pluginServices.getBooleanProperty(
+                                "captureConnectionLifecycleTraceEntries");
+                captureTransactionLifecycleTraceEntries = pluginServices.isEnabled()
+                        && pluginServices.getBooleanProperty(
+                                "captureTransactionLifecycleTraceEntries");
             }
         });
-        captureConnectionLifecycleTraceEntries =
-                pluginServices.getBooleanProperty("captureConnectionLifecycleTraceEntries");
-        captureTransactionLifecycleTraceEntries =
-                pluginServices.getBooleanProperty("captureTransactionLifecycleTraceEntries");
+        captureConnectionLifecycleTraceEntries = pluginServices.isEnabled()
+                && pluginServices.getBooleanProperty(
+                        "captureConnectionLifecycleTraceEntries");
+        captureTransactionLifecycleTraceEntries = pluginServices.isEnabled()
+                && pluginServices.getBooleanProperty(
+                        "captureTransactionLifecycleTraceEntries");
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "commit", ignoreSelfNested = true,
@@ -157,7 +161,7 @@ public class ConnectionAspect {
                 pluginServices.getMetricName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && captureTransactionLifecycleTraceEntries;
+            return captureTransactionLifecycleTraceEntries;
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter boolean autoCommit) {

@@ -157,8 +157,8 @@ public class EntriesCharSourceCreator {
             jg.writeStartObject();
             jg.writeNumberField("offset", traceEntry.getStartTick() - transactionStartTick);
             jg.writeFieldName("duration");
-            Long endTick = traceEntry.getEndTick();
-            if (endTick != null && Ticker.lessThanOrEqual(endTick, captureTick)) {
+            long endTick = traceEntry.getEndTick();
+            if (traceEntry.isCompleted() && Ticker.lessThanOrEqual(endTick, captureTick)) {
                 jg.writeNumber(endTick - traceEntry.getStartTick());
             } else {
                 jg.writeNumber(captureTick - traceEntry.getStartTick());

@@ -18,7 +18,7 @@ package org.glowroot.transaction;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.markers.ThreadSafe;
-import org.glowroot.transaction.model.CurrentTransactionMetricHolder;
+import org.glowroot.transaction.model.Transaction;
 import org.glowroot.transaction.model.TransactionMetricExt;
 import org.glowroot.transaction.model.TransactionMetricImpl;
 import org.glowroot.weaving.WeavingTimerService;
@@ -40,9 +40,11 @@ class WeavingTimerServiceImpl implements WeavingTimerService {
 
     @Override
     public WeavingTimer start() {
-        CurrentTransactionMetricHolder currentTransactionMetricHolder =
-                transactionRegistry.getCurrentTransactionMetricHolder();
-        TransactionMetricImpl currentMetric = currentTransactionMetricHolder.get();
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction == null) {
+            return NopWeavingTimer.INSTANCE;
+        }
+        TransactionMetricImpl currentMetric = transaction.getCurrentTransactionMetric();
         if (currentMetric == null) {
             return NopWeavingTimer.INSTANCE;
         }

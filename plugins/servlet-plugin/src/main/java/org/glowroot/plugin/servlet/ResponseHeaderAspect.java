@@ -46,7 +46,7 @@ public class ResponseHeaderAspect {
     };
 
     @Pointcut(className = "javax.servlet.ServletResponse", methodName = "setContentLength",
-            methodParameterTypes = {"int"}, ignoreSelfNested = true)
+            methodParameterTypes = {"int"})
     public static class SetContentLengthAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -70,7 +70,7 @@ public class ResponseHeaderAspect {
     }
 
     @Pointcut(className = "javax.servlet.ServletResponse", methodName = "setContentType",
-            methodParameterTypes = {"java.lang.String"}, ignoreSelfNested = true)
+            methodParameterTypes = {"java.lang.String"})
     public static class SetContentTypeAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -102,7 +102,7 @@ public class ResponseHeaderAspect {
     }
 
     @Pointcut(className = "javax.servlet.ServletResponse", methodName = "setCharacterEncoding",
-            methodParameterTypes = {"java.lang.String"}, ignoreSelfNested = true)
+            methodParameterTypes = {"java.lang.String"})
     public static class SetCharacterEncodingAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -131,7 +131,7 @@ public class ResponseHeaderAspect {
     }
 
     @Pointcut(className = "javax.servlet.ServletResponse", methodName = "setLocale",
-            methodParameterTypes = {"java.util.Locale"}, ignoreSelfNested = true)
+            methodParameterTypes = {"java.util.Locale"})
     public static class SetLocaleAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -192,7 +192,7 @@ public class ResponseHeaderAspect {
     }
 
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "setDateHeader",
-            methodParameterTypes = {"java.lang.String", "long"}, ignoreSelfNested = true)
+            methodParameterTypes = {"java.lang.String", "long"})
     public static class SetDateHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -216,7 +216,7 @@ public class ResponseHeaderAspect {
     }
 
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "setIntHeader",
-            methodParameterTypes = {"java.lang.String", "int"}, ignoreSelfNested = true)
+            methodParameterTypes = {"java.lang.String", "int"})
     public static class SetIntHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -265,7 +265,7 @@ public class ResponseHeaderAspect {
     }
 
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "addDateHeader",
-            methodParameterTypes = {"java.lang.String", "long"}, ignoreSelfNested = true)
+            methodParameterTypes = {"java.lang.String", "long"})
     public static class AddDateHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -289,7 +289,7 @@ public class ResponseHeaderAspect {
     }
 
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "addIntHeader",
-            methodParameterTypes = {"java.lang.String", "int"}, ignoreSelfNested = true)
+            methodParameterTypes = {"java.lang.String", "int"})
     public static class AddIntHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {

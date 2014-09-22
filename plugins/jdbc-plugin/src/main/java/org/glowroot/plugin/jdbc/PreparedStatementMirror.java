@@ -17,10 +17,8 @@ package org.glowroot.plugin.jdbc;
 
 import java.sql.PreparedStatement;
 import java.util.Collection;
-import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.hash.HashCode;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -34,18 +32,21 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 class PreparedStatementMirror extends StatementMirror {
 
+    private static final int PARAMETERS_INITIAL_CAPACITY = 20;
+
     private final String sql;
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is setting parameter values into the prepared statement and executing it
-    private List</*@Nullable*/Object> parameters;
+    private BindParameterList parameters;
+    private boolean parametersCopied;
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is setting parameter values into the prepared statement and executing it
     @Nullable
-    private Collection<List</*@Nullable*/Object>> batchedParameters;
+    private Collection<BindParameterList> batchedParameters;
 
     public PreparedStatementMirror(String sql) {
         this.sql = sql;
-        parameters = Lists.newArrayList();
+        parameters = new BindParameterList(PARAMETERS_INITIAL_CAPACITY);
     }
 
     public void addBatch() {
@@ -54,10 +55,10 @@ class PreparedStatementMirror extends StatementMirror {
             batchedParameters = Queues.newConcurrentLinkedQueue();
         }
         batchedParameters.add(parameters);
-        parameters = Lists.newArrayListWithCapacity(parameters.size());
+        parameters = new BindParameterList(parameters.size());
     }
 
-    public ImmutableList<List</*@Nullable*/Object>> getBatchedParametersCopy() {
+    public ImmutableList<BindParameterList> getBatchedParametersCopy() {
         if (batchedParameters == null) {
             return ImmutableList.of();
         } else {
@@ -67,9 +68,10 @@ class PreparedStatementMirror extends StatementMirror {
         }
     }
 
-    public List</*@Nullable*/Object> getParametersCopy() {
-        // cannot return ImmutableList.copyOf() since ImmutableList does not allow null elements
-        return Lists.newArrayList(parameters);
+    @Nullable
+    public BindParameterList getParametersCopy() {
+        parametersCopied = true;
+        return parameters;
     }
 
     public String getSql() {
@@ -78,24 +80,21 @@ class PreparedStatementMirror extends StatementMirror {
 
     // remember parameterIndex starts at 1 not 0
     public void setParameterValue(int parameterIndex, Object object) {
-        if (parameterIndex == parameters.size() + 1) {
-            // common path
-            parameters.add(object);
-        } else if (parameterIndex < parameters.size() + 1) {
-            // overwrite existing value
-            parameters.set(parameterIndex - 1, object);
-        } else {
-            // expand list with nulls
-            for (int i = parameters.size() + 1; i < parameterIndex; i++) {
-                parameters.add(null);
-            }
-            parameters.add(object);
+        if (parametersCopied) {
+            parameters = BindParameterList.copyOf(parameters);
+            parametersCopied = false;
         }
+        parameters.set(parameterIndex - 1, object);
     }
 
     @Override
     public void clearBatch() {
-        parameters.clear();
+        if (parametersCopied) {
+            parameters = new BindParameterList(parameters.size());
+            parametersCopied = false;
+        } else {
+            parameters.clear();
+        }
         if (batchedParameters != null) {
             batchedParameters.clear();
         }

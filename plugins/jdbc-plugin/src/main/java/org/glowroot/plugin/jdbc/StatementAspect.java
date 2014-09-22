@@ -18,14 +18,10 @@ package org.glowroot.plugin.jdbc;
 import java.io.InputStream;
 import java.io.Reader;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.ErrorMessage;
-import org.glowroot.api.Logger;
-import org.glowroot.api.LoggerFactory;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
@@ -57,11 +53,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 // must be tracked for their entire life
 public class StatementAspect {
 
-    private static final Logger logger = LoggerFactory.getLogger(StatementAspect.class);
-
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
-
-    private static final AtomicBoolean noSqlTextAvailableLoggedOnce = new AtomicBoolean();
 
     private static volatile boolean captureBindParameters;
 
@@ -77,18 +69,24 @@ public class StatementAspect {
 
     // ===================== Mixin =====================
 
-    @Mixin(target = "java.sql.Statement")
+    @Mixin(target = {"java.sql.Statement", "java.sql.ResultSet"})
     public static class HasStatementMirrorImpl implements HasStatementMirror {
+        // the field and method names are verbose to avoid conflict since they will become fields
+        // and methods in all classes that extend java.sql.Statement or java.sql.ResultSet
         @Nullable
-        private volatile StatementMirror statementMirror;
+        private volatile StatementMirror glowrootStatementMirror;
         @Override
         @Nullable
         public StatementMirror getGlowrootStatementMirror() {
-            return statementMirror;
+            return glowrootStatementMirror;
         }
         @Override
-        public void setGlowrootStatementMirror(StatementMirror statementMirror) {
-            this.statementMirror = statementMirror;
+        public void setGlowrootStatementMirror(@Nullable StatementMirror glowrootStatementMirror) {
+            this.glowrootStatementMirror = glowrootStatementMirror;
+        }
+        @Override
+        public boolean hasGlowrootStatementMirror() {
+            return glowrootStatementMirror != null;
         }
     }
 
@@ -97,7 +95,8 @@ public class StatementAspect {
     public interface HasStatementMirror {
         @Nullable
         StatementMirror getGlowrootStatementMirror();
-        void setGlowrootStatementMirror(StatementMirror statementMirror);
+        void setGlowrootStatementMirror(@Nullable StatementMirror glowrootStatementMirror);
+        boolean hasGlowrootStatementMirror();
     }
 
     // ===================== Statement Preparation =====================
@@ -112,20 +111,17 @@ public class StatementAspect {
         @OnBefore
         @Nullable
         public static TransactionMetric onBefore() {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            // (can't use @IsEnabled since need @OnReturn to always execute)
-            if (pluginServices.isEnabled()
-                    && !DatabaseMetaDataAspect.isCurrentlyExecuting()) {
+            if (pluginServices.isEnabled()) {
                 return pluginServices.startTransactionMetric(metricName);
             } else {
                 return null;
             }
         }
         @OnReturn
-        public static void onReturn(@BindReturn PreparedStatement preparedStatement,
+        public static void onReturn(@BindReturn HasStatementMirror preparedStatement,
                 @BindParameter String sql) {
-            ((HasStatementMirror) preparedStatement)
-                    .setGlowrootStatementMirror(new PreparedStatementMirror(sql));
+            // this runs even if plugin is temporarily disabled
+            preparedStatement.setGlowrootStatementMirror(new PreparedStatementMirror(sql));
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable TransactionMetric transactionMetric) {
@@ -135,60 +131,82 @@ public class StatementAspect {
         }
     }
 
+    @Pointcut(className = "java.sql.Connection", methodName = "createStatement",
+            methodParameterTypes = {".."}, ignoreSelfNested = true)
+    public static class CreateStatementAdvice {
+        @OnReturn
+        public static void onReturn(@BindReturn HasStatementMirror statement) {
+            // this runs even if glowroot temporarily disabled
+            statement.setGlowrootStatementMirror(new StatementMirror());
+        }
+    }
+
     // ================= Parameter Binding =================
 
     // capture the parameters that are bound to the PreparedStatement except
     // parameters bound via setNull(..)
     // see special case below to handle setNull()
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "/(?!setNull$)set.*/",
-            methodParameterTypes = {"int", "*", ".."}, ignoreSelfNested = true)
+            methodParameterTypes = {"int", "*", ".."})
     public static class SetXAdvice {
         @OnReturn
-        public static void onReturn(@BindReceiver PreparedStatement preparedStatement,
+        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
                 @BindParameter int parameterIndex, @BindParameter Object x) {
-            PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
-            if (x instanceof InputStream || x instanceof Reader) {
-                mirror.setParameterValue(parameterIndex, new StreamingParameterValue(x));
-            } else if (x instanceof byte[]) {
-                boolean displayAsHex = JdbcPluginProperties.displayBinaryParameterAsHex(
-                        mirror.getSql(), parameterIndex);
-                mirror.setParameterValue(parameterIndex, new ByteArrayParameterValue((byte[]) x,
-                        displayAsHex));
-            } else {
-                mirror.setParameterValue(parameterIndex, x);
+            PreparedStatementMirror mirror =
+                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+            if (mirror != null) {
+                if (x instanceof InputStream || x instanceof Reader) {
+                    mirror.setParameterValue(parameterIndex, new StreamingParameterValue(x));
+                } else if (x instanceof byte[]) {
+                    boolean displayAsHex = JdbcPluginProperties.displayBinaryParameterAsHex(
+                            mirror.getSql(), parameterIndex);
+                    mirror.setParameterValue(parameterIndex,
+                            new ByteArrayParameterValue((byte[]) x, displayAsHex));
+                } else {
+                    mirror.setParameterValue(parameterIndex, x);
+                }
             }
         }
     }
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "setNull",
-            methodParameterTypes = {"int", "int", ".."}, ignoreSelfNested = true)
+            methodParameterTypes = {"int", "int", ".."})
     public static class SetNullAdvice {
         @OnReturn
-        public static void onReturn(@BindReceiver PreparedStatement preparedStatement,
+        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
                 @BindParameter int parameterIndex) {
-            getPreparedStatementMirror(preparedStatement).setParameterValue(parameterIndex,
-                    new NullParameterValue());
+            PreparedStatementMirror mirror =
+                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+            if (mirror != null) {
+                mirror.setParameterValue(parameterIndex, new NullParameterValue());
+            }
         }
     }
 
     // ================== Statement Batching ==================
 
     @Pointcut(className = "java.sql.Statement", methodName = "addBatch",
-            methodParameterTypes = {"java.lang.String"}, ignoreSelfNested = true)
+            methodParameterTypes = {"java.lang.String"})
     public static class StatementAddBatchAdvice {
         @OnReturn
-        public static void onReturn(@BindReceiver Statement statement,
+        public static void onReturn(@BindReceiver HasStatementMirror statement,
                 @BindParameter String sql) {
-            getStatementMirror(statement).addBatch(sql);
+            StatementMirror mirror = statement.getGlowrootStatementMirror();
+            if (mirror != null) {
+                mirror.addBatch(sql);
+            }
         }
     }
 
-    @Pointcut(className = "java.sql.PreparedStatement", methodName = "addBatch",
-            ignoreSelfNested = true)
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "addBatch")
     public static class PreparedStatementAddBatchAdvice {
         @OnReturn
-        public static void onReturn(@BindReceiver PreparedStatement preparedStatement) {
-            getPreparedStatementMirror(preparedStatement).addBatch();
+        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement) {
+            PreparedStatementMirror mirror =
+                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+            if (mirror != null) {
+                mirror.addBatch();
+            }
         }
     }
 
@@ -197,9 +215,11 @@ public class StatementAspect {
     @Pointcut(className = "java.sql.Statement", methodName = "clearBatch")
     public static class ClearBatchAdvice {
         @OnReturn
-        public static void onReturn(@BindReceiver Statement statement) {
-            StatementMirror mirror = getStatementMirror(statement);
-            mirror.clearBatch();
+        public static void onReturn(@BindReceiver HasStatementMirror statement) {
+            StatementMirror mirror = statement.getGlowrootStatementMirror();
+            if (mirror != null) {
+                mirror.clearBatch();
+            }
         }
     }
 
@@ -212,28 +232,41 @@ public class StatementAspect {
         private static final MetricName metricName =
                 pluginServices.getMetricName(StatementExecuteAdvice.class);
         @IsEnabled
-        public static boolean isEnabled() {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            return !DatabaseMetaDataAspect.isCurrentlyExecuting();
+        public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
+            return statement.hasGlowrootStatementMirror();
         }
         @OnBefore
         @Nullable
-        public static TraceEntry onBefore(@BindReceiver Statement statement,
+        public static TraceEntry onBefore(@BindReceiver HasStatementMirror statement,
                 @BindParameter String sql) {
-            StatementMirror mirror = getStatementMirror(statement);
+            StatementMirror mirror = statement.getGlowrootStatementMirror();
+            if (mirror == null) {
+                // this shouldn't happen since just checked hasGlowrootStatementMirror() above
+                return null;
+            }
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.create(sql);
-                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
+                mirror.setLastRecordCountObject(jdbcMessageSupplier.getRecordCountObject());
                 return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
             } else {
-                // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
+                // clear lastRecordCountObject so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
-                mirror.setLastJdbcMessageSupplier(null);
+                mirror.clearLastRecordCountObject();
                 return null;
             }
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+        public static void onReturn(@BindReturn Object returnValue,
+                @BindReceiver HasStatementMirror statement,
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (returnValue instanceof HasStatementMirror) {
+                // Statement can always be retrieved from ResultSet.getStatement(), and
+                // StatementMirror from that, but ResultSet.getStatement() is sometimes not super
+                // duper fast due to ResultSet wrapping and other checks, so StatementMirror is
+                // stored directly in ResultSet as an optimization
+                StatementMirror mirror = statement.getGlowrootStatementMirror();
+                ((HasStatementMirror) returnValue).setGlowrootStatementMirror(mirror);
+            }
             if (traceEntry != null) {
                 traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                         MILLISECONDS);
@@ -256,14 +289,18 @@ public class StatementAspect {
         private static final MetricName metricName =
                 pluginServices.getMetricName(PreparedStatementExecuteAdvice.class);
         @IsEnabled
-        public static boolean isEnabled() {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            return !DatabaseMetaDataAspect.isCurrentlyExecuting();
+        public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
+            return preparedStatement.hasGlowrootStatementMirror();
         }
         @OnBefore
         @Nullable
-        public static TraceEntry onBefore(@BindReceiver PreparedStatement preparedStatement) {
-            PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
+        public static TraceEntry onBefore(@BindReceiver HasStatementMirror preparedStatement) {
+            PreparedStatementMirror mirror =
+                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+            if (mirror == null) {
+                // this shouldn't happen since just checked hasGlowrootStatementMirror() above
+                return null;
+            }
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier;
                 if (captureBindParameters) {
@@ -271,17 +308,27 @@ public class StatementAspect {
                 } else {
                     jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
                 }
-                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
+                mirror.setLastRecordCountObject(jdbcMessageSupplier.getRecordCountObject());
                 return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
             } else {
-                // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
+                // clear lastRecordCountObject so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
-                mirror.setLastJdbcMessageSupplier(null);
+                mirror.clearLastRecordCountObject();
                 return null;
             }
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+        public static void onReturn(@BindReturn Object returnValue,
+                @BindReceiver HasStatementMirror preparedStatement,
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (returnValue instanceof HasStatementMirror) {
+                // PreparedStatement can always be retrieved from ResultSet.getStatement(), and
+                // StatementMirror from that, but ResultSet.getStatement() is sometimes not super
+                // duper fast due to ResultSet wrapping and other checks, so StatementMirror is
+                // stored directly in ResultSet as an optimization
+                StatementMirror mirror = preparedStatement.getGlowrootStatementMirror();
+                ((HasStatementMirror) returnValue).setGlowrootStatementMirror(mirror);
+            }
             if (traceEntry != null) {
                 traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                         MILLISECONDS);
@@ -302,16 +349,19 @@ public class StatementAspect {
         private static final MetricName metricName =
                 pluginServices.getMetricName(StatementExecuteBatchAdvice.class);
         @IsEnabled
-        public static boolean isEnabled() {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            return !DatabaseMetaDataAspect.isCurrentlyExecuting();
+        public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
+            return statement.hasGlowrootStatementMirror();
         }
         @OnBefore
         @Nullable
-        public static TraceEntry onBefore(@BindReceiver Statement statement) {
+        public static TraceEntry onBefore(@BindReceiver HasStatementMirror statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror =
-                        getPreparedStatementMirror((PreparedStatement) statement);
+                        (PreparedStatementMirror) statement.getGlowrootStatementMirror();
+                if (mirror == null) {
+                    // this shouldn't happen since just checked hasGlowrootStatementMirror() above
+                    return null;
+                }
                 if (pluginServices.isEnabled()) {
                     JdbcMessageSupplier jdbcMessageSupplier;
                     if (captureBindParameters) {
@@ -320,25 +370,29 @@ public class StatementAspect {
                     } else {
                         jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
                     }
-                    mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
+                    mirror.setLastRecordCountObject(jdbcMessageSupplier.getRecordCountObject());
                     return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
                 } else {
-                    // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
+                    // clear lastRecordCountObject so that its numRows won't be updated if the
                     // plugin is re-enabled in the middle of iterating over a different result set
-                    mirror.setLastJdbcMessageSupplier(null);
+                    mirror.clearLastRecordCountObject();
                     return null;
                 }
             } else {
-                StatementMirror mirror = getStatementMirror(statement);
+                StatementMirror mirror = statement.getGlowrootStatementMirror();
+                if (mirror == null) {
+                    // this shouldn't happen since just checked hasGlowrootStatementMirror() above
+                    return null;
+                }
                 if (pluginServices.isEnabled()) {
                     JdbcMessageSupplier jdbcMessageSupplier =
                             JdbcMessageSupplier.createWithBatchedSqls(mirror);
-                    mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
+                    mirror.setLastRecordCountObject(jdbcMessageSupplier.getRecordCountObject());
                     return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
                 } else {
-                    // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
+                    // clear lastRecordCountObject so that its numRows won't be updated if the
                     // plugin is re-enabled in the middle of iterating over a different result set
-                    mirror.setLastJdbcMessageSupplier(null);
+                    mirror.clearLastRecordCountObject();
                     return null;
                 }
             }
@@ -359,68 +413,49 @@ public class StatementAspect {
         }
     }
 
+    // ================== Additional ResultSet Tracking ==================
+
+    @Pointcut(className = "java.sql.Statement", methodName = "getResultSet|getGeneratedKeys",
+            methodParameterTypes = {".."}, methodReturnType = "java.sql.ResultSet")
+    public static class StatementReturnResultSetAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
+            return statement.hasGlowrootStatementMirror();
+        }
+        @OnReturn
+        public static void onReturn(@BindReturn HasStatementMirror resultSet,
+                @BindReceiver HasStatementMirror statement) {
+            StatementMirror mirror = statement.getGlowrootStatementMirror();
+            resultSet.setGlowrootStatementMirror(mirror);
+        }
+    }
+
     // ================== Statement Closing ==================
 
-    @Pointcut(className = "java.sql.Statement", methodName = "close", ignoreSelfNested = true,
+    @Pointcut(className = "java.sql.Statement", methodName = "close",
             metricName = "jdbc statement close")
     public static class CloseAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(CloseAdvice.class);
         @IsEnabled
-        public static boolean isEnabled() {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            return pluginServices.isEnabled()
-                    && !DatabaseMetaDataAspect.isCurrentlyExecuting();
+        public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
+            return statement.hasGlowrootStatementMirror() && pluginServices.isEnabled();
         }
         @OnBefore
-        public static TransactionMetric onBefore(@BindReceiver Statement statement) {
+        public static TransactionMetric onBefore(@BindReceiver HasStatementMirror statement) {
             // help out gc a little by clearing the weak reference, don't want to solely rely on
             // this (and use strong reference) in case a jdbc driver implementation closes
             // statements in finalize by calling an internal method and not calling public close()
-            getStatementMirror(statement).setLastJdbcMessageSupplier(null);
+            StatementMirror mirror = statement.getGlowrootStatementMirror();
+            if (mirror != null) {
+                // this should always be true since just checked hasGlowrootStatementMirror() above
+                mirror.clearLastRecordCountObject();
+            }
             return pluginServices.startTransactionMetric(metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TransactionMetric transactionMetric) {
             transactionMetric.stop();
         }
-    }
-
-    private static StatementMirror getStatementMirror(Statement statement) {
-        StatementMirror mirror = ((HasStatementMirror) statement).getGlowrootStatementMirror();
-        if (mirror == null) {
-            mirror = new StatementMirror();
-            ((HasStatementMirror) statement).setGlowrootStatementMirror(mirror);
-        }
-        return mirror;
-    }
-
-    private static PreparedStatementMirror getPreparedStatementMirror(
-            PreparedStatement preparedStatement) {
-        PreparedStatementMirror mirror = (PreparedStatementMirror)
-                ((HasStatementMirror) preparedStatement).getGlowrootStatementMirror();
-        if (mirror == null) {
-            String databaseMetaDataMethodName =
-                    DatabaseMetaDataAspect.getCurrentlyExecutingMethodName();
-            if (databaseMetaDataMethodName != null) {
-                // wrapping description in sql comment (/* */)
-                mirror = new PreparedStatementMirror("/* internal prepared statement generated by"
-                        + " java.sql.DatabaseMetaData." + databaseMetaDataMethodName + "() */");
-                ((HasStatementMirror) preparedStatement).setGlowrootStatementMirror(mirror);
-            } else {
-                // wrapping description in sql comment (/* */)
-                mirror = new PreparedStatementMirror("/* prepared statement generated outside of"
-                        + " the java.sql.Connection.prepare*() public API, no sql text available"
-                        + " */");
-                ((HasStatementMirror) preparedStatement).setGlowrootStatementMirror(mirror);
-                if (!noSqlTextAvailableLoggedOnce.getAndSet(true)) {
-                    // this is only logged the first time it occurs
-                    logger.warn("prepared statement generated outside of the"
-                            + " java.sql.Connection.prepare*() public API, no sql text available",
-                            new Throwable());
-                }
-            }
-        }
-        return mirror;
     }
 }

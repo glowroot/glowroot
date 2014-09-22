@@ -196,8 +196,10 @@ public class TransactionCollectorImpl implements TransactionCollector {
     }
 
     private void store(Trace trace, Transaction transaction) throws IOException {
-        Long captureTick = transaction.getEndTick();
-        if (captureTick == null) {
+        long captureTick;
+        if (transaction.isCompleted()) {
+            captureTick = transaction.getEndTick();
+        } else {
             captureTick = ticker.read();
         }
         CharSource entries = EntriesCharSourceCreator.createEntriesCharSource(

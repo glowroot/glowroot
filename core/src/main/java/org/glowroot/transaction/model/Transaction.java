@@ -166,8 +166,11 @@ public class Transaction {
         return traceEntryComponent.getStartTick();
     }
 
-    @Nullable
-    public Long getEndTick() {
+    public boolean isCompleted() {
+        return traceEntryComponent.isCompleted();
+    }
+
+    public long getEndTick() {
         return traceEntryComponent.getEndTick();
     }
 
@@ -178,10 +181,6 @@ public class Transaction {
 
     public boolean isPartial() {
         return partial.get();
-    }
-
-    public boolean isCompleted() {
-        return traceEntryComponent.isCompleted();
     }
 
     public String getTransactionType() {
@@ -242,6 +241,11 @@ public class Transaction {
     public TransactionMetricImpl getRootMetric() {
         readMemoryBarrier();
         return rootMetric;
+    }
+
+    @Nullable
+    public TransactionMetricImpl getCurrentTransactionMetric() {
+        return rootMetric.getCurrentTransactionMetricHolder().get();
     }
 
     // can be called from a non-transaction thread

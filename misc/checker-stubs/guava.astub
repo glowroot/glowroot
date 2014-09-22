@@ -24,6 +24,12 @@ public class Strings {
 /* ========================================================================== */
 package com.google.common.collect;
 
+public class Iterators {
+    public static <T extends @Nullable Object> UnmodifiableIterator<T> forArray(T... array);
+    public static <T extends @Nullable Object> Iterator<T> limit(Iterator<T> iterator,
+            int limitSize);
+}
+
 public class Lists {
     public static <E extends @Nullable Object> ArrayList<E> newArrayList();
     public static <E extends @Nullable Object> ArrayList<E> newArrayListWithCapacity(

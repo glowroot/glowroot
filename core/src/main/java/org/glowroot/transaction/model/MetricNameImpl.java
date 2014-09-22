@@ -15,6 +15,8 @@
  */
 package org.glowroot.transaction.model;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.glowroot.api.MetricName;
 
 /**
@@ -23,13 +25,21 @@ import org.glowroot.api.MetricName;
  */
 public class MetricNameImpl implements MetricName {
 
+    private static final AtomicInteger nextSpecialHashCode = new AtomicInteger();
+
     private final String name;
+    private final int specialHashCode;
 
     public MetricNameImpl(String name) {
         this.name = name;
+        specialHashCode = nextSpecialHashCode.getAndIncrement();
     }
 
     String getName() {
         return name;
+    }
+
+    int getSpecialHashCode() {
+        return specialHashCode;
     }
 }

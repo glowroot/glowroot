@@ -29,8 +29,6 @@ import org.glowroot.markers.Static;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.transaction.model.TransactionMetricImpl;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -54,10 +52,7 @@ public class TraceCreator {
 
     static Trace createCompletedTrace(Transaction transaction, long captureTime)
             throws IOException {
-        Long endTick = transaction.getEndTick();
-        // endTick is non-null since the trace is complete
-        checkNotNull(endTick);
-        return createTrace(transaction, false, false, captureTime, endTick);
+        return createTrace(transaction, false, false, captureTime, transaction.getEndTick());
     }
 
     // timings for traces that are still active are normalized to the capture tick in order to

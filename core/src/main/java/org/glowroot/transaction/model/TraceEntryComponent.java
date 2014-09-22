@@ -15,12 +15,11 @@
  */
 package org.glowroot.transaction.model;
 
-import java.util.List;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,19 +39,24 @@ class TraceEntryComponent {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceEntryComponent.class);
 
-    // activeEntries doesn't need to be thread safe since only accessed by the transaction thread
-    private final List<TraceEntry> activeEntries = Lists.newArrayList();
+    // activeEntries doesn't need to be thread safe since it is only accessed by transaction thread
+    private final Deque<TraceEntry> activeEntries = new ArrayDeque<TraceEntry>();
 
     private final long startTick;
-    // not volatile, so depends on memory barrier in Trace for visibility
-    @MonotonicNonNull
-    private Long endTick;
+    // not volatile, so depends on memory barrier in Transaction for visibility
+    private boolean completed;
+    // not volatile, so depends on memory barrier in Transaction for visibility
+    private long endTick;
 
     private final TraceEntry rootTraceEntry;
     // very little contention on entries, so synchronized ArrayList performs better than
     // ConcurrentLinkedQueue
     @GuardedBy("entries")
-    private final List<TraceEntry> entries = Lists.newArrayList();
+    private final Deque<TraceEntry> entries = new ArrayDeque<TraceEntry>(200);
+
+    // entries.size() is accessed a lot, but only by transaction thread, so storing size separately
+    // so it can be accessed without synchronization
+    private int entriesSize;
 
     // this doesn't need to be volatile since it is only accessed by the transaction thread
     private boolean entryLimitExceeded;
@@ -64,10 +68,11 @@ class TraceEntryComponent {
         this.startTick = startTick;
         this.ticker = ticker;
         rootTraceEntry = new TraceEntry(messageSupplier, startTick, 0, transactionMetric);
-        activeEntries.add(rootTraceEntry);
+        activeEntries.push(rootTraceEntry);
         synchronized (entries) {
-            entries.add(rootTraceEntry);
+            entries.push(rootTraceEntry);
         }
+        entriesSize++;
     }
 
     TraceEntry getRootTraceEntry() {
@@ -76,41 +81,39 @@ class TraceEntryComponent {
 
     ImmutableList<TraceEntry> getEntriesCopy() {
         synchronized (entries) {
-            return ImmutableList.copyOf(entries);
+            return ImmutableList.copyOf(entries.descendingIterator());
         }
     }
 
     int getSize() {
-        synchronized (entries) {
-            return entries.size();
-        }
+        return entriesSize;
     }
 
     long getStartTick() {
         return startTick;
     }
 
-    @Nullable
-    Long getEndTick() {
+    boolean isCompleted() {
+        return completed;
+    }
+
+    long getEndTick() {
         return endTick;
     }
 
     // duration of trace in nanoseconds
     long getDuration() {
-        return endTick == null ? ticker.read() - startTick : endTick - startTick;
-    }
-
-    boolean isCompleted() {
-        return endTick != null;
+        return completed ? endTick - startTick : ticker.read() - startTick;
     }
 
     TraceEntry pushEntry(long startTick, MessageSupplier messageSupplier,
             TransactionMetricExt transactionMetric) {
         TraceEntry entry = createEntry(startTick, messageSupplier, null, transactionMetric, false);
-        activeEntries.add(entry);
+        activeEntries.push(entry);
         synchronized (entries) {
-            entries.add(entry);
+            entries.push(entry);
         }
+        entriesSize++;
         return entry;
     }
 
@@ -123,6 +126,7 @@ class TraceEntryComponent {
         popEntrySafe(entry);
         if (activeEntries.isEmpty()) {
             this.endTick = endTick;
+            this.completed = true;
         }
     }
 
@@ -131,8 +135,9 @@ class TraceEntryComponent {
         TraceEntry entry =
                 createEntry(startTick, messageSupplier, errorMessage, null, limitBypassed);
         synchronized (entries) {
-            entries.add(entry);
+            entries.push(entry);
         }
+        entriesSize++;
         entry.setEndTick(endTick);
         return entry;
     }
@@ -143,8 +148,9 @@ class TraceEntryComponent {
         }
         entryLimitExceeded = true;
         synchronized (entries) {
-            entries.add(TraceEntry.getLimitExceededMarker());
+            entries.push(TraceEntry.getLimitExceededMarker());
         }
+        entriesSize++;
     }
 
     private TraceEntry createEntry(long startTick, @Nullable MessageSupplier messageSupplier,
@@ -157,10 +163,11 @@ class TraceEntryComponent {
             // also a different marker ("limit extended") is placed in the entries so that the ui
             // can display this scenario sensibly
             synchronized (entries) {
-                entries.add(TraceEntry.getLimitExtendedMarker());
+                entries.push(TraceEntry.getLimitExtendedMarker());
             }
+            entriesSize++;
         }
-        TraceEntry currentEntry = activeEntries.get(activeEntries.size() - 1);
+        TraceEntry currentEntry = activeEntries.getFirst();
         int nestingLevel;
         if (entryLimitExceeded && limitBypassed) {
             // limit bypassed entries have no proper nesting, so put them directly under the root
@@ -179,12 +186,12 @@ class TraceEntryComponent {
             logger.error("entry stack is empty, cannot pop entry: {}", entry);
             return;
         }
-        TraceEntry pop = activeEntries.remove(activeEntries.size() - 1);
+        TraceEntry pop = activeEntries.pop();
         if (!pop.equals(entry)) {
             // somehow(?) a pop was missed (or maybe too many pops), this is just damage control
             logger.error("found entry {} at top of stack when expecting entry {}", pop, entry);
             while (!activeEntries.isEmpty() && !pop.equals(entry)) {
-                pop = activeEntries.remove(activeEntries.size() - 1);
+                pop = activeEntries.pop();
             }
             if (activeEntries.isEmpty() && !pop.equals(entry)) {
                 logger.error("popped entire stack, never found entry: {}", entry);
@@ -197,6 +204,7 @@ class TraceEntryComponent {
         return MoreObjects.toStringHelper(this)
                 .add("activeEntries", activeEntries)
                 .add("startTick", startTick)
+                .add("completed", completed)
                 .add("endTick", endTick)
                 .add("rootTraceEntry", rootTraceEntry)
                 .add("entries", getEntriesCopy())
