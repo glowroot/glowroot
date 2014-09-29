@@ -76,7 +76,7 @@
         <groupId>io.netty</groupId>
         <artifactId>netty</artifactId>
         <!-- TODO upgrade to netty 4 -->
-        <version>3.9.3.Final</version>
+        <version>3.9.4.Final</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -131,17 +131,17 @@
       <dependency>
         <groupId>com.ning</groupId>
         <artifactId>async-http-client</artifactId>
-        <version>1.8.13</version>
+        <version>1.8.14</version>
       </dependency>
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-core</artifactId>
-        <version>1.0</version>
+        <version>1.1.1</version>
       </dependency>
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-generator-annprocess</artifactId>
-        <version>1.0</version>
+        <version>1.1.1</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

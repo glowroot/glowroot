@@ -2,7 +2,7 @@
   "name": "glowroot",
   "dependencies": {
     "angular": "1.2.22",
-    "angular-ui-bootstrap": "b75f7afb9e207e4c7a74e385a51aae6d0197f2a4",
+    "angular-ui-bootstrap": "0.11.2",
     "angular-ui-router": "0.2.11",
     "bootstrap": "3.2.0",
     "bootstrap-datepicker": "1.3.0",
@@ -11,8 +11,8 @@
     "handlebars": "1.3.0",
     "jquery": "2.1.1",
     "jquery-color": "2.1.2",
-    "moment": "2.8.2",
-    "qtip2": "2.2.0",
+    "moment": "2.8.3",
+    "qtip2": "2.2.1",
     "spinjs": "2.0.1"
   }
 }

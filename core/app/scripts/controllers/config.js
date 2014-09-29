@@ -36,11 +36,11 @@ glowroot.controller('ConfigCtrl', [
     $scope.pattern = {
       // TODO allow comma as decimal separator (and check out html5 input type="number")
       // tolerant of missing whole (.2) and missing decimal (2.)
-      percentage: /^(0|[1-9][0-9]?|100)?(\\.[0-9]*)?$/,
+      percentage: /^(0|[1-9][0-9]?|100)?(\.[0-9]*)?$/,
       // tolerant of commas
       integer: /^(0|[1-9][0-9]*)$/,
       // missing whole (.2) and missing decimal (2.)
-      double: /^(0|[1-9][0-9]*)?(\\.[0-9]*)?$/
+      double: /^(0|[1-9][0-9]*)?(\.[0-9]*)?$/
     };
   }
 ]);
