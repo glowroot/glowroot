@@ -90,19 +90,25 @@ class ClasspathCache {
         // update cache before proceeding
         updateCache();
         String partialClassNameUpper = partialClassName.toUpperCase(Locale.ENGLISH);
-        String prefixedPartialClassNameUpper = '.' + partialClassNameUpper;
+        String prefixedPartialClassNameUpper1 = '.' + partialClassNameUpper;
+        String prefixedPartialClassNameUpper2 = '$' + partialClassNameUpper;
         List<String> fullMatchingClassNames = Lists.newArrayList();
         List<String> matchingClassNames = Lists.newArrayList();
         for (String className : classNames.keys()) {
             String classNameUpper = className.toUpperCase(Locale.ENGLISH);
             boolean potentialFullMatch = classNameUpper.equals(partialClassNameUpper)
-                    || classNameUpper.endsWith(prefixedPartialClassNameUpper);
+                    || classNameUpper.endsWith(prefixedPartialClassNameUpper1)
+                    || classNameUpper.endsWith(prefixedPartialClassNameUpper2);
             if (matchingClassNames.size() == limit && !potentialFullMatch) {
                 // once limit reached, only consider full matches
                 continue;
             }
+            if (fullMatchingClassNames.size() == limit) {
+                break;
+            }
             if (classNameUpper.startsWith(partialClassNameUpper)
-                    || classNameUpper.contains(prefixedPartialClassNameUpper)) {
+                    || classNameUpper.contains(prefixedPartialClassNameUpper1)
+                    || classNameUpper.contains(prefixedPartialClassNameUpper2)) {
                 if (potentialFullMatch) {
                     fullMatchingClassNames.add(className);
                 } else {
