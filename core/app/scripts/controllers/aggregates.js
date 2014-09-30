@@ -274,7 +274,7 @@ glowroot.controller('PerformanceCtrl', [
         // overall hasn't loaded yet
         return '';
       } else if ($scope.overallSummary.count) {
-        return (($scope.overallSummary.totalMicros / $scope.overallSummary.count) / 1000000).toFixed(2);
+        return (($scope.overallSummary.totalMicros / $scope.overallSummary.count) / 1000000).toFixed(3);
       } else {
         return '-';
       }
