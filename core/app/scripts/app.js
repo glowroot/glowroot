@@ -93,8 +93,9 @@ glowroot.run([
   '$rootScope',
   '$http',
   '$location',
+  '$modalStack',
   'login',
-  function ($rootScope, $http, $location, login) {
+  function ($rootScope, $http, $location, $modalStack, login) {
 
     $rootScope.signOut = function () {
       $http.post('backend/sign-out')
@@ -149,6 +150,20 @@ glowroot.run([
             setInitialLayout(data);
           });
     }
+
+    $rootScope.$on('$stateChangeStart', function () {
+      // this is kind of hacky way to close trace modal
+      var $modalBackdrop = $('#modalBackdrop');
+      if ($modalBackdrop) {
+        $modalBackdrop.remove();
+      }
+      // and this is kind of hacky way to close normal angular-ui-bootstrap modals
+      // (see https://github.com/angular-ui/bootstrap/issues/335)
+      var top = $modalStack.getTop();
+      if (top) {
+        $modalStack.dismiss(top.key);
+      }
+    });
   }
 ]);
 
