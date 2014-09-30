@@ -21,7 +21,10 @@
   &times;
 </button>
 <div class="full-screen-modal-content">
-  <div ng-include src="'template/gt-loading-overlay.html'"></div>
-  <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+  <div gt-spinner
+       gt-show="!loaded && !httpError"
+       class="left-aligned-spinner">
+  </div>
+  <div ng-include src="'template/gt-http-error.html'"></div>
   <div class="modal-body" id="modalContent"></div>
 </div>
