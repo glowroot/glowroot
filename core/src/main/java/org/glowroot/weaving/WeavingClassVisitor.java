@@ -441,7 +441,7 @@ class WeavingClassVisitor extends ClassVisitor {
             }
         }
         return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
-                metaHolderInternalName, methodMetaUniqueNum, loader == null);
+                metaHolderInternalName, methodMetaUniqueNum, loader == null, null);
     }
 
     @RequiresNonNull("type")
@@ -450,24 +450,13 @@ class WeavingClassVisitor extends ClassVisitor {
             Iterable<Advice> matchingAdvisors) {
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, desc);
         if (metricWrapperMethods && !name.equals("<init>")) {
-            String innerWrappedName = wrapWithSyntheticMetricMarkerMethods(access, name, desc,
-                    signature, exceptions, matchingAdvisors);
-            String methodName = name;
-            int methodAccess = access;
-            if (innerWrappedName != null) {
-                methodName = innerWrappedName;
-                methodAccess = ACC_PRIVATE + ACC_FINAL + (access & ACC_STATIC);
-            }
-            MethodVisitor mv =
-                    cw.visitMethod(methodAccess, methodName, desc, signature, exceptions);
-            checkNotNull(mv);
-            return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type,
-                    matchingAdvisors, metaHolderInternalName, methodMetaUniqueNum, loader == null);
+            return wrapWithSyntheticMetricMarkerMethods(access, name, desc, signature, exceptions,
+                    matchingAdvisors, methodMetaUniqueNum);
         } else {
             MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
             checkNotNull(mv);
             return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
-                    metaHolderInternalName, methodMetaUniqueNum, loader == null);
+                    metaHolderInternalName, methodMetaUniqueNum, loader == null, null);
         }
     }
 
@@ -496,13 +485,14 @@ class WeavingClassVisitor extends ClassVisitor {
 
     // returns null if no synthetic metric marker methods were needed
     @RequiresNonNull("type")
-    @Nullable
-    private String wrapWithSyntheticMetricMarkerMethods(int outerAccess, String outerName,
-            String desc, @Nullable String signature, String/*@Nullable*/[] exceptions,
-            Iterable<Advice> matchingAdvisors) {
+    private WeavingMethodVisitor wrapWithSyntheticMetricMarkerMethods(int outerAccess,
+            String outerName, String desc, @Nullable String signature,
+            String/*@Nullable*/[] exceptions, Iterable<Advice> matchingAdvisors,
+            @Nullable Integer methodMetaUniqueNum) {
         int innerAccess = ACC_PRIVATE + ACC_FINAL + (outerAccess & ACC_STATIC);
-        boolean first = true;
+        MethodVisitor outerMethodVisitor = null;
         String currMethodName = outerName;
+        int currMethodAccess = outerAccess;
         for (Advice advice : matchingAdvisors) {
             String metricName = advice.getPointcut().metricName();
             if (metricName.isEmpty()) {
@@ -514,7 +504,7 @@ class WeavingClassVisitor extends ClassVisitor {
             }
             String nextMethodName = outerName + "$glowroot$metric$" + metricName.replace(' ', '$')
                     + '$' + innerMethodCounter++;
-            int access = first ? outerAccess : innerAccess;
+            int access = outerMethodVisitor == null ? outerAccess : innerAccess;
             MethodVisitor mv = cw.visitMethod(access, currMethodName, desc, signature, exceptions);
             checkNotNull(mv);
             GeneratorAdapter mg = new GeneratorAdapter(mv, access, nextMethodName, desc);
@@ -529,9 +519,17 @@ class WeavingClassVisitor extends ClassVisitor {
             mg.returnValue();
             mg.endMethod();
             currMethodName = nextMethodName;
-            first = false;
+            currMethodAccess = innerAccess;
+            if (outerMethodVisitor == null) {
+                outerMethodVisitor = mg;
+            }
         }
-        return first ? null : currMethodName;
+        MethodVisitor mv =
+                cw.visitMethod(currMethodAccess, currMethodName, desc, signature, exceptions);
+        checkNotNull(mv);
+        return new WeavingMethodVisitor(mv, currMethodAccess, currMethodName, desc, type,
+                matchingAdvisors, metaHolderInternalName, methodMetaUniqueNum, loader == null,
+                outerMethodVisitor);
     }
 
     @RequiresNonNull("type")

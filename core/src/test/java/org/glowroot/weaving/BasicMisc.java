@@ -15,7 +15,12 @@
  */
 package org.glowroot.weaving;
 
+import java.lang.annotation.Retention;
+import java.lang.reflect.Method;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
+
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * @author Trask Stalnaker
@@ -32,10 +37,22 @@ public class BasicMisc extends SuperBasicMisc implements Misc, Misc2, Misc3 {
 
     // Misc implementation
     @Override
+    @TestAnnotation
     public void execute1() {
         // do some stuff that can be intercepted
         new BasicMisc();
         withInnerArg(null);
+        Method method;
+        try {
+            method = BasicMisc.class.getDeclaredMethod("execute1");
+        } catch (NoSuchMethodException e) {
+            throw new AssertionError(e);
+        } catch (SecurityException e) {
+            throw new AssertionError(e);
+        }
+        if (!method.isAnnotationPresent(TestAnnotation.class)) {
+            throw new AssertionError();
+        }
     }
 
     @Override
@@ -77,4 +94,7 @@ public class BasicMisc extends SuperBasicMisc implements Misc, Misc2, Misc3 {
         @Override
         public void executeWithArgs(String one, int two) {}
     }
+
+    @Retention(RUNTIME)
+    public @interface TestAnnotation {}
 }

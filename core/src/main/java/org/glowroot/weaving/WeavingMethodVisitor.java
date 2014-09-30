@@ -26,6 +26,7 @@ import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
@@ -72,6 +73,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private final Integer methodMetaGroupUniqueNum;
     private final boolean bootstrapClassLoader;
     private final boolean needsTryCatch;
+    @Nullable
+    private final MethodVisitor outerMethodVisitor;
 
     private final Map<Advice, Integer> adviceFlowHolderLocals = Maps.newHashMap();
     // the adviceFlow stores the value in the holder at the beginning of the advice so the holder
@@ -88,7 +91,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
             Iterable<Advice> advisors, @Nullable String metaHolderInternalName,
-            @Nullable Integer methodMetaGroupUniqueNum, boolean bootstrapClassLoader) {
+            @Nullable Integer methodMetaGroupUniqueNum, boolean bootstrapClassLoader,
+            @Nullable MethodVisitor outerMethodVisitor) {
         super(ASM5, mv, access, name, desc);
         this.access = access;
         this.name = name;
@@ -108,6 +112,15 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
             }
         }
         this.needsTryCatch = needsTryCatch;
+        this.outerMethodVisitor = outerMethodVisitor;
+    }
+
+    @Override
+    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+        if (outerMethodVisitor != null) {
+            return outerMethodVisitor.visitAnnotation(desc, visible);
+        }
+        return super.visitAnnotation(desc, visible);
     }
 
     @Override
