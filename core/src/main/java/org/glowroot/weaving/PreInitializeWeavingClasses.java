@@ -49,20 +49,25 @@ public class PreInitializeWeavingClasses {
     public static void preInitializeClasses() {
         ClassLoader loader = PreInitializeWeavingClasses.class.getClassLoader();
         for (String type : usedTypes()) {
-            initialize(type, loader);
+            initialize(type, loader, true);
         }
         for (String type : maybeUsedTypes()) {
-            if (exists(type)) {
-                initialize(type, loader);
-            }
+            initialize(type, loader, false);
+        }
+        for (String type : javaUsedTypes()) {
+            // passing warnOnNotExists=false since ThreadLocalRandom only exists in jdk 1.7+
+            initialize(type, loader, false);
         }
     }
 
-    private static void initialize(String type, @Nullable ClassLoader loader) {
+    private static void initialize(String type, @Nullable ClassLoader loader,
+            boolean warnOnNotExists) {
         try {
             Class.forName(type, true, loader);
         } catch (ClassNotFoundException e) {
-            logger.warn("class not found: {}", type);
+            if (warnOnNotExists) {
+                logger.warn("class not found: {}", type);
+            }
             // log stack trace at debug level
             logger.debug(e.getMessage(), e);
         }
@@ -75,7 +80,6 @@ public class PreInitializeWeavingClasses {
         types.addAll(getGlowrootUsedTypes());
         types.addAll(getAsmUsedTypes());
         return types;
-
     }
 
     private static List<String> getGuavaUsedTypes() {
@@ -506,14 +510,48 @@ public class PreInitializeWeavingClasses {
         return types;
     }
 
-    private static boolean exists(String type) {
-        try {
-            Class.forName(type);
-            return true;
-        } catch (ClassNotFoundException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            return false;
-        }
+    // for the most part, adding used java types is not needed and will just slow down startup
+    // exceptions can be added here
+    private static List<String> javaUsedTypes() {
+        List<String> types = Lists.newArrayList();
+        // pre-initialize ThreadLocalRandom to avoid this error that occurred once during
+        // integration tests (ClassLoaderLeakTest):
+        //
+        // java.lang.ClassCircularityError: sun/nio/ch/Interruptible
+        //
+        // java.lang.Class.getDeclaredFields0(Native Method)[na:1.8.0_20]
+        // java.lang.Class.privateGetDeclaredFields(Class.java:2570)[na:1.8.0_20]
+        // java.lang.Class.getDeclaredField(Class.java:2055)[na:1.8.0_20]
+        // java.util.concurrent.ThreadLocalRandom.<clinit>(ThreadLocalRandom.java:1092)~[na:1.8.0_20]
+        // java.util.concurrent.ConcurrentHashMap.fullAddCount(ConcurrentHashMap.java:2526)~[na:1.8.0_20]
+        // java.util.concurrent.ConcurrentHashMap.addCount(ConcurrentHashMap.java:2266)~[na:1.8.0_20]
+        // java.util.concurrent.ConcurrentHashMap.putVal(ConcurrentHashMap.java:1070)~[na:1.8.0_20]
+        // java.util.concurrent.ConcurrentHashMap.put(ConcurrentHashMap.java:1006)~[na:1.8.0_20]
+        // org.glowroot.weaving.AnalyzedWorld.add(AnalyzedWorld.java:156)~[na:0.5-SNAPSHOT]
+        // org.glowroot.weaving.AnalyzingClassVisitor.visitEndReturningAnalyzedClass(AnalyzingClassVisitor.java:160)~[na:0.5-SNAPSHOT]
+        // org.glowroot.weaving.WeavingClassVisitor.visitEnd(WeavingClassVisitor.java:229)~[na:0.5-SNAPSHOT]
+        // org.glowroot.shaded.objectweb.asm.ClassVisitor.visitEnd(Unknown Source)~[na:0.5-SNAPSHOT]
+        // org.glowroot.shaded.objectweb.asm.ClassReader.accept(Unknown Source)~[na:0.5-SNAPSHOT]
+        // org.glowroot.shaded.objectweb.asm.ClassReader.accept(Unknown Source)~[na:0.5-SNAPSHOT]
+        // org.glowroot.weaving.Weaver.weaveInternal(Weaver.java:115)[na:0.5-SNAPSHOT]
+        // org.glowroot.weaving.Weaver.weave$glowroot$metric$glowroot$weaving$0(Weaver.java:88)[na:0.5-SNAPSHOT]
+        // org.glowroot.weaving.Weaver.weave(Weaver.java:78)[na:0.5-SNAPSHOT]
+        // org.glowroot.weaving.WeavingClassFileTransformer.transformInternal(WeavingClassFileTransformer.java:113)[na:0.5-SNAPSHOT]
+        // org.glowroot.weaving.WeavingClassFileTransformer.transform(WeavingClassFileTransformer.java:76)[na:0.5-SNAPSHOT]
+        // sun.instrument.TransformerManager.transform(TransformerManager.java:188)[na:1.8.0_20]
+        // sun.instrument.InstrumentationImpl.transform(InstrumentationImpl.java:428)[na:1.8.0_20]
+        // java.lang.Class.getDeclaredFields0(Native Method)[na:1.8.0_20]
+        // java.lang.Class.privateGetDeclaredFields(Class.java:2570)[na:1.8.0_20]
+        // java.lang.Class.getDeclaredField(Class.java:2055)[na:1.8.0_20]
+        // java.util.concurrent.locks.LockSupport.<clinit>(LockSupport.java:404)[na:1.8.0_20]
+        // java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:2039)[na:1.8.0_20]
+        // java.util.concurrent.ScheduledThreadPoolExecutor$DelayedWorkQueue.take(ScheduledThreadPoolExecutor.java:1088)[na:1.8.0_20]
+        // java.util.concurrent.ScheduledThreadPoolExecutor$DelayedWorkQueue.take(ScheduledThreadPoolExecutor.java:809)[na:1.8.0_20]
+        // java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1067)[na:1.8.0_20]
+        // java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1127)[na:1.8.0_20]
+        // java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)[na:1.8.0_20]
+        // java.lang.Thread.run(Thread.java:745)[na:1.8.0_20]
+        types.add("java.util.concurrent.ThreadLocalRandom");
+        return types;
     }
 }
