@@ -152,8 +152,8 @@ public class AnalyzedWorld {
 
     void add(AnalyzedClass analyzedClass, @Nullable ClassLoader loader) {
         ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses = getAnalyzedClasses(loader);
-        String className = analyzedClass.getName();
-        loaderAnalyzedClasses.put(className, analyzedClass);
+        // analyzedClass.getName() is already interned
+        loaderAnalyzedClasses.put(analyzedClass.getName(), analyzedClass);
     }
 
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
@@ -213,8 +213,9 @@ public class AnalyzedWorld {
         AnalyzedClass analyzedClass = loaderAnalyzedClasses.get(className);
         if (analyzedClass == null) {
             analyzedClass = createAnalyzedClass(className, analyzedClassLoader);
+            // analyzedClass.getName() is already interned
             AnalyzedClass existingAnalyzedClass =
-                    loaderAnalyzedClasses.putIfAbsent(className, analyzedClass);
+                    loaderAnalyzedClasses.putIfAbsent(analyzedClass.getName(), analyzedClass);
             if (existingAnalyzedClass != null) {
                 // (rare) concurrent AnalyzedClass creation, use the one that made it into the map
                 analyzedClass = existingAnalyzedClass;

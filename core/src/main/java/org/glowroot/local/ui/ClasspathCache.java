@@ -35,7 +35,9 @@ import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
@@ -77,9 +79,10 @@ class ClasspathCache {
     @GuardedBy("this")
     private final Set<URI> classpathURIs = Sets.newHashSet();
 
+    // using ImmutableMultimap because it is very space efficient
+    // this is not updated often so trading space efficiency for copying the entire map on update
     @GuardedBy("this")
-    private final Multimap<String, URI> classNames =
-            TreeMultimap.create(String.CASE_INSENSITIVE_ORDER, Ordering.natural());
+    private ImmutableMultimap<String, URI> classNames = ImmutableMultimap.of();
 
     ClasspathCache(AnalyzedWorld analyzedWorld) {
         this.analyzedWorld = analyzedWorld;
@@ -145,13 +148,21 @@ class ClasspathCache {
 
     // using synchronization over concurrent structures in this cache to conserve memory
     synchronized void updateCache() {
+        Multimap<String, URI> newClassNames = HashMultimap.create();
         for (ClassLoader loader : getKnownClassLoaders()) {
-            updateCache(loader);
+            updateCache(loader, newClassNames);
         }
-        updateCacheWithBootstrapClasses();
+        updateCacheWithBootstrapClasses(newClassNames);
+        if (!newClassNames.isEmpty()) {
+            Multimap<String, URI> newMap =
+                    TreeMultimap.create(String.CASE_INSENSITIVE_ORDER, Ordering.natural());
+            newMap.putAll(classNames);
+            newMap.putAll(newClassNames);
+            classNames = ImmutableMultimap.copyOf(newMap);
+        }
     }
 
-    private void updateCacheWithBootstrapClasses() {
+    private void updateCacheWithBootstrapClasses(Multimap<String, URI> newClassNames) {
         String bootClassPath = System.getProperty("sun.boot.class.path");
         if (bootClassPath == null) {
             return;
@@ -159,7 +170,7 @@ class ClasspathCache {
         for (String path : Splitter.on(File.pathSeparatorChar).split(bootClassPath)) {
             URI uri = new File(path).toURI();
             if (!classpathURIs.contains(uri)) {
-                loadClassNames(uri);
+                loadClassNames(uri, newClassNames);
                 classpathURIs.add(uri);
             }
         }
@@ -173,7 +184,7 @@ class ClasspathCache {
         return cv.getAnalyzedMethods();
     }
 
-    private void updateCache(ClassLoader loader) {
+    private void updateCache(ClassLoader loader, Multimap<String, URI> newClassNames) {
         List<URL> urls = getURLs(loader);
         List<URI> uris = Lists.newArrayList();
         for (URL url : urls) {
@@ -198,7 +209,7 @@ class ClasspathCache {
         }
         for (URI uri : uris) {
             if (!classpathURIs.contains(uri)) {
-                loadClassNames(uri);
+                loadClassNames(uri, newClassNames);
                 classpathURIs.add(uri);
             }
         }
@@ -241,25 +252,26 @@ class ClasspathCache {
         return loaders;
     }
 
-    private void loadClassNames(URI uri) {
+    private static void loadClassNames(URI uri, Multimap<String, URI> newClassNames) {
         try {
             if (uri.getScheme().equals("file")) {
                 File file = new File(uri);
                 if (file.isDirectory()) {
-                    loadClassNamesFromDirectory(file, "");
+                    loadClassNamesFromDirectory(file, "", newClassNames);
                 } else if (file.exists() && file.getName().endsWith(".jar")) {
-                    loadClassNamesFromJarFile(uri);
+                    loadClassNamesFromJarFile(uri, newClassNames);
                 }
             } else if (uri.getPath().endsWith(".jar")) {
                 // try to load jar from non-file uri
-                loadClassNamesFromJarFile(uri);
+                loadClassNamesFromJarFile(uri, newClassNames);
             }
         } catch (IOException e) {
             logger.debug("error reading classes from uri: {}", uri, e);
         }
     }
 
-    private void loadClassNamesFromDirectory(File dir, String prefix) throws MalformedURLException {
+    private static void loadClassNamesFromDirectory(File dir, String prefix,
+            Multimap<String, URI> newClassNames) throws MalformedURLException {
         File[] files = dir.listFiles();
         if (files == null) {
             return;
@@ -268,14 +280,17 @@ class ClasspathCache {
             String name = file.getName();
             if (file.isFile() && name.endsWith(".class")) {
                 URI fileUri = new File(dir, name).toURI();
-                classNames.put(prefix + name.substring(0, name.lastIndexOf('.')), fileUri);
+                String className = prefix + name.substring(0, name.lastIndexOf('.'));
+                // share interned className with AnalyzedClass
+                newClassNames.put(className.intern(), fileUri);
             } else if (file.isDirectory()) {
-                loadClassNamesFromDirectory(file, prefix + name + ".");
+                loadClassNamesFromDirectory(file, prefix + name + ".", newClassNames);
             }
         }
     }
 
-    private void loadClassNamesFromJarFile(URI jarUri) throws IOException {
+    private static void loadClassNamesFromJarFile(URI jarUri, Multimap<String, URI> newClassNames)
+            throws IOException {
         Closer closer = Closer.create();
         InputStream s = jarUri.toURL().openStream();
         JarInputStream jarIn = closer.register(new JarInputStream(s));
@@ -286,7 +301,7 @@ class ClasspathCache {
                 if (classpath != null) {
                     for (String path : Splitter.on(' ').omitEmptyStrings().split(classpath)) {
                         URI uri = jarUri.resolve(path);
-                        loadClassNames(uri);
+                        loadClassNames(uri, newClassNames);
                     }
                 }
             }
@@ -306,7 +321,8 @@ class ClasspathCache {
                         }
                         URI fileURI =
                                 new URI("jar", jarUri.getScheme() + ":" + path + "!/" + name, "");
-                        classNames.put(className, fileURI);
+                        // share interned className with AnalyzedClass
+                        newClassNames.put(className.intern(), fileURI);
                     } catch (URISyntaxException e) {
                         logger.error(e.getMessage(), e);
                     }
