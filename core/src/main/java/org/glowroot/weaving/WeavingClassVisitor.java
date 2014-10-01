@@ -103,6 +103,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private final ClassLoader loader;
 
     private final AnalyzingClassVisitor analyzingClassVisitor;
+    private final AnalyzedWorld analyzedWorld;
 
     private final boolean metricWrapperMethods;
 
@@ -133,6 +134,7 @@ class WeavingClassVisitor extends ClassVisitor {
         this.loader = loader;
         analyzingClassVisitor =
                 new AnalyzingClassVisitor(advisors, mixinTypes, loader, analyzedWorld, codeSource);
+        this.analyzedWorld = analyzedWorld;
         this.metricWrapperMethods = metricWrapperMethods;
     }
 
@@ -196,7 +198,7 @@ class WeavingClassVisitor extends ClassVisitor {
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
         if (throwShortCircuitException) {
             // this is in visitMethod because need to check annotations first
-            analyzingClassVisitor.visitEndReturningAnalyzedClass();
+            analyzingClassVisitor.visitEnd();
             throw ShortCircuitException.INSTANCE;
         }
         List<Advice> matchingAdvisors = analyzingClassVisitor.visitMethodReturningAdvisors(access,
@@ -223,10 +225,13 @@ class WeavingClassVisitor extends ClassVisitor {
     public void visitEnd() {
         if (throwShortCircuitException) {
             // this is in visitEnd also in case there were no methods
-            analyzingClassVisitor.visitEndReturningAnalyzedClass();
+            analyzingClassVisitor.visitEnd();
             throw ShortCircuitException.INSTANCE;
         }
-        AnalyzedClass analyzedClass = analyzingClassVisitor.visitEndReturningAnalyzedClass();
+        analyzingClassVisitor.visitEnd();
+        AnalyzedClass analyzedClass = analyzingClassVisitor.getAnalyzedClass();
+        checkNotNull(analyzedClass); // analyzedClass is non-null after visiting the class
+        analyzedWorld.add(analyzedClass, loader);
         if (interfaceSoNothingToWeave) {
             return;
         }

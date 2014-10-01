@@ -131,7 +131,8 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     @Override
     public void visitEnd() {
-        visitEndReturningAnalyzedClass();
+        checkNotNull(analyzedClassBuilder, "Call to visit() is required");
+        analyzedClass = analyzedClassBuilder.build();
     }
 
     List<Advice> visitMethodReturningAdvisors(int access, String name, String desc,
@@ -152,13 +153,6 @@ class AnalyzingClassVisitor extends ClassVisitor {
                     matchingAdvisors);
         }
         return matchingAdvisors;
-    }
-
-    AnalyzedClass visitEndReturningAnalyzedClass() {
-        checkNotNull(analyzedClassBuilder, "Call to visit() is required");
-        analyzedClass = analyzedClassBuilder.build();
-        analyzedWorld.add(analyzedClass, loader);
-        return analyzedClass;
     }
 
     ImmutableList<AdviceMatcher> getAdviceMatchers() {
