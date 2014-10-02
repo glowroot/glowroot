@@ -23,6 +23,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
@@ -89,14 +90,25 @@ class JvmJsonService {
     private static final Logger logger = LoggerFactory.getLogger(JvmJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final Ordering<ThreadInfo> orderingByStackSize = new Ordering<ThreadInfo>() {
-        @Override
-        public int compare(@Nullable ThreadInfo left, @Nullable ThreadInfo right) {
-            checkNotNull(left);
-            checkNotNull(right);
-            return Ints.compare(right.getStackTrace().length, left.getStackTrace().length);
-        }
-    };
+    private static final Ordering<ThreadInfo> threadInfoOrdering =
+            new Ordering<ThreadInfo>() {
+                @Override
+                public int compare(@Nullable ThreadInfo left, @Nullable ThreadInfo right) {
+                    checkNotNull(left);
+                    checkNotNull(right);
+                    if (left.getThreadId() == Thread.currentThread().getId()) {
+                        return 1;
+                    } else if (right.getThreadId() == Thread.currentThread().getId()) {
+                        return -1;
+                    }
+                    int result =
+                            Ints.compare(right.getStackTrace().length, left.getStackTrace().length);
+                    if (result == 0) {
+                        return left.getThreadName().compareToIgnoreCase(right.getThreadName());
+                    }
+                    return result;
+                }
+            };
 
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
@@ -251,27 +263,29 @@ class JvmJsonService {
     String getThreadDump() throws IOException {
         logger.debug("getThreadDump()");
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-        long currentThreadId = Thread.currentThread().getId();
-        List<ThreadInfo> threadInfos = Lists.newArrayList();
-        for (long threadId : threadBean.getAllThreadIds()) {
-            if (threadId != currentThreadId) {
-                ThreadInfo threadInfo = threadBean.getThreadInfo(threadId, Integer.MAX_VALUE);
-                if (threadInfo != null) {
-                    threadInfos.add(threadInfo);
-                }
-            }
-        }
-        threadInfos = orderingByStackSize.sortedCopy(threadInfos);
+        ThreadInfo[] threadInfos =
+                threadBean.getThreadInfo(threadBean.getAllThreadIds(), Integer.MAX_VALUE);
+        List<ThreadInfo> sortedThreadInfos =
+                threadInfoOrdering.immutableSortedCopy(Arrays.asList(threadInfos));
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartArray();
-        for (ThreadInfo threadInfo : threadInfos) {
+        long currentThreadId = Thread.currentThread().getId();
+        for (ThreadInfo threadInfo : sortedThreadInfos) {
             jg.writeStartObject();
             jg.writeStringField("name", threadInfo.getThreadName());
             jg.writeStringField("state", threadInfo.getThreadState().name());
             jg.writeStringField("lockName", threadInfo.getLockName());
             jg.writeArrayFieldStart("stackTrace");
+            boolean trimCurrentThreadStack = threadInfo.getThreadId() == currentThreadId;
             for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
+                if (trimCurrentThreadStack && !stackTraceElement.getClassName().equals(
+                        JvmJsonService.class.getName())) {
+                    // just cleaning current thread's stack trace a bit to make it more obvious
+                    // that it is just the current thread
+                    continue;
+                }
+                trimCurrentThreadStack = false;
                 jg.writeString(stackTraceElement.toString());
             }
             jg.writeEndArray();

@@ -43,7 +43,7 @@ glowroot.controller('JvmThreadDumpCtrl', [
 
     $scope.exportAsText = function (deferred) {
       var textWindow = window.open();
-      $(textWindow.document.body).html(threadDumpHtml);
+      $(textWindow.document.body).html(threadDumpHtml.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;'));
       deferred.resolve();
     };
 
