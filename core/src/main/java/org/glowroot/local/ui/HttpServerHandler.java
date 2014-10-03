@@ -313,7 +313,9 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         } else {
             // all other static resources are versioned and can be safely cached forever
             String filename = path.substring(path.lastIndexOf('/') + 1);
-            String rev = filename.substring(0, filename.indexOf('.'));
+            int to = filename.lastIndexOf('.');
+            int from = filename.lastIndexOf('.', to - 1);
+            String rev = filename.substring(from + 1, to);
             response.headers().add(Names.ETAG, rev);
             response.headers().add(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
 

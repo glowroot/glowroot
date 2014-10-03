@@ -101,7 +101,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>18.0-rc2</version>
+        <version>18.0</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
@@ -136,12 +136,12 @@
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-core</artifactId>
-        <version>0.9.7</version>
+        <version>1.0</version>
       </dependency>
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-generator-annprocess</artifactId>
-        <version>0.9.7</version>
+        <version>1.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -341,7 +341,7 @@
       <properties>
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
-        <checker.qual.version>1.8.4</checker.qual.version>
+        <checker.qual.version>1.8.5</checker.qual.version>
       </properties>
       <dependencies>
         <dependency>
