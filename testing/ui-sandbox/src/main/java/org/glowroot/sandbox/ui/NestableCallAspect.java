@@ -115,15 +115,19 @@ public class NestableCallAspect {
             double value = random.nextDouble();
             if (value < 0.8) {
                 traceEntry.end();
-            } else if (value < 0.9) {
-                traceEntry.endWithError(ErrorMessage
-                        .from("root entry randomized error", new IllegalStateException()));
-            } else {
+            } else if (value < 0.89) {
+                traceEntry.endWithError(ErrorMessage.from("root entry randomized error",
+                        new IllegalStateException()));
+            } else if (value < 0.98) {
                 // add detail map to half of randomized errors
                 traceEntry.endWithError(ErrorMessage.withDetail(
                         "root entry randomized error with detail map",
                         new IllegalStateException(), ImmutableMap.of("roota", Optional.absent(),
                                 "rootb", "a non-null value for rootb")));
+            } else {
+                String reallyLongErrorMessage = Strings.repeat("abcdefghijklmnopqrstuvwxyz ", 100);
+                traceEntry.endWithError(ErrorMessage.from(reallyLongErrorMessage,
+                        new IllegalStateException()));
             }
         }
     }

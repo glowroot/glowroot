@@ -128,15 +128,22 @@ glowroot.controller('ErrorsCtrl', [
     };
 
     $scope.tracesQueryString = function (aggregate) {
-      return queryStrings.encodeObject({
+      var tracesQuery = {
         // from is adjusted because aggregates are really aggregates of interval before aggregate timestamp
         from: appliedFilter.from,
         to: appliedFilter.to,
         transactionName: aggregate.transactionName,
-        transactionNameComparator: 'equals',
-        error: aggregate.error,
-        errorComparator: 'equals'
-      });
+        transactionNameComparator: 'equals'
+      };
+      if (aggregate.error.length <= 1000) {
+        tracesQuery.error = aggregate.error;
+        tracesQuery.errorComparator = 'equals';
+      } else {
+        // this keeps url length under control
+        tracesQuery.error = aggregate.error.substring(0, 1000);
+        tracesQuery.errorComparator = 'begins';
+      }
+      return queryStrings.encodeObject(tracesQuery);
     };
 
     $scope.showMore = function (deferred) {
