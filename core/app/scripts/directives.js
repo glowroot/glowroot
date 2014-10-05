@@ -253,12 +253,48 @@ glowroot.directive('gtNavbarItem', [
         scope.ngShow = function () {
           return iAttrs.gtShow ? scope.gtShow() : true;
         };
+        scope.isActive = function () {
+          return scope.$parent.activeNavbarItem === scope.gtItemName;
+        };
         scope.ngClick = function (event) {
           // need to collapse the navbar in mobile view
           var $navbarCollapse = $('.navbar-collapse');
           $navbarCollapse.removeClass('in');
           $navbarCollapse.addClass('collapse');
-          if (scope.$parent.activeNavbarItem === scope.gtItemName && !event.ctrlKey) {
+          if ($location.path() === scope.gtUrl && !event.ctrlKey) {
+            $state.go($state.$current, null, { reload: true });
+            // suppress normal link
+            event.preventDefault();
+            return false;
+          }
+        };
+      }
+    };
+  }
+]);
+
+glowroot.directive('gtSidebarItem', [
+  '$location',
+  '$state',
+  function ($location, $state) {
+    return {
+      scope: {
+        gtDisplay: '@',
+        gtUrl: '@',
+        gtShow: '&'
+      },
+      // replace is needed in order to not mess up bootstrap css hierarchical selectors
+      replace: true,
+      templateUrl: 'template/gt-sidebar-item.html',
+      link: function (scope, iElement, iAttrs) {
+        scope.ngShow = function () {
+          return iAttrs.gtShow ? scope.gtShow() : true;
+        };
+        scope.isActive = function () {
+          return $location.path() === scope.gtUrl;
+        };
+        scope.ngClick = function (event) {
+          if ($location.path() === scope.gtUrl && !event.ctrlKey) {
             $state.go($state.$current, null, { reload: true });
             // suppress normal link
             event.preventDefault();
@@ -372,7 +408,7 @@ glowroot.directive('gtSmartClick', function () {
           // not a simple single click, probably highlighting text
           return;
         }
-        scope.$apply(function() {
+        scope.$apply(function () {
           scope.gtSmartClick({$event: event});
         });
       });

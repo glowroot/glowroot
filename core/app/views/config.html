@@ -16,41 +16,34 @@
 <div class="gt-sidebar hidden-print">
   <div class="panel panel-default">
     <ul class="list-group">
-      <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.traces')}"
-         href="/config/traces">
-        Traces
-      </a>
-      <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.profiling')}"
-         href="/config/profiling">
-        Profiling
-      </a>
-      <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.userRecording')}"
-         href="/config/user-recording">
-        User recording
-      </a>
-      <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.capturePoints')}"
-         href="/config/capture-points">
-        Capture points
-      </a>
-      <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.storage')}"
-         href="/config/storage">
-        Storage
-      </a>
-      <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.userInterface')}"
-         href="/config/user-interface">
-        User interface
-      </a>
-      <a class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentView('config.advanced')}"
-         href="/config/advanced">
-        Advanced
-      </a>
+      <div gt-sidebar-item
+           gt-display="Traces"
+           gt-url="/config/traces">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Profiling"
+           gt-url="/config/profiling">
+      </div>
+      <div gt-sidebar-item
+           gt-display="User recording"
+           gt-url="/config/user-recording">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Capture points"
+           gt-url="/config/capture-points">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Storage"
+           gt-url="/config/storage">
+      </div>
+      <div gt-sidebar-item
+           gt-display="User interface"
+           gt-url="/config/user-interface">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Advanced"
+           gt-url="/config/advanced">
+      </div>
     </ul>
   </div>
   <div class="panel panel-default">
@@ -58,12 +51,11 @@
       <li class="list-group-item plugin-sidebar-name">
         Plugins
       </li>
-      <a ng-repeat="plugin in layout.plugins"
-         class="list-group-item selectable-list-group-item"
-         ng-class="{active: isCurrentPluginView(plugin.id)}"
-         ng-href="/config/plugin/{{plugin.id}}">
-        {{plugin.name}}
-      </a>
+      <div ng-repeat="plugin in layout.plugins"
+           gt-sidebar-item
+           gt-display="{{plugin.name}}"
+           gt-url="/config/plugin/{{plugin.id}}">
+      </div>
     </ul>
   </div>
 </div>

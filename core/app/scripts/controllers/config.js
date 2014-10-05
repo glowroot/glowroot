@@ -25,14 +25,6 @@ glowroot.controller('ConfigCtrl', [
     $scope.$parent.title = 'Configuration';
     $scope.$parent.activeNavbarItem = 'config';
 
-    $scope.isCurrentView = function (viewName) {
-      return $state.current.name === viewName;
-    };
-
-    $scope.isCurrentPluginView = function (pluginId) {
-      return $state.params.pluginId === pluginId;
-    };
-
     $scope.pattern = {
       // TODO allow comma as decimal separator (and check out html5 input type="number")
       // tolerant of missing whole (.2) and missing decimal (2.)

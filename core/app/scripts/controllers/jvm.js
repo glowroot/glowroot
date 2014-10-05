@@ -24,9 +24,5 @@ glowroot.controller('JvmCtrl', [
     document.title = 'JVM \u00b7 Glowroot';
     $scope.$parent.title = 'JVM';
     $scope.$parent.activeNavbarItem = 'jvm';
-
-    $scope.isCurrentView = function (viewName) {
-      return $state.current.name === viewName;
-    };
   }
 ]);
