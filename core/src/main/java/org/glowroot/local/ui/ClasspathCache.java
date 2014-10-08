@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -67,6 +68,8 @@ import static org.objectweb.asm.Opcodes.ASM5;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// TODO need to remove items from classpathURIs and classNames when class loaders are no longer
+// present, e.g. in wildfly after undeploying an application
 @Singleton
 class ClasspathCache {
 
@@ -97,7 +100,7 @@ class ClasspathCache {
         String prefixedPartialClassNameUpper2 = '$' + partialClassNameUpper;
         List<String> fullMatchingClassNames = Lists.newArrayList();
         List<String> matchingClassNames = Lists.newArrayList();
-        for (String className : classNames.keys()) {
+        for (String className : classNames.keySet()) {
             String classNameUpper = className.toUpperCase(Locale.ENGLISH);
             boolean potentialFullMatch = classNameUpper.equals(partialClassNameUpper)
                     || classNameUpper.endsWith(prefixedPartialClassNameUpper1)
