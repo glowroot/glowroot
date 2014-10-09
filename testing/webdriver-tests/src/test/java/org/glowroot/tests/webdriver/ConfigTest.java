@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.rules.TestWatcher;
-import org.junit.runner.RunWith;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -52,7 +51,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@RunWith(WebDriverRunner.class)
 public class ConfigTest {
 
     private static final boolean USE_LOCAL_IE = false;
@@ -64,6 +62,10 @@ public class ConfigTest {
     private static WebDriver driver;
 
     private String remoteWebDriverSessionId;
+
+    @Rule
+    public final ScreenshotOnExceptionRule screenshotOnExceptionRule =
+            new ScreenshotOnExceptionRule(driver);
 
     @BeforeClass
     public static void setUp() throws Exception {
