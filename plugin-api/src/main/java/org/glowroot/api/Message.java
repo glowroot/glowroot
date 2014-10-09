@@ -20,6 +20,7 @@ import java.util.Map;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +49,14 @@ import org.glowroot.api.internal.ReadableMessage;
  */
 public abstract class Message {
 
+    private static final int MESSAGE_CHAR_LIMIT;
+
     private static final ImmutableMap<String, Object> EMPTY_DETAIL = ImmutableMap.of();
+
+    static {
+        // default is 512k characters so that memory limit is 1mb since 1 character = 2 bytes
+        MESSAGE_CHAR_LIMIT = Integer.getInteger("glowroot.message.char.limit", 512 * 1024);
+    }
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
     public static Message from(@Nullable String message) {
@@ -81,7 +89,10 @@ public abstract class Message {
 
         private MessageImpl(@Nullable String template, @Nullable String[] args,
                 Map<String, ? extends /*@Nullable*/Object> detail) {
-            this.template = template;
+            this.template = truncateToMessageCharLimit(template);
+            for (int i = 0; i < args.length; i++) {
+                args[i] = truncateToMessageCharLimit(args[i]);
+            }
             this.args = args;
             this.detail = detail;
         }
@@ -115,7 +126,7 @@ public abstract class Message {
                 curr = next + 2; // +2 to skip over "{}"
             }
             text.append(template.substring(curr));
-            return text.toString();
+            return truncateToMessageCharLimit(text.toString());
         }
 
         @Override
@@ -130,6 +141,16 @@ public abstract class Message {
                     .add("args", args)
                     .add("detail", detail)
                     .toString();
+        }
+
+        @PolyNull
+        private static String truncateToMessageCharLimit(@PolyNull String s) {
+            if (s == null || s.length() <= MESSAGE_CHAR_LIMIT) {
+                return s;
+            } else {
+                return s.substring(0, MESSAGE_CHAR_LIMIT) + " [truncated to " + MESSAGE_CHAR_LIMIT
+                        + " characters]";
+            }
         }
     }
 }

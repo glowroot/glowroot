@@ -15,6 +15,7 @@
  */
 package org.glowroot.api;
 
+import com.google.common.base.Strings;
 import org.junit.Test;
 
 import org.glowroot.api.internal.ReadableMessage;
@@ -56,5 +57,20 @@ public class MessageTest {
     public void shouldFormatConstantWithEmptyMethodBody() {
         ReadableMessage message = (ReadableMessage) Message.from("public void run() {}");
         assertThat(message.getText()).isEqualTo("public void run() {}");
+    }
+
+    @Test
+    public void shouldTruncate() {
+        String longString = Strings.repeat("a", 512 * 1024);
+        ReadableMessage message = (ReadableMessage) Message.from("{}", longString + "a");
+        assertThat(message.getText()).isEqualTo(
+                longString + " [truncated to " + 512 * 1024 + " characters]");
+    }
+
+    @Test
+    public void shouldNotTruncate() {
+        String longString = Strings.repeat("a", 512 * 1024);
+        ReadableMessage message = (ReadableMessage) Message.from("{}", longString);
+        assertThat(message.getText()).isEqualTo(longString);
     }
 }
