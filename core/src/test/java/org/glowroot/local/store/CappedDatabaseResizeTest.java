@@ -56,36 +56,35 @@ public class CappedDatabaseResizeTest {
 
     @Test
     public void shouldWrapAndThenResizeSmaller() throws Exception {
-        shouldWrapAndResize(cappedDatabase, 1);
+        shouldWrapAndResize(1);
     }
 
     @Test
     public void shouldWrapAndThenResizeSameSize() throws Exception {
-        shouldWrapAndResize(cappedDatabase, 2);
+        shouldWrapAndResize(2);
     }
 
     @Test
     public void shouldWrapAndThenResizeLarger() throws Exception {
-        shouldWrapAndResize(cappedDatabase, 3);
+        shouldWrapAndResize(3);
     }
 
     @Test
     public void shouldResizeSmallerAndThenWrap() throws Exception {
-        shouldResizeAndWrap(cappedDatabase, 1);
+        shouldResizeAndWrap(1);
     }
 
     @Test
     public void shouldResizeSameSizeAndThenWrap() throws Exception {
-        shouldResizeAndWrap(cappedDatabase, 2);
+        shouldResizeAndWrap(2);
     }
 
     @Test
     public void shouldResizeLargerAndThenWrap() throws Exception {
-        shouldResizeAndWrap(cappedDatabase, 3);
+        shouldResizeAndWrap(3);
     }
 
-    private void shouldWrapAndResize(CappedDatabase cappedDatabase, int newSizeKb)
-            throws Exception {
+    private void shouldWrapAndResize(int newSizeKb) throws Exception {
         // given
         // when
         // because of compression, use somewhat random text and loop until wrap occurs
@@ -106,8 +105,7 @@ public class CappedDatabaseResizeTest {
         assertThat(text2).isEqualTo(text);
     }
 
-    private void shouldResizeAndWrap(CappedDatabase cappedDatabase, int newSizeKb)
-            throws Exception {
+    private void shouldResizeAndWrap(int newSizeKb) throws Exception {
         // given
         // when
         cappedDatabase.resize(newSizeKb);

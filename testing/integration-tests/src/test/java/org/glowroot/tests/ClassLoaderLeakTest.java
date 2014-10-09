@@ -51,7 +51,7 @@ public class ClassLoaderLeakTest {
             // jdk8+ eliminated perm gen, so just limit overall memory
             extraJvmArgs.add("-Xmx64m");
         }
-        container = new JavaagentContainer(null, false, true, false, extraJvmArgs);
+        container = new JavaagentContainer(null, false, false, false, extraJvmArgs);
     }
 
     @AfterClass
