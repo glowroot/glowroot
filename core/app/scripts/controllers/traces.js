@@ -247,17 +247,6 @@ glowroot.controller('TracesCtrl', [
       });
     }
 
-    function hideTooltip() {
-      $chart.qtip('hide');
-    }
-
-    $('body').mousedown(function (e) {
-      if ($(e.target).parents('.qtip').length === 0) {
-        // click occurred outside of qtip
-        hideTooltip();
-      }
-    });
-
     $('#zoomOut').click(function () {
       plot.zoomOut();
     });

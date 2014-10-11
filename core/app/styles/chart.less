@@ -66,34 +66,6 @@
   border-radius: 6px;
 }
 
-.qtip-override {
-  // min and max need to be the same for consistent qtip rendering
-  // otherwise, when a line-wrappable qtip is sort of near the right hand edge, the max-width won't allow it to overlap
-  // the chart-container, and then line wrapping kicks in and the qtip becomes taller, and then the left middle point
-  // marker gets pushed down past the point
-  min-width: 500px;
-  max-width: 500px;
-  font-size: 12px;
-  line-height: 16px;
-  background-color: #fff;
-}
-
-.qtip-override-aggregate {
-  // min and max need to be the same for consistent qtip rendering
-  // otherwise, when a line-wrappable qtip is sort of near the right hand edge, the max-width won't allow it to overlap
-  // the chart-container, and then line wrapping kicks in and the qtip becomes taller, and then the left middle point
-  // marker gets pushed down past the point
-  min-width: 200px;
-  max-width: 200px;
-  font-size: 12px;
-  line-height: 16px;
-  background-color: #fff;
-}
-
-.qtip-content {
-  padding: 1.5em 2em;
-}
-
 .qtip-border-color-0 {
   border-color: @trace-point-normal;
 }
@@ -104,8 +76,4 @@
 
 .qtip-border-color-2 {
   border-color: @trace-point-active;
-}
-
-.qtip-color-0 {
-  color: @trace-point-normal;
 }
