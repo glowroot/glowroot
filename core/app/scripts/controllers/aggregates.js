@@ -195,7 +195,7 @@ glowroot.controller('PerformanceCtrl', [
     $scope.$watch('filterTransactionType', function (newValue, oldValue) {
       if (newValue !== oldValue) {
         $scope.selectedTransactionName = '';
-        $timeout(function() {
+        $timeout(function () {
           $('#refreshButtonSpan').find('button').click();
         }, 0, false);
       }
@@ -203,7 +203,7 @@ glowroot.controller('PerformanceCtrl', [
 
     $scope.$watch('filterDate', function (newValue, oldValue) {
       if (newValue !== oldValue) {
-        $timeout(function() {
+        $timeout(function () {
           $('#refreshButtonSpan').find('button').click();
         }, 0, false);
       }
@@ -408,6 +408,34 @@ glowroot.controller('PerformanceCtrl', [
       $location.search(query).replace();
     }
 
+    function renderTooltipHtml(dataIndex, highlightSeriesIndex) {
+      var html = '<table><tbody>';
+      var total = 0;
+      var plotData = plot.getData();
+      for (var seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
+        var dataSeries = plotData[seriesIndex];
+        var value = dataSeries.data[dataIndex][1];
+        html += '<tr';
+        if (seriesIndex === highlightSeriesIndex) {
+          html += ' style="background-color: #eee;"';
+        }
+        html += '>' +
+            '<td class="legendColorBox">' +
+            '<div style="border: 1px solid rgb(204, 204, 204); padding: 1px;">' +
+            '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">' +
+            '</div></div></td>' +
+            '<td class="legendLabel" style="padding-right: 10px;">' + dataSeries.label + '</td>' +
+            '<td><strong>' + value.toFixed(3) + '</strong></td>' +
+            '</tr>';
+        total += value;
+      }
+      if (total === 0) {
+        return 'No data';
+      }
+      html += '</tbody></table>';
+      return html;
+    }
+
     (function () {
       var options = {
         grid: {
@@ -415,7 +443,9 @@ glowroot.controller('PerformanceCtrl', [
           // without specifying min border margin, the point radius is used
           minBorderMargin: 10,
           borderColor: '#7d7358',
-          borderWidth: 1
+          borderWidth: 1,
+          // this is needed for tooltip plugin to work
+          hoverable: true
         },
         xaxis: {
           mode: 'time',
@@ -451,6 +481,15 @@ glowroot.controller('PerformanceCtrl', [
           lines: {
             show: true,
             fill: true
+          },
+          points: {
+            radius: 8
+          }
+        },
+        tooltip: true,
+        tooltipOpts: {
+          content: function (label, xval, yval, flotItem) {
+            return renderTooltipHtml(flotItem.dataIndex, flotItem.seriesIndex);
           }
         }
       };
