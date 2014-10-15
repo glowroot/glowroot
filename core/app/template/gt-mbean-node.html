@@ -17,8 +17,7 @@
          style="margin-left: -10px;"
          ng-show="node.expanded"
          gt-smart-click="toggleMBean(node)">
-      <span style="font-weight: bold;">{{node.nodeName}}</span>
-      <br>
+      <label>{{node.nodeName}}</label>
       <div gt-spinner
            gt-show="node.loading && !httpError">
       </div>

@@ -215,7 +215,7 @@ and conditions of the following licenses.
 License for AngularJS
 ================================================================================
 
-Copyright (c) 2010-2012 Google, Inc.
+Copyright 2010-2012 Google, Inc
 http://angularjs.org
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -241,7 +241,7 @@ THE SOFTWARE.
 License for AngularUI Bootstrap
 ================================================================================
 
-Copyright (c) 2012-2013 the AngularUI Team,
+Copyright 2012-2013 the AngularUI Team,
 https://github.com/organizations/angular-ui/teams/291112
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -267,7 +267,7 @@ THE SOFTWARE.
 License for AngularUI Router
 ================================================================================
 
-Copyright (c) 2013 Karsten Sperling
+Copyright 2013 Karsten Sperling
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -292,7 +292,7 @@ THE SOFTWARE.
 License for ASM
 ================================================================================
 
-Copyright (c) 2000-2011 INRIA, France Telecom
+Copyright 2000-2011 INRIA, France Telecom
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -327,7 +327,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 License for Bootstrap
 ================================================================================
 
-Copyright (c) 2014 Twitter, Inc
+Copyright 2014 Twitter, Inc
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -362,7 +362,7 @@ Licensed under the Apache License, Version 2.0
 License for Flot
 ================================================================================
 
-Copyright (c) 2007-2013 IOLA and Ole Laursen
+Copyright 2007-2013 IOLA and Ole Laursen
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
@@ -418,7 +418,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 License for Font Awesome
 ================================================================================
 
-@davegandy
+Copyright @davegandy
 
 Font licensed under the SIL Open Font License, Version 1.1
 
@@ -429,7 +429,7 @@ Code licensed under the MIT License
 License for Guava
 ================================================================================
 
-Copyright (C) 2013 The Guava Authors
+Copyright 2013 The Guava Authors
 
 Licensed under the Apache License, Version 2.0
 
@@ -438,7 +438,7 @@ Licensed under the Apache License, Version 2.0
 License for H2
 ================================================================================
 
-Copyright 2004-2012 H2 Group.
+Copyright 2004-2012 H2 Group
 
 Dual licensed and available under a modified version of the MPL 1.1 (Mozilla
 Public License) or under the (unmodified) EPL 1.0 (Eclipse Public License).
@@ -450,7 +450,7 @@ http://www.h2database.com/html/license.html
 License for handlebars
 ================================================================================
 
-Copyright (C) 2011 by Yehuda Katz
+Copyright 2011 Yehuda Katz
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -475,7 +475,7 @@ THE SOFTWARE.
 License for Jackson
 ================================================================================
 
-Copyright (c) 2007- Tatu Saloranta, tatu.saloranta@iki.fi
+Copyright 2007- Tatu Saloranta, tatu.saloranta@iki.fi
 
 Licensed under the Apache License, version 2.0
 
@@ -511,7 +511,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 License for jQuery Mouse Wheel
 ================================================================================
 
-Copyright (c) 2013 Brandon Aaron (http://brandonaaron.net)
+Copyright 2013 Brandon Aaron (http://brandonaaron.net)
 https://github.com/brandonaaron/jquery-mousewheel
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -538,7 +538,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 License for Logback
 ================================================================================
 
-Copyright (C) 1999-2012, QOS.ch
+Copyright 1999-2012 QOS.ch
 All rights reserved.
 
 This program and the accompanying materials are dual-licensed under
@@ -552,19 +552,10 @@ as published by the Free Software Foundation.
 
 
 ================================================================================
-License for Love Ya Like A Sister Font
-================================================================================
-
-Copyright (c) 2010, Kimberly Geswein (kimberlygeswein.com)
-
-Licensed under the SIL Open Font License, Version 1.1
-
-
-================================================================================
 License for Moment.js
 ================================================================================
 
-Copyright (c) 2011-2013 Tim Wood, Iskren Chernev, Moment.js contributors
+Copyright 2011-2013 Tim Wood, Iskren Chernev, Moment.js contributors
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
@@ -601,7 +592,16 @@ Licensed under the Apache License, Version 2.0
 License for Ning Compress
 ================================================================================
 
-Copyright 2009-2010 Ning, Inc.
+Copyright 2009-2010 Ning, Inc
+
+Licensed under the Apache License, Version 2.0
+
+
+================================================================================
+License for Open Sans Font
+================================================================================
+
+Copyright 2010-2011 Google Corporation
 
 Licensed under the Apache License, Version 2.0
 
@@ -610,7 +610,7 @@ Licensed under the Apache License, Version 2.0
 License for SLF4J
 ================================================================================
 
-Copyright (c) 2004-2013 QOS.ch
+Copyright 2004-2013 QOS.ch
 All rights reserved.
 
 Permission is hereby granted, free  of charge, to any person obtaining
@@ -637,7 +637,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 License for spin.js
 ================================================================================
 
-Copyright (c) 2011 Felix Gnass [fgnass at neteye dot de]
+Copyright 2011 Felix Gnass [fgnass at neteye dot de]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

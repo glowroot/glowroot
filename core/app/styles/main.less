@@ -73,7 +73,7 @@
 @navbar-height: 50px;
 @navbar-inverse-bg: @glowroot-primary-color;
 @navbar-inverse-link-active-bg: darken(@navbar-inverse-bg, 5%);
-@navbar-inverse-link-color: #ddd;
+@navbar-inverse-link-color: #e8e8e8;
 
 @input-border-focus: @glowroot-blue;
 
@@ -93,6 +93,7 @@ body {
   // when resizing the window horizontally smaller than the chart, there is a brief time before the chart re-draws
   // itself during which time the horizontal scrollbar shows up (which actually triggers a vertical window resize)
   overflow-x: hidden;
+  font-family: 'Open Sans', sans-serif;
 }
 
 .header {
@@ -105,28 +106,27 @@ body {
   font-size: 48px;
   color: #555;
   color: @glowroot-page-title-color;
-  font-family: 'Love Ya Like A Sister';
-}
-
-@font-face {
-  font-family: 'Love Ya Like A Sister';
-  font-style: normal;
-  font-weight: 400;
-  src: url(../fonts/love-ya-like-a-sister.eot);
-  src: url(../fonts/love-ya-like-a-sister.eot?#iefix) format("embedded-opentype"),
-       url(../fonts/love-ya-like-a-sister.woff) format("woff"),
-       url(../fonts/love-ya-like-a-sister.ttf) format("truetype");
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 600;
 }
 
 .navbar-brand {
   font-size: 24px;
   color: #fff !important;
   text-shadow: 0 0 4px white;
-  font-family: 'Love Ya Like A Sister';
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 800;
+  margin-top: -1px;
 }
 
 .nav.navbar-nav {
   font-size: 16px;
+  font-weight: 600;
+}
+
+.container {
+  padding-left: 15px !important;
+  padding-right: 15px !important;
 }
 
 // since the angular script is not loaded in the html head, the ng-cloak css style must be provided here

@@ -429,7 +429,7 @@ glowroot.controller('TracesCtrl', [
           clickable: true,
           // min border margin should match aggregate chart so they are positioned the same from the top of page
           // without specifying min border margin, the point radius is used
-          minBorderMargin: 10,
+          minBorderMargin: 0,
           borderColor: '#7d7358',
           borderWidth: 1
         },
@@ -446,7 +446,8 @@ glowroot.controller('TracesCtrl', [
           zoomRange: [
             fromMidnight,
             fromMidnight + 24 * 60 * 60 * 1000
-          ]
+          ],
+          reserveSpace: false
         },
         yaxis: {
           ticks: 10,

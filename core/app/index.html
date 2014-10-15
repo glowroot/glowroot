@@ -18,9 +18,8 @@
 <head>
   <meta charset="utf-8">
   <!-- intentionally not using <meta http-equiv="X-UA-Compatible" content="IE=edge">
-       because the conditional comments that are wrapping the html tag prevent it from working
-       and it must be set (and is being set) via http header
-       see https://github.com/h5bp/html5-boilerplate/issues/1187 -->
+       and instead sending http response header X-UA-Compatible: IE=edge
+       see https://github.com/h5bp/html5-boilerplate/blob/master/src/doc/html.md#x-ua-compatible -->
   <title>Glowroot</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -30,6 +29,8 @@
 
   <!-- this is needed when base href is not / -->
   <link rel="shortcut icon" href="favicon.ico">
+
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:400,600,700">
 
   <!-- build:css({.tmp,.}) styles/main.css -->
   <link rel="stylesheet" href="styles/main.css">

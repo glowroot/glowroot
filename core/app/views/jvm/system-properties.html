@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013 the original author or authors.
+  Copyright 2013-2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -22,12 +22,12 @@
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-repeat="property in properties">
       <div class="row system-property">
-        <div class="col-lg-3 break-word">
+        <div class="col-lg-4 break-word">
           <label>{{property.name}}</label>
         </div>
         <div gt-display-whitespace
              gt-bind="property.value"
-             class="col-lg-9 break-word">
+             class="col-lg-8 break-word">
         </div>
       </div>
     </div>
