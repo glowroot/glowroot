@@ -126,6 +126,7 @@ public class TraceExportHttpService implements HttpService {
     }
 
     private static CharSource render(TraceExport traceExport) throws IOException {
+        String htmlStartTag = "<html>";
         String exportCssPlaceholder = "<link rel=\"stylesheet\" href=\"styles/export-main.css\">";
         String exportComponentsJsPlaceholder =
                 "<script src=\"scripts/export-vendor.js\"></script>";
@@ -137,7 +138,7 @@ public class TraceExportHttpService implements HttpService {
                 "<script type=\"text/json\" id=\"outlierProfileJson\"></script>";
 
         String templateContent = asCharSource("trace-export.html").read();
-        Pattern pattern = Pattern.compile("(" + exportCssPlaceholder + "|"
+        Pattern pattern = Pattern.compile("(" + htmlStartTag + "|" + exportCssPlaceholder + "|"
                 + exportComponentsJsPlaceholder + "|" + exportJsPlaceholder + "|"
                 + tracePlaceholder + "|" + entriesPlaceholder + "|" + profilePlaceholder + "|"
                 + outlierProfilePlaceholder + ")");
@@ -149,7 +150,12 @@ public class TraceExportHttpService implements HttpService {
                     templateContent.substring(curr, matcher.start())));
             curr = matcher.end();
             String match = matcher.group();
-            if (match.equals(exportCssPlaceholder)) {
+            if (match.equals(htmlStartTag)) {
+                // Need to add "Mark of the Web" for IE, otherwise IE won't run javascript
+                // see http://msdn.microsoft.com/en-us/library/ms537628(v=vs.85).aspx
+                charSources.add(CharSource.wrap(
+                        "<!-- saved from url=(0014)about:internet -->\r\n<html>"));
+            } else if (match.equals(exportCssPlaceholder)) {
                 charSources.add(CharSource.wrap("<style>"));
                 charSources.add(asCharSource("styles/export-main.css"));
                 charSources.add(CharSource.wrap("</style>"));
