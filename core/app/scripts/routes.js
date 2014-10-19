@@ -73,6 +73,11 @@ glowroot.config([
       templateUrl: 'views/jvm/process.html',
       controller: 'JvmProcessCtrl'
     });
+    $stateProvider.state('jvm.gauges', {
+      url: '/gauges',
+      templateUrl: 'views/jvm/gauges.html',
+      controller: 'JvmGaugesCtrl'
+    });
     $stateProvider.state('jvm.mbeans', {
       url: '/mbeans',
       templateUrl: 'views/jvm/mbeans.html',
@@ -147,6 +152,11 @@ glowroot.config([
       url: '/plugin/:pluginId',
       templateUrl: 'views/config/plugin.html',
       controller: 'ConfigPluginCtrl'
+    });
+    $stateProvider.state('config.mbeanGauges', {
+      url: '/mbean-gauges',
+      templateUrl: 'views/config/mbean-gauge-list.html',
+      controller: 'ConfigMBeanGaugeListCtrl'
     });
     $stateProvider.state('login', {
       url: '/login',

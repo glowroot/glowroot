@@ -52,6 +52,7 @@ public class StorageModule {
     private final CappedDatabase cappedDatabase;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
+    private final GaugePointDao gaugePointDao;
     @Nullable
     private final ReaperRunnable reaperRunnable;
 
@@ -71,11 +72,13 @@ public class StorageModule {
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
         aggregateDao = new AggregateDao(dataSource, cappedDatabase);
         traceDao = new TraceDao(dataSource, cappedDatabase);
+        gaugePointDao = new GaugePointDao(dataSource);
         PreInitializeStorageShutdownClasses.preInitializeClasses();
         if (viewerModeEnabled) {
             reaperRunnable = null;
         } else {
-            reaperRunnable = new ReaperRunnable(configService, aggregateDao, traceDao, clock);
+            reaperRunnable = new ReaperRunnable(configService, aggregateDao, traceDao,
+                    gaugePointDao, clock);
             reaperRunnable.scheduleWithFixedDelay(scheduledExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
@@ -87,6 +90,10 @@ public class StorageModule {
 
     public TraceRepository getTraceRepository() {
         return traceDao;
+    }
+
+    public GaugePointDao getGaugePointDao() {
+        return gaugePointDao;
     }
 
     public DataSource getDataSource() {

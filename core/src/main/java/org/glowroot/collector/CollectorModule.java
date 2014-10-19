@@ -23,8 +23,11 @@ import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
+import org.glowroot.jvm.JvmModule;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author Trask Stalnaker
@@ -34,25 +37,39 @@ import org.glowroot.markers.ThreadSafe;
 public class CollectorModule {
 
     private static final long fixedAggregateIntervalSeconds;
+    private static final long fixedGaugeIntervalSeconds;
 
     static {
         fixedAggregateIntervalSeconds =
                 Long.getLong("glowroot.internal.collector.aggregateInterval", 300);
+        fixedGaugeIntervalSeconds =
+                Long.getLong("glowroot.internal.collector.gaugeInterval", 5);
     }
 
     private final TransactionCollectorImpl transactionCollector;
     @Nullable
     private final AggregateCollector aggregateCollector;
+    @Nullable
+    private final GaugeCollector gaugeCollector;
 
-    public CollectorModule(Clock clock, Ticker ticker, ConfigModule configModule,
-            TraceRepository traceRepository, AggregateRepository aggregateRepository,
+    public CollectorModule(Clock clock, Ticker ticker, JvmModule jvmModule,
+            ConfigModule configModule, TraceRepository traceRepository,
+            AggregateRepository aggregateRepository, GaugePointRepository gaugePointRepository,
             ScheduledExecutorService scheduledExecutor, boolean viewerModeEnabled) {
         ConfigService configService = configModule.getConfigService();
         if (viewerModeEnabled) {
             aggregateCollector = null;
+            gaugeCollector = null;
         } else {
             aggregateCollector = new AggregateCollector(scheduledExecutor, aggregateRepository,
                     clock, fixedAggregateIntervalSeconds);
+            gaugeCollector = new GaugeCollector(configService, gaugePointRepository,
+                    jvmModule.getLazyPlatformMBeanServer(), clock);
+            // using fixed rate to keep gauge collections close to on the second mark
+            long initialDelay = fixedGaugeIntervalSeconds
+                    - (clock.currentTimeMillis() % fixedGaugeIntervalSeconds);
+            gaugeCollector.scheduleAtFixedRate(scheduledExecutor, initialDelay,
+                    fixedGaugeIntervalSeconds, SECONDS);
         }
         // TODO should be no need for transaction collector in viewer mode
         transactionCollector = new TransactionCollectorImpl(scheduledExecutor, configService,
@@ -65,6 +82,10 @@ public class CollectorModule {
 
     public long getFixedAggregateIntervalSeconds() {
         return fixedAggregateIntervalSeconds;
+    }
+
+    public long getFixedGaugeIntervalSeconds() {
+        return fixedGaugeIntervalSeconds;
     }
 
     @OnlyUsedByTests

@@ -65,6 +65,7 @@ class ConfigMapper {
     private static final String UI = "ui";
     private static final String ADVANCED = "advanced";
     private static final String PLUGINS = "plugins";
+    private static final String MBEAN_GAUGES = "mbeanGauges";
     private static final String CAPTURE_POINTS = "capturePoints";
 
     static {
@@ -90,13 +91,14 @@ class ConfigMapper {
         StorageConfig storageConfig = readStorageNode(rootNode);
         UserInterfaceConfig userInterfaceConfig =
                 readUserInterfaceNode(rootNode, pluginDescriptors);
+        ImmutableList<MBeanGauge> mbeanGauges = createMBeanGauges(rootNode);
         AdvancedConfig advancedConfig = readAdvancedNode(rootNode);
         ImmutableMap<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
         ImmutableList<PluginConfig> pluginConfigs =
                 createPluginConfigs(pluginNodes, pluginDescriptors);
         ImmutableList<CapturePoint> capturePoints = createCapturePoints(rootNode);
         return new Config(traceConfig, profilingConfig, userRecordingConfig, storageConfig,
-                userInterfaceConfig, advancedConfig, pluginConfigs, capturePoints);
+                userInterfaceConfig, advancedConfig, pluginConfigs, mbeanGauges, capturePoints);
     }
 
     static void writeValue(File configFile, Config config) throws IOException {
@@ -135,6 +137,11 @@ class ConfigMapper {
         jg.writeArrayFieldStart(CAPTURE_POINTS);
         for (CapturePoint capturePoint : config.getCapturePoints()) {
             writer.writeValue(jg, capturePoint);
+        }
+        jg.writeEndArray();
+        jg.writeArrayFieldStart(MBEAN_GAUGES);
+        for (MBeanGauge mbeanGauge : config.getMBeanGauges()) {
+            writer.writeValue(jg, mbeanGauge);
         }
         jg.writeEndArray();
         jg.writeEndObject();
@@ -280,5 +287,20 @@ class ConfigMapper {
                 JsonGenerationException {
             jg.writeRaw(": ");
         }
+    }
+
+    private static ImmutableList<MBeanGauge> createMBeanGauges(ObjectNode rootNode)
+            throws JsonProcessingException {
+        JsonNode gaugesNode = rootNode.get(MBEAN_GAUGES);
+        if (gaugesNode == null) {
+            return ImmutableList.of();
+        }
+        List<MBeanGauge> mbeanGauges = Lists.newArrayList();
+        for (JsonNode gaugeNode : gaugesNode) {
+            MBeanGauge mbeanGauge =
+                    ObjectMappers.treeToRequiredValue(mapper, gaugeNode, MBeanGauge.class);
+            mbeanGauges.add(mbeanGauge);
+        }
+        return ImmutableList.copyOf(mbeanGauges);
     }
 }

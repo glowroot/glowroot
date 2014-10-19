@@ -58,6 +58,14 @@ public interface ConfigService {
 
     void updatePluginConfig(String pluginId, PluginConfig config) throws Exception;
 
+    List<MBeanGauge> getMBeanGauges() throws Exception;
+
+    String addMBeanGauge(MBeanGauge mbeanGauge) throws Exception;
+
+    void updateMBeanGauge(String version, MBeanGauge mbeanGauge) throws Exception;
+
+    void removeMBeanGauge(String version) throws Exception;
+
     List<CapturePoint> getCapturePoints() throws Exception;
 
     String addCapturePoint(CapturePoint capturePoint) throws Exception;

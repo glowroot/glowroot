@@ -20,13 +20,16 @@ import java.util.List;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.config.CapturePoint;
 import org.glowroot.container.config.ConfigService;
+import org.glowroot.container.config.MBeanGauge;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
@@ -141,6 +144,42 @@ class JavaagentConfigService implements ConfigService {
     @Override
     public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
         httpClient.post("/backend/config/plugin/" + pluginId, mapper.writeValueAsString(config));
+    }
+
+    @Override
+    public List<MBeanGauge> getMBeanGauges() throws Exception {
+        String response = httpClient.get("/backend/config/mbean-gauge");
+        ArrayNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ArrayNode.class);
+        List<MBeanGauge> configs = Lists.newArrayList();
+        for (JsonNode childNode : rootNode) {
+            ObjectNode configNode =
+                    (ObjectNode) ObjectMappers.getRequiredChildNode(childNode, "config");
+            configs.add(mapper.readValue(mapper.treeAsTokens(configNode), MBeanGauge.class));
+        }
+        return configs;
+    }
+
+    // returns new version
+    @Override
+    public String addMBeanGauge(MBeanGauge mbeanGauge) throws Exception {
+        String response = httpClient.post("/backend/config/mbean-gauge/+",
+                mapper.writeValueAsString(mbeanGauge));
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
+        JsonNode versionNode = ObjectMappers.getRequiredChildNode(configNode, "version");
+        return versionNode.asText();
+    }
+
+    @Override
+    public void updateMBeanGauge(String version, MBeanGauge mbeanGauge)
+            throws Exception {
+        httpClient.post("/backend/config/mbean-gauge/" + version,
+                mapper.writeValueAsString(mbeanGauge));
+    }
+
+    @Override
+    public void removeMBeanGauge(String version) throws Exception {
+        httpClient.post("/backend/config/mbean-gauge/-", mapper.writeValueAsString(version));
     }
 
     @Override

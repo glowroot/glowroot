@@ -43,6 +43,7 @@ public class AdvancedConfig {
     private final int maxEntriesPerTrace;
     private final boolean captureThreadInfo;
     private final boolean captureGcInfo;
+    private final int mbeanGaugeNotFoundDelaySeconds;
 
     private final String version;
 
@@ -52,8 +53,10 @@ public class AdvancedConfig {
         final int maxEntriesPerTrace = 2000;
         final boolean captureThreadInfo = true;
         final boolean captureGcInfo = true;
+        final int mbeanGaugeNotFoundDelaySeconds = 60;
         return new AdvancedConfig(metricWrapperMethods, immediatePartialStoreThresholdSeconds,
-                maxEntriesPerTrace, captureThreadInfo, captureGcInfo);
+                maxEntriesPerTrace, captureThreadInfo, captureGcInfo,
+                mbeanGaugeNotFoundDelaySeconds);
     }
 
     public static Overlay overlay(AdvancedConfig base) {
@@ -62,15 +65,17 @@ public class AdvancedConfig {
 
     @VisibleForTesting
     public AdvancedConfig(boolean metricWrapperMethods, int immediatePartialStoreThresholdSeconds,
-            int maxEntriesPerTrace, boolean captureThreadInfo, boolean captureGcInfo) {
+            int maxEntriesPerTrace, boolean captureThreadInfo, boolean captureGcInfo,
+            int mbeanGaugeNotFoundDelaySeconds) {
         this.metricWrapperMethods = metricWrapperMethods;
         this.immediatePartialStoreThresholdSeconds = immediatePartialStoreThresholdSeconds;
         this.maxEntriesPerTrace = maxEntriesPerTrace;
         this.captureThreadInfo = captureThreadInfo;
         this.captureGcInfo = captureGcInfo;
+        this.mbeanGaugeNotFoundDelaySeconds = mbeanGaugeNotFoundDelaySeconds;
         this.version = VersionHashes.sha1(metricWrapperMethods,
                 immediatePartialStoreThresholdSeconds, maxEntriesPerTrace, captureThreadInfo,
-                captureGcInfo);
+                captureGcInfo, mbeanGaugeNotFoundDelaySeconds);
     }
 
     public boolean isMetricWrapperMethods() {
@@ -93,6 +98,10 @@ public class AdvancedConfig {
         return captureGcInfo;
     }
 
+    public int getMBeanGaugeNotFoundDelaySeconds() {
+        return mbeanGaugeNotFoundDelaySeconds;
+    }
+
     @JsonView(UiView.class)
     public String getVersion() {
         return version;
@@ -106,6 +115,7 @@ public class AdvancedConfig {
                 .add("maxEntriesPerTrace", maxEntriesPerTrace)
                 .add("captureThreadInfo", captureThreadInfo)
                 .add("captureGcInfo", captureGcInfo)
+                .add("mbeanGaugeNotFoundDelaySeconds", mbeanGaugeNotFoundDelaySeconds)
                 .add("version", version)
                 .toString();
     }
@@ -119,6 +129,7 @@ public class AdvancedConfig {
         private int maxEntriesPerTrace;
         private boolean captureThreadInfo;
         private boolean captureGcInfo;
+        private int mbeanGaugeNotFoundDelaySeconds;
 
         private Overlay(AdvancedConfig base) {
             metricWrapperMethods = base.metricWrapperMethods;
@@ -126,6 +137,7 @@ public class AdvancedConfig {
             maxEntriesPerTrace = base.maxEntriesPerTrace;
             captureThreadInfo = base.captureThreadInfo;
             captureGcInfo = base.captureGcInfo;
+            mbeanGaugeNotFoundDelaySeconds = base.mbeanGaugeNotFoundDelaySeconds;
         }
         public void setMetricWrapperMethods(boolean metricWrapperMethods) {
             this.metricWrapperMethods = metricWrapperMethods;
@@ -143,9 +155,13 @@ public class AdvancedConfig {
         public void setCaptureGcInfo(boolean captureGcInfo) {
             this.captureGcInfo = captureGcInfo;
         }
+        public void setMBeanGaugeNotFoundDelaySeconds(int mbeanGaugeNotFoundDelaySeconds) {
+            this.mbeanGaugeNotFoundDelaySeconds = mbeanGaugeNotFoundDelaySeconds;
+        }
         public AdvancedConfig build() {
             return new AdvancedConfig(metricWrapperMethods, immediatePartialStoreThresholdSeconds,
-                    maxEntriesPerTrace, captureThreadInfo, captureGcInfo);
+                    maxEntriesPerTrace, captureThreadInfo, captureGcInfo,
+                    mbeanGaugeNotFoundDelaySeconds);
         }
     }
 }

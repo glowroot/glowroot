@@ -28,6 +28,7 @@ import org.glowroot.container.config.CapturePoint;
 import org.glowroot.container.config.CapturePoint.CaptureKind;
 import org.glowroot.container.config.CapturePoint.MethodModifier;
 import org.glowroot.container.config.ConfigService;
+import org.glowroot.container.config.MBeanGauge;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
@@ -188,6 +189,31 @@ class LocalConfigService implements ConfigService {
     }
 
     @Override
+    public List<MBeanGauge> getMBeanGauges() {
+        List<MBeanGauge> configs = Lists.newArrayList();
+        for (org.glowroot.config.MBeanGauge coreConfig : configService
+                .getMBeanGaugesNeverShaded()) {
+            configs.add(convertFromCore(coreConfig));
+        }
+        return configs;
+    }
+
+    @Override
+    public String addMBeanGauge(MBeanGauge config) throws Exception {
+        return configService.insertMBeanGauge(convertToCore(config));
+    }
+
+    @Override
+    public void updateMBeanGauge(String version, MBeanGauge config) throws Exception {
+        configService.updateMBeanGauge(version, convertToCore(config));
+    }
+
+    @Override
+    public void removeMBeanGauge(String version) throws Exception {
+        configService.deleteMBeanGauge(version);
+    }
+
+    @Override
     public AdvancedConfig getAdvancedConfig() {
         org.glowroot.config.AdvancedConfig coreConfig = configService.getAdvancedConfig();
         AdvancedConfig config = new AdvancedConfig(coreConfig.getVersion());
@@ -197,6 +223,7 @@ class LocalConfigService implements ConfigService {
         config.setMaxEntriesPerTrace(coreConfig.getMaxEntriesPerTrace());
         config.setCaptureThreadInfo(coreConfig.isCaptureThreadInfo());
         config.setCaptureGcInfo(coreConfig.isCaptureGcInfo());
+        config.setMBeanGaugeNotFoundDelaySeconds(coreConfig.getMBeanGaugeNotFoundDelaySeconds());
         return config;
     }
 
@@ -206,7 +233,7 @@ class LocalConfigService implements ConfigService {
                 new org.glowroot.config.AdvancedConfig(config.isMetricWrapperMethods(),
                         config.getImmediatePartialStoreThresholdSeconds(),
                         config.getMaxEntriesPerTrace(), config.isCaptureThreadInfo(),
-                        config.isCaptureGcInfo());
+                        config.isCaptureGcInfo(), config.getMBeanGaugeNotFoundDelaySeconds());
         configService.updateAdvancedConfig(updatedConfig, config.getVersion());
     }
 
@@ -343,5 +370,23 @@ class LocalConfigService implements ConfigService {
                 nullToEmpty(config.getTransactionCustomAttributeTemplates()),
                 nullToEmpty(config.getEnabledProperty()),
                 nullToEmpty(config.getTraceEntryEnabledProperty()));
+    }
+
+    private static MBeanGauge convertFromCore(org.glowroot.config.MBeanGauge coreConfig) {
+        MBeanGauge config = new MBeanGauge(coreConfig.getVersion());
+        config.setName(coreConfig.getName());
+        config.setMBeanObjectName(coreConfig.getMBeanObjectName());
+        config.setMBeanAttributeNames(coreConfig.getMBeanAttributeNamesNeverShaded());
+        return config;
+    }
+
+    private static org.glowroot.config.MBeanGauge convertToCore(MBeanGauge config) {
+        String metricName = config.getName();
+        String mbeanObjectName = config.getMBeanObjectName();
+        List<String> mbeanAttributeName = config.getMBeanAttributeNames();
+        checkNotNull(metricName, "MBeanGauge metricName is null");
+        checkNotNull(mbeanObjectName, "MBeanGauge mbeanObjectName is null");
+        checkNotNull(mbeanAttributeName, "MBeanGauge mbeanAttributeName is null");
+        return new org.glowroot.config.MBeanGauge(metricName, mbeanObjectName, mbeanAttributeName);
     }
 }

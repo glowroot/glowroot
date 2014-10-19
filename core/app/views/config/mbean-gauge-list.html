@@ -1,0 +1,132 @@
+<!--
+  Copyright 2012-2014 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div gt-spinner
+     gt-show="!loaded && !httpError"
+     class="plugin-list-spinner">
+</div>
+<div ng-include src="'template/gt-http-error.html'"></div>
+<div ng-repeat="gauge in gauges"
+     ng-controller="ConfigMBeanGaugeCtrl"
+     class="panel panel-default">
+  <div class="panel-heading">
+    <h2>{{heading}}</h2>
+  </div>
+  <div class="panel-body">
+    <div ng-form
+         gt-form-with-primary-button
+         class="form-horizontal"
+         name="formCtrl">
+      <div class="form-group"
+           ng-class="{'has-error': hasMBeanObjectNameError()}">
+        <label class="col-lg-2 control-label"
+               for="mbeanObjectName{{$id}}">
+          MBean object name
+        </label>
+        <div class="col-lg-10">
+          <input type="text"
+                 class="form-control"
+                 ng-model="config.mbeanObjectName"
+                 ng-required="true"
+                 typeahead="suggestion for suggestion in mbeanObjectNames($viewValue)"
+                 typeahead-on-select="onSelectMBeanObjectName()"
+                 typeahead-loading="mbeanObjectNamesLoading"
+                 ng-blur="onSelectMBeanObjectName()"
+                 name="mbeanObjectName"
+                 id="mbeanObjectName{{$id}}"
+                 gt-set-focus="isFocus"
+                 style="max-width: 40em; display: inline-block">
+          <div gt-spinner
+               gt-spinner-inline="true"
+               gt-show="mbeanObjectNamesLoading"
+               class="inline-spinner">
+          </div>
+          <div ng-show="mbeanUnavailable"
+               class="glowroot-red"
+               style="padding-top: 10px;">
+            MBean not found
+          </div>
+          <div ng-show="duplicateMBean"
+               class="glowroot-red"
+               style="padding-top: 10px;">
+            There is already a gauge for this MBean
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-lg-2 control-label">
+          MBean attributes
+        </label>
+        <div class="col-lg-10">
+          <div gt-spinner
+               gt-show="mbeanAttributesLoading && !httpError"
+               class="inline-spinner hide"
+               style="height: 50px;">
+          </div>
+          <div ng-repeat="mbeanAttribute in allMBeanAttributes | orderBy:'name'"
+               ng-show="allMBeanAttributes">
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" ng-model="mbeanAttribute.checked">
+                {{mbeanAttribute.name}}
+                <span ng-show="!mbeanAttribute.available"
+                      class="glowroot-red"
+                      style="padding-left: 10px;">
+                  Attribute not found
+                </span>
+              </label>
+            </div>
+          </div>
+          <div ng-show="!allMBeanAttributes.length && !mbeanUnavailable && config.mbeanObjectName"
+               class="glowroot-red">
+            There are no number-valued attributes for this MBean
+          </div>
+        </div>
+      </div>
+      <div class="form-group form-buttons">
+        <div class="col-lg-offset-2 col-lg-10">
+          <div gt-button-group>
+            <div gt-button
+                 gt-label="{{config.version ? 'Save' : 'Add'}}"
+                 gt-click="save(deferred)"
+                 gt-disabled="saveDisabled()"
+                 class="inline-block">
+            </div>
+            <div gt-button
+                 gt-label="Delete"
+                 gt-click="delete(deferred)"
+                 gt-btn-class="btn-default"
+                 class="inline-block"
+                 style="margin-left: 5px;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
+     before it gets pushed down by existing gauge sections -->
+<div class="panel panel-default" ng-show="loaded">
+  <div class="panel-heading">
+    <h2>Add mbean gauge</h2>
+  </div>
+  <!-- override .panel-body min-height: 150px, not needed anyway since no loading spinner in this panel -->
+  <div class="panel-body" style="min-height: 0;">
+    <button type="button" class="btn btn-primary" ng-click="addGauge()">
+      New
+    </button>
+  </div>
+</div>

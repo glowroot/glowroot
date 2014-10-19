@@ -152,7 +152,7 @@ public class PluginDescriptorCache {
         return advisors;
     }
 
-    // the 2 methods below only used by test harness (LocalContainer), so that tests will still
+    // the 2 methods below are only used by test harness (LocalContainer), so that tests will still
     // succeed even if core is shaded (e.g. compiled from maven) and test-harness is compiled
     // against unshaded core (e.g. compiled previously in IDE)
     //

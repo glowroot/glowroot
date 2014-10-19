@@ -36,8 +36,9 @@ import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 import org.glowroot.container.trace.TraceService;
-import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.AggregateDao;
+import org.glowroot.local.store.GaugePointDao;
+import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.ui.TraceCommonService;
 import org.glowroot.local.ui.TraceExportHttpService;
 import org.glowroot.transaction.TransactionRegistry;
@@ -56,6 +57,7 @@ class LocalTraceService extends TraceService {
 
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
+    private final GaugePointDao gaugePointDao;
     private final TraceCommonService traceCommonService;
     private final TraceExportHttpService traceExportHttpService;
     private final TransactionCollectorImpl transactionCollector;
@@ -66,6 +68,7 @@ class LocalTraceService extends TraceService {
     LocalTraceService(GlowrootModule glowrootModule) {
         aggregateDao = glowrootModule.getStorageModule().getAggregateDao();
         traceDao = glowrootModule.getStorageModule().getTraceDao();
+        gaugePointDao = glowrootModule.getStorageModule().getGaugePointDao();
         traceCommonService = glowrootModule.getUiModule().getTraceCommonService();
         traceExportHttpService = glowrootModule.getUiModule().getTraceExportHttpService();
         transactionCollector = glowrootModule.getCollectorModule().getTransactionCollector();
@@ -146,6 +149,7 @@ class LocalTraceService extends TraceService {
     public void deleteAll() {
         aggregateDao.deleteAll();
         traceDao.deleteAll();
+        gaugePointDao.deleteAll();
     }
 
     @Override

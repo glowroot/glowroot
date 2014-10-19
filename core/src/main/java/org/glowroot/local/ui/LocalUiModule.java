@@ -40,6 +40,7 @@ import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.store.DataSource;
+import org.glowroot.local.store.GaugePointDao;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
@@ -86,6 +87,7 @@ public class LocalUiModule {
 
         AggregateDao aggregateDao = storageModule.getAggregateDao();
         TraceDao traceDao = storageModule.getTraceDao();
+        GaugePointDao gaugePointDao = storageModule.getGaugePointDao();
         DataSource dataSource = storageModule.getDataSource();
         CappedDatabase cappedDatabase = storageModule.getCappedDatabase();
         TransactionCollectorImpl transactionCollector = collectorModule.getTransactionCollector();
@@ -95,7 +97,8 @@ public class LocalUiModule {
 
         LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
                 pluginDescriptorCache, jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),
-                collectorModule.getFixedAggregateIntervalSeconds());
+                collectorModule.getFixedAggregateIntervalSeconds(),
+                collectorModule.getFixedGaugeIntervalSeconds());
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configService, clock, layoutJsonService);
         IndexHtmlHttpService indexHtmlHttpService =
@@ -115,15 +118,18 @@ public class LocalUiModule {
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
         ErrorJsonService errorJsonService = new ErrorJsonService(traceDao);
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
-                jvmModule.getThreadAllocatedBytes(), jvmModule.getHeapHistograms(),
-                jvmModule.getHeapDumps());
+                gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),
+                jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),
+                collectorModule.getFixedGaugeIntervalSeconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
                 pluginDescriptorCache, dataDir, httpSessionManager, traceModule);
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld);
         CapturePointJsonService capturePointJsonService = new CapturePointJsonService(
                 configService, traceModule.getAdviceCache(), classpathCache, traceModule);
+        MBeanGaugeJsonService mbeanGaugeJsonService =
+                new MBeanGaugeJsonService(configService, jvmModule.getLazyPlatformMBeanServer());
         AdminJsonService adminJsonService = new AdminJsonService(aggregateDao, traceDao,
-                configService, traceModule.getAdviceCache(), analyzedWorld,
+                gaugePointDao, configService, traceModule.getAdviceCache(), analyzedWorld,
                 instrumentation, transactionCollector, dataSource, transactionRegistry);
 
         List<Object> jsonServices = Lists.newArrayList();
@@ -135,6 +141,7 @@ public class LocalUiModule {
         jsonServices.add(jvmJsonService);
         jsonServices.add(configJsonService);
         jsonServices.add(capturePointJsonService);
+        jsonServices.add(mbeanGaugeJsonService);
         jsonServices.add(adminJsonService);
 
         // for now only a single http worker thread to keep # of threads down
@@ -153,7 +160,6 @@ public class LocalUiModule {
             configJsonService.setHttpServer(httpServer);
         }
     }
-
     public int getPort() {
         if (httpServer == null) {
             return -1;

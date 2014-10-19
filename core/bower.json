@@ -12,6 +12,7 @@
     "handlebars": "2.0.0",
     "jquery": "2.1.1",
     "moment": "2.8.3",
+    "rcolor": "sterlingwes/RandomColor#83308d7627ba4a50c4cd571543871bd5052a1322",
     "spinjs": "2.0.1"
   }
 }

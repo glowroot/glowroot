@@ -33,6 +33,7 @@ import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.config.CapturePoint;
 import org.glowroot.container.config.CapturePoint.CaptureKind;
 import org.glowroot.container.config.CapturePoint.MethodModifier;
+import org.glowroot.container.config.MBeanGauge;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
@@ -222,6 +223,45 @@ public class ConfigTest {
     }
 
     @Test
+    public void shouldInsertMBeanGauge() throws Exception {
+        // given
+        MBeanGauge config = createMBeanGauge();
+        // when
+        container.getConfigService().addMBeanGauge(config);
+        // then
+        List<MBeanGauge> configs = container.getConfigService().getMBeanGauges();
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0)).isEqualTo(config);
+    }
+
+    @Test
+    public void shouldUpdateMBeanGauge() throws Exception {
+        // given
+        MBeanGauge config = createMBeanGauge();
+        String version = container.getConfigService().addMBeanGauge(config);
+        // when
+        updateAllFields(config);
+        container.getConfigService().updateMBeanGauge(version, config);
+        // then
+        List<MBeanGauge> configs = container.getConfigService().getMBeanGauges();
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0)).isEqualTo(config);
+    }
+
+    @Test
+    public void shouldDeleteMBeanGauge() throws Exception {
+        // given
+        MBeanGauge config = createMBeanGauge();
+        String version = container.getConfigService().addMBeanGauge(config);
+        // when
+        container.getConfigService().removeMBeanGauge(version);
+        // then
+        List<? extends MBeanGauge> configs =
+                container.getConfigService().getMBeanGauges();
+        assertThat(configs).isEmpty();
+    }
+
+    @Test
     public void shouldUpdateAdvancedConfig() throws Exception {
         // given
         AdvancedConfig config = container.getConfigService().getAdvancedConfig();
@@ -287,6 +327,7 @@ public class ConfigTest {
         config.setMaxEntriesPerTrace(config.getMaxEntriesPerTrace() + 1);
         config.setCaptureThreadInfo(!config.isCaptureThreadInfo());
         config.setCaptureGcInfo(!config.isCaptureGcInfo());
+        config.setMBeanGaugeNotFoundDelaySeconds(config.getMBeanGaugeNotFoundDelaySeconds() + 1);
     }
 
     private static void updateAllFields(PluginConfig config) {
@@ -365,5 +406,24 @@ public class ConfigTest {
         config.setTransactionCustomAttributeTemplates(transactionCustomAttributeTemplates);
         config.setEnabledProperty(config.getEnabledProperty() + "k");
         config.setTraceEntryEnabledProperty(config.getTraceEntryEnabledProperty() + "l");
+    }
+
+    private static MBeanGauge createMBeanGauge() {
+        MBeanGauge config = new MBeanGauge();
+        config.setName("test");
+        config.setMBeanObjectName("anobject:k=v");
+        config.setMBeanAttributeNames(Lists.newArrayList("anattribute"));
+        return config;
+    }
+
+    private static void updateAllFields(MBeanGauge config) {
+        config.setName(config.getName() + "a");
+        config.setMBeanObjectName(config.getMBeanObjectName() + "b");
+        List<String> mbeanAttributeNames = Lists.newArrayList();
+        for (String mbeanAttributeName : config.getMBeanAttributeNames()) {
+            mbeanAttributeNames.add(mbeanAttributeName + "c");
+        }
+        mbeanAttributeNames.add("d");
+        config.setMBeanAttributeNames(mbeanAttributeNames);
     }
 }

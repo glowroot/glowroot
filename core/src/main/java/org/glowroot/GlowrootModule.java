@@ -177,9 +177,9 @@ public class GlowrootModule {
         } catch (IOException e) {
             throw new StartupFailedException(e);
         }
-        collectorModule = new CollectorModule(clock, ticker, configModule,
+        collectorModule = new CollectorModule(clock, ticker, jvmModule, configModule,
                 storageModule.getTraceRepository(), storageModule.getAggregateRepository(),
-                scheduledExecutor, viewerModeEnabled);
+                storageModule.getGaugePointDao(), scheduledExecutor, viewerModeEnabled);
         // now inject the real TransactionCollector into the proxy
         transactionCollectorProxy.setInstance(collectorModule.getTransactionCollector());
         // now init plugins to give them a chance to do something in their static initializer

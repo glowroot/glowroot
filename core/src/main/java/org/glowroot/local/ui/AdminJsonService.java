@@ -34,6 +34,7 @@ import org.glowroot.config.CapturePoint;
 import org.glowroot.config.ConfigService;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.DataSource;
+import org.glowroot.local.store.GaugePointDao;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
@@ -55,6 +56,7 @@ class AdminJsonService {
 
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
+    private final GaugePointDao gaugePointDao;
     private final ConfigService configService;
     private final AdviceCache adviceCache;
     private final AnalyzedWorld analyzedWorld;
@@ -64,13 +66,14 @@ class AdminJsonService {
     private final DataSource dataSource;
     private final TransactionRegistry transactionRegistry;
 
-    AdminJsonService(AggregateDao aggregateDao, TraceDao traceDao,
+    AdminJsonService(AggregateDao aggregateDao, TraceDao traceDao, GaugePointDao gaugePointDao,
             ConfigService configService, AdviceCache adviceCache, AnalyzedWorld analyzedWorld,
             @Nullable Instrumentation instrumentation,
-            TransactionCollectorImpl transactionCollector,
-            DataSource dataSource, TransactionRegistry transactionRegistry) {
+            TransactionCollectorImpl transactionCollector, DataSource dataSource,
+            TransactionRegistry transactionRegistry) {
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
+        this.gaugePointDao = gaugePointDao;
         this.configService = configService;
         this.adviceCache = adviceCache;
         this.analyzedWorld = analyzedWorld;
@@ -90,6 +93,7 @@ class AdminJsonService {
     void deleteAllTraces() {
         logger.debug("deleteAllTraces()");
         traceDao.deleteAll();
+        gaugePointDao.deleteAll();
     }
 
     @POST("/backend/admin/reweave-capture-points")

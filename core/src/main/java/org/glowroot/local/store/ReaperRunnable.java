@@ -32,13 +32,15 @@ class ReaperRunnable extends ScheduledRunnable {
     private final ConfigService configService;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
+    private final GaugePointDao gaugePointDao;
     private final Clock clock;
 
     ReaperRunnable(ConfigService configService, AggregateDao aggregateDao, TraceDao traceDao,
-            Clock clock) {
+            GaugePointDao gaugePointDao, Clock clock) {
         this.configService = configService;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
+        this.gaugePointDao = gaugePointDao;
         this.clock = clock;
     }
 
@@ -51,5 +53,8 @@ class ReaperRunnable extends ScheduledRunnable {
         long traceCaptureTime = clock.currentTimeMillis()
                 - HOURS.toMillis(configService.getStorageConfig().getTraceExpirationHours());
         traceDao.deleteBefore(traceCaptureTime);
+
+        // TODO separate expiration for gauge data?
+        gaugePointDao.deleteBefore(aggregateCaptureTime);
     }
 }

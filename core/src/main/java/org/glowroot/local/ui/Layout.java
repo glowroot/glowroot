@@ -44,6 +44,7 @@ public class Layout {
     private final String defaultTransactionType;
     private final ImmutableList<String> transactionCustomAttributes;
     private final long fixedAggregateIntervalSeconds;
+    private final long fixedGaugeIntervalSeconds;
     private final String version;
 
     static Builder builder() {
@@ -53,7 +54,7 @@ public class Layout {
     Layout(boolean jvmHeapHistogram, boolean jvmHeapDump, String footerMessage,
             boolean passwordEnabled, List<LayoutPlugin> plugins, List<String> transactionTypes,
             String defaultTransactionType, List<String> transactionCustomAttributes,
-            long fixedAggregateIntervalSeconds) {
+            long fixedAggregateIntervalSeconds, long fixedGaugeIntervalSeconds) {
         this.jvmHeapHistogram = jvmHeapHistogram;
         this.jvmHeapDump = jvmHeapDump;
         this.footerMessage = footerMessage;
@@ -63,9 +64,10 @@ public class Layout {
         this.defaultTransactionType = defaultTransactionType;
         this.transactionCustomAttributes = ImmutableList.copyOf(transactionCustomAttributes);
         this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
+        this.fixedGaugeIntervalSeconds = fixedGaugeIntervalSeconds;
         version = VersionHashes.sha1(jvmHeapHistogram, jvmHeapDump, footerMessage, passwordEnabled,
                 transactionTypes, defaultTransactionType, transactionCustomAttributes,
-                fixedAggregateIntervalSeconds);
+                fixedAggregateIntervalSeconds, fixedGaugeIntervalSeconds);
     }
 
     public boolean isJvmHeapHistogram() {
@@ -104,6 +106,10 @@ public class Layout {
         return fixedAggregateIntervalSeconds;
     }
 
+    public long getFixedGaugeIntervalSeconds() {
+        return fixedGaugeIntervalSeconds;
+    }
+
     public String getVersion() {
         return version;
     }
@@ -120,6 +126,7 @@ public class Layout {
                 .add("defaultTransactionType", defaultTransactionType)
                 .add("transactionCustomAttributes", transactionCustomAttributes)
                 .add("fixedAggregateIntervalSeconds", fixedAggregateIntervalSeconds)
+                .add("fixedGaugeIntervalSeconds", fixedGaugeIntervalSeconds)
                 .toString();
     }
 
@@ -156,6 +163,7 @@ public class Layout {
         private String defaultTransactionType;
         private List<String> transactionCustomAttributes = ImmutableList.of();
         private long fixedAggregateIntervalSeconds;
+        private long fixedGaugeIntervalSeconds;
 
         private Builder() {}
 
@@ -206,11 +214,16 @@ public class Layout {
             return this;
         }
 
+        Builder fixedGaugeIntervalSeconds(long fixedGaugeIntervalSeconds) {
+            this.fixedGaugeIntervalSeconds = fixedGaugeIntervalSeconds;
+            return this;
+        }
+
         @RequiresNonNull({"footerMessage", "defaultTransactionType"})
         Layout build() {
             return new Layout(jvmHeapHistogram, jvmHeapDump, footerMessage, passwordEnabled,
                     plugins, transactionTypes, defaultTransactionType, transactionCustomAttributes,
-                    fixedAggregateIntervalSeconds);
+                    fixedAggregateIntervalSeconds, fixedGaugeIntervalSeconds);
         }
     }
 }

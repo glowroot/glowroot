@@ -36,13 +36,15 @@ class Config {
     private final UserInterfaceConfig userInterfaceConfig;
     private final AdvancedConfig advancedConfig;
     private final ImmutableList<PluginConfig> pluginConfigs;
+    private final ImmutableList<MBeanGauge> mbeanGauges;
     private final ImmutableList<CapturePoint> capturePoints;
 
     static Config getDefault(ImmutableList<PluginDescriptor> pluginDescriptors) {
         return new Config(TraceConfig.getDefault(), ProfilingConfig.getDefault(),
                 UserRecordingConfig.getDefault(), StorageConfig.getDefault(),
                 UserInterfaceConfig.getDefault(pluginDescriptors), AdvancedConfig.getDefault(),
-                createPluginConfigs(pluginDescriptors), ImmutableList.<CapturePoint>of());
+                createPluginConfigs(pluginDescriptors), ImmutableList.<MBeanGauge>of(),
+                ImmutableList.<CapturePoint>of());
     }
 
     static Builder builder(Config base) {
@@ -52,7 +54,8 @@ class Config {
     Config(TraceConfig traceConfig, ProfilingConfig profilingConfig,
             UserRecordingConfig userRecordingConfig, StorageConfig storageConfig,
             UserInterfaceConfig userInterfaceConfig, AdvancedConfig advancedConfig,
-            List<PluginConfig> pluginConfigs, List<CapturePoint> capturePoints) {
+            List<PluginConfig> pluginConfigs, List<MBeanGauge> mbeanGauges,
+            List<CapturePoint> capturePoints) {
         this.traceConfig = traceConfig;
         this.profilingConfig = profilingConfig;
         this.userRecordingConfig = userRecordingConfig;
@@ -60,6 +63,7 @@ class Config {
         this.userInterfaceConfig = userInterfaceConfig;
         this.advancedConfig = advancedConfig;
         this.pluginConfigs = ImmutableList.copyOf(pluginConfigs);
+        this.mbeanGauges = ImmutableList.copyOf(mbeanGauges);
         this.capturePoints = ImmutableList.copyOf(capturePoints);
     }
 
@@ -91,6 +95,10 @@ class Config {
         return pluginConfigs;
     }
 
+    ImmutableList<MBeanGauge> getMBeanGauges() {
+        return mbeanGauges;
+    }
+
     ImmutableList<CapturePoint> getCapturePoints() {
         return capturePoints;
     }
@@ -113,6 +121,7 @@ class Config {
         private UserInterfaceConfig userInterfaceConfig;
         private AdvancedConfig advancedConfig;
         private List<PluginConfig> pluginConfigs;
+        private List<MBeanGauge> mbeanGauges;
         private List<CapturePoint> capturePoints;
 
         private Builder(Config base) {
@@ -123,6 +132,7 @@ class Config {
             userInterfaceConfig = base.userInterfaceConfig;
             advancedConfig = base.advancedConfig;
             pluginConfigs = base.pluginConfigs;
+            mbeanGauges = base.mbeanGauges;
             capturePoints = base.capturePoints;
         }
         Builder traceConfig(TraceConfig traceConfig) {
@@ -153,13 +163,17 @@ class Config {
             this.pluginConfigs = pluginConfigs;
             return this;
         }
+        Builder mbeanGauges(List<MBeanGauge> mbeanGauges) {
+            this.mbeanGauges = mbeanGauges;
+            return this;
+        }
         Builder capturePoints(List<CapturePoint> capturePoints) {
             this.capturePoints = capturePoints;
             return this;
         }
         Config build() {
             return new Config(traceConfig, profilingConfig, userRecordingConfig, storageConfig,
-                    userInterfaceConfig, advancedConfig, pluginConfigs, capturePoints);
+                    userInterfaceConfig, advancedConfig, pluginConfigs, mbeanGauges, capturePoints);
         }
     }
 }

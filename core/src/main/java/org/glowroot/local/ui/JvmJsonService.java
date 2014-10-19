@@ -61,7 +61,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.collector.GaugePoint;
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.config.ConfigService;
+import org.glowroot.config.MBeanGauge;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.HeapHistograms;
 import org.glowroot.jvm.HeapHistograms.HeapHistogramException;
@@ -70,6 +73,7 @@ import org.glowroot.jvm.OptionalService;
 import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.ProcessId;
 import org.glowroot.jvm.ThreadAllocatedBytes;
+import org.glowroot.local.store.GaugePointDao;
 import org.glowroot.markers.Singleton;
 import org.glowroot.markers.UsedByJsonBinding;
 
@@ -111,17 +115,27 @@ class JvmJsonService {
             };
 
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
+    private final GaugePointDao gaugePointDao;
+    private final ConfigService configService;
+
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapHistograms> heapHistograms;
     private final OptionalService<HeapDumps> heapDumps;
 
-    JvmJsonService(LazyPlatformMBeanServer lazyPlatformMBeanServer,
+    private final long fixedGaugeIntervalMillis;
+
+    JvmJsonService(LazyPlatformMBeanServer lazyPlatformMBeanServer, GaugePointDao gaugePointDao,
+            ConfigService configService,
             OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
-            OptionalService<HeapHistograms> heapHistograms, OptionalService<HeapDumps> heapDumps) {
+            OptionalService<HeapHistograms> heapHistograms, OptionalService<HeapDumps> heapDumps,
+            long fixedGaugeIntervalSeconds) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
+        this.gaugePointDao = gaugePointDao;
+        this.configService = configService;
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.heapHistograms = heapHistograms;
         this.heapDumps = heapDumps;
+        this.fixedGaugeIntervalMillis = fixedGaugeIntervalSeconds * 1000;
     }
 
     @GET("/backend/jvm/process")
@@ -164,6 +178,49 @@ class JvmJsonService {
         jg.writeEndObject();
         jg.close();
         return sb.toString();
+    }
+
+    @GET("/backend/jvm/gauge-points")
+    String getGaugePoints(String content) throws IOException {
+        logger.debug("getGaugePoints(): {}", content);
+        ObjectMapper mapper = ObjectMappers.create();
+        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        GaugePointRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, GaugePointRequest.class);
+        List<List<Number/*@Nullable*/[]>> series = Lists.newArrayList();
+        for (String gaugeName : request.getGaugeNames()) {
+            ImmutableList<GaugePoint> gaugePoints =
+                    gaugePointDao.readGaugePoints(gaugeName, request.getFrom(), request.getTo());
+            List<Number/*@Nullable*/[]> points = Lists.newArrayList();
+            GaugePoint lastGaugePoint = null;
+            for (GaugePoint gaugePoint : gaugePoints) {
+                if (lastGaugePoint != null) {
+                    long millisecondsSinceLastPoint =
+                            gaugePoint.getCaptureTime() - lastGaugePoint.getCaptureTime();
+                    if (millisecondsSinceLastPoint > fixedGaugeIntervalMillis * 1.5) {
+                        points.add(null);
+                    }
+                }
+                points.add(new Number[] {gaugePoint.getCaptureTime(), gaugePoint.getValue()});
+                lastGaugePoint = gaugePoint;
+            }
+            series.add(points);
+        }
+        return mapper.writeValueAsString(series);
+    }
+
+    @GET("/backend/jvm/all-gauge-names")
+    String getAllGaugeNames() throws IOException {
+        logger.debug("getAllGaugeNames()");
+        List<String> gaugeNames = Lists.newArrayList();
+        for (MBeanGauge mbeanGauge : configService.getMBeanGauges()) {
+            for (String mbeanAttributeName : mbeanGauge.getMBeanAttributeNames()) {
+                gaugeNames.add(mbeanGauge.getName() + "/" + mbeanAttributeName);
+            }
+        }
+        ImmutableList<String> sortedGaugeNames =
+                Ordering.from(String.CASE_INSENSITIVE_ORDER).immutableSortedCopy(gaugeNames);
+        return mapper.writeValueAsString(sortedGaugeNames);
     }
 
     @GET("/backend/jvm/system-properties")
@@ -222,8 +279,7 @@ class JvmJsonService {
             for (int i = 0; i < propertyValues.size(); i++) {
                 String value = propertyValues.get(i);
                 if (i == propertyValues.size() - 1) {
-                    String name = objectName.getDomain() + ":"
-                            + objectName.getKeyPropertyListString();
+                    String name = objectName.toString();
                     if (request.getExpanded().contains(name)) {
                         Map<String, /*@Nullable*/Object> sortedAttributeMap =
                                 getMBeanSortedAttributeMap(objectName);
@@ -509,6 +565,38 @@ class JvmJsonService {
             return value;
         } else {
             return value.toString();
+        }
+    }
+
+    @UsedByJsonBinding
+    static class GaugePointRequest {
+
+        private final long from;
+        private final long to;
+        private final ImmutableList<String> gaugeNames;
+
+        @JsonCreator
+        GaugePointRequest(@JsonProperty("from") @Nullable Long from,
+                @JsonProperty("to") @Nullable Long to,
+                @JsonProperty("gaugeNames") @Nullable List<String> gaugeNames)
+                throws JsonMappingException {
+            checkRequiredProperty(from, "from");
+            checkRequiredProperty(to, "to");
+            this.from = from;
+            this.to = to;
+            this.gaugeNames = ImmutableList.copyOf(nullToEmpty(gaugeNames));
+        }
+
+        private long getFrom() {
+            return from;
+        }
+
+        private long getTo() {
+            return to;
+        }
+
+        private ImmutableList<String> getGaugeNames() {
+            return gaugeNames;
         }
     }
 

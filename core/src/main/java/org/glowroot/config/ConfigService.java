@@ -107,6 +107,10 @@ public class ConfigService {
         return null;
     }
 
+    public ImmutableList<MBeanGauge> getMBeanGauges() {
+        return config.getMBeanGauges();
+    }
+
     public ImmutableList<CapturePoint> getCapturePoints() {
         return config.getCapturePoints();
     }
@@ -244,6 +248,72 @@ public class ConfigService {
         return pluginConfig.getVersion();
     }
 
+    public String insertMBeanGauge(MBeanGauge mbeanGauge) throws IOException,
+            DuplicateMBeanObjectNameException {
+        synchronized (writeLock) {
+            List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.getMBeanGauges());
+            // check for duplicate mbeanObjectName
+            for (MBeanGauge loopMBeanGauge : mbeanGauges) {
+                if (loopMBeanGauge.getMBeanObjectName().equals(mbeanGauge.getMBeanObjectName())) {
+                    throw new DuplicateMBeanObjectNameException();
+                }
+            }
+            mbeanGauges.add(mbeanGauge);
+            Config updatedConfig = Config.builder(config)
+                    .mbeanGauges(mbeanGauges)
+                    .build();
+            ConfigMapper.writeValue(configFile, updatedConfig);
+            config = updatedConfig;
+        }
+        return mbeanGauge.getVersion();
+    }
+
+    public String updateMBeanGauge(String priorVersion, MBeanGauge mbeanGauge)
+            throws IOException {
+        synchronized (writeLock) {
+            List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.getMBeanGauges());
+            boolean found = false;
+            for (ListIterator<MBeanGauge> i = mbeanGauges.listIterator(); i.hasNext();) {
+                if (priorVersion.equals(i.next().getVersion())) {
+                    i.set(mbeanGauge);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new IOException("Gauge config not found: " + priorVersion);
+            }
+            Config updatedConfig = Config.builder(config)
+                    .mbeanGauges(mbeanGauges)
+                    .build();
+            ConfigMapper.writeValue(configFile, updatedConfig);
+            config = updatedConfig;
+        }
+        return mbeanGauge.getVersion();
+    }
+
+    public void deleteMBeanGauge(String version) throws IOException {
+        synchronized (writeLock) {
+            List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.getMBeanGauges());
+            boolean found = false;
+            for (ListIterator<MBeanGauge> i = mbeanGauges.listIterator(); i.hasNext();) {
+                if (version.equals(i.next().getVersion())) {
+                    i.remove();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new IOException("Gauge config not found: " + version);
+            }
+            Config updatedConfig = Config.builder(config)
+                    .mbeanGauges(mbeanGauges)
+                    .build();
+            ConfigMapper.writeValue(configFile, updatedConfig);
+            config = updatedConfig;
+        }
+    }
+
     public String insertCapturePoint(CapturePoint capturePoint) throws IOException {
         synchronized (writeLock) {
             List<CapturePoint> capturePoints = Lists.newArrayList(config.getCapturePoints());
@@ -340,11 +410,17 @@ public class ConfigService {
         notifyAllPluginConfigListeners();
     }
 
-    // the method below is only used by test harness (LocalContainer), so that tests will still
+    // the 2 methods below are only used by test harness (LocalContainer), so that tests will still
     // succeed even if core is shaded (e.g. compiled from maven) and test-harness is compiled
     // against unshaded core (e.g. compiled previously in IDE)
     //
     // don't return ImmutableList
+    @OnlyUsedByTests
+    public List<MBeanGauge> getMBeanGaugesNeverShaded() {
+        return getMBeanGauges();
+    }
+
+    // don't return ImmutableList, see comment above
     @OnlyUsedByTests
     public List<CapturePoint> getCapturePointsNeverShaded() {
         return config.getCapturePoints();
@@ -400,4 +476,7 @@ public class ConfigService {
 
     @SuppressWarnings("serial")
     public static class OptimisticLockException extends Exception {}
+
+    @SuppressWarnings("serial")
+    public static class DuplicateMBeanObjectNameException extends Exception {}
 }

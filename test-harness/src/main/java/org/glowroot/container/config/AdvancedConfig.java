@@ -35,6 +35,7 @@ public class AdvancedConfig {
     private int maxEntriesPerTrace;
     private boolean captureThreadInfo;
     private boolean captureGcInfo;
+    private int mbeanGaugeNotFoundDelaySeconds;
 
     private final String version;
 
@@ -83,6 +84,14 @@ public class AdvancedConfig {
         this.captureGcInfo = captureGcInfo;
     }
 
+    public int getMBeanGaugeNotFoundDelaySeconds() {
+        return mbeanGaugeNotFoundDelaySeconds;
+    }
+
+    public void setMBeanGaugeNotFoundDelaySeconds(int mbeanGaugeNotFoundDelaySeconds) {
+        this.mbeanGaugeNotFoundDelaySeconds = mbeanGaugeNotFoundDelaySeconds;
+    }
+
     public String getVersion() {
         return version;
     }
@@ -99,7 +108,9 @@ public class AdvancedConfig {
                             that.immediatePartialStoreThresholdSeconds)
                     && Objects.equal(maxEntriesPerTrace, that.maxEntriesPerTrace)
                     && Objects.equal(captureThreadInfo, that.captureThreadInfo)
-                    && Objects.equal(captureGcInfo, that.captureGcInfo);
+                    && Objects.equal(captureGcInfo, that.captureGcInfo)
+                    && Objects.equal(mbeanGaugeNotFoundDelaySeconds,
+                            that.mbeanGaugeNotFoundDelaySeconds);
         }
         return false;
     }
@@ -110,7 +121,8 @@ public class AdvancedConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(metricWrapperMethods, immediatePartialStoreThresholdSeconds,
-                maxEntriesPerTrace, captureThreadInfo, captureGcInfo);
+                maxEntriesPerTrace, captureThreadInfo, captureGcInfo,
+                mbeanGaugeNotFoundDelaySeconds);
     }
 
     @Override
@@ -121,6 +133,7 @@ public class AdvancedConfig {
                 .add("maxEntriesPerTrace", maxEntriesPerTrace)
                 .add("captureThreadInfo", captureThreadInfo)
                 .add("captureGcInfo", captureGcInfo)
+                .add("mbeanGaugeNotFoundDelaySeconds", mbeanGaugeNotFoundDelaySeconds)
                 .add("version", version)
                 .toString();
     }
@@ -132,6 +145,7 @@ public class AdvancedConfig {
             @JsonProperty("maxEntriesPerTrace") @Nullable Integer maxEntriesPerTrace,
             @JsonProperty("captureThreadInfo") @Nullable Boolean captureThreadInfo,
             @JsonProperty("captureGcInfo") @Nullable Boolean captureGcInfo,
+            @JsonProperty("mbeanGaugeNotFoundDelaySeconds") @Nullable Integer mbeanGaugeNotFoundDelaySeconds,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(metricWrapperMethods, "metricWrapperMethods");
         checkRequiredProperty(immediatePartialStoreThresholdSeconds,
@@ -139,6 +153,7 @@ public class AdvancedConfig {
         checkRequiredProperty(maxEntriesPerTrace, "maxEntriesPerTrace");
         checkRequiredProperty(captureThreadInfo, "captureThreadInfo");
         checkRequiredProperty(captureGcInfo, "captureGcInfo");
+        checkRequiredProperty(mbeanGaugeNotFoundDelaySeconds, "mbeanGaugeNotFoundDelaySeconds");
         checkRequiredProperty(version, "version");
         AdvancedConfig config = new AdvancedConfig(version);
         config.setMetricWrapperMethods(metricWrapperMethods);
@@ -146,6 +161,7 @@ public class AdvancedConfig {
         config.setMaxEntriesPerTrace(maxEntriesPerTrace);
         config.setCaptureThreadInfo(captureThreadInfo);
         config.setCaptureGcInfo(captureGcInfo);
+        config.setMBeanGaugeNotFoundDelaySeconds(mbeanGaugeNotFoundDelaySeconds);
         return config;
     }
 }

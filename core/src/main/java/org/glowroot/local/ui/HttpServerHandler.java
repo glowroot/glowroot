@@ -490,6 +490,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             for (Entry<String, List<String>> entry : decoder.getParameters().entrySet()) {
                 String key = entry.getKey();
                 key = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, key);
+                // special rule for "-mbean" so that it will convert to "...MBean"
+                key = key.replace("Mbean", "MBean");
                 if (entry.getValue().size() == 1) {
                     parameters.put(key, entry.getValue().get(0));
                 } else {
