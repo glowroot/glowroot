@@ -80,15 +80,15 @@ public class ConfigTest {
         } else {
             seleniumServer = new SeleniumServer();
             seleniumServer.start();
+            // currently tests fail with default nativeEvents=true
+            // (can't select radio buttons on capture point page)
+            DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
+            capabilities.setCapability("nativeEvents", false);
             // single webdriver instance for much better performance
             if (USE_LOCAL_IE) {
-                // currently tests fail with default nativeEvents=true
-                // (can't select radio buttons on capture point page)
-                DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
-                capabilities.setCapability("nativeEvents", false);
                 driver = new InternetExplorerDriver(capabilities);
             } else {
-                driver = new FirefoxDriver();
+                driver = new FirefoxDriver(capabilities);
             }
             // 992 is bootstrap media query breakpoint for screen-md-min
             // 1200 is bootstrap media query breakpoint for screen-lg-min
