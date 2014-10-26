@@ -50,15 +50,16 @@
                    ng-required="true"
                    typeahead="suggestion for suggestion in classNames($viewValue)"
                    typeahead-on-select="onSelectClassName()"
-                   typeahead-loading="classNamesLoading"
                    typeahead-template-url="template/gt-typeahead-class-match.html"
+                   typeahead-wait-ms="5"
                    name="className"
                    id="className{{$id}}"
                    gt-set-focus="isFocus"
                    style="max-width: 40em; display: inline-block">
             <div gt-spinner
                  gt-spinner-inline="true"
-                 gt-show="classNamesLoading"
+                 gt-show="showClassNameSpinner"
+                 gt-no-delay="true"
                  class="inline-spinner">
             </div>
             <div class="help-block">
@@ -79,15 +80,15 @@
                    ng-required="true"
                    typeahead="suggestion for suggestion in methodNames($viewValue)"
                    typeahead-on-select="onSelectMethodName()"
-                   typeahead-loading="methodNamesLoading"
-                   gt-typeahead-open-on-empty
-                   ng-blur="onSelectMethodName()"
+                   typeahead-wait-ms="5"
+                   ng-blur="onBlurMethodName()"
                    name="methodName"
                    id="methodName{{$id}}"
                    style="max-width: 40em; display: inline-block;">
             <div gt-spinner
                  gt-spinner-inline="true"
-                 gt-show="methodNamesLoading"
+                 gt-show="showMethodNameSpinner"
+                 gt-no-delay="true"
                  class="inline-spinner">
             </div>
             <div class="help-block">
@@ -111,6 +112,7 @@
           <div class="col-lg-9">
             <div gt-spinner
                  gt-show="methodSignaturesLoading && !httpError"
+                 gt-no-delay="true"
                  class="inline-spinner hide"
                  style="height: 50px;">
             </div>

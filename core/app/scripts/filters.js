@@ -34,6 +34,18 @@ glowroot.filter('gtBytes', function () {
   };
 });
 
+glowroot.filter('gtNumber', function () {
+  return function (number, precision) {
+    if (isNaN(parseFloat(number)) || !isFinite(number)) {
+      return '-';
+    }
+    if (typeof precision === 'undefined') {
+      precision = 1;
+    }
+    return number.toFixed(precision);
+  };
+});
+
 glowroot.filter('gtDuration', function () {
   return function (input) {
     if (input === undefined) {

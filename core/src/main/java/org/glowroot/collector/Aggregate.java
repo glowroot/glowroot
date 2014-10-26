@@ -33,25 +33,23 @@ public class Aggregate {
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
     private final long totalMicros;
     private final long count;
-    private final long errorCount;
-    private final long traceCount;
     private final String metrics;
     private final Existence profileExistence;
+    private final long profileSampleCount;
     @Nullable
     private final String profile;
 
     public Aggregate(String transactionType, @Nullable String transactionName, long captureTime,
-            long totalMicros, long count, long errorCount, long traceCount, String metrics,
-            Existence profileExistence, @Nullable String profile) {
+            long totalMicros, long count, String metrics, Existence profileExistence,
+            long profileSampleCount, @Nullable String profile) {
         this.transactionType = transactionType;
         this.transactionName = transactionName;
         this.captureTime = captureTime;
         this.totalMicros = totalMicros;
         this.count = count;
-        this.errorCount = errorCount;
-        this.traceCount = traceCount;
         this.metrics = metrics;
         this.profileExistence = profileExistence;
+        this.profileSampleCount = profileSampleCount;
         this.profile = profile;
     }
 
@@ -76,20 +74,16 @@ public class Aggregate {
         return count;
     }
 
-    public long getErrorCount() {
-        return errorCount;
-    }
-
-    public long getTraceCount() {
-        return traceCount;
-    }
-
     public String getMetrics() {
         return metrics;
     }
 
     public Existence getProfileExistence() {
         return profileExistence;
+    }
+
+    public long getProfileSampleCount() {
+        return profileSampleCount;
     }
 
     @Nullable

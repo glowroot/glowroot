@@ -46,8 +46,7 @@ class AggregateBuilder {
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
     private long totalMicros;
     private long count;
-    private long errorCount;
-    private long traceCount;
+    private long profileSampleCount;
     private final AggregateMetric syntheticRootMetric = new AggregateMetric("");
     private final AggregateProfileBuilder aggregateProfile = new AggregateProfileBuilder();
 
@@ -61,27 +60,20 @@ class AggregateBuilder {
         count++;
     }
 
-    void addToErrorCount() {
-        errorCount++;
-    }
-
-    void addToTraceCount() {
-        traceCount++;
-    }
-
     void addToMetrics(TransactionMetricImpl rootTransactionMetric) {
         addToMetrics(rootTransactionMetric, syntheticRootMetric);
     }
 
     void addToProfile(Profile profile) {
         aggregateProfile.addProfile(profile);
+        profileSampleCount += profile.getSyntheticRootNode().getSampleCount();
     }
 
     Aggregate build(long captureTime) throws IOException {
         String profile = getProfileJson();
         Existence profileExistence = profile != null ? Existence.YES : Existence.NO;
         return new Aggregate(transactionType, transactionName, captureTime, totalMicros, count,
-                errorCount, traceCount, getMetricsJson(), profileExistence, profile);
+                getMetricsJson(), profileExistence, profileSampleCount, profile);
     }
 
     private void addToMetrics(TransactionMetricImpl transactionMetric,

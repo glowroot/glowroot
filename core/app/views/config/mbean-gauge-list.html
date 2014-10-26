@@ -15,7 +15,7 @@
 -->
 <div gt-spinner
      gt-show="!loaded && !httpError"
-     class="plugin-list-spinner">
+     class="left-aligned-spinner">
 </div>
 <div ng-include src="'template/gt-http-error.html'"></div>
 <div ng-repeat="gauge in gauges"
@@ -42,15 +42,14 @@
                  ng-required="true"
                  typeahead="suggestion for suggestion in mbeanObjectNames($viewValue)"
                  typeahead-on-select="onSelectMBeanObjectName()"
-                 typeahead-loading="mbeanObjectNamesLoading"
-                 ng-blur="onSelectMBeanObjectName()"
+                 ng-blur="onBlurMBeanObjectName()"
                  name="mbeanObjectName"
                  id="mbeanObjectName{{$id}}"
                  gt-set-focus="isFocus"
                  style="max-width: 40em; display: inline-block">
           <div gt-spinner
                gt-spinner-inline="true"
-               gt-show="mbeanObjectNamesLoading"
+               gt-show="showMBeanObjectNameSpinner"
                class="inline-spinner">
           </div>
           <div ng-show="mbeanUnavailable"
@@ -89,7 +88,7 @@
               </label>
             </div>
           </div>
-          <div ng-show="!allMBeanAttributes.length && !mbeanUnavailable && config.mbeanObjectName"
+          <div ng-show="!allMBeanAttributes.length && !mbeanUnavailable && config.selectedMBeanObjectName"
                class="glowroot-red">
             There are no number-valued attributes for this MBean
           </div>

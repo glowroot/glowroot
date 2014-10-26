@@ -17,8 +17,6 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
@@ -52,8 +50,6 @@ class IndexHtmlHttpService implements HttpService {
     public HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
         URL url = Resources.getResource("org/glowroot/local/ui/app-dist/index.html");
         String indexHtml = Resources.toString(url, Charsets.UTF_8);
-        Pattern scriptPattern = Pattern.compile("<base href=\"/\">");
-        Matcher scriptMatcher = scriptPattern.matcher(indexHtml);
         String layout;
         if (httpSessionManager.needsAuthentication(request)) {
             layout = layoutJsonService.getUnauthenticatedLayout();
@@ -73,8 +69,25 @@ class IndexHtmlHttpService implements HttpService {
         // embed script in IIFE to not polute global vars
         baseHrefScript = "(function(){" + baseHrefScript + "}());";
         String layoutScript = "var layout=" + layout + ";";
-        indexHtml = scriptMatcher.replaceFirst("<script>" + baseHrefScript + layoutScript
-                + "</script>");
+        indexHtml = indexHtml.replaceFirst("<base href=\"/\">", "<script>" + baseHrefScript
+                + layoutScript + "</script>");
+        // this is to work around an issue with Chrome when running behind reverse proxy with
+        // non-root base href, e.g. /glowroot
+        // the issue is that Chrome doesn't use the custom base href when loading the final script
+        // tag on the page
+        indexHtml = indexHtml.replaceFirst(
+                "<script src=\"scripts/scripts\\.([0-9a-f]+)\\.js\"></script>",
+                "<script>document.write('<script src=\"'"
+                        + " + document.getElementsByTagName(\"base\")[0].href"
+                        + " + 'scripts/scripts.$1.js\"><\\\\/script>');</script>");
+        // this is to work around an issue with IE10-11 (IE9 is OK)
+        // (even without reverse proxy/non-root base href)
+        // IE doesn't use the base href when loading the favicon
+        indexHtml = indexHtml.replaceFirst(
+                "<link rel=\"shortcut icon\" href=\"favicon\\.([0-9a-f]+)\\.ico\">",
+                "<script>document.write('<link rel=\"shortcut icon\" href=\"'"
+                        + " + document.getElementsByTagName(\"base\")[0].href"
+                        + " + 'favicon.$1.ico\">');</script>");
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         HttpServices.preventCaching(response);
         response.headers().set(Names.CONTENT_TYPE, "text/html; charset=UTF-8");

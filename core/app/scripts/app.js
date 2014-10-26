@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-/* global angular, $, Spinner */
+/* global angular, $, Spinner, alert */
 
 var glowroot = angular.module('glowroot', [
   'ui.router',
   'ui.bootstrap.buttons',
   'ui.bootstrap.dropdown',
+  'ui.bootstrap.popover',
   'ui.bootstrap.typeahead',
   'ui.bootstrap.bindHtml',
-  'ui.bootstrap.modal',
-  'ui.bootstrap.collapse'
+  'ui.bootstrap.modal'
 ]);
 
 var Glowroot;
@@ -142,15 +142,20 @@ glowroot.run([
           .success(function (data) {
             setInitialLayout(data);
           });
+      setTimeout(function () {
+        if (!$rootScope.layout) {
+          alert('backend/layout is not loading, is the server running?');
+        }
+      }, 3000);
     }
 
     $rootScope.$on('$stateChangeStart', function () {
-      // this is kind of hacky way to close trace modal
+      // this is a hacky way to close trace modal on browser back button
       var $modalBackdrop = $('#modalBackdrop');
       if ($modalBackdrop) {
         $modalBackdrop.remove();
       }
-      // and this is kind of hacky way to close normal angular-ui-bootstrap modals
+      // and this is a hacky way to close normal angular-ui-bootstrap modals
       // (see https://github.com/angular-ui/bootstrap/issues/335)
       var top = $modalStack.getTop();
       if (top) {

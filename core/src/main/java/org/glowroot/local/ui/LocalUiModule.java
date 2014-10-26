@@ -70,8 +70,6 @@ public class LocalUiModule {
     // only stored/exposed for tests
     private final AggregateCommonService aggregateCommonService;
     // only stored/exposed for tests
-    private final AggregateExportHttpService transactionExportHttpService;
-    // only stored/exposed for tests
     private final TraceCommonService traceCommonService;
     // only stored/exposed for tests
     private final TraceExportHttpService traceExportHttpService;
@@ -114,7 +112,6 @@ public class LocalUiModule {
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
         TraceDetailHttpService traceDetailHttpService =
                 new TraceDetailHttpService(traceCommonService);
-        transactionExportHttpService = new AggregateExportHttpService(aggregateCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
         ErrorJsonService errorJsonService = new ErrorJsonService(traceDao);
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
@@ -155,7 +152,7 @@ public class LocalUiModule {
         String bindAddress = getBindAddress(properties);
         httpServer = buildHttpServer(bindAddress, port, numWorkerThreads, httpSessionManager,
                 indexHtmlHttpService, layoutJsonService, traceDetailHttpService,
-                transactionExportHttpService, traceExportHttpService, jsonServices);
+                traceExportHttpService, jsonServices);
         if (httpServer != null) {
             configJsonService.setHttpServer(httpServer);
         }
@@ -207,7 +204,6 @@ public class LocalUiModule {
     private static HttpServer buildHttpServer(String bindAddress, int port, int numWorkerThreads,
             HttpSessionManager httpSessionManager, IndexHtmlHttpService indexHtmlHttpService,
             LayoutJsonService layoutJsonService, TraceDetailHttpService traceDetailHttpService,
-            AggregateExportHttpService aggregateExportHttpService,
             TraceExportHttpService traceExportHttpService, List<Object> jsonServices) {
 
         String resourceBase = "org/glowroot/local/ui/app-dist";
@@ -215,7 +211,8 @@ public class LocalUiModule {
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
         uriMappings.put(Pattern.compile("^/$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/performance$"), indexHtmlHttpService);
+        uriMappings.put(Pattern.compile("^/performance/transactions$"), indexHtmlHttpService);
+        uriMappings.put(Pattern.compile("^/performance/metrics"), indexHtmlHttpService);
         uriMappings.put(Pattern.compile("^/errors$"), indexHtmlHttpService);
         uriMappings.put(Pattern.compile("^/traces$"), indexHtmlHttpService);
         uriMappings.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
@@ -229,9 +226,8 @@ public class LocalUiModule {
                 resourceBase + "/favicon.$1.ico");
         uriMappings.put(Pattern.compile("^/sources/(.*)$"), resourceBase + "/sources/$1");
         // services
-        // export services are not bound under /backend since the export urls are visible to users
+        // export service is not bound under /backend since the export url is visible to users
         // as the download url for the export file
-        uriMappings.put(Pattern.compile("^/export/performance.*$"), aggregateExportHttpService);
         uriMappings.put(Pattern.compile("^/export/trace/.*$"), traceExportHttpService);
         uriMappings.put(Pattern.compile("^/backend/trace/entries$"), traceDetailHttpService);
         uriMappings.put(Pattern.compile("^/backend/trace/profile$"), traceDetailHttpService);

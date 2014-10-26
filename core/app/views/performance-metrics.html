@@ -1,0 +1,138 @@
+<!--
+  Copyright 2013-2014 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="header">
+  <div class="header-page-name">
+    <a ng-href="performance/transactions?{{transactionsQueryString()}}">{{transactionType}}</a>:
+    {{transactionName || 'All Transactions'}}
+  </div>
+</div>
+<div class="chart-container"
+     style="position: relative;">
+  <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid zooming -->
+  <div gt-spinner
+       gt-show="showChartSpinner"
+       gt-no-delay="true"
+       class="spinner panel-overlay"
+       id="chartSpinner"
+       style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
+  </div>
+  <div class="chart-dimensions" id="chart"></div>
+  <div class="chart-error" ng-show="refreshChartError">
+    <strong>{{refreshChartError}}</strong>
+  </div>
+  <div ng-show="chartNoData && !showChartSpinner"
+       style="display: table; width: 100%; height: 100%;">
+    <div style="display: table-cell; text-align: center; vertical-align: middle;">
+      <div class="chart-no-data">No data</div>
+    </div>
+  </div>
+</div>
+<div ng-hide="chartNoData"
+     style="position: relative; padding-top: 40px; margin-left: 60px;">
+  <div class="panel-overlay" ng-show="showTableOverlay">
+  </div>
+  <div>
+    <table class="trace-metrics-table"
+           ng-hide="showTreeView"
+           style="border-spacing: 0;">
+      <thead>
+      <tr>
+        <td></td>
+        <td>total</td>
+        <td>count</td>
+        <td>
+          <button class="flat-btn flat-btn-big glowroot-link-color"
+                  ng-click="showTreeView = true"
+                  style="margin-top: -6px; margin-bottom: -6px;">
+            switch to tree view
+          </button>
+        </td>
+      </tr>
+      </thead>
+      <tbody>
+      <tr class="align-top"
+          ng-repeat="flattenedMetric in flattenedMetrics">
+        <td style="text-align: left;">
+          <div>
+            <div class="second-line-indent">{{flattenedMetric.name}}</div>
+          </div>
+        </td>
+        <td>{{flattenedMetric.totalMicros / (1000 * mergedAggregate.count) | gtNumber}}</td>
+        <td>{{flattenedMetric.count / mergedAggregate.count | gtNumber}}</td>
+        <td></td>
+      </tr>
+      </tbody>
+    </table>
+    <table class="trace-metrics-table"
+           ng-show="showTreeView"
+           style="border-spacing: 0;">
+      <thead>
+      <tr>
+        <td></td>
+        <td>total</td>
+        <td>count</td>
+        <td>
+          <button class="flat-btn flat-btn-big glowroot-link-color"
+                  ng-click="showTreeView = false"
+                  style="margin-top: -6px; margin-bottom: -6px;">
+            switch to flattened view
+          </button>
+        </td>
+      </tr>
+      </thead>
+      <tbody>
+      <tr class="align-top"
+          ng-repeat="treeMetric in treeMetrics">
+        <td style="text-align: left;">
+          <div ng-style="{'margin-left': treeMetric.nestingLevel + 'em'}">
+            <div class="second-line-indent">{{treeMetric.name}} {{treeMetric.metricIndent}}</div>
+          </div>
+        </td>
+        <td>{{treeMetric.totalMicros / (1000 * mergedAggregate.count) | gtNumber}}</td>
+        <td>{{treeMetric.count / mergedAggregate.count | gtNumber}}</td>
+        <td></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+  <br>
+  <div ng-show="mergedAggregate.profileExistence === 'yes'">
+    <div>
+      <button class="flat-btn flat-btn-big-pad1aligned"
+              ng-click="toggleProfile($event)">
+        <span class="glowroot-link-color">
+          Profile from {{mergedAggregate.profileSampleCount}} stack trace
+          <span ng-pluralize count="mergedAggregate.profileSampleCount" when="{'1':'sample','other':'samples'}"></span>
+        </span>
+      </button>
+      <div>
+        <div class="hide trace-detail-spinner"></div>
+      </div>
+    </div>
+    <div class="nowrap hide" id="profileOuter">
+      <select class="form-control profile-filter input-xlarge hide" onchange="this.blur()"
+              style="margin: 4px;">
+      </select>
+      <div class="profile indent1"></div>
+    </div>
+  </div>
+  <div ng-show="mergedAggregate.profileExistence === 'expired'">
+    <strong>
+      Profile no longer exists for this time period
+    </strong>
+    <em>(see Glowroot > Configuration &gt; Storage &gt; Trace entries/profiles capped db)</em>
+  </div>
+</div>

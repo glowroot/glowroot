@@ -84,16 +84,21 @@ glowroot.controller('ConfigMBeanGaugeCtrl', [
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
+    $scope.showMBeanObjectNameSpinner = 0;
+
     $scope.mbeanObjectNames = function (suggestion) {
       var queryData = {
         partialMBeanObjectName: suggestion,
         limit: 10
       };
+      $scope.showMBeanObjectNameSpinner++;
       // use 'then' method to return promise
       return $http.get('backend/config/matching-mbean-objects?' + queryStrings.encodeObject(queryData))
           .then(function (response) {
+            $scope.showMBeanObjectNameSpinner--;
             return response.data;
           }, function () {
+            $scope.showMBeanObjectNameSpinner--;
             // TODO handle error
           });
     };
@@ -104,14 +109,16 @@ glowroot.controller('ConfigMBeanGaugeCtrl', [
       // then changed mind and put the previous value back)
       if (mbeanObjectName !== $scope.selectedMBeanObjectName) {
         $scope.selectedMBeanObjectName = mbeanObjectName;
-        if (mbeanObjectName === undefined) {
-          // this can happen if user clears the text input and tabs away (onSelectMBeanObjectName is called on blur)
-          $scope.mbeanUnavailable = false;
-          $scope.duplicateMBean = false;
-          $scope.allMBeanAttributes = [];
-        } else {
-          fetchMBeanAttributes(mbeanObjectName);
-        }
+        fetchMBeanAttributes(mbeanObjectName);
+      }
+    };
+
+    $scope.onBlurMBeanObjectName = function () {
+      if (!$scope.config.mbeanObjectName) {
+        // the user cleared the text input and tabbed away
+        $scope.mbeanUnavailable = false;
+        $scope.duplicateMBean = false;
+        $scope.allMBeanAttributes = [];
       }
     };
 

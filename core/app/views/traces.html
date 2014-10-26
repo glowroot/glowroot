@@ -13,11 +13,29 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<div class="header">
+  <div class="header-page-name">
+    Traces
+  </div>
+</div>
 <div class="chart-container">
+  <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid zooming -->
+  <div gt-spinner
+       gt-show="showChartSpinner"
+       gt-no-delay="true"
+       class="spinner panel-overlay"
+       id="chartSpinner"
+       style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
+  </div>
   <div class="chart-dimensions" id="chart"></div>
-  <div class="chart-spinner hide" id="chartSpinner"></div>
   <div class="chart-error" ng-show="refreshChartError">
     <strong>{{refreshChartError}}</strong>
+  </div>
+  <div ng-show="chartNoData && !showChartSpinner"
+       style="display: table; width: 100%; height: 100%;">
+    <div style="display: table-cell; text-align: center; vertical-align: middle;">
+      <div class="chart-no-data">No data</div>
+    </div>
   </div>
 </div>
 <br>
@@ -61,7 +79,8 @@
     <div class="col-lg-offset-3 col-lg-9">
       <div gt-button
            gt-label="Refresh"
-           gt-click="clickRefreshButton(deferred)">
+           gt-click="clickRefreshButton(deferred)"
+           gt-no-spinner="true">
       </div>
     </div>
   </div>

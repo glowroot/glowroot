@@ -16,25 +16,22 @@
 
 /* global glowroot, angular, $ */
 
-glowroot.controller('PerformanceCtrl', [
+glowroot.controller('PerformanceTransactionsCtrl', [
   '$scope',
   '$location',
   '$filter',
   '$http',
   '$q',
   '$timeout',
-  '$modal',
+  'keyedColorPools',
   'queryStrings',
   'httpErrors',
-  function ($scope, $location, $filter, $http, $q, $timeout, $modal, queryStrings, httpErrors) {
+  function ($scope, $location, $filter, $http, $q, $timeout, keyedColorPools, queryStrings, httpErrors) {
     // \u00b7 is &middot;
     document.title = 'Performance \u00b7 Glowroot';
-    $scope.$parent.title = 'Performance';
     $scope.$parent.activeNavbarItem = 'performance';
 
     var plot;
-    // plotTransactionName is only updated when the plot is updated
-    var plotTransactionName;
 
     var fixedAggregateIntervalMillis = $scope.layout.fixedAggregateIntervalSeconds * 1000;
 
@@ -43,8 +40,9 @@ glowroot.controller('PerformanceCtrl', [
 
     var $chart = $('#chart');
 
-    // top 25 is a nice number, screen is not too large
-    var summaryLimit = 25;
+    var keyedColorPool = keyedColorPools.create();
+
+    var summaryLimit = 100;
 
     // this is used to calculate bar width under transaction name representing the proportion of total time
     var maxSummaryTotalMicros;
@@ -56,32 +54,28 @@ glowroot.controller('PerformanceCtrl', [
     });
 
     $scope.showChartSpinner = 0;
+    $scope.showTableOverlay = 0;
 
-    function refreshChart(refreshButtonDeferred, skipUpdateSummaries) {
+    function refreshData(deferred) {
       var date = $scope.filterDate;
       var refreshId = ++currentRefreshId;
       var query = {
         from: $scope.chartFrom,
         to: $scope.chartTo,
-        transactionType: $scope.filterTransactionType
+        transactionType: $scope.filterTransactionType,
+        limit: summaryLimit
       };
-      if ($scope.selectedTransactionName) {
-        query.transactionName = $scope.selectedTransactionName;
-      }
-      var pointsDeferred;
-      if (refreshButtonDeferred && !skipUpdateSummaries) {
-        pointsDeferred = $q.defer();
-      } else {
-        pointsDeferred = refreshButtonDeferred;
-      }
       $scope.showChartSpinner++;
-      $http.get('backend/aggregate/stacked?' + queryStrings.encodeObject(query))
+      $scope.showTableOverlay++;
+      $http.get('backend/performance/transactions?' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showChartSpinner--;
+            $scope.showTableOverlay--;
             if (refreshId !== currentRefreshId) {
               return;
             }
             $scope.refreshChartError = false;
+            $scope.chartNoData = !data.dataSeries.length;
             // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
             plot.getAxes().xaxis.options.min = query.from;
             plot.getAxes().xaxis.options.max = query.to;
@@ -89,23 +83,37 @@ glowroot.controller('PerformanceCtrl', [
               date.getTime(),
                   date.getTime() + 24 * 60 * 60 * 1000
             ];
-            plotTransactionName = query.transactionName;
             var plotData = [];
-            angular.forEach(data, function (dataSeries) {
+            var labels = [];
+            angular.forEach(data.dataSeries, function (dataSeries) {
+              labels.push(dataSeries.name ? dataSeries.name : 'Other');
+            });
+            keyedColorPool.reset(labels);
+            angular.forEach(data.dataSeries, function (dataSeries, index) {
+              var label = labels[index];
               plotData.push({
                 data: dataSeries.data,
-                label: dataSeries.metricName ? dataSeries.metricName : 'Other'
+                label: label,
+                color: keyedColorPool.get(label)
               });
             });
-            plot.setData(plotData);
+            if (plotData.length) {
+              plot.setData(plotData);
+            } else {
+              plot.setData([
+                []
+              ]);
+            }
             plot.setupGrid();
             plot.draw();
-            if (pointsDeferred) {
-              pointsDeferred.resolve('Success');
+            updateTransactionSummaries(data);
+            if (deferred) {
+              deferred.resolve('Success');
             }
           })
           .error(function (data, status) {
             $scope.showChartSpinner--;
+            $scope.showTableOverlay--;
             if (refreshId !== currentRefreshId) {
               return;
             }
@@ -115,28 +123,10 @@ glowroot.controller('PerformanceCtrl', [
             } else {
               $scope.refreshChartError = 'An error occurred';
             }
-            if (pointsDeferred) {
-              pointsDeferred.reject($scope.refreshChartError);
+            if (deferred) {
+              deferred.reject($scope.refreshChartError);
             }
           });
-      if (!skipUpdateSummaries) {
-        var summariesDeferred;
-        if (refreshButtonDeferred) {
-          summariesDeferred = $q.defer();
-          $q.all([pointsDeferred.promise, summariesDeferred.promise])
-              .then(function () {
-                refreshButtonDeferred.resolve('Success');
-              }, function (data) {
-                refreshButtonDeferred.resolve(data);
-              });
-        }
-        // give the points request above a small head start since otherwise the summaries query could get handled
-        // first, which isn't that bad, but the aggregate query is much slower and the glowroot http handler is
-        // throttled to one thread currently
-        $timeout(function () {
-          updateSummaries(summariesDeferred);
-        }, 5);
-      }
     }
 
     $scope.refreshButtonClick = function (deferred) {
@@ -148,126 +138,74 @@ glowroot.controller('PerformanceCtrl', [
         $scope.chartTo = $scope.filterDate.getTime() + ($scope.chartTo - midnight);
       }
       updateLocation();
-      refreshChart(deferred);
+      refreshData(deferred);
     };
 
     $chart.bind('plotzoom', function (event, plot, args) {
-      plot.setupGrid();
-      // TODO add spinner
-      plot.draw();
       $scope.$apply(function () {
-        $scope.chartFrom = plot.getAxes().xaxis.min;
-        $scope.chartTo = plot.getAxes().xaxis.max;
-        chartFromToDefault = false;
-        updateLocation();
+        // throw up spinner right away
+        $scope.showChartSpinner++;
+        $scope.showTableOverlay++;
+        // need to call setupGrid on each zoom to handle rapid zooming
+        plot.setupGrid();
+        var zoomId = ++currentZoomId;
+        // use 100 millisecond delay to handle rapid zooming
+        $timeout(function () {
+          if (zoomId === currentZoomId) {
+            $scope.chartFrom = plot.getAxes().xaxis.min;
+            $scope.chartTo = plot.getAxes().xaxis.max;
+            chartFromToDefault = false;
+            updateLocation();
+            refreshData();
+          }
+          $scope.showChartSpinner--;
+          $scope.showTableOverlay--;
+        }, 100);
       });
-      var zoomId = ++currentZoomId;
-      // use 100 millisecond delay to handle rapid zooming
-      setTimeout(function () {
-        if (zoomId !== currentZoomId) {
-          return;
-        }
-        $scope.$apply(function () {
-          refreshChart();
-        });
-      }, 100);
     });
 
     $chart.bind('plotselected', function (event, ranges) {
-      plot.clearSelection();
-      // perform the zoom
-      plot.getAxes().xaxis.options.min = ranges.xaxis.from;
-      plot.getAxes().xaxis.options.max = ranges.xaxis.to;
-      plot.setupGrid();
-      plot.draw();
       $scope.$apply(function () {
+        plot.clearSelection();
+        // perform the zoom
+        plot.getAxes().xaxis.options.min = ranges.xaxis.from;
+        plot.getAxes().xaxis.options.max = ranges.xaxis.to;
+        plot.setupGrid();
         $scope.chartFrom = plot.getAxes().xaxis.min;
         $scope.chartTo = plot.getAxes().xaxis.max;
         chartFromToDefault = false;
         updateLocation();
+        currentRefreshId++;
+        refreshData();
       });
-      currentRefreshId++;
-      $scope.$apply(function () {
-        refreshChart();
-      });
-    });
-
-    $scope.$watch('filterTransactionType', function (newValue, oldValue) {
-      if (newValue !== oldValue) {
-        $scope.selectedTransactionName = '';
-        $timeout(function () {
-          $('#refreshButtonSpan').find('button').click();
-        }, 0, false);
-      }
     });
 
     $scope.$watch('filterDate', function (newValue, oldValue) {
       if (newValue !== oldValue) {
         $timeout(function () {
-          $('#refreshButtonSpan').find('button').click();
+          $('#refreshButtonDiv').find('button').click();
         }, 0, false);
       }
     });
 
-    $scope.viewAggregateDetail = function (deferred) {
-      // calling resolve immediately is needed to suppress the spinner since this is part of a gt-button-group
-      deferred.resolve();
-      var query = {
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
-        transactionType: $scope.filterTransactionType
-      };
-      if ($scope.selectedTransactionName) {
-        query.transactionName = $scope.selectedTransactionName;
+    function updateTransactionSummaries(data) {
+      if (data.overallSummary) {
+        $scope.overallSummary = data.overallSummary;
       }
-      $modal.open({
-        templateUrl: 'views/aggregate-detail.html',
-        controller: 'AggregateDetailCtrl',
-        windowClass: 'full-screen-modal',
-        resolve: {
-          aggregateQuery: function () {
-            return query;
-          }
-        }
+      $scope.transactionSummaries = data.transactionSummaries;
+      $scope.moreAvailable = data.moreAvailable;
+      maxSummaryTotalMicros = 0;
+      angular.forEach($scope.transactionSummaries, function (summary) {
+        maxSummaryTotalMicros = Math.max(maxSummaryTotalMicros, summary.totalMicros);
       });
-    };
-
-    $scope.showTableOverlay = 0;
-    $scope.showTableSpinner = 0;
-
-    function updateSummaries(deferred) {
-      var query = {
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
-        transactionType: $scope.filterTransactionType,
-        sortAttribute: $scope.sortAttribute,
-        sortDirection: $scope.sortDirection,
-        limit: summaryLimit
-      };
-      $scope.showTableOverlay++;
-      if (!deferred) {
-        // show table spinner if not triggered from refresh button or show more button
-        $scope.showTableSpinner++;
-      }
-      $http.get('backend/aggregate/summaries?' + queryStrings.encodeObject(query))
-          .success(function (data) {
-            $scope.showTableOverlay--;
-            if (!deferred) {
-              $scope.showTableSpinner--;
-            }
-            $scope.overallSummary = data.overallSummary;
-            $scope.moreAvailable = data.moreAvailable;
-            $scope.transactionSummaries = data.transactionSummaries;
-            maxSummaryTotalMicros = 0;
-            angular.forEach($scope.transactionSummaries, function (summary) {
-              maxSummaryTotalMicros = Math.max(maxSummaryTotalMicros, summary.totalMicros);
-            });
-            if (deferred) {
-              deferred.resolve();
-            }
-          })
-          .error(httpErrors.handler($scope, deferred));
     }
+
+    $scope.changeTransactionType = function (transactionType) {
+      if (transactionType !== $scope.filterTransactionType) {
+        $scope.filterTransactionType = transactionType;
+        refreshData();
+      }
+    };
 
     $scope.overallAverage = function () {
       if (!$scope.overallSummary) {
@@ -280,51 +218,33 @@ glowroot.controller('PerformanceCtrl', [
       }
     };
 
-    $scope.sort = function (attributeName) {
-      if ($scope.sortAttribute === attributeName) {
-        // switch direction
-        if ($scope.sortDirection === 'desc') {
-          $scope.sortDirection = 'asc';
-        } else {
-          $scope.sortDirection = 'desc';
-        }
-      } else {
-        $scope.sortAttribute = attributeName;
-        $scope.sortDirection = 'desc';
-      }
-      updateLocation();
-      updateSummaries();
-    };
-
-    $scope.sortIconClass = function (attributeName) {
-      if ($scope.sortAttribute !== attributeName) {
-        return '';
-      }
-      if ($scope.sortDirection === 'desc') {
-        return 'caret';
-      } else {
-        return 'caret aggregate-caret-reversed';
-      }
-    };
-
-    $scope.tracesQueryString = function (transactionName) {
+    $scope.metricsQueryString = function (transactionName) {
       var query = {
-        // from is adjusted because aggregate points are the aggregation of the interval before the aggregate point
-        from: $scope.chartFrom - fixedAggregateIntervalMillis,
-        to: $scope.chartTo,
-        transactionType: $scope.filterTransactionType
+        transactionType: $scope.filterTransactionType,
+        transactionName: transactionName,
+        from: $scope.chartFrom,
+        to: $scope.chartTo
       };
-      if (transactionName) {
-        query.transactionName = transactionName;
-        query.transactionNameComparator = 'equals';
-      }
       return queryStrings.encodeObject(query);
     };
 
     $scope.showMore = function (deferred) {
-      // double each time
+      var query = {
+        from: $scope.chartFrom,
+        to: $scope.chartTo,
+        transactionType: $scope.filterTransactionType,
+        limit: summaryLimit
+      };
+      // double next time
       summaryLimit *= 2;
-      updateSummaries(deferred);
+      $scope.showTableOverlay++;
+      $http.get('backend/performance/transaction-summaries?' + queryStrings.encodeObject(query))
+          .success(function (data) {
+            $scope.showTableOverlay--;
+            updateTransactionSummaries(data);
+            deferred.resolve();
+          })
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $scope.updateFilterLimit = function (limit) {
@@ -338,19 +258,16 @@ glowroot.controller('PerformanceCtrl', [
       });
     };
 
-    $scope.clickTransactionName = function (transactionName) {
-      $scope.selectedTransactionName = transactionName;
-      updateLocation();
-      refreshChart(undefined, true);
-    };
-
     $scope.transactionSummaryBarWidth = function (totalMicros) {
       return (totalMicros / maxSummaryTotalMicros) * 100 + '%';
     };
 
-    $('#zoomOut').click(function () {
-      plot.zoomOut();
-    });
+    $scope.zoomOut = function () {
+      // need to execute this outside of $apply since code assumes it needs to do its own $apply
+      $timeout(function () {
+        plot.zoomOut();
+      });
+    };
 
     var chartFromToDefault;
 
@@ -382,28 +299,14 @@ glowroot.controller('PerformanceCtrl', [
       $scope.chartTo = Math.min($scope.chartFrom + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
     $scope.filterTransactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
-    $scope.sortAttribute = $location.search()['sort-attribute'] || 'total';
-    $scope.sortDirection = $location.search()['sort-direction'] || 'desc';
-
-    $scope.selectedTransactionName = $location.search()['transaction-name'];
 
     function updateLocation() {
-      var query = {};
+      var query = {
+        'transaction-type': $scope.filterTransactionType
+      };
       if (!chartFromToDefault) {
         query.from = $scope.chartFrom - fixedAggregateIntervalMillis;
         query.to = $scope.chartTo;
-      }
-      if ($scope.filterTransactionType !== $scope.layout.defaultTransactionType) {
-        query['transaction-type'] = $scope.filterTransactionType;
-      }
-      if ($scope.selectedTransactionName) {
-        query['transaction-name'] = $scope.selectedTransactionName;
-      }
-      if ($scope.sortAttribute !== 'total' || $scope.sortDirection !== 'desc') {
-        query['sort-attribute'] = $scope.sortAttribute;
-        if ($scope.sortDirection !== 'desc') {
-          query['sort-direction'] = $scope.sortDirection;
-        }
       }
       $location.search(query).replace();
     }
@@ -495,11 +398,13 @@ glowroot.controller('PerformanceCtrl', [
         }
       };
       // render chart with no data points
-      plot = $.plot($chart, [], options);
+      plot = $.plot($chart, [
+        []
+      ], options);
       plot.getAxes().xaxis.options.borderGridLock = fixedAggregateIntervalMillis;
     })();
 
     plot.getAxes().yaxis.options.max = undefined;
-    refreshChart();
+    refreshData();
   }
 ]);

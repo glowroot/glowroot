@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, $, RColor, moment */
+/* global glowroot, angular, $, moment */
 
 glowroot.controller('JvmGaugesCtrl', [
   '$scope',
@@ -22,13 +22,13 @@ glowroot.controller('JvmGaugesCtrl', [
   '$filter',
   '$http',
   '$timeout',
-  'traceModal',
+  'keyedColorPools',
   'queryStrings',
-  function ($scope, $location, $filter, $http, $timeout, traceModal, queryStrings) {
+  'httpErrors',
+  function ($scope, $location, $filter, $http, $timeout, keyedColorPools, queryStrings, httpErrors) {
 
     var plot;
-    var plotColors;
-    var plotLabels;
+    var plotGaugeNames;
 
     var fixedGaugeIntervalMillis = $scope.layout.fixedGaugeIntervalSeconds * 1000;
 
@@ -37,15 +37,8 @@ glowroot.controller('JvmGaugesCtrl', [
 
     var $chart = $('#chart');
 
-    var rcolor = new RColor();
-    // RColor evenly distributes colors, but largely separated calls can have similar colors
-    // so availableColors is used to store returned colors to keep down the number of calls to RColor
-    // and to keep the used colors well distributed
-    var availableColors = [];
-
-    function nextRColor() {
-      return rcolor.get(true, 0.5, 0.5);
-    }
+    var keyedColorPool = keyedColorPools.create();
+    $scope.keyedColorPool = keyedColorPool;
 
     $scope.$watchCollection('[containerWidth, windowHeight]', function () {
       plot.resize();
@@ -55,24 +48,37 @@ glowroot.controller('JvmGaugesCtrl', [
 
     $scope.showChartSpinner = 0;
 
-    $scope.tableLoaded = false;
-
     $http.get('backend/jvm/all-gauge-names')
         .success(function (data) {
-          $scope.tableLoaded = true;
+          $scope.loaded = true;
           $scope.allGaugeNames = data;
-        })
-        .error(function (data, status) {
-          // TODO
-        });
+          $scope.allShortGaugeNames = createShortGaugeNames($scope.allGaugeNames);
 
-    function smallestUniqueGaugeNames(gaugeNames) {
+          var gaugeNames = $location.search()['gauge-name'];
+          if (angular.isArray(gaugeNames)) {
+            angular.forEach(gaugeNames, function (gaugeName) {
+              if ($scope.allGaugeNames.indexOf(gaugeName) !== -1) {
+                keyedColorPool.add(gaugeName);
+              }
+            });
+          } else if (gaugeNames) {
+            if ($scope.allGaugeNames.indexOf(gaugeNames) !== -1) {
+              keyedColorPool.add(gaugeNames);
+            }
+          }
+          if (keyedColorPool.keys()) {
+            refreshChart();
+          }
+        })
+        .error(httpErrors.handler($scope));
+
+    function createShortGaugeNames(gaugeNames) {
       var splitGaugeNames = [];
       angular.forEach(gaugeNames, function (gaugeName) {
         splitGaugeNames.push(gaugeName.split('/'));
       });
       var minRequiredForUniqueName;
-      var uniqueNames = [];
+      var shortNames = {};
       for (var i = 0; i < gaugeNames.length; i++) {
         var si = splitGaugeNames[i];
         minRequiredForUniqueName = 1;
@@ -88,24 +94,20 @@ glowroot.controller('JvmGaugesCtrl', [
             minRequiredForUniqueName = Math.max(minRequiredForUniqueName, k + 1);
           }
         }
-        uniqueNames.push(si.slice(-minRequiredForUniqueName).join('/'));
+        shortNames[gaugeNames[i]] = si.slice(-minRequiredForUniqueName).join('/');
       }
-      return uniqueNames;
+      return shortNames;
     }
 
     function refreshChart(deferred) {
       var date = $scope.filterDate;
       var refreshId = ++currentRefreshId;
-      var gaugeNames = [];
-      angular.forEach($scope.checkedGaugeColors, function (color, gaugeName) {
-        gaugeNames.push(gaugeName);
-      });
       var chartFrom = $scope.chartFrom;
       var chartTo = $scope.chartTo;
       var query = {
         from: chartFrom - fixedGaugeIntervalMillis,
         to: chartTo + fixedGaugeIntervalMillis,
-        gaugeNames: gaugeNames
+        gaugeNames: keyedColorPool.keys()
       };
       $scope.showChartSpinner++;
       $http.get('backend/jvm/gauge-points?' + queryStrings.encodeObject(query))
@@ -123,11 +125,10 @@ glowroot.controller('JvmGaugesCtrl', [
                   date.getTime() + 24 * 60 * 60 * 1000
             ];
             var plotData = data;
-            plotColors = [];
+            plotGaugeNames = [];
             angular.forEach(query.gaugeNames, function (gaugeName) {
-              plotColors.push($scope.checkedGaugeColors[gaugeName]);
+              plotGaugeNames.push(gaugeName);
             });
-            plotLabels = smallestUniqueGaugeNames(query.gaugeNames);
             updatePlotData(plotData);
             if (deferred) {
               deferred.resolve('Success');
@@ -158,66 +159,98 @@ glowroot.controller('JvmGaugesCtrl', [
         $scope.chartFrom = $scope.filterDate.getTime() + ($scope.chartFrom - midnight);
         $scope.chartTo = $scope.filterDate.getTime() + ($scope.chartTo - midnight);
       }
-      updateLocation();
       refreshChart(deferred);
+      updateLocation();
     };
 
     function updatePlotData(data) {
       var plotData = [];
-      for (var i = 0; i < data.length; i++) {
-        plotData.push({
-          data: data[i],
-          color: plotColors[i],
-          label: plotLabels[i]
-        });
+      var nodata = true;
+      // using plotGaugeNames.length since data.length is 1 for dummy data [[]] which is needed for flot to draw
+      // gridlines
+      if (plotGaugeNames && plotGaugeNames.length) {
+        for (var i = 0; i < plotGaugeNames.length; i++) {
+          if (nodata) {
+            nodata = !data[i].length;
+          }
+          plotData.push({
+            data: data[i],
+            color: keyedColorPool.get(plotGaugeNames[i]),
+            label: plotGaugeNames[i]
+          });
+        }
+        $scope.chartNoData = nodata;
+      } else {
+        // don't show "No data" when no gauges were even selected
+        $scope.chartNoData = false;
       }
-      plot.setData(plotData);
+      if (plotData.length) {
+        plot.setData(plotData);
+      } else {
+        plot.setData([
+          []
+        ]);
+      }
       plot.setupGrid();
       plot.draw();
     }
 
     $chart.bind('plotzoom', function (event, plot, args) {
-      var zoomingOut = args.amount && args.amount < 1;
-      updatePlotData(getFilteredData());
       $scope.$apply(function () {
-        $scope.chartFrom = plot.getAxes().xaxis.min;
-        $scope.chartTo = plot.getAxes().xaxis.max;
-        chartFromToDefault = false;
-        updateLocation();
+        // throw up spinner right away
+        $scope.showChartSpinner++;
+        $scope.showTableOverlay++;
+        var zoomingOut = args.amount && args.amount < 1;
+        if (zoomingOut) {
+          plot.getAxes().yaxis.options.min = 0;
+          plot.getAxes().yaxis.options.realMax = undefined;
+        }
+        if (zoomingOut) {
+          // need to call setupGrid on each zoom to handle rapid zooming
+          plot.setupGrid();
+          var zoomId = ++currentZoomId;
+          // use 100 millisecond delay to handle rapid zooming
+          $timeout(function () {
+            if (zoomId === currentZoomId) {
+              $scope.chartFrom = plot.getAxes().xaxis.min;
+              $scope.chartTo = plot.getAxes().xaxis.max;
+              chartFromToDefault = false;
+              refreshChart();
+              updateLocation();
+            }
+            $scope.showChartSpinner--;
+            $scope.showTableOverlay--;
+          }, 100);
+        } else {
+          // no need to fetch new data
+          $scope.chartFrom = plot.getAxes().xaxis.min;
+          $scope.chartTo = plot.getAxes().xaxis.max;
+          chartFromToDefault = false;
+          updatePlotData(getFilteredData());
+          updateLocation();
+          // increment currentRefreshId to cancel any refresh in action
+          currentRefreshId++;
+          $scope.showChartSpinner--;
+          $scope.showTableOverlay--;
+        }
       });
-      if (zoomingOut) {
-        var zoomId = ++currentZoomId;
-        // use 100 millisecond delay to handle rapid zooming
-        setTimeout(function () {
-          if (zoomId !== currentZoomId) {
-            return;
-          }
-          $scope.$apply(function () {
-            refreshChart();
-          });
-        }, 100);
-      } else {
-        // no need to fetch new data
-        // increment currentRefreshId to cancel any refresh in action
-        currentRefreshId++;
-      }
     });
 
     $chart.bind('plotselected', function (event, ranges) {
-      plot.clearSelection();
-      // perform the zoom
-      plot.getAxes().xaxis.options.min = ranges.xaxis.from;
-      plot.getAxes().xaxis.options.max = ranges.xaxis.to;
-      updatePlotData(getFilteredData());
       $scope.$apply(function () {
+        plot.clearSelection();
+        // perform the zoom
+        plot.getAxes().xaxis.options.min = ranges.xaxis.from;
+        plot.getAxes().xaxis.options.max = ranges.xaxis.to;
+        updatePlotData(getFilteredData());
         $scope.chartFrom = plot.getAxes().xaxis.min;
         $scope.chartTo = plot.getAxes().xaxis.max;
         chartFromToDefault = false;
         updateLocation();
+        // no need to fetch new data
+        // increment currentRefreshId to cancel any refresh in action
+        currentRefreshId++;
       });
-      // no need to fetch new data
-      // increment currentRefreshId to cancel any refresh in action
-      currentRefreshId++;
     });
 
     function getFilteredData() {
@@ -263,11 +296,8 @@ glowroot.controller('JvmGaugesCtrl', [
       return filteredData;
     }
 
-    $scope.showTableOverlay = 0;
-    $scope.showTableSpinner = 0;
-
     $scope.gaugeRowStyle = function (gaugeName) {
-      var color = $scope.checkedGaugeColors[gaugeName];
+      var color = keyedColorPool.get(gaugeName);
       if (color) {
         return {
           color: color,
@@ -281,7 +311,7 @@ glowroot.controller('JvmGaugesCtrl', [
     };
 
     $scope.displayFilterRowStyle = function (gaugeName) {
-      var color = $scope.checkedGaugeColors[gaugeName];
+      var color = keyedColorPool.get(gaugeName);
       return {
         'background-color': color,
         color: 'white',
@@ -295,30 +325,48 @@ glowroot.controller('JvmGaugesCtrl', [
     };
 
     $scope.clickGaugeName = function (gaugeName) {
-      var color = $scope.checkedGaugeColors[gaugeName];
+      var color = keyedColorPool.get(gaugeName);
       if (color) {
         // uncheck it
-        availableColors.push(color);
-        delete $scope.checkedGaugeColors[gaugeName];
+        keyedColorPool.remove(gaugeName);
       } else {
         // check it
-        color = availableColors.length ? availableColors.pop() : nextRColor();
-        $scope.checkedGaugeColors[gaugeName] = color;
+        color = keyedColorPool.add(gaugeName);
       }
       refreshChart();
+      updateLocation();
     };
 
     $scope.removeDisplayedGauge = function (gaugeName) {
-      var color = $scope.checkedGaugeColors[gaugeName];
-      availableColors.push(color);
-      delete $scope.checkedGaugeColors[gaugeName];
+      keyedColorPool.remove(gaugeName);
       refreshChart();
+      updateLocation();
     };
 
-    $('#zoomOut').click(function () {
-      plot.zoomOut();
-    });
-    $('#modalHide').click(traceModal.hideModal);
+    $scope.selectAllGauges = function () {
+      var gaugeNames = $filter('filter')($scope.allGaugeNames, $scope.gaugeNameFilter);
+      angular.forEach(gaugeNames, function (gaugeName) {
+        keyedColorPool.add(gaugeName);
+      });
+      refreshChart();
+      updateLocation();
+    };
+
+    $scope.deselectAllGauges = function () {
+      var gaugeNames = $filter('filter')($scope.allGaugeNames, $scope.gaugeNameFilter);
+      angular.forEach(gaugeNames, function (gaugeName) {
+        keyedColorPool.remove(gaugeName);
+      });
+      refreshChart();
+      updateLocation();
+    };
+
+    $scope.zoomOut = function () {
+      // need to execute this outside of $apply since code assumes it needs to do its own $apply
+      $timeout(function () {
+        plot.zoomOut();
+      });
+    };
 
     var chartFromToDefault;
 
@@ -342,38 +390,13 @@ glowroot.controller('JvmGaugesCtrl', [
       $scope.chartTo = Math.min($scope.chartFrom + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
 
-    $scope.checkedGaugeColors = {};
-    var gaugeNames = $location.search()['gauge-name'];
-    $scope.gaugeNames = [];
-    if (angular.isArray(gaugeNames)) {
-      angular.forEach(gaugeNames, function (gaugeName) {
-        $scope.checkedGaugeColors[gaugeName] = nextRColor();
-        $scope.gaugeNames.push(gaugeName);
-      });
-    } else if (gaugeNames) {
-      $scope.checkedGaugeColors[gaugeNames] = nextRColor();
-      $scope.gaugeNames.push(gaugeNames);
-    }
-
     function updateLocation() {
-      var gaugeNames = [];
-      angular.forEach($scope.checkedGaugeColors, function (color, gaugeName) {
-        gaugeNames.push(gaugeName);
-      });
       var query = {};
       if (!chartFromToDefault) {
         query.from = $scope.chartFrom;
         query.to = $scope.chartTo;
       }
-      if (gaugeNames) {
-        query['gauge-name'] = gaugeNames;
-      }
-      if ($scope.tableSortAttribute !== 'total' || $scope.tableSortDirection !== 'desc') {
-        query['table-sort-attribute'] = $scope.tableSortAttribute;
-        if ($scope.tableSortDirection !== 'desc') {
-          query['table-sort-direction'] = $scope.tableSortDirection;
-        }
-      }
+      query['gauge-name'] = keyedColorPool.keys();
       $location.search(query).replace();
     }
 
@@ -381,13 +404,15 @@ glowroot.controller('JvmGaugesCtrl', [
       var options = {
         grid: {
           mouseActiveRadius: 10,
-          // min border margin should match aggregate chart so they are positioned the same from the top of page
           // without specifying min border margin, the point radius is used
           minBorderMargin: 10,
           borderColor: '#7d7358',
           borderWidth: 1,
           // this is needed for tooltip plugin to work
           hoverable: true
+        },
+        legend: {
+          show: false
         },
         xaxis: {
           mode: 'time',
@@ -430,17 +455,18 @@ glowroot.controller('JvmGaugesCtrl', [
         tooltipOpts: {
           content: function (label, xval, yval, flotItem) {
             // TODO internationalize time format
-            var index = label.lastIndexOf('/');
-            return moment(xval).format('h:mm:ss.SSS a (Z)') + '<br>' + label.substring(index + 1) + ': ' + yval;
+            var shortLabel = $scope.allShortGaugeNames[label];
+            return moment(xval).format('h:mm:ss.SSS a (Z)') + '<br>' + shortLabel + ': ' + yval;
           }
         }
       };
       // render chart with no data points
-      plot = $.plot($chart, [], options);
+      plot = $.plot($chart, [
+        []
+      ], options);
       plot.getAxes().xaxis.options.borderGridLock = 1;
     })();
 
     plot.getAxes().yaxis.options.max = undefined;
-    refreshChart();
   }
 ]);

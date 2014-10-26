@@ -62,10 +62,10 @@ public class AggregateCollectorTest {
         when(transaction.getRootMetric()).thenReturn(transactionMetric);
         // when
         int count = 0;
-        long firstCaptureTime = aggregateCollector.add(transaction, false);
+        long firstCaptureTime = aggregateCollector.add(transaction);
         long aggregateCaptureTime = (long) Math.ceil(firstCaptureTime / 1000.0) * 1000;
         while (true) {
-            long captureTime = aggregateCollector.add(transaction, false);
+            long captureTime = aggregateCollector.add(transaction);
             count++;
             if (captureTime > aggregateCaptureTime) {
                 break;

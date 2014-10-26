@@ -46,24 +46,15 @@ class AggregateCommonService {
         this.aggregateDao = aggregateDao;
     }
 
-    MergedAggregate getMergedAggregate(String transactionType, @Nullable String transactionName,
-            long from, long to) throws IOException {
-        List<Aggregate> aggregates;
-        if (transactionName == null) {
-            aggregates = aggregateDao.readOverallAggregates(transactionType, from, to);
-        } else {
-            aggregates = aggregateDao.readTransactionAggregates(transactionType, transactionName,
-                    from, to);
-        }
+    MergedAggregate getMergedAggregate(List<Aggregate> aggregates) throws IOException {
         long totalMicros = 0;
         long count = 0;
-        long errorCount = 0;
         AggregateMetric syntheticRootMetric = AggregateMetric.createSyntheticRootMetric();
         Existence profileExistence = Existence.NO;
+        long profileSampleCount = 0;
         for (Aggregate aggregate : aggregates) {
             totalMicros += aggregate.getTotalMicros();
             count += aggregate.getCount();
-            errorCount += aggregate.getErrorCount();
             AggregateMetric toBeMergedSyntheticRootMetric =
                     mapper.readValue(aggregate.getMetrics(), AggregateMetric.class);
             mergeMatchedMetric(toBeMergedSyntheticRootMetric, syntheticRootMetric);
@@ -73,13 +64,16 @@ class AggregateCommonService {
                     && aggregate.getProfileExistence() == Existence.YES) {
                 profileExistence = Existence.YES;
             }
+            if (aggregate.getProfileExistence() == Existence.YES) {
+                profileSampleCount += aggregate.getProfileSampleCount();
+            }
         }
         AggregateMetric rootMetric = syntheticRootMetric;
         if (syntheticRootMetric.getNestedMetrics().size() == 1) {
             rootMetric = syntheticRootMetric.getNestedMetrics().get(0);
         }
-        return new MergedAggregate(transactionType, transactionName, from, to, totalMicros,
-                count, errorCount, rootMetric, profileExistence);
+        return new MergedAggregate(totalMicros, count, rootMetric, profileExistence,
+                profileSampleCount);
     }
 
     @Nullable
@@ -189,46 +183,19 @@ class AggregateCommonService {
     @UsedByJsonBinding
     public static class MergedAggregate {
 
-        private final String transactionType;
-        @Nullable
-        private final String transactionName;
-        private final long from;
-        private final long to;
         private final long totalMicros;
         private final long count;
-        private final long errorCount;
         private final AggregateMetric rootMetric;
         private final Existence profileExistence;
+        private final long profileSampleCount;
 
-        private MergedAggregate(String transactionType, @Nullable String transactionName,
-                long from, long to, long totalMicros, long count, long errorCount,
-                AggregateMetric rootMetric, Existence profileExistence) {
-            this.transactionType = transactionType;
-            this.transactionName = transactionName;
-            this.from = from;
-            this.to = to;
+        private MergedAggregate(long totalMicros, long count, AggregateMetric rootMetric,
+                Existence profileExistence, long profileSampleCount) {
             this.totalMicros = totalMicros;
             this.count = count;
-            this.errorCount = errorCount;
             this.rootMetric = rootMetric;
             this.profileExistence = profileExistence;
-        }
-
-        public String getTransactionType() {
-            return transactionType;
-        }
-
-        @Nullable
-        public String getTransactionName() {
-            return transactionName;
-        }
-
-        public long getFrom() {
-            return from;
-        }
-
-        public long getTo() {
-            return to;
+            this.profileSampleCount = profileSampleCount;
         }
 
         public long getTotalMicros() {
@@ -239,16 +206,16 @@ class AggregateCommonService {
             return count;
         }
 
-        public long getErrorCount() {
-            return errorCount;
-        }
-
         public AggregateMetric getMetrics() {
             return rootMetric;
         }
 
         public Existence getProfileExistence() {
             return profileExistence;
+        }
+
+        public long getProfileSampleCount() {
+            return profileSampleCount;
         }
     }
 }

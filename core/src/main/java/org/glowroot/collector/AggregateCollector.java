@@ -77,14 +77,13 @@ class AggregateCollector {
         processingThread.start();
     }
 
-    long add(Transaction transaction, boolean traceWillBeStored) {
+    long add(Transaction transaction) {
         // this synchronized block is to ensure traces are placed into processing queue in the
         // order of captureTime (so that queue reader can assume if captureTime indicates time to
         // flush, then no new traces will come in with prior captureTime)
         synchronized (lock) {
             long captureTime = clock.currentTimeMillis();
-            pendingTransactionQueue.add(
-                    new PendingTransaction(captureTime, transaction, traceWillBeStored));
+            pendingTransactionQueue.add(new PendingTransaction(captureTime, transaction));
             return captureTime;
         }
     }
@@ -130,8 +129,7 @@ class AggregateCollector {
             // the synchronized block is to ensure visibility of updates to this particular
             // currentIntervalCollector
             synchronized (currentIntervalCollector) {
-                currentIntervalCollector.add(pendingTransaction.getTransaction(),
-                        pendingTransaction.isTraceWillBeStored());
+                currentIntervalCollector.add(pendingTransaction.getTransaction());
             }
         }
 
@@ -206,9 +204,9 @@ class AggregateCollector {
                     * fixedAggregateIntervalMillis;
         }
 
-        private void add(Transaction transaction, boolean traceWillBeStored) {
+        private void add(Transaction transaction) {
             IntervalTypeCollector typeBuilder = getTypeBuilder(transaction.getTransactionType());
-            typeBuilder.add(transaction, traceWillBeStored);
+            typeBuilder.add(transaction);
         }
 
         private IntervalTypeCollector getTypeBuilder(String transactionType) {
@@ -233,7 +231,7 @@ class AggregateCollector {
             overallBuilder = new AggregateBuilder(transactionType, null);
         }
 
-        private void add(Transaction transaction, boolean traceWillBeStored) {
+        private void add(Transaction transaction) {
             overallBuilder.add(transaction.getDuration());
             AggregateBuilder transactionBuilder =
                     transactionBuilders.get(transaction.getTransactionName());
@@ -243,14 +241,6 @@ class AggregateCollector {
                 transactionBuilders.put(transaction.getTransactionName(), transactionBuilder);
             }
             transactionBuilder.add(transaction.getDuration());
-            if (transaction.getError() != null) {
-                overallBuilder.addToErrorCount();
-                transactionBuilder.addToErrorCount();
-            }
-            if (traceWillBeStored) {
-                overallBuilder.addToTraceCount();
-                transactionBuilder.addToTraceCount();
-            }
             overallBuilder.addToMetrics(transaction.getRootMetric());
             transactionBuilder.addToMetrics(transaction.getRootMetric());
             // only add profile to transaction, overall profile doesn't seem worth the overhead
@@ -265,13 +255,10 @@ class AggregateCollector {
 
         private final long captureTime;
         private final Transaction transaction;
-        private final boolean traceWillBeStored;
 
-        private PendingTransaction(long captureTime, Transaction transaction,
-                boolean traceWillBeStored) {
+        private PendingTransaction(long captureTime, Transaction transaction) {
             this.captureTime = captureTime;
             this.transaction = transaction;
-            this.traceWillBeStored = traceWillBeStored;
         }
 
         private long getCaptureTime() {
@@ -280,10 +267,6 @@ class AggregateCollector {
 
         private Transaction getTransaction() {
             return transaction;
-        }
-
-        private boolean isTraceWillBeStored() {
-            return traceWillBeStored;
         }
     }
 }

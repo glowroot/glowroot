@@ -68,7 +68,7 @@
            gt-model="config.passwordEnabled"
            gt-type="checkbox"
            class="gt-form-group-without-help-block">
-        <div collapse="originalConfig.passwordEnabled || !config.passwordEnabled">
+        <div ng-hide="originalConfig.passwordEnabled || !config.passwordEnabled">
           <div class="well" style="margin-bottom: 0; margin-top: 25px;">
             <label class="control-label" style="padding-top: 0;">Initial password</label>
             <input type="password"
@@ -82,7 +82,7 @@
                    style="max-width: 20em;">
           </div>
         </div>
-        <div collapse="!originalConfig.passwordEnabled || config.passwordEnabled">
+        <div ng-hide="!originalConfig.passwordEnabled || config.passwordEnabled">
           <div class="well" style="margin-bottom: 0; margin-top: 25px;">
             <label class="control-label" style="padding-top: 0;">Verify current password</label>
             <input type="password"

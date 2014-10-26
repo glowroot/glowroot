@@ -3,29 +3,30 @@
     "enabled": true,
     "storeThresholdMillis": 0,
     "outlierProfilingEnabled": true,
-    "outlierProfilingInitialDelayMillis": 10000,
+    "outlierProfilingInitialDelayMillis": 3000,
     "outlierProfilingIntervalMillis": 1000
   },
   "profiling": {
-    "enabled": false,
-    "transactionPercentage": 5.0,
+    "enabled": true,
+    "transactionPercentage": 2.0,
     "intervalMillis": 50,
     "traceStoreThresholdOverrideMillis": -1
   },
   "userRecording": {
     "enabled": false,
     "user": null,
-    "profileIntervalMillis": 20
+    "profileIntervalMillis": 10
+  },
+  "storage": {
+    "aggregateExpirationHours": 2147483647,
+    "traceExpirationHours": 2147483647,
+    "cappedDatabaseSizeMb": 1000
   },
   "ui": {
     "defaultTransactionType": "Integration test",
     "port": 0,
     "passwordHash": "",
     "sessionTimeoutMinutes": 30
-  },
-  "storage": {
-    "traceExpirationHours": 2147483647,
-    "cappedDatabaseSizeMb": 1000
   },
   "advanced": {
     "metricWrapperMethods": true,
@@ -53,5 +54,6 @@
       "properties": { }
     }
   ],
-  "capturePoints": [ ]
+  "capturePoints": [ ],
+  "mbeanGauges": [ ]
 }

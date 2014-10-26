@@ -67,8 +67,12 @@ module.exports = function (grunt) {
         livereload: 35729
       },
       rules: [
-        { from: '^/performance(\\?.*)?$', to: '/index.html' },
+        { from: '^/performance/transactions(\\?.*)?$', to: '/index.html' },
+        { from: '^/performance/metrics\\?.*$', to: '/index.html' },
+        { from: '^/performance/trace\\?.*$', to: '/index.html' },
         { from: '^/errors(\\?.*)?$', to: '/index.html' },
+        { from: '^/errors/transactions\\?.*$', to: '/index.html' },
+        { from: '^/errors/trace\\?.*$', to: '/index.html' },
         { from: '^/traces(\\?.*)?$', to: '/index.html' },
         { from: '^/jvm/.*$', to: '/index.html' },
         { from: '^/config/.*$', to: '/index.html' },
@@ -261,7 +265,8 @@ module.exports = function (grunt) {
         cwd: 'bower_components/angular-ui-bootstrap',
         src: [
           'template/typeahead/*.html',
-          'template/modal/*.html'
+          'template/modal/*.html',
+          'template/popover/*.html'
         ],
         dest: '.tmp/scripts/generated/angular-ui-bootstrap-templates.js'
       },

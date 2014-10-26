@@ -247,6 +247,7 @@ class MBeanGaugeJsonService {
     private static class MBeanAttributeNamesRequest {
 
         private final String mbeanObjectName;
+        @Nullable
         private final String mbeanGaugeVersion;
 
         @JsonCreator
@@ -255,7 +256,6 @@ class MBeanGaugeJsonService {
                 @JsonProperty("mbeanGaugeVersion") @Nullable String mbeanGaugeVersion)
                 throws JsonMappingException {
             checkRequiredProperty(mbeanObjectName, "mbeanObjectName");
-            checkRequiredProperty(mbeanGaugeVersion, "mbeanGaugeVersion");
             this.mbeanObjectName = mbeanObjectName;
             this.mbeanGaugeVersion = mbeanGaugeVersion;
         }
@@ -264,6 +264,7 @@ class MBeanGaugeJsonService {
             return mbeanObjectName;
         }
 
+        @Nullable
         private String getMBeanGaugeVersion() {
             return mbeanGaugeVersion;
         }

@@ -45,12 +45,19 @@ glowroot.config([
         };
       }
     ]);
-    $urlRouterProvider.otherwise('/performance');
-    $stateProvider.state('performance', {
-      url: '/performance',
-      templateUrl: 'views/aggregates.html',
-      controller: 'PerformanceCtrl',
-      // performance controllers needs to wait for layout when running under grunt serve
+    $urlRouterProvider.otherwise('performance/transactions');
+    $stateProvider.state('/performance-transactions', {
+      url: '/performance/transactions',
+      templateUrl: 'views/performance-transactions.html',
+      controller: 'PerformanceTransactionsCtrl',
+      // performance-transactions controller needs to wait for layout when running under grunt serve
+      resolve: waitForLayout
+    });
+    $stateProvider.state('performance-metrics', {
+      url: '/performance/metrics',
+      templateUrl: 'views/performance-metrics.html',
+      controller: 'PerformanceMetricsCtrl',
+      // performance-metrics controller needs to wait for layout when running under grunt serve
       resolve: waitForLayout
     });
     $stateProvider.state('errors', {
@@ -61,7 +68,9 @@ glowroot.config([
     $stateProvider.state('traces', {
       url: '/traces',
       templateUrl: 'views/traces.html',
-      controller: 'TracesCtrl'
+      controller: 'TracesCtrl',
+      // traces controller needs to wait for layout when running under grunt serve
+      resolve: waitForLayout
     });
     $stateProvider.state('jvm', {
       url: '/jvm',
@@ -76,7 +85,9 @@ glowroot.config([
     $stateProvider.state('jvm.gauges', {
       url: '/gauges',
       templateUrl: 'views/jvm/gauges.html',
-      controller: 'JvmGaugesCtrl'
+      controller: 'JvmGaugesCtrl',
+      // gauges controller needs to wait for layout when running under grunt serve
+      resolve: waitForLayout
     });
     $stateProvider.state('jvm.mbeans', {
       url: '/mbeans',

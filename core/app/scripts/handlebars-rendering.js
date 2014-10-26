@@ -119,67 +119,6 @@ HandlebarsRendering = (function () {
     return buffer;
   });
 
-  Handlebars.registerHelper('eachAggregateMetricOrdered', function (rootMetric, options) {
-    var buffer = '';
-
-    function traverse(metric, nestingLevel) {
-      metric.nestingLevel = nestingLevel;
-      buffer += options.fn(metric);
-      if (metric.nestedMetrics) {
-        metric.nestedMetrics.sort(function (a, b) {
-          return b.totalMicros - a.totalMicros;
-        });
-        $.each(metric.nestedMetrics, function (index, nestedMetric) {
-          traverse(nestedMetric, nestingLevel + 1);
-        });
-      }
-    }
-
-    // add the root node
-    traverse(rootMetric, 0);
-    return buffer;
-  });
-
-  Handlebars.registerHelper('eachAggregateMetricFlattenedOrdered', function (rootMetric, options) {
-    var flattenedMetricMap = {};
-    var flattenedMetrics = [];
-
-    function traverse(metric, parentMetricNames) {
-      var flattenedMetric = flattenedMetricMap[metric.name];
-      if (!flattenedMetric) {
-        flattenedMetric = {
-          name: metric.name,
-          totalMicros: metric.totalMicros,
-          count: metric.count
-        };
-        flattenedMetricMap[metric.name] = flattenedMetric;
-        flattenedMetrics.push(flattenedMetric);
-      } else if (parentMetricNames.indexOf(metric.name) === -1) {
-        // only add to existing flattened metric if the aggregate metric isn't appearing under itself
-        // (this is possible when they are separated by another aggregate metric)
-        flattenedMetric.totalMicros += metric.totalMicros;
-        flattenedMetric.count += metric.count;
-      }
-      if (metric.nestedMetrics) {
-        $.each(metric.nestedMetrics, function (index, nestedMetric) {
-          traverse(nestedMetric, parentMetricNames.concat(metric));
-        });
-      }
-    }
-
-    // add the root node
-    traverse(rootMetric, []);
-
-    flattenedMetrics.sort(function (a, b) {
-      return b.totalMicros - a.totalMicros;
-    });
-    var buffer = '';
-    $.each(flattenedMetrics, function (index, metric) {
-      buffer += options.fn(metric);
-    });
-    return buffer;
-  });
-
   Handlebars.registerHelper('ifThreadInfo', function (threadInfo, options) {
     if (threadInfo &&
         (threadInfo.threadCpuTime || threadInfo.threadBlockedTime || threadInfo.threadWaitedTime ||
@@ -214,8 +153,8 @@ HandlebarsRendering = (function () {
     return buffer;
   });
 
-  Handlebars.registerHelper('ifMoreThanOne', function (num, options) {
-    if (num > 1) {
+  Handlebars.registerHelper('ifNotOne', function (num, options) {
+    if (num !== 1) {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -234,24 +173,15 @@ HandlebarsRendering = (function () {
     return (micros / 1000).toFixed(1);
   });
 
-  Handlebars.registerHelper('divideMicrosByCount', function (micros, count) {
-    // and convert to millis
-    return ((micros / count) / 1000).toFixed(1);
-  });
-
-  Handlebars.registerHelper('divideCountByCount', function (count1, count2) {
-    return (count1 / count2).toFixed(1);
-  });
-
-  Handlebars.registerHelper('ifExistenceExpired', function (existence, options) {
-    if (existence === 'expired') {
+  Handlebars.registerHelper('ifExistenceYes', function (existence, options) {
+    if (existence === 'yes') {
       return options.fn(this);
     }
     return options.inverse(this);
   });
 
-  Handlebars.registerHelper('ifExistenceYes', function (existence, options) {
-    if (existence === 'yes') {
+  Handlebars.registerHelper('ifExistenceExpired', function (existence, options) {
+    if (existence === 'expired') {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -356,11 +286,6 @@ HandlebarsRendering = (function () {
     var traceId = $traceParent.data('traceId');
     window.location = 'export/trace/' + traceId;
   });
-  $(document).on('click', 'button.download-aggregate', function () {
-    var $aggregateParent = $(this).parents('.aggregate-parent');
-    var queryString = $aggregateParent.data('queryString');
-    window.location = 'export/performance?' + queryString + '&truncateLeafPercentage=0.002';
-  });
   var mousedownPageX, mousedownPageY;
   $(document).mousedown(function (e) {
     mousedownPageX = e.pageX;
@@ -431,33 +356,31 @@ HandlebarsRendering = (function () {
   $(document).on('click', '.profile-toggle', function () {
     var $traceParent = $(this).parents('.trace-parent');
     var $button = $(this);
-    var traceId = $traceParent.data('traceId');
-    profileToggle($button, $traceParent, '#profileOuter', 'profile',
-            'backend/trace/profile' + '?trace-id=' + traceId);
+    var profile = $traceParent.data('profile');
+    var url;
+    if (!profile) {
+      url = 'backend/trace/profile' + '?trace-id=' + $traceParent.data('traceId');
+    }
+    profileToggle($button, '#profileOuter', profile, url);
   });
   $(document).on('click', '.outlier-profile-toggle', function () {
     var $traceParent = $(this).parents('.trace-parent');
     var $button = $(this);
-    var traceId = $traceParent.data('traceId');
-    profileToggle($button, $traceParent, '#outlierProfileOuter', 'outlierProfile',
-            'backend/trace/outlier-profile' + '?trace-id=' + traceId);
-  });
-  $(document).on('click', '.aggregate-profile-toggle', function () {
-    var $aggregateParent = $(this).parents('.aggregate-parent');
-    var $button = $(this);
-    var queryString = $aggregateParent.data('queryString');
-    profileToggle($button, $aggregateParent, '#profileOuter', 'profile',
-            'backend/aggregate/profile?' + queryString);
+    var outlierProfile = $traceParent.data('outlierProfile');
+    var url;
+    if (!outlierProfile) {
+      url = 'backend/trace/outlier-profile' + '?trace-id=' + $traceParent.data('traceId');
+    }
+    profileToggle($button, '#outlierProfileOuter', outlierProfile, url);
   });
 
-  function profileToggle($button, $parent, selector, parentDataAttribute, url) {
+  function profileToggle($button, selector, profile, url) {
     var $selector = $(selector);
     if ($selector.data('loading')) {
       // handles rapid clicking when loading from url
       return;
     }
     if (!$selector.data('loaded')) {
-      var profile = $parent.data(parentDataAttribute);
       if (profile) {
         // this is an export file
         buildMergedStackTree(profile, $selector);
@@ -749,15 +672,6 @@ HandlebarsRendering = (function () {
       $selector.data('outlierProfile', outlierProfile);
       this.renderTrace(trace, $selector);
     },
-    renderAggregate: function (aggregate, $selector, queryString) {
-      var html = JST.aggregate(aggregate);
-      $selector.html(html);
-      $selector.addClass('aggregate-parent');
-      $selector.data('queryString', queryString);
-    },
-    renderAggregateFromExport: function (aggregate, $selector, profile) {
-      $selector.data('profile', profile);
-      this.renderAggregate(aggregate, $selector);
-    }
+    profileToggle: profileToggle
   };
 })();

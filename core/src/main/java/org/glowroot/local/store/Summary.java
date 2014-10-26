@@ -31,16 +31,11 @@ public class Summary {
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
     private final long totalMicros;
     private final long count;
-    private final long errorCount;
-    private final long traceCount;
 
-    Summary(@Nullable String transactionName, long totalMicros, long count, long errorCount,
-            long traceCount) {
+    Summary(@Nullable String transactionName, long totalMicros, long count) {
         this.transactionName = transactionName;
         this.totalMicros = totalMicros;
         this.count = count;
-        this.errorCount = errorCount;
-        this.traceCount = traceCount;
     }
 
     @Nullable
@@ -54,13 +49,5 @@ public class Summary {
 
     public long getCount() {
         return count;
-    }
-
-    public long getErrorCount() {
-        return errorCount;
-    }
-
-    public long getTraceCount() {
-        return traceCount;
     }
 }

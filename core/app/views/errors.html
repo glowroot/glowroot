@@ -13,6 +13,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<div class="header">
+  <div class="header-page-name">
+    Errors
+  </div>
+</div>
 <div ng-form
      gt-form-with-primary-button
      class="col-xs-12 col-sm-8 form-horizontal"
@@ -105,7 +110,7 @@
         {{aggregate.count}}
       </td>
       <td style="white-space: nowrap;">
-        <a ng-href="/traces?{{tracesQueryString(aggregate)}}">
+        <a ng-href="traces?{{tracesQueryString(aggregate)}}">
           see traces
         </a>
       </td>

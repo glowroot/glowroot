@@ -25,7 +25,6 @@ glowroot.controller('ErrorsCtrl', [
   function ($scope, $location, $http, queryStrings, httpErrors) {
     // \u00b7 is &middot;
     document.title = 'Errors \u00b7 Glowroot';
-    $scope.$parent.title = 'Errors';
     $scope.$parent.activeNavbarItem = 'errors';
 
     $scope.showTableSpinner = 0;

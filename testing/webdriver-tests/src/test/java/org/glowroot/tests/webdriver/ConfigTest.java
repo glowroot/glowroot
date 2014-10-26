@@ -64,8 +64,7 @@ public class ConfigTest {
     private String remoteWebDriverSessionId;
 
     @Rule
-    public final ScreenshotOnExceptionRule screenshotOnExceptionRule =
-            new ScreenshotOnExceptionRule(driver);
+    public ScreenshotOnExceptionRule screenshotOnExceptionRule = new ScreenshotOnExceptionRule();
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -116,6 +115,7 @@ public class ConfigTest {
             // driver.quit() is called
             remoteWebDriverSessionId = ((RemoteWebDriver) driver).getSessionId().toString();
         }
+        screenshotOnExceptionRule.setDriver(driver);
     }
 
     @After

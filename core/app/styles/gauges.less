@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-/* global HandlebarsRendering, $ */
+@import "../../bower_components/bootstrap/less/close";
+@import "../../bower_components/bootstrap/less/mixins";
 
-$(document).ready(function () {
-  var aggregate = JSON.parse($('#aggregateJson').html());
-  var profileJson = $('#profileJson').html();
-  var profile;
-  if (profileJson) {
-    profile = JSON.parse(profileJson);
-  }
-  HandlebarsRendering.renderAggregateFromExport(aggregate, $('#aggregatePlaceholder'), profile);
-});
+/* override some bootstrap .close attributes */
+.gauges-displayed-close {
+  .close;
+  float: none !important;
+  vertical-align: -2px;
+  // without reducing line-height, it expands the container vertically a bit and doesn't match with All Transactions
+  line-height: 0.5;
+  .opacity(.3);
+  // make larger hitbox for easy clicking
+  padding: 10px !important;
+  margin: -10px -10px -10px -5px;
+}

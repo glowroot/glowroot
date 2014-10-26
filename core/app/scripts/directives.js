@@ -20,7 +20,7 @@ glowroot.factory('gtButtonGroupControllerFactory', [
   '$q',
   function ($q) {
     return {
-      create: function (element) {
+      create: function (element, noSpinner) {
         var $element = $(element);
         var alreadyExecuting = false;
         return {
@@ -33,11 +33,16 @@ glowroot.factory('gtButtonGroupControllerFactory', [
             var $buttonSpinner = $element.find('.button-spinner');
             // in case button is clicked again before message fades out
             $buttonMessage.addClass('hide');
-            var spinner = Glowroot.showSpinner($buttonSpinner);
+            var spinner;
+            if (!noSpinner) {
+              spinner = Glowroot.showSpinner($buttonSpinner);
+            }
 
             var deferred = $q.defer();
             deferred.promise.then(function (success) {
-              spinner.stop();
+              if (spinner) {
+                spinner.stop();
+              }
               // if success is undefined (e.g. no explicit success message), need to pass empty string,
               // otherwise it won't overwrite old error message in $buttonMessage if there is one
               $buttonMessage.text(success || '');
@@ -46,7 +51,9 @@ glowroot.factory('gtButtonGroupControllerFactory', [
               Glowroot.showAndFadeSuccessMessage($buttonMessage);
               alreadyExecuting = false;
             }, function (error) {
-              spinner.stop();
+              if (spinner) {
+                spinner.stop();
+              }
               $buttonMessage.text(error);
               $buttonMessage.removeClass('button-message-success');
               $buttonMessage.addClass('button-message-error');
@@ -82,7 +89,8 @@ glowroot.directive('gtButtonGroup', [
       controller: [
         '$element',
         function ($element) {
-          return gtButtonGroupControllerFactory.create($element);
+          var gtButtonGroup = gtButtonGroupControllerFactory.create($element);
+          this.onClick = gtButtonGroup.onClick;
         }
       ]
     };
@@ -98,7 +106,8 @@ glowroot.directive('gtButton', [
         gtClick: '&',
         gtShow: '&',
         gtBtnClass: '@',
-        gtDisabled: '&'
+        gtDisabled: '&',
+        gtNoSpinner: '@'
       },
       templateUrl: function (tElement, tAttrs) {
         if (tAttrs.hasOwnProperty('gtButtonRightAligned')) {
@@ -114,7 +123,7 @@ glowroot.directive('gtButton', [
         };
         if (!gtButtonGroup) {
           scope.noGroup = true;
-          gtButtonGroup = gtButtonGroupControllerFactory.create(iElement);
+          gtButtonGroup = gtButtonGroupControllerFactory.create(iElement, scope.gtNoSpinner);
         }
         scope.onClick = function () {
           gtButtonGroup.onClick(scope.gtClick);
@@ -261,7 +270,7 @@ glowroot.directive('gtNavbarItem', [
           var $navbarCollapse = $('.navbar-collapse');
           $navbarCollapse.removeClass('in');
           $navbarCollapse.addClass('collapse');
-          if ($location.path() === scope.gtUrl && !event.ctrlKey) {
+          if ($location.path() === '/' + scope.gtUrl && !event.ctrlKey) {
             $state.go($state.$current, null, { reload: true });
             // suppress normal link
             event.preventDefault();
@@ -291,10 +300,10 @@ glowroot.directive('gtSidebarItem', [
           return iAttrs.gtShow ? scope.gtShow() : true;
         };
         scope.isActive = function () {
-          return $location.path() === scope.gtUrl;
+          return $location.path() === '/' + scope.gtUrl;
         };
         scope.ngClick = function (event) {
-          if ($location.path() === scope.gtUrl && !event.ctrlKey) {
+          if ($location.path() === '/' + scope.gtUrl && !event.ctrlKey) {
             $state.go($state.$current, null, { reload: true });
             // suppress normal link
             event.preventDefault();
@@ -351,11 +360,16 @@ glowroot.directive('gtSpinner', function () {
               // z-index should be less than navbar (which is 1030)
               spinner = new Spinner({ lines: 9, radius: 8, width: 5, left: left, zIndex: 1020 });
             }
-            // small delay so that if there is an immediate response the spinner doesn't blink
-            timer = setTimeout(function () {
+            if (iAttrs.gtNoDelay) {
               iElement.removeClass('hide');
               spinner.spin(iElement[0]);
-            }, 100);
+            } else {
+              // small delay so that if there is an immediate response the spinner doesn't blink
+              timer = setTimeout(function () {
+                iElement.removeClass('hide');
+                spinner.spin(iElement[0]);
+              }, 100);
+            }
           } else if (spinner !== undefined) {
             clearTimeout(timer);
             iElement.addClass('hide');

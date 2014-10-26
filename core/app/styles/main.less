@@ -33,6 +33,10 @@
 // list-group is used by configuration sidebar
 @import "../../bower_components/bootstrap/less/list-group";
 @import "../../bower_components/bootstrap/less/modals";
+// popovers is used by chart help
+@import "../../bower_components/bootstrap/less/popovers";
+// tooltip is used by chart help
+@import "../../bower_components/bootstrap/less/tooltip";
 // navs import needs to be before navbar import, othewise navbar is messed up
 @import "../../bower_components/bootstrap/less/navs";
 @import "../../bower_components/bootstrap/less/navbar";
@@ -56,11 +60,11 @@
 
 @import "common-trace";
 @import "chart";
-@import "aggregates";
 @import "search";
 @import "config";
 @import "system";
 @import "sidebar";
+@import "gauges";
 @import "thread-dump";
 @import "common";
 @import "sticky-footer";
@@ -100,18 +104,29 @@ body {
 }
 
 .header-page-name {
-  font-size: 48px;
-  color: #555;
+  font-size: 36px;
   color: @glowroot-page-title-color;
-  font-family: 'Open Sans', sans-serif;
   font-weight: 600;
+}
+
+.header-page-name a {
+  color: @glowroot-page-title-color;
+}
+
+.header-page-name li a {
+  font-size: 24px;
+  color: darken(@glowroot-page-title-color, 10%);
+}
+
+.header-page-name li a:hover {
+  color: white;
+  background-color: @glowroot-primary-color;
 }
 
 .navbar-brand {
   font-size: 24px;
   color: #fff !important;
   text-shadow: 0 0 4px white;
-  font-family: 'Open Sans', sans-serif;
   font-weight: 800;
   margin-top: -1px;
 }

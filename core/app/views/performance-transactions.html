@@ -1,0 +1,141 @@
+<!--
+  Copyright 2013-2014 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="header">
+  <div class="header-page-name">
+    <div ng-switch="layout.transactionTypes.length">
+      <div ng-switch-when="1">
+        {{filterTransactionType}}
+      </div>
+      <div ng-switch-default>
+        <div dropdown class="dropdown">
+          <div dropdown-toggle class="dropdown-toggle" style="cursor: pointer; display: inline-block;">
+            {{filterTransactionType}}
+            <span class="caret"></span>
+          </div>
+          <ul class="dropdown-menu">
+            <li ng-repeat="transactionType in layout.transactionTypes">
+              <a ng-click="changeTransactionType(transactionType)">
+                {{transactionType}}
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="pull-right">
+  <button popover-window="template/gt-chart-help.html"
+          popover-window-placement="left"
+          popover-window-trigger="focus"
+          class="btn btn-default"
+          style="border: none; padding: 6px 8px;">
+    <i title="Help"
+       class="fa fa-question-circle"
+       style="font-size: 28px; color: #7d7358;"></i>
+  </button>
+</div>
+<div style="float: left; padding-right: 10px;">
+  <label class="control-label"
+         for="filterDate"
+         style="padding: 0 10px 0 60px;">
+    Date
+  </label>
+  <div gt-datepicker
+       gt-model="filterDate"
+       gt-id="filterDate"
+       style="display: inline-block;">
+  </div>
+</div>
+<div gt-button
+     gt-label="Refresh"
+     gt-click="refreshButtonClick(deferred)"
+     gt-no-spinner="true"
+     id="refreshButtonDiv">
+</div>
+<div class="chart-container"
+     style="position: relative;">
+  <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid zooming -->
+  <div gt-spinner
+       gt-show="showChartSpinner"
+       gt-no-delay="true"
+       class="spinner panel-overlay"
+       id="chartSpinner"
+       style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
+  </div>
+  <div class="chart-dimensions" id="chart"></div>
+  <div class="chart-error" ng-show="refreshChartError">
+    <strong>{{refreshChartError}}</strong>
+  </div>
+  <div ng-show="chartNoData && !showChartSpinner"
+       style="display: table; width: 100%; height: 100%;">
+    <div style="display: table-cell; text-align: center; vertical-align: middle;">
+      <div class="chart-no-data">No data</div>
+    </div>
+  </div>
+</div>
+<div ng-hide="chartNoData"
+     style="position: relative; padding-top: 20px;">
+  <div class="panel-overlay" ng-show="showTableOverlay">
+  </div>
+  <table class="table">
+    <thead>
+    <tr>
+      <th width="50%">Transaction name</th>
+      <th width="10%">Average</th>
+      <th width="10%">Count</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td style="padding: 0;">
+        <a style="display: block; position: relative; padding: 8px; word-break: break-all;"
+           ng-href="performance/metrics?{{metricsQueryString(null)}}">
+          All Transactions
+        </a>
+      </td>
+      <td>{{overallAverage()}}</td>
+      <td>{{overallSummary.count}}</td>
+    </tr>
+    <tr ng-repeat="transactionSummary in transactionSummaries"
+        ng-class="{'aggregate-row-selected': transactionSummary.transactionName === selectedTransactionName}">
+      <td style="padding: 0;">
+        <!-- cannot apply relative positioning to td elements in firefox
+         see https://bugzilla.mozilla.org/show_bug.cgi?id=35168 -->
+        <div style="position: relative;">
+          <div style="position: absolute; height: 100%; background-color: #eee;"
+               ng-style="{width: transactionSummaryBarWidth(transactionSummary.totalMicros)}">
+          </div>
+          <a style="display: block; position: relative; padding: 8px; word-break: break-all;"
+             ng-href="performance/metrics?{{metricsQueryString(transactionSummary.transactionName)}}">
+            {{transactionSummary.transactionName}}
+          </a>
+        </div>
+      </td>
+      <td>{{((transactionSummary.totalMicros / transactionSummary.count) / 1000000).toFixed(3)}}</td>
+      <td>{{transactionSummary.count}}</td>
+    </tr>
+    </tbody>
+  </table>
+  <div ng-show="moreAvailable"
+       style="vertical-align: middle; padding: 20px 0 0 30px;">
+    <div gt-button
+         gt-btn-class="btn-default"
+         gt-label="Show more"
+         gt-click="showMore(deferred)">
+    </div>
+  </div>
+</div>

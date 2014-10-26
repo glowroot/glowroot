@@ -18,94 +18,87 @@
     <h2>Gauges</h2>
   </div>
   <div class="panel-body">
+    <div gt-spinner
+         gt-show="!loaded && !httpError"
+         class="left-aligned-spinner">
+    </div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-
-    <div class="chart-container"
-         style="position: relative;">
-      <div gt-spinner
-           gt-show="showChartSpinner"
-           class="spinner"
-           id="chartSpinner"
-           style="position: absolute; width: 100%; height: 100%;">
+    <div ng-show="loaded">
+      <div ng-hide="allGaugeNames.length" style="font-size: 16px; margin-top: 20px;">
+        No gauges configured. See <a href="config/mbean-gauges">Gauge configuration</a>.
       </div>
-      <div class="chart-dimensions" id="chart"></div>
-      <div class="chart-error" ng-show="refreshChartError">
-        <strong>{{refreshChartError}}</strong>
-      </div>
-    </div>
-    <br>
-    <div class="col-xs-12 col-sm-6" style="float: right; margin: 10px auto 0;">
-      <div class="chart-help">
-        <div style="margin-top: 10px;"><strong>Chart navigation</strong></div>
-        <ul>
-          <li>use the mouse scroll wheel to zoom in and out</li>
-          <li>drag over a region to zoom in</li>
-          <li>double click to zoom in</li>
-          <li>
-            <button class="flat-btn glowroot-link-color" id="zoomOut"
-                    style="margin-left: -4px; padding: 0 4px;">
-              click here to zoom out
-            </button>
-            (if no scroll wheel)
-          </li>
-        </ul>
-      </div>
-    </div>
-    <div ng-form
-         gt-form-with-primary-button
-         class="col-xs-12 col-sm-6 form-horizontal"
-         style="float: left; margin: 20px auto 0 auto;">
-      <div class="form-group">
-        <label class="col-lg-4 control-label" for="filterDate">Date</label>
-        <div class="col-lg-8">
+      <div ng-show="allGaugeNames.length">
+        <div style="float: left; padding-right: 10px;">
+          <label class="control-label"
+                 for="filterDate"
+                 style="padding: 0 10px 0 40px;">
+            Date
+          </label>
           <div gt-datepicker
                gt-model="filterDate"
-               gt-id="filterDate">
+               gt-id="filterDate"
+               style="display: inline-block;">
           </div>
         </div>
-      </div>
-      <div class="form-group">
-        <div class="col-lg-offset-4 col-lg-8">
-          <div gt-button
-               gt-label="Refresh"
-               gt-click="refreshButtonClick(deferred)">
-          </div>
+        <div gt-button
+             gt-label="Refresh"
+             gt-click="refreshButtonClick(deferred)"
+             gt-no-spinner="true">
         </div>
-      </div>
-    </div>
-    <div style="clear: both; padding-top: 20px">
-      <div class="home-gauge-aggregates-error" ng-show="aggregatesError">
-        <strong>{{aggregatesError}}</strong>
-      </div>
-    </div>
-    <div style="clear: both; position: relative;">
-      <div class="panel-overlay" ng-hide="tableLoaded">
-        <!-- this inner div is to position the spinner near top of panel since panel can be very tall pushing spinner
-             offscreen -->
-        <div style="position: absolute; width: 100%; margin-top: 50px;">
-          <!-- don't show spinner on refresh button since that has its own spinner -->
+        <div class="chart-container"
+             style="position: relative;">
+          <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid
+               zooming -->
           <div gt-spinner
-               gt-show="!tableLoaded"
-               class="spinner"
-               style="margin-top: 40px; width: 100%;">
+               gt-show="showChartSpinner"
+               gt-no-delay="true"
+               class="spinner panel-overlay"
+               id="chartSpinner"
+               style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
+          </div>
+          <div class="chart-dimensions" id="chart"></div>
+          <div class="chart-error" ng-show="refreshChartError">
+            <strong>{{refreshChartError}}</strong>
+          </div>
+          <div ng-show="chartNoData && !showChartSpinner"
+               style="display: table; width: 100%; height: 100%;">
+            <div style="display: table-cell; text-align: center; vertical-align: middle;">
+              <div class="chart-no-data">No data</div>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="checkbox" ng-repeat="gaugeName in allGaugeNames">
-        <label ng-style="gaugeRowStyle(gaugeName)">
-          <input type="checkbox" ng-checked="checkedGaugeColors[gaugeName]"
-                 ng-click="clickGaugeName(gaugeName)"
-                 id="{{gaugeName}}">
-          {{gaugeName}}
-        </label>
+        <br>
+        <div>
+          <div ng-repeat="gaugeName in keyedColorPool.keys() | orderBy"
+               class="inline-block"
+               ng-style="displayFilterRowStyle(gaugeName)">
+            {{allShortGaugeNames[gaugeName]}}
+            <button type="button"
+                    class="gauges-displayed-close"
+                    ng-click="removeDisplayedGauge(gaugeName)">
+              &times;
+            </button>
+          </div>
+        </div>
+        <br>
+        <div>
+          Filter
+          <input type="text"
+                 class="form-control inline-block"
+                 ng-model="gaugeNameFilter"
+                 style="width: 25em; margin-left: 5px;">
+          <a href="" ng-click="selectAllGauges()" style="margin: 0 20px;">select all</a>
+          <a href="" ng-click="deselectAllGauges()">deselect all</a>
+        </div>
+        <div class="checkbox" ng-repeat="gaugeName in allGaugeNames | filter:gaugeNameFilter">
+          <label ng-style="gaugeRowStyle(gaugeName)">
+            <input type="checkbox" ng-checked="keyedColorPool.get(gaugeName)"
+                   ng-click="clickGaugeName(gaugeName)"
+                   id="{{gaugeName}}">
+            {{gaugeName}}
+          </label>
+        </div>
       </div>
     </div>
-    <div class="modal hide" id="modal">
-      <button class="close" id="modalHide" style="position: fixed; right: 65px; top:30px;">
-        &times;
-      </button>
-      <div class="modal-content" id="modalContent"></div>
-    </div>
-    <span class="qtip-border-color-0 offscreen" id="offscreenNormalColor"></span>
   </div>
 </div>

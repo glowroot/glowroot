@@ -39,6 +39,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
           modifiers: data.methodModifiers
         };
         var captureKind = data.captureKind;
+        $scope.selectedClassName = data.className;
         $scope.selectedMethodName = data.methodName;
         $scope.selectedMethodSignature = methodSignature;
         $scope.methodSignatures = [ methodSignature ];
@@ -63,16 +64,22 @@ glowroot.controller('ConfigCapturePointCtrl', [
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
+    $scope.showClassNameSpinner = 0;
+    $scope.showMethodNameSpinner = 0;
+
     $scope.classNames = function (suggestion) {
       var postData = {
         partialClassName: suggestion,
         limit: 10
       };
+      $scope.showClassNameSpinner++;
       // use 'then' method to return promise
       return $http.get('backend/config/matching-class-names?' + queryStrings.encodeObject(postData))
           .then(function (response) {
+            $scope.showClassNameSpinner--;
             return response.data;
           }, function () {
+            $scope.showClassNameSpinner--;
             // TODO handle error
           });
     };
@@ -90,6 +97,9 @@ glowroot.controller('ConfigCapturePointCtrl', [
     };
 
     $scope.methodNames = function (suggestion) {
+      if (!$scope.config.className) {
+        return [];
+      }
       if (suggestion.indexOf('*') !== -1) {
         return [ suggestion ];
       }
@@ -98,10 +108,13 @@ glowroot.controller('ConfigCapturePointCtrl', [
         partialMethodName: suggestion,
         limit: 10
       };
+      $scope.showMethodNameSpinner++;
       return $http.get('backend/config/matching-method-names?' + queryStrings.encodeObject(queryData))
           .then(function (response) {
+            $scope.showMethodNameSpinner--;
             return response.data;
           }, function () {
+            $scope.showMethodNameSpinner--;
             // TODO handle error
           });
     };
@@ -119,11 +132,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
       if (methodName !== $scope.selectedMethodName) {
         $scope.loadMethodSignatures = false;
         $scope.selectedMethodName = methodName;
-        if (methodName === undefined) {
-          // this can happen if user clears the text input and tabs away (onSelectMethodName is called on blur)
-          $scope.methodSignatures = [];
-          $scope.selectedMethodSignature = undefined;
-        } else if (methodName.indexOf('*') !== -1) {
+        if (methodName.indexOf('*') !== -1) {
           $scope.methodSignatures = [
             {
               name: methodName,
@@ -142,12 +151,20 @@ glowroot.controller('ConfigCapturePointCtrl', [
       }
     };
 
+    $scope.onBlurMethodName = function () {
+      if (!$scope.config.methodName) {
+        // the user cleared the text input and tabbed away
+        $scope.methodSignatures = [];
+        $scope.selectedMethodSignature = undefined;
+      }
+    };
+
     $scope.methodSignatureText = function (methodSignature) {
       if (methodSignature.name.indexOf('*') !== -1 || methodSignature.name.indexOf('|') !== -1) {
-        return 'all methods matching the above name';
+        return 'match any signature';
       }
       if (isSignatureAll(methodSignature)) {
-        return 'all methods with the above name';
+        return 'match any signature';
       }
       var text = '';
       var i;

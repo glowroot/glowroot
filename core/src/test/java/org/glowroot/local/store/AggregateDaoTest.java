@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.Existence;
 import org.glowroot.common.Ticker;
-import org.glowroot.local.store.SummaryQuery.AggregateSortAttribute;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,31 +72,30 @@ public class AggregateDaoTest {
     public void shouldReadTransactions() {
         // given
         Aggregate overallAggregate =
-                new Aggregate("a type", null, 10000, 1000000, 10, 0, 0, "", Existence.NO, null);
+                new Aggregate("a type", null, 10000, 1000000, 10, "", Existence.NO, 0, null);
         List<Aggregate> transactionAggregates = Lists.newArrayList();
-        transactionAggregates.add(
-                new Aggregate("a type", "one", 10000, 100000, 1, 0, 0, "", Existence.NO, null));
-        transactionAggregates.add(
-                new Aggregate("a type", "two", 10000, 300000, 2, 0, 0, "", Existence.NO, null));
-        transactionAggregates.add(
-                new Aggregate("a type", "seven", 10000, 1400000, 7, 0, 0, "", Existence.NO, null));
+        transactionAggregates.add(new Aggregate("a type", "one", 10000, 100000, 1, "",
+                Existence.NO, 0, null));
+        transactionAggregates.add(new Aggregate("a type", "two", 10000, 300000, 2, "",
+                Existence.NO, 0, null));
+        transactionAggregates.add(new Aggregate("a type", "seven", 10000, 1400000, 7, "",
+                Existence.NO, 0, null));
         aggregateDao.store(ImmutableList.of(overallAggregate), transactionAggregates);
 
         Aggregate overallPoint2 =
-                new Aggregate("a type", null, 20000, 1000000, 10, 0, 0, "", Existence.NO, null);
+                new Aggregate("a type", null, 20000, 1000000, 10, "", Existence.NO, 0, null);
         List<Aggregate> aggregates2 = Lists.newArrayList();
-        aggregates2.add(
-                new Aggregate("a type", "one", 20000, 100000, 1, 0, 0, "", Existence.NO, null));
-        aggregates2.add(
-                new Aggregate("a type", "two", 20000, 300000, 2, 0, 0, "", Existence.NO, null));
-        aggregates2.add(
-                new Aggregate("a type", "seven", 20000, 1400000, 7, 0, 0, "", Existence.NO, null));
+        aggregates2.add(new Aggregate("a type", "one", 20000, 100000, 1, "", Existence.NO, 0,
+                null));
+        aggregates2.add(new Aggregate("a type", "two", 20000, 300000, 2, "", Existence.NO, 0,
+                null));
+        aggregates2.add(new Aggregate("a type", "seven", 20000, 1400000, 7, "", Existence.NO, 0,
+                null));
         aggregateDao.store(ImmutableList.of(overallPoint2), aggregates2);
         // when
         List<Aggregate> overallAggregates = aggregateDao.readOverallAggregates("a type", 0, 100000);
-        SummaryQuery query = new SummaryQuery("a type", 0, 100000,
-                AggregateSortAttribute.AVERAGE, SortDirection.DESC, 10);
-        QueryResult<Summary> queryResult = aggregateDao.readTransactionSummaries(query);
+        QueryResult<Summary> queryResult =
+                aggregateDao.readTransactionSummaries("a type", 0, 100000, 10);
         // then
         assertThat(overallAggregates).hasSize(2);
         assertThat(queryResult.getRecords()).hasSize(3);

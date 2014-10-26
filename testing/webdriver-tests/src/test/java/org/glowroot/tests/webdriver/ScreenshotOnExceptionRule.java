@@ -37,9 +37,9 @@ public class ScreenshotOnExceptionRule implements MethodRule {
 
     private static Logger logger = LoggerFactory.getLogger(ScreenshotOnExceptionRule.class);
 
-    private final WebDriver driver;
+    private WebDriver driver;
 
-    public ScreenshotOnExceptionRule(WebDriver driver) {
+    public void setDriver(WebDriver driver) {
         this.driver = driver;
     }
 

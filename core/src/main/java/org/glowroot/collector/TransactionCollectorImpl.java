@@ -138,9 +138,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
         if (aggregateCollector == null) {
             captureTime = clock.currentTimeMillis();
         } else {
-            // there's a small window where something bad could happen and the trace is not
-            // stored, and aggregate 'trace count' would be off by one
-            captureTime = aggregateCollector.add(transaction, store);
+            captureTime = aggregateCollector.add(transaction);
         }
         if (store) {
             // onCompleteAndShouldStore must be called by the transaction thread

@@ -157,7 +157,7 @@
   {{#eachGcInfoOrdered gcInfos}}
     <div class="indent2">
       {{name}}: {{collectionTime}} milliseconds ({{collectionCount}}
-      collection{{#ifMoreThanOne collectionCount}}s{{/ifMoreThanOne}})
+      collection{{#ifNotOne collectionCount}}s{{/ifNotOne}})
     </div>
   {{/eachGcInfoOrdered}}
 {{/if}}

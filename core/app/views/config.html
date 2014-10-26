@@ -13,40 +13,45 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<div class="header">
+  <div class="header-page-name">
+    Configuration
+  </div>
+</div>
 <div class="gt-sidebar hidden-print">
   <div class="panel panel-default">
     <ul class="list-group">
       <div gt-sidebar-item
            gt-display="Traces"
-           gt-url="/config/traces">
+           gt-url="config/traces">
       </div>
       <div gt-sidebar-item
            gt-display="Profiling"
-           gt-url="/config/profiling">
+           gt-url="config/profiling">
       </div>
       <div gt-sidebar-item
            gt-display="User recording"
-           gt-url="/config/user-recording">
+           gt-url="config/user-recording">
       </div>
       <div gt-sidebar-item
            gt-display="MBean Gauges"
-           gt-url="/config/mbean-gauges">
+           gt-url="config/mbean-gauges">
       </div>
       <div gt-sidebar-item
            gt-display="Capture points"
-           gt-url="/config/capture-points">
+           gt-url="config/capture-points">
       </div>
       <div gt-sidebar-item
            gt-display="Storage"
-           gt-url="/config/storage">
+           gt-url="config/storage">
       </div>
       <div gt-sidebar-item
            gt-display="User interface"
-           gt-url="/config/user-interface">
+           gt-url="config/user-interface">
       </div>
       <div gt-sidebar-item
            gt-display="Advanced"
-           gt-url="/config/advanced">
+           gt-url="config/advanced">
       </div>
     </ul>
   </div>
@@ -58,7 +63,7 @@
       <div ng-repeat="plugin in layout.plugins"
            gt-sidebar-item
            gt-display="{{plugin.name}}"
-           gt-url="/config/plugin/{{plugin.id}}">
+           gt-url="config/plugin/{{plugin.id}}">
       </div>
     </ul>
   </div>
