@@ -20,7 +20,6 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.security.CodeSource;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +44,6 @@ import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.Singleton;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 
 /**
  * @author Trask Stalnaker
@@ -129,21 +127,6 @@ public class AnalyzedWorld {
         }
         classes.addAll(getExistingSubClasses(rootClassNames, null, remove));
         return classes;
-    }
-
-    public List<AnalyzedClass> getAnalyzedClasses(String className) {
-        List<AnalyzedClass> analyzedClasses = Lists.newArrayList();
-        AnalyzedClass analyzedClass = bootstrapLoaderWorld.get(className);
-        if (analyzedClass != null) {
-            analyzedClasses.add(analyzedClass);
-        }
-        for (Map<String, AnalyzedClass> loaderAnalyzedClasses : world.asMap().values()) {
-            analyzedClass = loaderAnalyzedClasses.get(className);
-            if (analyzedClass != null) {
-                analyzedClasses.add(analyzedClass);
-            }
-        }
-        return analyzedClasses;
     }
 
     public ImmutableList<ClassLoader> getClassLoaders() {
@@ -446,8 +429,7 @@ public class AnalyzedWorld {
             Type returnType = Type.getType(method.getReturnType());
             List<Advice> matchingAdvisors = getMatchingAdvisors(method.getModifiers(),
                     method.getName(), parameterTypes, returnType, adviceMatchers);
-            if (!matchingAdvisors.isEmpty() && (method.getModifiers() & ACC_SYNTHETIC) == 0) {
-                // don't add synthetic methods to the analyzed model
+            if (!matchingAdvisors.isEmpty()) {
                 List<String> exceptions = Lists.newArrayList();
                 for (Class<?> exceptionType : method.getExceptionTypes()) {
                     exceptions.add(Type.getInternalName(exceptionType));

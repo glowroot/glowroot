@@ -198,7 +198,6 @@ class WeavingClassVisitor extends ClassVisitor {
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
         if (throwShortCircuitException) {
             // this is in visitMethod because need to check annotations first
-            analyzingClassVisitor.visitEnd();
             throw ShortCircuitException.INSTANCE;
         }
         List<Advice> matchingAdvisors = analyzingClassVisitor.visitMethodReturningAdvisors(access,
@@ -225,7 +224,6 @@ class WeavingClassVisitor extends ClassVisitor {
     public void visitEnd() {
         if (throwShortCircuitException) {
             // this is in visitEnd also in case there were no methods
-            analyzingClassVisitor.visitEnd();
             throw ShortCircuitException.INSTANCE;
         }
         analyzingClassVisitor.visitEnd();
