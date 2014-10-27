@@ -18,6 +18,7 @@ package org.glowroot.local.ui;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -27,6 +28,7 @@ import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -34,10 +36,13 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
+import com.google.common.base.Function;
 import com.google.common.base.Splitter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
@@ -75,6 +80,8 @@ class ClasspathCache {
     private static final Logger logger = LoggerFactory.getLogger(ClasspathCache.class);
 
     private final AnalyzedWorld analyzedWorld;
+    @Nullable
+    private final Instrumentation instrumentation;
 
     // using sets of URIs because URLs have expensive equals and hashcode methods
     // see http://michaelscharf.blogspot.com/2006/11/javaneturlequals-and-hashcode-make.html
@@ -86,20 +93,35 @@ class ClasspathCache {
     @GuardedBy("this")
     private ImmutableMultimap<String, URI> classNames = ImmutableMultimap.of();
 
-    ClasspathCache(AnalyzedWorld analyzedWorld) {
+    ClasspathCache(AnalyzedWorld analyzedWorld, @Nullable Instrumentation instrumentation) {
         this.analyzedWorld = analyzedWorld;
+        this.instrumentation = instrumentation;
     }
 
     // using synchronization over concurrent structures in this cache to conserve memory
-    synchronized List<String> getMatchingClassNames(String partialClassName, int limit) {
+    synchronized ImmutableList<String> getMatchingClassNames(String partialClassName, int limit) {
         // update cache before proceeding
         updateCache();
         String partialClassNameUpper = partialClassName.toUpperCase(Locale.ENGLISH);
         String prefixedPartialClassNameUpper1 = '.' + partialClassNameUpper;
         String prefixedPartialClassNameUpper2 = '$' + partialClassNameUpper;
-        List<String> fullMatchingClassNames = Lists.newArrayList();
-        List<String> matchingClassNames = Lists.newArrayList();
-        for (String className : classNames.keySet()) {
+        Set<String> fullMatchingClassNames = Sets.newLinkedHashSet();
+        Set<String> matchingClassNames = Sets.newLinkedHashSet();
+        // also check loaded classes, e.g. for groovy classes
+        Iterator<String> i = classNames.keySet().iterator();
+        if (instrumentation != null) {
+            i = Iterators.concat(i, Iterators.transform(
+                    Iterators.forArray(instrumentation.getAllLoadedClasses()),
+                    new Function<Class, String>() {
+                        @Override
+                        public String apply(@Nullable Class input) {
+                            checkNotNull(input);
+                            return input.getName();
+                        }
+                    }));
+        }
+        while (i.hasNext()) {
+            String className = i.next();
             String classNameUpper = className.toUpperCase(Locale.ENGLISH);
             boolean potentialFullMatch = classNameUpper.equals(partialClassNameUpper)
                     || classNameUpper.endsWith(prefixedPartialClassNameUpper1)
@@ -124,16 +146,16 @@ class ClasspathCache {
         if (fullMatchingClassNames.size() < limit) {
             int space = limit - fullMatchingClassNames.size();
             int numToAdd = Math.min(space, matchingClassNames.size());
-            fullMatchingClassNames.addAll(matchingClassNames.subList(0, numToAdd));
+            fullMatchingClassNames.addAll(
+                    ImmutableList.copyOf(Iterables.limit(matchingClassNames, numToAdd)));
         }
-        return fullMatchingClassNames;
+        return ImmutableList.copyOf(fullMatchingClassNames);
     }
-
     // using synchronization over concurrent structures in this cache to conserve memory
     synchronized ImmutableList<UiAnalyzedMethod> getAnalyzedMethods(String className) {
         // update cache before proceeding
         updateCache();
-        List<UiAnalyzedMethod> analyzedMethods = Lists.newArrayList();
+        Set<UiAnalyzedMethod> analyzedMethods = Sets.newHashSet();
         Collection<URI> uris = classNames.get(className);
         if (uris == null) {
             return ImmutableList.of();
@@ -143,6 +165,14 @@ class ClasspathCache {
                 analyzedMethods.addAll(getAnalyzedMethods(uri));
             } catch (IOException e) {
                 logger.warn(e.getMessage(), e);
+            }
+        }
+        if (instrumentation != null) {
+            // also check loaded classes, e.g. for groovy classes
+            for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
+                if (clazz.getName().equals(className)) {
+                    analyzedMethods.addAll(getAnalyzedMethods(clazz));
+                }
             }
         }
         return ImmutableList.copyOf(analyzedMethods);
@@ -184,6 +214,30 @@ class ClasspathCache {
         ClassReader cr = new ClassReader(bytes);
         cr.accept(cv, 0);
         return cv.getAnalyzedMethods();
+    }
+
+    private List<UiAnalyzedMethod> getAnalyzedMethods(Class<?> clazz) {
+        List<UiAnalyzedMethod> analyzedMethods = Lists.newArrayList();
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (method.isSynthetic()) {
+                // don't add synthetic methods to the analyzed model
+                continue;
+            }
+            List<Type> parameterTypes = Lists.newArrayList();
+            for (Class<?> parameterType : method.getParameterTypes()) {
+                parameterTypes.add(Type.getType(parameterType));
+            }
+            Type returnType = Type.getType(method.getReturnType());
+            // don't add synthetic methods to the analyzed model
+            List<String> exceptions = Lists.newArrayList();
+            for (Class<?> exceptionType : method.getExceptionTypes()) {
+                exceptions.add(Type.getInternalName(exceptionType));
+            }
+            UiAnalyzedMethod analyzedMethod = UiAnalyzedMethod.from(method.getName(),
+                    parameterTypes, returnType, method.getModifiers(), null, exceptions);
+            analyzedMethods.add(analyzedMethod);
+        }
+        return analyzedMethods;
     }
 
     private void updateCache(ClassLoader loader, Multimap<String, URI> newClassNames) {
@@ -241,7 +295,7 @@ class ClasspathCache {
     }
 
     private List<ClassLoader> getKnownClassLoaders() {
-        List<ClassLoader> loaders = Lists.newArrayList(analyzedWorld.getClassLoaders());
+        List<ClassLoader> loaders = analyzedWorld.getClassLoaders();
         if (loaders.isEmpty()) {
             // this is needed for testing the UI outside of javaagent
             ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();

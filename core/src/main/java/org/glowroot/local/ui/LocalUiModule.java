@@ -120,7 +120,7 @@ public class LocalUiModule {
                 collectorModule.getFixedGaugeIntervalSeconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
                 pluginDescriptorCache, dataDir, httpSessionManager, traceModule);
-        ClasspathCache classpathCache = new ClasspathCache(analyzedWorld);
+        ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, instrumentation);
         CapturePointJsonService capturePointJsonService = new CapturePointJsonService(
                 configService, traceModule.getAdviceCache(), classpathCache, traceModule);
         MBeanGaugeJsonService mbeanGaugeJsonService =

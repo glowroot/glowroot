@@ -37,7 +37,7 @@ public class ClasspathCacheTest {
         AnalyzedWorld analyzedWorld = mock(AnalyzedWorld.class);
         when(analyzedWorld.getClassLoaders())
                 .thenReturn(ImmutableList.of(ClasspathCacheTest.class.getClassLoader()));
-        ClasspathCache classpathCache = new ClasspathCache(analyzedWorld);
+        ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, null);
         assertThat(classpathCache.getMatchingClassNames("lang.stringutils", 10))
                 .contains("org.apache.commons.lang.StringUtils");
     }
