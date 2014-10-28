@@ -74,20 +74,20 @@ class ConfigJsonService {
     private final PluginDescriptorCache pluginDescriptorCache;
     private final File dataDir;
     private final HttpSessionManager httpSessionManager;
-    private final TransactionModule traceModule;
+    private final TransactionModule transactionModule;
 
     @MonotonicNonNull
     private volatile HttpServer httpServer;
 
     ConfigJsonService(ConfigService configService, CappedDatabase cappedDatabase,
             PluginDescriptorCache pluginDescriptorCache, File dataDir,
-            HttpSessionManager httpSessionManager, TransactionModule traceModule) {
+            HttpSessionManager httpSessionManager, TransactionModule transactionModule) {
         this.configService = configService;
         this.cappedDatabase = cappedDatabase;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.dataDir = dataDir;
         this.httpSessionManager = httpSessionManager;
-        this.traceModule = traceModule;
+        this.transactionModule = transactionModule;
     }
 
     void setHttpServer(HttpServer httpServer) {
@@ -119,7 +119,8 @@ class ConfigJsonService {
         writer.writeValue(jg, configService.getProfilingConfig());
         jg.writeNumberField("defaultTraceStoreThresholdMillis",
                 configService.getTraceConfig().getStoreThresholdMillis());
-        jg.writeBooleanField("metricWrapperMethodsActive", traceModule.isMetricWrapperMethods());
+        jg.writeBooleanField("metricWrapperMethodsActive",
+                transactionModule.isMetricWrapperMethods());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -178,7 +179,8 @@ class ConfigJsonService {
         jg.writeStartObject();
         jg.writeFieldName("config");
         writer.writeValue(jg, configService.getAdvancedConfig());
-        jg.writeBooleanField("metricWrapperMethodsActive", traceModule.isMetricWrapperMethods());
+        jg.writeBooleanField("metricWrapperMethodsActive",
+                transactionModule.isMetricWrapperMethods());
         jg.writeEndObject();
         jg.close();
         return sb.toString();

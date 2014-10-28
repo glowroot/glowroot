@@ -77,7 +77,7 @@ public class GlowrootModule {
     private final ConfigModule configModule;
     private final StorageModule storageModule;
     private final CollectorModule collectorModule;
-    private final TransactionModule traceModule;
+    private final TransactionModule transactionModule;
     private final LocalUiModule uiModule;
     private final File dataDir;
 
@@ -163,7 +163,7 @@ public class GlowrootModule {
         // services/java.sql.Driver, and those drivers need to be woven
         TransactionCollectorProxy transactionCollectorProxy = new TransactionCollectorProxy();
         try {
-            traceModule = new TransactionModule(clock, ticker, configModule,
+            transactionModule = new TransactionModule(clock, ticker, configModule,
                     transactionCollectorProxy, jvmModule.getThreadAllocatedBytes().getService(),
                     instrumentation, dataDir, extraBootResourceFinder, scheduledExecutor);
         } catch (IOException e) {
@@ -196,7 +196,8 @@ public class GlowrootModule {
             }
         }
         uiModule = new LocalUiModule(ticker, clock, dataDir, jvmModule, configModule,
-                storageModule, collectorModule, traceModule, instrumentation, properties, version);
+                storageModule, collectorModule, transactionModule, instrumentation, properties,
+                version);
         this.dataDir = dataDir;
     }
 
@@ -270,8 +271,8 @@ public class GlowrootModule {
     }
 
     @OnlyUsedByTests
-    public TransactionModule getTraceModule() {
-        return traceModule;
+    public TransactionModule getTransactionModule() {
+        return transactionModule;
     }
 
     @OnlyUsedByTests
@@ -287,7 +288,7 @@ public class GlowrootModule {
     @OnlyUsedByTests
     public void reopen() {
         initStaticLoggerState(dataDir, loggingSpy);
-        traceModule.reopen();
+        transactionModule.reopen();
     }
 
     @OnlyUsedByTests
@@ -295,7 +296,7 @@ public class GlowrootModule {
         logger.debug("close()");
         uiModule.close();
         collectorModule.close();
-        traceModule.close();
+        transactionModule.close();
         storageModule.close();
         scheduledExecutor.shutdownNow();
         // finally, close logger

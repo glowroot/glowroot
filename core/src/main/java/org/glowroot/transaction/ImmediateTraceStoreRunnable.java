@@ -38,7 +38,7 @@ class ImmediateTraceStoreRunnable extends ScheduledRunnable {
 
     private final Transaction transaction;
     private final TransactionCollector transactionCollector;
-    private volatile boolean tracePreviouslyCompleted;
+    private volatile boolean transactionPreviouslyCompleted;
 
     ImmediateTraceStoreRunnable(Transaction transaction,
             TransactionCollector transactionCollector) {
@@ -50,13 +50,13 @@ class ImmediateTraceStoreRunnable extends ScheduledRunnable {
     public void runInternal() {
         logger.debug("run(): trace.id={}", transaction.getId());
         if (transaction.isCompleted()) {
-            if (tracePreviouslyCompleted) {
+            if (transactionPreviouslyCompleted) {
                 // throw marker exception to terminate subsequent scheduled executions
                 throw new TerminateSubsequentExecutionsException();
             } else {
                 // there is a small window between trace completion and cancellation of this command
                 // so give it one extra chance to be completed normally
-                tracePreviouslyCompleted = true;
+                transactionPreviouslyCompleted = true;
                 return;
             }
         }
@@ -67,8 +67,8 @@ class ImmediateTraceStoreRunnable extends ScheduledRunnable {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("trace", transaction)
-                .add("tracePreviouslyCompleted", tracePreviouslyCompleted)
+                .add("transaction", transaction)
+                .add("transactionPreviouslyCompleted", transactionPreviouslyCompleted)
                 .toString();
     }
 }

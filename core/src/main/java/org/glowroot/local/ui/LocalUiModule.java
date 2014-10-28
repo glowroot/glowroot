@@ -76,7 +76,7 @@ public class LocalUiModule {
 
     public LocalUiModule(Ticker ticker, Clock clock, File dataDir, JvmModule jvmModule,
             ConfigModule configModule, StorageModule storageModule,
-            CollectorModule collectorModule, TransactionModule traceModule,
+            CollectorModule collectorModule, TransactionModule transactionModule,
             @Nullable Instrumentation instrumentation, Map<String, String> properties,
             String version) {
 
@@ -89,9 +89,9 @@ public class LocalUiModule {
         DataSource dataSource = storageModule.getDataSource();
         CappedDatabase cappedDatabase = storageModule.getCappedDatabase();
         TransactionCollectorImpl transactionCollector = collectorModule.getTransactionCollector();
-        AnalyzedWorld analyzedWorld = traceModule.getAnalyzedWorld();
+        AnalyzedWorld analyzedWorld = transactionModule.getAnalyzedWorld();
 
-        TransactionRegistry transactionRegistry = traceModule.getTraceRegistry();
+        TransactionRegistry transactionRegistry = transactionModule.getTraceRegistry();
 
         LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
                 pluginDescriptorCache, jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),
@@ -119,14 +119,15 @@ public class LocalUiModule {
                 jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),
                 collectorModule.getFixedGaugeIntervalSeconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
-                pluginDescriptorCache, dataDir, httpSessionManager, traceModule);
+                pluginDescriptorCache, dataDir, httpSessionManager, transactionModule);
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, instrumentation);
         CapturePointJsonService capturePointJsonService = new CapturePointJsonService(
-                configService, traceModule.getAdviceCache(), classpathCache, traceModule);
+                configService, transactionModule.getAdviceCache(), classpathCache,
+                transactionModule);
         MBeanGaugeJsonService mbeanGaugeJsonService =
                 new MBeanGaugeJsonService(configService, jvmModule.getLazyPlatformMBeanServer());
         AdminJsonService adminJsonService = new AdminJsonService(aggregateDao, traceDao,
-                gaugePointDao, configService, traceModule.getAdviceCache(), analyzedWorld,
+                gaugePointDao, configService, transactionModule.getAdviceCache(), analyzedWorld,
                 instrumentation, transactionCollector, dataSource, transactionRegistry);
 
         List<Object> jsonServices = Lists.newArrayList();

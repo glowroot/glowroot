@@ -68,15 +68,15 @@ class CapturePointJsonService {
 
     private final ConfigService configService;
     private final AdviceCache adviceCache;
-    private final TransactionModule traceModule;
+    private final TransactionModule transactionModule;
     private final ClasspathCache classpathCache;
 
     CapturePointJsonService(ConfigService configService, AdviceCache adviceCache,
-            ClasspathCache classpathCache, TransactionModule traceModule) {
+            ClasspathCache classpathCache, TransactionModule transactionModule) {
         this.configService = configService;
         this.adviceCache = adviceCache;
         this.classpathCache = classpathCache;
-        this.traceModule = traceModule;
+        this.transactionModule = transactionModule;
     }
 
     @GET("/backend/config/capture-points")
@@ -91,7 +91,7 @@ class CapturePointJsonService {
         jg.writeBooleanField("jvmOutOfSync",
                 adviceCache.isOutOfSync(configService.getCapturePoints()));
         jg.writeBooleanField("jvmRetransformClassesSupported",
-                traceModule.isJvmRetransformClassesSupported());
+                transactionModule.isJvmRetransformClassesSupported());
         jg.writeEndObject();
         jg.close();
         return sb.toString();

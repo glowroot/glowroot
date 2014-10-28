@@ -56,7 +56,7 @@ class ProfileRunnable extends ScheduledRunnable {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("trace", transaction)
+                .add("transaction", transaction)
                 .add("outlier", outlier)
                 .toString();
     }

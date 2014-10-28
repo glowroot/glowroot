@@ -95,12 +95,13 @@ public class LocalContainer implements Container {
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         PluginDescriptorCache pluginDescriptorCache =
                 glowrootModule.getConfigModule().getPluginDescriptorCache();
-        AdviceCache adviceCache = glowrootModule.getTraceModule().getAdviceCache();
+        AdviceCache adviceCache = glowrootModule.getTransactionModule().getAdviceCache();
         loader.setMixinTypes(pluginDescriptorCache.getMixinTypesNeverShaded());
         List<Advice> advisors = Lists.newArrayList();
         advisors.addAll(adviceCache.getAdvisors());
         loader.setAdvisors(advisors);
-        loader.setWeavingTimerService(glowrootModule.getTraceModule().getWeavingTimerService());
+        loader.setWeavingTimerService(
+                glowrootModule.getTransactionModule().getWeavingTimerService());
         loader.setMetricWrapperMethods(glowrootModule.getConfigModule().getConfigService()
                 .getAdvancedConfig().isMetricWrapperMethods());
         loader.addBridgeClasses(AppUnderTest.class, AppUnderTestServices.class);
