@@ -15,10 +15,7 @@
  */
 package org.glowroot.advicegen;
 
-import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.List;
 
 import com.google.common.base.Splitter;
@@ -33,30 +30,28 @@ public class PathEvaluator {
 
     private static final Splitter splitter = Splitter.on('.').omitEmptyStrings();
 
-    private final MethodOrField[] accessors;
+    private final Accessor[] accessors;
     private final String/*@Nullable*/[] remainingPath;
 
     public PathEvaluator(Class<?> baseClass, String path) {
         List<String> parts = Lists.newArrayList(splitter.split(path));
-        List<MethodOrField> accessors = Lists.newArrayList();
+        List<Accessor> accessors = Lists.newArrayList();
         Class<?> currClass = baseClass;
         while (!parts.isEmpty()) {
             String currPart = parts.remove(0);
-            AccessibleObject accessor = Beans.findAccessor(currClass, currPart);
+            Accessor accessor = Beans.findAccessor(currClass, currPart);
+            while (accessor == null && currClass.getComponentType() != null) {
+                currClass = currClass.getComponentType();
+                accessor = Beans.findAccessor(currClass, currPart);
+            }
             if (accessor == null) {
                 parts.add(0, currPart);
                 break;
             }
-            accessor.setAccessible(true);
-            if (accessor instanceof Method) {
-                accessors.add(new MethodOrField((Method) accessor, null));
-                currClass = ((Method) accessor).getReturnType();
-            } else {
-                accessors.add(new MethodOrField(null, (Field) accessor));
-                currClass = ((Field) accessor).getType();
-            }
+            accessors.add(accessor);
+            currClass = accessor.getValueType();
         }
-        this.accessors = accessors.toArray(new MethodOrField[accessors.size()]);
+        this.accessors = accessors.toArray(new Accessor[accessors.size()]);
         if (parts.isEmpty()) {
             remainingPath = null;
         } else {
@@ -68,17 +63,8 @@ public class PathEvaluator {
     public Object evaluateOnBase(Object base) throws IllegalArgumentException,
             IllegalAccessException, InvocationTargetException {
         Object curr = base;
-        for (MethodOrField accessor : accessors) {
-            Method method = accessor.method;
-            if (method != null) {
-                curr = method.invoke(curr);
-            } else {
-                Field field = accessor.field;
-                if (field == null) {
-                    throw new AssertionError("both method and field cannot be null");
-                }
-                curr = field.get(curr);
-            }
+        for (Accessor accessor : accessors) {
+            curr = accessor.evaluate(curr);
             if (curr == null) {
                 return null;
             }
@@ -88,18 +74,5 @@ public class PathEvaluator {
             return Beans.value(curr, remainingPath);
         }
         return curr;
-    }
-
-    private static class MethodOrField {
-
-        @Nullable
-        private final Method method;
-        @Nullable
-        private final Field field;
-
-        private MethodOrField(@Nullable Method method, @Nullable Field field) {
-            this.method = method;
-            this.field = field;
-        }
     }
 }

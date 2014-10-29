@@ -176,7 +176,13 @@ public class MessageTemplate {
                 return "null";
             }
             try {
-                return String.valueOf(pathEvaluator.evaluateOnBase(base));
+                Object value = pathEvaluator.evaluateOnBase(base);
+                if (value instanceof Object[]) {
+                    StringBuilder sb = new StringBuilder();
+                    valueOf((Object[]) value, sb);
+                    return sb.toString();
+                }
+                return String.valueOf(value);
             } catch (IllegalArgumentException e) {
                 logger.debug(e.getMessage(), e);
                 return "<error evaluating: " + e.getMessage() + ">";
@@ -187,6 +193,25 @@ public class MessageTemplate {
                 logger.debug(e.getMessage(), e);
                 return "<error evaluating: " + e.getMessage() + ">";
             }
+        }
+
+        private static void valueOf(Object object, StringBuilder sb) {
+            if (object instanceof Object[]) {
+                valueOf((Object[]) object, sb);
+            } else {
+                sb.append(String.valueOf(object));
+            }
+        }
+
+        private static void valueOf(Object[] object, StringBuilder sb) {
+            sb.append('[');
+            for (int i = 0; i < object.length; i++) {
+                if (i != 0) {
+                    sb.append(", ");
+                }
+                valueOf(object[i], sb);
+            }
+            sb.append(']');
         }
     }
 

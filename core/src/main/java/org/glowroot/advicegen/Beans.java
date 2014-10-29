@@ -15,7 +15,6 @@
  */
 package org.glowroot.advicegen;
 
-import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -41,11 +40,12 @@ public class Beans {
     // sentinel method is used to represent null value in the weak valued ConcurrentMap below
     // using guava's Optional would make the weakness on the Optional instance instead of on the
     // Method instance which would cause unnecessary clearing of the map values
-    private static final Method SENTINEL_METHOD;
+    private static final Accessor SENTINEL_ACCESSOR;
 
     static {
         try {
-            SENTINEL_METHOD = Beans.class.getDeclaredMethod("sentinelMethod");
+            SENTINEL_ACCESSOR =
+                    Accessor.fromMethod(Beans.class.getDeclaredMethod("sentinelMethod"));
         } catch (NoSuchMethodException e) {
             // unrecoverable error
             throw new AssertionError(e);
@@ -59,11 +59,11 @@ public class Beans {
     // reference to the class loader
     //
     // weak keys in loading cache to prevent Class retention
-    private static final LoadingCache<Class<?>, ConcurrentMap<String, AccessibleObject>> getters =
+    private static final LoadingCache<Class<?>, ConcurrentMap<String, Accessor>> getters =
             CacheBuilder.newBuilder().weakKeys()
-                    .build(new CacheLoader<Class<?>, ConcurrentMap<String, AccessibleObject>>() {
+                    .build(new CacheLoader<Class<?>, ConcurrentMap<String, Accessor>>() {
                         @Override
-                        public ConcurrentMap<String, AccessibleObject> load(Class<?> clazz) {
+                        public ConcurrentMap<String, Accessor> load(Class<?> clazz) {
                             // weak values since Method has a strong reference to its Class which
                             // is used as the key in the outer loading cache
                             return new MapMaker().weakValues().makeMap();
@@ -90,18 +90,13 @@ public class Beans {
             return value(((Map<?, ?>) obj).get(curr), path, currIndex + 1);
         }
         try {
-            AccessibleObject accessor = getAccessor(obj.getClass(), curr);
-            if (accessor.equals(SENTINEL_METHOD)) {
+            Accessor accessor = getAccessor(obj.getClass(), curr);
+            if (accessor.equals(SENTINEL_ACCESSOR)) {
                 // no appropriate method found, dynamic paths that may or may not resolve
                 // correctly are ok, just return null
                 return null;
             }
-            Object currItem;
-            if (accessor instanceof Method) {
-                currItem = ((Method) accessor).invoke(obj);
-            } else {
-                currItem = ((Field) accessor).get(obj);
-            }
+            Object currItem = accessor.evaluate(obj);
             return value(currItem, path, currIndex + 1);
         } catch (IllegalAccessException e) {
             // log exception at debug level
@@ -118,48 +113,63 @@ public class Beans {
         }
     }
 
-    private static AccessibleObject getAccessor(Class<?> clazz, String name) {
-        ConcurrentMap<String, AccessibleObject> accessorsForType = getters.getUnchecked(clazz);
-        AccessibleObject accessor = accessorsForType.get(name);
+    private static Accessor getAccessor(Class<?> clazz, String name) {
+        ConcurrentMap<String, Accessor> accessorsForType = getters.getUnchecked(clazz);
+        Accessor accessor = accessorsForType.get(name);
         if (accessor == null) {
             accessor = findAccessor(clazz, name);
             if (accessor == null) {
-                accessor = SENTINEL_METHOD;
+                accessor = SENTINEL_ACCESSOR;
             }
-            accessor.setAccessible(true);
             accessorsForType.put(name, accessor);
         }
         return accessor;
     }
 
     @Nullable
-    public static AccessibleObject findAccessor(Class<?> clazz, String name) {
+    public static Accessor findAccessor(Class<?> clazz, String name) {
+        if (clazz.getComponentType() != null && name.equals("length")) {
+            return Accessor.arrayLength();
+        }
+        Class<?> componentType = clazz;
+        while (componentType.getComponentType() != null) {
+            componentType = componentType.getComponentType();
+        }
         String capitalizedName = Character.toUpperCase(name.charAt(0)) + name.substring(1);
         try {
-            return getMethod(clazz, "get" + capitalizedName);
+            Method method = getMethod(componentType, "get" + capitalizedName);
+            method.setAccessible(true);
+            return Accessor.fromMethod(method);
         } catch (ReflectiveException e) {
             // log exception at trace level
             logger.trace(e.getMessage(), e);
             // fall back to "is" prefix
             try {
-                return getMethod(clazz, "is" + capitalizedName);
+                Method method = getMethod(componentType, "is" + capitalizedName);
+                method.setAccessible(true);
+                return Accessor.fromMethod(method);
             } catch (ReflectiveException f) {
                 // log exception at trace level
                 logger.trace(f.getMessage(), f);
                 // fall back to no prefix
                 try {
-                    return getMethod(clazz, name);
+                    Method method = getMethod(componentType, name);
+                    method.setAccessible(true);
+                    return Accessor.fromMethod(method);
                 } catch (ReflectiveException g) {
                     // log exception at trace level
                     logger.trace(g.getMessage(), g);
                     // fall back to field access
                     try {
-                        return getField(clazz, name);
+                        Field field = getField(componentType, name);
+                        field.setAccessible(true);
+                        return Accessor.fromField(field);
                     } catch (ReflectiveException h) {
                         // log exception at trace level
                         logger.trace(h.getMessage(), h);
                         // log general failure message at debug level
-                        logger.debug("no accessor found for {} in class {}", name, clazz.getName());
+                        logger.debug("no accessor found for {} in class {}", name,
+                                componentType.getName());
                         return null;
                     }
                 }
