@@ -26,6 +26,10 @@ glowroot.controller('ConfigMBeanGaugeCtrl', [
   function ($scope, $http, $timeout, confirmIfHasChanges, httpErrors, queryStrings) {
 
     function onNewData(data) {
+      // need to sort attribute names to keep hasChanges() consistent
+      if (data.config.mbeanAttributeNames) {
+        data.config.mbeanAttributeNames.sort();
+      }
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
 
@@ -77,6 +81,8 @@ glowroot.controller('ConfigMBeanGaugeCtrl', [
           $scope.config.mbeanAttributeNames.push(mbeanAttribute.name);
         }
       });
+      // need to sort attribute names to keep hasChanges() consistent
+      $scope.config.mbeanAttributeNames.sort();
     }, true);
 
     $scope.hasChanges = function () {
