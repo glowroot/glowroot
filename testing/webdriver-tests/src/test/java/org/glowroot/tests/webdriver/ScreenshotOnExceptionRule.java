@@ -18,7 +18,6 @@ package org.glowroot.tests.webdriver;
 import java.io.File;
 import java.io.IOException;
 
-import com.google.common.base.Throwables;
 import com.google.common.io.Files;
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
@@ -51,6 +50,10 @@ public class ScreenshotOnExceptionRule implements MethodRule {
                 try {
                     base.evaluate();
                 } catch (Throwable t) {
+                    if (driver == null) {
+                        // rethrow to allow the failure to be reported to JUnit
+                        throw t;
+                    }
                     byte[] bytes = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
                     File file;
                     try {
@@ -63,7 +66,7 @@ public class ScreenshotOnExceptionRule implements MethodRule {
                         logger.error(e.getMessage(), e);
                     }
                     // rethrow to allow the failure to be reported to JUnit
-                    throw Throwables.propagate(t);
+                    throw t;
                 }
             }
         };
