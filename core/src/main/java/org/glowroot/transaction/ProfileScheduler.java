@@ -66,7 +66,8 @@ class ProfileScheduler {
         double transactionPercentage = profilingConfig.getTransactionPercentage();
         // just optimization to check transactionPercentage != 0
         if (transactionPercentage != 0 && random.nextFloat() * 100 < transactionPercentage) {
-            scheduleProfiling(transaction, configService.getProfilingConfig().getIntervalMillis());
+            scheduleRandomizedProfiling(transaction,
+                    configService.getProfilingConfig().getIntervalMillis());
         }
     }
 
@@ -78,6 +79,19 @@ class ProfileScheduler {
                 intervalMillis - NANOSECONDS.toMillis(transaction.getDuration()));
         profileRunnable.scheduleWithFixedDelay(scheduledExecutor, initialDelay, intervalMillis,
                 MILLISECONDS);
-        transaction.setProfileRunnable(profileRunnable);
+        transaction.setUserProfileRunnable(profileRunnable);
+    }
+
+    private void scheduleRandomizedProfiling(Transaction transaction, int intervalMillis) {
+        long delayFromIntervalStart = (long) (random.nextFloat() * intervalMillis);
+        long currentDuration = NANOSECONDS.toMillis(transaction.getDuration());
+        if (delayFromIntervalStart < currentDuration) {
+            // this is the soonest it can happen (delayFromNow will be zero below in this case)
+            delayFromIntervalStart = currentDuration;
+        }
+        Runnable profileRunnable = new RandomizedProfileRunnable(transaction, scheduledExecutor,
+                random, intervalMillis, delayFromIntervalStart);
+        long delayFromNow = delayFromIntervalStart - currentDuration;
+        scheduledExecutor.schedule(profileRunnable, delayFromNow, MILLISECONDS);
     }
 }

@@ -336,7 +336,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
             transaction.setUser(user);
-            if (user != null && transaction.getProfileRunnable() == null) {
+            if (user != null && transaction.getUserProfileRunnable() == null) {
                 profilingScheduler.maybeScheduleProfilingUsingUser(transaction, user);
             }
         }
@@ -480,7 +480,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // the root entry has been popped off
                 safeCancel(transaction.getOutlierProfileRunnable());
                 safeCancel(transaction.getImmedateTraceStoreRunnable());
-                safeCancel(transaction.getProfileRunnable());
+                safeCancel(transaction.getUserProfileRunnable());
                 // send to trace collector before removing from trace registry so that trace
                 // collector can cover the gap (via
                 // TransactionCollectorImpl.getPendingCompleteTraces())

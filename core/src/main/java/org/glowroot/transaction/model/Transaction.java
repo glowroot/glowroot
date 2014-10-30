@@ -114,7 +114,7 @@ public class Transaction {
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
     @Nullable
-    private volatile ScheduledRunnable profileRunnable;
+    private volatile ScheduledRunnable userProfileRunnable;
     @Nullable
     private volatile ScheduledRunnable outlierProfileRunnable;
     @Nullable
@@ -298,8 +298,8 @@ public class Transaction {
     }
 
     @Nullable
-    public ScheduledRunnable getProfileRunnable() {
-        return profileRunnable;
+    public ScheduledRunnable getUserProfileRunnable() {
+        return userProfileRunnable;
     }
 
     @Nullable
@@ -368,11 +368,11 @@ public class Transaction {
         }
     }
 
-    public void setProfileRunnable(ScheduledRunnable scheduledRunnable) {
-        if (profileRunnable != null) {
-            logger.warn("setProfileRunnable(): overwriting non-null profileRunnable");
+    public void setUserProfileRunnable(ScheduledRunnable scheduledRunnable) {
+        if (userProfileRunnable != null) {
+            logger.warn("setUserProfileRunnable(): overwriting non-null userProfileRunnable");
         }
-        this.profileRunnable = scheduledRunnable;
+        this.userProfileRunnable = scheduledRunnable;
     }
 
     public void setOutlierProfileRunnable(ScheduledRunnable scheduledRunnable) {
@@ -481,7 +481,7 @@ public class Transaction {
                 .add("traceEntryComponent", traceEntryComponent)
                 .add("profile", profile)
                 .add("outlierProfile", outlierProfile)
-                .add("profileRunnable", profileRunnable)
+                .add("userProfileRunnable", userProfileRunnable)
                 .add("outlierProfileRunnable", outlierProfileRunnable)
                 .add("immedateTraceStoreRunnable", immedateTraceStoreRunnable)
                 .toString();
