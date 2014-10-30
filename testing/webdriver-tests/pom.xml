@@ -16,6 +16,7 @@
   <description>Glowroot WebDriver Tests</description>
 
   <properties>
+    <!-- can't upgrade to 2.44.0 due to https://code.google.com/p/selenium/issues/detail?id=8083 -->
     <selenium.version>2.43.1</selenium.version>
   </properties>
 
@@ -84,19 +85,6 @@
       <groupId>com.github.detro.ghostdriver</groupId>
       <artifactId>phantomjsdriver</artifactId>
       <version>1.1.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.extension</groupId>
-      <artifactId>arquillian-phantom-driver</artifactId>
-      <version>1.1.2.Final</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!-- extra dependency added just to prevent annoying stack trace logged at INFO level -->
-      <groupId>com.opera</groupId>
-      <artifactId>operadriver</artifactId>
-      <version>1.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
