@@ -20,8 +20,8 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.security.CodeSource;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -120,13 +120,15 @@ public class AnalyzedWorld {
         return classes;
     }
 
-    public List<Class<?>> getExistingSubClasses(Set<String> rootClassNames, boolean remove) {
-        List<Class<?>> classes = Lists.newArrayList();
-        for (ClassLoader loader : world.asMap().keySet()) {
-            classes.addAll(getExistingSubClasses(rootClassNames, loader, remove));
+    public void removeClasses(List<Class<?>> classes) {
+        for (Map<String, AnalyzedClass> map : world.asMap().values()) {
+            for (Class<?> clazz : classes) {
+                map.remove(clazz.getName());
+            }
         }
-        classes.addAll(getExistingSubClasses(rootClassNames, null, remove));
-        return classes;
+        for (Class<?> clazz : classes) {
+            bootstrapLoaderWorld.remove(clazz.getName());
+        }
     }
 
     public ImmutableList<ClassLoader> getClassLoaders() {
@@ -226,57 +228,6 @@ public class AnalyzedWorld {
             }
         }
         return classes;
-    }
-
-    private List<Class<?>> getExistingSubClasses(Set<String> rootClassNames,
-            @Nullable ClassLoader loader, boolean remove) {
-        List<Class<?>> classes = Lists.newArrayList();
-        ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses = getAnalyzedClasses(loader);
-        for (AnalyzedClass analyzedClass : loaderAnalyzedClasses.values()) {
-            if (isSubClass(analyzedClass, rootClassNames, loader)) {
-                try {
-                    classes.add(Class.forName(analyzedClass.getName(), false, loader));
-                } catch (ClassNotFoundException e) {
-                    logger.warn(e.getMessage(), e);
-                }
-            }
-        }
-        if (remove) {
-            for (Class<?> clazz : classes) {
-                loaderAnalyzedClasses.remove(clazz.getName());
-            }
-        }
-        return classes;
-    }
-
-    private boolean isSubClass(AnalyzedClass analyzedClass, Set<String> rootClassNames,
-            @Nullable ClassLoader loader) {
-        List<String> superClassNames = getExistingClassHierarchy(analyzedClass, loader);
-        for (String superClassName : superClassNames) {
-            if (rootClassNames.contains(superClassName)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private List<String> getExistingClassHierarchy(AnalyzedClass analyzedClass,
-            @Nullable ClassLoader loader) {
-        List<String> superClasses = Lists.newArrayList(analyzedClass.getName());
-        String superName = analyzedClass.getSuperName();
-        if (superName != null && !superName.equals("java.lang.Object")) {
-            AnalyzedClass superAnalyzedClass = getExistingAnalyzedClass(superName, loader);
-            if (superAnalyzedClass != null) {
-                superClasses.addAll(getExistingClassHierarchy(superAnalyzedClass, loader));
-            }
-        }
-        for (String interfaceName : analyzedClass.getInterfaceNames()) {
-            AnalyzedClass interfaceAnalyzedClass = getExistingAnalyzedClass(interfaceName, loader);
-            if (interfaceAnalyzedClass != null) {
-                superClasses.addAll(getExistingClassHierarchy(interfaceAnalyzedClass, loader));
-            }
-        }
-        return superClasses;
     }
 
     @Nullable

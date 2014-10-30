@@ -24,8 +24,10 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,16 +115,13 @@ class AdminJsonService {
             classNames.add(capturePoint.getClassName());
         }
         Set<Class<?>> classes = Sets.newHashSet();
+        List<Class<?>> possibleNewReweavableClasses = getExistingSubClasses(classNames);
         // need to remove these classes from AnalyzedWorld, otherwise if a subclass and its parent
         // class are both in the list and the subclass is re-transformed first, it will use the
         // old cached AnalyzedClass for its parent which will have the old AnalyzedMethod advisors
         List<Class<?>> existingReweavableClasses =
                 analyzedWorld.getClassesWithReweavableAdvice(true);
-        // need to remove these classes from AnalyzedWorld, otherwise if a subclass and its parent
-        // class are both in the list and the subclass is re-transformed first, it will use the
-        // old cached AnalyzedClass for its parent which will have the old AnalyzedMethod advisors
-        List<Class<?>> possibleNewReweavableClasses =
-                analyzedWorld.getExistingSubClasses(classNames, true);
+        analyzedWorld.removeClasses(possibleNewReweavableClasses);
         classes.addAll(existingReweavableClasses);
         classes.addAll(possibleNewReweavableClasses);
         if (classes.isEmpty()) {
@@ -180,5 +179,32 @@ class AdminJsonService {
     String getNumTraces() {
         logger.debug("getNumTraces()");
         return Long.toString(traceDao.count());
+    }
+
+    @RequiresNonNull("instrumentation")
+    private List<Class<?>> getExistingSubClasses(Set<String> classNames) {
+        List<Class<?>> classes = Lists.newArrayList();
+        for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
+            if (isSubClassOfOneOf(clazz, classNames)) {
+                classes.add(clazz);
+            }
+        }
+        return classes;
+    }
+
+    private static boolean isSubClassOfOneOf(Class<?> clazz, Set<String> classNames) {
+        if (classNames.contains(clazz.getName())) {
+            return true;
+        }
+        Class<?> superclass = clazz.getSuperclass();
+        if (superclass != null && isSubClassOfOneOf(superclass, classNames)) {
+            return true;
+        }
+        for (Class<?> iface : clazz.getInterfaces()) {
+            if (isSubClassOfOneOf(iface, classNames)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

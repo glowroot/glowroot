@@ -32,6 +32,11 @@ public class ReweavePointcutsTest extends CapturePointTest {
     @BeforeClass
     public static void setUp() throws Exception {
         container = Containers.getSharedJavaagentContainer();
+        // make sure the classes are loaded before re-weaving
+        container.executeAppUnderTest(ShouldExecute1.class);
+        container.executeAppUnderTest(ShouldExecuteWithReturn.class);
+        container.executeAppUnderTest(ShouldExecuteWithArgs.class);
+
         addCapturePointForExecute1();
         addCapturePointForExecute1MetricOnly();
         addCapturePointForExecuteWithReturn();
