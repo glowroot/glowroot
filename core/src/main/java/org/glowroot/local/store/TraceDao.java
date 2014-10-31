@@ -170,6 +170,29 @@ public class TraceDao implements TraceRepository {
         }
     }
 
+    public long readTransactionCount(String transactionType, String transactionName,
+            long captureTimeFrom, long captureTimeTo) {
+        try {
+            return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
+                    + " and transaction_name = ? and capture_time >= ? and capture_time <= ?",
+                    transactionType, transactionName, captureTimeFrom, captureTimeTo);
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    public long readOverallCount(String transactionType, long captureTimeFrom, long captureTimeTo) {
+        try {
+            return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
+                    + " and capture_time >= ? and capture_time <= ?", transactionType,
+                    captureTimeFrom, captureTimeTo);
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return 0;
+        }
+    }
+
     @Nullable
     public Trace readTrace(String traceId) {
         List<Trace> traces;

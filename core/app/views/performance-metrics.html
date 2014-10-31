@@ -135,4 +135,11 @@
     </strong>
     <em>(see Glowroot > Configuration &gt; Storage &gt; Trace entries/profiles capped db)</em>
   </div>
+  <br>
+  <div ng-show="traceCount">
+    <a ng-href="traces?{{tracesQueryString()}}">
+      View {{traceCount}}
+      <span ng-pluralize count="traceCount" when="{'1':'trace','other':'traces'}"></span>
+    </a>
+  </div>
 </div>

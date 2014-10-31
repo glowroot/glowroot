@@ -59,6 +59,17 @@ glowroot.controller('PerformanceMetricsCtrl', [
       return queryStrings.encodeObject(query);
     };
 
+    $scope.tracesQueryString = function () {
+      var query = {
+        transactionType: $scope.transactionType,
+        transactionName: $scope.transactionName,
+        transactionNameComparator: 'equals',
+        from: $scope.chartFrom,
+        to: $scope.chartTo
+      };
+      return queryStrings.encodeObject(query);
+    };
+
     function refreshData() {
       var date = $scope.filterDate;
       var refreshId = ++currentRefreshId;
@@ -126,6 +137,7 @@ glowroot.controller('PerformanceMetricsCtrl', [
             } else {
               $('#detail').html('No data');
             }
+            $scope.traceCount = data.traceCount;
           })
           .error(function (data, status) {
             $scope.showChartSpinner--;

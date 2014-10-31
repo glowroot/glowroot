@@ -41,6 +41,7 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.Summary;
+import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.ui.AggregateCommonService.MergedAggregate;
 import org.glowroot.markers.Singleton;
 
@@ -62,13 +63,15 @@ class AggregateJsonService {
 
     private final AggregateCommonService aggregateCommonService;
     private final AggregateDao aggregateDao;
+    private final TraceDao traceDao;
     private final Clock clock;
     private final long fixedAggregateIntervalMillis;
 
     AggregateJsonService(AggregateCommonService aggregateCommonService, AggregateDao aggregateDao,
-            Clock clock, long fixedAggregateIntervalSeconds) {
+            TraceDao traceDao, Clock clock, long fixedAggregateIntervalSeconds) {
         this.aggregateCommonService = aggregateCommonService;
         this.aggregateDao = aggregateDao;
+        this.traceDao = traceDao;
         this.clock = clock;
         fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
     }
@@ -178,10 +181,7 @@ class AggregateJsonService {
         for (int i = 0; i < Math.min(metricNames.size(), topX); i++) {
             dataSeriesList.add(new DataSeries(metricNames.get(i)));
         }
-        DataSeries otherDataSeries = null;
-        if (metricNames.size() > topX) {
-            otherDataSeries = new DataSeries(null);
-        }
+        DataSeries otherDataSeries = new DataSeries(null);
         Aggregate lastAggregate = null;
         for (StackedPoint stackedPoint : stackedPoints) {
             Aggregate aggregate = stackedPoint.getAggregate();
@@ -224,11 +224,21 @@ class AggregateJsonService {
         }
 
         MergedAggregate mergedAggregate = aggregateCommonService.getMergedAggregate(aggregates);
+        long traceCount;
+        if (transactionName == null) {
+            traceCount = traceDao.readOverallCount(request.getTransactionType(), request.getFrom(),
+                    request.getTo());
+        } else {
+            traceCount = traceDao.readTransactionCount(request.getTransactionType(),
+                    transactionName,
+                    request.getFrom(), request.getTo());
+        }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeriesList);
         jg.writeObjectField("mergedAggregate", mergedAggregate);
+        jg.writeObjectField("traceCount", traceCount);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
