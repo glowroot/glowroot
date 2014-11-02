@@ -45,6 +45,8 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.Static;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -117,9 +119,9 @@ class Schemas {
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
             while (resultSet.next()) {
-                String columnName = resultSet.getString("COLUMN_NAME").toLowerCase(Locale.ENGLISH);
+                String columnName = checkNotNull(resultSet.getString("COLUMN_NAME"));
                 int columnType = resultSet.getInt("DATA_TYPE");
-                columns.add(new Column(columnName, columnType));
+                columns.add(new Column(columnName.toLowerCase(Locale.ENGLISH), columnType));
             }
         } catch (Throwable t) {
             throw closer.rethrow(t);
@@ -222,8 +224,8 @@ class Schemas {
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
             while (resultSet.next()) {
-                String indexName = resultSet.getString("INDEX_NAME");
-                String columnName = resultSet.getString("COLUMN_NAME");
+                String indexName = checkNotNull(resultSet.getString("INDEX_NAME"));
+                String columnName = checkNotNull(resultSet.getString("COLUMN_NAME"));
                 // hack-ish to skip over primary key constraints which seem to be always
                 // prefixed in H2 by PRIMARY_KEY_
                 if (!indexName.startsWith("PRIMARY_KEY_")) {

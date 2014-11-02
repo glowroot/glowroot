@@ -46,6 +46,7 @@ public class Log4jAspect {
         private static final MetricName metricName =
                 pluginServices.getMetricName(LogAdvice.class);
         @IsEnabled
+        @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled() {
             return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
@@ -75,6 +76,7 @@ public class Log4jAspect {
         private static final MetricName metricName =
                 pluginServices.getMetricName(LogWithThrowableAdvice.class);
         @IsEnabled
+        @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled() {
             return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
@@ -109,6 +111,7 @@ public class Log4jAspect {
         private static final MetricName metricName =
                 pluginServices.getMetricName(LogWithPriorityAdvice.class);
         @IsEnabled
+        @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter Object priority) {
             if (LoggerPlugin.inAdvice.get() || !pluginServices.isEnabled()) {
                 return false;
@@ -143,6 +146,7 @@ public class Log4jAspect {
         private static final MetricName metricName =
                 pluginServices.getMetricName(LogWithPriorityAndThrowableAdvice.class);
         @IsEnabled
+        @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter Object priority) {
             if (LoggerPlugin.inAdvice.get() || !pluginServices.isEnabled()) {
                 return false;
@@ -183,6 +187,7 @@ public class Log4jAspect {
         private static final MetricName metricName =
                 pluginServices.getMetricName(LocalizedLogAdvice.class);
         @IsEnabled
+        @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter Object priority) {
             if (LoggerPlugin.inAdvice.get() || !pluginServices.isEnabled()) {
                 return false;
@@ -222,6 +227,7 @@ public class Log4jAspect {
         private static final MetricName metricName =
                 pluginServices.getMetricName(LocalizedLogWithParametersAdvice.class);
         @IsEnabled
+        @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter Object priority) {
             if (LoggerPlugin.inAdvice.get() || !pluginServices.isEnabled()) {
                 return false;

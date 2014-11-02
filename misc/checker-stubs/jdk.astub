@@ -4,7 +4,7 @@ import org.checkerframework.checker.nullness.qual.*;
 package java.lang;
 
 public class ClassLoader {
-    protected @Nullable URL findResource(String name);
+    // see https://code.google.com/p/checker-framework/issues/detail?id=316
     protected Package definePackage(String name, @Nullable String specTitle,
             @Nullable String specVersion, @Nullable String specVendor, @Nullable String implTitle,
             @Nullable String implVersion, @Nullable String implVendor, @Nullable URL sealBase);
@@ -14,43 +14,24 @@ public class ClassLoader {
 package java.lang.instrument;
 
 public interface ClassFileTransformer {
+    // see https://code.google.com/p/checker-framework/issues/detail?id=316
     byte @Nullable [] transform(@Nullable ClassLoader loader, @Nullable String className,
             @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] classfileBuffer);
 }
 
 /* ========================================================================== */
-package java.lang.reflect;
-
-public class Constructor<T> {
-    public T newInstance(@Nullable Object... initargs);
-}
-
-/* ========================================================================== */
 package java.net;
 
 public class URL {
+    // see https://code.google.com/p/checker-framework/issues/detail?id=371
     public boolean equals(@Nullable Object obj);
-}
-
-/* ========================================================================== */
-package java.sql;
-
-public interface ResultSet {
-    @Nullable String getString(int columnIndex);
 }
 
 /* ========================================================================== */
 package java.util;
 
 public class Arrays {
+    // see https://code.google.com/p/checker-framework/issues/detail?id=370
     public static <T extends @Nullable Object> List<T> asList(T... a);
-    public static void fill(@Nullable Object[] a, @Nullable Object val);
-}
-
-/* ========================================================================== */
-package javax.management;
-
-public interface MBeanServer {
-    public Set<ObjectName> queryNames(@Nullable ObjectName name, @Nullable QueryExp query);
 }
