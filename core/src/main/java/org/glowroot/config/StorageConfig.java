@@ -34,6 +34,8 @@ import org.glowroot.markers.UsedByJsonBinding;
 @Immutable
 public class StorageConfig {
 
+    // currently aggregate expiration should be at least as big as trace expiration
+    // errors/messages page depends on this for calculating error percentage when using the filter
     private final int aggregateExpirationHours;
     private final int traceExpirationHours;
     // size of capped database for storing trace details (entries and profiles)

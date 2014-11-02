@@ -21,6 +21,7 @@ import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.channels.ClosedChannelException;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.h2.api.ErrorCode;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -57,6 +59,7 @@ import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +79,7 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SER
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_MODIFIED;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.REQUEST_TIMEOUT;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
@@ -159,7 +163,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     // https://code.google.com/p/checker-framework/issues/detail?id=293
     @SuppressWarnings("initialization")
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws IOException,
-            InterruptedException {
+            SQLException, InterruptedException {
         HttpRequest request = (HttpRequest) e.getMessage();
         logger.debug("messageReceived(): request.uri={}", request.getUri());
         Channel channel = e.getChannel();
@@ -232,7 +236,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     }
 
     @Nullable
-    private HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
+    private HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException,
+            SQLException {
         logger.debug("handleRequest(): request.uri={}", request.getUri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();
@@ -356,13 +361,20 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             Throwable cause = e.getCause();
             if (cause instanceof JsonServiceException) {
                 // this is an "expected" exception, no need to log
-                return newHttpResponseFromJsonServiceException((JsonServiceException) cause);
+                JsonServiceException jsonServiceException = (JsonServiceException) cause;
+                return newHttpResponseFromJsonServiceException(jsonServiceException.getMessage(),
+                        jsonServiceException.getStatus());
             }
             logger.error(e.getMessage(), e);
-            return newHttpResponseWithStackTrace(e);
+            if (cause instanceof SQLException
+                    && ((SQLException) cause).getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED) {
+                return newHttpResponseWithStackTrace(e, REQUEST_TIMEOUT,
+                        "Query timed out (timeout is configurable under Configuration > Advanced)");
+            }
+            return newHttpResponseWithStackTrace(e, INTERNAL_SERVER_ERROR, null);
         } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
-            return newHttpResponseWithStackTrace(e);
+            return newHttpResponseWithStackTrace(e, INTERNAL_SERVER_ERROR, null);
         }
         if (responseText == null) {
             response.setContent(ChannelBuffers.EMPTY_BUFFER);
@@ -391,16 +403,17 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
     }
 
-    private static HttpResponse newHttpResponseFromJsonServiceException(JsonServiceException e) {
+    private static HttpResponse newHttpResponseFromJsonServiceException(@Nullable String message,
+            HttpResponseStatus status) {
         // this is an "expected" exception, no need to send back stack trace
         StringBuilder sb = new StringBuilder();
         try {
             JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
-            jg.writeStringField("message", e.getMessage());
+            jg.writeStringField("message", message);
             jg.writeEndObject();
             jg.close();
-            DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, e.getStatus());
+            DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, status);
             response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
             response.setContent(ChannelBuffers.copiedBuffer(sb.toString(), Charsets.ISO_8859_1));
             return response;
@@ -410,24 +423,31 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
     }
 
-    private static HttpResponse newHttpResponseWithStackTrace(Exception e) {
+    private static HttpResponse newHttpResponseWithStackTrace(Exception e,
+            HttpResponseStatus status, @Nullable String simplifiedMessage) {
         StringWriter sw = new StringWriter();
         e.printStackTrace(new PrintWriter(sw));
         StringBuilder sb = new StringBuilder();
         try {
             JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
-            Throwable cause = e;
-            Throwable childCause = cause.getCause();
-            while (childCause != null) {
-                cause = childCause;
-                childCause = cause.getCause();
+            String message;
+            if (simplifiedMessage == null) {
+                Throwable cause = e;
+                Throwable childCause = cause.getCause();
+                while (childCause != null) {
+                    cause = childCause;
+                    childCause = cause.getCause();
+                }
+                message = cause.getMessage();
+            } else {
+                message = simplifiedMessage;
             }
-            jg.writeStringField("message", cause.getMessage());
+            jg.writeStringField("message", message);
             jg.writeStringField("stackTrace", sw.toString());
             jg.writeEndObject();
             jg.close();
-            DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+            DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, status);
             response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
             response.setContent(ChannelBuffers.copiedBuffer(sb.toString(), Charsets.ISO_8859_1));
             return response;

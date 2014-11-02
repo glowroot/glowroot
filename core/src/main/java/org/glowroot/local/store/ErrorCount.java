@@ -15,6 +15,8 @@
  */
 package org.glowroot.local.store;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import org.glowroot.markers.UsedByJsonBinding;
 
 /**
@@ -22,27 +24,38 @@ import org.glowroot.markers.UsedByJsonBinding;
  * @since 0.5
  */
 @UsedByJsonBinding
-public class ErrorAggregate {
+public class ErrorCount {
 
+    @Nullable
+    private final String transactionType;
+    @Nullable
     private final String transactionName;
-    private final String error;
-    private final long count;
+    private final long errorCount;
+    private final long transactionCount;
 
-    ErrorAggregate(String transactionName, String error, long count) {
+    ErrorCount(@Nullable String transactionType, @Nullable String transactionName, long errorCount,
+            long transactionCount) {
+        this.transactionType = transactionType;
         this.transactionName = transactionName;
-        this.error = error;
-        this.count = count;
+        this.errorCount = errorCount;
+        this.transactionCount = transactionCount;
     }
 
+    @Nullable
+    public String getTransactionType() {
+        return transactionType;
+    }
+
+    @Nullable
     public String getTransactionName() {
         return transactionName;
     }
 
-    public String getError() {
-        return error;
+    public long getErrorCount() {
+        return errorCount;
     }
 
-    public long getCount() {
-        return count;
+    public long getTransactionCount() {
+        return transactionCount;
     }
 }

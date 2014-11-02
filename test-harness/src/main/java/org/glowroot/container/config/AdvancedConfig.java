@@ -36,6 +36,7 @@ public class AdvancedConfig {
     private boolean captureThreadInfo;
     private boolean captureGcInfo;
     private int mbeanGaugeNotFoundDelaySeconds;
+    private int internalQueryTimeoutSeconds;
 
     private final String version;
 
@@ -92,6 +93,14 @@ public class AdvancedConfig {
         this.mbeanGaugeNotFoundDelaySeconds = mbeanGaugeNotFoundDelaySeconds;
     }
 
+    public int getInternalQueryTimeoutSeconds() {
+        return internalQueryTimeoutSeconds;
+    }
+
+    public void setInternalQueryTimeoutSeconds(int internalQueryTimeoutSeconds) {
+        this.internalQueryTimeoutSeconds = internalQueryTimeoutSeconds;
+    }
+
     public String getVersion() {
         return version;
     }
@@ -110,7 +119,8 @@ public class AdvancedConfig {
                     && Objects.equal(captureThreadInfo, that.captureThreadInfo)
                     && Objects.equal(captureGcInfo, that.captureGcInfo)
                     && Objects.equal(mbeanGaugeNotFoundDelaySeconds,
-                            that.mbeanGaugeNotFoundDelaySeconds);
+                            that.mbeanGaugeNotFoundDelaySeconds)
+                    && Objects.equal(internalQueryTimeoutSeconds, that.internalQueryTimeoutSeconds);
         }
         return false;
     }
@@ -122,7 +132,7 @@ public class AdvancedConfig {
         // server
         return Objects.hashCode(metricWrapperMethods, immediatePartialStoreThresholdSeconds,
                 maxEntriesPerTrace, captureThreadInfo, captureGcInfo,
-                mbeanGaugeNotFoundDelaySeconds);
+                mbeanGaugeNotFoundDelaySeconds, internalQueryTimeoutSeconds);
     }
 
     @Override
@@ -134,6 +144,7 @@ public class AdvancedConfig {
                 .add("captureThreadInfo", captureThreadInfo)
                 .add("captureGcInfo", captureGcInfo)
                 .add("mbeanGaugeNotFoundDelaySeconds", mbeanGaugeNotFoundDelaySeconds)
+                .add("internalQueryTimeoutSeconds", internalQueryTimeoutSeconds)
                 .add("version", version)
                 .toString();
     }
@@ -146,6 +157,7 @@ public class AdvancedConfig {
             @JsonProperty("captureThreadInfo") @Nullable Boolean captureThreadInfo,
             @JsonProperty("captureGcInfo") @Nullable Boolean captureGcInfo,
             @JsonProperty("mbeanGaugeNotFoundDelaySeconds") @Nullable Integer mbeanGaugeNotFoundDelaySeconds,
+            @JsonProperty("internalQueryTimeoutSeconds") @Nullable Integer internalQueryTimeoutSeconds,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(metricWrapperMethods, "metricWrapperMethods");
         checkRequiredProperty(immediatePartialStoreThresholdSeconds,
@@ -154,6 +166,7 @@ public class AdvancedConfig {
         checkRequiredProperty(captureThreadInfo, "captureThreadInfo");
         checkRequiredProperty(captureGcInfo, "captureGcInfo");
         checkRequiredProperty(mbeanGaugeNotFoundDelaySeconds, "mbeanGaugeNotFoundDelaySeconds");
+        checkRequiredProperty(internalQueryTimeoutSeconds, "internalQueryTimeoutSeconds");
         checkRequiredProperty(version, "version");
         AdvancedConfig config = new AdvancedConfig(version);
         config.setMetricWrapperMethods(metricWrapperMethods);
@@ -162,6 +175,7 @@ public class AdvancedConfig {
         config.setCaptureThreadInfo(captureThreadInfo);
         config.setCaptureGcInfo(captureGcInfo);
         config.setMBeanGaugeNotFoundDelaySeconds(mbeanGaugeNotFoundDelaySeconds);
+        config.setInternalQueryTimeoutSeconds(internalQueryTimeoutSeconds);
         return config;
     }
 }

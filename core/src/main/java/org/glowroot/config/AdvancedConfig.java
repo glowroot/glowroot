@@ -44,6 +44,7 @@ public class AdvancedConfig {
     private final boolean captureThreadInfo;
     private final boolean captureGcInfo;
     private final int mbeanGaugeNotFoundDelaySeconds;
+    private final int internalQueryTimeoutSeconds;
 
     private final String version;
 
@@ -54,9 +55,10 @@ public class AdvancedConfig {
         final boolean captureThreadInfo = true;
         final boolean captureGcInfo = true;
         final int mbeanGaugeNotFoundDelaySeconds = 60;
+        final int internalQueryTimeoutSeconds = 60;
         return new AdvancedConfig(metricWrapperMethods, immediatePartialStoreThresholdSeconds,
                 maxEntriesPerTrace, captureThreadInfo, captureGcInfo,
-                mbeanGaugeNotFoundDelaySeconds);
+                mbeanGaugeNotFoundDelaySeconds, internalQueryTimeoutSeconds);
     }
 
     public static Overlay overlay(AdvancedConfig base) {
@@ -66,16 +68,17 @@ public class AdvancedConfig {
     @VisibleForTesting
     public AdvancedConfig(boolean metricWrapperMethods, int immediatePartialStoreThresholdSeconds,
             int maxEntriesPerTrace, boolean captureThreadInfo, boolean captureGcInfo,
-            int mbeanGaugeNotFoundDelaySeconds) {
+            int mbeanGaugeNotFoundDelaySeconds, int internalQueryTimeoutSeconds) {
         this.metricWrapperMethods = metricWrapperMethods;
         this.immediatePartialStoreThresholdSeconds = immediatePartialStoreThresholdSeconds;
         this.maxEntriesPerTrace = maxEntriesPerTrace;
         this.captureThreadInfo = captureThreadInfo;
         this.captureGcInfo = captureGcInfo;
         this.mbeanGaugeNotFoundDelaySeconds = mbeanGaugeNotFoundDelaySeconds;
+        this.internalQueryTimeoutSeconds = internalQueryTimeoutSeconds;
         this.version = VersionHashes.sha1(metricWrapperMethods,
                 immediatePartialStoreThresholdSeconds, maxEntriesPerTrace, captureThreadInfo,
-                captureGcInfo, mbeanGaugeNotFoundDelaySeconds);
+                captureGcInfo, mbeanGaugeNotFoundDelaySeconds, internalQueryTimeoutSeconds);
     }
 
     public boolean isMetricWrapperMethods() {
@@ -102,6 +105,10 @@ public class AdvancedConfig {
         return mbeanGaugeNotFoundDelaySeconds;
     }
 
+    public int getInternalQueryTimeoutSeconds() {
+        return internalQueryTimeoutSeconds;
+    }
+
     @JsonView(UiView.class)
     public String getVersion() {
         return version;
@@ -116,6 +123,7 @@ public class AdvancedConfig {
                 .add("captureThreadInfo", captureThreadInfo)
                 .add("captureGcInfo", captureGcInfo)
                 .add("mbeanGaugeNotFoundDelaySeconds", mbeanGaugeNotFoundDelaySeconds)
+                .add("internalQueryTimeoutSeconds", internalQueryTimeoutSeconds)
                 .add("version", version)
                 .toString();
     }
@@ -130,6 +138,7 @@ public class AdvancedConfig {
         private boolean captureThreadInfo;
         private boolean captureGcInfo;
         private int mbeanGaugeNotFoundDelaySeconds;
+        private int internalQueryTimeoutSeconds;
 
         private Overlay(AdvancedConfig base) {
             metricWrapperMethods = base.metricWrapperMethods;
@@ -138,6 +147,7 @@ public class AdvancedConfig {
             captureThreadInfo = base.captureThreadInfo;
             captureGcInfo = base.captureGcInfo;
             mbeanGaugeNotFoundDelaySeconds = base.mbeanGaugeNotFoundDelaySeconds;
+            internalQueryTimeoutSeconds = base.internalQueryTimeoutSeconds;
         }
         public void setMetricWrapperMethods(boolean metricWrapperMethods) {
             this.metricWrapperMethods = metricWrapperMethods;
@@ -158,10 +168,13 @@ public class AdvancedConfig {
         public void setMBeanGaugeNotFoundDelaySeconds(int mbeanGaugeNotFoundDelaySeconds) {
             this.mbeanGaugeNotFoundDelaySeconds = mbeanGaugeNotFoundDelaySeconds;
         }
+        public void setInternalQueryTimeoutSeconds(int internalQueryTimeoutSeconds) {
+            this.internalQueryTimeoutSeconds = internalQueryTimeoutSeconds;
+        }
         public AdvancedConfig build() {
             return new AdvancedConfig(metricWrapperMethods, immediatePartialStoreThresholdSeconds,
                     maxEntriesPerTrace, captureThreadInfo, captureGcInfo,
-                    mbeanGaugeNotFoundDelaySeconds);
+                    mbeanGaugeNotFoundDelaySeconds, internalQueryTimeoutSeconds);
         }
     }
 }

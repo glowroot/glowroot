@@ -24,8 +24,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.markers.UsedByJsonBinding;
-
 import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
@@ -34,53 +32,57 @@ import static org.glowroot.common.ObjectMappers.nullToEmpty;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class ErrorAggregateQuery {
+public class ErrorMessageQuery {
 
+    @Nullable
+    private final String transactionType;
+    @Nullable
+    private final String transactionName;
     private final long from;
     private final long to;
     private final List<String> includes;
     private final List<String> excludes;
-    private final ErrorAggregateSortAttribute sortAttribute;
-    private final SortDirection sortDirection;
     private final int limit;
 
     @VisibleForTesting
-    ErrorAggregateQuery(long from, long to, List<String> includes, List<String> excludes,
-            ErrorAggregateSortAttribute sortAttribute, SortDirection sortDirection, int limit) {
+    ErrorMessageQuery(@Nullable String transactionType, @Nullable String transactionName,
+            long from, long to, List<String> includes, List<String> excludes, int limit) {
+        this.transactionType = transactionType;
+        this.transactionName = transactionName;
         this.from = from;
         this.to = to;
         this.includes = includes;
         this.excludes = excludes;
-        this.sortAttribute = sortAttribute;
-        this.sortDirection = sortDirection;
         this.limit = limit;
     }
 
-    long getFrom() {
+    @Nullable
+    public String getTransactionType() {
+        return transactionType;
+    }
+
+    @Nullable
+    public String getTransactionName() {
+        return transactionName;
+    }
+
+    public long getFrom() {
         return from;
     }
 
-    long getTo() {
+    public long getTo() {
         return to;
     }
 
-    List<String> getIncludes() {
+    public List<String> getIncludes() {
         return includes;
     }
 
-    List<String> getExcludes() {
+    public List<String> getExcludes() {
         return excludes;
     }
 
-    ErrorAggregateSortAttribute getSortAttribute() {
-        return sortAttribute;
-    }
-
-    SortDirection getSortDirection() {
-        return sortDirection;
-    }
-
-    int getLimit() {
+    public int getLimit() {
         return limit;
     }
 
@@ -91,48 +93,26 @@ public class ErrorAggregateQuery {
                 .add("to", to)
                 .add("includes", includes)
                 .add("excludes", excludes)
-                .add("sortAttribute", sortAttribute)
-                .add("sortDirection", sortDirection)
                 .add("limit", limit)
                 .toString();
     }
 
     @JsonCreator
-    static ErrorAggregateQuery readValue(@JsonProperty("from") @Nullable Long from,
+    static ErrorMessageQuery readValue(
+            @JsonProperty("transactionType") @Nullable String transactionType,
+            @JsonProperty("transactionName") @Nullable String transactionName,
+            @JsonProperty("from") @Nullable Long from,
             @JsonProperty("to") @Nullable Long to,
             @JsonProperty("includes") @Nullable List</*@Nullable*/String> uncheckedIncludes,
             @JsonProperty("excludes") @Nullable List</*@Nullable*/String> uncheckedExcludes,
-            @JsonProperty("sortAttribute") @Nullable ErrorAggregateSortAttribute sortAttribute,
-            @JsonProperty("sortDirection") @Nullable SortDirection sortDirection,
             @JsonProperty("limit") @Nullable Integer limit)
             throws JsonMappingException {
         List<String> includes = checkNotNullItemsForProperty(uncheckedIncludes, "includes");
         List<String> excludes = checkNotNullItemsForProperty(uncheckedExcludes, "excludes");
         checkRequiredProperty(from, "from");
         checkRequiredProperty(to, "to");
-        checkRequiredProperty(sortAttribute, "sortAttribute");
-        checkRequiredProperty(sortDirection, "sortDirection");
         checkRequiredProperty(limit, "limit");
-        return new ErrorAggregateQuery(from, to, nullToEmpty(includes), nullToEmpty(excludes),
-                sortAttribute, sortDirection, limit);
-    }
-
-    @UsedByJsonBinding
-    public static enum ErrorAggregateSortAttribute implements SortAttribute {
-
-        TRANSACTION_NAME("upper(transaction_name)"),
-        ERROR("upper(error_message)"),
-        COUNT("count(*)");
-
-        private final String column;
-
-        private ErrorAggregateSortAttribute(String column) {
-            this.column = column;
-        }
-
-        @Override
-        public String getColumn() {
-            return column;
-        }
+        return new ErrorMessageQuery(transactionType, transactionName, from, to,
+                nullToEmpty(includes), nullToEmpty(excludes), limit);
     }
 }

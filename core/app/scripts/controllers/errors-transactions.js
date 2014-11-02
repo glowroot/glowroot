@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 /* global glowroot, angular, $ */
 
-glowroot.controller('PerformanceTransactionsCtrl', [
+glowroot.controller('ErrorsTransactionsCtrl', [
   '$scope',
   '$location',
   '$filter',
@@ -28,8 +28,8 @@ glowroot.controller('PerformanceTransactionsCtrl', [
   'httpErrors',
   function ($scope, $location, $filter, $http, $q, $timeout, keyedColorPools, queryStrings, httpErrors) {
     // \u00b7 is &middot;
-    document.title = 'Performance \u00b7 Glowroot';
-    $scope.$parent.activeNavbarItem = 'performance';
+    document.title = 'Errors \u00b7 Glowroot';
+    $scope.$parent.activeNavbarItem = 'errors';
 
     var plot;
 
@@ -58,20 +58,15 @@ glowroot.controller('PerformanceTransactionsCtrl', [
 
     function refreshData(deferred) {
       var date = $scope.filterDate;
-      if (!date) {
-        deferred.reject('Missing date');
-        return;
-      }
       var refreshId = ++currentRefreshId;
       var query = {
         from: $scope.chartFrom,
         to: $scope.chartTo,
-        transactionType: $scope.filterTransactionType,
         limit: summaryLimit
       };
       $scope.showChartSpinner++;
       $scope.showTableOverlay++;
-      $http.get('backend/performance/transactions?' + queryStrings.encodeObject(query))
+      $http.get('backend/error/transactions?' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showChartSpinner--;
             $scope.showTableOverlay--;
@@ -195,35 +190,29 @@ glowroot.controller('PerformanceTransactionsCtrl', [
       $scope.moreAvailable = data.moreAvailable;
       maxTransactionSummaryBarValue = 0;
       angular.forEach($scope.transactionSummaries, function (summary) {
-        maxTransactionSummaryBarValue = Math.max(maxTransactionSummaryBarValue, summary.totalMicros);
+        maxTransactionSummaryBarValue = Math.max(maxTransactionSummaryBarValue, summary.errorCount);
       });
     }
 
-    $scope.changeTransactionType = function (transactionType) {
-      if (transactionType !== $scope.filterTransactionType) {
-        $scope.filterTransactionType = transactionType;
-        refreshData();
-      }
-    };
-
-    $scope.overallAverage = function () {
+    $scope.overallErrorPercentage = function () {
       if (!$scope.overallSummary) {
         // overall hasn't loaded yet
         return '';
-      } else if ($scope.overallSummary.transactionCount) {
-        return (($scope.overallSummary.totalMicros / $scope.overallSummary.transactionCount) / 1000000).toFixed(3);
+      } else if ($scope.overallSummary.errorCount) {
+        return (($scope.overallSummary.errorCount / $scope.overallSummary.transactionCount) * 100).toFixed(1);
       } else {
         return '-';
       }
     };
 
-    $scope.metricsQueryString = function (transactionName) {
-      var query = {
-        transactionType: $scope.filterTransactionType,
-        transactionName: transactionName,
-        from: $scope.chartFrom,
-        to: $scope.chartTo
-      };
+    $scope.messagesQueryString = function (summary) {
+      var query = {};
+      if (summary) {
+        query.transactionType = summary.transactionType;
+        query.transactionName = summary.transactionName;
+      }
+      query.from = $scope.chartFrom;
+      query.to = $scope.chartTo;
       return queryStrings.encodeObject(query);
     };
 
@@ -233,11 +222,10 @@ glowroot.controller('PerformanceTransactionsCtrl', [
       var query = {
         from: $scope.chartFrom,
         to: $scope.chartTo,
-        transactionType: $scope.filterTransactionType,
         limit: summaryLimit
       };
       $scope.showTableOverlay++;
-      $http.get('backend/performance/transaction-summaries?' + queryStrings.encodeObject(query))
+      $http.get('backend/error/transaction-summaries?' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showTableOverlay--;
             updateTransactionSummaries(data);
@@ -246,8 +234,8 @@ glowroot.controller('PerformanceTransactionsCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $scope.transactionSummaryBarWidth = function (totalMicros) {
-      return (totalMicros / maxTransactionSummaryBarValue) * 100 + '%';
+    $scope.transactionSummaryBarWidth = function (errorCount) {
+      return (errorCount / maxTransactionSummaryBarValue) * 100 + '%';
     };
 
     $scope.zoomOut = function () {
@@ -286,12 +274,9 @@ glowroot.controller('PerformanceTransactionsCtrl', [
       $scope.chartFrom = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
       $scope.chartTo = Math.min($scope.chartFrom + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
-    $scope.filterTransactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
 
     function updateLocation() {
-      var query = {
-        'transaction-type': $scope.filterTransactionType
-      };
+      var query = {};
       if (!chartFromToDefault) {
         query.from = $scope.chartFrom - fixedAggregateIntervalMillis;
         query.to = $scope.chartTo;
@@ -356,9 +341,9 @@ glowroot.controller('PerformanceTransactionsCtrl', [
           ticks: 10,
           zoomRange: false,
           min: 0,
-          // 10 second yaxis max just for initial empty chart rendering
-          max: 10,
-          label: 'seconds'
+          // 100% yaxis max just for initial empty chart rendering
+          max: 100,
+          label: 'error percentage'
         },
         zoom: {
           interactive: true,

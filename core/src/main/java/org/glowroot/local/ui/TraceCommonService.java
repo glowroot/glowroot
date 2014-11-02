@@ -62,7 +62,7 @@ public class TraceCommonService {
 
     @VisibleForTesting
     @Nullable
-    public Trace getTrace(String traceId) throws IOException {
+    public Trace getTrace(String traceId) throws IOException, SQLException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Transaction active : transactionRegistry.getTransactions()) {
@@ -146,7 +146,7 @@ public class TraceCommonService {
     }
 
     @Nullable
-    TraceExport getExport(String traceId) throws IOException {
+    TraceExport getExport(String traceId) throws IOException, SQLException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Transaction active : transactionRegistry.getTransactions()) {

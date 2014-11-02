@@ -232,7 +232,7 @@ class AggregateCollector {
         }
 
         private void add(Transaction transaction) {
-            overallBuilder.add(transaction.getDuration());
+            overallBuilder.add(transaction.getDuration(), transaction.getError() != null);
             AggregateBuilder transactionBuilder =
                     transactionBuilders.get(transaction.getTransactionName());
             if (transactionBuilder == null) {
@@ -240,7 +240,7 @@ class AggregateCollector {
                         new AggregateBuilder(transactionType, transaction.getTransactionName());
                 transactionBuilders.put(transaction.getTransactionName(), transactionBuilder);
             }
-            transactionBuilder.add(transaction.getDuration());
+            transactionBuilder.add(transaction.getDuration(), transaction.getError() != null);
             overallBuilder.addToMetrics(transaction.getRootMetric());
             transactionBuilder.addToMetrics(transaction.getRootMetric());
             // only add profile to transaction, overall profile doesn't seem worth the overhead

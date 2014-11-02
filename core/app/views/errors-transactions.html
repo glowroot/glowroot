@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2014 the original author or authors.
+  Copyright 2014 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -19,26 +19,7 @@
 </div>
 <div class="header">
   <div class="header-page-name">
-    <div ng-switch="layout.transactionTypes.length">
-      <div ng-switch-when="1">
-        {{filterTransactionType}}
-      </div>
-      <div ng-switch-default>
-        <div dropdown class="dropdown">
-          <div dropdown-toggle class="dropdown-toggle" style="cursor: pointer; display: inline-block;">
-            {{filterTransactionType}}
-            <span class="caret"></span>
-          </div>
-          <ul class="dropdown-menu">
-            <li ng-repeat="transactionType in layout.transactionTypes">
-              <a ng-click="changeTransactionType(transactionType)">
-                {{transactionType}}
-              </a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
+    Errors
   </div>
 </div>
 <div ng-form
@@ -98,8 +79,9 @@
   <table class="table">
     <thead>
     <tr>
-      <th width="70%">Transaction name</th>
-      <th width="15%">Average (seconds)</th>
+      <th width="60%">Transaction name</th>
+      <th width="12%">% Errors</th>
+      <th width="13%">Error count</th>
       <th width="15%">Transaction count</th>
     </tr>
     </thead>
@@ -107,11 +89,12 @@
     <tr>
       <td style="padding: 0;">
         <a style="display: block; position: relative; padding: 8px; word-break: break-all;"
-           ng-href="performance/metrics?{{metricsQueryString(null)}}">
+           ng-href="errors/messages?{{messagesQueryString(null)}}">
           All Transactions
         </a>
       </td>
-      <td>{{overallAverage()}}</td>
+      <td>{{overallErrorPercentage()}}</td>
+      <td>{{overallSummary.errorCount}}</td>
       <td>{{overallSummary.transactionCount}}</td>
     </tr>
     <tr ng-repeat="transactionSummary in transactionSummaries">
@@ -120,15 +103,16 @@
          see https://bugzilla.mozilla.org/show_bug.cgi?id=35168 -->
         <div style="position: relative;">
           <div style="position: absolute; height: 100%; background-color: #eee;"
-               ng-style="{width: transactionSummaryBarWidth(transactionSummary.totalMicros)}">
+               ng-style="{width: transactionSummaryBarWidth(transactionSummary.errorCount)}">
           </div>
           <a style="display: block; position: relative; padding: 8px; word-break: break-all;"
-             ng-href="performance/metrics?{{metricsQueryString(transactionSummary.transactionName)}}">
-            {{transactionSummary.transactionName}}
+             ng-href="errors/messages?{{messagesQueryString(transactionSummary)}}">
+            {{transactionSummary.transactionName}} ({{transactionSummary.transactionType}})
           </a>
         </div>
       </td>
-      <td>{{((transactionSummary.totalMicros / transactionSummary.transactionCount) / 1000000).toFixed(3)}}</td>
+      <td>{{((transactionSummary.errorCount / transactionSummary.transactionCount) * 100).toFixed(1)}}</td>
+      <td>{{transactionSummary.errorCount}}</td>
       <td>{{transactionSummary.transactionCount}}</td>
     </tr>
     </tbody>

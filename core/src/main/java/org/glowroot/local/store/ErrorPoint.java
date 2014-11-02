@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package org.glowroot.local.store;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.glowroot.markers.UsedByJsonBinding;
 
 /**
@@ -24,30 +22,39 @@ import org.glowroot.markers.UsedByJsonBinding;
  * @since 0.5
  */
 @UsedByJsonBinding
-public class Summary {
+public class ErrorPoint {
 
-    @Nullable
-    private final String transactionName;
-    // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
-    private final long totalMicros;
-    private final long transactionCount;
+    public static final long UNKNOWN_TRANSACTION_COUNT = -1;
 
-    Summary(@Nullable String transactionName, long totalMicros, long transactionCount) {
-        this.transactionName = transactionName;
-        this.totalMicros = totalMicros;
+    private final long captureTime;
+    private final long errorCount;
+    private long transactionCount;
+
+    ErrorPoint(long captureTime, long errorCount, long transactionCount) {
+        this.captureTime = captureTime;
+        this.errorCount = errorCount;
         this.transactionCount = transactionCount;
     }
 
-    @Nullable
-    public String getTransactionName() {
-        return transactionName;
+    ErrorPoint(long captureTime, long errorCount) {
+        this.captureTime = captureTime;
+        this.errorCount = errorCount;
+        this.transactionCount = UNKNOWN_TRANSACTION_COUNT;
     }
 
-    public long getTotalMicros() {
-        return totalMicros;
+    public long getCaptureTime() {
+        return captureTime;
+    }
+
+    public long getErrorCount() {
+        return errorCount;
     }
 
     public long getTransactionCount() {
         return transactionCount;
+    }
+
+    public void setTransactionCount(long transactionCount) {
+        this.transactionCount = transactionCount;
     }
 }

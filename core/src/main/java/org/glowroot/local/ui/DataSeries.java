@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,39 @@
  */
 package org.glowroot.local.ui;
 
-import java.io.IOException;
-import java.sql.SQLException;
+import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-interface HttpService {
+class DataSeries {
+
+    // null is used for 'Other' data series
+    @JsonProperty
+    @Nullable
+    private final String name;
+    @JsonProperty
+    private final List<Number/*@Nullable*/[]> data = Lists.newArrayList();
+
+    DataSeries(@Nullable String name) {
+        this.name = name;
+    }
 
     @Nullable
-    HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException,
-            SQLException;
+    String getName() {
+        return name;
+    }
+
+    void add(long captureTime, double value) {
+        data.add(new Number[] {captureTime, value});
+    }
+
+    void addNull() {
+        data.add(null);
+    }
 }

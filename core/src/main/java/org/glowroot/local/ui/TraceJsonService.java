@@ -16,6 +16,7 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +44,7 @@ class TraceJsonService {
     }
 
     @GET("/backend/trace/header/(.+)")
-    String getTrace(String id) throws IOException {
+    String getTrace(String id) throws IOException, SQLException {
         logger.debug("getTrace(): id={}", id);
         Trace trace = traceCommonService.getTrace(id);
         if (trace == null) {

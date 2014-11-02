@@ -23,9 +23,10 @@ glowroot.controller('PerformanceMetricsCtrl', [
   '$http',
   '$q',
   '$timeout',
+  'httpErrors',
   'keyedColorPools',
   'queryStrings',
-  function ($scope, $location, $filter, $http, $q, $timeout, keyedColorPools, queryStrings) {
+  function ($scope, $location, $filter, $http, $q, $timeout, httpErrors, keyedColorPools, queryStrings) {
     // \u00b7 is &middot;
     document.title = 'Performance \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'performance';
@@ -88,7 +89,6 @@ glowroot.controller('PerformanceMetricsCtrl', [
             if (refreshId !== currentRefreshId) {
               return;
             }
-            $scope.refreshChartError = false;
             $scope.chartNoData = !data.dataSeries.length;
             // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
             plot.getAxes().xaxis.options.min = query.from;
@@ -145,11 +145,7 @@ glowroot.controller('PerformanceMetricsCtrl', [
             if (refreshId !== currentRefreshId) {
               return;
             }
-            if (status === 0) {
-              $scope.refreshChartError = 'Unable to connect to server';
-            } else {
-              $scope.refreshChartError = 'An error occurred';
-            }
+            httpErrors.handler($scope)(data, status);
           });
     }
 
@@ -398,7 +394,9 @@ glowroot.controller('PerformanceMetricsCtrl', [
         }
       };
       // render chart with no data points
-      plot = $.plot($chart, [], options);
+      plot = $.plot($chart, [
+        []
+      ], options);
       plot.getAxes().xaxis.options.borderGridLock = fixedAggregateIntervalMillis;
     })();
 

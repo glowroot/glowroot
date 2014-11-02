@@ -113,7 +113,8 @@ public class LocalUiModule {
         TraceDetailHttpService traceDetailHttpService =
                 new TraceDetailHttpService(traceCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
-        ErrorJsonService errorJsonService = new ErrorJsonService(traceDao);
+        ErrorJsonService errorJsonService = new ErrorJsonService(aggregateDao, traceDao, clock,
+                collectorModule.getFixedAggregateIntervalSeconds());
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),
                 jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),

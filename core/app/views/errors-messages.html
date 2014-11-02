@@ -19,43 +19,34 @@
 </div>
 <div class="header">
   <div class="header-page-name">
-    <div ng-switch="layout.transactionTypes.length">
-      <div ng-switch-when="1">
-        {{filterTransactionType}}
-      </div>
-      <div ng-switch-default>
-        <div dropdown class="dropdown">
-          <div dropdown-toggle class="dropdown-toggle" style="cursor: pointer; display: inline-block;">
-            {{filterTransactionType}}
-            <span class="caret"></span>
-          </div>
-          <ul class="dropdown-menu">
-            <li ng-repeat="transactionType in layout.transactionTypes">
-              <a ng-click="changeTransactionType(transactionType)">
-                {{transactionType}}
-              </a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
+    {{transactionType || transactionName ? transactionType + ': ' + transactionName : 'All Transactions'}}
   </div>
 </div>
 <div ng-form
      gt-form-with-primary-button>
   <div class="form-group"
+       ng-class="{'has-error': parsingError}"
        style="margin-bottom: 0;">
     <div style="float: left; padding-right: 10px;">
       <label class="control-label"
-             for="filterDate"
+             for="errorFilter"
              style="padding: 0 10px 0 60px;">
-        Date
+        Error filter
       </label>
-      <div gt-datepicker
-           gt-model="filterDate"
-           gt-id="filterDate"
-           style="display: inline-block;">
-      </div>
+      <input type="text"
+             ng-model="errorFilter"
+             class="form-control"
+             id="errorFilter"
+             style="display: inline-block; width: 25em;">
+      <button popover-window="template/gt-error-filter-help.html"
+              popover-window-placement="right"
+              popover-window-trigger="focus"
+              class="chart-help-button"
+              style="border: none; padding: 0px 4px; vertical-align: middle;">
+        <i title="Help"
+           class="fa fa-question-circle"
+           style="font-size: 28px;"></i>
+      </button>
     </div>
     <div gt-button
          gt-label="Refresh"
@@ -98,38 +89,29 @@
   <table class="table">
     <thead>
     <tr>
-      <th width="70%">Transaction name</th>
-      <th width="15%">Average (seconds)</th>
-      <th width="15%">Transaction count</th>
+      <th width="98%">
+        Error
+      </th>
+      <th width="1%">
+        Count
+      </th>
+      <th width="1%">
+        Traces
+      </th>
     </tr>
     </thead>
     <tbody>
-    <tr>
-      <td style="padding: 0;">
-        <a style="display: block; position: relative; padding: 8px; word-break: break-all;"
-           ng-href="performance/metrics?{{metricsQueryString(null)}}">
-          All Transactions
+    <tr ng-repeat="errorMessage in errorMessages">
+      <!-- no whitespace/indentation inside td is important here -->
+      <td style="word-break: break-all; white-space: pre-line;">{{errorMessage.message}}</td>
+      <td style="text-align: right;">
+        {{errorMessage.count}}
+      </td>
+      <td style="white-space: nowrap;">
+        <a ng-href="traces?{{tracesQueryString(errorMessage)}}">
+          see traces
         </a>
       </td>
-      <td>{{overallAverage()}}</td>
-      <td>{{overallSummary.transactionCount}}</td>
-    </tr>
-    <tr ng-repeat="transactionSummary in transactionSummaries">
-      <td style="padding: 0;">
-        <!-- cannot apply relative positioning to td elements in firefox
-         see https://bugzilla.mozilla.org/show_bug.cgi?id=35168 -->
-        <div style="position: relative;">
-          <div style="position: absolute; height: 100%; background-color: #eee;"
-               ng-style="{width: transactionSummaryBarWidth(transactionSummary.totalMicros)}">
-          </div>
-          <a style="display: block; position: relative; padding: 8px; word-break: break-all;"
-             ng-href="performance/metrics?{{metricsQueryString(transactionSummary.transactionName)}}">
-            {{transactionSummary.transactionName}}
-          </a>
-        </div>
-      </td>
-      <td>{{((transactionSummary.totalMicros / transactionSummary.transactionCount) / 1000000).toFixed(3)}}</td>
-      <td>{{transactionSummary.transactionCount}}</td>
     </tr>
     </tbody>
   </table>

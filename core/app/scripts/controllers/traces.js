@@ -22,9 +22,10 @@ glowroot.controller('TracesCtrl', [
   '$http',
   '$q',
   '$timeout',
+  'httpErrors',
   'traceModal',
   'queryStrings',
-  function ($scope, $location, $http, $q, $timeout, traceModal, queryStrings) {
+  function ($scope, $location, $http, $q, $timeout, httpErrors, traceModal, queryStrings) {
     // \u00b7 is &middot;
     document.title = 'Traces \u00b7 Glowroot';
     $scope.$parent.title = 'Traces';
@@ -70,7 +71,6 @@ glowroot.controller('TracesCtrl', [
             if (refreshId !== currentRefreshId) {
               return;
             }
-            $scope.refreshChartError = false;
             $scope.chartNoData = !data.normalPoints.length && !data.errorPoints.length && !data.activePoints.length;
             $scope.chartLimitExceeded = data.limitExceeded;
             $scope.chartLimit = limit;
@@ -101,14 +101,7 @@ glowroot.controller('TracesCtrl', [
               return;
             }
             $scope.chartLimitExceeded = false;
-            if (status === 0) {
-              $scope.refreshChartError = 'Unable to connect to server';
-            } else {
-              $scope.refreshChartError = 'An error occurred';
-            }
-            if (deferred) {
-              deferred.reject($scope.refreshChartError);
-            }
+            httpErrors.handler($scope, deferred)(data, status);
           });
     }
 
@@ -490,7 +483,9 @@ glowroot.controller('TracesCtrl', [
         }
       };
       // render chart with no data points
-      plot = $.plot($chart, [], options);
+      plot = $.plot($chart, [
+        []
+      ], options);
     })();
 
     plot.getAxes().yaxis.options.max = undefined;

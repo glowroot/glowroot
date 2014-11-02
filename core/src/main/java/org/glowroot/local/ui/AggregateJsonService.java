@@ -16,6 +16,7 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -60,6 +61,7 @@ class AggregateJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(AggregateJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final int MICROSECONDS_PER_SECOND = 1000000;
 
     private final AggregateCommonService aggregateCommonService;
     private final AggregateDao aggregateDao;
@@ -77,7 +79,7 @@ class AggregateJsonService {
     }
 
     @GET("/backend/performance/transactions")
-    String getTransactions(String content) throws IOException {
+    String getTransactions(String content) throws IOException, SQLException {
         logger.debug("getTransactions(): content={}", content);
         AggregateRequestWithLimit request =
                 ObjectMappers.readRequiredValue(mapper, content, AggregateRequestWithLimit.class);
@@ -90,10 +92,10 @@ class AggregateJsonService {
         List<Aggregate> overallAggregates = aggregateDao.readOverallAggregates(
                 request.getTransactionType(), request.getFrom(), request.getTo());
 
-        final int TOP_X = 5;
+        final int topX = 5;
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         List<PeekingIterator<Aggregate>> transactionAggregatesList = Lists.newArrayList();
-        for (int i = 0; i < Math.min(queryResult.getRecords().size(), TOP_X); i++) {
+        for (int i = 0; i < Math.min(queryResult.getRecords().size(), topX); i++) {
             String transactionName = queryResult.getRecords().get(i).getTransactionName();
             checkNotNull(transactionName);
             dataSeriesList.add(new DataSeries(transactionName));
@@ -103,7 +105,7 @@ class AggregateJsonService {
         }
 
         DataSeries otherDataSeries = null;
-        if (queryResult.getRecords().size() > TOP_X) {
+        if (queryResult.getRecords().size() > topX) {
             otherDataSeries = new DataSeries(null);
         }
 
@@ -128,13 +130,18 @@ class AggregateJsonService {
                 if (transactionAggregate == null) {
                     dataSeries.add(overallAggregate.getCaptureTime(), 0);
                 } else {
-                    dataSeries.add(overallAggregate.getCaptureTime(),
-                            transactionAggregate.getTotalMicros() / overallAggregate.getCount());
+                    // convert to average seconds
+                    dataSeries.add(
+                            overallAggregate.getCaptureTime(),
+                            (transactionAggregate.getTotalMicros() / (double) overallAggregate.getTransactionCount())
+                                    / MICROSECONDS_PER_SECOND);
                     totalOtherMicros -= transactionAggregate.getTotalMicros();
                 }
             }
             if (otherDataSeries != null) {
-                otherDataSeries.add(overallAggregate.getCaptureTime(), totalOtherMicros);
+                otherDataSeries.add(overallAggregate.getCaptureTime(),
+                        (totalOtherMicros / (double) overallAggregate.getTransactionCount())
+                                / MICROSECONDS_PER_SECOND);
             }
         }
         if (lastOverallAggregate != null) {
@@ -157,7 +164,7 @@ class AggregateJsonService {
     }
 
     @GET("/backend/performance/metrics")
-    String getMetrics(String content) throws IOException {
+    String getMetrics(String content) throws IOException, SQLException {
         logger.debug("getMetrics(): content={}", content);
         AggregateRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, AggregateRequest.class);
@@ -181,6 +188,8 @@ class AggregateJsonService {
         for (int i = 0; i < Math.min(metricNames.size(), topX); i++) {
             dataSeriesList.add(new DataSeries(metricNames.get(i)));
         }
+        // need 'other' data series even if < topX metrics in order to capture root metrics,
+        // e.g. time spent in 'servlet' metric but not in any nested metric
         DataSeries otherDataSeries = new DataSeries(null);
         Aggregate lastAggregate = null;
         for (StackedPoint stackedPoint : stackedPoints) {
@@ -201,27 +210,27 @@ class AggregateJsonService {
                 if (totalMicros == null) {
                     dataSeries.add(aggregate.getCaptureTime(), 0);
                 } else {
+                    // convert to average seconds
                     dataSeries.add(aggregate.getCaptureTime(),
-                            totalMicros.longValue() / (double) aggregate.getCount());
+                            (totalMicros.longValue() / (double) aggregate.getTransactionCount())
+                                    / MICROSECONDS_PER_SECOND);
                     totalOtherMicros -= totalMicros.longValue();
                 }
             }
-            if (otherDataSeries != null) {
-                if (aggregate.getCount() == 0) {
-                    otherDataSeries.add(aggregate.getCaptureTime(), 0);
-                } else {
-                    otherDataSeries.add(aggregate.getCaptureTime(),
-                            totalOtherMicros / (double) aggregate.getCount());
-                }
+            if (aggregate.getTransactionCount() == 0) {
+                otherDataSeries.add(aggregate.getCaptureTime(), 0);
+            } else {
+                // convert to average seconds
+                otherDataSeries.add(aggregate.getCaptureTime(),
+                        (totalOtherMicros / (double) aggregate.getTransactionCount())
+                                / MICROSECONDS_PER_SECOND);
             }
         }
         if (lastAggregate != null) {
             addFinalDownslope(request.getTo(), dataSeriesList, otherDataSeries,
                     lastAggregate.getCaptureTime());
         }
-        if (otherDataSeries != null) {
-            dataSeriesList.add(otherDataSeries);
-        }
+        dataSeriesList.add(otherDataSeries);
 
         MergedAggregate mergedAggregate = aggregateCommonService.getMergedAggregate(aggregates);
         long traceCount;
@@ -245,14 +254,13 @@ class AggregateJsonService {
     }
 
     @GET("/backend/performance/transaction-summaries")
-    String getTransactionSummaries(String content) throws IOException {
+    String getTransactionSummaries(String content) throws IOException, SQLException {
         logger.debug("getTransactionSummaries(): content={}", content);
         AggregateRequestWithLimit request =
                 ObjectMappers.readRequiredValue(mapper, content, AggregateRequestWithLimit.class);
-        Integer limit = request.getLimit();
-        checkNotNull(limit);
-        QueryResult<Summary> queryResult = aggregateDao.readTransactionSummaries(
-                request.getTransactionType(), request.getFrom(), request.getTo(), limit);
+        QueryResult<Summary> queryResult =
+                aggregateDao.readTransactionSummaries(request.getTransactionType(),
+                        request.getFrom(), request.getTo(), request.getLimit());
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
@@ -264,7 +272,7 @@ class AggregateJsonService {
     }
 
     @GET("/backend/performance/profile")
-    String getProfile(String content) throws IOException {
+    String getProfile(String content) throws IOException, SQLException {
         logger.debug("getProfile(): content={}", content);
         ProfileRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, ProfileRequest.class);
@@ -412,7 +420,7 @@ class AggregateJsonService {
 
     private static class AggregateRequestWithLimit extends AggregateRequest {
 
-        private final Integer limit;
+        private final int limit;
 
         @JsonCreator
         AggregateRequestWithLimit(@JsonProperty("from") @Nullable Long from,
@@ -426,7 +434,7 @@ class AggregateJsonService {
             this.limit = limit;
         }
 
-        private Integer getLimit() {
+        private int getLimit() {
             return limit;
         }
     }
@@ -475,35 +483,6 @@ class AggregateJsonService {
 
         private double getTruncateLeafPercentage() {
             return truncateLeafPercentage;
-        }
-    }
-
-    // this is used for stacked response
-    private static class DataSeries {
-
-        // null is used for 'Other' data series
-        @JsonProperty
-        @Nullable
-        private final String name;
-        @JsonProperty
-        private final List<Number/*@Nullable*/[]> data = Lists.newArrayList();
-
-        private DataSeries(@Nullable String name) {
-            this.name = name;
-        }
-
-        @Nullable
-        private String getName() {
-            return name;
-        }
-
-        private void add(long captureTime, double averageMicros) {
-            // convert microseconds to seconds
-            data.add(new Number[] {captureTime, averageMicros / 1000000});
-        }
-
-        private void addNull() {
-            data.add(null);
         }
     }
 

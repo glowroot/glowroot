@@ -224,6 +224,7 @@ class LocalConfigService implements ConfigService {
         config.setCaptureThreadInfo(coreConfig.isCaptureThreadInfo());
         config.setCaptureGcInfo(coreConfig.isCaptureGcInfo());
         config.setMBeanGaugeNotFoundDelaySeconds(coreConfig.getMBeanGaugeNotFoundDelaySeconds());
+        config.setInternalQueryTimeoutSeconds(coreConfig.getInternalQueryTimeoutSeconds());
         return config;
     }
 
@@ -233,7 +234,8 @@ class LocalConfigService implements ConfigService {
                 new org.glowroot.config.AdvancedConfig(config.isMetricWrapperMethods(),
                         config.getImmediatePartialStoreThresholdSeconds(),
                         config.getMaxEntriesPerTrace(), config.isCaptureThreadInfo(),
-                        config.isCaptureGcInfo(), config.getMBeanGaugeNotFoundDelaySeconds());
+                        config.isCaptureGcInfo(), config.getMBeanGaugeNotFoundDelaySeconds(),
+                        config.getInternalQueryTimeoutSeconds());
         configService.updateAdvancedConfig(updatedConfig, config.getVersion());
     }
 

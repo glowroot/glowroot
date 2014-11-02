@@ -93,7 +93,13 @@ public class TraceDao implements TraceRepository {
     // this index includes all of the columns needed for the trace points query so h2 can return
     // result set directly from the index without having to reference the table for each row
     private static final ImmutableList<Index> traceIndexes = ImmutableList.of(
-            new Index("trace_idx", ImmutableList.of("capture_time", "duration", "id", "error")));
+            new Index("trace_idx", ImmutableList.of("capture_time", "transaction_type", "duration",
+                    "id", "error")),
+            // trace_error_message_idx is for readErrorMessageCounts()
+            new Index("trace_error_message_idx", ImmutableList.of("transaction_type",
+                    "transaction_name", "capture_time", "error_message")),
+            // trace_count_idx is for readOverallCount()
+            new Index("trace_count_idx", ImmutableList.of("transaction_type", "capture_time")));
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
@@ -157,54 +163,50 @@ public class TraceDao implements TraceRepository {
         }
     }
 
-    public QueryResult<TracePoint> readPoints(TracePointQuery query) {
-        try {
-            ParameterizedSql parameterizedSql = getParameterizedSql(query);
-            ImmutableList<TracePoint> points = dataSource.query(parameterizedSql.getSql(),
-                    new PointRowMapper(), parameterizedSql.getArgs());
-            // one extra record over the limit is fetched above to identify if the limit was hit
-            return QueryResult.from(points, query.getLimit());
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return QueryResult.empty();
-        }
+    public QueryResult<TracePoint> readPoints(TracePointQuery query) throws SQLException {
+        ParameterizedSql parameterizedSql = getParameterizedSql(query);
+        ImmutableList<TracePoint> points = dataSource.query(parameterizedSql.getSql(),
+                new TracePointRowMapper(), parameterizedSql.getArgs());
+        // one extra record over the limit is fetched above to identify if the limit was hit
+        return QueryResult.from(points, query.getLimit());
     }
 
     public long readTransactionCount(String transactionType, String transactionName,
-            long captureTimeFrom, long captureTimeTo) {
-        try {
-            return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
-                    + " and transaction_name = ? and capture_time >= ? and capture_time <= ?",
-                    transactionType, transactionName, captureTimeFrom, captureTimeTo);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return 0;
-        }
+            long captureTimeFrom, long captureTimeTo) throws SQLException {
+        return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
+                + " and transaction_name = ? and capture_time >= ? and capture_time <= ?",
+                transactionType, transactionName, captureTimeFrom, captureTimeTo);
     }
 
-    public long readOverallCount(String transactionType, long captureTimeFrom, long captureTimeTo) {
-        try {
-            return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
-                    + " and capture_time >= ? and capture_time <= ?", transactionType,
-                    captureTimeFrom, captureTimeTo);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return 0;
-        }
+    public long readOverallCount(String transactionType, long captureTimeFrom, long captureTimeTo)
+            throws SQLException {
+        return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
+                + " and capture_time >= ? and capture_time <= ?", transactionType,
+                captureTimeFrom, captureTimeTo);
+    }
+
+    public ImmutableList<ErrorPoint> readErrorPoints(ErrorMessageQuery query, long resolutionMillis)
+            throws SQLException {
+        ParameterizedSql parameterizedSql = getErrorPointParameterizedSql(query, resolutionMillis);
+        return dataSource.query(parameterizedSql.getSql(), new ErrorPointRowMapper(),
+                parameterizedSql.getArgs());
+    }
+
+    public QueryResult<ErrorMessageCount> readErrorMessageCounts(ErrorMessageQuery query)
+            throws SQLException {
+        ParameterizedSql parameterizedSql = getErrorMessageCountParameterizedSql(query);
+        ImmutableList<ErrorMessageCount> points = dataSource.query(parameterizedSql.getSql(),
+                new ErrorMessageCountRowMapper(), parameterizedSql.getArgs());
+        // one extra record over the limit is fetched above to identify if the limit was hit
+        return QueryResult.from(points, query.getLimit());
     }
 
     @Nullable
-    public Trace readTrace(String traceId) {
-        List<Trace> traces;
-        try {
-            traces = dataSource.query("select id, partial, start_time, capture_time, duration,"
-                    + " transaction_type, transaction_name, headline, error_message, user,"
-                    + " custom_attributes, metrics, thread_info, gc_infos, entries_id, profile_id,"
-                    + " outlier_profile_id from trace where id = ?", new TraceRowMapper(), traceId);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return null;
-        }
+    public Trace readTrace(String traceId) throws SQLException {
+        List<Trace> traces = dataSource.query("select id, partial, start_time, capture_time,"
+                + " duration, transaction_type, transaction_name, headline, error_message, user,"
+                + " custom_attributes, metrics, thread_info, gc_infos, entries_id, profile_id,"
+                + " outlier_profile_id from trace where id = ?", new TraceRowMapper(), traceId);
         if (traces.isEmpty()) {
             return null;
         }
@@ -227,20 +229,6 @@ public class TraceDao implements TraceRepository {
     @Nullable
     public CharSource readOutlierProfile(String traceId) throws SQLException {
         return readFromCappedDatabase("outlier_profile_id", traceId);
-    }
-
-    public QueryResult<ErrorAggregate> readErrorAggregates(ErrorAggregateQuery query) {
-        try {
-            ParameterizedSql parameterizedSql = getParameterizedSql(query);
-            ImmutableList<ErrorAggregate> errorAggregates = dataSource.query(
-                    parameterizedSql.getSql(), new ErrorAggregateRowMapper(),
-                    parameterizedSql.getArgs());
-            // one extra record over the limit is fetched above to identify if the limit was hit
-            return QueryResult.from(errorAggregates, query.getLimit());
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return QueryResult.empty();
-        }
     }
 
     public void deleteAll() {
@@ -308,13 +296,8 @@ public class TraceDao implements TraceRepository {
     }
 
     @OnlyUsedByTests
-    public long count() {
-        try {
-            return dataSource.queryForLong("select count(*) from trace");
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return 0;
-        }
+    public long count() throws SQLException {
+        return dataSource.queryForLong("select count(*) from trace");
     }
 
     private static ParameterizedSql getParameterizedSql(TracePointQuery query) {
@@ -425,13 +408,25 @@ public class TraceDao implements TraceRepository {
         }
     }
 
-    private static ParameterizedSql getParameterizedSql(ErrorAggregateQuery query) {
-        String sql = "select transaction_name, error_message, count(*) from trace where"
-                + " error = ? and capture_time >= ? and capture_time <= ?";
+    private ParameterizedSql getErrorPointParameterizedSql(ErrorMessageQuery query,
+            long resolutionMillis) {
+        // need ".0" to force double result
+        String captureTimeSql = "ceil(capture_time / " + resolutionMillis + ".0) * "
+                + resolutionMillis;
+        String sql = "select " + captureTimeSql + ", count(*) from trace where error = ?";
         List<Object> args = Lists.newArrayList();
         args.add(true);
+        String transactionType = query.getTransactionType();
+        String transactionName = query.getTransactionName();
+        if (transactionType != null && transactionName != null) {
+            sql += " and transaction_type = ? and transaction_name = ?";
+            args.add(transactionType);
+            args.add(transactionName);
+        }
+        sql += " and capture_time >= ? and capture_time <= ? and error = ?";
         args.add(query.getFrom());
         args.add(query.getTo());
+        args.add(true);
         for (String include : query.getIncludes()) {
             sql += " and upper(error_message) like ?";
             args.add('%' + include.toUpperCase(Locale.ENGLISH) + '%');
@@ -440,11 +435,34 @@ public class TraceDao implements TraceRepository {
             sql += " and upper(error_message) not like ?";
             args.add('%' + exclude.toUpperCase(Locale.ENGLISH) + '%');
         }
-        sql += " group by transaction_name, error_message ";
-        sql += query.getSortDirection().getOrderByClause(query.getSortAttribute());
-        sql += " limit ?";
-        // +1 is to identify if limit was exceeded
-        args.add(query.getLimit() + 1);
+        sql += " group by " + captureTimeSql + " order by " + captureTimeSql;
+        return new ParameterizedSql(sql, args);
+    }
+
+    private ParameterizedSql getErrorMessageCountParameterizedSql(ErrorMessageQuery query) {
+        String sql = "select error_message, count(*) from trace where error = ?";
+        List<Object> args = Lists.newArrayList();
+        args.add(true);
+        String transactionType = query.getTransactionType();
+        String transactionName = query.getTransactionName();
+        if (transactionType != null && transactionName != null) {
+            sql += " and transaction_type = ? and transaction_name = ?";
+            args.add(transactionType);
+            args.add(transactionName);
+        }
+        sql += " and capture_time >= ? and capture_time <= ? and error = ?";
+        args.add(query.getFrom());
+        args.add(query.getTo());
+        args.add(true);
+        for (String include : query.getIncludes()) {
+            sql += " and upper(error_message) like ?";
+            args.add('%' + include.toUpperCase(Locale.ENGLISH) + '%');
+        }
+        for (String exclude : query.getExcludes()) {
+            sql += " and upper(error_message) not like ?";
+            args.add('%' + exclude.toUpperCase(Locale.ENGLISH) + '%');
+        }
+        sql += " group by error_message order by count(*) desc";
         return new ParameterizedSql(sql, args);
     }
 
@@ -468,19 +486,7 @@ public class TraceDao implements TraceRepository {
         }
     }
 
-    private static class ErrorAggregateRowMapper implements RowMapper<ErrorAggregate> {
-
-        @Override
-        public ErrorAggregate mapRow(ResultSet resultSet) throws SQLException {
-            String transactionName = resultSet.getString(1);
-            String error = resultSet.getString(2);
-            long count = resultSet.getLong(3);
-            return new ErrorAggregate(Strings.nullToEmpty(transactionName),
-                    Strings.nullToEmpty(error), count);
-        }
-    }
-
-    private static class PointRowMapper implements RowMapper<TracePoint> {
+    private static class TracePointRowMapper implements RowMapper<TracePoint> {
 
         @Override
         public TracePoint mapRow(ResultSet resultSet) throws SQLException {
@@ -523,7 +529,7 @@ public class TraceDao implements TraceRepository {
             return trace.build();
         }
 
-        private Existence getExistence(@Nullable String fileBlockId) {
+        private Existence getExistence(@Nullable String fileBlockId) throws SQLException {
             if (fileBlockId == null) {
                 return Existence.NO;
             }
@@ -531,14 +537,31 @@ public class TraceDao implements TraceRepository {
             try {
                 fileBlock = FileBlock.from(fileBlockId);
             } catch (InvalidBlockIdFormatException e) {
-                logger.warn(e.getMessage(), e);
-                return Existence.NO;
+                throw new SQLException(e);
             }
             if (cappedDatabase.isExpired(fileBlock)) {
                 return Existence.EXPIRED;
             } else {
                 return Existence.YES;
             }
+        }
+    }
+
+    private static class ErrorPointRowMapper implements RowMapper<ErrorPoint> {
+        @Override
+        public ErrorPoint mapRow(ResultSet resultSet) throws SQLException {
+            long captureTime = resultSet.getLong(1);
+            long errorCount = resultSet.getLong(2);
+            return new ErrorPoint(captureTime, errorCount);
+        }
+    }
+
+    private static class ErrorMessageCountRowMapper implements RowMapper<ErrorMessageCount> {
+        @Override
+        public ErrorMessageCount mapRow(ResultSet resultSet) throws SQLException {
+            String errorMessage = resultSet.getString(1);
+            long count = resultSet.getLong(2);
+            return new ErrorMessageCount(Strings.nullToEmpty(errorMessage), count);
         }
     }
 

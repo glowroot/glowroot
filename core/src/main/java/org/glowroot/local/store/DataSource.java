@@ -68,6 +68,7 @@ public class DataSource {
     private final Object lock = new Object();
     @GuardedBy("lock")
     private Connection connection;
+    private volatile int queryTimeoutSeconds;
     private volatile boolean closing = false;
 
     private final LoadingCache<String, PreparedStatement> preparedStatementCache = CacheBuilder
@@ -95,6 +96,10 @@ public class DataSource {
         connection = createConnection(dbFile);
         shutdownHookThread = new ShutdownHookThread();
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
+    }
+
+    public void setQueryTimeoutSeconds(Integer queryTimeoutSeconds) {
+        this.queryTimeoutSeconds = queryTimeoutSeconds;
     }
 
     public void compact() throws SQLException {
@@ -166,6 +171,8 @@ public class DataSource {
             for (int i = 0; i < args.length; i++) {
                 preparedStatement.setObject(i + 1, args[i]);
             }
+            // setQueryTimeout() affects all statements of this connection (at least with h2)
+            preparedStatement.setQueryTimeout(queryTimeoutSeconds);
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetCloser closer = new ResultSetCloser(resultSet);
             try {
@@ -194,6 +201,8 @@ public class DataSource {
             for (int i = 0; i < args.length; i++) {
                 preparedStatement.setObject(i + 1, args[i]);
             }
+            // setQueryTimeout() affects all statements of this connection (at least with h2)
+            preparedStatement.setQueryTimeout(queryTimeoutSeconds);
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetCloser closer = new ResultSetCloser(resultSet);
             try {
@@ -224,6 +233,8 @@ public class DataSource {
             for (int i = 0; i < args.length; i++) {
                 preparedStatement.setObject(i + 1, args[i]);
             }
+            // setQueryTimeout() affects all statements of this connection (at least with h2)
+            preparedStatement.setQueryTimeout(0);
             return preparedStatement.executeUpdate();
             // don't need to close statement since they are all cached and used under lock
         }
@@ -245,6 +256,8 @@ public class DataSource {
             }
             PreparedStatement preparedStatement = prepareStatement(sql);
             batchAdder.addBatches(preparedStatement);
+            // setQueryTimeout() affects all statements of this connection (at least with h2)
+            preparedStatement.setQueryTimeout(0);
             return preparedStatement.executeBatch();
             // don't need to close statement since they are all cached and used under lock
         }
@@ -303,6 +316,8 @@ public class DataSource {
         for (int i = 0; i < args.length; i++) {
             preparedStatement.setObject(i + 1, args[i]);
         }
+        // setQueryTimeout() affects all statements of this connection (at least with h2)
+        preparedStatement.setQueryTimeout(queryTimeoutSeconds);
         ResultSet resultSet = preparedStatement.executeQuery();
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {

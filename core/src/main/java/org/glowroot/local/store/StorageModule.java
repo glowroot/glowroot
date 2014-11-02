@@ -25,6 +25,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.collector.AggregateRepository;
 import org.glowroot.collector.TraceRepository;
 import org.glowroot.common.Clock;
@@ -61,12 +62,23 @@ public class StorageModule {
             boolean viewerModeEnabled) throws SQLException, IOException {
         // mem db is only used for testing (by glowroot-test-container)
         String h2MemDb = properties.get("internal.h2.memdb");
+        final DataSource dataSource;
         if (Boolean.parseBoolean(h2MemDb)) {
             dataSource = new DataSource();
         } else {
             dataSource = new DataSource(new File(dataDir, "glowroot.h2.db"));
         }
-        ConfigService configService = configModule.getConfigService();
+        final ConfigService configService = configModule.getConfigService();
+        dataSource.setQueryTimeoutSeconds(
+                configService.getAdvancedConfig().getInternalQueryTimeoutSeconds());
+        configService.addConfigListener(new ConfigListener() {
+            @Override
+            public void onChange() {
+                dataSource.setQueryTimeoutSeconds(
+                        configService.getAdvancedConfig().getInternalQueryTimeoutSeconds());
+            }
+        });
+        this.dataSource = dataSource;
         int cappedDatabaseSizeMb = configService.getStorageConfig().getCappedDatabaseSizeMb();
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);

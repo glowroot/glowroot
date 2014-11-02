@@ -176,7 +176,7 @@ class AdminJsonService {
 
     @OnlyUsedByTests
     @GET("/backend/admin/num-traces")
-    String getNumTraces() {
+    String getNumTraces() throws SQLException {
         logger.debug("getNumTraces()");
         return Long.toString(traceDao.count());
     }

@@ -14,22 +14,21 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, $ */
+/* global glowroot, $ */
 
-glowroot.controller('PerformanceTransactionsCtrl', [
+glowroot.controller('ErrorsMessagesCtrl', [
   '$scope',
   '$location',
   '$filter',
   '$http',
   '$q',
   '$timeout',
-  'keyedColorPools',
-  'queryStrings',
   'httpErrors',
-  function ($scope, $location, $filter, $http, $q, $timeout, keyedColorPools, queryStrings, httpErrors) {
+  'queryStrings',
+  function ($scope, $location, $filter, $http, $q, $timeout, httpErrors, queryStrings) {
     // \u00b7 is &middot;
-    document.title = 'Performance \u00b7 Glowroot';
-    $scope.$parent.activeNavbarItem = 'performance';
+    document.title = 'Errors \u00b7 Glowroot';
+    $scope.$parent.activeNavbarItem = 'errors';
 
     var plot;
 
@@ -40,12 +39,9 @@ glowroot.controller('PerformanceTransactionsCtrl', [
 
     var $chart = $('#chart');
 
-    var keyedColorPool = keyedColorPools.create();
-
     var summaryLimit = 100;
 
-    // this is used to calculate bar width under transaction name
-    var maxTransactionSummaryBarValue;
+    var dataSeriesExtra;
 
     $scope.$watchCollection('[containerWidth, windowHeight]', function () {
       plot.resize();
@@ -56,29 +52,48 @@ glowroot.controller('PerformanceTransactionsCtrl', [
     $scope.showChartSpinner = 0;
     $scope.showTableOverlay = 0;
 
+    $scope.tracesQueryString = function (errorMessage) {
+      var query = {
+        transactionType: $scope.transactionType,
+        transactionName: $scope.transactionName,
+        transactionNameComparator: 'equals',
+        from: $scope.chartFrom,
+        to: $scope.chartTo,
+        errorOnly: true
+      };
+      if (errorMessage.message.length <= 1000) {
+        query.error = errorMessage.message;
+        query.errorComparator = 'equals';
+      } else {
+        // this keeps url length under control
+        query.error = errorMessage.message.substring(0, 1000);
+        query.errorComparator = 'begins';
+      }
+      return queryStrings.encodeObject(query);
+    };
+
     function refreshData(deferred) {
       var date = $scope.filterDate;
-      if (!date) {
-        deferred.reject('Missing date');
-        return;
-      }
       var refreshId = ++currentRefreshId;
       var query = {
         from: $scope.chartFrom,
         to: $scope.chartTo,
-        transactionType: $scope.filterTransactionType,
+        transactionType: $scope.transactionType,
+        transactionName: $scope.transactionName,
+        includes: $scope.errorFilterIncludes,
+        excludes: $scope.errorFilterExcludes,
         limit: summaryLimit
       };
       $scope.showChartSpinner++;
       $scope.showTableOverlay++;
-      $http.get('backend/performance/transactions?' + queryStrings.encodeObject(query))
+      $http.get('backend/error/messages?' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showChartSpinner--;
             $scope.showTableOverlay--;
             if (refreshId !== currentRefreshId) {
               return;
             }
-            $scope.chartNoData = !data.dataSeries.length;
+            $scope.chartNoData = !data.dataSeries.data.length;
             // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
             plot.getAxes().xaxis.options.min = query.from;
             plot.getAxes().xaxis.options.max = query.to;
@@ -86,22 +101,12 @@ glowroot.controller('PerformanceTransactionsCtrl', [
               date.getTime(),
                   date.getTime() + 24 * 60 * 60 * 1000
             ];
-            var plotData = [];
-            var labels = [];
-            angular.forEach(data.dataSeries, function (dataSeries) {
-              labels.push(dataSeries.name ? dataSeries.name : 'Other');
-            });
-            keyedColorPool.reset(labels);
-            angular.forEach(data.dataSeries, function (dataSeries, index) {
-              var label = labels[index];
-              plotData.push({
-                data: dataSeries.data,
-                label: label,
-                color: keyedColorPool.get(label)
-              });
-            });
-            if (plotData.length) {
-              plot.setData(plotData);
+            if (data.dataSeries.data.length) {
+              plot.setData([
+                {
+                  data: data.dataSeries.data
+                }
+              ]);
             } else {
               plot.setData([
                 []
@@ -109,7 +114,11 @@ glowroot.controller('PerformanceTransactionsCtrl', [
             }
             plot.setupGrid();
             plot.draw();
-            updateTransactionSummaries(data);
+            dataSeriesExtra = data.dataSeriesExtra;
+
+            $scope.moreAvailable = data.moreAvailable;
+            $scope.errorMessages = data.errorMessages;
+            $scope.traceCount = data.traceCount;
             if (deferred) {
               deferred.resolve('Success');
             }
@@ -125,16 +134,11 @@ glowroot.controller('PerformanceTransactionsCtrl', [
     }
 
     $scope.refreshButtonClick = function (deferred) {
-      if (!$scope.filterDate) {
-        deferred.reject('Missing date');
+      $scope.parsingError = undefined;
+      parseQuery($scope.errorFilter || '');
+      if ($scope.parsingError) {
+        deferred.reject($scope.parsingError);
         return;
-      }
-      var midnight = new Date($scope.chartFrom).setHours(0, 0, 0, 0);
-      if (midnight !== $scope.filterDate.getTime()) {
-        // filterDate has changed
-        chartFromToDefault = false;
-        $scope.chartFrom = $scope.filterDate.getTime() + ($scope.chartFrom - midnight);
-        $scope.chartTo = $scope.filterDate.getTime() + ($scope.chartTo - midnight);
       }
       updateLocation();
       refreshData(deferred);
@@ -179,83 +183,72 @@ glowroot.controller('PerformanceTransactionsCtrl', [
       });
     });
 
-    $scope.$watch('filterDate', function (newValue, oldValue) {
-      if (newValue && newValue !== oldValue) {
-        $timeout(function () {
-          $('#refreshButtonDiv').find('button').click();
-        }, 0, false);
-      }
-    });
-
-    function updateTransactionSummaries(data) {
-      if (data.overallSummary) {
-        $scope.overallSummary = data.overallSummary;
-      }
-      $scope.transactionSummaries = data.transactionSummaries;
-      $scope.moreAvailable = data.moreAvailable;
-      maxTransactionSummaryBarValue = 0;
-      angular.forEach($scope.transactionSummaries, function (summary) {
-        maxTransactionSummaryBarValue = Math.max(maxTransactionSummaryBarValue, summary.totalMicros);
-      });
-    }
-
-    $scope.changeTransactionType = function (transactionType) {
-      if (transactionType !== $scope.filterTransactionType) {
-        $scope.filterTransactionType = transactionType;
-        refreshData();
-      }
-    };
-
-    $scope.overallAverage = function () {
-      if (!$scope.overallSummary) {
-        // overall hasn't loaded yet
-        return '';
-      } else if ($scope.overallSummary.transactionCount) {
-        return (($scope.overallSummary.totalMicros / $scope.overallSummary.transactionCount) / 1000000).toFixed(3);
-      } else {
-        return '-';
-      }
-    };
-
-    $scope.metricsQueryString = function (transactionName) {
-      var query = {
-        transactionType: $scope.filterTransactionType,
-        transactionName: transactionName,
-        from: $scope.chartFrom,
-        to: $scope.chartTo
-      };
-      return queryStrings.encodeObject(query);
-    };
-
-    $scope.showMore = function (deferred) {
-      // double each time
-      summaryLimit *= 2;
-      var query = {
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
-        transactionType: $scope.filterTransactionType,
-        limit: summaryLimit
-      };
-      $scope.showTableOverlay++;
-      $http.get('backend/performance/transaction-summaries?' + queryStrings.encodeObject(query))
-          .success(function (data) {
-            $scope.showTableOverlay--;
-            updateTransactionSummaries(data);
-            deferred.resolve();
-          })
-          .error(httpErrors.handler($scope, deferred));
-    };
-
-    $scope.transactionSummaryBarWidth = function (totalMicros) {
-      return (totalMicros / maxTransactionSummaryBarValue) * 100 + '%';
-    };
-
     $scope.zoomOut = function () {
       // need to execute this outside of $apply since code assumes it needs to do its own $apply
       $timeout(function () {
         plot.zoomOut();
       });
     };
+
+    function parseQuery(text) {
+      var includes = [];
+      var excludes = [];
+      var i;
+      var c;
+      var currTerm;
+      var inQuote;
+      var inExclude;
+      for (i = 0; i < text.length; i++) {
+        c = text.charAt(i);
+        if (currTerm !== undefined) {
+          // inside quoted or non-quoted term
+          if (c === inQuote || !inQuote && c === ' ') {
+            // end of term (quoted or non-quoted)
+            if (inExclude) {
+              excludes.push(currTerm);
+            } else {
+              includes.push(currTerm);
+            }
+            currTerm = undefined;
+            inQuote = undefined;
+            inExclude = false;
+          } else if (!inQuote && (c === '\'' || c === '"')) {
+            $scope.parsingError = 'Mismatched quote';
+            return;
+          } else {
+            currTerm += c;
+          }
+        } else if (c === '\'' || c === '"') {
+          // start of quoted term
+          currTerm = '';
+          inQuote = c;
+        } else if (c === '-') {
+          // validate there is an immediate next term
+          if (i === text.length - 1 || text.charAt(i + 1) === ' ') {
+            $scope.parsingError = 'Invalid location for minus';
+          }
+          // next term is an exclude
+          inExclude = true;
+        } else if (c !== ' ') {
+          // start of non-quoted term
+          currTerm = c;
+        }
+      }
+      if (inQuote) {
+        $scope.parsingError = 'Mismatched quote';
+        return;
+      }
+      if (currTerm) {
+        // end the last non-quoted term
+        if (inExclude) {
+          excludes.push(currTerm);
+        } else {
+          includes.push(currTerm);
+        }
+      }
+      $scope.errorFilterIncludes = includes;
+      $scope.errorFilterExcludes = excludes;
+    }
 
     var chartFromToDefault;
 
@@ -286,45 +279,19 @@ glowroot.controller('PerformanceTransactionsCtrl', [
       $scope.chartFrom = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
       $scope.chartTo = Math.min($scope.chartFrom + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
-    $scope.filterTransactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
+    $scope.transactionType = $location.search()['transaction-type'];
+    $scope.transactionName = $location.search()['transaction-name'];
 
     function updateLocation() {
       var query = {
-        'transaction-type': $scope.filterTransactionType
+        'transaction-type': $scope.transactionType,
+        'transaction-name': $scope.transactionName
       };
       if (!chartFromToDefault) {
         query.from = $scope.chartFrom - fixedAggregateIntervalMillis;
         query.to = $scope.chartTo;
       }
       $location.search(query).replace();
-    }
-
-    function renderTooltipHtml(dataIndex, highlightSeriesIndex) {
-      var html = '<table><tbody>';
-      var total = 0;
-      var plotData = plot.getData();
-      for (var seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
-        var dataSeries = plotData[seriesIndex];
-        var value = dataSeries.data[dataIndex][1];
-        html += '<tr';
-        if (seriesIndex === highlightSeriesIndex) {
-          html += ' style="background-color: #eee;"';
-        }
-        html += '>' +
-            '<td class="legendColorBox">' +
-            '<div style="border: 1px solid rgb(204, 204, 204); padding: 1px;">' +
-            '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">' +
-            '</div></div></td>' +
-            '<td class="legendLabel" style="padding-right: 10px;">' + dataSeries.label + '</td>' +
-            '<td><strong>' + value.toFixed(3) + '</strong></td>' +
-            '</tr>';
-        total += value;
-      }
-      if (total === 0) {
-        return 'No data';
-      }
-      html += '</tbody></table>';
-      return html;
     }
 
     (function () {
@@ -356,9 +323,9 @@ glowroot.controller('PerformanceTransactionsCtrl', [
           ticks: 10,
           zoomRange: false,
           min: 0,
-          // 10 second yaxis max just for initial empty chart rendering
-          max: 10,
-          label: 'seconds'
+          // 100% yaxis max just for initial empty chart rendering
+          max: 100,
+          label: 'error percentage'
         },
         zoom: {
           interactive: true,
@@ -381,7 +348,12 @@ glowroot.controller('PerformanceTransactionsCtrl', [
         tooltip: true,
         tooltipOpts: {
           content: function (label, xval, yval, flotItem) {
-            return renderTooltipHtml(flotItem.dataIndex, flotItem.seriesIndex);
+            if (yval === 0 && !dataSeriesExtra[xval]) {
+              // this is synthetic point for initial upslope, gap or final downslope
+              return 'No errors';
+            }
+            return 'Error percentage: ' + yval.toFixed(1) + '<br>Error count: ' + dataSeriesExtra[xval][0] +
+                '<br>Transaction count: ' + dataSeriesExtra[xval][1];
           }
         }
       };

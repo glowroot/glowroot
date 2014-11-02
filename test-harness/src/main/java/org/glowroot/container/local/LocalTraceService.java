@@ -17,6 +17,7 @@ package org.glowroot.container.local;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.List;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -83,7 +84,7 @@ class LocalTraceService extends TraceService {
     }
 
     @Override
-    public long getNumTraces() {
+    public long getNumTraces() throws SQLException {
         return traceDao.count();
     }
 

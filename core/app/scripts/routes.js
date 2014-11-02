@@ -60,10 +60,19 @@ glowroot.config([
       // performance-metrics controller needs to wait for layout when running under grunt serve
       resolve: waitForLayout
     });
-    $stateProvider.state('errors', {
-      url: '/errors',
-      templateUrl: 'views/errors.html',
-      controller: 'ErrorsCtrl'
+    $stateProvider.state('errors-transactions', {
+      url: '/errors/transactions',
+      templateUrl: 'views/errors-transactions.html',
+      controller: 'ErrorsTransactionsCtrl',
+      // errors-transactions controller needs to wait for layout when running under grunt serve
+      resolve: waitForLayout
+    });
+    $stateProvider.state('errors-messages', {
+      url: '/errors/messages',
+      templateUrl: 'views/errors-messages.html',
+      controller: 'ErrorsMessagesCtrl',
+      // errors-transactions controller needs to wait for layout when running under grunt serve
+      resolve: waitForLayout
     });
     $stateProvider.state('traces', {
       url: '/traces',

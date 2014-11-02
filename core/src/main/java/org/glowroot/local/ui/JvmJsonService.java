@@ -22,6 +22,7 @@ import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Array;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -181,7 +182,7 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/gauge-points")
-    String getGaugePoints(String content) throws IOException {
+    String getGaugePoints(String content) throws IOException, SQLException {
         logger.debug("getGaugePoints(): {}", content);
         ObjectMapper mapper = ObjectMappers.create();
         mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);

@@ -328,6 +328,7 @@ public class ConfigTest {
         config.setCaptureThreadInfo(!config.isCaptureThreadInfo());
         config.setCaptureGcInfo(!config.isCaptureGcInfo());
         config.setMBeanGaugeNotFoundDelaySeconds(config.getMBeanGaugeNotFoundDelaySeconds() + 1);
+        config.setInternalQueryTimeoutSeconds(config.getInternalQueryTimeoutSeconds() + 1);
     }
 
     private static void updateAllFields(PluginConfig config) {

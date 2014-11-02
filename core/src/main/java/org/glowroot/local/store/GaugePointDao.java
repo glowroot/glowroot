@@ -81,16 +81,11 @@ public class GaugePointDao implements GaugePointRepository {
     }
 
     public ImmutableList<GaugePoint> readGaugePoints(String gaugeName, long captureTimeFrom,
-            long captureTimeTo) {
-        try {
-            return dataSource.query("select gauge_name, capture_time, value from gauge_point"
-                    + " where gauge_name = ? and capture_time >= ? and capture_time <= ?"
-                    + " order by capture_time", new GaugePointRowMapper(), gaugeName,
-                    captureTimeFrom, captureTimeTo);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return ImmutableList.of();
-        }
+            long captureTimeTo) throws SQLException {
+        return dataSource.query("select gauge_name, capture_time, value from gauge_point"
+                + " where gauge_name = ? and capture_time >= ? and capture_time <= ?"
+                + " order by capture_time", new GaugePointRowMapper(), gaugeName,
+                captureTimeFrom, captureTimeTo);
     }
 
     public void deleteAll() {

@@ -65,7 +65,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTrace() {
+    public void shouldReadTrace() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -86,7 +86,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTraceWithDurationQualifier() {
+    public void shouldReadTraceWithDurationQualifier() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -101,7 +101,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithHighDurationQualifier() {
+    public void shouldNotReadTraceWithHighDurationQualifier() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -116,7 +116,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithLowDurationQualifier() {
+    public void shouldNotReadTraceWithLowDurationQualifier() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -131,7 +131,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTraceWithAttributeQualifier() {
+    public void shouldReadTraceWithAttributeQualifier() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -146,7 +146,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTraceWithAttributeQualifier2() {
+    public void shouldReadTraceWithAttributeQualifier2() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -160,7 +160,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTraceWithAttributeQualifier3() {
+    public void shouldReadTraceWithAttributeQualifier3() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -175,7 +175,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithNonMatchingAttributeQualifier() {
+    public void shouldNotReadTraceWithNonMatchingAttributeQualifier() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -190,7 +190,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithNonMatchingAttributeQualifier2() {
+    public void shouldNotReadTraceWithNonMatchingAttributeQualifier2() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -205,7 +205,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldDeletedTrace() {
+    public void shouldDeletedTrace() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();

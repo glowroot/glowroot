@@ -16,6 +16,7 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Random;
 
@@ -59,7 +60,8 @@ public class TracePointJsonServiceTest {
     // mostly the interesting tests are when requesting to=0 so active & pending traces are included
 
     @Test
-    public void shouldReturnCompletedStoredPointInPlaceOfActivePoint() throws IOException {
+    public void shouldReturnCompletedStoredPointInPlaceOfActivePoint() throws IOException,
+            SQLException {
         // given
         List<Transaction> activeTransactions = Lists.newArrayList();
         activeTransactions.add(mockActiveTransaction("id1", 500));
@@ -77,7 +79,8 @@ public class TracePointJsonServiceTest {
     }
 
     @Test
-    public void shouldReturnCompletedPendingPointInPlaceOfActivePoint() throws IOException {
+    public void shouldReturnCompletedPendingPointInPlaceOfActivePoint() throws IOException,
+            SQLException {
         // given
         List<Transaction> activeTransactions = Lists.newArrayList();
         activeTransactions.add(mockActiveTransaction("id1", 500));
@@ -97,7 +100,7 @@ public class TracePointJsonServiceTest {
     // this is relevant because completed pending traces don't have firm end times
     // and non-completed pending traces don't have firm end times or durations
     @Test
-    public void shouldReturnStoredTraceInPlaceOfPendingTrace() throws IOException {
+    public void shouldReturnStoredTraceInPlaceOfPendingTrace() throws IOException, SQLException {
         // given
         List<Transaction> activeTransactions = Lists.newArrayList();
         List<Transaction> pendingTransactions = Lists.newArrayList();
@@ -116,7 +119,7 @@ public class TracePointJsonServiceTest {
     }
 
     @Test
-    public void shouldReturnOrderedByDurationDesc() throws IOException {
+    public void shouldReturnOrderedByDurationDesc() throws IOException, SQLException {
         // given
         List<Transaction> activeTransactions = Lists.newArrayList();
         for (int i = 0; i < 100; i++) {
@@ -148,7 +151,7 @@ public class TracePointJsonServiceTest {
     }
 
     @Test
-    public void shouldHandleCaseWithMoreActiveTracesThanLimit() throws IOException {
+    public void shouldHandleCaseWithMoreActiveTracesThanLimit() throws IOException, SQLException {
         // given
         List<Transaction> activeTransactions = Lists.newArrayList();
         for (int i = 0; i < 110; i++) {
@@ -168,7 +171,7 @@ public class TracePointJsonServiceTest {
 
     private static TracePointJsonService buildTracePointJsonService(
             List<Transaction> activeTransactions, List<Transaction> pendingTransactions,
-            List<TracePoint> points) {
+            List<TracePoint> points) throws SQLException {
 
         return buildTracePointJsonService(activeTransactions, pendingTransactions, points,
                 DEFAULT_CURRENT_TIME_MILLIS, DEFAULT_CURRENT_TICK);
@@ -177,7 +180,7 @@ public class TracePointJsonServiceTest {
     private static TracePointJsonService buildTracePointJsonService(
             List<Transaction> activeTransactions, List<Transaction> pendingTransactions,
             List<TracePoint> points, long currentTimeMillis,
-            long currentTick) {
+            long currentTick) throws SQLException {
 
         Ordering<TracePoint> durationDescOrdering = Ordering.natural().reverse()
                 .onResultOf(new Function<TracePoint, Double>() {

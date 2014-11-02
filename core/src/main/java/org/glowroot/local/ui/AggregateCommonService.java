@@ -16,6 +16,7 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -54,7 +55,7 @@ class AggregateCommonService {
         long profileSampleCount = 0;
         for (Aggregate aggregate : aggregates) {
             totalMicros += aggregate.getTotalMicros();
-            count += aggregate.getCount();
+            count += aggregate.getTransactionCount();
             AggregateMetric toBeMergedSyntheticRootMetric =
                     mapper.readValue(aggregate.getMetrics(), AggregateMetric.class);
             mergeMatchedMetric(toBeMergedSyntheticRootMetric, syntheticRootMetric);
@@ -78,7 +79,7 @@ class AggregateCommonService {
 
     @Nullable
     AggregateProfileNode getProfile(String transactionType, String transactionName, long from,
-            long to, double truncateLeafPercentage) throws IOException {
+            long to, double truncateLeafPercentage) throws IOException, SQLException {
         List<CharSource> profiles =
                 aggregateDao.readProfiles(transactionType, transactionName, from, to);
         AggregateProfileNode syntheticRootNode = AggregateProfileNode.createSyntheticRootNode();

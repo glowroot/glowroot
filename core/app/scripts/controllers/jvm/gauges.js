@@ -116,7 +116,6 @@ glowroot.controller('JvmGaugesCtrl', [
             if (refreshId !== currentRefreshId) {
               return;
             }
-            $scope.refreshChartError = false;
             // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
             plot.getAxes().xaxis.options.min = chartFrom;
             plot.getAxes().xaxis.options.max = chartTo;
@@ -139,15 +138,7 @@ glowroot.controller('JvmGaugesCtrl', [
             if (refreshId !== currentRefreshId) {
               return;
             }
-            $scope.chartLimitExceeded = false;
-            if (status === 0) {
-              $scope.refreshChartError = 'Unable to connect to server';
-            } else {
-              $scope.refreshChartError = 'An error occurred';
-            }
-            if (deferred) {
-              deferred.reject($scope.refreshChartError);
-            }
+            httpErrors.handler($scope, deferred)(data, status);
           });
     }
 
@@ -405,7 +396,7 @@ glowroot.controller('JvmGaugesCtrl', [
         grid: {
           mouseActiveRadius: 10,
           // without specifying min border margin, the point radius is used
-          minBorderMargin: 10,
+          minBorderMargin: 0,
           borderColor: '#7d7358',
           borderWidth: 1,
           // this is needed for tooltip plugin to work

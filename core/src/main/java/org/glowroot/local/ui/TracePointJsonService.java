@@ -16,6 +16,7 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -80,7 +81,7 @@ class TracePointJsonService {
     }
 
     @GET("/backend/trace/points")
-    String getPoints(String content) throws IOException {
+    String getPoints(String content) throws IOException, SQLException {
         logger.debug("getPoints(): content={}", content);
         TracePointQuery query = ObjectMappers.readRequiredValue(mapper, content,
                 TracePointQuery.class);
@@ -95,7 +96,7 @@ class TracePointJsonService {
             this.query = request;
         }
 
-        private String handle() throws IOException {
+        private String handle() throws IOException, SQLException {
             boolean captureActiveTraces = shouldCaptureActiveTraces();
             List<Transaction> activeTraces = Lists.newArrayList();
             long captureTime = 0;
@@ -122,7 +123,8 @@ class TracePointJsonService {
                     && query.getFrom() < currentTimeMillis;
         }
 
-        private QueryResult<TracePoint> getStoredAndPendingPoints(boolean captureActiveTraces) {
+        private QueryResult<TracePoint> getStoredAndPendingPoints(boolean captureActiveTraces)
+                throws SQLException {
             List<TracePoint> matchingPendingPoints;
             // it only seems worth looking at pending traces if request asks for active traces
             if (captureActiveTraces) {

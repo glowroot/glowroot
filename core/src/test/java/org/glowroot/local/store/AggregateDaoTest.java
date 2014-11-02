@@ -16,6 +16,7 @@
 package org.glowroot.local.store;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -69,27 +70,27 @@ public class AggregateDaoTest {
     }
 
     @Test
-    public void shouldReadTransactions() {
+    public void shouldReadTransactions() throws SQLException {
         // given
         Aggregate overallAggregate =
-                new Aggregate("a type", null, 10000, 1000000, 10, "", Existence.NO, 0, null);
+                new Aggregate("a type", null, 10000, 1000000, 0, 10, "", Existence.NO, 0, null);
         List<Aggregate> transactionAggregates = Lists.newArrayList();
-        transactionAggregates.add(new Aggregate("a type", "one", 10000, 100000, 1, "",
+        transactionAggregates.add(new Aggregate("a type", "one", 10000, 100000, 0, 1, "",
                 Existence.NO, 0, null));
-        transactionAggregates.add(new Aggregate("a type", "two", 10000, 300000, 2, "",
+        transactionAggregates.add(new Aggregate("a type", "two", 10000, 300000, 0, 2, "",
                 Existence.NO, 0, null));
-        transactionAggregates.add(new Aggregate("a type", "seven", 10000, 1400000, 7, "",
+        transactionAggregates.add(new Aggregate("a type", "seven", 10000, 1400000, 0, 7, "",
                 Existence.NO, 0, null));
         aggregateDao.store(ImmutableList.of(overallAggregate), transactionAggregates);
 
         Aggregate overallPoint2 =
-                new Aggregate("a type", null, 20000, 1000000, 10, "", Existence.NO, 0, null);
+                new Aggregate("a type", null, 20000, 1000000, 0, 10, "", Existence.NO, 0, null);
         List<Aggregate> aggregates2 = Lists.newArrayList();
-        aggregates2.add(new Aggregate("a type", "one", 20000, 100000, 1, "", Existence.NO, 0,
+        aggregates2.add(new Aggregate("a type", "one", 20000, 100000, 0, 1, "", Existence.NO, 0,
                 null));
-        aggregates2.add(new Aggregate("a type", "two", 20000, 300000, 2, "", Existence.NO, 0,
+        aggregates2.add(new Aggregate("a type", "two", 20000, 300000, 0, 2, "", Existence.NO, 0,
                 null));
-        aggregates2.add(new Aggregate("a type", "seven", 20000, 1400000, 7, "", Existence.NO, 0,
+        aggregates2.add(new Aggregate("a type", "seven", 20000, 1400000, 0, 7, "", Existence.NO, 0,
                 null));
         aggregateDao.store(ImmutableList.of(overallPoint2), aggregates2);
         // when
@@ -101,12 +102,12 @@ public class AggregateDaoTest {
         assertThat(queryResult.getRecords()).hasSize(3);
         assertThat(queryResult.getRecords().get(0).getTransactionName()).isEqualTo("seven");
         assertThat(queryResult.getRecords().get(0).getTotalMicros()).isEqualTo(2800000);
-        assertThat(queryResult.getRecords().get(0).getCount()).isEqualTo(14);
+        assertThat(queryResult.getRecords().get(0).getTransactionCount()).isEqualTo(14);
         assertThat(queryResult.getRecords().get(1).getTransactionName()).isEqualTo("two");
         assertThat(queryResult.getRecords().get(1).getTotalMicros()).isEqualTo(600000);
-        assertThat(queryResult.getRecords().get(1).getCount()).isEqualTo(4);
+        assertThat(queryResult.getRecords().get(1).getTransactionCount()).isEqualTo(4);
         assertThat(queryResult.getRecords().get(2).getTransactionName()).isEqualTo("one");
         assertThat(queryResult.getRecords().get(2).getTotalMicros()).isEqualTo(200000);
-        assertThat(queryResult.getRecords().get(2).getCount()).isEqualTo(2);
+        assertThat(queryResult.getRecords().get(2).getTransactionCount()).isEqualTo(2);
     }
 }

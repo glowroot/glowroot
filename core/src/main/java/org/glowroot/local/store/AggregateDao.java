@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharSource;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -54,7 +55,8 @@ public class AggregateDao implements AggregateRepository {
             new Column("transaction_type", Types.VARCHAR),
             new Column("capture_time", Types.BIGINT), // capture time rounded up to nearest 5 min
             new Column("total_micros", Types.BIGINT), // microseconds
-            new Column("count", Types.BIGINT),
+            new Column("error_count", Types.BIGINT),
+            new Column("transaction_count", Types.BIGINT),
             new Column("metrics", Types.VARCHAR)); // json data
 
     private static final ImmutableList<Column> transactionAggregateColumns = ImmutableList.of(
@@ -62,7 +64,8 @@ public class AggregateDao implements AggregateRepository {
             new Column("transaction_name", Types.VARCHAR),
             new Column("capture_time", Types.BIGINT), // capture time rounded up to nearest 5 min
             new Column("total_micros", Types.BIGINT), // microseconds
-            new Column("count", Types.BIGINT),
+            new Column("error_count", Types.BIGINT),
+            new Column("transaction_count", Types.BIGINT),
             new Column("profile_sample_count", Types.BIGINT),
             new Column("profile_id", Types.VARCHAR),  // capped database id
             new Column("metrics", Types.VARCHAR)); // json data
@@ -70,14 +73,17 @@ public class AggregateDao implements AggregateRepository {
     // this index includes all columns needed for the overall aggregate query so h2 can return
     // the result set directly from the index without having to reference the table for each row
     private static final ImmutableList<Index> overallAggregateIndexes = ImmutableList.of(
-            new Index("overall_aggregate_idx", ImmutableList.of("transaction_type", "capture_time",
-                    "total_micros", "count")));
+            new Index("overall_aggregate_idx", ImmutableList.of("capture_time", "transaction_type",
+                    "total_micros", "transaction_count", "error_count")));
 
     // this index includes all columns needed for the transaction aggregate query so h2 can return
     // the result set directly from the index without having to reference the table for each row
+    //
+    // capture_time is first so this can also be used for readTransactionErrorCounts()
     private static final ImmutableList<Index> transactionAggregateIndexes = ImmutableList.of(
-            new Index("transaction_aggregate_idx", ImmutableList.of("transaction_type",
-                    "capture_time", "transaction_name", "total_micros", "count")));
+            new Index("transaction_aggregate_idx", ImmutableList.of("capture_time",
+                    "transaction_type", "transaction_name", "total_micros", "transaction_count",
+                    "error_count")));
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
@@ -96,7 +102,8 @@ public class AggregateDao implements AggregateRepository {
             final List<Aggregate> transactionAggregates) {
         try {
             dataSource.batchUpdate("insert into overall_aggregate (transaction_type, capture_time,"
-                    + " total_micros, count, metrics) values (?, ?, ?, ?, ?)", new BatchAdder() {
+                    + " total_micros, error_count, transaction_count, metrics) values (?, ?, ?, ?,"
+                    + " ?, ?)", new BatchAdder() {
                 @Override
                 public void addBatches(PreparedStatement preparedStatement)
                         throws SQLException {
@@ -105,16 +112,18 @@ public class AggregateDao implements AggregateRepository {
                                 overallAggregate.getTransactionType());
                         preparedStatement.setLong(2, overallAggregate.getCaptureTime());
                         preparedStatement.setLong(3, overallAggregate.getTotalMicros());
-                        preparedStatement.setLong(4, overallAggregate.getCount());
-                        preparedStatement.setString(5, overallAggregate.getMetrics());
+                        preparedStatement.setLong(4, overallAggregate.getErrorCount());
+                        preparedStatement.setLong(5, overallAggregate.getTransactionCount());
+                        preparedStatement.setString(6, overallAggregate.getMetrics());
                         preparedStatement.addBatch();
                     }
 
                 }
             });
             dataSource.batchUpdate("insert into transaction_aggregate (transaction_type,"
-                    + " transaction_name, capture_time, total_micros, count, profile_sample_count,"
-                    + " profile_id, metrics) values (?, ?, ?, ?, ?, ?, ?, ?)", new BatchAdder() {
+                    + " transaction_name, capture_time, total_micros, error_count,"
+                    + " transaction_count, profile_sample_count, profile_id, metrics) values (?,"
+                    + " ?, ?, ?, ?, ?, ?, ?, ?)", new BatchAdder() {
                 @Override
                 public void addBatches(PreparedStatement preparedStatement)
                         throws SQLException {
@@ -130,10 +139,12 @@ public class AggregateDao implements AggregateRepository {
                                 transactionAggregate.getTransactionName());
                         preparedStatement.setLong(3, transactionAggregate.getCaptureTime());
                         preparedStatement.setLong(4, transactionAggregate.getTotalMicros());
-                        preparedStatement.setLong(5, transactionAggregate.getCount());
-                        preparedStatement.setLong(6, transactionAggregate.getProfileSampleCount());
-                        preparedStatement.setString(7, profileId);
-                        preparedStatement.setString(8, transactionAggregate.getMetrics());
+                        preparedStatement.setLong(5, transactionAggregate.getErrorCount());
+                        preparedStatement.setLong(6, transactionAggregate.getTransactionCount());
+                        preparedStatement.setLong(7,
+                                transactionAggregate.getProfileSampleCount());
+                        preparedStatement.setString(8, profileId);
+                        preparedStatement.setString(9, transactionAggregate.getMetrics());
                         preparedStatement.addBatch();
                     }
                 }
@@ -144,89 +155,106 @@ public class AggregateDao implements AggregateRepository {
     }
 
     public ImmutableList<Aggregate> readOverallAggregates(String transactionType,
-            long captureTimeFrom, long captureTimeTo) {
-        try {
-            return dataSource.query("select capture_time, total_micros, count, null, null, metrics"
-                    + " from overall_aggregate where transaction_type = ? and capture_time >= ?"
-                    + " and capture_time <= ? order by capture_time",
-                    new AggregateRowMapper(transactionType, null), transactionType,
-                    captureTimeFrom, captureTimeTo);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return ImmutableList.of();
-        }
+            long captureTimeFrom, long captureTimeTo) throws SQLException {
+        return dataSource.query("select capture_time, total_micros, error_count,"
+                + " transaction_count, null, null, metrics from overall_aggregate where"
+                + " transaction_type = ? and capture_time >= ? and capture_time <= ? order by"
+                + " capture_time", new AggregateRowMapper(transactionType, null),
+                transactionType, captureTimeFrom, captureTimeTo);
     }
 
     public ImmutableList<Aggregate> readTransactionAggregates(String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo) {
-        try {
-            // TODO this query is a little slow because of pulling in metrics for each row
-            // and sticking metrics into index does not seem to help
-            return dataSource.query("select capture_time, total_micros, count,"
-                    + " profile_sample_count, profile_id, metrics from transaction_aggregate where"
-                    + " transaction_type = ? and transaction_name = ? and capture_time >= ? and"
-                    + " capture_time <= ?",
-                    new AggregateRowMapper(transactionType, transactionName), transactionType,
-                    transactionName, captureTimeFrom, captureTimeTo);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return ImmutableList.of();
-        }
+            String transactionName, long captureTimeFrom, long captureTimeTo) throws SQLException {
+        // TODO this query is a little slow because of pulling in metrics for each row
+        // and sticking metrics into index does not seem to help
+        return dataSource.query("select capture_time, total_micros, error_count,"
+                + " transaction_count, profile_sample_count, profile_id, metrics from"
+                + " transaction_aggregate where transaction_type = ? and transaction_name = ?"
+                + " and capture_time >= ? and capture_time <= ?",
+                new AggregateRowMapper(transactionType, transactionName), transactionType,
+                transactionName, captureTimeFrom, captureTimeTo);
     }
 
     public Summary readOverallSummary(String transactionType, long captureTimeFrom,
-            long captureTimeTo) {
-        try {
-            // it's important that all these columns are in a single index so h2 can return the
-            // result set directly from the index without having to reference the table for each row
-            Summary result = dataSource.query("select sum(total_micros), sum(count) from"
-                    + " overall_aggregate where transaction_type = ? and capture_time >= ? and"
-                    + " capture_time <= ?", new OverallSummaryResultSetExtractor(),
-                    transactionType, captureTimeFrom, captureTimeTo);
-            if (result == null) {
-                // this can happen if datasource is in the middle of closing
-                return new Summary(null, 0, 0);
-            } else {
-                return result;
-            }
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
+            long captureTimeTo) throws SQLException {
+        // it's important that all these columns are in a single index so h2 can return the
+        // result set directly from the index without having to reference the table for each row
+        Summary result = dataSource.query("select sum(total_micros), sum(transaction_count)"
+                + " from overall_aggregate where transaction_type = ? and capture_time >= ?"
+                + " and capture_time <= ?", new OverallSummaryResultSetExtractor(),
+                transactionType, captureTimeFrom, captureTimeTo);
+        if (result == null) {
+            // this can happen if datasource is in the middle of closing
             return new Summary(null, 0, 0);
+        } else {
+            return result;
         }
     }
 
     public QueryResult<Summary> readTransactionSummaries(String transactionType,
-            long captureTimeFrom, long captureTimeTo, int limit) {
-        try {
-            // it's important that all these columns are in a single index so h2 can return the
-            // result set directly from the index without having to reference the table for each row
-            ImmutableList<Summary> transactions =
-                    dataSource.query("select transaction_name, sum(total_micros), sum(count)"
-                            + " from transaction_aggregate where transaction_type = ? and"
-                            + " capture_time >= ? and capture_time <= ? group by"
-                            + " transaction_name order by sum(total_micros) desc limit ?",
-                            new SummaryRowMapper(), transactionType,
-                            captureTimeFrom, captureTimeTo, limit + 1);
-            // one extra record over the limit is fetched above to identify if the limit was hit
-            return QueryResult.from(transactions, limit);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return QueryResult.empty();
-        }
+            long captureTimeFrom, long captureTimeTo, int limit) throws SQLException {
+        // it's important that all these columns are in a single index so h2 can return the
+        // result set directly from the index without having to reference the table for each row
+        ImmutableList<Summary> transactions = dataSource.query("select transaction_name,"
+                + " sum(total_micros), sum(transaction_count) from transaction_aggregate where"
+                + " transaction_type = ? and capture_time >= ? and capture_time <= ? group by"
+                + " transaction_name order by sum(total_micros) desc, transaction_name"
+                + " limit ?", new SummaryRowMapper(), transactionType, captureTimeFrom,
+                captureTimeTo, limit + 1);
+        // one extra record over the limit is fetched above to identify if the limit was hit
+        return QueryResult.from(transactions, limit);
     }
 
     public ImmutableList<CharSource> readProfiles(String transactionType, String transactionName,
-            long captureTimeFrom, long captureTimeTo) {
-        try {
-            return dataSource.query("select profile_id from transaction_aggregate where"
-                    + " transaction_type = ? and transaction_name = ? and capture_time >= ?"
-                    + " and capture_time <= ? and profile_id is not null",
-                    new CharSourceRowMapper(), transactionType, transactionName, captureTimeFrom,
-                    captureTimeTo);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return ImmutableList.of();
+            long captureTimeFrom, long captureTimeTo) throws SQLException {
+        return dataSource.query("select profile_id from transaction_aggregate where"
+                + " transaction_type = ? and transaction_name = ? and capture_time >= ?"
+                + " and capture_time <= ? and profile_id is not null",
+                new CharSourceRowMapper(), transactionType, transactionName, captureTimeFrom,
+                captureTimeTo);
+    }
+
+    public ErrorCount readOverallErrorCount(long captureTimeFrom, long captureTimeTo)
+            throws SQLException {
+        ErrorCount result = dataSource.query("select sum(error_count), sum(transaction_count)"
+                + " from overall_aggregate where capture_time >= ? and capture_time <= ?",
+                new OverallErrorCountResultSetExtractor(), captureTimeFrom, captureTimeTo);
+        if (result == null) {
+            // this can happen if datasource is in the middle of closing
+            return new ErrorCount(null, null, 0, 0);
+        } else {
+            return result;
         }
+    }
+
+    public QueryResult<ErrorCount> readTransactionErrorCounts(long captureTimeFrom,
+            long captureTimeTo, int limit) throws SQLException {
+        ImmutableList<ErrorCount> errorCounts = dataSource.query("select transaction_type,"
+                + " transaction_name, sum(error_count), sum(transaction_count) from"
+                + " transaction_aggregate where capture_time >= ? and capture_time <= ?"
+                + " group by transaction_type, transaction_name having sum(error_count) > 0"
+                + " order by sum(error_count) desc, transaction_type, transaction_name"
+                + " limit ?", new ErrorCountRowMapper(), captureTimeFrom, captureTimeTo,
+                limit + 1);
+        // one extra record over the limit is fetched above to identify if the limit was hit
+        return QueryResult.from(errorCounts, limit);
+    }
+
+    public ImmutableList<ErrorPoint> readOverallErrorPoints(long captureTimeFrom,
+            long captureTimeTo) throws SQLException {
+        return dataSource.query("select capture_time, sum(error_count), sum(transaction_count)"
+                + " from overall_aggregate where capture_time >= ? and capture_time <= ?"
+                + " group by capture_time having sum(error_count) > 0 order by capture_time",
+                new ErrorPointRowMapper(), captureTimeFrom, captureTimeTo);
+    }
+
+    public ImmutableList<ErrorPoint> readTransactionErrorPoints(String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo) throws SQLException {
+        return dataSource.query("select capture_time, error_count, transaction_count from"
+                + " transaction_aggregate where transaction_type = ? and transaction_name = ?"
+                + " and capture_time >= ? and capture_time <= ? and error_count > 0",
+                new ErrorPointRowMapper(), transactionType, transactionName, captureTimeFrom,
+                captureTimeTo);
     }
 
     public void deleteAll() {
@@ -262,20 +290,21 @@ public class AggregateDao implements AggregateRepository {
         public Aggregate mapRow(ResultSet resultSet) throws SQLException {
             long captureTime = resultSet.getLong(1);
             long totalMicros = resultSet.getLong(2);
-            long count = resultSet.getLong(3);
-            long profileSampleCount = resultSet.getLong(4);
-            String profileId = resultSet.getString(5);
-            String metrics = resultSet.getString(6);
+            long errorCount = resultSet.getLong(3);
+            long transactionCount = resultSet.getLong(4);
+            long profileSampleCount = resultSet.getLong(5);
+            String profileId = resultSet.getString(6);
+            String metrics = resultSet.getString(7);
             if (metrics == null) {
                 // transaction_name should never be null
                 // TODO provide better fallback here
                 throw new SQLException("Found null metrics in transaction_aggregate table");
             }
-            return new Aggregate(transactionType, transactionName, captureTime, totalMicros, count,
-                    metrics, getExistence(profileId), profileSampleCount, null);
+            return new Aggregate(transactionType, transactionName, captureTime, totalMicros,
+                    errorCount, transactionCount, metrics, getExistence(profileId),
+                    profileSampleCount, null);
         }
-
-        private Existence getExistence(@Nullable String fileBlockId) {
+        private Existence getExistence(@Nullable String fileBlockId) throws SQLException {
             if (fileBlockId == null) {
                 return Existence.NO;
             }
@@ -283,8 +312,7 @@ public class AggregateDao implements AggregateRepository {
             try {
                 fileBlock = FileBlock.from(fileBlockId);
             } catch (InvalidBlockIdFormatException e) {
-                logger.warn(e.getMessage(), e);
-                return Existence.NO;
+                throw new SQLException(e);
             }
             if (cappedDatabase.isExpired(fileBlock)) {
                 return Existence.EXPIRED;
@@ -304,8 +332,8 @@ public class AggregateDao implements AggregateRepository {
                 return new Summary(null, 0, 0);
             }
             long totalMicros = resultSet.getLong(1);
-            long count = resultSet.getLong(2);
-            return new Summary(null, totalMicros, count);
+            long transactionCount = resultSet.getLong(2);
+            return new Summary(null, totalMicros, transactionCount);
         }
     }
 
@@ -320,8 +348,8 @@ public class AggregateDao implements AggregateRepository {
                 transactionName = "unknown";
             }
             long totalMicros = resultSet.getLong(2);
-            long count = resultSet.getLong(3);
-            return new Summary(transactionName, totalMicros, count);
+            long transactionCount = resultSet.getLong(3);
+            return new Summary(transactionName, totalMicros, transactionCount);
         }
     }
 
@@ -339,6 +367,44 @@ public class AggregateDao implements AggregateRepository {
                 throw new SQLException(e);
             }
             return cappedDatabase.read(fileBlock, "{\"overwritten\":true}");
+        }
+    }
+
+    @ThreadSafe
+    private static class OverallErrorCountResultSetExtractor implements
+            ResultSetExtractor<ErrorCount> {
+        @Override
+        public ErrorCount extractData(ResultSet resultSet) throws SQLException {
+            if (!resultSet.next()) {
+                // this is an aggregate query so this should be impossible
+                logger.warn("aggregate query did not return any results");
+                return new ErrorCount(null, null, 0, 0);
+            }
+            long errorCount = resultSet.getLong(1);
+            long transactionCount = resultSet.getLong(2);
+            return new ErrorCount(null, null, errorCount, transactionCount);
+        }
+    }
+
+    private static class ErrorCountRowMapper implements RowMapper<ErrorCount> {
+        @Override
+        public ErrorCount mapRow(ResultSet resultSet) throws SQLException {
+            String transactionType = resultSet.getString(1);
+            String transactionName = resultSet.getString(2);
+            long errorCount = resultSet.getLong(3);
+            long transactionCount = resultSet.getLong(4);
+            return new ErrorCount(Strings.nullToEmpty(transactionType),
+                    Strings.nullToEmpty(transactionName), errorCount, transactionCount);
+        }
+    }
+
+    private static class ErrorPointRowMapper implements RowMapper<ErrorPoint> {
+        @Override
+        public ErrorPoint mapRow(ResultSet resultSet) throws SQLException {
+            long captureTime = resultSet.getLong(1);
+            long errorCount = resultSet.getLong(2);
+            long transactionCount = resultSet.getLong(3);
+            return new ErrorPoint(captureTime, errorCount, transactionCount);
         }
     }
 }

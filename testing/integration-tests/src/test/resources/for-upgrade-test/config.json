@@ -33,7 +33,9 @@
     "immediatePartialStoreThresholdSeconds": 60,
     "maxEntriesPerTrace": 2000,
     "captureThreadInfo": true,
-    "captureGcInfo": true
+    "captureGcInfo": true,
+    "mbeanGaugeNotFoundDelaySeconds": 60,
+    "internalQueryTimeoutSeconds": 60
   },
   "plugins": [
     {

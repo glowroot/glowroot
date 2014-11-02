@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.local.ui;
+package org.glowroot.local.store;
 
-import java.io.IOException;
-import java.sql.SQLException;
-
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.glowroot.markers.UsedByJsonBinding;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-interface HttpService {
+@UsedByJsonBinding
+public class ErrorMessageCount {
 
-    @Nullable
-    HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException,
-            SQLException;
+    private final String message;
+    private final long count;
+
+    ErrorMessageCount(String message, long count) {
+        this.message = message;
+        this.count = count;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public long getCount() {
+        return count;
+    }
 }
