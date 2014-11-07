@@ -33,6 +33,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
 import org.glowroot.weaving.AnalyzedWorld.ParseContext;
+import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ASM5;
@@ -56,8 +57,6 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     private List<AnalyzedClass> superAnalyzedClasses = ImmutableList.of();
 
-    private boolean nothingInterestingHere;
-
     private AnalyzedClass./*@MonotonicNonNull*/Builder analyzedClassBuilder;
 
     @MonotonicNonNull
@@ -79,6 +78,21 @@ class AnalyzingClassVisitor extends ClassVisitor {
             @Nullable String superInternalName,
             String/*@Nullable*/[] interfaceInternalNamesNullable) {
 
+        AnalyzedClass nonInterestingAnalyzedClass =
+                visitAndSometimesReturnNonInterestingAnalyzedClass(version, access, internalName,
+                        signature, superInternalName, interfaceInternalNamesNullable);
+        if (nonInterestingAnalyzedClass != null) {
+            analyzedClass = nonInterestingAnalyzedClass;
+            throw ShortCircuitException.INSTANCE;
+        }
+    }
+
+    @Nullable
+    public AnalyzedClass visitAndSometimesReturnNonInterestingAnalyzedClass(int version,
+            int access, String internalName, @Nullable String signature,
+            @Nullable String superInternalName,
+            String/*@Nullable*/[] interfaceInternalNamesNullable) {
+
         ImmutableList<String> interfaceNames = ImmutableList.of();
         if (interfaceInternalNamesNullable != null) {
             interfaceNames = ClassNames.fromInternalNames(interfaceInternalNamesNullable);
@@ -93,8 +107,11 @@ class AnalyzingClassVisitor extends ClassVisitor {
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             superAnalyzedClasses = ImmutableList.of();
             analyzedClassBuilder.addMixinTypes(matchedMixinTypes);
-            nothingInterestingHere = adviceMatchers.isEmpty();
-            return;
+            if (adviceMatchers.isEmpty()) {
+                return analyzedClassBuilder.build();
+            } else {
+                return null;
+            }
         }
         ParseContext parseContext = new ParseContext(className, codeSource);
         List<AnalyzedClass> superAnalyzedHierarchy =
@@ -118,14 +135,18 @@ class AnalyzingClassVisitor extends ClassVisitor {
                 break;
             }
         }
-        nothingInterestingHere = !hasSuperAdvice && adviceMatchers.isEmpty();
+        if (!hasSuperAdvice && adviceMatchers.isEmpty() && matchedMixinTypes.isEmpty()) {
+            return analyzedClassBuilder.build();
+        } else {
+            return null;
+        }
     }
 
     @Override
     @Nullable
     public MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
-        visitMethodReturningAdvisors(access, name, desc, signature, exceptions);
+        visitMethodAndReturnAdvisors(access, name, desc, signature, exceptions);
         return null;
     }
 
@@ -135,12 +156,8 @@ class AnalyzingClassVisitor extends ClassVisitor {
         analyzedClass = analyzedClassBuilder.build();
     }
 
-    List<Advice> visitMethodReturningAdvisors(int access, String name, String desc,
+    List<Advice> visitMethodAndReturnAdvisors(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
-        if (nothingInterestingHere) {
-            // no need to pass method on to class writer
-            return ImmutableList.of();
-        }
         List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
         Type returnType = Type.getReturnType(desc);
         List<Advice> matchingAdvisors =
@@ -165,10 +182,6 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     List<AnalyzedClass> getSuperAnalyzedClasses() {
         return superAnalyzedClasses;
-    }
-
-    boolean isNothingInteresting() {
-        return nothingInterestingHere;
     }
 
     @Nullable
@@ -243,8 +256,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
         ToStringHelper toStringHelper = MoreObjects.toStringHelper(this)
                 .add("codeSource", codeSource)
                 .add("adviceMatchers", adviceMatchers)
-                .add("matchedMixinTypes", matchedMixinTypes)
-                .add("nothingInterestingHere", nothingInterestingHere);
+                .add("matchedMixinTypes", matchedMixinTypes);
         if (analyzedClassBuilder != null) {
             toStringHelper.add("analyzedClass", analyzedClassBuilder.build());
         }

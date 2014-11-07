@@ -85,13 +85,15 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             @Nullable ProtectionDomain protectionDomain, byte[] bytes) {
         // don't weave glowroot classes, including shaded classes like h2 jdbc driver
         // (can't just match "org/glowroot/" since that would match integration test classes)
-        if (className.startsWith("org/glowroot/collector/")
+        if (className.startsWith("org/glowroot/api/")
+                || className.startsWith("org/glowroot/advicegen/")
+                || className.startsWith("org/glowroot/collector/")
                 || className.startsWith("org/glowroot/common/")
                 || className.startsWith("org/glowroot/config/")
-                || className.startsWith("org/glowroot/advicegen/")
+                || className.startsWith("org/glowroot/jvm/")
                 || className.startsWith("org/glowroot/local/")
                 || className.startsWith("org/glowroot/shaded/")
-                || className.startsWith("org/glowroot/trace/")
+                || className.startsWith("org/glowroot/transaction/")
                 || className.startsWith("org/glowroot/weaving/")) {
             return null;
         }

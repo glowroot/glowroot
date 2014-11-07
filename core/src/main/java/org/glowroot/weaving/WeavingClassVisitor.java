@@ -143,11 +143,12 @@ class WeavingClassVisitor extends ClassVisitor {
             @Nullable String superInternalName,
             String/*@Nullable*/[] interfaceInternalNamesNullable) {
 
-        analyzingClassVisitor.visit(version, access, internalName, signature, superInternalName,
-                interfaceInternalNamesNullable);
-        if (analyzingClassVisitor.isNothingInteresting()
-                && analyzingClassVisitor.getMatchedMixinTypes().isEmpty()) {
+        AnalyzedClass nonInterestingAnalyzedClass = analyzingClassVisitor
+                .visitAndSometimesReturnNonInterestingAnalyzedClass(version, access, internalName,
+                        signature, superInternalName, interfaceInternalNamesNullable);
+        if (nonInterestingAnalyzedClass != null) {
             // performance optimization
+            analyzedWorld.add(nonInterestingAnalyzedClass, loader);
             throwShortCircuitException = true;
             return;
         }
@@ -200,7 +201,7 @@ class WeavingClassVisitor extends ClassVisitor {
             // this is in visitMethod because need to check annotations first
             throw ShortCircuitException.INSTANCE;
         }
-        List<Advice> matchingAdvisors = analyzingClassVisitor.visitMethodReturningAdvisors(access,
+        List<Advice> matchingAdvisors = analyzingClassVisitor.visitMethodAndReturnAdvisors(access,
                 name, desc, signature, exceptions);
         if (interfaceSoNothingToWeave) {
             return null;
@@ -644,7 +645,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @SuppressWarnings("serial")
     static class ShortCircuitException extends RuntimeException {
-        private static ShortCircuitException INSTANCE = new ShortCircuitException();
+        static ShortCircuitException INSTANCE = new ShortCircuitException();
         private ShortCircuitException() {}
     }
 

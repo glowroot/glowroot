@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.Singleton;
+import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -197,14 +198,35 @@ public class AnalyzedWorld {
                 getAnalyzedClasses(analyzedClassLoader);
         AnalyzedClass analyzedClass = loaderAnalyzedClasses.get(className);
         if (analyzedClass == null) {
-            analyzedClass = createAnalyzedClass(className, analyzedClassLoader);
-            // analyzedClass.getName() is already interned
-            AnalyzedClass existingAnalyzedClass =
-                    loaderAnalyzedClasses.putIfAbsent(analyzedClass.getName(), analyzedClass);
-            if (existingAnalyzedClass != null) {
-                // (rare) concurrent AnalyzedClass creation, use the one that made it into the map
-                analyzedClass = existingAnalyzedClass;
+            if (loader != analyzedClassLoader) {
+                // this class may have been looked up and stored previously in loader's map, and
+                // then subsequently loaded into it's true class loader (analyzedClassLoader)
+                ConcurrentMap<String, AnalyzedClass> currLoaderAnalyzedClasses =
+                        getAnalyzedClasses(loader);
+                analyzedClass = currLoaderAnalyzedClasses.get(className);
+                if (analyzedClass != null) {
+                    analyzedClass = putAnalyzedClass(loaderAnalyzedClasses, analyzedClass);
+                    // remove it from the "incorrect" class loader
+                    currLoaderAnalyzedClasses.remove(className);
+                    // this
+                    return analyzedClass;
+                }
             }
+            analyzedClass = createAnalyzedClass(className, analyzedClassLoader);
+            analyzedClass = putAnalyzedClass(loaderAnalyzedClasses, analyzedClass);
+        }
+        return analyzedClass;
+    }
+
+    private AnalyzedClass putAnalyzedClass(
+            ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses,
+            AnalyzedClass analyzedClass) {
+        // analyzedClass.getName() is already interned
+        AnalyzedClass existingAnalyzedClass =
+                loaderAnalyzedClasses.putIfAbsent(analyzedClass.getName(), analyzedClass);
+        if (existingAnalyzedClass != null) {
+            // (rare) concurrent AnalyzedClass creation, use the one that made it into the map
+            return existingAnalyzedClass;
         }
         return analyzedClass;
     }
@@ -255,7 +277,7 @@ public class AnalyzedWorld {
         }
         ClassLoader analyzedLoader = loader;
         if (clazz != null) {
-            // this class has already been loaded, so the corresponding analyzedType should already
+            // this class has already been loaded, so the corresponding analyzedClass should already
             // be in the cache under its class loader
             //
             // this helps in cases where the .class files are not available via
@@ -311,7 +333,11 @@ public class AnalyzedWorld {
                 new AnalyzingClassVisitor(advisors.get(), mixinTypes, loader, this, null);
         byte[] bytes = Resources.toByteArray(url);
         ClassReader cr = new ClassReader(bytes);
-        cr.accept(cv, 0);
+        try {
+            cr.accept(cv, ClassReader.SKIP_CODE);
+        } catch (ShortCircuitException e) {
+            // this is ok, in either case analyzed class is now available
+        }
         AnalyzedClass analyzedClass = cv.getAnalyzedClass();
         checkNotNull(analyzedClass); // analyzedClass is non-null after visiting the class
         return analyzedClass;
