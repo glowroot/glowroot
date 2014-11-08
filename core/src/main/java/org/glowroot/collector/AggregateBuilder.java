@@ -24,18 +24,12 @@ import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.TransactionMetricImpl;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // must be used under an appropriate lock
-@NotThreadSafe
 class AggregateBuilder {
 
     private static final JsonFactory jsonFactory = new JsonFactory();

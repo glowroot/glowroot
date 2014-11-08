@@ -59,10 +59,6 @@ import org.glowroot.container.trace.TraceService;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class JavaagentContainer implements Container {
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentContainer.class);

@@ -27,13 +27,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.Static;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 public class VersionHashes {
 
     private static final Logger logger = LoggerFactory.getLogger(VersionHashes.class);

@@ -23,14 +23,6 @@ import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
 
-/**
- * Immutable structure to hold the trace config.
- * 
- * Default values should be conservative.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 public class TraceConfig {
 
@@ -56,6 +48,7 @@ public class TraceConfig {
     private final String version;
 
     static TraceConfig getDefault() {
+        // default values should be conservative
         final boolean enabled = true;
         final int storeThresholdMillis = 3000;
         final boolean outlierProfilingEnabled = true;

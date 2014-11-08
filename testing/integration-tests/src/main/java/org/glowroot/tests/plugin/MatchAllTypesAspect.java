@@ -17,10 +17,6 @@ package org.glowroot.tests.plugin;
 
 import org.glowroot.api.weaving.Pointcut;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // this forces a lot of extra weaving which can cause issues
 public class MatchAllTypesAspect {
 

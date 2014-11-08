@@ -15,16 +15,8 @@
  */
 package org.glowroot.common;
 
-import org.glowroot.markers.ThreadSafe;
-
-/**
- * Basically the same as Guava's {@link com.google.common.base.Ticker} class, but doesn't get shaded
- * so it can be used from other modules (e.g. microbenchmarks).
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
+// Basically the same as Guava's {@link com.google.common.base.Ticker} class, but doesn't get shaded
+// so it can be used from other modules (e.g. microbenchmarks).
 public abstract class Ticker {
 
     private static final Ticker SYSTEM_TICKER = new Ticker() {

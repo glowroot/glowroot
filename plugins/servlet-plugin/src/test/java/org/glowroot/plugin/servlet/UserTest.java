@@ -32,10 +32,6 @@ import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class UserTest {
 
     private static final String PLUGIN_ID = "servlet";

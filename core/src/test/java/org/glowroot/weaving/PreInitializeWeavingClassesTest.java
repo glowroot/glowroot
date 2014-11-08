@@ -26,10 +26,6 @@ import org.glowroot.weaving.preinit.ReferencedMethod;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class PreInitializeWeavingClassesTest {
 
     // TODO this test should be run against glowroot after shading

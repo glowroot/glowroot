@@ -28,10 +28,6 @@ import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ScreenshotOnExceptionRule implements MethodRule {
 
     private static Logger logger = LoggerFactory.getLogger(ScreenshotOnExceptionRule.class);

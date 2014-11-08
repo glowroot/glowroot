@@ -18,8 +18,5 @@ package org.glowroot.api;
 /**
  * See {@link PluginServices#getMetricName(Class)} for how to retrieve and use {@code MetricName}
  * instances.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 public interface MetricName {}

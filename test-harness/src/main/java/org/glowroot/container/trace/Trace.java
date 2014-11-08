@@ -31,10 +31,6 @@ import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForPr
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class Trace {
 
     private final String id;

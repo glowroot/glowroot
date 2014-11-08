@@ -22,10 +22,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class BasicMisc extends SuperBasicMisc implements Misc, Misc2, Misc3 {
 
     // the cascading constructor is for testing that MixinInit is called exactly once

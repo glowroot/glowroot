@@ -27,10 +27,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // shallow copies are necessary because request may not be thread safe, which may affect ability
 // to see detail from active traces
 //

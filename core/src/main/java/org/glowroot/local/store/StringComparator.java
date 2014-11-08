@@ -15,10 +15,6 @@
  */
 package org.glowroot.local.store;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public enum StringComparator {
 
     BEGINS("like", "%s%%"),

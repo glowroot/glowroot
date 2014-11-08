@@ -76,10 +76,6 @@ import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
 import static org.objectweb.asm.Opcodes.V1_5;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class AdviceGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(AdviceGenerator.class);

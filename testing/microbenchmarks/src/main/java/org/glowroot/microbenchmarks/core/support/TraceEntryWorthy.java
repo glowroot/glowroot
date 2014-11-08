@@ -15,10 +15,6 @@
  */
 package org.glowroot.microbenchmarks.core.support;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class TraceEntryWorthy {
 
     public void doSomethingTraceEntryWorthy() {}

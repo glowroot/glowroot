@@ -27,10 +27,6 @@ import org.glowroot.container.SharedContainerRunListener;
 import org.glowroot.container.javaagent.JavaagentContainer;
 import org.glowroot.container.local.LocalContainer;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class Containers {
 
     private static final Logger logger = LoggerFactory.getLogger(Containers.class);

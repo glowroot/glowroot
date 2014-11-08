@@ -37,10 +37,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class PartialTraceTest {
 
     private static Container container;

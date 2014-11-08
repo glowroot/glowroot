@@ -15,7 +15,6 @@
  */
 package org.glowroot.plugin.jdbc;
 
-import java.sql.PreparedStatement;
 import java.util.Collection;
 
 import com.google.common.collect.ImmutableList;
@@ -23,13 +22,8 @@ import com.google.common.collect.Queues;
 import com.google.common.hash.HashCode;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * Used to capture and mirror the state of prepared statements since the underlying
- * {@link PreparedStatement} values cannot be inspected after they have been set.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// used to capture and mirror the state of prepared statements since the underlying
+// PreparedStatement values cannot be inspected after they have been set
 class PreparedStatementMirror extends StatementMirror {
 
     private static final int PARAMETERS_INITIAL_CAPACITY = 20;

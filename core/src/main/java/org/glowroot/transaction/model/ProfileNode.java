@@ -24,12 +24,6 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * Element of {@link Profile}.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ProfileNode {
 
     @Nullable

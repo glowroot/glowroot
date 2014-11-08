@@ -19,13 +19,8 @@ import java.util.Map;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * This interface exists to provide access to ErrorMessageImpl from glowroot without making
- * ErrorMessageImpl accessible to plugins (at least not through the org.glowroot.api package)
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// this interface exists to provide access to ErrorMessageImpl from glowroot without making
+// ErrorMessageImpl accessible to plugins (at least not through the org.glowroot.api package)
 public interface ReadableErrorMessage {
 
     String getText();

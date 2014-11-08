@@ -34,10 +34,6 @@ import org.glowroot.markers.GuardedBy;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class ThreadInfoComponent {
 
     private static final Logger logger = LoggerFactory.getLogger(ThreadInfoComponent.class);

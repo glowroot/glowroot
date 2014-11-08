@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigService;
-import org.glowroot.markers.Singleton;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.COOKIE;
@@ -47,11 +46,6 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SER
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 class HttpSessionManager {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpSessionManager.class);

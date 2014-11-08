@@ -34,10 +34,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // this is needed for jboss-modules because calling ManagementFactory.getPlatformMBeanServer()
 // before jboss-modules has set up its own logger will trigger the default JUL LogManager to be
 // used, and then jboss/wildfly will fail to start

@@ -38,10 +38,6 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class MockPreparedStatement implements PreparedStatement {
 
     @Override

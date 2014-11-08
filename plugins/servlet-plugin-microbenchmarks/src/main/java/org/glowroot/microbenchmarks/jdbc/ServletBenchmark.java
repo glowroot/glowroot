@@ -33,10 +33,6 @@ import org.glowroot.microbenchmarks.jdbc.support.MockHttpRequest;
 import org.glowroot.microbenchmarks.jdbc.support.MockHttpResponse;
 import org.glowroot.microbenchmarks.jdbc.support.MockHttpServlet;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)

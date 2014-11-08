@@ -32,17 +32,10 @@ import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.Ticker;
 import org.glowroot.markers.Immutable;
-import org.glowroot.markers.NotThreadSafe;
-import org.glowroot.markers.Static;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Profile.StackTraceElementPlus;
 import org.glowroot.transaction.model.TraceEntry;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 public class EntriesCharSourceCreator {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
@@ -84,7 +77,6 @@ public class EntriesCharSourceCreator {
         }
     }
 
-    @NotThreadSafe
     private static class EntriesReader extends Reader {
 
         private final Iterator<TraceEntry> entries;
@@ -226,7 +218,6 @@ public class EntriesCharSourceCreator {
         }
     }
 
-    @NotThreadSafe
     private static class CharArrayWriter extends java.io.CharArrayWriter {
 
         // provides access to protected char buffer

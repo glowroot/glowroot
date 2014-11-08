@@ -25,9 +25,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * Annotates a parameter to an {@literal @}{@link IsEnabled}, {@literal @}{@link OnBefore},
  * {@literal @}{@link OnReturn}, {@literal @}{@link OnThrow} or {@literal @}{@link OnAfter} method
  * in a {@literal @}{@link Pointcut} class.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 // for non-static methods, binds "this"
 @Target(PARAMETER)

@@ -43,10 +43,6 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // unfortunately this is mostly a duplicate of a class from the glowroot module test-container
 // cannot use the class from the glowroot module since sometimes that class exposes unshaded jackson
 // types (in IDE) and sometimes it exposes shaded jackson types (in maven build)

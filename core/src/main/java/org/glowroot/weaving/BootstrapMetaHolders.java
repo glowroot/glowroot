@@ -27,10 +27,6 @@ import org.objectweb.asm.Type;
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // can't generate classes in bootstrap class loader, so this is needed for storing meta holders
 // similar technique is not good for non-bootstrap class loaders anyways since then weak references
 // would need to be used to prevent retention of meta holders

@@ -23,10 +23,6 @@ import org.glowroot.tests.webdriver.Utils;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.linkText;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ConfigSidebar {
 
     private final WebDriver driver;

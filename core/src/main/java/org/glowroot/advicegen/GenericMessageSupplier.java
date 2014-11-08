@@ -27,10 +27,6 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.markers.UsedByGeneratedBytecode;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @UsedByGeneratedBytecode
 public class GenericMessageSupplier extends MessageSupplier {
 

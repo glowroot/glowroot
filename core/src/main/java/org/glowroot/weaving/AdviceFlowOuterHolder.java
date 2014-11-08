@@ -15,16 +15,9 @@
  */
 package org.glowroot.weaving;
 
-import org.glowroot.markers.NotThreadSafe;
-import org.glowroot.markers.PartiallyThreadSafe;
 import org.glowroot.markers.UsedByGeneratedBytecode;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @UsedByGeneratedBytecode
-@PartiallyThreadSafe("AdviceFlowHolder returned by getInnerHolder() is not thread safe")
 public class AdviceFlowOuterHolder {
 
     // it is faster to use a mutable holder object and always perform ThreadLocal.get() and never
@@ -50,7 +43,6 @@ public class AdviceFlowOuterHolder {
     }
 
     @UsedByGeneratedBytecode
-    @NotThreadSafe
     public static class AdviceFlowHolder {
         private boolean top;
         private AdviceFlowHolder(boolean top) {

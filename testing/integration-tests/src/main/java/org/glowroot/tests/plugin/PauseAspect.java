@@ -28,10 +28,6 @@ import org.glowroot.tests.plugin.LogErrorAspect.LogErrorAdvice;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class PauseAspect {
 
     private static final PluginServices pluginServices =

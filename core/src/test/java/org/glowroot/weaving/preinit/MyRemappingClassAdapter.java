@@ -23,10 +23,6 @@ import org.objectweb.asm.MethodVisitor;
 
 import static org.objectweb.asm.Opcodes.ASM5;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // from org.objectweb.asm.commons.RemappingClassAdapter
 class MyRemappingClassAdapter extends ClassVisitor {
 

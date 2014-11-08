@@ -37,10 +37,6 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class MockResultSet implements ResultSet {
 
     @Override

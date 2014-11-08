@@ -20,10 +20,6 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 import org.objectweb.asm.commons.Remapper;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class MethodCollector extends Remapper {
 
     private final Set<String> referencedInternalNames = Sets.newHashSet();

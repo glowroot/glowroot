@@ -29,17 +29,12 @@ import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.Optional;
 
-/**
- * Similar thread safety issues as {@link JdbcMessageSupplier}, see documentation in that class for
- * more info.
- * 
- * This trace entry gets to piggyback on the happens-before relationships created by putting other
- * trace entries into the concurrent queue which ensures that session state is visible at least up
- * to the start of the most recent trace entry.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// similar thread safety issues as {@link JdbcMessageSupplier}, see documentation in that class for
+// more info
+//
+// this trace entry gets to piggyback on the happens-before relationships created by putting other
+// trace entries into the concurrent queue which ensures that session state is visible at least up
+// to the start of the most recent trace entry
 class ServletMessageSupplier extends MessageSupplier {
 
     // it would be convenient to just store the request object here

@@ -43,15 +43,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.Immutable;
-import org.glowroot.markers.Static;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 class Schemas {
 
     private static final Logger logger = LoggerFactory.getLogger(Schemas.class);

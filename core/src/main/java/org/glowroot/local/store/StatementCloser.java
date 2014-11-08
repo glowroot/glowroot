@@ -21,10 +21,6 @@ import java.sql.Statement;
 import com.google.common.base.Throwables;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // similar to guava's Closer, but for java.sql.Statement which doesn't implement Closeable
 class StatementCloser {
 

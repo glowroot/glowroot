@@ -17,16 +17,11 @@ package org.glowroot.transaction;
 
 import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.transaction.model.TransactionMetricExt;
 import org.glowroot.transaction.model.TransactionMetricImpl;
 import org.glowroot.weaving.WeavingTimerService;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class WeavingTimerServiceImpl implements WeavingTimerService {
 
     private final TransactionRegistry transactionRegistry;
@@ -57,7 +52,6 @@ class WeavingTimerServiceImpl implements WeavingTimerService {
         };
     }
 
-    @ThreadSafe
     private static class NopWeavingTimer implements WeavingTimer {
         private static final NopWeavingTimer INSTANCE = new NopWeavingTimer();
         @Override

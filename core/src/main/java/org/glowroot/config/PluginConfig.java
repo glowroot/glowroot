@@ -47,12 +47,6 @@ import org.glowroot.markers.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * Immutable structure to hold the current config for a plugin.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 @JsonPropertyOrder({"id"})
 @Immutable
 public class PluginConfig {

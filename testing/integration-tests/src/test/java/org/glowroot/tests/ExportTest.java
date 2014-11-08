@@ -29,10 +29,6 @@ import org.glowroot.container.Container;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.tests.BasicTest.ShouldGenerateTraceWithNestedEntries;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ExportTest {
 
     private static Container container;

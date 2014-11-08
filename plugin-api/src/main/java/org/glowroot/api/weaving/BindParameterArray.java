@@ -31,9 +31,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@link Pointcut} are wrapped into a single {@link Object[]} and bound to this parameter.
  * <p>
  * Parameters annotated with {@literal @}{@link BindMethodName} must be of type {@link Object[]}.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 @Target(PARAMETER)
 @Retention(RUNTIME)

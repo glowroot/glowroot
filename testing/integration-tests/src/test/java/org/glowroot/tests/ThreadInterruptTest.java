@@ -25,10 +25,6 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ThreadInterruptTest {
 
     private static Container container;

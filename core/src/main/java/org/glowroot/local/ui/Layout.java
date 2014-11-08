@@ -27,10 +27,6 @@ import org.glowroot.config.VersionHashes;
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @UsedByJsonBinding
 @Immutable
 public class Layout {

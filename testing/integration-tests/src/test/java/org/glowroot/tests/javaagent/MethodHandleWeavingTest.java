@@ -15,8 +15,6 @@
  */
 package org.glowroot.tests.javaagent;
 
-import java.lang.instrument.ClassFileTransformer;
-
 import com.google.common.base.StandardSystemProperty;
 import org.fest.reflect.core.Reflection;
 import org.junit.After;
@@ -28,24 +26,16 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.weaving.WeavingClassFileTransformer;
 
-/**
- * From http://docs.oracle.com/javase/7/docs/api/java/lang/invoke/MethodHandle.html
- * 
- * "Implementations may (or may not) create internal subclasses of MethodHandle"
- * 
- * When these internal subclasses of MethodHandle are created, they are passed to
- * {@link ClassFileTransformer#transform(ClassLoader, String, Class, java.security.ProtectionDomain, byte[])}
- * with null class name.
- * 
- * This test checks that
- * {@link WeavingClassFileTransformer#transform(ClassLoader, String, Class, java.security.ProtectionDomain, byte[])}
- * doesn't mind being passed null class names.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// from http://docs.oracle.com/javase/7/docs/api/java/lang/invoke/MethodHandle.html:
+//
+// "Implementations may (or may not) create internal subclasses of MethodHandle"
+//
+// when these internal subclasses of MethodHandle are created, they are passed to
+// ClassFileTransformer.transform() with null class name
+//
+// this test checks that WeavingClassFileTransformer.transform() doesn't mind being passed null
+// class names
 public class MethodHandleWeavingTest {
 
     private static Container container;

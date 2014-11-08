@@ -23,12 +23,7 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.internal.ReadableErrorMessage;
 
-/**
- * This must support updating by a single thread and reading by multiple threads.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// this supports updating by a single thread and reading by multiple threads
 public class TraceEntry {
 
     private static final TraceEntry limitExceededMarker = new TraceEntry(null, 0, 0, null);

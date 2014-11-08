@@ -22,12 +22,7 @@ import java.util.ListIterator;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * This class primarily exists because Exceptions are not thread safe.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// this class primarily exists because Exceptions are not thread safe
 public class ExceptionInfo {
 
     private final String display;

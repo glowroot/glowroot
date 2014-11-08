@@ -75,20 +75,12 @@ import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.ProcessId;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.local.store.GaugePointDao;
-import org.glowroot.markers.Singleton;
 import org.glowroot.markers.UsedByJsonBinding;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
-/**
- * Json service to read jvm info.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 @JsonService
 class JvmJsonService {
 

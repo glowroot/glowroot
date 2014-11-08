@@ -23,16 +23,8 @@ import java.net.URISyntaxException;
 import java.security.CodeSource;
 import java.util.jar.JarFile;
 
-/**
- * This class is registered as the Premain-Class in the MANIFEST.MF of glowroot.jar:
- * 
- * Premain-Class: org.glowroot.Agent
- * 
- * This defines the entry point when the JVM is launched via -javaagent:glowroot.jar.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// this class is registered as the Premain-Class in the MANIFEST.MF of glowroot.jar
+//
 // this class should have minimal dependencies since it will live in the system class loader while
 // the rest of glowroot will live in the bootstrap class loader
 public class Agent {

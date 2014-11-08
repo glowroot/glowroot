@@ -25,10 +25,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class Utils {
 
     public static WebElement withWait(WebDriver driver, By by) {

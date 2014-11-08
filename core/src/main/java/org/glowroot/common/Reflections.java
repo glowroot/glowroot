@@ -21,13 +21,6 @@ import java.lang.reflect.Method;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.markers.Static;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 public class Reflections {
 
     private Reflections() {}

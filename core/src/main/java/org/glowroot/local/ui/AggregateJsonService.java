@@ -44,18 +44,10 @@ import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.Summary;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.ui.AggregateCommonService.MergedAggregate;
-import org.glowroot.markers.Singleton;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
-/**
- * Json service to read aggregate data.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 @JsonService
 class AggregateJsonService {
 

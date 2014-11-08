@@ -36,17 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.Singleton;
 
-/**
- * Stateful singleton service for accessing and updating config objects. Config objects are cached
- * for performance. Also, listeners can be registered with this service in order to receive
- * notifications when config objects are updated.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 public class ConfigService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigService.class);

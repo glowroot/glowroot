@@ -37,10 +37,6 @@ import org.glowroot.container.config.TraceConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
 import org.glowroot.container.config.UserRecordingConfig;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class JavaagentConfigService implements ConfigService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();

@@ -17,10 +17,6 @@ package org.glowroot.transaction;
 
 import org.glowroot.transaction.model.Transaction;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public interface TransactionCollector {
 
     void onCompletedTransaction(Transaction transaction);

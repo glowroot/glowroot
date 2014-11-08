@@ -24,10 +24,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class SessionInvoker {
 
     private static final Logger logger = LoggerFactory.getLogger(SessionInvoker.class);

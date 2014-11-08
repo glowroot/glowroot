@@ -27,12 +27,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.Type;
 
 import org.glowroot.markers.Immutable;
-import org.glowroot.markers.NotThreadSafe;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // an AnalyzedClass is never created for Object.class
 // Strings are interned to reduce memory footprint of AnalyzedWorld
 @Immutable
@@ -143,7 +138,6 @@ public class AnalyzedClass {
         return new Builder(modifiers, name, superName, interfaceNames);
     }
 
-    @NotThreadSafe
     static class Builder {
 
         private final int modifiers;

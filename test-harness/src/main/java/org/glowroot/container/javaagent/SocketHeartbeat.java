@@ -21,10 +21,6 @@ import java.io.ObjectOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class SocketHeartbeat implements Runnable {
 
     public static final String PING_COMMAND = "PING";

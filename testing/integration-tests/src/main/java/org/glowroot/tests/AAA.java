@@ -15,10 +15,6 @@
  */
 package org.glowroot.tests;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class AAA {
 
     void execute(@SuppressWarnings("unused") String x, @SuppressWarnings("unused") ParamObject y) {}

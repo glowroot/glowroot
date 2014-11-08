@@ -21,10 +21,6 @@ import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ClassPath {
 
     private ClassPath() {}

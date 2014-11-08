@@ -24,9 +24,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * Designates a method in a {@literal @}{@link Mixin} class that should be called exactly once
  * during the construction of each target type. See {@link Mixin} for more detail.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 @Target(METHOD)
 @Retention(RUNTIME)

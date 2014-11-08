@@ -37,16 +37,9 @@ import org.glowroot.local.store.DataSource.RowMapper;
 import org.glowroot.local.store.FileBlock.InvalidBlockIdFormatException;
 import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
-import org.glowroot.markers.Singleton;
-import org.glowroot.markers.ThreadSafe;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 public class AggregateDao implements AggregateRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(AggregateDao.class);
@@ -277,7 +270,6 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    @ThreadSafe
     private class AggregateRowMapper implements RowMapper<Aggregate> {
         private final String transactionType;
         @Nullable
@@ -322,7 +314,6 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    @ThreadSafe
     private static class OverallSummaryResultSetExtractor implements ResultSetExtractor<Summary> {
         @Override
         public Summary extractData(ResultSet resultSet) throws SQLException {
@@ -337,7 +328,6 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    @ThreadSafe
     private static class SummaryRowMapper implements RowMapper<Summary> {
         @Override
         public Summary mapRow(ResultSet resultSet) throws SQLException {
@@ -370,7 +360,6 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    @ThreadSafe
     private static class OverallErrorCountResultSetExtractor implements
             ResultSetExtractor<ErrorCount> {
         @Override

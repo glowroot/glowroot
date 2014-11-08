@@ -25,14 +25,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.Static;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // used by webdriver tests to get current selenium version from selenium-api's manifest
-@Static
 public class Manifests {
 
     private static final Logger logger = LoggerFactory.getLogger(Manifests.class);

@@ -43,17 +43,9 @@ import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.local.store.Schemas.PrimaryKeyColumn;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.Singleton;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * Data access object for storing and reading trace data from the embedded H2 database.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 public class TraceDao implements TraceRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);

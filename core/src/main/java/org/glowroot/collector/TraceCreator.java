@@ -25,15 +25,9 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.markers.Static;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.transaction.model.TransactionMetricImpl;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 public class TraceCreator {
 
     private static final JsonFactory jsonFactory = new JsonFactory();

@@ -31,10 +31,6 @@ import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class IndexHtmlHttpService implements HttpService {
 
     private final HttpSessionManager httpSessionManager;

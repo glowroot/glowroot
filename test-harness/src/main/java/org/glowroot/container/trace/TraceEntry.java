@@ -27,10 +27,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.nullToFalse;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class TraceEntry {
 
     private final long offset;

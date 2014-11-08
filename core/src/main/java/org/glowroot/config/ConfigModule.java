@@ -23,13 +23,6 @@ import java.net.URISyntaxException;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.markers.ThreadSafe;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 public class ConfigModule {
 
     private final PluginCache pluginCache;

@@ -24,13 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
-import org.glowroot.markers.ThreadSafe;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 public class ThreadAllocatedBytes {
 
     private static final Logger logger = LoggerFactory.getLogger(ThreadAllocatedBytes.class);

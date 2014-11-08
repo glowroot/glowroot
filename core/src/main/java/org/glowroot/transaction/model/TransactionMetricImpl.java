@@ -28,12 +28,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.api.MetricName;
 import org.glowroot.common.Ticker;
 
-/**
- * All timing data is in nanoseconds.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 // instances are updated by a single thread, but can be read by other threads
 // memory visibility is therefore an issue for the reading threads
 //
@@ -49,6 +43,8 @@ import org.glowroot.common.Ticker;
 //
 // the down side is that the latest updates to metrics for transactions that are captured
 // in-flight (e.g. partial traces and active traces displayed in the UI) may not be visible
+//
+// all timing data is in nanoseconds
 public class TransactionMetricImpl implements TransactionMetricExt {
 
     private final MetricNameImpl metricName;

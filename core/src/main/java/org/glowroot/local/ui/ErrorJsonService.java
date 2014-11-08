@@ -46,18 +46,10 @@ import org.glowroot.local.store.ErrorMessageQuery;
 import org.glowroot.local.store.ErrorPoint;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
-import org.glowroot.markers.Singleton;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
-/**
- * Json service to read error data.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 @JsonService
 class ErrorJsonService {
 

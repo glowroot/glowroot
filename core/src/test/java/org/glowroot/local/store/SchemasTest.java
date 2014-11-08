@@ -28,10 +28,6 @@ import org.glowroot.local.store.Schemas.Index;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class SchemasTest {
 
     @Test

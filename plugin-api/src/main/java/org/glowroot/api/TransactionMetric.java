@@ -18,9 +18,6 @@ package org.glowroot.api;
 /**
  * See {@link PluginServices#startTransactionMetric(MetricName)} for how to retrieve and use
  * {@code TransactionMetric} instances.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 public interface TransactionMetric {
 

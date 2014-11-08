@@ -20,16 +20,8 @@ import java.util.Collection;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.markers.Singleton;
 import org.glowroot.transaction.model.Transaction;
 
-/**
- * Registry to hold all active transactions.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 public class TransactionRegistry {
 
     // collection of active running transactions

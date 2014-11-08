@@ -25,16 +25,10 @@ import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.JvmModule;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.transaction.TransactionRegistry;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 public class CollectorModule {
 
     private static final long fixedAggregateIntervalSeconds;

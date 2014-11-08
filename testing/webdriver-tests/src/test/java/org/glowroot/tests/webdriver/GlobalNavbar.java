@@ -20,10 +20,6 @@ import org.openqa.selenium.WebElement;
 
 import static org.openqa.selenium.By.xpath;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class GlobalNavbar {
 
     private final WebDriver driver;

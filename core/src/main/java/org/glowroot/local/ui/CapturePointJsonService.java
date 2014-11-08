@@ -44,7 +44,6 @@ import org.glowroot.config.CapturePoint;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.local.ui.UiAnalyzedMethod.UiAnalyzedMethodOrdering;
-import org.glowroot.markers.Singleton;
 import org.glowroot.transaction.AdviceCache;
 import org.glowroot.transaction.TransactionModule;
 
@@ -52,13 +51,6 @@ import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
 
-/**
- * Json service to support capture points.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 @JsonService
 class CapturePointJsonService {
 

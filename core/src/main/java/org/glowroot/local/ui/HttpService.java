@@ -23,10 +23,6 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 interface HttpService {
 
     @Nullable

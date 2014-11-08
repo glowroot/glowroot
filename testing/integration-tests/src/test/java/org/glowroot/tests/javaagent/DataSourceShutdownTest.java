@@ -32,10 +32,6 @@ import org.glowroot.container.javaagent.JavaagentContainer;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // this is a test of DataSource's jvm shutdown hook, since prior to replacing H2's jvm shutdown
 // hook, the H2 jdbc connection could get closed while there were still traces being written to it,
 // and exceptions would get thrown/logged

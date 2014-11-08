@@ -27,10 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.Optional;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class DetailMapWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(DetailMapWriter.class);

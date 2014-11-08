@@ -20,10 +20,6 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class QueryResult<T> {
 
     private final List<T> records;

@@ -29,12 +29,7 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.common.Ticker;
 import org.glowroot.markers.GuardedBy;
 
-/**
- * This must support updating by a single thread and reading by multiple threads.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// this supports updating by a single thread and reading by multiple threads
 class TraceEntryComponent {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceEntryComponent.class);

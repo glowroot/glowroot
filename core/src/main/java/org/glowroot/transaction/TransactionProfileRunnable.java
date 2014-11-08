@@ -23,18 +23,8 @@ import com.google.common.base.MoreObjects;
 
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
-import org.glowroot.markers.ThreadSafe;
-import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Transaction;
 
-/**
- * Captures a stack trace for the thread executing a transaction and stores the stack trace in the
- * {@link Transaction}'s {@link Profile}.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 class TransactionProfileRunnable extends ScheduledRunnable {
 
     private final Transaction transaction;

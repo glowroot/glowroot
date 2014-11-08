@@ -49,20 +49,12 @@ import org.glowroot.config.UserInterfaceConfig.CurrentPasswordIncorrectException
 import org.glowroot.config.UserRecordingConfig;
 import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
-import org.glowroot.markers.Singleton;
 import org.glowroot.transaction.TransactionModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
 
-/**
- * Json service to read and update config data.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 @JsonService
 class ConfigJsonService {
 

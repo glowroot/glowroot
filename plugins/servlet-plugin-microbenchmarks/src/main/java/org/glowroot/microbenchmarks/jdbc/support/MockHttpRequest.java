@@ -39,10 +39,6 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class MockHttpRequest implements HttpServletRequest {
 
     @Override

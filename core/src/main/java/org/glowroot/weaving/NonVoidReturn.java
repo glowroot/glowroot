@@ -21,10 +21,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.api.OptionalReturn;
 import org.glowroot.markers.UsedByGeneratedBytecode;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @UsedByGeneratedBytecode
 public class NonVoidReturn implements OptionalReturn {
 

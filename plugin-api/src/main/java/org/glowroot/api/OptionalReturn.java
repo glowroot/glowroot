@@ -20,9 +20,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /**
  * For modeling an optional return value from a method when it is unknown whether that method
  * returns void or a value (value can be null).
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 public interface OptionalReturn {
 

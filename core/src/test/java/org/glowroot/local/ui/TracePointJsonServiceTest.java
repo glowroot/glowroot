@@ -45,10 +45,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class TracePointJsonServiceTest {
 
     private static final ObjectMapper mapper = ObjectMappers.create();

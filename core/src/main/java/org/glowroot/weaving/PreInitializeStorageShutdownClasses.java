@@ -23,16 +23,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.Static;
-
-/**
- * Class loading is also a bad idea inside of JVM shutdown hooks, see
- * https://bugs.openjdk.java.net/browse/JDK-7142035
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
+// Class loading is also a bad idea inside of JVM shutdown hooks, see
+// https://bugs.openjdk.java.net/browse/JDK-7142035
 public class PreInitializeStorageShutdownClasses {
 
     private static final Logger logger =

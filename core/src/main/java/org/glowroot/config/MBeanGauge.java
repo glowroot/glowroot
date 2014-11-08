@@ -33,12 +33,6 @@ import org.glowroot.markers.OnlyUsedByTests;
 
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
-/**
- * Immutable structure to hold an mbean gauge configuration.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 public class MBeanGauge {
 

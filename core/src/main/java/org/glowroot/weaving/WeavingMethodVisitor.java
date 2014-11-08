@@ -50,10 +50,6 @@ import org.glowroot.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingMethodVisitor.class);

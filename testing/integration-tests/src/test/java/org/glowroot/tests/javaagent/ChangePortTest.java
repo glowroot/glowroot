@@ -33,10 +33,6 @@ import org.glowroot.container.config.UserInterfaceConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ChangePortTest {
 
     private static Container container;

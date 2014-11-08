@@ -22,10 +22,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class JdbcMessageSupplier extends MessageSupplier {
 
     @Nullable

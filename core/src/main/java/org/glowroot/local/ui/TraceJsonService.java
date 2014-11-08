@@ -23,15 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Trace;
 import org.glowroot.collector.TraceWriter;
-import org.glowroot.markers.Singleton;
 
-/**
- * Json service to read trace data, bound under /backend/trace/header.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 @JsonService
 class TraceJsonService {
 

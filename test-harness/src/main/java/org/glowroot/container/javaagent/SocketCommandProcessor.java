@@ -38,10 +38,6 @@ import org.glowroot.container.Threads;
 import org.glowroot.container.javaagent.SocketCommander.CommandWrapper;
 import org.glowroot.container.javaagent.SocketCommander.ResponseWrapper;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class SocketCommandProcessor implements Runnable {
 
     public static final String EXECUTE_APP = "EXECUTE_APP";

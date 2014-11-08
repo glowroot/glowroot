@@ -38,9 +38,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * 
  * {@literal @}{@link OnReturn}, {@literal @}{@link OnThrow} and {@literal @}{@link OnAfter} methods
  * by annotating a parameter on any of these methods with {@literal @}{@link BindTraveler}.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 @Target(METHOD)
 @Retention(RUNTIME)

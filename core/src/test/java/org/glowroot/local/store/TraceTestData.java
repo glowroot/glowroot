@@ -24,10 +24,6 @@ import org.glowroot.collector.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class TraceTestData {
 
     private static final AtomicInteger counter = new AtomicInteger();

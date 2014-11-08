@@ -38,10 +38,6 @@ import org.glowroot.api.weaving.Pointcut;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ExpensiveCallAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");

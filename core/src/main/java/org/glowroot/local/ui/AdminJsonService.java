@@ -39,18 +39,10 @@ import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.GaugePointDao;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.Singleton;
 import org.glowroot.transaction.AdviceCache;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.weaving.AnalyzedWorld;
 
-/**
- * Json service for various admin tasks.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 @JsonService
 class AdminJsonService {
 

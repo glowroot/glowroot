@@ -23,12 +23,6 @@ import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 
-/**
- * Marker to identify methods that are only used by tests.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Documented
 @Target({TYPE, METHOD, CONSTRUCTOR, FIELD})
 public @interface OnlyUsedByTests {}

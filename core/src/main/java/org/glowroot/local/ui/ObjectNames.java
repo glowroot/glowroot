@@ -23,13 +23,6 @@ import javax.management.ObjectName;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 
-import org.glowroot.markers.Static;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 class ObjectNames {
 
     @VisibleForTesting

@@ -31,10 +31,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class ResponseHeaders {
 
     private static final Logger logger = LoggerFactory.getLogger(ServletMessageSupplier.class);

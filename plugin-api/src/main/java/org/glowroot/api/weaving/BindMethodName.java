@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@link Pointcut#methodName()} uses wildcards or is a regular expression.
  * <p>
  * Parameters annotated with {@literal @}{@link BindMethodName} must be of type {@link String}.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 @Target(PARAMETER)
 @Retention(RUNTIME)

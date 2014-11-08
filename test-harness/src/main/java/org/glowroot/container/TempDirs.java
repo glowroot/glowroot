@@ -21,13 +21,6 @@ import java.io.IOException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.StandardSystemProperty;
 
-import org.glowroot.markers.Static;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 public class TempDirs {
 
     private TempDirs() {}

@@ -20,18 +20,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ScheduledRunnable;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.transaction.model.Transaction;
 
-/**
- * Scheduled to run as soon as the transaction exceeds a given threshold.
- * 
- * If the {@link Transaction} has already completed when this is run then it does nothing.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 class ImmediateTraceStoreRunnable extends ScheduledRunnable {
 
     private static final Logger logger = LoggerFactory.getLogger(ImmediateTraceStoreRunnable.class);

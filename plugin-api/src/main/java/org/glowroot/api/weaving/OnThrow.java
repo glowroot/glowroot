@@ -45,9 +45,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * An {@literal @}{@code OnThrow} method must return {@code void}. It is not able to suppress the
  * original {@code Exception} or change the {@code Exception} that is thrown (at least not
  * currently).
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 @Target(METHOD)
 @Retention(RUNTIME)

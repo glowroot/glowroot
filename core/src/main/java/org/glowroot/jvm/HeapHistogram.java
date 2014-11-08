@@ -28,10 +28,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class HeapHistogram {
 
     private static final JsonFactory jsonFactory = new JsonFactory();

@@ -33,10 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.GuardedBy;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class GcInfoComponent {
 
     private static final Logger logger = LoggerFactory.getLogger(GcInfoComponent.class);

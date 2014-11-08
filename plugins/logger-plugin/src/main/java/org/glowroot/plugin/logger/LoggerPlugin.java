@@ -17,10 +17,6 @@ package org.glowroot.plugin.logger;
 
 import org.glowroot.api.PluginServices;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class LoggerPlugin {
 
     private static final PluginServices pluginServices = PluginServices.get("logger");

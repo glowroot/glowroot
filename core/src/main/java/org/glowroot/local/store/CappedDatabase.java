@@ -37,15 +37,8 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.Ticker;
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.Immutable;
-import org.glowroot.markers.NotThreadSafe;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 public class CappedDatabase {
 
     private static final Logger logger = LoggerFactory.getLogger(CappedDatabase.class);
@@ -141,7 +134,6 @@ public class CappedDatabase {
         }
     }
 
-    @NotThreadSafe
     private class FileBlockInputStream extends InputStream {
 
         private final FileBlock block;

@@ -33,10 +33,6 @@ import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class TraceEntryStackTraceTest {
 
     private static final String PLUGIN_ID = "glowroot-integration-tests";

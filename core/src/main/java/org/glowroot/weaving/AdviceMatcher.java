@@ -29,10 +29,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.api.weaving.MethodModifier;
 import org.glowroot.markers.Immutable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 class AdviceMatcher {
 

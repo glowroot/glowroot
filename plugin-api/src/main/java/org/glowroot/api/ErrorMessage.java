@@ -38,9 +38,6 @@ import org.glowroot.api.internal.ReadableErrorMessage;
  * The detail map does not need to be thread safe as long as it is only instantiated in response to
  * either MessageSupplier.get() or Message.getDetail() which are called by the thread that needs the
  * map.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 public abstract class ErrorMessage {
 

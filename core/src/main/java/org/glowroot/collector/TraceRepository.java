@@ -18,12 +18,6 @@ package org.glowroot.collector;
 import com.google.common.io.CharSource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * Interface for storing traces.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 public interface TraceRepository {
 
     void store(Trace trace, CharSource entries, @Nullable CharSource profile,

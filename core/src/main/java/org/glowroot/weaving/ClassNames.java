@@ -21,13 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 
-import org.glowroot.markers.Static;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 public class ClassNames {
 
     private ClassNames() {}

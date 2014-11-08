@@ -34,7 +34,6 @@ import org.objectweb.asm.util.CheckClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.AnalyzedWorld.ParseContext;
 import org.glowroot.weaving.WeavingClassVisitor.PointcutClassFoundException;
 import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
@@ -42,11 +41,6 @@ import org.glowroot.weaving.WeavingTimerService.WeavingTimer;
 
 import static org.objectweb.asm.Opcodes.ASM5;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 class Weaver {
 
     private static final Logger logger = LoggerFactory.getLogger(Weaver.class);

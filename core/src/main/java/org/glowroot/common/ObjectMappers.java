@@ -46,16 +46,9 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.Static;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // unfortunately this class cannot be used by test-container since sometimes this class exposes
 // unshaded jackson types (in IDE) and sometimes it exposes shaded jackson types (in maven build),
 // therefore there is a mostly duplicate class under test-container
-@Static
 public class ObjectMappers {
 
     private static final Logger logger = LoggerFactory.getLogger(ObjectMappers.class);

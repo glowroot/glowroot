@@ -23,13 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Manifests;
-import org.glowroot.markers.Static;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 class Version {
 
     private static final Logger logger = LoggerFactory.getLogger(Version.class);

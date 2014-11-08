@@ -15,10 +15,6 @@
  */
 package org.glowroot.local.store;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 enum SortDirection {
 
     ASC, DESC;

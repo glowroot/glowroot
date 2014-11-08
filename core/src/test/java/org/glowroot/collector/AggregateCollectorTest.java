@@ -33,10 +33,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class AggregateCollectorTest {
 
     @Test

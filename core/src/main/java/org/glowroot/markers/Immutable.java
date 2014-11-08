@@ -20,12 +20,6 @@ import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.TYPE;
 
-/**
- * Marker to identify classes that are immutable.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Documented
 @Target(TYPE)
 public @interface Immutable {}

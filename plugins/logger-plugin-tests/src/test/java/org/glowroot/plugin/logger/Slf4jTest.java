@@ -33,12 +33,6 @@ import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Basic tests of the servlet plugin.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class Slf4jTest {
 
     private static Container container;

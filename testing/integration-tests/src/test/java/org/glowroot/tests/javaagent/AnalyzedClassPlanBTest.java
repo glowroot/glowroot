@@ -36,10 +36,6 @@ import org.glowroot.container.config.CapturePoint.MethodModifier;
 import org.glowroot.weaving.AnalyzedWorld;
 import org.glowroot.weaving.ClassNames;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class AnalyzedClassPlanBTest {
 
     private static Container container;

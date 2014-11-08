@@ -21,26 +21,11 @@ import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.TraceConfig;
-import org.glowroot.markers.Singleton;
 import org.glowroot.transaction.model.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-/**
- * Captures outlier profile for traces that exceed the configured threshold.
- * 
- * The main repeating Runnable (this) only runs every PERIOD_MILLIS at which time it checks to see
- * if there are any traces that may need stack traces scheduled before the main repeating Runnable
- * runs again (in another PERIOD_MILLIS). the main repeating Runnable schedules a repeating
- * CollectStackCommand for any trace that may need a stack trace in the next PERIOD_MILLIS. since
- * the majority of traces never end up needing stack traces this is much more efficient than
- * scheduling a repeating CollectStackCommand for every trace (this was learned the hard way).
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 class OutlierProfileWatcher extends ScheduledRunnable {
 
     static final int PERIOD_MILLIS = 100;

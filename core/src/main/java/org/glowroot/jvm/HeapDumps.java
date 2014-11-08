@@ -26,10 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.Immutable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 public class HeapDumps {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,12 @@ import java.util.Map;
 
 import org.springframework.mock.web.MockHttpServletRequest;
 
-/**
- * This is a mock request object that mimics tomcat's getParameterMap() behavior. This tests that
- * the servlet-plugin doesn't try to capture the request parameters (which it does via
- * getParameterMap()) after the call to getParameterValues() (if getParameterValues() is called from
- * inside of getParameterMap()), since this would lock the parameter map causing the outer call to
- * {@link #getParameterMap()} to fail.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// this is a mock request object that mimics tomcat's getParameterMap() behavior
+//
+// this tests that the servlet-plugin doesn't try to capture the request parameters (which it does
+// via getParameterMap()) after the call to getParameterValues() (if getParameterValues() is called
+// from inside of getParameterMap()), since this would lock the parameter map causing the outer call
+// to getParameterMap() to fail
 public class MockCatalinaHttpServletRequest extends MockHttpServletRequest {
 
     private final ParameterMap<String, String[]> parameterMap =

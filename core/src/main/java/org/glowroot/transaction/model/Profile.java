@@ -30,18 +30,9 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.markers.GuardedBy;
-import org.glowroot.markers.ThreadSafe;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * Merged stack tree built from sampled stack traces captured by periodic calls to
- * {@link Thread#getStackTrace()}.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 public class Profile {
 
     private static final Pattern metricMarkerMethodPattern =

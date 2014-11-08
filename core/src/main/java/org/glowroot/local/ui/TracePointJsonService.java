@@ -46,19 +46,11 @@ import org.glowroot.local.store.StringComparator;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TracePoint;
 import org.glowroot.local.store.TracePointQuery;
-import org.glowroot.markers.Singleton;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * Json service to read trace point data, bound under /backend/trace/points.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 @JsonService
 class TracePointJsonService {
 

@@ -34,16 +34,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.advicegen.AdviceGenerator;
 import org.glowroot.config.CapturePoint;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.ClassLoaders;
 import org.glowroot.weaving.LazyDefinedClass;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 public class AdviceCache {
 
     private static final AtomicInteger jarFileCounter = new AtomicInteger();

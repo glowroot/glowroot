@@ -15,10 +15,6 @@
  */
 package org.glowroot.tests;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class LogError {
 
     // this method corresponds to LogErrorAspect

@@ -28,10 +28,6 @@ import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ErrorMessageQuery {
 
     @Nullable

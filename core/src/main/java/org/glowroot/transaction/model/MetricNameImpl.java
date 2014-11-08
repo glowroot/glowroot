@@ -19,10 +19,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.glowroot.api.MetricName;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class MetricNameImpl implements MetricName {
 
     private static final AtomicInteger nextSpecialHashCode = new AtomicInteger();

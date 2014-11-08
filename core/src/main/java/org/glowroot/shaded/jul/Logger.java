@@ -17,10 +17,6 @@ package org.glowroot.shaded.jul;
 
 import java.text.MessageFormat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class Logger {
 
     private final org.slf4j.Logger logger;

@@ -20,10 +20,6 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.Method;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class PatchedAdviceAdapter extends AdviceAdapter {
 
     protected PatchedAdviceAdapter(int api, MethodVisitor mv, int access, String name,

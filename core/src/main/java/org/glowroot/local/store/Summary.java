@@ -19,10 +19,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.markers.UsedByJsonBinding;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @UsedByJsonBinding
 public class Summary {
 

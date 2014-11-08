@@ -19,9 +19,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Very thin wrapper around SLF4J so plugins don't have to worry about SLF4J shading.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 public class LoggerFactory {
 

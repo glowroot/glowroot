@@ -62,9 +62,6 @@ import org.glowroot.api.weaving.Pointcut;
  *     }
  * }
  * </pre>
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 public abstract class PluginServices {
 

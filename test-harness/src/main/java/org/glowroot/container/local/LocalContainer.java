@@ -44,10 +44,6 @@ import org.glowroot.weaving.IsolatedWeavingClassLoader;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class LocalContainer implements Container {
 
     private final File dataDir;

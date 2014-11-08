@@ -23,14 +23,6 @@ import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
 
-/**
- * Immutable structure to hold the storage config.
- * 
- * Default values should be conservative.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 public class StorageConfig {
 
@@ -44,6 +36,7 @@ public class StorageConfig {
     private final String version;
 
     static StorageConfig getDefault() {
+        // default values should be conservative
         final int aggregateExpirationHours = 24 * 7;
         final int traceExpirationHours = 24 * 7;
         final int cappedDatabaseSizeMb = 1000;

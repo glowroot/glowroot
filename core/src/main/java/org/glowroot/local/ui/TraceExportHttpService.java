@@ -44,22 +44,13 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.collector.Trace;
 import org.glowroot.local.ui.TraceCommonService.TraceExport;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.Singleton;
 
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-/**
- * Http service to export a trace as a complete html page, bound to /export/trace. It is not bound
- * under /backend since it is visible to users as the download url for the export file.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 @VisibleForTesting
-@Singleton
 public class TraceExportHttpService implements HttpService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceExportHttpService.class);

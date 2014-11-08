@@ -29,15 +29,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.Static;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.ProfileNode;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 public class ProfileCharSourceCreator {
 
     private static final Logger logger = LoggerFactory.getLogger(ProfileCharSourceCreator.class);

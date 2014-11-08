@@ -35,10 +35,6 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.config.MBeanGauge;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class GaugeCollector extends ScheduledRunnable {
 
     private static final Logger logger = LoggerFactory.getLogger(GaugeCollector.class);

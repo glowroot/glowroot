@@ -33,10 +33,6 @@ import org.glowroot.container.trace.TraceMetric;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // CapturePoint's enabledProperty and traceEntryEnabledProperty can only be used by plugins and
 // must be configured in glowroot.plugin.json
 public class CapturePointEnabledPropertyTest {

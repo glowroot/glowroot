@@ -23,10 +23,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class HttpSessions {
 
     @Nullable

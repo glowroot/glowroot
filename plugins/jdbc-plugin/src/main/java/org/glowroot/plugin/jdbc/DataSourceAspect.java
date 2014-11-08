@@ -41,10 +41,6 @@ import org.glowroot.api.weaving.Pointcut;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // DataSource.getConnection() can be interesting in case the data source is improperly sized and is
 // slow while expanding
 public class DataSourceAspect {

@@ -26,10 +26,6 @@ import org.glowroot.transaction.model.ProfileNode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class AggregateProfileBuilder {
 
     private final Object lock = new Object();

@@ -20,10 +20,6 @@ import org.junit.Test;
 
 import org.glowroot.weaving.WeavingJDK14BytecodeAspect.BasicAdvice;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class WeavingJDK14BytecodeTest {
 
     // in particular, this test exercises WeavingMethodVisitor.loadTarget() where the method is

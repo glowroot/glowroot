@@ -15,10 +15,6 @@
  */
 package org.glowroot.sandbox.ui;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class NestableCall {
 
     private final NestableCall child;

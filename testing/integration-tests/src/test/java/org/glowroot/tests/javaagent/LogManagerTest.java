@@ -32,10 +32,6 @@ import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // this test is needed to ensure nothing initializes java.util.logging before jboss-modules is able
 // to set the system property "java.util.logging.manager" (see org.jboss.modules.Main)
 public class LogManagerTest {

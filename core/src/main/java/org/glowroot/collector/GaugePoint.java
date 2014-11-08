@@ -17,10 +17,6 @@ package org.glowroot.collector;
 
 import org.glowroot.markers.Immutable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 public class GaugePoint {
 

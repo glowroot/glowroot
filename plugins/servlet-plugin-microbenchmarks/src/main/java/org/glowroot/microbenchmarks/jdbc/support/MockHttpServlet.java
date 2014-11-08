@@ -19,10 +19,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @SuppressWarnings("serial")
 public class MockHttpServlet extends HttpServlet {
 

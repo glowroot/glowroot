@@ -18,10 +18,6 @@ package org.glowroot.weaving;
 import com.google.common.reflect.Reflection;
 import org.apache.jackrabbit.core.persistence.pool.BundleDbPersistenceManager;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class JsrMethodMisc implements Misc {
 
     @Override

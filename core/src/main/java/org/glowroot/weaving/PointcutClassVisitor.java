@@ -33,10 +33,6 @@ import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class PointcutClassVisitor extends ClassVisitor {
 
     private final ClassWriter cw;

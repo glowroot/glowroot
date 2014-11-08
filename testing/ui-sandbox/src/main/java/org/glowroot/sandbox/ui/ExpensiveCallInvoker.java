@@ -20,10 +20,6 @@ import java.lang.reflect.Method;
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ExpensiveCallInvoker {
 
     private static final Logger logger = LoggerFactory.getLogger(ExpensiveCallInvoker.class);

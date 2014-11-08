@@ -23,10 +23,6 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.tests.CapturePointTest;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ReweavePointcutsTest extends CapturePointTest {
 
     @BeforeClass

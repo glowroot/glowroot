@@ -17,12 +17,6 @@ package org.glowroot.collector;
 
 import java.util.List;
 
-/**
- * Interface for storing metric points.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 public interface GaugePointRepository {
 
     void store(List<GaugePoint> gaugePoints);

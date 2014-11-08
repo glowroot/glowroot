@@ -33,10 +33,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class SocketCommander {
 
     private static final Logger logger = LoggerFactory.getLogger(SocketCommander.class);

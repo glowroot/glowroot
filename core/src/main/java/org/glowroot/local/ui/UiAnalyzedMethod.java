@@ -31,10 +31,6 @@ import org.glowroot.markers.Immutable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 public class UiAnalyzedMethod {
 

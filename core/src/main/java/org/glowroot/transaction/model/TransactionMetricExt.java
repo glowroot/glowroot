@@ -17,10 +17,6 @@ package org.glowroot.transaction.model;
 
 import org.glowroot.api.TransactionMetric;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public interface TransactionMetricExt extends TransactionMetric {
 
     void end(long endTick);

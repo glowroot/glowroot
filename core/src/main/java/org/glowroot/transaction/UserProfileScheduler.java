@@ -20,19 +20,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.UserRecordingConfig;
-import org.glowroot.markers.Singleton;
 import org.glowroot.transaction.model.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-/**
- * Profiles a percentage of transactions.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 class UserProfileScheduler {
 
     private final ScheduledExecutorService scheduledExecutor;

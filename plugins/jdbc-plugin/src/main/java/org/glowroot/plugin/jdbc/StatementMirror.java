@@ -15,21 +15,14 @@
  */
 package org.glowroot.plugin.jdbc;
 
-import java.sql.Statement;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * Used to capture and mirror the state of statements since the underlying {@link Statement} values
- * cannot be inspected after they have been set.
- * 
- * @author Trask Stalnaker
- * @see java.sql.Statement#addBatch(String)
- * @since 0.5
- */
+// used to capture and mirror the state of statements since the underlying {@link Statement} values
+// cannot be inspected after they have been set
 class StatementMirror {
 
     // this field is not used by PreparedStatementMirror subclass

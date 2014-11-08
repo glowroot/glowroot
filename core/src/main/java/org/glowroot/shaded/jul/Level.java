@@ -15,10 +15,6 @@
  */
 package org.glowroot.shaded.jul;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class Level {
 
     public static final Level OFF = new Level("OFF", Integer.MAX_VALUE);

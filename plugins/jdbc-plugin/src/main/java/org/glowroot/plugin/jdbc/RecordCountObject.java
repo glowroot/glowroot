@@ -15,10 +15,6 @@
  */
 package org.glowroot.plugin.jdbc;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class RecordCountObject {
 
     // intentionally not for performance, but it does mean partial and active trace

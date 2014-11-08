@@ -33,10 +33,6 @@ import org.glowroot.api.weaving.Pointcut;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ConnectionAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");

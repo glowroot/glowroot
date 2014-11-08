@@ -50,9 +50,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * return value in to an {@literal @}{@code OnReturn} method (using
  * 
  * {@literal @}{@link BindReturn}) and then returning the wrapped value.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 @Target(METHOD)
 @Retention(RUNTIME)

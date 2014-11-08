@@ -40,9 +40,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * It's important to note that inline field initializers in the mixin class will not get added to
  * the {@code target} types (since at the bytecode level they are be part of the mixin constructor),
  * so field initializers must be placed in the {@literal @}{@code MixinInit}.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 @Target(TYPE)
 @Retention(RUNTIME)

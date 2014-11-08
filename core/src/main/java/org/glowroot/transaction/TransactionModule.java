@@ -30,7 +30,6 @@ import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.transaction.PluginServicesRegistry.PluginServicesFactory;
 import org.glowroot.weaving.AnalyzedWorld;
 import org.glowroot.weaving.ExtraBootResourceFinder;
@@ -40,11 +39,6 @@ import org.glowroot.weaving.WeavingTimerService;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 public class TransactionModule {
 
     private final AnalyzedWorld analyzedWorld;

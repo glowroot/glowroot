@@ -22,13 +22,7 @@ import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 
-/**
- * Marker to identify methods that are called by reflection. This is helpful to know when
- * refactoring and when running tools to find unused code (e.g. UCDetector).
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// this is helpful to know when refactoring and when running tools to find unused code
 @Documented
 @Target({TYPE, METHOD, FIELD})
 public @interface UsedByReflection {}

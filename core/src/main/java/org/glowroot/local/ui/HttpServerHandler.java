@@ -68,7 +68,6 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.common.Reflections.ReflectiveTargetException;
-import org.glowroot.markers.Singleton;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -83,11 +82,6 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.REQUEST_TIME
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 class HttpServerHandler extends SimpleChannelUpstreamHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerHandler.class);

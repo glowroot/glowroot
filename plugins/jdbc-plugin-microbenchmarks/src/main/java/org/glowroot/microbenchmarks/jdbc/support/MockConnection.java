@@ -34,10 +34,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class MockConnection implements Connection {
 
     @Override

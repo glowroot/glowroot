@@ -21,10 +21,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class TraceThreadInfo {
 
     @Nullable

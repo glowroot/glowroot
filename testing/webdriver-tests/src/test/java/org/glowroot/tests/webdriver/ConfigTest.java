@@ -47,10 +47,6 @@ import org.glowroot.tests.webdriver.config.TraceConfigPage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ConfigTest {
 
     private static final boolean USE_LOCAL_IE = false;

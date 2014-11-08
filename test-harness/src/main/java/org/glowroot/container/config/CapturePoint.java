@@ -31,10 +31,6 @@ import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForPr
 import static org.glowroot.container.common.ObjectMappers.checkNotNullValuesForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class CapturePoint {
 
     @Nullable

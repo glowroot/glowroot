@@ -15,10 +15,6 @@
  */
 package org.glowroot.collector;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public enum Existence {
     YES, NO, EXPIRED;
 }

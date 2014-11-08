@@ -21,10 +21,6 @@ import java.util.Iterator;
 import com.google.common.collect.Iterators;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // micro-optimized list for bind parameters
 class BindParameterList implements Iterable</*@Nullable*/Object> {
 

@@ -22,10 +22,6 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.base.Stopwatch;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public abstract class TraceService {
 
     public abstract int getNumPendingCompleteTransactions() throws Exception;

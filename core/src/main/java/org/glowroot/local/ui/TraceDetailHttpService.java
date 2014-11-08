@@ -31,19 +31,9 @@ import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.Singleton;
-
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-/**
- * Http service to read trace detail, bound to /backend/trace/entries, /backend/trace/profile and
- * /backend/trace/outlier-profile.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 class TraceDetailHttpService implements HttpService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceDetailHttpService.class);

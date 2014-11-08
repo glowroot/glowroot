@@ -20,10 +20,6 @@ import java.sql.Driver;
 import java.sql.DriverPropertyInfo;
 import java.util.Properties;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class MockDriver implements Driver {
 
     @Override

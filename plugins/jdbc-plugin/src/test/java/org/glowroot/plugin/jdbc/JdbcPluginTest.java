@@ -44,12 +44,6 @@ import org.glowroot.container.trace.TraceMetric;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Basic tests of the jdbc plugin.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class JdbcPluginTest {
 
     private static final String PLUGIN_ID = "jdbc";

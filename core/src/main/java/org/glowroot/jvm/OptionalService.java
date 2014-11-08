@@ -22,10 +22,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public abstract class OptionalService<T> {
 
     static <T> OptionalService<T> available(T service) {

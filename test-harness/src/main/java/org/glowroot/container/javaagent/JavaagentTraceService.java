@@ -33,10 +33,6 @@ import org.glowroot.container.trace.TraceService;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // even though this is thread safe, it is not useful for running tests in parallel since
 // getLastTrace() and others are not scoped to a particular test
 class JavaagentTraceService extends TraceService {

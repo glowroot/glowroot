@@ -34,20 +34,10 @@ import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
 
-/**
- * Defines pointcuts and captures data on
- * {@link javax.servlet.http.HttpServlet#service(javax.servlet.ServletRequest, javax.servlet.ServletResponse)}
- * and
- * {@link javax.servlet.Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)}
- * calls.
- * 
- * By default only the calls to the top-most Filter and to the top-most Servlet are captured.
- * 
- * This plugin is careful not to rely on request or session objects being thread-safe.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// only the calls to the top-most Filter and to the top-most Servlet are captured
+//
+// this plugin is careful not to rely on request or session objects being thread-safe
+//
 // TODO add support for async servlets (servlet 3.0)
 public class ServletAspect {
 

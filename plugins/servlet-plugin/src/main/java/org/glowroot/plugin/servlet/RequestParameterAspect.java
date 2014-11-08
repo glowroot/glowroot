@@ -22,10 +22,6 @@ import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.Pointcut;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class RequestParameterAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("servlet");

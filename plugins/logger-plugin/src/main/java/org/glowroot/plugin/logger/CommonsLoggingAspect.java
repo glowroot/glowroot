@@ -28,10 +28,6 @@ import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.Pointcut;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class CommonsLoggingAspect {
 
     private static final String TRACE_METRIC = "logging";

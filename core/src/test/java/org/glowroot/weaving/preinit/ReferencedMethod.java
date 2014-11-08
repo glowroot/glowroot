@@ -18,10 +18,6 @@ package org.glowroot.weaving.preinit;
 import com.google.common.base.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ReferencedMethod implements Comparable<ReferencedMethod> {
 
     private final String owner;

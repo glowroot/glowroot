@@ -34,10 +34,6 @@ import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.Immutable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 public class HeapHistograms {
 

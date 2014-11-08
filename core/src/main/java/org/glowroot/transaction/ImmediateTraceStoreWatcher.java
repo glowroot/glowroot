@@ -17,28 +17,15 @@ package org.glowroot.transaction;
 
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigService;
-import org.glowroot.markers.Singleton;
 import org.glowroot.transaction.model.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-/**
- * Owns the thread (via a single threaded scheduled executor) that watches out for transactions that
- * exceed the partial store threshold. When it finds one, it sends it to
- * {@link TransactionCollectorImpl#storePartialTrace(Transaction)}. This ensures that a transaction
- * that never ends is still captured even though normal collection occurs at the end of a
- * transaction.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 class ImmediateTraceStoreWatcher extends ScheduledRunnable {
 
     static final int PERIOD_MILLIS = 1000;

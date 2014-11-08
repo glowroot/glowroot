@@ -34,10 +34,6 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @BenchmarkMode(Mode.SingleShotTime)
 @Warmup(iterations = 0)
 @Measurement(iterations = 1)

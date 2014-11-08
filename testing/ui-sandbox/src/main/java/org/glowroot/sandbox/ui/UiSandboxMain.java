@@ -33,10 +33,6 @@ import org.glowroot.container.local.LocalContainer;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class UiSandboxMain {
 
     private static final boolean useJavaagent = false;

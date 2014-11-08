@@ -18,15 +18,9 @@ package org.glowroot.local.store;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
-import org.glowroot.markers.Singleton;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 class ReaperRunnable extends ScheduledRunnable {
 
     private final ConfigService configService;

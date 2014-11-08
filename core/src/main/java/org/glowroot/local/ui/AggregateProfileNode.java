@@ -30,10 +30,6 @@ import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @UsedByJsonBinding
 class AggregateProfileNode {
 
@@ -131,7 +127,8 @@ class AggregateProfileNode {
             @JsonProperty("metricNames") @Nullable List</*@Nullable*/String> uncheckedMetricNames,
             @JsonProperty("childNodes") @Nullable List</*@Nullable*/AggregateProfileNode> uncheckedChildNodes)
             throws JsonMappingException {
-        List<String> metricNames = checkNotNullItemsForProperty(uncheckedMetricNames, "metricNames");
+        List<String> metricNames =
+                checkNotNullItemsForProperty(uncheckedMetricNames, "metricNames");
         List<AggregateProfileNode> childNodes =
                 checkNotNullItemsForProperty(uncheckedChildNodes, "childNodes");
         checkRequiredProperty(sampleCount, "sampleCount");

@@ -35,9 +35,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@code false} then none of the {@literal @}{@link OnBefore}, {@literal @}{@link OnReturn},
  * {@literal @}{@link OnThrow} or {@literal @}{@link OnAfter} methods are called for that execution
  * of the method picked out by the {@link Pointcut}.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 @Target(METHOD)
 @Retention(RUNTIME)

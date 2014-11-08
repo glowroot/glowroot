@@ -36,10 +36,6 @@ import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.Pointcut;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class NestableCallAspect {
 
     private static final ImmutableList<String> USERS = ImmutableList.of("able", "baker", "charlie");

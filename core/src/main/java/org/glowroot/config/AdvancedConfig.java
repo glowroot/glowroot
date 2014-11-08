@@ -23,14 +23,6 @@ import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
 
-/**
- * Immutable structure to hold the advanced config.
- * 
- * Default values should be conservative.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 public class AdvancedConfig {
 
@@ -49,6 +41,7 @@ public class AdvancedConfig {
     private final String version;
 
     static AdvancedConfig getDefault() {
+        // default values should be conservative
         final boolean metricWrapperMethods = true;
         final int immediatePartialStoreThresholdSeconds = 60;
         final int maxTraceEntriesPerTransaction = 2000;

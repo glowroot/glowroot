@@ -32,10 +32,6 @@ import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // also tests null trace attribute value
 public class NullDetailMapValueTest {
 

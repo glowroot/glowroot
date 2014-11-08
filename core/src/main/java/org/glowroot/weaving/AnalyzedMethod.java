@@ -27,10 +27,6 @@ import org.objectweb.asm.Type;
 
 import org.glowroot.markers.Immutable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // Strings are interned to reduce memory footprint of AnalyzedWorld
 @Immutable
 public class AnalyzedMethod {

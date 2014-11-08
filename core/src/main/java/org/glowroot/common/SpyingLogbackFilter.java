@@ -33,10 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.OnlyUsedByTests;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // this is needed in glowroot-core so that the references to logback classes will be shaded whenever
 // glowroot-core is shaded
 @OnlyUsedByTests

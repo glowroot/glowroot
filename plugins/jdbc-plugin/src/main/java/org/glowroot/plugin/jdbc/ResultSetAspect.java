@@ -37,10 +37,6 @@ import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.plugin.jdbc.StatementAspect.HasStatementMirror;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ResultSetAspect {
 
     private static final Logger logger = LoggerFactory.getLogger(ResultSetAspect.class);

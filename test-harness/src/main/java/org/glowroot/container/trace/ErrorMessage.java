@@ -25,10 +25,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ErrorMessage extends Message {
 
     @Nullable

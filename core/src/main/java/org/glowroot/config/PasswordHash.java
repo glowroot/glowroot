@@ -24,13 +24,6 @@ import javax.crypto.spec.PBEKeySpec;
 
 import com.google.common.io.BaseEncoding;
 
-import org.glowroot.markers.Static;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 class PasswordHash {
 
     private static final int ITERATION_COUNT = 100000;

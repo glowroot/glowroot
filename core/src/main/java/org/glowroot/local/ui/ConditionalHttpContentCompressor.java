@@ -24,10 +24,6 @@ import org.jboss.netty.handler.codec.http.HttpMessage;
 
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class ConditionalHttpContentCompressor extends HttpContentCompressor {
 
     @Override

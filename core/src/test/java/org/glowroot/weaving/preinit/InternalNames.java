@@ -19,14 +19,8 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.collect.Maps;
 
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.ClassNames;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 class InternalNames {
 
     private static final ConcurrentMap<String, Boolean> bootstrapInternalNames =

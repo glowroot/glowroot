@@ -30,10 +30,6 @@ import org.glowroot.markers.UsedByGeneratedBytecode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @UsedByGeneratedBytecode
 public class MessageTemplate {
 

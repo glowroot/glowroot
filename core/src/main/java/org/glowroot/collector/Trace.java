@@ -24,12 +24,6 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
 import org.glowroot.markers.Immutable;
 
-/**
- * Structure used as part of the response to "/backend/trace/detail".
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 public class Trace {
 

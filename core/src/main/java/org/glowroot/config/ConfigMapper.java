@@ -46,10 +46,6 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.JsonViews.FileView;
 import org.glowroot.markers.Immutable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 class ConfigMapper {
 

@@ -15,10 +15,6 @@
  */
 package org.glowroot.weaving;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public abstract class AbstractMisc implements Misc {
 
     @Override

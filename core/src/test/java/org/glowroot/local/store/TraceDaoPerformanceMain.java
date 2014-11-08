@@ -26,15 +26,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Trace;
 import org.glowroot.common.Ticker;
-import org.glowroot.markers.Static;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 public class TraceDaoPerformanceMain {
 
     private static final Logger logger = LoggerFactory

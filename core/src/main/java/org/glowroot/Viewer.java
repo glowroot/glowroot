@@ -21,13 +21,6 @@ import java.security.CodeSource;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.markers.Static;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 class Viewer {
 
     private Viewer() {}

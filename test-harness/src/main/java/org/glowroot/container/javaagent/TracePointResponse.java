@@ -30,10 +30,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class TracePointResponse {
 
     private final ImmutableList<RawPoint> normalPoints;

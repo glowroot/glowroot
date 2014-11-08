@@ -17,12 +17,6 @@ package org.glowroot.collector;
 
 import java.util.List;
 
-/**
- * Interface for storing aggregates.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 public interface AggregateRepository {
 
     void store(List<Aggregate> overallAggregate, List<Aggregate> transactionAggregates);

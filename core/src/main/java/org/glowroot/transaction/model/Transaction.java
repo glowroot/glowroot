@@ -38,18 +38,11 @@ import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.GuardedBy;
-import org.glowroot.markers.PartiallyThreadSafe;
 
-/**
- * Contains all data that has been captured for a given transaction (e.g. a servlet request).
- * 
- * This class needs to be thread safe, only one thread updates it, but multiple threads can read it
- * at the same time as it is being updated.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@PartiallyThreadSafe("pushEntry(), popEntry(), add*() can only be called from transaction thread")
+// contains all data that has been captured for a given transaction (e.g. a servlet request)
+//
+// this class needs to be thread safe, only one thread updates it, but multiple threads can read it
+// at the same time as it is being updated
 public class Transaction {
 
     private static final Logger logger = LoggerFactory.getLogger(Transaction.class);

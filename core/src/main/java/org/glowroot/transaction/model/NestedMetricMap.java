@@ -17,10 +17,6 @@ package org.glowroot.transaction.model;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // micro-optimized map for nested metrics
 class NestedMetricMap {
 

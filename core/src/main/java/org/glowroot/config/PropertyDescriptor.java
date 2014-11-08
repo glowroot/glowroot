@@ -31,10 +31,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToFalse;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 @UsedByJsonBinding
 public abstract class PropertyDescriptor {

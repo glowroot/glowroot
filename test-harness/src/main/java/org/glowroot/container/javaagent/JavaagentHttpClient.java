@@ -43,10 +43,6 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class JavaagentHttpClient {
 
     private final AsyncHttpClient asyncHttpClient;

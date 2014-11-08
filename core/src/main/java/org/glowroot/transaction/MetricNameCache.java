@@ -25,10 +25,6 @@ import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.transaction.model.MetricNameImpl;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // used to ensure one instance per name so that pointer equality can be used instead of String
 // equality
 //

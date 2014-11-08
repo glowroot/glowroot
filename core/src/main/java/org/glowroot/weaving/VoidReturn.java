@@ -18,10 +18,6 @@ package org.glowroot.weaving;
 import org.glowroot.api.OptionalReturn;
 import org.glowroot.markers.UsedByGeneratedBytecode;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @UsedByGeneratedBytecode
 public class VoidReturn implements OptionalReturn {
 

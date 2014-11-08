@@ -15,13 +15,6 @@
  */
 package org.glowroot.jvm;
 
-import org.glowroot.markers.ThreadSafe;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 public class JvmModule {
 
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;

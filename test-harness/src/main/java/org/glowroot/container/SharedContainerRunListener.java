@@ -20,10 +20,6 @@ import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class SharedContainerRunListener extends RunListener {
 
     private static volatile boolean useSharedContainer;

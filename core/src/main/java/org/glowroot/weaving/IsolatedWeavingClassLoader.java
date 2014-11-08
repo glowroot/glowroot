@@ -37,20 +37,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * The placement of this code in the main Glowroot code base (and not inside of the tests folder) is
- * not ideal, but the alternative is to create a separate artifact (or at least classifier) for this
- * small amount of code, which also seems to be not ideal.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// the placement of this code in the main Glowroot code base (and not inside of the tests folder) is
+// not ideal, but the alternative is to create a separate artifact (or at least classifier) for this
+// small amount of code, which also seems to be not ideal
 @OnlyUsedByTests
-@ThreadSafe
 public class IsolatedWeavingClassLoader extends ClassLoader {
 
     private static final Logger logger = LoggerFactory.getLogger(IsolatedWeavingClassLoader.class);

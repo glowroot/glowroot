@@ -31,10 +31,6 @@ import org.glowroot.container.Container;
 import org.glowroot.container.javaagent.JavaagentContainer;
 import org.glowroot.weaving.ClassNames;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ClassLoaderLeakTest {
 
     private static Container container;

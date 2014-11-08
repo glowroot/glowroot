@@ -15,20 +15,16 @@
  */
 package org.glowroot.weaving;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import org.glowroot.api.OptionalReturn;
 import org.glowroot.weaving.SomeAspect.TestClassMeta;
 import org.glowroot.weaving.SomeAspect.TestMethodMeta;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class SomeAspectThreadLocals {
 
     private static final Set<ThreadLocal<?>> threadLocals = Sets.newConcurrentHashSet();
@@ -98,7 +94,7 @@ public class SomeAspectThreadLocals {
         ThreadLocal<List<T>> threadLocal = new ThreadLocal<List<T>>() {
             @Override
             protected List<T> initialValue() {
-                return new ArrayList<T>();
+                return Lists.newArrayList();
             }
         };
         threadLocals.add(threadLocal);

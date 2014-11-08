@@ -61,20 +61,14 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.GuardedBy;
-import org.glowroot.markers.Singleton;
 import org.glowroot.weaving.AnalyzedWorld;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ASM5;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // TODO need to remove items from classpathURIs and classNames when class loaders are no longer
 // present, e.g. in wildfly after undeploying an application
-@Singleton
 class ClasspathCache {
 
     private static final Logger logger = LoggerFactory.getLogger(ClasspathCache.class);

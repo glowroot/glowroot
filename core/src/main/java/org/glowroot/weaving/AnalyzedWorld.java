@@ -41,16 +41,10 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
-import org.glowroot.markers.Singleton;
 import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 public class AnalyzedWorld {
 
     private static final Logger logger = LoggerFactory.getLogger(AnalyzedWorld.class);

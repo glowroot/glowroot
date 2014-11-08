@@ -33,10 +33,6 @@ import org.glowroot.common.Ticker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class AggregateDaoTest {
 
     private DataSource dataSource;

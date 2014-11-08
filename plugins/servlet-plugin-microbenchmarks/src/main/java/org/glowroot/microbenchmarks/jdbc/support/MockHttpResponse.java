@@ -24,10 +24,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class MockHttpResponse implements HttpServletResponse {
 
     @Override

@@ -17,10 +17,6 @@ package org.glowroot.weaving.other;
 
 import org.glowroot.weaving.Misc;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // this needs to be in a package other than "org.glowroot.weaving", since that is the package used
 // when generating MethodMetaHolder classes, and so would have access to SomethingPrivate.class
 // class constant

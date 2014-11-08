@@ -23,10 +23,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class TraceGcInfo {
 
     private final String name;

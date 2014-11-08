@@ -24,10 +24,6 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class IsolatedClassLoader extends URLClassLoader {
 
     private final Map<String, Class<?>> classes = Maps.newConcurrentMap();

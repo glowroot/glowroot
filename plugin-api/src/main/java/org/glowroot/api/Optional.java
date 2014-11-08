@@ -25,9 +25,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * {@link ConcurrentMap} from {@link Message#getDetail()}. {@link ConcurrentMap} does not accept
  * {@code null} values, but if values are wrapped in {@code Optional}, then Glowroot will unwrap the
  * values and treat {@link Optional#absent()} the same as {@code null}.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 public abstract class Optional<T extends /*@NonNull*/Object> {
 

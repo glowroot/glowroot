@@ -23,10 +23,6 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class App {
 
     private final WebDriver driver;

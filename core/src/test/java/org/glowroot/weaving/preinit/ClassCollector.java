@@ -23,10 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class ClassCollector {
 
     @Nullable

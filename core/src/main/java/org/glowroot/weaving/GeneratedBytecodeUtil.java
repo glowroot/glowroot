@@ -17,14 +17,8 @@ package org.glowroot.weaving;
 
 import java.lang.reflect.Array;
 
-import org.glowroot.markers.Static;
 import org.glowroot.markers.UsedByGeneratedBytecode;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 @UsedByGeneratedBytecode
 public class GeneratedBytecodeUtil {
 

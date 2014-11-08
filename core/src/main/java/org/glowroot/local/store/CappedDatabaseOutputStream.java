@@ -34,12 +34,7 @@ import org.glowroot.markers.OnlyUsedByTests;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-/**
- * Needs to be externally synchronized around startBlock()/write()/endBlock().
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// Needs to be externally synchronized around startBlock()/write()/endBlock().
 class CappedDatabaseOutputStream extends OutputStream {
 
     static final int HEADER_SKIP_BYTES = 20;

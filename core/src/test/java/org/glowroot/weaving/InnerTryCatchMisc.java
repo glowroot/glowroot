@@ -15,10 +15,6 @@
  */
 package org.glowroot.weaving;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class InnerTryCatchMisc implements Misc {
 
     private String message = "caught";

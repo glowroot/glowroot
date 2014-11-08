@@ -19,10 +19,6 @@ import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.Pointcut;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class WeavingJDK14BytecodeAspect {
 
     @Pointcut(className = "org.apache.commons.lang.StringUtils", methodName = "isEmpty",

@@ -28,10 +28,6 @@ import org.openjdk.jmh.annotations.State;
 
 import org.glowroot.microbenchmarks.core.support.TransactionWorthy;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)

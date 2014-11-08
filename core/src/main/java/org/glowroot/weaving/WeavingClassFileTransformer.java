@@ -26,13 +26,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.ThreadSafe;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassFileTransformer.class);

@@ -22,10 +22,6 @@ import org.glowroot.tests.webdriver.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class CapturePointListPage {
 
     private final WebDriver driver;

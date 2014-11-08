@@ -32,10 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.MixinInit;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class MixinType {
 
     private static final Logger logger = LoggerFactory.getLogger(MixinType.class);

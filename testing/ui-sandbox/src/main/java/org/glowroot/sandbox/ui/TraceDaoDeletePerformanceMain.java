@@ -28,10 +28,6 @@ import org.glowroot.container.config.TraceConfig;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class TraceDaoDeletePerformanceMain {
 
     private static final Logger logger =

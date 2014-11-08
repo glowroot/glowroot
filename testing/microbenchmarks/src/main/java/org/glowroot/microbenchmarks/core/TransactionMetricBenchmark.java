@@ -34,10 +34,6 @@ import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.microbenchmarks.core.support.MetricWorthy;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)

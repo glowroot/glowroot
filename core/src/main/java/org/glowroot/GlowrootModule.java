@@ -53,18 +53,12 @@ import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.ui.LocalUiModule;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.transaction.TransactionCollector;
 import org.glowroot.transaction.TransactionModule;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.weaving.ExtraBootResourceFinder;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @VisibleForTesting
-@ThreadSafe
 public class GlowrootModule {
 
     private static final Logger logger = LoggerFactory.getLogger(GlowrootModule.class);

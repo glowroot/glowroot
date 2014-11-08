@@ -27,10 +27,6 @@ import com.google.common.collect.Lists;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class ServletPluginProperties {
 
     private static final String CAPTURE_REQUEST_PARAMS_PROPERTY_NAME = "captureRequestParameters";

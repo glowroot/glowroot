@@ -35,9 +35,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@link Pointcut#methodParameterTypes()} and the number of arguments is unknown, then
  * {@link BindParameterArray} can be used to bind all arguments to a single parameter of type
  * {@code Object[]}.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 @Target(PARAMETER)
 @Retention(RUNTIME)

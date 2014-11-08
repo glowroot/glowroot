@@ -31,14 +31,7 @@ import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.RowMapper;
 import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
-import org.glowroot.markers.Singleton;
-import org.glowroot.markers.ThreadSafe;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 public class GaugePointDao implements GaugePointRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(GaugePointDao.class);
@@ -105,7 +98,6 @@ public class GaugePointDao implements GaugePointRepository {
         }
     }
 
-    @ThreadSafe
     private static class GaugePointRowMapper implements RowMapper<GaugePoint> {
         @Override
         public GaugePoint mapRow(ResultSet resultSet) throws SQLException {

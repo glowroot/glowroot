@@ -24,10 +24,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // this is needed because Instrumentation.appendToBootstrapClassLoaderSearch() doesn't add resources
 // to the search path
 public class ExtraBootResourceFinder {

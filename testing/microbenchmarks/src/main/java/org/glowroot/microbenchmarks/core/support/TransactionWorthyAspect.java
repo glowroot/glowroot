@@ -28,10 +28,6 @@ import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class TransactionWorthyAspect {
 
     private static final PluginServices pluginServices =

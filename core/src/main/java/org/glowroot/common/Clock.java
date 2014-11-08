@@ -15,15 +15,7 @@
  */
 package org.glowroot.common;
 
-import org.glowroot.markers.ThreadSafe;
-
-/**
- * Modeled after Guava's {@link com.google.common.base.Ticker} class, but for currentTimeMillis.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
+// Modeled after Guava's {@link com.google.common.base.Ticker} class, but for currentTimeMillis.
 public abstract class Clock {
 
     private static final Clock SYSTEM_CLOCK = new Clock() {

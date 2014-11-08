@@ -24,12 +24,6 @@ import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.markers.Immutable;
 import org.glowroot.markers.UsedByJsonBinding;
 
-/**
- * Immutable structure to hold the user recording config.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 public class UserRecordingConfig {
 

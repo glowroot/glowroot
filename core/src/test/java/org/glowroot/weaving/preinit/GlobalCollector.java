@@ -31,10 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.weaving.ClassNames;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class GlobalCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalCollector.class);

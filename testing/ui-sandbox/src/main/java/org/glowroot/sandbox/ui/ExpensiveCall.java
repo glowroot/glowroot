@@ -23,10 +23,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import org.glowroot.markers.UsedByReflection;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ExpensiveCall {
 
     private static final Random random = new Random();

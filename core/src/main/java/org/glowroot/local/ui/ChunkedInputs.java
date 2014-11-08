@@ -30,13 +30,6 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
 import org.jboss.netty.handler.stream.ChunkedInput;
 
-import org.glowroot.markers.Static;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 class ChunkedInputs {
 
     static ChunkedInput fromReader(Reader reader) {

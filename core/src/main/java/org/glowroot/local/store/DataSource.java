@@ -43,16 +43,7 @@ import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 
-/**
- * DataSource is a cross between javax.sql.DataSource and spring's JdbcTemplate. Ideally would have
- * just used/wrapped JdbcTemplate but want to keep external dependencies down where reasonable.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 public class DataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);

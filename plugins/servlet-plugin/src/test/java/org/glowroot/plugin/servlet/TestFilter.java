@@ -29,10 +29,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import org.glowroot.container.AppUnderTest;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class TestFilter implements Filter, AppUnderTest {
 
     @Override

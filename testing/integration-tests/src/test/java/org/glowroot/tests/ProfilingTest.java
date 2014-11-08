@@ -41,10 +41,6 @@ import org.glowroot.container.trace.Trace.Existence;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class ProfilingTest {
 
     private static Container container;

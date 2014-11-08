@@ -27,10 +27,6 @@ import org.glowroot.container.javaagent.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class DataDirLockTest {
 
     @Test

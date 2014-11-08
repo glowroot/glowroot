@@ -46,16 +46,7 @@ import org.jboss.netty.util.ThreadNameDeterminer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.Singleton;
-
-/**
- * Handles all http requests for the embedded UI (by default http://localhost:4000).
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 @VisibleForTesting
-@Singleton
 public class HttpServer {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);

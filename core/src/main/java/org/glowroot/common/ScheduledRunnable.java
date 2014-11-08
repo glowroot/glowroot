@@ -23,10 +23,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public abstract class ScheduledRunnable implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(ScheduledRunnable.class);

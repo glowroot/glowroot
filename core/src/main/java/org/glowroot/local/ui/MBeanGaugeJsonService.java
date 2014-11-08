@@ -47,18 +47,10 @@ import org.glowroot.config.ConfigService.DuplicateMBeanObjectNameException;
 import org.glowroot.config.JsonViews.UiView;
 import org.glowroot.config.MBeanGauge;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
-import org.glowroot.markers.Singleton;
 
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 
-/**
- * Json service to support gauge configuration.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 @JsonService
 class MBeanGaugeJsonService {
 

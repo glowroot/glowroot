@@ -22,10 +22,6 @@ import org.glowroot.api.internal.ReadableMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class MessageTest {
 
     @Test

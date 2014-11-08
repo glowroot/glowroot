@@ -33,15 +33,9 @@ import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.Singleton;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 @VisibleForTesting
 public class TraceCommonService {
 

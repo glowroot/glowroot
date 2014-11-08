@@ -47,10 +47,6 @@ import org.glowroot.weaving.ClassLoaders;
 import org.glowroot.weaving.LazyDefinedClass;
 import org.glowroot.weaving.MixinType;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 public class PluginDescriptorCache {
 

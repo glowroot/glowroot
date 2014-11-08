@@ -22,10 +22,6 @@ import com.google.common.collect.Lists;
 
 import org.glowroot.markers.Immutable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 class Config {
 

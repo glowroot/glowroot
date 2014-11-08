@@ -17,10 +17,6 @@ package org.glowroot.weaving;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class AccessibilityMisc implements Misc {
 
     @Override

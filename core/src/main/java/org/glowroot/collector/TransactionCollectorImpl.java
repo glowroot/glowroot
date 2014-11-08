@@ -32,18 +32,12 @@ import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigService;
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.Singleton;
 import org.glowroot.markers.UsedByReflection;
 import org.glowroot.transaction.TransactionCollector;
 import org.glowroot.transaction.model.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 public class TransactionCollectorImpl implements TransactionCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionCollectorImpl.class);

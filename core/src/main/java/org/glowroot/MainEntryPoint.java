@@ -39,13 +39,7 @@ import org.glowroot.GlowrootModule.StartupFailedException;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.Static;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 public class MainEntryPoint {
 
     // log startup messages using logger name "org.glowroot"

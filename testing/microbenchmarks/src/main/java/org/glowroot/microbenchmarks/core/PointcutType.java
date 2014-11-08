@@ -15,10 +15,6 @@
  */
 package org.glowroot.microbenchmarks.core;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public enum PointcutType {
 
     API, CONFIG

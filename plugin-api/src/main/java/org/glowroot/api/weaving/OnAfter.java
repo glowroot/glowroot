@@ -40,9 +40,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * <em>traveler</em>).
  * <p>
  * An {@literal @}{@code OnAfter} method must return {@code void}.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 @Target(METHOD)
 @Retention(RUNTIME)

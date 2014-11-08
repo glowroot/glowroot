@@ -30,15 +30,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
-import org.glowroot.markers.Static;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 public class ClassLoaders {
 
     private static final Logger logger = LoggerFactory.getLogger(ClassLoaders.class);

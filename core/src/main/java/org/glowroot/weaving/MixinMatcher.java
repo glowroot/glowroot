@@ -15,13 +15,6 @@
  */
 package org.glowroot.weaving;
 
-import org.glowroot.markers.Static;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 class MixinMatcher {
 
     private MixinMatcher() {}

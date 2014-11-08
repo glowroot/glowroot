@@ -22,13 +22,8 @@ import com.google.common.base.Strings;
 
 import org.glowroot.markers.Immutable;
 
-/**
- * The unique identifier for a trace. The string representation of the unique identifier is lazily
- * constructed since it is only needed for traces which are stored and/or viewed in-flight.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// the string representation of the unique identifier is lazily constructed since it is only needed
+// for traces which are stored and/or viewed in-flight
 @Immutable
 class TraceUniqueId {
 

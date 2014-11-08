@@ -35,10 +35,6 @@ import org.glowroot.container.trace.TraceGcInfo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class TraceGcInfoTest {
 
     private static Container container;

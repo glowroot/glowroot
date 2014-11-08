@@ -26,10 +26,6 @@ import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToFalse;
 import static org.glowroot.common.ObjectMappers.nullToZero;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class TracePointQuery {
 
     private final long from;

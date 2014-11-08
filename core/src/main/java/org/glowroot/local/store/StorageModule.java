@@ -33,16 +33,10 @@ import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.weaving.PreInitializeStorageShutdownClasses;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 public class StorageModule {
 
     private static final Logger logger = LoggerFactory.getLogger(StorageModule.class);

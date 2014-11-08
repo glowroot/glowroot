@@ -29,14 +29,8 @@ import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.Existence;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
-import org.glowroot.markers.Singleton;
 import org.glowroot.markers.UsedByJsonBinding;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 class AggregateCommonService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();

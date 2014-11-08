@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * Annotates a parameter to an {@literal @}{@link OnReturn} method in a {@literal @}{@link Pointcut}
  * class.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 @Target(PARAMETER)
 @Retention(RUNTIME)

@@ -22,10 +22,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.io.CharStreams;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class TraceWriter {
 
     private static final JsonFactory jsonFactory = new JsonFactory();

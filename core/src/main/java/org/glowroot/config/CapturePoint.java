@@ -40,12 +40,6 @@ import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.nullToEmpty;
 import static org.glowroot.common.ObjectMappers.nullToFalse;
 
-/**
- * Immutable structure to hold a capture point configuration.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 public class CapturePoint {
 

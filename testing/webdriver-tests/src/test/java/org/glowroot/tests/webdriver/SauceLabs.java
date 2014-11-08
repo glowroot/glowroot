@@ -28,10 +28,6 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 
 import org.glowroot.common.Manifests;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class SauceLabs {
 
     private static final String platform;

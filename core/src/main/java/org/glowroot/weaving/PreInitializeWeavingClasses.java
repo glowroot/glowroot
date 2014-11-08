@@ -23,23 +23,16 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.Static;
-
-/**
- * "There are some things that agents are allowed to do that simply should not be permitted"
- * 
- * -- http://mail.openjdk.java.net/pipermail/hotspot-dev/2012-March/005464.html
- * 
- * In particular (at least prior to parallel class loading in JDK 7) initializing other classes
- * inside of a ClassFileTransformer.transform() method occasionally leads to deadlocks. To avoid
- * initializing other classes inside of the transform() method, all classes referenced from
- * WeavingClassFileTransformer are pre-initialized (and all classes referenced from those classes,
- * etc).
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
+// "There are some things that agents are allowed to do that simply should not be permitted"
+//
+// -- http://mail.openjdk.java.net/pipermail/hotspot-dev/2012-March/005464.html
+//
+// in particular (at least prior to parallel class loading in JDK 7) initializing other classes
+// inside of a ClassFileTransformer.transform() method occasionally leads to deadlocks
+//
+// to avoid initializing other classes inside of the transform() method, all classes referenced from
+// WeavingClassFileTransformer are pre-initialized (and all classes referenced from those classes,
+// etc)
 public class PreInitializeWeavingClasses {
 
     private static final Logger logger = LoggerFactory.getLogger(PreInitializeWeavingClasses.class);

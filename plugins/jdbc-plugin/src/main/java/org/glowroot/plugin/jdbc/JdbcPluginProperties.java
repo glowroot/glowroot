@@ -21,10 +21,6 @@ import com.google.common.collect.ImmutableMultimap;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // this is public so it can be called from other plugins
 public class JdbcPluginProperties {
 

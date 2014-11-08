@@ -19,10 +19,6 @@ import com.google.common.base.MoreObjects;
 
 import org.glowroot.markers.Immutable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Immutable
 class FileBlock {
 

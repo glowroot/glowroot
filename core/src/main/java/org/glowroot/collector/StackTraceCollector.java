@@ -30,17 +30,11 @@ import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ProfilingConfig;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.Singleton;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 class StackTraceCollector implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(StackTraceCollector.class);

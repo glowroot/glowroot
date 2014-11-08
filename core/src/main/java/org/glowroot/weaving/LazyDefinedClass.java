@@ -18,10 +18,6 @@ package org.glowroot.weaving;
 import com.google.common.collect.ImmutableList;
 import org.objectweb.asm.Type;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class LazyDefinedClass {
 
     private final Type type;

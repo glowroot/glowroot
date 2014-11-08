@@ -26,14 +26,8 @@ import java.util.jar.Manifest;
 
 import com.google.common.io.Resources;
 
-import org.glowroot.markers.Static;
 import org.glowroot.weaving.ClassNames;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Static
 public class DelegatingJavaagent {
 
     private static final String DELEGATE_JAVA_AGENT_PROPERTY = "delegateJavaagent";

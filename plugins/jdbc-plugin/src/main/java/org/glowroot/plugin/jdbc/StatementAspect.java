@@ -45,10 +45,6 @@ import org.glowroot.plugin.jdbc.PreparedStatementMirror.StreamingParameterValue;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // many of the pointcuts are not restricted to pluginServices.isEnabled() because StatementMirrors
 // must be tracked for their entire life
 public class StatementAspect {

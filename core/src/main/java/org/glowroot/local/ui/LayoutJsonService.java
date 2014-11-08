@@ -40,15 +40,7 @@ import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.HeapHistograms;
 import org.glowroot.jvm.OptionalService;
 import org.glowroot.local.ui.Layout.LayoutPlugin;
-import org.glowroot.markers.Singleton;
 
-/**
- * Service to read basic ui layout info.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@Singleton
 @JsonService
 class LayoutJsonService {
 

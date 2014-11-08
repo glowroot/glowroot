@@ -21,10 +21,6 @@ import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginConfig;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class AppUnderTestServices {
 
     public static AppUnderTestServices get() {

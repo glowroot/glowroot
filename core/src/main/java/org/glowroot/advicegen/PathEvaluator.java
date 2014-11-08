@@ -22,10 +22,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class PathEvaluator {
 
     private static final Splitter splitter = Splitter.on('.').omitEmptyStrings();

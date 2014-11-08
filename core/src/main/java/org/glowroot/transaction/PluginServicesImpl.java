@@ -45,23 +45,11 @@ import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.config.TraceConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.markers.NotThreadSafe;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.transaction.model.MetricNameImpl;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.transaction.model.TransactionMetricExt;
 import org.glowroot.transaction.model.TransactionMetricImpl;
 
-/**
- * Implementation of PluginServices from the Plugin API. Each plugin gets its own instance so that
- * isEnabled(), getStringProperty(), etc can be scoped to the given plugin. The pluginId should be
- * "groupId:artifactId", using the groupId and artifactId specified in the plugin's
- * glowroot.plugin.json file.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServicesImpl.class);
@@ -428,7 +416,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         return ImmutableList.of();
     }
 
-    @NotThreadSafe
     private class TraceEntryImpl implements TraceEntry {
         private final org.glowroot.transaction.model.TraceEntry traceEntry;
         private final Transaction transaction;
@@ -498,7 +485,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
-    @NotThreadSafe
     private class DummyTraceEntry implements TraceEntry {
         private final TransactionMetricExt transactionMetric;
         private final long startTick;
@@ -588,14 +574,12 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
-    @ThreadSafe
     private static class NopTransactionMetric implements TransactionMetric {
         private static final NopTransactionMetric INSTANCE = new NopTransactionMetric();
         @Override
         public void stop() {}
     }
 
-    @ThreadSafe
     public static class NopTransactionMetricExt implements TransactionMetricExt {
         public static final NopTransactionMetricExt INSTANCE = new NopTransactionMetricExt();
         @Override

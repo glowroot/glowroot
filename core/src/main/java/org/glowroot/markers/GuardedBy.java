@@ -20,10 +20,6 @@ import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.FIELD;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 @Documented
 @Target(FIELD)
 public @interface GuardedBy {

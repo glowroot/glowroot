@@ -19,10 +19,6 @@ import java.util.List;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public interface ConfigService {
 
     void setPluginProperty(String pluginId, String propertyName, @Nullable Object propertyValue)

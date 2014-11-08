@@ -30,10 +30,6 @@ import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.Pointcut;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 public class SessionAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("servlet");

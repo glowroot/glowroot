@@ -45,16 +45,10 @@ import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.ThreadSafe;
 import org.glowroot.transaction.TransactionModule;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.weaving.AnalyzedWorld;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-@ThreadSafe
 public class LocalUiModule {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalUiModule.class);

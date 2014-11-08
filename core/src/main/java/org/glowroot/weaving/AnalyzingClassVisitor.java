@@ -38,10 +38,6 @@ import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ASM5;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class AnalyzingClassVisitor extends ClassVisitor {
 
     private final ImmutableList<MixinType> mixinTypes;

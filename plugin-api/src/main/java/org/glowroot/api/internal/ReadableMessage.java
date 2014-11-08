@@ -17,13 +17,8 @@ package org.glowroot.api.internal;
 
 import java.util.Map;
 
-/**
- * This interface exists to provide access to MessageImpl from glowroot without making MessageImpl
- * accessible to plugins (at least not through the org.glowroot.api package)
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// this interface exists to provide access to MessageImpl from glowroot without making MessageImpl
+// accessible to plugins (at least not through the org.glowroot.api package)
 public interface ReadableMessage {
 
     String getText();

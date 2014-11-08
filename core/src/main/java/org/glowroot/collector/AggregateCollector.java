@@ -31,18 +31,12 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.Clock;
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.Singleton;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 // TODO add thread info aggregation
-@Singleton
 class AggregateCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionProcessor.class);

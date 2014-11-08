@@ -24,10 +24,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
 class TracePointResponse {
 
     private final List<RawPoint> normalPoints;

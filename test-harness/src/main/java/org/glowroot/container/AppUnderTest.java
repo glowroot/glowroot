@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,8 @@
  */
 package org.glowroot.container;
 
-import java.util.concurrent.Callable;
-
-/**
- * Even though this is essentially the same as {@link Callable}, it seems worth having a separate
- * interface just for the self-documenting name.
- * 
- * @author Trask Stalnaker
- * @since 0.5
- */
+// even though this is essentially the same as {@link Callable}, it seems worth having a separate
+// interface just for the self-documenting name
 public interface AppUnderTest {
 
     void executeApp() throws Exception;

@@ -27,9 +27,6 @@ import org.glowroot.api.weaving.Pointcut;
 /**
  * See {@link PluginServices#startTraceEntry(MessageSupplier, MetricName)} for how to create and use
  * {@code TraceEntry} instances.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 public interface TraceEntry {
 

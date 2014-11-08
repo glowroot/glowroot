@@ -20,9 +20,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /**
  * A (lazy) supplier of {@link Message} instances. Needs to be thread safe since transaction thread
  * creates it, but trace storage (and live viewing) is done in a separate thread.
- * 
- * @author Trask Stalnaker
- * @since 0.5
  */
 public abstract class MessageSupplier {
 
