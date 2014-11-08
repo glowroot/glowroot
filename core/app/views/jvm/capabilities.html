@@ -68,17 +68,5 @@
         </div>
       </div>
     </div>
-    <div class="row system-property">
-      <div class="col-sm-4">
-        <label>Heap histogram</label>
-      </div>
-      <div class="col-sm-8">
-        {{capabilities.heapHistogram.available | gtOnOff}}
-        <div class="secondary-text"
-             ng-show="!capabilities.heapHistogram.available">
-          {{capabilities.heapHistogram.reason}}
-        </div>
-      </div>
-    </div>
   </div>
 </div>

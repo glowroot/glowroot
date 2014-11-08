@@ -31,7 +31,6 @@ import org.glowroot.markers.UsedByJsonBinding;
 @Immutable
 public class Layout {
 
-    private final boolean jvmHeapHistogram;
     private final boolean jvmHeapDump;
     private final String footerMessage;
     private final boolean passwordEnabled;
@@ -47,11 +46,10 @@ public class Layout {
         return new Builder();
     }
 
-    Layout(boolean jvmHeapHistogram, boolean jvmHeapDump, String footerMessage,
-            boolean passwordEnabled, List<LayoutPlugin> plugins, List<String> transactionTypes,
+    Layout(boolean jvmHeapDump, String footerMessage, boolean passwordEnabled,
+            List<LayoutPlugin> plugins, List<String> transactionTypes,
             String defaultTransactionType, List<String> transactionCustomAttributes,
             long fixedAggregateIntervalSeconds, long fixedGaugeIntervalSeconds) {
-        this.jvmHeapHistogram = jvmHeapHistogram;
         this.jvmHeapDump = jvmHeapDump;
         this.footerMessage = footerMessage;
         this.passwordEnabled = passwordEnabled;
@@ -61,13 +59,9 @@ public class Layout {
         this.transactionCustomAttributes = ImmutableList.copyOf(transactionCustomAttributes);
         this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
         this.fixedGaugeIntervalSeconds = fixedGaugeIntervalSeconds;
-        version = VersionHashes.sha1(jvmHeapHistogram, jvmHeapDump, footerMessage, passwordEnabled,
-                transactionTypes, defaultTransactionType, transactionCustomAttributes,
-                fixedAggregateIntervalSeconds, fixedGaugeIntervalSeconds);
-    }
-
-    public boolean isJvmHeapHistogram() {
-        return jvmHeapHistogram;
+        version = VersionHashes.sha1(jvmHeapDump, footerMessage, passwordEnabled, transactionTypes,
+                defaultTransactionType, transactionCustomAttributes, fixedAggregateIntervalSeconds,
+                fixedGaugeIntervalSeconds);
     }
 
     public boolean isJvmHeapDump() {
@@ -113,7 +107,6 @@ public class Layout {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("jvmHeapHistogram", jvmHeapHistogram)
                 .add("jvmHeapDump", jvmHeapDump)
                 .add("footerMessage", footerMessage)
                 .add("passwordEnabled", passwordEnabled)
@@ -148,7 +141,6 @@ public class Layout {
 
     static class Builder {
 
-        private boolean jvmHeapHistogram;
         private boolean jvmHeapDump;
         @MonotonicNonNull
         private String footerMessage;
@@ -162,11 +154,6 @@ public class Layout {
         private long fixedGaugeIntervalSeconds;
 
         private Builder() {}
-
-        Builder jvmHeapHistogram(boolean jvmHeapHistogram) {
-            this.jvmHeapHistogram = jvmHeapHistogram;
-            return this;
-        }
 
         Builder jvmHeapDump(boolean jvmHeapDump) {
             this.jvmHeapDump = jvmHeapDump;
@@ -217,8 +204,8 @@ public class Layout {
 
         @RequiresNonNull({"footerMessage", "defaultTransactionType"})
         Layout build() {
-            return new Layout(jvmHeapHistogram, jvmHeapDump, footerMessage, passwordEnabled,
-                    plugins, transactionTypes, defaultTransactionType, transactionCustomAttributes,
+            return new Layout(jvmHeapDump, footerMessage, passwordEnabled, plugins,
+                    transactionTypes, defaultTransactionType, transactionCustomAttributes,
                     fixedAggregateIntervalSeconds, fixedGaugeIntervalSeconds);
         }
     }

@@ -19,13 +19,11 @@ public class JvmModule {
 
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
-    private final OptionalService<HeapHistograms> heapHistograms;
     private final OptionalService<HeapDumps> heapDumps;
 
     public JvmModule() {
         lazyPlatformMBeanServer = new LazyPlatformMBeanServer();
         threadAllocatedBytes = ThreadAllocatedBytes.create();
-        heapHistograms = HeapHistograms.create();
         heapDumps = HeapDumps.create(lazyPlatformMBeanServer);
     }
 
@@ -35,10 +33,6 @@ public class JvmModule {
 
     public OptionalService<ThreadAllocatedBytes> getThreadAllocatedBytes() {
         return threadAllocatedBytes;
-    }
-
-    public OptionalService<HeapHistograms> getHeapHistograms() {
-        return heapHistograms;
     }
 
     public OptionalService<HeapDumps> getHeapDumps() {

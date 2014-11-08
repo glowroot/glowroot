@@ -67,8 +67,6 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.MBeanGauge;
 import org.glowroot.jvm.HeapDumps;
-import org.glowroot.jvm.HeapHistograms;
-import org.glowroot.jvm.HeapHistograms.HeapHistogramException;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 import org.glowroot.jvm.OptionalService;
 import org.glowroot.jvm.OptionalService.Availability;
@@ -112,7 +110,6 @@ class JvmJsonService {
     private final ConfigService configService;
 
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
-    private final OptionalService<HeapHistograms> heapHistograms;
     private final OptionalService<HeapDumps> heapDumps;
 
     private final long fixedGaugeIntervalMillis;
@@ -120,13 +117,11 @@ class JvmJsonService {
     JvmJsonService(LazyPlatformMBeanServer lazyPlatformMBeanServer, GaugePointDao gaugePointDao,
             ConfigService configService,
             OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
-            OptionalService<HeapHistograms> heapHistograms, OptionalService<HeapDumps> heapDumps,
-            long fixedGaugeIntervalSeconds) {
+            OptionalService<HeapDumps> heapDumps, long fixedGaugeIntervalSeconds) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         this.gaugePointDao = gaugePointDao;
         this.configService = configService;
         this.threadAllocatedBytes = threadAllocatedBytes;
-        this.heapHistograms = heapHistograms;
         this.heapDumps = heapDumps;
         this.fixedGaugeIntervalMillis = fixedGaugeIntervalSeconds * 1000;
     }
@@ -345,13 +340,6 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/jvm/heap-histogram")
-    String getHeapHistogram() throws HeapHistogramException {
-        logger.debug("getHeapHistogram()");
-        HeapHistograms service = OptionalJsonServices.validateAvailability(heapHistograms);
-        return service.heapHistogramJson();
-    }
-
     @GET("/backend/jvm/heap-dump-defaults")
     String getHeapDumpDefaults() throws IOException, JMException {
         logger.debug("getHeapDumpDefaults()");
@@ -431,8 +419,6 @@ class JvmJsonService {
         mapper.writeValue(jg, getThreadContentionAvailability());
         jg.writeFieldName("threadAllocatedBytes");
         mapper.writeValue(jg, threadAllocatedBytes.getAvailability());
-        jg.writeFieldName("heapHistogram");
-        mapper.writeValue(jg, heapHistograms.getAvailability());
         jg.writeFieldName("heapDump");
         mapper.writeValue(jg, heapDumps.getAvailability());
         jg.writeEndObject();

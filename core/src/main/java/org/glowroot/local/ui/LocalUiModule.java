@@ -88,7 +88,7 @@ public class LocalUiModule {
         TransactionRegistry transactionRegistry = transactionModule.getTransactionRegistry();
 
         LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
-                pluginDescriptorCache, jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),
+                pluginDescriptorCache, jvmModule.getHeapDumps(),
                 collectorModule.getFixedAggregateIntervalSeconds(),
                 collectorModule.getFixedGaugeIntervalSeconds());
         HttpSessionManager httpSessionManager =
@@ -111,8 +111,7 @@ public class LocalUiModule {
                 collectorModule.getFixedAggregateIntervalSeconds());
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),
-                jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),
-                collectorModule.getFixedGaugeIntervalSeconds());
+                jvmModule.getHeapDumps(), collectorModule.getFixedGaugeIntervalSeconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
                 pluginDescriptorCache, dataDir, httpSessionManager, transactionModule);
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, instrumentation);

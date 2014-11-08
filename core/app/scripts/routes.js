@@ -113,11 +113,6 @@ glowroot.config([
       templateUrl: 'views/jvm/heap-dump.html',
       controller: 'JvmHeapDumpCtrl'
     });
-    $stateProvider.state('jvm.heapHistogram', {
-      url: '/heap-histogram',
-      templateUrl: 'views/jvm/heap-histogram.html',
-      controller: 'JvmHeapHistogramCtrl'
-    });
     $stateProvider.state('jvm.systemProperties', {
       url: '/system-properties',
       templateUrl: 'views/jvm/system-properties.html',
