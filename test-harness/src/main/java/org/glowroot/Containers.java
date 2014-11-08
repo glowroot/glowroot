@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.container.Container;
 import org.glowroot.container.SharedContainerRunListener;
-import org.glowroot.container.javaagent.JavaagentContainer;
-import org.glowroot.container.local.LocalContainer;
+import org.glowroot.container.impl.JavaagentContainer;
+import org.glowroot.container.impl.LocalContainer;
 
 public class Containers {
 

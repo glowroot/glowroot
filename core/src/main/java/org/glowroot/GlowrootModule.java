@@ -319,9 +319,8 @@ public class GlowrootModule {
         }
     }
 
-    @VisibleForTesting
     @SuppressWarnings("serial")
-    public static class DataDirLockedException extends StartupFailedException {
+    static class DataDirLockedException extends StartupFailedException {
 
         private DataDirLockedException() {
             super();

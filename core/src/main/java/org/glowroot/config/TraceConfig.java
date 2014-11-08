@@ -16,7 +16,6 @@
 package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 
 import org.glowroot.config.JsonViews.UiView;
@@ -62,8 +61,7 @@ public class TraceConfig {
         return new Overlay(base);
     }
 
-    @VisibleForTesting
-    public TraceConfig(boolean enabled, int storeThresholdMillis, boolean outlierProfilingEnabled,
+    private TraceConfig(boolean enabled, int storeThresholdMillis, boolean outlierProfilingEnabled,
             int outlierProfilingInitialDelayMillis, int outlierProfilingIntervalMillis) {
         this.enabled = enabled;
         this.storeThresholdMillis = storeThresholdMillis;

@@ -27,7 +27,7 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.javaagent.JavaagentContainer;
+import org.glowroot.container.impl.JavaagentContainer;
 import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;

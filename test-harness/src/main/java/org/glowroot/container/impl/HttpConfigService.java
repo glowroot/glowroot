@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.container.javaagent;
+package org.glowroot.container.impl;
 
 import java.util.List;
 
@@ -37,14 +37,14 @@ import org.glowroot.container.config.TraceConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
 import org.glowroot.container.config.UserRecordingConfig;
 
-class JavaagentConfigService implements ConfigService {
+class HttpConfigService implements ConfigService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final JavaagentHttpClient httpClient;
+    private final HttpClient httpClient;
     private final GetUiPortCommand getUiPortCommand;
 
-    JavaagentConfigService(JavaagentHttpClient httpClient, GetUiPortCommand getUiPortCommand) {
+    HttpConfigService(HttpClient httpClient, GetUiPortCommand getUiPortCommand) {
         this.httpClient = httpClient;
         this.getUiPortCommand = getUiPortCommand;
     }

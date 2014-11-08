@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.container.javaagent;
+package org.glowroot.container.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,29 +43,29 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 
-class JavaagentHttpClient {
+public class HttpClient {
 
     private final AsyncHttpClient asyncHttpClient;
     private volatile int port;
     @Nullable
     private volatile Cookie sessionIdCookie;
 
-    JavaagentHttpClient(int uiPort) {
+    public HttpClient(int uiPort) {
         this.port = uiPort;
         this.asyncHttpClient = createAsyncHttpClient();
     }
 
-    void updateUiPort(int uiPort) {
+    public void updateUiPort(int uiPort) {
         this.port = uiPort;
     }
 
-    String get(String path) throws Exception {
+    public String get(String path) throws Exception {
         BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + port + path);
         Response response = execute(request);
         return validateAndReturnBody(response);
     }
 
-    InputStream getAsStream(String path) throws Exception {
+    public InputStream getAsStream(String path) throws Exception {
         BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + port + path);
         Response response = execute(request);
         return validateAndReturnBodyAsStream(response);

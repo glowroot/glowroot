@@ -16,7 +16,6 @@
 package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -44,8 +43,7 @@ public class UserRecordingConfig {
         return new Overlay(base);
     }
 
-    @VisibleForTesting
-    public UserRecordingConfig(boolean enabled, @Nullable String user, int profileIntervalMillis) {
+    private UserRecordingConfig(boolean enabled, @Nullable String user, int profileIntervalMillis) {
         this.enabled = enabled;
         this.user = user;
         this.profileIntervalMillis = profileIntervalMillis;

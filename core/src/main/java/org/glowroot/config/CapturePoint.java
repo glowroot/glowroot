@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -72,8 +71,7 @@ public class CapturePoint {
 
     private final String version;
 
-    @VisibleForTesting
-    public CapturePoint(String className, String methodName, List<String> methodParameterTypes,
+    private CapturePoint(String className, String methodName, List<String> methodParameterTypes,
             String methodReturnType, List<MethodModifier> methodModifiers, CaptureKind captureKind,
             String metricName, String traceEntryTemplate,
             @Nullable Long entryStackTraceThresholdMillis, boolean traceEntryCaptureSelfNested,

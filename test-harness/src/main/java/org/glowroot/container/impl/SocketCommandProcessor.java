@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.container.javaagent;
+package org.glowroot.container.impl;
 
 import java.io.EOFException;
 import java.io.ObjectInputStream;
@@ -35,8 +35,8 @@ import org.glowroot.MainEntryPoint;
 import org.glowroot.common.SpyingLogbackFilter;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Threads;
-import org.glowroot.container.javaagent.SocketCommander.CommandWrapper;
-import org.glowroot.container.javaagent.SocketCommander.ResponseWrapper;
+import org.glowroot.container.impl.SocketCommander.CommandWrapper;
+import org.glowroot.container.impl.SocketCommander.ResponseWrapper;
 
 class SocketCommandProcessor implements Runnable {
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.container.local;
+package org.glowroot.container.impl;
 
 import java.io.File;
 import java.util.List;
@@ -36,7 +36,7 @@ import org.glowroot.container.AppUnderTestServices;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.ConfigService;
-import org.glowroot.container.javaagent.JavaagentContainer;
+import org.glowroot.container.impl.HttpConfigService.GetUiPortCommand;
 import org.glowroot.container.trace.TraceService;
 import org.glowroot.transaction.AdviceCache;
 import org.glowroot.weaving.Advice;
@@ -51,8 +51,9 @@ public class LocalContainer implements Container {
     private final boolean shared;
 
     private final IsolatedWeavingClassLoader isolatedWeavingClassLoader;
-    private final LocalConfigService configService;
-    private final LocalTraceService traceService;
+    private final HttpClient httpClient;
+    private final HttpConfigService configService;
+    private final HttpTraceService traceService;
     private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
     private final GlowrootModule glowrootModule;
 
@@ -86,8 +87,8 @@ public class LocalContainer implements Container {
         } catch (org.glowroot.GlowrootModule.StartupFailedException e) {
             throw new StartupFailedException(e);
         }
-        JavaagentContainer.setTraceStoreThresholdMillisToZero();
-        glowrootModule = MainEntryPoint.getGlowrootModule();
+        JavaagentMain.setTraceStoreThresholdMillisToZero();
+        final GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         PluginDescriptorCache pluginDescriptorCache =
                 glowrootModule.getConfigModule().getPluginDescriptorCache();
@@ -103,12 +104,20 @@ public class LocalContainer implements Container {
         loader.addBridgeClasses(AppUnderTest.class, AppUnderTestServices.class);
         // TODO add hook to optionally exclude guava package which improves integration-test
         // performance
-        loader.addExcludePackages("org.glowroot.api", "org.glowroot.collector",
-                "org.glowroot.common", "org.glowroot.config", "org.glowroot.advicegen",
-                "org.glowroot.local", "org.glowroot.trace", "org.glowroot.shaded");
+        loader.addExcludePackages("org.glowroot.api", "org.glowroot.advicegen",
+                "org.glowroot.collector", "org.glowroot.common", "org.glowroot.config",
+                "org.glowroot.jvm", "org.glowroot.local", "org.glowroot.shaded",
+                "org.glowroot.transaction", "org.glowroot.weaving");
         isolatedWeavingClassLoader = loader.build();
-        configService = new LocalConfigService(glowrootModule);
-        traceService = new LocalTraceService(glowrootModule);
+        httpClient = new HttpClient(glowrootModule.getUiModule().getPort());
+        configService = new HttpConfigService(httpClient, new GetUiPortCommand() {
+            @Override
+            public int getUiPort() throws Exception {
+                return glowrootModule.getUiModule().getPort();
+            }
+        });
+        traceService = new HttpTraceService(httpClient);
+        this.glowrootModule = glowrootModule;
     }
 
     @Override

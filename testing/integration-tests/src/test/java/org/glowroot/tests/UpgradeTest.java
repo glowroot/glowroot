@@ -27,7 +27,7 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.StorageConfig;
-import org.glowroot.container.local.LocalContainer;
+import org.glowroot.container.impl.LocalContainer;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 

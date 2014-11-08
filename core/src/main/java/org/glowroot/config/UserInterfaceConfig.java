@@ -19,7 +19,6 @@ import java.security.GeneralSecurityException;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -64,8 +63,7 @@ public class UserInterfaceConfig {
         return new FileOverlay(base);
     }
 
-    @VisibleForTesting
-    public UserInterfaceConfig(String defaultTransactionType, int port, String passwordHash,
+    private UserInterfaceConfig(String defaultTransactionType, int port, String passwordHash,
             int sessionTimeoutMinutes) {
         this.defaultTransactionType = defaultTransactionType;
         this.port = port;

@@ -24,7 +24,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -46,8 +45,7 @@ import org.jboss.netty.util.ThreadNameDeterminer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@VisibleForTesting
-public class HttpServer {
+class HttpServer {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
 
@@ -157,7 +155,6 @@ public class HttpServer {
         }
     }
 
-    @VisibleForTesting
     @SuppressWarnings("serial")
     public static class PortChangeFailedException extends Exception {
         private PortChangeFailedException(Exception cause) {

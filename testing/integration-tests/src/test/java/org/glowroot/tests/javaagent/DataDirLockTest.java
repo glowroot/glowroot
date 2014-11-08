@@ -23,7 +23,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.Container.StartupFailedException;
 import org.glowroot.container.TempDirs;
-import org.glowroot.container.javaagent.JavaagentContainer;
+import org.glowroot.container.impl.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

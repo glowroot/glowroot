@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.javaagent.JavaagentContainer;
+import org.glowroot.container.impl.JavaagentContainer;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;

@@ -20,7 +20,6 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -40,8 +39,7 @@ public class ErrorMessageQuery {
     private final List<String> excludes;
     private final int limit;
 
-    @VisibleForTesting
-    ErrorMessageQuery(@Nullable String transactionType, @Nullable String transactionName,
+    private ErrorMessageQuery(@Nullable String transactionType, @Nullable String transactionName,
             long from, long to, List<String> includes, List<String> excludes, int limit) {
         this.transactionType = transactionType;
         this.transactionName = transactionName;

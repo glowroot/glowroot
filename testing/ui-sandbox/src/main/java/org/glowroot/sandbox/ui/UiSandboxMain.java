@@ -28,8 +28,8 @@ import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
 import org.glowroot.container.config.TraceConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
-import org.glowroot.container.javaagent.JavaagentContainer;
-import org.glowroot.container.local.LocalContainer;
+import org.glowroot.container.impl.JavaagentContainer;
+import org.glowroot.container.impl.LocalContainer;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 

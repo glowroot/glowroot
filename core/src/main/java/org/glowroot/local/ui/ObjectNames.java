@@ -20,12 +20,10 @@ import java.util.List;
 
 import javax.management.ObjectName;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 
 class ObjectNames {
 
-    @VisibleForTesting
     static List<String> getPropertyValues(ObjectName objectName) throws IOException {
         List<String> values = Lists.newArrayList();
         char[] chars = objectName.getKeyPropertyListString().toCharArray();

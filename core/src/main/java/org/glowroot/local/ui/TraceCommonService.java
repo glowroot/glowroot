@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.CharSource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -36,8 +35,7 @@ import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
 
-@VisibleForTesting
-public class TraceCommonService {
+class TraceCommonService {
 
     private final TraceDao traceDao;
     private final TransactionRegistry transactionRegistry;
@@ -54,9 +52,8 @@ public class TraceCommonService {
         this.ticker = ticker;
     }
 
-    @VisibleForTesting
     @Nullable
-    public Trace getTrace(String traceId) throws IOException, SQLException {
+    Trace getTrace(String traceId) throws IOException, SQLException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Transaction active : transactionRegistry.getTransactions()) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.container.javaagent;
+package org.glowroot.container.impl;
 
 import java.io.InputStream;
 import java.util.List;
@@ -25,7 +25,7 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.container.common.ObjectMappers;
-import org.glowroot.container.javaagent.TracePointResponse.RawPoint;
+import org.glowroot.container.impl.TracePointResponse.RawPoint;
 import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
@@ -35,13 +35,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 // even though this is thread safe, it is not useful for running tests in parallel since
 // getLastTrace() and others are not scoped to a particular test
-class JavaagentTraceService extends TraceService {
+class HttpTraceService extends TraceService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final JavaagentHttpClient httpClient;
+    private final HttpClient httpClient;
 
-    JavaagentTraceService(JavaagentHttpClient httpClient) {
+    HttpTraceService(HttpClient httpClient) {
         this.httpClient = httpClient;
     }
 

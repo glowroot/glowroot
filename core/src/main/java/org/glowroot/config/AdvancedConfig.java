@@ -16,7 +16,6 @@
 package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 
 import org.glowroot.config.JsonViews.UiView;
@@ -60,8 +59,7 @@ public class AdvancedConfig {
         return new Overlay(base);
     }
 
-    @VisibleForTesting
-    public AdvancedConfig(boolean metricWrapperMethods, int immediatePartialStoreThresholdSeconds,
+    private AdvancedConfig(boolean metricWrapperMethods, int immediatePartialStoreThresholdSeconds,
             int maxTraceEntriesPerTransaction, int maxStackTraceSamplesPerTransaction,
             boolean captureThreadInfo, boolean captureGcInfo, int mbeanGaugeNotFoundDelaySeconds,
             int internalQueryTimeoutSeconds) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.container.javaagent;
+package org.glowroot.container.impl;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,8 +21,6 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
@@ -31,11 +29,8 @@ import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
-import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Stopwatch;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
@@ -43,23 +38,18 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.Agent;
-import org.glowroot.GlowrootModule;
-import org.glowroot.MainEntryPoint;
 import org.glowroot.common.SpyingLogbackFilter.MessageCount;
-import org.glowroot.config.ConfigService.OptimisticLockException;
-import org.glowroot.config.TraceConfig;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.ConfigService;
-import org.glowroot.container.javaagent.JavaagentConfigService.GetUiPortCommand;
+import org.glowroot.container.impl.HttpConfigService.GetUiPortCommand;
 import org.glowroot.container.trace.TraceService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class JavaagentContainer implements Container {
+public class JavaagentContainer implements Container, GetUiPortCommand {
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentContainer.class);
 
@@ -72,9 +62,9 @@ public class JavaagentContainer implements Container {
     private final ExecutorService consolePipeExecutorService;
     private final Process process;
     private final ConsoleOutputPipe consoleOutputPipe;
-    private final JavaagentHttpClient httpClient;
-    private final JavaagentConfigService configService;
-    private final JavaagentTraceService traceService;
+    private final HttpClient httpClient;
+    private final HttpConfigService configService;
+    private final HttpTraceService traceService;
     private final Thread shutdownHook;
 
     public static JavaagentContainer createWithFileDb() throws Exception {
@@ -102,8 +92,8 @@ public class JavaagentContainer implements Container {
         if (!configFile.exists()) {
             Files.write("{\"ui\":{\"port\":0}}", configFile, Charsets.UTF_8);
         }
-        List<String> command =
-                buildCommand(serverSocket.getLocalPort(), this.dataDir, useFileDb, extraJvmArgs);
+        List<String> command = JavaagentMain.buildCommand(serverSocket.getLocalPort(),
+                this.dataDir, useFileDb, extraJvmArgs);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         final Process process = processBuilder.start();
@@ -118,7 +108,7 @@ public class JavaagentContainer implements Container {
         Socket socket = serverSocket.accept();
         ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
         ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
-        socketCommander = new SocketCommander(objectOut, objectIn);
+        final SocketCommander socketCommander = new SocketCommander(objectOut, objectIn);
         int uiPort;
         try {
             uiPort = getUiPort(socketCommander);
@@ -131,11 +121,16 @@ public class JavaagentContainer implements Container {
             consolePipeExecutorService.shutdownNow();
             throw e;
         }
-        httpClient = new JavaagentHttpClient(uiPort);
-        this.configService = new JavaagentConfigService(httpClient,
-                new JavaagentContainerGetUiPort(socketCommander));
-        traceService = new JavaagentTraceService(httpClient);
+        httpClient = new HttpClient(uiPort);
+        configService = new HttpConfigService(httpClient, new GetUiPortCommand() {
+            @Override
+            public int getUiPort() throws Exception {
+                return JavaagentContainer.getUiPort(socketCommander);
+            }
+        });
+        traceService = new HttpTraceService(httpClient);
         shutdownHook = new ShutdownHookThread(socketCommander);
+        this.socketCommander = socketCommander;
         // unfortunately, ctrl-c during maven test will kill the maven process, but won't kill the
         // forked surefire jvm where the tests are being run
         // (http://jira.codehaus.org/browse/SUREFIRE-413), and so this hook won't get triggered by
@@ -263,122 +258,6 @@ public class JavaagentContainer implements Container {
             throw new StartupFailedException();
         }
         return (Integer) response;
-    }
-
-    public static void main(String... args) throws Exception {
-        // traceStoreThresholdMillis=0 is the default for testing
-        setTraceStoreThresholdMillisToZero();
-        int port = Integer.parseInt(args[0]);
-        // socket is never closed since program is still running after main returns
-        Socket socket = new Socket((String) null, port);
-        ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
-        ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
-        new Thread(new SocketHeartbeat(objectOut)).start();
-        new Thread(new SocketCommandProcessor(objectIn, objectOut)).start();
-        // spin a bit to so that caller can capture a trace with <multiple root nodes> if desired
-        for (int i = 0; i < 1000; i++) {
-            metricMarkerOne();
-            metricMarkerTwo();
-            Thread.sleep(1);
-        }
-        // non-daemon threads started above keep jvm alive after main returns
-    }
-
-    public static void setTraceStoreThresholdMillisToZero() throws OptimisticLockException,
-            IOException {
-        GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
-        if (glowrootModule == null) {
-            // failed to start, e.g. DataSourceLockTest
-            return;
-        }
-        org.glowroot.config.ConfigService configService =
-                glowrootModule.getConfigModule().getConfigService();
-        TraceConfig traceConfig = configService.getTraceConfig();
-        // conditional check is needed to prevent config file timestamp update when testing
-        // ConfigFileLastModifiedTest.shouldNotUpdateFileOnStartupIfNoChanges()
-        if (traceConfig.getStoreThresholdMillis() != 0) {
-            TraceConfig.Overlay overlay = TraceConfig.overlay(traceConfig);
-            overlay.setStoreThresholdMillis(0);
-            configService.updateTraceConfig(overlay.build(), traceConfig.getVersion());
-        }
-    }
-
-    private static void metricMarkerOne() throws InterruptedException {
-        Thread.sleep(1);
-    }
-
-    private static void metricMarkerTwo() throws InterruptedException {
-        Thread.sleep(1);
-    }
-
-    private static List<String> buildCommand(int containerPort, File dataDir, boolean useFileDb,
-            List<String> extraJvmArgs) throws Exception {
-        List<String> command = Lists.newArrayList();
-        String javaExecutable = StandardSystemProperty.JAVA_HOME.value() + File.separator + "bin"
-                + File.separator + "java";
-        command.add(javaExecutable);
-        command.addAll(extraJvmArgs);
-        String classpath = Strings.nullToEmpty(StandardSystemProperty.JAVA_CLASS_PATH.value());
-        List<String> paths = Lists.newArrayList();
-        File javaagentJarFile = null;
-        for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
-            File file = new File(path);
-            if (file.getName().matches("glowroot-core-[0-9.]+(-SNAPSHOT)?.jar")) {
-                javaagentJarFile = file;
-            } else {
-                paths.add(path);
-            }
-        }
-        command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(paths));
-        command.addAll(getJacocoArgsFromCurrentJvm());
-        if (javaagentJarFile == null) {
-            // create jar file in data dir since that gets cleaned up at end of test already
-            javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(dataDir);
-            command.add("-javaagent:" + javaagentJarFile);
-            command.add("-DdelegateJavaagent=" + Agent.class.getName());
-        } else {
-            command.add("-javaagent:" + javaagentJarFile);
-        }
-        command.add("-Dglowroot.data.dir=" + dataDir.getAbsolutePath());
-        command.add("-Dglowroot.internal.logging.spy=true");
-        if (!useFileDb) {
-            command.add("-Dglowroot.internal.h2.memdb=true");
-        }
-        Integer aggregateInterval =
-                Integer.getInteger("glowroot.internal.collector.aggregateInterval");
-        if (aggregateInterval != null) {
-            command.add("-Dglowroot.internal.collector.aggregateInterval=" + aggregateInterval);
-        }
-        command.add(JavaagentContainer.class.getName());
-        command.add(Integer.toString(containerPort));
-        return command;
-    }
-
-    private static List<String> getJacocoArgsFromCurrentJvm() {
-        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-        List<String> arguments = runtimeMXBean.getInputArguments();
-        List<String> jacocoArgs = Lists.newArrayList();
-        for (String argument : arguments) {
-            if (argument.startsWith("-javaagent:") && argument.contains("jacoco")) {
-                jacocoArgs.add(argument);
-                jacocoArgs.add("-Djacoco.inclBootstrapClasses=true");
-            }
-        }
-        return jacocoArgs;
-    }
-
-    private static class JavaagentContainerGetUiPort implements GetUiPortCommand {
-
-        private final SocketCommander socketCommander;
-
-        private JavaagentContainerGetUiPort(SocketCommander socketCommander) {
-            this.socketCommander = socketCommander;
-        }
-
-        @Override
-        public int getUiPort() throws Exception {
-            return JavaagentContainer.getUiPort(socketCommander);
-        }
     }
 
     private static class ShutdownHookThread extends Thread {

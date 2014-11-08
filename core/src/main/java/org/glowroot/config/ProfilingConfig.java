@@ -16,7 +16,6 @@
 package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 
 import org.glowroot.config.JsonViews.UiView;
@@ -41,8 +40,7 @@ public class ProfilingConfig {
         return new Overlay(base);
     }
 
-    @VisibleForTesting
-    public ProfilingConfig(boolean enabled, int intervalMillis) {
+    private ProfilingConfig(boolean enabled, int intervalMillis) {
         this.enabled = enabled;
         this.intervalMillis = intervalMillis;
         version = VersionHashes.sha1(enabled, intervalMillis);

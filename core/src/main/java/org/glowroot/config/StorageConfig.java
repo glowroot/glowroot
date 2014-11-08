@@ -16,7 +16,6 @@
 package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 
 import org.glowroot.config.JsonViews.UiView;
@@ -48,8 +47,7 @@ public class StorageConfig {
         return new Overlay(base);
     }
 
-    @VisibleForTesting
-    public StorageConfig(int aggregateExpirationHours, int traceExpirationHours,
+    private StorageConfig(int aggregateExpirationHours, int traceExpirationHours,
             int cappedDatabaseSizeMb) {
         this.aggregateExpirationHours = aggregateExpirationHours;
         this.traceExpirationHours = traceExpirationHours;

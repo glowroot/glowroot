@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -42,8 +41,7 @@ public class MBeanGauge {
 
     private final String version;
 
-    @VisibleForTesting
-    public MBeanGauge(String name, String mbeanObjectName, List<String> mbeanAttributeNames) {
+    private MBeanGauge(String name, String mbeanObjectName, List<String> mbeanAttributeNames) {
         this.name = name;
         this.mbeanObjectName = mbeanObjectName;
         this.mbeanAttributeNames = ImmutableList.copyOf(mbeanAttributeNames);
