@@ -72,8 +72,7 @@ public class UiSandboxMain {
             container.getConfigService().updateTraceConfig(traceConfig);
             ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
             profilingConfig.setEnabled(true);
-            profilingConfig.setTransactionPercentage(50);
-            profilingConfig.setIntervalMillis(10);
+            profilingConfig.setIntervalMillis(100);
             container.getConfigService().updateProfilingConfig(profilingConfig);
             if (rollOverQuickly) {
                 StorageConfig storageConfig = container.getConfigService().getStorageConfig();

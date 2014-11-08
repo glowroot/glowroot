@@ -73,7 +73,7 @@ class LocalTraceService extends TraceService {
         traceCommonService = glowrootModule.getUiModule().getTraceCommonService();
         traceExportHttpService = glowrootModule.getUiModule().getTraceExportHttpService();
         transactionCollector = glowrootModule.getCollectorModule().getTransactionCollector();
-        transactionRegistry = glowrootModule.getTransactionModule().getTraceRegistry();
+        transactionRegistry = glowrootModule.getTransactionModule().getTransactionRegistry();
         clock = glowrootModule.getClock();
         ticker = glowrootModule.getTicker();
     }

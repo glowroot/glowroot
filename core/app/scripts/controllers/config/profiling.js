@@ -30,33 +30,10 @@ glowroot.controller('ConfigProfilingCtrl', [
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
-    $scope.$watchCollection('[page.traceStoreThresholdOverride, page.traceStoreThresholdOverrideMillis]',
-        function (newValues) {
-          if (newValues[0] === undefined) {
-            // initial
-            return;
-          }
-          if (newValues[0]) {
-            $scope.config.traceStoreThresholdOverrideMillis = newValues[1];
-          } else {
-            $scope.config.traceStoreThresholdOverrideMillis = -1;
-            // update disabled input text to show the overridden value from general config
-            $scope.page.traceStoreThresholdOverrideMillis = $scope.defaultTraceStoreThresholdMillis;
-          }
-        });
-
     function onNewData(data) {
       $scope.loaded = true;
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
-
-      $scope.defaultTraceStoreThresholdMillis = data.defaultTraceStoreThresholdMillis;
-      if (data.config.traceStoreThresholdOverrideMillis === -1) {
-        $scope.page.traceStoreThresholdOverride = false;
-      } else {
-        $scope.page.traceStoreThresholdOverride = true;
-        $scope.page.traceStoreThresholdOverrideMillis = $scope.config.traceStoreThresholdOverrideMillis;
-      }
     }
 
     $scope.save = function (deferred) {

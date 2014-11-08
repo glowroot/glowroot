@@ -290,16 +290,13 @@ public class ConfigTest {
         config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
         config.setOutlierProfilingEnabled(!config.isOutlierProfilingEnabled());
         config.setOutlierProfilingInitialDelayMillis(
-                config.getOutlierProfilingInitialDelayMillis() + 1);
-        config.setOutlierProfilingIntervalMillis(config.getOutlierProfilingIntervalMillis() + 1);
+                config.getOutlierProfilingInitialDelayMillis() + 10);
+        config.setOutlierProfilingIntervalMillis(config.getOutlierProfilingIntervalMillis() + 100);
     }
 
     private static void updateAllFields(ProfilingConfig config) {
         config.setEnabled(!config.isEnabled());
-        config.setTransactionPercentage(config.getTransactionPercentage() + 1);
         config.setIntervalMillis(config.getIntervalMillis() + 1);
-        config.setTraceStoreThresholdOverrideMillis(
-                config.getTraceStoreThresholdOverrideMillis() + 1);
     }
 
     private static void updateAllFields(UserRecordingConfig config) {
@@ -310,8 +307,8 @@ public class ConfigTest {
 
     private static void updateAllFields(StorageConfig config) {
         config.setAggregateExpirationHours(config.getAggregateExpirationHours() + 1);
-        config.setTraceExpirationHours(config.getTraceExpirationHours() + 1);
-        config.setCappedDatabaseSizeMb(config.getCappedDatabaseSizeMb() + 1);
+        config.setTraceExpirationHours(config.getTraceExpirationHours() + 10);
+        config.setCappedDatabaseSizeMb(config.getCappedDatabaseSizeMb() + 100);
     }
 
     private static void updateAllFields(UserInterfaceConfig config) {
@@ -324,11 +321,13 @@ public class ConfigTest {
         config.setMetricWrapperMethods(!config.isMetricWrapperMethods());
         config.setImmediatePartialStoreThresholdSeconds(
                 config.getImmediatePartialStoreThresholdSeconds() + 1);
-        config.setMaxEntriesPerTrace(config.getMaxEntriesPerTrace() + 1);
+        config.setMaxTraceEntriesPerTransaction(config.getMaxTraceEntriesPerTransaction() + 10);
+        config.setMaxStackTraceSamplesPerTransaction(
+                config.getMaxStackTraceSamplesPerTransaction() + 100);
         config.setCaptureThreadInfo(!config.isCaptureThreadInfo());
         config.setCaptureGcInfo(!config.isCaptureGcInfo());
-        config.setMBeanGaugeNotFoundDelaySeconds(config.getMBeanGaugeNotFoundDelaySeconds() + 1);
-        config.setInternalQueryTimeoutSeconds(config.getInternalQueryTimeoutSeconds() + 1);
+        config.setMBeanGaugeNotFoundDelaySeconds(config.getMBeanGaugeNotFoundDelaySeconds() + 1000);
+        config.setInternalQueryTimeoutSeconds(config.getInternalQueryTimeoutSeconds() + 10000);
     }
 
     private static void updateAllFields(PluginConfig config) {
@@ -398,7 +397,7 @@ public class ConfigTest {
         if (storeThresholdOverrideMillis == null) {
             config.setTraceStoreThresholdMillis(1000L);
         } else {
-            config.setTraceStoreThresholdMillis(storeThresholdOverrideMillis + 1);
+            config.setTraceStoreThresholdMillis(storeThresholdOverrideMillis + 10);
         }
         config.setTransactionUserTemplate(config.getTransactionUserTemplate() + "i");
         Map<String, String> transactionCustomAttributeTemplates =

@@ -67,8 +67,13 @@ public class Profile {
         return syntheticRootNode;
     }
 
-    void addStackTrace(ThreadInfo threadInfo) {
+    // limit is just to cap memory consumption for a single transaction profile in case it runs for
+    // a very very very long time
+    void addStackTrace(ThreadInfo threadInfo, int limit) {
         synchronized (lock) {
+            if (syntheticRootNode.getSampleCount() + unmergedStackTraces.size() >= limit) {
+                return;
+            }
             List<StackTraceElement> stackTrace = Arrays.asList(threadInfo.getStackTrace());
             unmergedStackTraces.add(stackTrace);
             unmergedStackTraceThreadStates.add(threadInfo.getThreadState());

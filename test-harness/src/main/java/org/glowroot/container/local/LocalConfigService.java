@@ -98,10 +98,7 @@ class LocalConfigService implements ConfigService {
                 configService.getProfilingConfig();
         ProfilingConfig config = new ProfilingConfig(coreConfig.getVersion());
         config.setEnabled(coreConfig.isEnabled());
-        config.setTransactionPercentage(coreConfig.getTransactionPercentage());
         config.setIntervalMillis(coreConfig.getIntervalMillis());
-        config.setTraceStoreThresholdOverrideMillis(
-                coreConfig.getTraceStoreThresholdOverrideMillis());
         return config;
     }
 
@@ -109,8 +106,7 @@ class LocalConfigService implements ConfigService {
     public void updateProfilingConfig(ProfilingConfig config) throws Exception {
         org.glowroot.config.ProfilingConfig updatedConfig =
                 new org.glowroot.config.ProfilingConfig(config.isEnabled(),
-                        config.getTransactionPercentage(), config.getIntervalMillis(),
-                        config.getTraceStoreThresholdOverrideMillis());
+                        config.getIntervalMillis());
         configService.updateProfilingConfig(updatedConfig, config.getVersion());
     }
 
@@ -220,7 +216,9 @@ class LocalConfigService implements ConfigService {
         config.setMetricWrapperMethods(coreConfig.isMetricWrapperMethods());
         config.setImmediatePartialStoreThresholdSeconds(
                 coreConfig.getImmediatePartialStoreThresholdSeconds());
-        config.setMaxEntriesPerTrace(coreConfig.getMaxEntriesPerTrace());
+        config.setMaxTraceEntriesPerTransaction(coreConfig.getMaxTraceEntriesPerTransaction());
+        config.setMaxStackTraceSamplesPerTransaction(
+                coreConfig.getMaxStackTraceSamplesPerTransaction());
         config.setCaptureThreadInfo(coreConfig.isCaptureThreadInfo());
         config.setCaptureGcInfo(coreConfig.isCaptureGcInfo());
         config.setMBeanGaugeNotFoundDelaySeconds(coreConfig.getMBeanGaugeNotFoundDelaySeconds());
@@ -233,8 +231,10 @@ class LocalConfigService implements ConfigService {
         org.glowroot.config.AdvancedConfig updatedConfig =
                 new org.glowroot.config.AdvancedConfig(config.isMetricWrapperMethods(),
                         config.getImmediatePartialStoreThresholdSeconds(),
-                        config.getMaxEntriesPerTrace(), config.isCaptureThreadInfo(),
-                        config.isCaptureGcInfo(), config.getMBeanGaugeNotFoundDelaySeconds(),
+                        config.getMaxTraceEntriesPerTransaction(),
+                        config.getMaxStackTraceSamplesPerTransaction(),
+                        config.isCaptureThreadInfo(), config.isCaptureGcInfo(),
+                        config.getMBeanGaugeNotFoundDelaySeconds(),
                         config.getInternalQueryTimeoutSeconds());
         configService.updateAdvancedConfig(updatedConfig, config.getVersion());
     }

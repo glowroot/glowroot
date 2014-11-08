@@ -35,12 +35,12 @@ import org.glowroot.markers.UsedByJsonBinding;
 public class AdvancedConfig {
 
     private final boolean metricWrapperMethods;
-    // minimum is imposed because of PartialTraceStorageWatcher#PERIOD_MILLIS
-    // -1 means no partial traces are gathered, should be minimum 100 milliseconds
+    // should be minimum 1000 because of ImmediateTraceStoreWatcher#PERIOD_MILLIS
     private final int immediatePartialStoreThresholdSeconds;
     // used to limit memory requirement, also used to help limit trace capture size,
-    // 0 means don't capture any entries, -1 means no limit
-    private final int maxEntriesPerTrace;
+    private final int maxTraceEntriesPerTransaction;
+    // used to limit memory requirement, also used to help limit trace capture size,
+    private final int maxStackTraceSamplesPerTransaction;
     private final boolean captureThreadInfo;
     private final boolean captureGcInfo;
     private final int mbeanGaugeNotFoundDelaySeconds;
@@ -51,14 +51,16 @@ public class AdvancedConfig {
     static AdvancedConfig getDefault() {
         final boolean metricWrapperMethods = true;
         final int immediatePartialStoreThresholdSeconds = 60;
-        final int maxEntriesPerTrace = 2000;
+        final int maxTraceEntriesPerTransaction = 2000;
+        final int maxStackTraceSamplesPerTransaction = 10000;
         final boolean captureThreadInfo = true;
         final boolean captureGcInfo = true;
         final int mbeanGaugeNotFoundDelaySeconds = 60;
         final int internalQueryTimeoutSeconds = 60;
         return new AdvancedConfig(metricWrapperMethods, immediatePartialStoreThresholdSeconds,
-                maxEntriesPerTrace, captureThreadInfo, captureGcInfo,
-                mbeanGaugeNotFoundDelaySeconds, internalQueryTimeoutSeconds);
+                maxTraceEntriesPerTransaction, maxStackTraceSamplesPerTransaction,
+                captureThreadInfo, captureGcInfo, mbeanGaugeNotFoundDelaySeconds,
+                internalQueryTimeoutSeconds);
     }
 
     public static Overlay overlay(AdvancedConfig base) {
@@ -67,18 +69,21 @@ public class AdvancedConfig {
 
     @VisibleForTesting
     public AdvancedConfig(boolean metricWrapperMethods, int immediatePartialStoreThresholdSeconds,
-            int maxEntriesPerTrace, boolean captureThreadInfo, boolean captureGcInfo,
-            int mbeanGaugeNotFoundDelaySeconds, int internalQueryTimeoutSeconds) {
+            int maxTraceEntriesPerTransaction, int maxStackTraceSamplesPerTransaction,
+            boolean captureThreadInfo, boolean captureGcInfo, int mbeanGaugeNotFoundDelaySeconds,
+            int internalQueryTimeoutSeconds) {
         this.metricWrapperMethods = metricWrapperMethods;
         this.immediatePartialStoreThresholdSeconds = immediatePartialStoreThresholdSeconds;
-        this.maxEntriesPerTrace = maxEntriesPerTrace;
+        this.maxTraceEntriesPerTransaction = maxTraceEntriesPerTransaction;
+        this.maxStackTraceSamplesPerTransaction = maxStackTraceSamplesPerTransaction;
         this.captureThreadInfo = captureThreadInfo;
         this.captureGcInfo = captureGcInfo;
         this.mbeanGaugeNotFoundDelaySeconds = mbeanGaugeNotFoundDelaySeconds;
         this.internalQueryTimeoutSeconds = internalQueryTimeoutSeconds;
         this.version = VersionHashes.sha1(metricWrapperMethods,
-                immediatePartialStoreThresholdSeconds, maxEntriesPerTrace, captureThreadInfo,
-                captureGcInfo, mbeanGaugeNotFoundDelaySeconds, internalQueryTimeoutSeconds);
+                immediatePartialStoreThresholdSeconds, maxTraceEntriesPerTransaction,
+                maxStackTraceSamplesPerTransaction, captureThreadInfo, captureGcInfo,
+                mbeanGaugeNotFoundDelaySeconds, internalQueryTimeoutSeconds);
     }
 
     public boolean isMetricWrapperMethods() {
@@ -89,8 +94,12 @@ public class AdvancedConfig {
         return immediatePartialStoreThresholdSeconds;
     }
 
-    public int getMaxEntriesPerTrace() {
-        return maxEntriesPerTrace;
+    public int getMaxTraceEntriesPerTransaction() {
+        return maxTraceEntriesPerTransaction;
+    }
+
+    public int getMaxStackTraceSamplesPerTransaction() {
+        return maxStackTraceSamplesPerTransaction;
     }
 
     public boolean isCaptureThreadInfo() {
@@ -119,7 +128,8 @@ public class AdvancedConfig {
         return MoreObjects.toStringHelper(this)
                 .add("metricWrapperMethods", metricWrapperMethods)
                 .add("immediatePartialStoreThresholdSeconds", immediatePartialStoreThresholdSeconds)
-                .add("maxEntriesPerTrace", maxEntriesPerTrace)
+                .add("maxTraceEntriesPerTransaction", maxTraceEntriesPerTransaction)
+                .add("maxStackTraceSamplesPerTransaction", maxStackTraceSamplesPerTransaction)
                 .add("captureThreadInfo", captureThreadInfo)
                 .add("captureGcInfo", captureGcInfo)
                 .add("mbeanGaugeNotFoundDelaySeconds", mbeanGaugeNotFoundDelaySeconds)
@@ -134,7 +144,8 @@ public class AdvancedConfig {
 
         private boolean metricWrapperMethods;
         private int immediatePartialStoreThresholdSeconds;
-        private int maxEntriesPerTrace;
+        private int maxTraceEntriesPerTransaction;
+        private int maxStackTraceSamplesPerTransaction;
         private boolean captureThreadInfo;
         private boolean captureGcInfo;
         private int mbeanGaugeNotFoundDelaySeconds;
@@ -143,7 +154,8 @@ public class AdvancedConfig {
         private Overlay(AdvancedConfig base) {
             metricWrapperMethods = base.metricWrapperMethods;
             immediatePartialStoreThresholdSeconds = base.immediatePartialStoreThresholdSeconds;
-            maxEntriesPerTrace = base.maxEntriesPerTrace;
+            maxTraceEntriesPerTransaction = base.maxTraceEntriesPerTransaction;
+            maxStackTraceSamplesPerTransaction = base.maxStackTraceSamplesPerTransaction;
             captureThreadInfo = base.captureThreadInfo;
             captureGcInfo = base.captureGcInfo;
             mbeanGaugeNotFoundDelaySeconds = base.mbeanGaugeNotFoundDelaySeconds;
@@ -156,8 +168,11 @@ public class AdvancedConfig {
                 int immediatePartialStoreThresholdSeconds) {
             this.immediatePartialStoreThresholdSeconds = immediatePartialStoreThresholdSeconds;
         }
-        public void setMaxEntriesPerTrace(int maxEntriesPerTrace) {
-            this.maxEntriesPerTrace = maxEntriesPerTrace;
+        public void setMaxTraceEntriesPerTransaction(int maxTraceEntriesPerTransaction) {
+            this.maxTraceEntriesPerTransaction = maxTraceEntriesPerTransaction;
+        }
+        public void setMaxStackTraceSamplesPerTransaction(int maxStackTraceSamplesPerTransaction) {
+            this.maxStackTraceSamplesPerTransaction = maxStackTraceSamplesPerTransaction;
         }
         public void setCaptureThreadInfo(boolean captureThreadInfo) {
             this.captureThreadInfo = captureThreadInfo;
@@ -173,8 +188,9 @@ public class AdvancedConfig {
         }
         public AdvancedConfig build() {
             return new AdvancedConfig(metricWrapperMethods, immediatePartialStoreThresholdSeconds,
-                    maxEntriesPerTrace, captureThreadInfo, captureGcInfo,
-                    mbeanGaugeNotFoundDelaySeconds, internalQueryTimeoutSeconds);
+                    maxTraceEntriesPerTransaction, maxStackTraceSamplesPerTransaction,
+                    captureThreadInfo, captureGcInfo, mbeanGaugeNotFoundDelaySeconds,
+                    internalQueryTimeoutSeconds);
         }
     }
 }

@@ -41,7 +41,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 @Singleton
 class ImmediateTraceStoreWatcher extends ScheduledRunnable {
 
-    static final int PERIOD_MILLIS = 100;
+    static final int PERIOD_MILLIS = 1000;
 
     private final ScheduledExecutorService scheduledExecutor;
     private final TransactionRegistry transactionRegistry;

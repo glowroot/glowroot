@@ -67,7 +67,7 @@ public class MaxEntriesLimitTest {
     public void shouldReadActivePartialTrace() throws Exception {
         // given
         AdvancedConfig advancedConfig = container.getConfigService().getAdvancedConfig();
-        advancedConfig.setMaxEntriesPerTrace(100);
+        advancedConfig.setMaxTraceEntriesPerTransaction(100);
         container.getConfigService().updateAdvancedConfig(advancedConfig);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -100,7 +100,7 @@ public class MaxEntriesLimitTest {
 
         // part 2 of this test
         advancedConfig = container.getConfigService().getAdvancedConfig();
-        advancedConfig.setMaxEntriesPerTrace(200);
+        advancedConfig.setMaxTraceEntriesPerTransaction(200);
         container.getConfigService().updateAdvancedConfig(advancedConfig);
         stopwatch.stop().reset().start();
         while (stopwatch.elapsed(SECONDS) < 2) {

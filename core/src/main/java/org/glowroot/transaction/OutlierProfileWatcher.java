@@ -43,7 +43,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 @Singleton
 class OutlierProfileWatcher extends ScheduledRunnable {
 
-    static final int PERIOD_MILLIS = 50;
+    static final int PERIOD_MILLIS = 100;
 
     private final ScheduledExecutorService scheduledExecutor;
     private final TransactionRegistry transactionRegistry;
@@ -62,12 +62,11 @@ class OutlierProfileWatcher extends ScheduledRunnable {
     // polling interval and schedule stack trace capture to occur at the appropriate time(s)
     @Override
     protected void runInternal() {
-        // order configs by trace percentage so that lowest percentage configs have first shot
-        long currentTick = ticker.read();
         TraceConfig config = configService.getTraceConfig();
         if (!config.isOutlierProfilingEnabled()) {
             return;
         }
+        long currentTick = ticker.read();
         int initialDelayMillis = config.getOutlierProfilingInitialDelayMillis();
         long stackTraceThresholdTime = currentTick
                 - MILLISECONDS.toNanos(initialDelayMillis - PERIOD_MILLIS);
@@ -84,9 +83,9 @@ class OutlierProfileWatcher extends ScheduledRunnable {
     }
 
     // schedule stack traces to be taken every X seconds
-    private void scheduleProfiling(Transaction transaction, long currentTick,
-            TraceConfig config) {
-        ScheduledRunnable profileRunnable = new ProfileRunnable(transaction, true);
+    private void scheduleProfiling(Transaction transaction, long currentTick, TraceConfig config) {
+        ScheduledRunnable profileRunnable =
+                new TransactionProfileRunnable(transaction, true, configService);
         long initialDelayRemainingMillis =
                 getInitialDelayForCommand(transaction.getStartTick(), currentTick, config);
         profileRunnable.scheduleWithFixedDelay(scheduledExecutor, initialDelayRemainingMillis,

@@ -58,7 +58,7 @@ public class ProfilingTest {
         traceConfig.setOutlierProfilingInitialDelayMillis(60);
         traceConfig.setOutlierProfilingIntervalMillis(10);
         container.getConfigService().updateTraceConfig(traceConfig);
-        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
+        container.executeAppUnderTest(ShouldGenerateOutlierTraceWithProfile.class);
     }
 
     @AfterClass
@@ -75,15 +75,11 @@ public class ProfilingTest {
     public void shouldReadProfile() throws Exception {
         // given
         TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        traceConfig.setStoreThresholdMillis(10000);
-        traceConfig.setOutlierProfilingInitialDelayMillis(200);
-        traceConfig.setOutlierProfilingIntervalMillis(10);
+        traceConfig.setOutlierProfilingInitialDelayMillis(2000);
         container.getConfigService().updateTraceConfig(traceConfig);
         ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
         profilingConfig.setEnabled(true);
-        profilingConfig.setTransactionPercentage(100);
         profilingConfig.setIntervalMillis(10);
-        profilingConfig.setTraceStoreThresholdOverrideMillis(0);
         container.getConfigService().updateProfilingConfig(profilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
@@ -101,7 +97,7 @@ public class ProfilingTest {
         // given
         TraceConfig traceConfig = container.getConfigService().getTraceConfig();
         traceConfig.setStoreThresholdMillis(10000);
-        traceConfig.setOutlierProfilingInitialDelayMillis(200);
+        traceConfig.setOutlierProfilingInitialDelayMillis(1100);
         traceConfig.setOutlierProfilingIntervalMillis(10);
         container.getConfigService().updateTraceConfig(traceConfig);
         UserRecordingConfig userRecordingConfig =
@@ -128,14 +124,9 @@ public class ProfilingTest {
     @Test
     public void shouldReadActiveProfile() throws Exception {
         // given
-        TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        traceConfig.setStoreThresholdMillis(10000);
-        container.getConfigService().updateTraceConfig(traceConfig);
         ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
         profilingConfig.setEnabled(true);
-        profilingConfig.setTransactionPercentage(100);
         profilingConfig.setIntervalMillis(10);
-        profilingConfig.setTraceStoreThresholdOverrideMillis(0);
         container.getConfigService().updateProfilingConfig(profilingConfig);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -159,14 +150,14 @@ public class ProfilingTest {
     public void shouldReadOutlierProfile() throws Exception {
         // given
         TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        traceConfig.setOutlierProfilingInitialDelayMillis(60);
+        traceConfig.setOutlierProfilingInitialDelayMillis(1100);
         traceConfig.setOutlierProfilingIntervalMillis(10);
         container.getConfigService().updateTraceConfig(traceConfig);
         ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
         profilingConfig.setEnabled(false);
         container.getConfigService().updateProfilingConfig(profilingConfig);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
+        container.executeAppUnderTest(ShouldGenerateOutlierTraceWithProfile.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         ProfileNode rootProfileNode = container.getTraceService().getOutlierProfile(trace.getId());
@@ -174,45 +165,23 @@ public class ProfilingTest {
         assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.YES);
         // outlier profiler should have captured exactly 5 stack traces
         int sampleCount = rootProfileNode.getSampleCount();
-        assertThat(sampleCount).isBetween(3, 7);
+        assertThat(sampleCount).isBetween(5, 15);
         assertThatTreeDoesNotContainSyntheticMetricWrapperMethods(rootProfileNode);
     }
 
     @Test
-    public void shouldReadOutlierProfileWhenMaxSecondsIsZero() throws Exception {
-        // given
-        TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        traceConfig.setOutlierProfilingInitialDelayMillis(60);
-        traceConfig.setOutlierProfilingIntervalMillis(50);
-        container.getConfigService().updateTraceConfig(traceConfig);
-        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-        profilingConfig.setEnabled(false);
-        container.getConfigService().updateProfilingConfig(profilingConfig);
-        // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        ProfileNode rootProfileNode = container.getTraceService().getOutlierProfile(trace.getId());
-        assertThat(trace.getProfileExistence()).isEqualTo(Existence.NO);
-        assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.YES);
-        // outlier profiler should have captured exactly 1 stack trace
-        assertThat(rootProfileNode.getSampleCount()).isEqualTo(1);
-        assertThatTreeDoesNotContainSyntheticMetricWrapperMethods(rootProfileNode);
-    }
-
-    @Test
-    public void shouldNotReadProfileWhenDisabled() throws Exception {
+    public void shouldNotReadOutlierProfileWhenDisabled() throws Exception {
         // given
         TraceConfig traceConfig = container.getConfigService().getTraceConfig();
         traceConfig.setOutlierProfilingEnabled(false);
-        traceConfig.setOutlierProfilingInitialDelayMillis(60);
+        traceConfig.setOutlierProfilingInitialDelayMillis(1100);
         traceConfig.setOutlierProfilingIntervalMillis(10);
         container.getConfigService().updateTraceConfig(traceConfig);
         ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
         profilingConfig.setEnabled(false);
         container.getConfigService().updateProfilingConfig(profilingConfig);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
+        container.executeAppUnderTest(ShouldGenerateOutlierTraceWithProfile.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getProfileExistence()).isEqualTo(Existence.NO);
@@ -256,7 +225,18 @@ public class ProfilingTest {
         }
         @Override
         public void traceMarker() throws InterruptedException {
-            Threads.moreAccurateSleep(105);
+            Threads.moreAccurateSleep(100);
+        }
+    }
+
+    public static class ShouldGenerateOutlierTraceWithProfile implements AppUnderTest, TraceMarker {
+        @Override
+        public void executeApp() throws InterruptedException {
+            traceMarker();
+        }
+        @Override
+        public void traceMarker() throws InterruptedException {
+            Threads.moreAccurateSleep(1200);
         }
     }
 

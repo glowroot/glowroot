@@ -65,18 +65,32 @@
         </div>
       </div>
       <div gt-form-group
-           gt-label="Max entries per trace"
-           gt-model="config.maxEntriesPerTrace"
+           gt-label="Max trace entries per transaction"
+           gt-model="config.maxTraceEntriesPerTransaction"
            gt-number="true"
            gt-pattern="pattern.integer"
            gt-required="loaded"
            gt-width="7em">
         <div class="help-block">
-          Maximum number of entries collected for a given trace. This is used to
+          Maximum number of trace entries collected for a given transaction. This is used to
           limit the memory requirement of very long transactions that would capture
           potentially hundreds of thousands of trace entries (e.g. large batch or background
           operations).
           Also, the UI is not really optimized for viewing super large numbers of trace entries.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Max stack trace samples per transaction"
+           gt-model="config.maxStackTraceSamplesPerTransaction"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em">
+        <div class="help-block">
+          Maximum number of stack trace samples collected for a given transaction. This is used to
+          limit the memory requirement of very long transactions that would capture
+          potentially hundreds of thousands of stack traces (e.g. large batch or background
+          operations).
         </div>
       </div>
       <div gt-form-group
@@ -91,11 +105,11 @@
       </div>
       <div gt-form-group
            gt-label="GC info"
-           gt-checkbox-label="Capture garbage collection info per trace"
+           gt-checkbox-label="Capture garbage collection info per transaction"
            gt-model="config.captureGcInfo"
            gt-type="checkbox">
         <div class="help-block">
-          Capture global garbage collection info per trace.
+          Capture global garbage collection info per transaction.
         </div>
       </div>
       <div gt-form-group

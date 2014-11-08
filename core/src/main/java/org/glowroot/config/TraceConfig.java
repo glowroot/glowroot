@@ -59,7 +59,7 @@ public class TraceConfig {
         final boolean enabled = true;
         final int storeThresholdMillis = 3000;
         final boolean outlierProfilingEnabled = true;
-        final int outlierProfilingInitialDelayMillis = 3000;
+        final int outlierProfilingInitialDelayMillis = 10000;
         final int outlierProfilingIntervalMillis = 1000;
         return new TraceConfig(enabled, storeThresholdMillis, outlierProfilingEnabled,
                 outlierProfilingInitialDelayMillis, outlierProfilingIntervalMillis);

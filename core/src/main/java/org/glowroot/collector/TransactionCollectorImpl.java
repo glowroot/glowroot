@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.ProfilingConfig;
 import org.glowroot.markers.GuardedBy;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
@@ -89,16 +88,6 @@ public class TransactionCollectorImpl implements TransactionCollector {
             String user = transaction.getUser();
             if (user != null
                     && user.equalsIgnoreCase(configService.getUserRecordingConfig().getUser())) {
-                return true;
-            }
-        }
-        // check if should store for profiling
-        if (transaction.isProfiled()) {
-            int traceStoreThresholdOverrideMillis =
-                    configService.getProfilingConfig().getTraceStoreThresholdOverrideMillis();
-            if (traceStoreThresholdOverrideMillis != ProfilingConfig.USE_GENERAL_STORE_THRESHOLD
-                    && transaction.getDuration() >= MILLISECONDS.toNanos(
-                            traceStoreThresholdOverrideMillis)) {
                 return true;
             }
         }

@@ -32,25 +32,15 @@ import org.glowroot.markers.UsedByJsonBinding;
 @Immutable
 public class ProfilingConfig {
 
-    public static final int USE_GENERAL_STORE_THRESHOLD = -1;
-
     private final boolean enabled;
-    // percentage of transactions to apply profiling, between 0.0 and 100.0
-    private final double transactionPercentage;
     private final int intervalMillis;
-    // trace store threshold of -1 means use default trace store threshold for profiled
-    // transactions (the real threshold is the minimum of this and the default threshold)
-    private final int traceStoreThresholdOverrideMillis;
 
     private final String version;
 
     static ProfilingConfig getDefault() {
         final boolean enabled = true;
-        final double transactionPercentage = 2;
-        final int intervalMillis = 50;
-        final int traceStoreThresholdMillis = USE_GENERAL_STORE_THRESHOLD;
-        return new ProfilingConfig(enabled, transactionPercentage, intervalMillis,
-                traceStoreThresholdMillis);
+        final int intervalMillis = 2000;
+        return new ProfilingConfig(enabled, intervalMillis);
     }
 
     public static Overlay overlay(ProfilingConfig base) {
@@ -58,30 +48,18 @@ public class ProfilingConfig {
     }
 
     @VisibleForTesting
-    public ProfilingConfig(boolean enabled, double transactionPercentage, int intervalMillis,
-            int traceStoreThresholdOverrideMillis) {
+    public ProfilingConfig(boolean enabled, int intervalMillis) {
         this.enabled = enabled;
-        this.transactionPercentage = transactionPercentage;
         this.intervalMillis = intervalMillis;
-        this.traceStoreThresholdOverrideMillis = traceStoreThresholdOverrideMillis;
-        version = VersionHashes.sha1(transactionPercentage, intervalMillis,
-                traceStoreThresholdOverrideMillis);
+        version = VersionHashes.sha1(enabled, intervalMillis);
     }
 
     public boolean isEnabled() {
         return enabled;
     }
 
-    public double getTransactionPercentage() {
-        return transactionPercentage;
-    }
-
     public int getIntervalMillis() {
         return intervalMillis;
-    }
-
-    public int getTraceStoreThresholdOverrideMillis() {
-        return traceStoreThresholdOverrideMillis;
     }
 
     @JsonView(UiView.class)
@@ -93,9 +71,7 @@ public class ProfilingConfig {
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("enabled", enabled)
-                .add("transactionPercentage", transactionPercentage)
                 .add("intervalMillis", intervalMillis)
-                .add("traceStoreThresholdOverrideMillis", traceStoreThresholdOverrideMillis)
                 .add("version", version)
                 .toString();
     }
@@ -105,31 +81,20 @@ public class ProfilingConfig {
     public static class Overlay {
 
         private boolean enabled;
-        private double transactionPercentage;
         private int intervalMillis;
-        private int traceStoreThresholdOverrideMillis;
 
         private Overlay(ProfilingConfig base) {
             enabled = base.enabled;
-            transactionPercentage = base.transactionPercentage;
             intervalMillis = base.intervalMillis;
-            traceStoreThresholdOverrideMillis = base.traceStoreThresholdOverrideMillis;
         }
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
         }
-        public void setTransactionPercentage(double transactionPercentage) {
-            this.transactionPercentage = transactionPercentage;
-        }
         public void setIntervalMillis(int intervalMillis) {
             this.intervalMillis = intervalMillis;
         }
-        public void setTraceStoreThresholdOverrideMillis(int traceStoreThresholdOverrideMillis) {
-            this.traceStoreThresholdOverrideMillis = traceStoreThresholdOverrideMillis;
-        }
         public ProfilingConfig build() {
-            return new ProfilingConfig(enabled, transactionPercentage, intervalMillis,
-                    traceStoreThresholdOverrideMillis);
+            return new ProfilingConfig(enabled, intervalMillis);
         }
     }
 }

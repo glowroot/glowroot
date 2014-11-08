@@ -8,9 +8,7 @@
   },
   "profiling": {
     "enabled": true,
-    "transactionPercentage": 2.0,
-    "intervalMillis": 50,
-    "traceStoreThresholdOverrideMillis": -1
+    "intervalMillis": 5000
   },
   "userRecording": {
     "enabled": false,
@@ -31,7 +29,8 @@
   "advanced": {
     "metricWrapperMethods": true,
     "immediatePartialStoreThresholdSeconds": 60,
-    "maxEntriesPerTrace": 2000,
+    "maxTraceEntriesPerTransaction": 2000,
+    "maxStackTraceSamplesPerTransaction": 10000,
     "captureThreadInfo": true,
     "captureGcInfo": true,
     "mbeanGaugeNotFoundDelaySeconds": 60,

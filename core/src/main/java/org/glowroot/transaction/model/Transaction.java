@@ -15,9 +15,7 @@
  */
 package org.glowroot.transaction.model;
 
-import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.MoreObjects;
@@ -312,6 +310,10 @@ public class Transaction {
         return immedateTraceStoreRunnable;
     }
 
+    public long getThreadId() {
+        return threadId;
+    }
+
     public void setPartial() {
         partial.getAndSet(true);
     }
@@ -421,15 +423,11 @@ public class Transaction {
         memoryBarrier = true;
     }
 
-    public void captureStackTrace(boolean outlier) {
-        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-        ThreadInfo threadInfo = threadBean.getThreadInfo(threadId, Integer.MAX_VALUE);
+    public void captureStackTrace(@Nullable ThreadInfo threadInfo, boolean outlier, int limit) {
         if (threadInfo == null) {
             // thread is no longer alive
             return;
         }
-        // check if trace is completed to avoid small window between trace completion and
-        // canceling the scheduled command that invokes this method
         if (traceEntryComponent.isCompleted()) {
             return;
         }
@@ -439,7 +437,7 @@ public class Transaction {
                 // an almost simultaneously captured stack trace
                 outlierProfile = new Profile();
             }
-            outlierProfile.addStackTrace(threadInfo);
+            outlierProfile.addStackTrace(threadInfo, limit);
         } else {
             if (profile == null) {
                 // initialization possible race condition is ok, worst case scenario it misses
@@ -448,7 +446,7 @@ public class Transaction {
             }
             // TODO make sure that when reading profile it is not in-between instantiation
             // and having its first stack trace here, maybe pass threadInfo to constructor????
-            profile.addStackTrace(threadInfo);
+            profile.addStackTrace(threadInfo, limit);
         }
     }
 

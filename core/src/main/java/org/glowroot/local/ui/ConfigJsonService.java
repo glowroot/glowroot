@@ -117,10 +117,6 @@ class ConfigJsonService {
         jg.writeStartObject();
         jg.writeFieldName("config");
         writer.writeValue(jg, configService.getProfilingConfig());
-        jg.writeNumberField("defaultTraceStoreThresholdMillis",
-                configService.getTraceConfig().getStoreThresholdMillis());
-        jg.writeBooleanField("metricWrapperMethodsActive",
-                transactionModule.isMetricWrapperMethods());
         jg.writeEndObject();
         jg.close();
         return sb.toString();

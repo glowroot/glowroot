@@ -31,9 +31,7 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 public class ProfilingConfig {
 
     private boolean enabled;
-    private double transactionPercentage;
     private int intervalMillis;
-    private int traceStoreThresholdOverrideMillis;
 
     private final String version;
 
@@ -49,28 +47,12 @@ public class ProfilingConfig {
         this.enabled = enabled;
     }
 
-    public double getTransactionPercentage() {
-        return transactionPercentage;
-    }
-
-    public void setTransactionPercentage(double transactionPercentage) {
-        this.transactionPercentage = transactionPercentage;
-    }
-
     public int getIntervalMillis() {
         return intervalMillis;
     }
 
     public void setIntervalMillis(int intervalMillis) {
         this.intervalMillis = intervalMillis;
-    }
-
-    public int getTraceStoreThresholdOverrideMillis() {
-        return traceStoreThresholdOverrideMillis;
-    }
-
-    public void setTraceStoreThresholdOverrideMillis(int traceStoreThresholdOverrideMillis) {
-        this.traceStoreThresholdOverrideMillis = traceStoreThresholdOverrideMillis;
     }
 
     public String getVersion() {
@@ -85,10 +67,7 @@ public class ProfilingConfig {
             // sending to the server, and represents the current version hash when receiving from
             // the server
             return Objects.equal(enabled, that.enabled)
-                    && Objects.equal(transactionPercentage, that.transactionPercentage)
-                    && Objects.equal(intervalMillis, that.intervalMillis)
-                    && Objects.equal(traceStoreThresholdOverrideMillis,
-                            that.traceStoreThresholdOverrideMillis);
+                    && Objects.equal(intervalMillis, that.intervalMillis);
         }
         return false;
     }
@@ -98,17 +77,14 @@ public class ProfilingConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(enabled, transactionPercentage, intervalMillis,
-                traceStoreThresholdOverrideMillis);
+        return Objects.hashCode(enabled, intervalMillis);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("enabled", enabled)
-                .add("transactionPercentage", transactionPercentage)
                 .add("intervalMillis", intervalMillis)
-                .add("traceStoreThresholdOverrideMillis", traceStoreThresholdOverrideMillis)
                 .add("version", version)
                 .toString();
     }
@@ -116,21 +92,14 @@ public class ProfilingConfig {
     @JsonCreator
     static ProfilingConfig readValue(
             @JsonProperty("enabled") @Nullable Boolean enabled,
-            @JsonProperty("transactionPercentage") @Nullable Double transactionPercentage,
             @JsonProperty("intervalMillis") @Nullable Integer intervalMillis,
-            @JsonProperty("traceStoreThresholdOverrideMillis") @Nullable Integer traceStoreThresholdOverrideMillis,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(enabled, "enabled");
-        checkRequiredProperty(transactionPercentage, "transactionPercentage");
         checkRequiredProperty(intervalMillis, "intervalMillis");
-        checkRequiredProperty(traceStoreThresholdOverrideMillis,
-                "traceStoreThresholdOverrideMillis");
         checkRequiredProperty(version, "version");
         ProfilingConfig config = new ProfilingConfig(version);
         config.setEnabled(enabled);
-        config.setTransactionPercentage(transactionPercentage);
         config.setIntervalMillis(intervalMillis);
-        config.setTraceStoreThresholdOverrideMillis(traceStoreThresholdOverrideMillis);
         return config;
     }
 }

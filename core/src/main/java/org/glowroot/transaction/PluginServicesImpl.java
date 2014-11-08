@@ -72,7 +72,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final MetricNameCache metricNameCache;
     @Nullable
     private final ThreadAllocatedBytes threadAllocatedBytes;
-    private final ProfileScheduler profilingScheduler;
+    private final UserProfileScheduler userProfileScheduler;
     private final Clock clock;
     private final Ticker ticker;
 
@@ -85,18 +85,18 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private volatile boolean enabled;
     private volatile boolean captureThreadInfo;
     private volatile boolean captureGcInfo;
-    private volatile int maxEntriesPerTrace;
+    private volatile int maxTraceEntriesPerTransaction;
     @MonotonicNonNull
     private volatile PluginConfig pluginConfig;
 
     static PluginServicesImpl create(TransactionRegistry transactionRegistry,
             TransactionCollector transactionCollector, ConfigService configService,
             MetricNameCache metricNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
-            ProfileScheduler profilingScheduler, Ticker ticker, Clock clock,
+            UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock,
             PluginDescriptorCache pluginDescriptorCache, @Nullable String pluginId) {
         PluginServicesImpl pluginServices = new PluginServicesImpl(transactionRegistry,
                 transactionCollector, configService, metricNameCache, threadAllocatedBytes,
-                profilingScheduler, ticker, clock, pluginDescriptorCache, pluginId);
+                userProfileScheduler, ticker, clock, pluginDescriptorCache, pluginId);
         // add config listeners first before caching configuration property values to avoid a
         // (remotely) possible race condition
         configService.addConfigListener(pluginServices);
@@ -111,14 +111,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private PluginServicesImpl(TransactionRegistry transactionRegistry,
             TransactionCollector transactionCollector, ConfigService configService,
             MetricNameCache metricNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
-            ProfileScheduler profilingScheduler, Ticker ticker, Clock clock,
+            UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock,
             PluginDescriptorCache pluginDescriptorCache, @Nullable String pluginId) {
         this.transactionRegistry = transactionRegistry;
         this.transactionCollector = transactionCollector;
         this.configService = configService;
         this.metricNameCache = metricNameCache;
         this.threadAllocatedBytes = threadAllocatedBytes;
-        this.profilingScheduler = profilingScheduler;
+        this.userProfileScheduler = userProfileScheduler;
         this.clock = clock;
         this.ticker = ticker;
         if (pluginId == null) {
@@ -220,7 +220,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                     transactionName, messageSupplier, rootMetric, startTick, captureThreadInfo,
                     captureGcInfo, threadAllocatedBytes, ticker);
             transactionRegistry.addTransaction(transaction);
-            profilingScheduler.maybeScheduleProfilingUsingPercentage(transaction);
             return new TraceEntryImpl(transaction.getTraceEntryComponent(), transaction);
         } else {
             return startTraceEntry(transaction, metricName, messageSupplier);
@@ -282,7 +281,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             return NopCompletedEntry.INSTANCE;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
-        if (transaction != null && transaction.getEntryCount() < maxEntriesPerTrace) {
+        if (transaction != null && transaction.getEntryCount() < maxTraceEntriesPerTransaction) {
             // the trace limit has not been exceeded
             long currTick = ticker.read();
             return new CompletedEntryImpl(transaction.addEntry(currTick, currTick, messageSupplier,
@@ -299,7 +298,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         // use higher entry limit when adding errors, but still need some kind of cap
-        if (transaction != null && transaction.getEntryCount() < 2 * maxEntriesPerTrace) {
+        if (transaction != null
+                && transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
             long currTick = ticker.read();
             return new CompletedEntryImpl(
                     transaction.addEntry(currTick, currTick, null, errorMessage, true));
@@ -337,7 +337,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (transaction != null) {
             transaction.setUser(user);
             if (user != null && transaction.getUserProfileRunnable() == null) {
-                profilingScheduler.maybeScheduleProfilingUsingUser(transaction, user);
+                userProfileScheduler.maybeScheduleUserProfiling(transaction, user);
             }
         }
     }
@@ -389,7 +389,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             }
         }
         AdvancedConfig advancedConfig = configService.getAdvancedConfig();
-        maxEntriesPerTrace = advancedConfig.getMaxEntriesPerTrace();
+        maxTraceEntriesPerTransaction = advancedConfig.getMaxTraceEntriesPerTransaction();
         captureThreadInfo = advancedConfig.isCaptureThreadInfo();
         captureGcInfo = advancedConfig.isCaptureGcInfo();
     }
@@ -397,7 +397,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private TraceEntry startTraceEntry(Transaction transaction, MetricName metricName,
             MessageSupplier messageSupplier) {
         long startTick = ticker.read();
-        if (transaction.getEntryCount() >= maxEntriesPerTrace) {
+        if (transaction.getEntryCount() >= maxTraceEntriesPerTransaction) {
             // the entry limit has been exceeded for this trace
             transaction.addEntryLimitExceededMarkerIfNeeded();
             TransactionMetricExt transactionMetric =
@@ -522,7 +522,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             transactionMetric.end(endTick);
             // use higher entry limit when adding slow entries, but still need some kind of cap
             if (endTick - startTick >= unit.toNanos(threshold)
-                    && transaction.getEntryCount() < 2 * maxEntriesPerTrace) {
+                    && transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
                 // entry won't necessarily be nested properly, and won't have any timing data, but
                 // at least the long entry and stack trace will get captured
                 org.glowroot.transaction.model.TraceEntry entry =
@@ -542,7 +542,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             long endTick = ticker.read();
             transactionMetric.end(endTick);
             // use higher entry limit when adding errors, but still need some kind of cap
-            if (transaction.getEntryCount() < 2 * maxEntriesPerTrace) {
+            if (transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
                 // entry won't be nested properly, but at least the error will get captured
                 return new CompletedEntryImpl(transaction.addEntry(startTick, endTick,
                         messageSupplier, errorMessage, true));

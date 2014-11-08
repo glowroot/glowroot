@@ -26,6 +26,7 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.JvmModule;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
+import org.glowroot.transaction.TransactionRegistry;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -51,15 +52,19 @@ public class CollectorModule {
     private final AggregateCollector aggregateCollector;
     @Nullable
     private final GaugeCollector gaugeCollector;
+    @Nullable
+    private final StackTraceCollector stackTraceCollector;
 
     public CollectorModule(Clock clock, Ticker ticker, JvmModule jvmModule,
             ConfigModule configModule, TraceRepository traceRepository,
             AggregateRepository aggregateRepository, GaugePointRepository gaugePointRepository,
-            ScheduledExecutorService scheduledExecutor, boolean viewerModeEnabled) {
+            TransactionRegistry transactionRegistry, ScheduledExecutorService scheduledExecutor,
+            boolean viewerModeEnabled) {
         ConfigService configService = configModule.getConfigService();
         if (viewerModeEnabled) {
             aggregateCollector = null;
             gaugeCollector = null;
+            stackTraceCollector = null;
         } else {
             aggregateCollector = new AggregateCollector(scheduledExecutor, aggregateRepository,
                     clock, fixedAggregateIntervalSeconds);
@@ -70,6 +75,8 @@ public class CollectorModule {
                     - (clock.currentTimeMillis() % fixedGaugeIntervalSeconds);
             gaugeCollector.scheduleAtFixedRate(scheduledExecutor, initialDelay,
                     fixedGaugeIntervalSeconds, SECONDS);
+            stackTraceCollector = StackTraceCollector.create(transactionRegistry, configService,
+                    scheduledExecutor);
         }
         // TODO should be no need for transaction collector in viewer mode
         transactionCollector = new TransactionCollectorImpl(scheduledExecutor, configService,
@@ -92,6 +99,9 @@ public class CollectorModule {
     public void close() {
         if (aggregateCollector != null) {
             aggregateCollector.close();
+        }
+        if (stackTraceCollector != null) {
+            stackTraceCollector.close();
         }
     }
 }

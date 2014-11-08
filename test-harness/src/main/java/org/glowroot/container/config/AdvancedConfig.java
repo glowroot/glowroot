@@ -32,7 +32,8 @@ public class AdvancedConfig {
 
     private boolean metricWrapperMethods;
     private int immediatePartialStoreThresholdSeconds;
-    private int maxEntriesPerTrace;
+    private int maxTraceEntriesPerTransaction;
+    private int maxStackTraceSamplesPerTransaction;
     private boolean captureThreadInfo;
     private boolean captureGcInfo;
     private int mbeanGaugeNotFoundDelaySeconds;
@@ -61,12 +62,20 @@ public class AdvancedConfig {
         this.immediatePartialStoreThresholdSeconds = immediatePartialStoreThresholdSeconds;
     }
 
-    public int getMaxEntriesPerTrace() {
-        return maxEntriesPerTrace;
+    public int getMaxTraceEntriesPerTransaction() {
+        return maxTraceEntriesPerTransaction;
     }
 
-    public void setMaxEntriesPerTrace(int maxEntriesPerTrace) {
-        this.maxEntriesPerTrace = maxEntriesPerTrace;
+    public void setMaxTraceEntriesPerTransaction(int maxTraceEntriesPerTransaction) {
+        this.maxTraceEntriesPerTransaction = maxTraceEntriesPerTransaction;
+    }
+
+    public int getMaxStackTraceSamplesPerTransaction() {
+        return maxStackTraceSamplesPerTransaction;
+    }
+
+    public void setMaxStackTraceSamplesPerTransaction(int maxStackTraceSamplesPerTransaction) {
+        this.maxStackTraceSamplesPerTransaction = maxStackTraceSamplesPerTransaction;
     }
 
     public boolean isCaptureThreadInfo() {
@@ -115,7 +124,10 @@ public class AdvancedConfig {
             return Objects.equal(metricWrapperMethods, that.metricWrapperMethods)
                     && Objects.equal(immediatePartialStoreThresholdSeconds,
                             that.immediatePartialStoreThresholdSeconds)
-                    && Objects.equal(maxEntriesPerTrace, that.maxEntriesPerTrace)
+                    && Objects.equal(maxTraceEntriesPerTransaction,
+                            that.maxTraceEntriesPerTransaction)
+                    && Objects.equal(maxStackTraceSamplesPerTransaction,
+                            that.maxStackTraceSamplesPerTransaction)
                     && Objects.equal(captureThreadInfo, that.captureThreadInfo)
                     && Objects.equal(captureGcInfo, that.captureGcInfo)
                     && Objects.equal(mbeanGaugeNotFoundDelaySeconds,
@@ -131,8 +143,9 @@ public class AdvancedConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(metricWrapperMethods, immediatePartialStoreThresholdSeconds,
-                maxEntriesPerTrace, captureThreadInfo, captureGcInfo,
-                mbeanGaugeNotFoundDelaySeconds, internalQueryTimeoutSeconds);
+                maxTraceEntriesPerTransaction, maxStackTraceSamplesPerTransaction,
+                captureThreadInfo, captureGcInfo, mbeanGaugeNotFoundDelaySeconds,
+                internalQueryTimeoutSeconds);
     }
 
     @Override
@@ -140,7 +153,8 @@ public class AdvancedConfig {
         return MoreObjects.toStringHelper(this)
                 .add("metricWrapperMethods", metricWrapperMethods)
                 .add("immediatePartialStoreThresholdSeconds", immediatePartialStoreThresholdSeconds)
-                .add("maxEntriesPerTrace", maxEntriesPerTrace)
+                .add("maxTraceEntriesPerTransaction", maxTraceEntriesPerTransaction)
+                .add("maxStackTraceSamplesPerTransaction", maxStackTraceSamplesPerTransaction)
                 .add("captureThreadInfo", captureThreadInfo)
                 .add("captureGcInfo", captureGcInfo)
                 .add("mbeanGaugeNotFoundDelaySeconds", mbeanGaugeNotFoundDelaySeconds)
@@ -153,7 +167,8 @@ public class AdvancedConfig {
     static AdvancedConfig readValue(
             @JsonProperty("metricWrapperMethods") @Nullable Boolean metricWrapperMethods,
             @JsonProperty("immediatePartialStoreThresholdSeconds") @Nullable Integer immediatePartialStoreThresholdSeconds,
-            @JsonProperty("maxEntriesPerTrace") @Nullable Integer maxEntriesPerTrace,
+            @JsonProperty("maxTraceEntriesPerTransaction") @Nullable Integer maxTraceEntriesPerTransaction,
+            @JsonProperty("maxStackTraceSamplesPerTransaction") @Nullable Integer maxStackTraceSamplesPerTransaction,
             @JsonProperty("captureThreadInfo") @Nullable Boolean captureThreadInfo,
             @JsonProperty("captureGcInfo") @Nullable Boolean captureGcInfo,
             @JsonProperty("mbeanGaugeNotFoundDelaySeconds") @Nullable Integer mbeanGaugeNotFoundDelaySeconds,
@@ -162,7 +177,9 @@ public class AdvancedConfig {
         checkRequiredProperty(metricWrapperMethods, "metricWrapperMethods");
         checkRequiredProperty(immediatePartialStoreThresholdSeconds,
                 "immediatePartialStoreThresholdSeconds");
-        checkRequiredProperty(maxEntriesPerTrace, "maxEntriesPerTrace");
+        checkRequiredProperty(maxTraceEntriesPerTransaction, "maxTraceEntriesPerTransaction");
+        checkRequiredProperty(maxStackTraceSamplesPerTransaction,
+                "maxStackTraceSamplesPerTransaction");
         checkRequiredProperty(captureThreadInfo, "captureThreadInfo");
         checkRequiredProperty(captureGcInfo, "captureGcInfo");
         checkRequiredProperty(mbeanGaugeNotFoundDelaySeconds, "mbeanGaugeNotFoundDelaySeconds");
@@ -171,7 +188,8 @@ public class AdvancedConfig {
         AdvancedConfig config = new AdvancedConfig(version);
         config.setMetricWrapperMethods(metricWrapperMethods);
         config.setImmediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds);
-        config.setMaxEntriesPerTrace(maxEntriesPerTrace);
+        config.setMaxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction);
+        config.setMaxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction);
         config.setCaptureThreadInfo(captureThreadInfo);
         config.setCaptureGcInfo(captureGcInfo);
         config.setMBeanGaugeNotFoundDelaySeconds(mbeanGaugeNotFoundDelaySeconds);

@@ -197,24 +197,24 @@ public abstract class PluginServices {
      * Creates and starts a trace entry with the given {@code messageSupplier}. A transaction metric
      * for the specified metric is also started.
      * 
-     * Since entries can be expensive in great quantities, there is a {@code maxEntriesPerTrace}
-     * property on the configuration page to limit the number of entries captured for any given
-     * trace.
+     * Since entries can be expensive in great quantities, there is a
+     * {@code maxTraceEntriesPerTransaction} property on the configuration page to limit the number
+     * of entries captured for any given trace.
      * 
-     * Once a trace has accumulated {@code maxEntriesPerTrace} entries, this method doesn't add new
-     * entries to the trace, but instead returns a dummy entry. A transaction metric for the
-     * specified metric is still started, since metrics are very cheap, even in great quantities.
-     * The dummy entry adhere to the {@link TraceEntry} contract and return the specified
-     * {@link MessageSupplier} in response to {@link TraceEntry#getMessageSupplier()}. Calling
-     * {@link TraceEntry#end()} on the dummy entry ends the transaction metric. If
+     * Once a trace has accumulated {@code maxTraceEntriesPerTransaction} entries, this method
+     * doesn't add new entries to the trace, but instead returns a dummy entry. A transaction metric
+     * for the specified metric is still started, since metrics are very cheap, even in great
+     * quantities. The dummy entry adhere to the {@link TraceEntry} contract and return the
+     * specified {@link MessageSupplier} in response to {@link TraceEntry#getMessageSupplier()}.
+     * Calling {@link TraceEntry#end()} on the dummy entry ends the transaction metric. If
      * {@link TraceEntry#endWithError(ErrorMessage)} is called on the dummy entry, then the dummy
      * entry will be escalated to a real entry. If
      * {@link TraceEntry#endWithStackTrace(long, TimeUnit)} is called on the dummy entry and the
      * dummy entry duration exceeds the specified threshold, then the dummy entry will be escalated
      * to a real entry. If {@link TraceEntry#captureStackTrace()} is called on the dummy entry, then
      * the dummy entry will be escalated to a real entry. A hard cap (
-     * {@code maxEntriesPerTrace * 2}) on the total number of (real) entries is applied when
-     * escalating dummy entries to real entries.
+     * {@code maxTraceEntriesPerTransaction * 2}) on the total number of (real) entries is applied
+     * when escalating dummy entries to real entries.
      * 
      * If there is no current transaction, this method does nothing, and returns a no-op instance of
      * {@link TraceEntry}.
@@ -242,8 +242,8 @@ public abstract class PluginServices {
     /**
      * Adds a trace entry with duration zero.
      * 
-     * Once a trace has accumulated {@code maxEntriesPerTrace} entries, this method does nothing,
-     * and returns a no-op instance of {@link CompletedTraceEntry}.
+     * Once a trace has accumulated {@code maxTraceEntriesPerTransaction} entries, this method does
+     * nothing, and returns a no-op instance of {@link CompletedTraceEntry}.
      * 
      * If there is no current transaction, this method does nothing, and returns a no-op instance of
      * {@link CompletedTraceEntry}.
@@ -256,10 +256,10 @@ public abstract class PluginServices {
      * Adds a trace entry with duration zero. It does not set the error attribute on the trace,
      * which must be done with {@link TraceEntry#endWithError(ErrorMessage)} on the root entry.
      * 
-     * This method bypasses the regular {@code maxEntriesPerTrace} check so that errors after
-     * {@code maxEntriesPerTrace} will still be included in the trace. A hard cap (
-     * {@code maxEntriesPerTrace * 2}) on the total number of entries is still applied, after which
-     * this method does nothing.
+     * This method bypasses the regular {@code maxTraceEntriesPerTransaction} check so that errors
+     * after {@code maxTraceEntriesPerTransaction} will still be included in the trace. A hard cap (
+     * {@code maxTraceEntriesPerTransaction * 2}) on the total number of entries is still applied,
+     * after which this method does nothing.
      * 
      * If there is no current transaction, this method does nothing, and returns a no-op instance of
      * {@link CompletedTraceEntry}.

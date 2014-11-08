@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
-import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -108,8 +107,8 @@ public class TransactionModule {
                 ImmediateTraceStoreWatcher.PERIOD_MILLIS, MILLISECONDS);
         outlierProfileWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
                 OutlierProfileWatcher.PERIOD_MILLIS, MILLISECONDS);
-        final ProfileScheduler profileScheduler =
-                new ProfileScheduler(scheduledExecutor, configService, new Random());
+        final UserProfileScheduler userProfileScheduler =
+                new UserProfileScheduler(scheduledExecutor, configService);
         // this assignment to local variable is just to make checker framework happy
         // instead of directly accessing the field from inside the anonymous inner class below
         // (in which case checker framework thinks the field may still be null)
@@ -119,8 +118,8 @@ public class TransactionModule {
             public PluginServices create(@Nullable String pluginId) {
                 return PluginServicesImpl.create(transactionRegistry, transactionCollector,
                         configModule.getConfigService(), metricNameCache, threadAllocatedBytes,
-                        profileScheduler, ticker, clock, configModule.getPluginDescriptorCache(),
-                        pluginId);
+                        userProfileScheduler, ticker, clock,
+                        configModule.getPluginDescriptorCache(), pluginId);
             }
         };
         PluginServicesRegistry.initStaticState(pluginServicesFactory);
@@ -130,7 +129,7 @@ public class TransactionModule {
         return analyzedWorld;
     }
 
-    public TransactionRegistry getTraceRegistry() {
+    public TransactionRegistry getTransactionRegistry() {
         return transactionRegistry;
     }
 

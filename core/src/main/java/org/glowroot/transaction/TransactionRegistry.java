@@ -32,9 +32,7 @@ import org.glowroot.transaction.model.Transaction;
 @Singleton
 public class TransactionRegistry {
 
-    // collection of active running transactions, "nearly" ordered by start time
-    // ordering is not completely guaranteed since there is no synchronization block around
-    // transaction instantiation and placement into the registry
+    // collection of active running transactions
     private final Collection<Transaction> transactions = Sets.newConcurrentHashSet();
 
     // active running transaction being executed by the current thread

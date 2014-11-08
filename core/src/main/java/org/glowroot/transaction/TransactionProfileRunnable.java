@@ -15,9 +15,14 @@
  */
 package org.glowroot.transaction;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
+
 import com.google.common.base.MoreObjects;
 
 import org.glowroot.common.ScheduledRunnable;
+import org.glowroot.config.ConfigService;
 import org.glowroot.markers.ThreadSafe;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Transaction;
@@ -30,14 +35,17 @@ import org.glowroot.transaction.model.Transaction;
  * @since 0.5
  */
 @ThreadSafe
-class ProfileRunnable extends ScheduledRunnable {
+class TransactionProfileRunnable extends ScheduledRunnable {
 
     private final Transaction transaction;
     private final boolean outlier;
+    private final ConfigService configService;
 
-    ProfileRunnable(Transaction transaction, boolean outlier) {
+    TransactionProfileRunnable(Transaction transaction, boolean outlier,
+            ConfigService configService) {
         this.transaction = transaction;
         this.outlier = outlier;
+        this.configService = configService;
     }
 
     @Override
@@ -50,7 +58,11 @@ class ProfileRunnable extends ScheduledRunnable {
             // ScheduledExecutorService.scheduleWithFixedDelay()
             throw new TerminateSubsequentExecutionsException();
         }
-        transaction.captureStackTrace(outlier);
+        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        ThreadInfo threadInfo =
+                threadBean.getThreadInfo(transaction.getThreadId(), Integer.MAX_VALUE);
+        transaction.captureStackTrace(threadInfo, outlier,
+                configService.getAdvancedConfig().getMaxStackTraceSamplesPerTransaction());
     }
 
     @Override

@@ -47,10 +47,10 @@ public interface TraceEntry {
      * the stack trace point to the method execution picked out by the {@link Pointcut} instead of
      * pointing to the Glowroot code that performs the stack trace capture.
      * 
-     * In case the trace has accumulated {@code maxEntriesPerTrace} entries and this is a dummy
-     * entry and its duration exceeds the specified threshold, then this dummy entry is escalated
-     * into a real entry. A hard cap ({@code maxEntriesPerTrace * 2}) on the total number of (real)
-     * entries is applied when escalating dummy entries to real entries.
+     * In case the trace has accumulated {@code maxTraceEntriesPerTransaction} entries and this is a
+     * dummy entry and its duration exceeds the specified threshold, then this dummy entry is
+     * escalated into a real entry. A hard cap ({@code maxTraceEntriesPerTransaction * 2}) on the
+     * total number of (real) entries is applied when escalating dummy entries to real entries.
      * 
      * @param threshold
      * @param unit
@@ -63,10 +63,10 @@ public interface TraceEntry {
      * If this is the root entry, then the error flag on the trace is set. Traces can be filtered by
      * their error flag on the trace explorer page.
      * 
-     * In case the trace has accumulated {@code maxEntriesPerTrace} entries and this is a dummy
-     * entry, then this dummy entry is escalated into a real entry. A hard cap (
-     * {@code maxEntriesPerTrace * 2}) on the total number of (real) entries is applied when
-     * escalating dummy entries to real entries.
+     * In case the trace has accumulated {@code maxTraceEntriesPerTransaction} entries and this is a
+     * dummy entry, then this dummy entry is escalated into a real entry. A hard cap (
+     * {@code maxTraceEntriesPerTransaction * 2}) on the total number of (real) entries is applied
+     * when escalating dummy entries to real entries.
      * 
      * @param errorMessage
      */
@@ -81,7 +81,7 @@ public interface TraceEntry {
      * {@code MessageSupplier}.
      * 
      * This returns the {@code MessageSupplier} even if the trace has accumulated
-     * {@code maxEntriesPerTrace} entries and this is a dummy entry.
+     * {@code maxTraceEntriesPerTransaction} entries and this is a dummy entry.
      * 
      * Under some error conditions this can return {@code null}.
      * 

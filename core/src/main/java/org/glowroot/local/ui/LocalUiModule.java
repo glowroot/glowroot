@@ -91,7 +91,7 @@ public class LocalUiModule {
         TransactionCollectorImpl transactionCollector = collectorModule.getTransactionCollector();
         AnalyzedWorld analyzedWorld = transactionModule.getAnalyzedWorld();
 
-        TransactionRegistry transactionRegistry = transactionModule.getTraceRegistry();
+        TransactionRegistry transactionRegistry = transactionModule.getTransactionRegistry();
 
         LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
                 pluginDescriptorCache, jvmModule.getHeapHistograms(), jvmModule.getHeapDumps(),
