@@ -18,9 +18,10 @@ package org.glowroot.advicegen;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class PathEvaluator {
 

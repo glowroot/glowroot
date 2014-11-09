@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -38,11 +37,9 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.glowroot.markers.Immutable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -79,7 +76,7 @@ class Schemas {
         ImmutableSet<Index> desiredIndexes = ImmutableSet.copyOf(indexes);
         Set<Index> existingIndexes = getIndexes(tableName, connection);
         for (Index index : Sets.difference(existingIndexes, desiredIndexes)) {
-            execute("drop index " + index.getName(), connection);
+            execute("drop index " + index.name(), connection);
         }
         for (Index index : Sets.difference(desiredIndexes, existingIndexes)) {
             createIndex(tableName, index, connection);
@@ -115,7 +112,7 @@ class Schemas {
             while (resultSet.next()) {
                 String columnName = checkNotNull(resultSet.getString("COLUMN_NAME"));
                 int columnType = resultSet.getInt("DATA_TYPE");
-                columns.add(new Column(columnName.toLowerCase(Locale.ENGLISH), columnType));
+                columns.add(ImmutableColumn.of(columnName.toLowerCase(Locale.ENGLISH), columnType));
             }
         } catch (Throwable t) {
             throw closer.rethrow(t);
@@ -135,11 +132,11 @@ class Schemas {
             if (i > 0) {
                 sql.append(", ");
             }
-            String sqlTypeName = sqlTypeNames.get(columns.get(i).getType());
+            String sqlTypeName = sqlTypeNames.get(columns.get(i).type());
             if (sqlTypeName == null) {
-                throw new SQLException("Unexpected sql type '" + columns.get(i).getType());
+                throw new SQLException("Unexpected sql type '" + columns.get(i).type());
             }
-            sql.append(columns.get(i).getName());
+            sql.append(columns.get(i).name());
             sql.append(" ");
             sql.append(sqlTypeName);
             if (columns.get(i) instanceof PrimaryKeyColumn) {
@@ -164,7 +161,7 @@ class Schemas {
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
         Map<String, Column> remaining = new TreeMap<String, Column>(String.CASE_INSENSITIVE_ORDER);
         for (Column column : columns) {
-            remaining.put(column.getName(), column);
+            remaining.put(column.name(), column);
         }
         ResultSet resultSet = connection.getMetaData().getColumns(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), null);
@@ -175,7 +172,7 @@ class Schemas {
                 if (column == null) {
                     return true;
                 }
-                if (column.getType() != resultSet.getInt("DATA_TYPE")) {
+                if (column.type() != resultSet.getInt("DATA_TYPE")) {
                     return true;
                 }
             }
@@ -195,7 +192,7 @@ class Schemas {
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
             for (PrimaryKeyColumn primaryKeyColumn : primaryKeyColumns) {
-                if (!resultSet.next() || !primaryKeyColumn.getName().equalsIgnoreCase(
+                if (!resultSet.next() || !primaryKeyColumn.name().equalsIgnoreCase(
                         resultSet.getString("COLUMN_NAME"))) {
                     return true;
                 }
@@ -233,9 +230,12 @@ class Schemas {
         }
         ImmutableSet.Builder<Index> indexes = ImmutableSet.builder();
         for (Entry<String, Collection<String>> entry : indexColumns.asMap().entrySet()) {
-            String name = entry.getKey();
-            indexes.add(new Index(name, entry.getValue()));
-
+            String name = entry.getKey().toLowerCase(Locale.ENGLISH);
+            List<String> columns = Lists.newArrayList();
+            for (String column : entry.getValue()) {
+                columns.add(column.toLowerCase(Locale.ENGLISH));
+            }
+            indexes.add(ImmutableIndex.of(name, columns));
         }
         return indexes.build();
     }
@@ -244,15 +244,15 @@ class Schemas {
             throws SQLException {
         StringBuilder sql = new StringBuilder();
         sql.append("create index ");
-        sql.append(index.getName());
+        sql.append(index.name());
         sql.append(" on ");
         sql.append(tableName);
         sql.append(" (");
-        for (int i = 0; i < index.getColumns().size(); i++) {
+        for (int i = 0; i < index.columns().size(); i++) {
             if (i > 0) {
                 sql.append(", ");
             }
-            sql.append(index.getColumns().get(i));
+            sql.append(index.columns().get(i));
         }
         sql.append(")");
         execute(sql.toString(), connection);
@@ -267,67 +267,22 @@ class Schemas {
         }
     }
 
-    @Immutable
-    static class Column {
-        private final String name;
-        private final int type;
-
-        Column(String name, int type) {
-            this.name = name;
-            this.type = type;
-        }
-        String getName() {
-            return name;
-        }
-        private int getType() {
-            return type;
-        }
+    @Value.Immutable
+    abstract static class Column {
+        @Value.Parameter
+        abstract String name();
+        @Value.Parameter
+        abstract int type();
     }
 
-    @Immutable
-    static class PrimaryKeyColumn extends Column {
-        PrimaryKeyColumn(String name, int type) {
-            super(name, type);
-        }
-    }
+    @Value.Immutable
+    abstract static class PrimaryKeyColumn extends Column {}
 
-    @Immutable
-    static class Index {
-        // nameUpper and columnsUpper are used to make equals/hashCode case insensitive
-        private final String name;
-        private final String nameUpper;
-        private final ImmutableList<String> columns;
-        private final ImmutableList<String> columnUppers;
-        Index(String name, Iterable<String> columns) {
-            this.name = name;
-            this.nameUpper = name.toUpperCase(Locale.ENGLISH);
-            this.columns = ImmutableList.copyOf(columns);
-            List<String> columnUppers = Lists.newArrayList();
-            for (String column : columns) {
-                columnUppers.add(column.toUpperCase(Locale.ENGLISH));
-            }
-            this.columnUppers = ImmutableList.copyOf(columnUppers);
-        }
-        private String getName() {
-            return name;
-        }
-        private ImmutableList<String> getColumns() {
-            return columns;
-        }
-        // equals/hashCode are used in Schema.syncIndexes() to diff list of indexes with list of
-        // existing indexes
-        @Override
-        public boolean equals(@Nullable Object obj) {
-            if (obj instanceof Index) {
-                Index that = (Index) obj;
-                return nameUpper.equalsIgnoreCase(that.nameUpper)
-                        && Objects.equal(columnUppers, that.columnUppers);
-            }
-            return false;
-        }
-        @Override
-        public int hashCode() {
-            return Objects.hashCode(nameUpper, columnUppers);
-        }
+    @Value.Immutable
+    abstract static class Index {
+        @Value.Parameter
+        abstract String name();
+        @Value.Parameter
+        abstract List<String> columns();
     }
 }

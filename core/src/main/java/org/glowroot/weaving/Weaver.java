@@ -20,11 +20,12 @@ import java.io.PrintWriter;
 import java.security.CodeSource;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -235,10 +236,10 @@ class Weaver {
 
         private String getCommonSuperClass(AnalyzedClass analyzedClass1,
                 AnalyzedClass analyzedClass2, String type1, String type2) {
-            if (isAssignableFrom(analyzedClass1.getName(), analyzedClass2)) {
+            if (isAssignableFrom(analyzedClass1.name(), analyzedClass2)) {
                 return type1;
             }
-            if (isAssignableFrom(analyzedClass2.getName(), analyzedClass1)) {
+            if (isAssignableFrom(analyzedClass2.name(), analyzedClass1)) {
                 return type2;
             }
             if (analyzedClass1.isInterface() || analyzedClass2.isInterface()) {
@@ -246,7 +247,7 @@ class Weaver {
             }
             // climb analyzedClass1 super class hierarchy and check if any of them are assignable
             // from analyzedClass2
-            String superName = analyzedClass1.getSuperName();
+            String superName = analyzedClass1.superName();
             while (superName != null) {
                 if (isAssignableFrom(superName, analyzedClass2)) {
                     return ClassNames.toInternalName(superName);
@@ -254,7 +255,7 @@ class Weaver {
                 try {
                     AnalyzedClass superAnalyzedClass =
                             analyzedWorld.getAnalyzedClass(superName, loader);
-                    superName = superAnalyzedClass.getSuperName();
+                    superName = superAnalyzedClass.superName();
                 } catch (IOException e) {
                     logger.error(e.getMessage(), e);
                     return "java/lang/Object";
@@ -271,10 +272,10 @@ class Weaver {
 
         private boolean isAssignableFrom(String possibleSuperClassName,
                 AnalyzedClass analyzedClass) {
-            if (analyzedClass.getName().equals(possibleSuperClassName)) {
+            if (analyzedClass.name().equals(possibleSuperClassName)) {
                 return true;
             }
-            for (String interfaceName : analyzedClass.getInterfaceNames()) {
+            for (String interfaceName : analyzedClass.interfaceNames()) {
                 try {
                     AnalyzedClass interfaceAnalyzedClass =
                             analyzedWorld.getAnalyzedClass(interfaceName, loader);
@@ -290,7 +291,7 @@ class Weaver {
                             parseContext, e);
                 }
             }
-            String superName = analyzedClass.getSuperName();
+            String superName = analyzedClass.superName();
             if (superName == null) {
                 return false;
             }

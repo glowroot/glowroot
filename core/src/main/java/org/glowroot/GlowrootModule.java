@@ -29,6 +29,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.jar.JarFile;
 
+import javax.annotation.Nullable;
+
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
@@ -39,7 +41,6 @@ import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -180,8 +181,8 @@ public class GlowrootModule {
         // now init plugins to give them a chance to do something in their static initializer
         // e.g. append their package to jboss.modules.system.pkgs
         for (PluginDescriptor pluginDescriptor : configModule.getPluginDescriptorCache()
-                .getPluginDescriptors()) {
-            for (String aspect : pluginDescriptor.getAspects()) {
+                .pluginDescriptors()) {
+            for (String aspect : pluginDescriptor.aspects()) {
                 try {
                     Class.forName(aspect, true, GlowrootModule.class.getClassLoader());
                 } catch (ClassNotFoundException e) {

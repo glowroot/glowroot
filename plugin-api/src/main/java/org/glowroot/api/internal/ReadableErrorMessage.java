@@ -17,7 +17,7 @@ package org.glowroot.api.internal;
 
 import java.util.Map;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 // this interface exists to provide access to ErrorMessageImpl from glowroot without making
 // ErrorMessageImpl accessible to plugins (at least not through the org.glowroot.api package)

@@ -17,7 +17,7 @@ package org.glowroot.jvm;
 
 import java.lang.management.ManagementFactory;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 public class ProcessId {
 

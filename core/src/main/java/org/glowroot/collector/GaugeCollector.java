@@ -18,6 +18,7 @@ package org.glowroot.collector;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.MalformedObjectNameException;
@@ -25,7 +26,6 @@ import javax.management.ObjectName;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,8 +63,8 @@ class GaugeCollector extends ScheduledRunnable {
         for (MBeanGauge mbeanGauge : configService.getMBeanGauges()) {
             try {
                 long captureTime = clock.currentTimeMillis();
-                ObjectName objectName = ObjectName.getInstance(mbeanGauge.getMBeanObjectName());
-                for (String mbeanAttributeName : mbeanGauge.getMBeanAttributeNames()) {
+                ObjectName objectName = ObjectName.getInstance(mbeanGauge.mbeanObjectName());
+                for (String mbeanAttributeName : mbeanGauge.mbeanAttributeNames()) {
                     Object attributeValue;
                     try {
                         attributeValue = lazyPlatformMBeanServer.getAttribute(objectName,
@@ -89,8 +89,11 @@ class GaugeCollector extends ScheduledRunnable {
                     }
                     if (attributeValue instanceof Number) {
                         double value = ((Number) attributeValue).doubleValue();
-                        gaugePoints.add(new GaugePoint(mbeanGauge.getName() + "/"
-                                + mbeanAttributeName, captureTime, value));
+                        gaugePoints.add(ImmutableGaugePoint.builder()
+                                .gaugeName(mbeanGauge.name() + "/" + mbeanAttributeName)
+                                .captureTime(captureTime)
+                                .value(value)
+                                .build());
                     } else {
                         logFirstTimeMBeanAttributeError(mbeanGauge, mbeanAttributeName,
                                 "MBean attribute value is not a number");
@@ -108,17 +111,17 @@ class GaugeCollector extends ScheduledRunnable {
 
     // relatively common, so nice message
     private void logFirstTimeMBeanNotFound(MBeanGauge mbeanGauge) {
-        int delaySeconds = configService.getAdvancedConfig().getMBeanGaugeNotFoundDelaySeconds();
+        int delaySeconds = configService.getAdvancedConfig().mbeanGaugeNotFoundDelaySeconds();
         if (clock.currentTimeMillis() - startTimeMillis < delaySeconds * 1000) {
-            pendingLoggedMBeanGauges.add(mbeanGauge.getVersion());
-        } else if (loggedMBeanGauges.add(mbeanGauge.getVersion())) {
-            if (pendingLoggedMBeanGauges.remove(mbeanGauge.getVersion())) {
+            pendingLoggedMBeanGauges.add(mbeanGauge.version());
+        } else if (loggedMBeanGauges.add(mbeanGauge.version())) {
+            if (pendingLoggedMBeanGauges.remove(mbeanGauge.version())) {
                 logger.warn("mbean not found: {} (waited {} seconds after jvm startup before"
                         + " logging this warning to allow time for mbean registration"
                         + " - this wait time can be changed under Configuration > Advanced)",
-                        mbeanGauge.getMBeanObjectName(), delaySeconds);
+                        mbeanGauge.mbeanObjectName(), delaySeconds);
             } else {
-                logger.warn("mbean not found: {}", mbeanGauge.getMBeanObjectName());
+                logger.warn("mbean not found: {}", mbeanGauge.mbeanObjectName());
             }
         }
     }
@@ -126,25 +129,25 @@ class GaugeCollector extends ScheduledRunnable {
     // relatively common, so nice message
     private void logFirstTimeMBeanAttributeNotFound(MBeanGauge mbeanGauge,
             String mbeanAttributeName) {
-        if (loggedMBeanGauges.add(mbeanGauge.getVersion() + "/" + mbeanAttributeName)) {
+        if (loggedMBeanGauges.add(mbeanGauge.version() + "/" + mbeanAttributeName)) {
             logger.warn("mbean attribute {} not found: {}", mbeanAttributeName,
-                    mbeanGauge.getMBeanObjectName());
+                    mbeanGauge.mbeanObjectName());
         }
     }
 
     private void logFirstTimeMBeanException(MBeanGauge mbeanGauge, @Nullable String message) {
-        if (loggedMBeanGauges.add(mbeanGauge.getVersion())) {
+        if (loggedMBeanGauges.add(mbeanGauge.version())) {
             // using toString() instead of getMessage() in order to capture exception class name
-            logger.warn("error accessing mbean {}: {}", mbeanGauge.getMBeanObjectName(),
+            logger.warn("error accessing mbean {}: {}", mbeanGauge.mbeanObjectName(),
                     message);
         }
     }
 
     private void logFirstTimeMBeanAttributeError(MBeanGauge mbeanGauge, String mbeanAttributeName,
             @Nullable String message) {
-        if (loggedMBeanGauges.add(mbeanGauge.getVersion() + "/" + mbeanAttributeName)) {
+        if (loggedMBeanGauges.add(mbeanGauge.version() + "/" + mbeanAttributeName)) {
             logger.warn("error accessing mbean attribute {} {}: {}",
-                    mbeanGauge.getMBeanObjectName(), mbeanAttributeName, message);
+                    mbeanGauge.mbeanObjectName(), mbeanAttributeName, message);
         }
     }
 }

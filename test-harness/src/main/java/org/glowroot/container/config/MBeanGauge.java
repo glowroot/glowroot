@@ -17,12 +17,13 @@ package org.glowroot.container.config;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -73,6 +74,11 @@ public class MBeanGauge {
 
     public void setMBeanAttributeNames(List<String> mbeanAttributeNames) {
         this.mbeanAttributeNames = mbeanAttributeNames;
+    }
+
+    @Nullable
+    public String getVersion() {
+        return version;
     }
 
     @Override

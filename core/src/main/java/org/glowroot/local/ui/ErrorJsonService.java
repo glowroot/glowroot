@@ -15,16 +15,13 @@
  */
 package org.glowroot.local.ui;
 
-import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -33,22 +30,23 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.io.CharStreams;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
-import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.ErrorCount;
+import org.glowroot.local.store.ErrorCountMarshaler;
 import org.glowroot.local.store.ErrorMessageCount;
+import org.glowroot.local.store.ErrorMessageCountMarshaler;
 import org.glowroot.local.store.ErrorMessageQuery;
 import org.glowroot.local.store.ErrorPoint;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
 @JsonService
 class ErrorJsonService {
@@ -57,7 +55,7 @@ class ErrorJsonService {
     private static final ObjectMapper mapper;
 
     static {
-        mapper = ObjectMappers.create();
+        mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
     }
 
@@ -75,36 +73,36 @@ class ErrorJsonService {
     }
 
     @GET("/backend/error/transactions")
-    String getTransactions(String content) throws IOException, SQLException {
-        logger.debug("getTransactions(): content={}", content);
+    String getTransactions(String queryString) throws Exception {
+        logger.debug("getTransactions(): queryString={}", queryString);
         ErrorRequestWithLimit request =
-                ObjectMappers.readRequiredValue(mapper, content, ErrorRequestWithLimit.class);
+                QueryStrings.decode(queryString, ErrorRequestWithLimit.class);
 
         ErrorCount overallErrorCount =
-                aggregateDao.readOverallErrorCount(request.getFrom(), request.getTo());
+                aggregateDao.readOverallErrorCount(request.from(), request.to());
         QueryResult<ErrorCount> queryResult = aggregateDao.readTransactionErrorCounts(
-                request.getFrom(), request.getTo(), request.getLimit());
+                request.from(), request.to(), request.limit());
 
         ImmutableList<ErrorPoint> overallErrorPoints =
-                aggregateDao.readOverallErrorPoints(request.getFrom(), request.getTo());
+                aggregateDao.readOverallErrorPoints(request.from(), request.to());
 
         final int topX = 5;
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         List<PeekingIterator<ErrorPoint>> transactionErrorPointsList = Lists.newArrayList();
-        for (int i = 0; i < Math.min(queryResult.getRecords().size(), topX); i++) {
-            ErrorCount errorCount = queryResult.getRecords().get(i);
-            String transactionType = errorCount.getTransactionType();
-            String transactionName = errorCount.getTransactionName();
+        for (int i = 0; i < Math.min(queryResult.records().size(), topX); i++) {
+            ErrorCount errorCount = queryResult.records().get(i);
+            String transactionType = errorCount.transactionType();
+            String transactionName = errorCount.transactionName();
             checkNotNull(transactionType);
             checkNotNull(transactionName);
             dataSeriesList.add(new DataSeries(transactionName));
             transactionErrorPointsList.add(Iterators.peekingIterator(
                     aggregateDao.readTransactionErrorPoints(transactionType, transactionName,
-                            request.getFrom(), request.getTo()).iterator()));
+                            request.from(), request.to()).iterator()));
         }
 
         DataSeries otherDataSeries = null;
-        if (queryResult.getRecords().size() > topX) {
+        if (queryResult.records().size() > topX) {
             otherDataSeries = new DataSeries(null);
         }
 
@@ -112,7 +110,7 @@ class ErrorJsonService {
         for (ErrorPoint overallErrorPoint : overallErrorPoints) {
             if (lastOverallErrorPoint == null) {
                 // first aggregate
-                addInitialUpslope(request.getFrom(), overallErrorPoint.getCaptureTime(),
+                addInitialUpslope(request.from(), overallErrorPoint.getCaptureTime(),
                         dataSeriesList, otherDataSeries);
             } else {
                 addGapIfNeeded(lastOverallErrorPoint.getCaptureTime(),
@@ -142,7 +140,7 @@ class ErrorJsonService {
             }
         }
         if (lastOverallErrorPoint != null) {
-            addFinalDownslope(request.getTo(), dataSeriesList, otherDataSeries,
+            addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
                     lastOverallErrorPoint.getCaptureTime());
         }
         if (otherDataSeries != null) {
@@ -152,39 +150,40 @@ class ErrorJsonService {
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeriesList);
-        jg.writeObjectField("overallSummary", overallErrorCount);
-        jg.writeObjectField("transactionSummaries", queryResult.getRecords());
-        jg.writeBooleanField("moreAvailable", queryResult.isMoreAvailable());
+        jg.writeFieldName("overallSummary");
+        ErrorCountMarshaler.instance().marshalInstance(jg, overallErrorCount);
+        jg.writeFieldName("transactionSummaries");
+        ErrorCountMarshaler.instance().marshalIterable(jg, queryResult.records());
+        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
     @GET("/backend/error/messages")
-    String getErrorMessages(String content) throws IOException, SQLException {
-        logger.debug("getErrorMessages(): content={}", content);
-        ObjectMapper mapper = ObjectMappers.create();
+    String getErrorMessages(String queryString) throws Exception {
+        logger.debug("getErrorMessages(): queryString={}", queryString);
+        ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-        ErrorMessageQuery request =
-                ObjectMappers.readRequiredValue(mapper, content, ErrorMessageQuery.class);
+        ErrorMessageQuery request = QueryStrings.decode(queryString, ErrorMessageQuery.class);
         QueryResult<ErrorMessageCount> queryResult = traceDao.readErrorMessageCounts(request);
-        String transactionType = request.getTransactionType();
-        String transactionName = request.getTransactionName();
+        String transactionType = request.transactionType();
+        String transactionName = request.transactionName();
         List<ErrorPoint> unfilteredErrorPoints;
         if (!Strings.isNullOrEmpty(transactionType) && !Strings.isNullOrEmpty(transactionName)) {
             unfilteredErrorPoints = aggregateDao.readTransactionErrorPoints(transactionType,
-                    transactionName, request.getFrom(), request.getTo());
+                    transactionName, request.from(), request.to());
         } else if (Strings.isNullOrEmpty(transactionType)
                 && Strings.isNullOrEmpty(transactionName)) {
             unfilteredErrorPoints =
-                    aggregateDao.readOverallErrorPoints(request.getFrom(), request.getTo());
+                    aggregateDao.readOverallErrorPoints(request.from(), request.to());
         } else {
             throw new IllegalArgumentException("TransactionType and TransactionName must both be"
                     + "empty or must both be non-empty");
         }
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
-        if (request.getIncludes().isEmpty() && request.getExcludes().isEmpty()) {
+        if (request.includes().isEmpty() && request.excludes().isEmpty()) {
             nameMe(request, unfilteredErrorPoints, dataSeries, dataSeriesExtra);
         } else {
             Map<Long, Long> transactionCountMap = Maps.newHashMap();
@@ -207,8 +206,9 @@ class ErrorJsonService {
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeries);
         jg.writeObjectField("dataSeriesExtra", dataSeriesExtra);
-        jg.writeObjectField("errorMessages", queryResult.getRecords());
-        jg.writeBooleanField("moreAvailable", queryResult.isMoreAvailable());
+        jg.writeFieldName("errorMessages");
+        ErrorMessageCountMarshaler.instance().marshalIterable(jg, queryResult.records());
+        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -220,7 +220,7 @@ class ErrorJsonService {
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {
                 // first aggregate
-                addInitialUpslope(request.getFrom(), errorPoint.getCaptureTime(), dataSeries);
+                addInitialUpslope(request.from(), errorPoint.getCaptureTime(), dataSeries);
             } else {
                 addGapIfNeeded(lastErrorPoint.getCaptureTime(), errorPoint.getCaptureTime(),
                         dataSeries);
@@ -238,22 +238,22 @@ class ErrorJsonService {
                     new Long[] {errorPoint.getErrorCount(), transactionCount});
         }
         if (lastErrorPoint != null) {
-            addFinalDownslope(request.getTo(), dataSeries, lastErrorPoint.getCaptureTime());
+            addFinalDownslope(request.to(), dataSeries, lastErrorPoint.getCaptureTime());
         }
     }
 
     @GET("/backend/error/transaction-summaries")
-    String getTransactionSummaries(String content) throws IOException, SQLException {
-        logger.debug("getTransactionSummaries(): content={}", content);
+    String getTransactionSummaries(String queryString) throws Exception {
+        logger.debug("getTransactionSummaries(): queryString={}", queryString);
         ErrorRequestWithLimit request =
-                ObjectMappers.readRequiredValue(mapper, content, ErrorRequestWithLimit.class);
+                QueryStrings.decode(queryString, ErrorRequestWithLimit.class);
         QueryResult<ErrorCount> queryResult = aggregateDao.readTransactionErrorCounts(
-                request.getFrom(), request.getTo(), request.getLimit());
+                request.from(), request.to(), request.limit());
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeObjectField("transactionSummaries", queryResult.getRecords());
-        jg.writeBooleanField("moreAvailable", queryResult.isMoreAvailable());
+        jg.writeObjectField("transactionSummaries", queryResult.records());
+        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -363,66 +363,22 @@ class ErrorJsonService {
         dataSeries.add(lastCaptureTime + fixedAggregateIntervalMillis / 2, 0);
     }
 
-    private static class ErrorRequest {
-
-        private final long from;
-        private final long to;
-        @Nullable
-        private final String transactionType;
-        @Nullable
-        private final String transactionName;
-
-        @JsonCreator
-        ErrorRequest(@JsonProperty("from") @Nullable Long from,
-                @JsonProperty("to") @Nullable Long to,
-                @JsonProperty("transactionType") @Nullable String transactionType,
-                @JsonProperty("transactionName") @Nullable String transactionName)
-                throws JsonMappingException {
-            checkRequiredProperty(from, "from");
-            checkRequiredProperty(to, "to");
-            this.from = from;
-            this.to = to;
-            this.transactionType = transactionType;
-            this.transactionName = transactionName;
-        }
-
-        long getFrom() {
-            return from;
-        }
-
-        long getTo() {
-            return to;
-        }
-
-        @Nullable
-        String getTransactionType() {
-            return transactionType;
-        }
-
-        @Nullable
-        private String getTransactionName() {
-            return transactionName;
-        }
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class ErrorRequest {
+        abstract long from();
+        abstract long to();
+        abstract @Nullable String transactionType();
+        abstract @Nullable String transactionName();
     }
 
-    private static class ErrorRequestWithLimit extends ErrorRequest {
-
-        private final int limit;
-
-        @JsonCreator
-        ErrorRequestWithLimit(@JsonProperty("from") @Nullable Long from,
-                @JsonProperty("to") @Nullable Long to,
-                @JsonProperty("transactionType") @Nullable String transactionType,
-                @JsonProperty("transactionName") @Nullable String transactionName,
-                @JsonProperty("limit") @Nullable Integer limit)
-                throws JsonMappingException {
-            super(from, to, transactionType, transactionName);
-            checkRequiredProperty(limit, "limit");
-            this.limit = limit;
-        }
-
-        private int getLimit() {
-            return limit;
-        }
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class ErrorRequestWithLimit {
+        abstract long from();
+        abstract long to();
+        abstract @Nullable String transactionType();
+        abstract @Nullable String transactionName();
+        abstract int limit();
     }
 }

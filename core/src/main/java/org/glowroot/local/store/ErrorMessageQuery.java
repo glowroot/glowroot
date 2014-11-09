@@ -17,96 +17,19 @@ package org.glowroot.local.store;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
-import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
-import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.common.ObjectMappers.nullToEmpty;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
-public class ErrorMessageQuery {
-
-    @Nullable
-    private final String transactionType;
-    @Nullable
-    private final String transactionName;
-    private final long from;
-    private final long to;
-    private final List<String> includes;
-    private final List<String> excludes;
-    private final int limit;
-
-    private ErrorMessageQuery(@Nullable String transactionType, @Nullable String transactionName,
-            long from, long to, List<String> includes, List<String> excludes, int limit) {
-        this.transactionType = transactionType;
-        this.transactionName = transactionName;
-        this.from = from;
-        this.to = to;
-        this.includes = includes;
-        this.excludes = excludes;
-        this.limit = limit;
-    }
-
-    @Nullable
-    public String getTransactionType() {
-        return transactionType;
-    }
-
-    @Nullable
-    public String getTransactionName() {
-        return transactionName;
-    }
-
-    public long getFrom() {
-        return from;
-    }
-
-    public long getTo() {
-        return to;
-    }
-
-    public List<String> getIncludes() {
-        return includes;
-    }
-
-    public List<String> getExcludes() {
-        return excludes;
-    }
-
-    public int getLimit() {
-        return limit;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("from", from)
-                .add("to", to)
-                .add("includes", includes)
-                .add("excludes", excludes)
-                .add("limit", limit)
-                .toString();
-    }
-
-    @JsonCreator
-    static ErrorMessageQuery readValue(
-            @JsonProperty("transactionType") @Nullable String transactionType,
-            @JsonProperty("transactionName") @Nullable String transactionName,
-            @JsonProperty("from") @Nullable Long from,
-            @JsonProperty("to") @Nullable Long to,
-            @JsonProperty("includes") @Nullable List</*@Nullable*/String> uncheckedIncludes,
-            @JsonProperty("excludes") @Nullable List</*@Nullable*/String> uncheckedExcludes,
-            @JsonProperty("limit") @Nullable Integer limit)
-            throws JsonMappingException {
-        List<String> includes = checkNotNullItemsForProperty(uncheckedIncludes, "includes");
-        List<String> excludes = checkNotNullItemsForProperty(uncheckedExcludes, "excludes");
-        checkRequiredProperty(from, "from");
-        checkRequiredProperty(to, "to");
-        checkRequiredProperty(limit, "limit");
-        return new ErrorMessageQuery(transactionType, transactionName, from, to,
-                nullToEmpty(includes), nullToEmpty(excludes), limit);
-    }
+@Value.Immutable
+@Json.Marshaled
+public abstract class ErrorMessageQuery {
+    public abstract @Nullable String transactionType();
+    public abstract @Nullable String transactionName();
+    public abstract long from();
+    public abstract long to();
+    public abstract List<String> includes();
+    public abstract List<String> excludes();
+    public abstract int limit();
 }

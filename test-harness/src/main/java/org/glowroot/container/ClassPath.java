@@ -17,9 +17,10 @@ package org.glowroot.container;
 
 import java.io.File;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class ClassPath {
 

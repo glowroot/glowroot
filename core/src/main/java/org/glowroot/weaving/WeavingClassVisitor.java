@@ -25,13 +25,15 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
@@ -139,9 +141,9 @@ class WeavingClassVisitor extends ClassVisitor {
             @Nullable String superInternalName,
             String/*@Nullable*/[] interfaceInternalNamesNullable) {
 
-        AnalyzedClass nonInterestingAnalyzedClass = analyzingClassVisitor
-                .visitAndSometimesReturnNonInterestingAnalyzedClass(version, access, internalName,
-                        signature, superInternalName, interfaceInternalNamesNullable);
+        AnalyzedClass nonInterestingAnalyzedClass =
+                analyzingClassVisitor.visitAndSometimesReturnNonInterestingAnalyzedClass(access,
+                        internalName, superInternalName, interfaceInternalNamesNullable);
         if (nonInterestingAnalyzedClass != null) {
             // performance optimization
             analyzedWorld.add(nonInterestingAnalyzedClass, loader);
@@ -153,8 +155,8 @@ class WeavingClassVisitor extends ClassVisitor {
             return;
         }
         for (AdviceMatcher adviceMatcher : analyzingClassVisitor.getAdviceMatchers()) {
-            if (!adviceMatcher.getAdvice().getClassMetaTypes().isEmpty()
-                    || !adviceMatcher.getAdvice().getMethodMetaTypes().isEmpty()) {
+            if (!adviceMatcher.advice().classMetaTypes().isEmpty()
+                    || !adviceMatcher.advice().methodMetaTypes().isEmpty()) {
                 maybeHasMetas = true;
                 break;
             }
@@ -163,10 +165,10 @@ class WeavingClassVisitor extends ClassVisitor {
             List<AnalyzedClass> superAnalyzedClasses =
                     analyzingClassVisitor.getSuperAnalyzedClasses();
             outer: for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
-                for (AnalyzedMethod analyzedMethod : analyzedClass.getAnalyzedMethods()) {
-                    for (Advice advice : analyzedMethod.getAdvisors()) {
-                        if (!advice.getClassMetaTypes().isEmpty()
-                                || !advice.getMethodMetaTypes().isEmpty()) {
+                for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
+                    for (Advice advice : analyzedMethod.advisors()) {
+                        if (!advice.classMetaTypes().isEmpty()
+                                || !advice.methodMetaTypes().isEmpty()) {
                             maybeHasMetas = true;
                             break outer;
                         }
@@ -418,7 +420,7 @@ class WeavingClassVisitor extends ClassVisitor {
             interfacesIncludingMixins.addAll(Arrays.asList(interfaces));
         }
         for (MixinType matchedMixinType : matchedMixinTypes) {
-            for (Type mixinInterface : matchedMixinType.getInterfaces()) {
+            for (Type mixinInterface : matchedMixinType.interfaces()) {
                 interfacesIncludingMixins.add(mixinInterface.getInternalName());
             }
         }
@@ -435,7 +437,7 @@ class WeavingClassVisitor extends ClassVisitor {
         mv = new InitMixins(mv, access, name, desc, analyzingClassVisitor.getMatchedMixinTypes(),
                 type);
         for (Advice advice : matchingAdvisors) {
-            if (advice.getPointcut().metricName().length() != 0) {
+            if (advice.pointcut().metricName().length() != 0) {
                 logger.warn("cannot add metric to <clinit> or <init> methods at this time");
                 break;
             }
@@ -464,8 +466,8 @@ class WeavingClassVisitor extends ClassVisitor {
     private Integer collectMetasAtMethod(Iterable<Advice> matchingAdvisors, String desc) {
         Set<Type> methodMetaTypes = Sets.newHashSet();
         for (Advice matchingAdvice : matchingAdvisors) {
-            classMetaTypes.addAll(matchingAdvice.getClassMetaTypes());
-            methodMetaTypes.addAll(matchingAdvice.getMethodMetaTypes());
+            classMetaTypes.addAll(matchingAdvice.classMetaTypes());
+            methodMetaTypes.addAll(matchingAdvice.methodMetaTypes());
         }
         Integer methodMetaUniqueNum = null;
         if (!methodMetaTypes.isEmpty()) {
@@ -494,7 +496,7 @@ class WeavingClassVisitor extends ClassVisitor {
         String currMethodName = outerName;
         int currMethodAccess = outerAccess;
         for (Advice advice : matchingAdvisors) {
-            String metricName = advice.getPointcut().metricName();
+            String metricName = advice.pointcut().metricName();
             if (metricName.isEmpty()) {
                 continue;
             }
@@ -534,7 +536,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @RequiresNonNull("type")
     private void addMixin(MixinType mixinType) {
-        ClassReader cr = new ClassReader(mixinType.getImplementationBytes());
+        ClassReader cr = new ClassReader(mixinType.implementationBytes());
         ClassNode cn = new ClassNode();
         cr.accept(cn, ClassReader.SKIP_FRAMES);
         // SuppressWarnings because generics are explicitly removed from asm binaries
@@ -567,37 +569,39 @@ class WeavingClassVisitor extends ClassVisitor {
         if (analyzedClass.isInterface() || analyzedClass.isAbstract()) {
             return;
         }
-        Map<AnalyzedMethod, Set<Advice>> matchingAdvisorSets = Maps.newHashMap();
+        Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets = Maps.newHashMap();
         for (AnalyzedClass superAnalyzedClass : analyzingClassVisitor.getSuperAnalyzedClasses()) {
             if (!superAnalyzedClass.isInterface()) {
                 continue;
             }
-            for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.getAnalyzedMethods()) {
+            for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.analyzedMethods()) {
                 Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(superAnalyzedMethod);
                 if (matchingAdvisorSet == null) {
                     matchingAdvisorSet = Sets.newHashSet();
-                    matchingAdvisorSets.put(superAnalyzedMethod, matchingAdvisorSet);
+                    matchingAdvisorSets.put(AnalyzedMethodKey.wrap(superAnalyzedMethod),
+                            matchingAdvisorSet);
                 }
-                matchingAdvisorSet.addAll(superAnalyzedMethod.getAdvisors());
+                matchingAdvisorSet.addAll(superAnalyzedMethod.advisors());
             }
         }
-        for (AnalyzedMethod analyzedMethod : analyzedClass.getAnalyzedMethods()) {
-            matchingAdvisorSets.remove(analyzedMethod);
+        for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
+            matchingAdvisorSets.remove(AnalyzedMethodKey.wrap(analyzedMethod));
         }
         for (AnalyzedClass superAnalyzedClass : analyzingClassVisitor.getSuperAnalyzedClasses()) {
             if (superAnalyzedClass.isInterface()) {
                 continue;
             }
-            for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.getAnalyzedMethods()) {
-                Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(superAnalyzedMethod);
+            for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.analyzedMethods()) {
+                Set<Advice> matchingAdvisorSet =
+                        matchingAdvisorSets.get(AnalyzedMethodKey.wrap(superAnalyzedMethod));
                 if (matchingAdvisorSet == null) {
                     continue;
                 }
-                matchingAdvisorSet.removeAll(superAnalyzedMethod.getAdvisors());
+                matchingAdvisorSet.removeAll(superAnalyzedMethod.advisors());
             }
         }
-        for (Entry<AnalyzedMethod, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
-            AnalyzedMethod inheritedMethod = entry.getKey();
+        for (Entry<AnalyzedMethodKey, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
+            AnalyzedMethod inheritedMethod = entry.getKey().getAnalyzedMethod();
             Set<Advice> advisors = entry.getValue();
             if (!advisors.isEmpty()) {
                 overrideAndWeaveInheritedMethod(analyzedClass, inheritedMethod, advisors);
@@ -608,17 +612,20 @@ class WeavingClassVisitor extends ClassVisitor {
     @RequiresNonNull("type")
     private void overrideAndWeaveInheritedMethod(AnalyzedClass analyzedClass,
             AnalyzedMethod inheritedMethod, Collection<Advice> matchingAdvisors) {
-        String[] exceptions = Iterables.toArray(inheritedMethod.getExceptions(), String.class);
-        MethodVisitor mv = visitMethodWithAdvice(ACC_PUBLIC, inheritedMethod.getName(),
-                inheritedMethod.getDesc(), inheritedMethod.getSignature(), exceptions,
+        String[] exceptions = new String[inheritedMethod.exceptions().size()];
+        for (int i = 0; i < inheritedMethod.exceptions().size(); i++) {
+            exceptions[i] = ClassNames.toInternalName(inheritedMethod.exceptions().get(i));
+        }
+        MethodVisitor mv = visitMethodWithAdvice(ACC_PUBLIC, inheritedMethod.name(),
+                inheritedMethod.getDesc(), inheritedMethod.signature(), exceptions,
                 matchingAdvisors);
         checkNotNull(mv);
-        GeneratorAdapter mg = new GeneratorAdapter(mv, ACC_PUBLIC, inheritedMethod.getName(),
+        GeneratorAdapter mg = new GeneratorAdapter(mv, ACC_PUBLIC, inheritedMethod.name(),
                 inheritedMethod.getDesc());
         mg.visitCode();
         mg.loadThis();
         mg.loadArgs();
-        String superName = analyzedClass.getSuperName();
+        String superName = analyzedClass.superName();
         Type superType;
         if (superName == null) {
             superType = Type.getType(Object.class);
@@ -626,7 +633,7 @@ class WeavingClassVisitor extends ClassVisitor {
             superType = Type.getObjectType(ClassNames.toInternalName(superName));
         }
         // method is called invokeConstructor, but should really be called invokeSpecial
-        Method method = new Method(inheritedMethod.getName(), inheritedMethod.getDesc());
+        Method method = new Method(inheritedMethod.name(), inheritedMethod.getDesc());
         mg.invokeConstructor(superType, method);
         mg.returnValue();
         mg.endMethod();
@@ -681,7 +688,7 @@ class WeavingClassVisitor extends ClassVisitor {
                 return;
             }
             for (MixinType mixinType : matchedMixinTypes) {
-                String initMethodName = mixinType.getInitMethodName();
+                String initMethodName = mixinType.initMethodName();
                 if (initMethodName != null) {
                     loadThis();
                     invokeVirtual(type, new Method(initMethodName, "()V"));
@@ -719,6 +726,44 @@ class WeavingClassVisitor extends ClassVisitor {
 
         private Set<Type> getMethodMetaTypes() {
             return methodMetaTypes;
+        }
+    }
+
+    // AnalyzedMethod equivalence defined only in terms of method name and parameter types
+    // so that overridden methods will be equivalent
+    private static class AnalyzedMethodKey {
+
+        private final AnalyzedMethod analyzedMethod;
+
+        public static AnalyzedMethodKey wrap(AnalyzedMethod analyzedMethod) {
+            return new AnalyzedMethodKey(analyzedMethod);
+        }
+
+        private AnalyzedMethodKey(AnalyzedMethod analyzedMethod) {
+            this.analyzedMethod = analyzedMethod;
+        }
+
+        private AnalyzedMethod getAnalyzedMethod() {
+            return analyzedMethod;
+        }
+
+        @Override
+        public boolean equals(@Nullable Object obj) {
+            if (obj == this) {
+                return true;
+            }
+            if (obj instanceof AnalyzedMethodKey) {
+                AnalyzedMethodKey that = (AnalyzedMethodKey) obj;
+                return Objects.equal(analyzedMethod.name(), that.analyzedMethod.name())
+                        && Objects.equal(analyzedMethod.parameterTypes(),
+                                that.analyzedMethod.parameterTypes());
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(analyzedMethod.name(), analyzedMethod.parameterTypes());
         }
     }
 }

@@ -20,8 +20,9 @@ import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.net.URISyntaxException;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class ConfigModule {
 

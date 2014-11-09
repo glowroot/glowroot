@@ -15,30 +15,11 @@
  */
 package org.glowroot.collector;
 
-import org.glowroot.markers.Immutable;
+import org.immutables.value.Value;
 
-@Immutable
-public class GaugePoint {
-
-    private final String gaugeName;
-    private final long captureTime;
-    private final double value;
-
-    public GaugePoint(String gaugeName, long captureTime, double value) {
-        this.gaugeName = gaugeName;
-        this.captureTime = captureTime;
-        this.value = value;
-    }
-
-    public String getGaugeName() {
-        return gaugeName;
-    }
-
-    public long getCaptureTime() {
-        return captureTime;
-    }
-
-    public double getValue() {
-        return value;
-    }
+@Value.Immutable
+public abstract class GaugePoint {
+    public abstract String gaugeName();
+    public abstract long captureTime();
+    public abstract double value();
 }

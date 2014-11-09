@@ -41,7 +41,7 @@ public class SchemasTest {
         Set<Index> indexes = Schemas.getIndexes("tab", connection);
         assertThat(indexes).hasSize(1);
         assertThat(indexes.iterator().next())
-                .isEqualTo(new Index("tab_idx", ImmutableList.of("a")));
+                .isEqualTo(ImmutableIndex.of("tab_idx", ImmutableList.of("a")));
         // then
     }
 

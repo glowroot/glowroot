@@ -15,81 +15,22 @@
  */
 package org.glowroot.collector;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
-import org.glowroot.markers.Immutable;
+import org.immutables.value.Value;
 
-@Immutable
-public class Aggregate {
+@Value.Immutable
+public abstract class Aggregate {
 
-    private final String transactionType;
-    @Nullable
-    private final String transactionName;
-    private final long captureTime;
+    public abstract String transactionType();
+    public abstract @Nullable String transactionName();
+    public abstract long captureTime();
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
-    private final long totalMicros;
-    private final long errorCount;
-    private final long transactionCount;
-    private final String metrics;
-    private final Existence profileExistence;
-    private final long profileSampleCount;
-    @Nullable
-    private final String profile;
-
-    public Aggregate(String transactionType, @Nullable String transactionName, long captureTime,
-            long totalMicros, long errorCount, long transactionCount, String metrics,
-            Existence profileExistence, long profileSampleCount, @Nullable String profile) {
-        this.transactionType = transactionType;
-        this.transactionName = transactionName;
-        this.captureTime = captureTime;
-        this.totalMicros = totalMicros;
-        this.errorCount = errorCount;
-        this.transactionCount = transactionCount;
-        this.metrics = metrics;
-        this.profileExistence = profileExistence;
-        this.profileSampleCount = profileSampleCount;
-        this.profile = profile;
-    }
-
-    public String getTransactionType() {
-        return transactionType;
-    }
-
-    @Nullable
-    public String getTransactionName() {
-        return transactionName;
-    }
-
-    public long getCaptureTime() {
-        return captureTime;
-    }
-
-    public long getTotalMicros() {
-        return totalMicros;
-    }
-
-    public long getErrorCount() {
-        return errorCount;
-    }
-
-    public long getTransactionCount() {
-        return transactionCount;
-    }
-
-    public String getMetrics() {
-        return metrics;
-    }
-
-    public Existence getProfileExistence() {
-        return profileExistence;
-    }
-
-    public long getProfileSampleCount() {
-        return profileSampleCount;
-    }
-
-    @Nullable
-    public String getProfile() {
-        return profile;
-    }
+    public abstract long totalMicros();
+    public abstract long errorCount();
+    public abstract long transactionCount();
+    public abstract String metrics();
+    public abstract Existence profileExistence();
+    public abstract long profileSampleCount();
+    public abstract @Nullable String profile();
 }

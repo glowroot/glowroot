@@ -15,7 +15,6 @@
  */
 package org.glowroot.local.ui;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Random;
@@ -30,8 +29,8 @@ import org.junit.Test;
 
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
-import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.Ticker;
+import org.glowroot.local.store.ImmutableTracePoint;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TracePoint;
@@ -47,7 +46,7 @@ import static org.mockito.Mockito.when;
 
 public class TracePointJsonServiceTest {
 
-    private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final ObjectMapper mapper = new ObjectMapper();
     private static final Random random = new Random();
 
     private static final long DEFAULT_CURRENT_TICK = random.nextLong();
@@ -56,8 +55,7 @@ public class TracePointJsonServiceTest {
     // mostly the interesting tests are when requesting to=0 so active & pending traces are included
 
     @Test
-    public void shouldReturnCompletedStoredPointInPlaceOfActivePoint() throws IOException,
-            SQLException {
+    public void shouldReturnCompletedStoredPointInPlaceOfActivePoint() throws Exception {
         // given
         List<Transaction> activeTransactions = Lists.newArrayList();
         activeTransactions.add(mockActiveTransaction("id1", 500));
@@ -67,16 +65,15 @@ public class TracePointJsonServiceTest {
         TracePointJsonService tracePointJsonService =
                 buildTracePointJsonService(activeTransactions, pendingTransactions, points);
         // when
-        String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
+        String content = tracePointJsonService.getPoints("from=0&to=0&duration-low=0&limit=100");
         // then
         TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
-        assertThat(response.getActivePoints().size()).isEqualTo(0);
-        assertThat(response.getNormalPoints().size()).isEqualTo(1);
+        assertThat(response.activePoints().size()).isEqualTo(0);
+        assertThat(response.normalPoints().size()).isEqualTo(1);
     }
 
     @Test
-    public void shouldReturnCompletedPendingPointInPlaceOfActivePoint() throws IOException,
-            SQLException {
+    public void shouldReturnCompletedPendingPointInPlaceOfActivePoint() throws Exception {
         // given
         List<Transaction> activeTransactions = Lists.newArrayList();
         activeTransactions.add(mockActiveTransaction("id1", 500));
@@ -86,17 +83,17 @@ public class TracePointJsonServiceTest {
         TracePointJsonService tracePointJsonService =
                 buildTracePointJsonService(activeTransactions, pendingTransactions, points);
         // when
-        String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
+        String content = tracePointJsonService.getPoints("from=0&to=0&duration-low=0&limit=100");
         // then
         TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
-        assertThat(response.getActivePoints().size()).isEqualTo(0);
-        assertThat(response.getNormalPoints().size()).isEqualTo(1);
+        assertThat(response.activePoints().size()).isEqualTo(0);
+        assertThat(response.normalPoints().size()).isEqualTo(1);
     }
 
     // this is relevant because completed pending traces don't have firm end times
     // and non-completed pending traces don't have firm end times or durations
     @Test
-    public void shouldReturnStoredTraceInPlaceOfPendingTrace() throws IOException, SQLException {
+    public void shouldReturnStoredTraceInPlaceOfPendingTrace() throws Exception {
         // given
         List<Transaction> activeTransactions = Lists.newArrayList();
         List<Transaction> pendingTransactions = Lists.newArrayList();
@@ -106,16 +103,16 @@ public class TracePointJsonServiceTest {
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(
                 activeTransactions, pendingTransactions, points, 10000, DEFAULT_CURRENT_TICK);
         // when
-        String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
+        String content = tracePointJsonService.getPoints("from=0&to=0&duration-low=0&limit=100");
         // then
         TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
-        assertThat(response.getActivePoints().size()).isEqualTo(0);
-        assertThat(response.getNormalPoints().size()).isEqualTo(1);
-        assertThat(response.getNormalPoints().get(0).getCaptureTime()).isEqualTo(10001);
+        assertThat(response.activePoints().size()).isEqualTo(0);
+        assertThat(response.normalPoints().size()).isEqualTo(1);
+        assertThat(response.normalPoints().get(0).captureTime()).isEqualTo(10001);
     }
 
     @Test
-    public void shouldReturnOrderedByDurationDesc() throws IOException, SQLException {
+    public void shouldReturnOrderedByDurationDesc() throws Exception {
         // given
         List<Transaction> activeTransactions = Lists.newArrayList();
         for (int i = 0; i < 100; i++) {
@@ -132,13 +129,13 @@ public class TracePointJsonServiceTest {
         TracePointJsonService tracePointJsonService =
                 buildTracePointJsonService(activeTransactions, pendingTransactions, points);
         // when
-        String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":1000}");
+        String content = tracePointJsonService.getPoints("from=0&to=0&duration-low=0&limit=1000");
         // then
         TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
-        assertThat(response.getActivePoints().size()).isEqualTo(100);
-        assertThat(response.getNormalPoints().size()).isEqualTo(200);
-        assertThat(response.getActivePoints()).isSorted();
-        assertThat(response.getNormalPoints()).isSorted();
+        assertThat(response.activePoints().size()).isEqualTo(100);
+        assertThat(response.normalPoints().size()).isEqualTo(200);
+        assertThat(response.activePoints()).isSorted();
+        assertThat(response.normalPoints()).isSorted();
     }
 
     @Test
@@ -147,7 +144,7 @@ public class TracePointJsonServiceTest {
     }
 
     @Test
-    public void shouldHandleCaseWithMoreActiveTracesThanLimit() throws IOException, SQLException {
+    public void shouldHandleCaseWithMoreActiveTracesThanLimit() throws Exception {
         // given
         List<Transaction> activeTransactions = Lists.newArrayList();
         for (int i = 0; i < 110; i++) {
@@ -158,11 +155,11 @@ public class TracePointJsonServiceTest {
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(
                 activeTransactions, pendingTransactions, points);
         // when
-        String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
+        String content = tracePointJsonService.getPoints("from=0&to=0&duration-low=0&limit=100");
         // then
         TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
-        assertThat(response.getActivePoints().size()).isEqualTo(100);
-        assertThat(response.getNormalPoints().size()).isEqualTo(0);
+        assertThat(response.activePoints().size()).isEqualTo(100);
+        assertThat(response.normalPoints().size()).isEqualTo(0);
     }
 
     private static TracePointJsonService buildTracePointJsonService(
@@ -182,7 +179,7 @@ public class TracePointJsonServiceTest {
                 .onResultOf(new Function<TracePoint, Double>() {
                     @Override
                     public Double apply(TracePoint trace) {
-                        return trace.getDuration();
+                        return trace.duration();
                     }
                 });
 
@@ -228,6 +225,11 @@ public class TracePointJsonServiceTest {
     }
 
     private static TracePoint mockPoint(String id, long end, long durationMillis) {
-        return TracePoint.from(id, end, MILLISECONDS.toNanos(durationMillis), false);
+        return ImmutableTracePoint.builder()
+                .id(id)
+                .captureTime(end)
+                .duration(MILLISECONDS.toNanos(durationMillis))
+                .error(false)
+                .build();
     }
 }

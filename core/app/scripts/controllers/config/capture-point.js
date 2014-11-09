@@ -184,26 +184,25 @@ glowroot.controller('ConfigCapturePointCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      delete postData.version;
       var url;
-      var version = $scope.config.version;
-      if (version) {
-        url = 'backend/config/capture-points/' + version;
+      var update = $scope.config.version;
+      if (update) {
+        url = 'backend/config/capture-points/update';
       } else {
-        url = 'backend/config/capture-points/+';
+        url = 'backend/config/capture-points/add';
       }
       $http.post(url, postData)
           .success(function (data) {
             onNewData(data);
             $scope.page.dirty = true;
-            deferred.resolve(version ? 'Saved' : 'Added');
+            deferred.resolve(update ? 'Saved' : 'Added');
           })
           .error(httpErrors.handler($scope, deferred));
     };
 
     $scope.delete = function (deferred) {
       if ($scope.config.version) {
-        $http.post('backend/config/capture-points/-', '"' + $scope.config.version + '"')
+        $http.post('backend/config/capture-points/remove', '"' + $scope.config.version + '"')
             .success(function (data) {
               $scope.$parent.removeCapturePoint($scope.capturePoint);
               $scope.page.dirty = true;
@@ -238,7 +237,8 @@ glowroot.controller('ConfigCapturePointCtrl', [
             }
             if (keepSelectedMethodSignature) {
               for (var i = 0; i < data.length; i++) {
-                if (angular.equals($scope.selectedMethodSignature, data[i])) {
+                if ($scope.selectedMethodSignature.name === data[i].name &&
+                    angular.equals($scope.selectedMethodSignature.parameterTypes, data[i].parameterTypes)) {
                   $scope.selectedMethodSignature = data[i];
                   break;
                 }
@@ -272,8 +272,8 @@ glowroot.controller('ConfigCapturePointCtrl', [
     $scope.$watch('selectedMethodSignature', function (newValue) {
       if (newValue) {
         $scope.config.methodParameterTypes = newValue.parameterTypes;
-        $scope.config.methodReturnType = newValue.returnType;
-        $scope.config.methodModifiers = newValue.modifiers;
+        $scope.config.methodReturnType = '';
+        $scope.config.methodModifiers = [];
       } else {
         $scope.config.methodParameterTypes = [];
         $scope.config.methodReturnType = '';

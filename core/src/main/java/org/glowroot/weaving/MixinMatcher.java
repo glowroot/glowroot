@@ -21,6 +21,6 @@ class MixinMatcher {
 
     static boolean isTypeMatch(MixinType mixinType, String className) {
         // currently only exact matching is supported
-        return mixinType.getTargets().contains(className);
+        return mixinType.targets().contains(className);
     }
 }

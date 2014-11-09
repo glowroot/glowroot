@@ -17,25 +17,26 @@ package org.glowroot.transaction.model;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.immutables.value.Value;
+
 import org.glowroot.api.MetricName;
 
-public class MetricNameImpl implements MetricName {
+@Value.Immutable
+public abstract class MetricNameImpl implements MetricName {
 
     private static final AtomicInteger nextSpecialHashCode = new AtomicInteger();
 
-    private final String name;
-    private final int specialHashCode;
+    @Value.Parameter
+    abstract String name();
 
-    public MetricNameImpl(String name) {
-        this.name = name;
-        specialHashCode = nextSpecialHashCode.getAndIncrement();
+    @Value.Derived
+    int specialHashCode() {
+        return nextSpecialHashCode.getAndIncrement();
     }
 
-    String getName() {
-        return name;
-    }
-
-    int getSpecialHashCode() {
-        return specialHashCode;
+    public static MetricNameImpl create(String name) {
+        return ImmutableMetricNameImpl.builder()
+                .name(name)
+                .build();
     }
 }

@@ -16,15 +16,13 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
@@ -32,27 +30,27 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.io.CharStreams;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.common.Clock;
-import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.Summary;
+import org.glowroot.local.store.SummaryMarshaler;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.ui.AggregateCommonService.MergedAggregate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
 @JsonService
 class AggregateJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(AggregateJsonService.class);
-    private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final ObjectMapper mapper = new ObjectMapper();
     private static final int MICROSECONDS_PER_SECOND = 1000000;
 
     private final AggregateCommonService aggregateCommonService;
@@ -71,33 +69,33 @@ class AggregateJsonService {
     }
 
     @GET("/backend/performance/transactions")
-    String getTransactions(String content) throws IOException, SQLException {
-        logger.debug("getTransactions(): content={}", content);
+    String getTransactions(String queryString) throws Exception {
+        logger.debug("getTransactions(): queryString={}", queryString);
         AggregateRequestWithLimit request =
-                ObjectMappers.readRequiredValue(mapper, content, AggregateRequestWithLimit.class);
-        Summary overallSummary = aggregateDao.readOverallSummary(request.getTransactionType(),
-                request.getFrom(), request.getTo());
-        Integer limit = request.getLimit();
+                QueryStrings.decode(queryString, AggregateRequestWithLimit.class);
+        Summary overallSummary = aggregateDao.readOverallSummary(request.transactionType(),
+                request.from(), request.to());
+        Integer limit = request.limit();
         checkNotNull(limit);
         QueryResult<Summary> queryResult = aggregateDao.readTransactionSummaries(
-                request.getTransactionType(), request.getFrom(), request.getTo(), limit);
+                request.transactionType(), request.from(), request.to(), limit);
         List<Aggregate> overallAggregates = aggregateDao.readOverallAggregates(
-                request.getTransactionType(), request.getFrom(), request.getTo());
+                request.transactionType(), request.from(), request.to());
 
         final int topX = 5;
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         List<PeekingIterator<Aggregate>> transactionAggregatesList = Lists.newArrayList();
-        for (int i = 0; i < Math.min(queryResult.getRecords().size(), topX); i++) {
-            String transactionName = queryResult.getRecords().get(i).getTransactionName();
+        for (int i = 0; i < Math.min(queryResult.records().size(), topX); i++) {
+            String transactionName = queryResult.records().get(i).transactionName();
             checkNotNull(transactionName);
             dataSeriesList.add(new DataSeries(transactionName));
             transactionAggregatesList.add(Iterators.peekingIterator(
-                    aggregateDao.readTransactionAggregates(request.getTransactionType(),
-                            transactionName, request.getFrom(), request.getTo()).iterator()));
+                    aggregateDao.readTransactionAggregates(request.transactionType(),
+                            transactionName, request.from(), request.to()).iterator()));
         }
 
         DataSeries otherDataSeries = null;
-        if (queryResult.getRecords().size() > topX) {
+        if (queryResult.records().size() > topX) {
             otherDataSeries = new DataSeries(null);
         }
 
@@ -105,40 +103,40 @@ class AggregateJsonService {
         for (Aggregate overallAggregate : overallAggregates) {
             if (lastOverallAggregate == null) {
                 // first aggregate
-                addInitialUpslope(request.getFrom(), overallAggregate.getCaptureTime(),
+                addInitialUpslope(request.from(), overallAggregate.captureTime(),
                         dataSeriesList, otherDataSeries);
             } else {
-                addGapIfNeeded(lastOverallAggregate.getCaptureTime(),
-                        overallAggregate.getCaptureTime(), dataSeriesList, otherDataSeries);
+                addGapIfNeeded(lastOverallAggregate.captureTime(),
+                        overallAggregate.captureTime(), dataSeriesList, otherDataSeries);
             }
             lastOverallAggregate = overallAggregate;
 
-            long totalOtherMicros = overallAggregate.getTotalMicros();
+            long totalOtherMicros = overallAggregate.totalMicros();
             for (int i = 0; i < dataSeriesList.size(); i++) {
                 PeekingIterator<Aggregate> transactionAggregates = transactionAggregatesList.get(i);
                 Aggregate transactionAggregate = getNextAggregateIfMatching(transactionAggregates,
-                        overallAggregate.getCaptureTime());
+                        overallAggregate.captureTime());
                 DataSeries dataSeries = dataSeriesList.get(i);
                 if (transactionAggregate == null) {
-                    dataSeries.add(overallAggregate.getCaptureTime(), 0);
+                    dataSeries.add(overallAggregate.captureTime(), 0);
                 } else {
                     // convert to average seconds
                     dataSeries.add(
-                            overallAggregate.getCaptureTime(),
-                            (transactionAggregate.getTotalMicros() / (double) overallAggregate.getTransactionCount())
+                            overallAggregate.captureTime(),
+                            (transactionAggregate.totalMicros() / (double) overallAggregate.transactionCount())
                                     / MICROSECONDS_PER_SECOND);
-                    totalOtherMicros -= transactionAggregate.getTotalMicros();
+                    totalOtherMicros -= transactionAggregate.totalMicros();
                 }
             }
             if (otherDataSeries != null) {
-                otherDataSeries.add(overallAggregate.getCaptureTime(),
-                        (totalOtherMicros / (double) overallAggregate.getTransactionCount())
+                otherDataSeries.add(overallAggregate.captureTime(),
+                        (totalOtherMicros / (double) overallAggregate.transactionCount())
                                 / MICROSECONDS_PER_SECOND);
             }
         }
         if (lastOverallAggregate != null) {
-            addFinalDownslope(request.getTo(), dataSeriesList, otherDataSeries,
-                    lastOverallAggregate.getCaptureTime());
+            addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
+                    lastOverallAggregate.captureTime());
         }
         if (otherDataSeries != null) {
             dataSeriesList.add(otherDataSeries);
@@ -147,27 +145,28 @@ class AggregateJsonService {
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeriesList);
-        jg.writeObjectField("overallSummary", overallSummary);
-        jg.writeObjectField("transactionSummaries", queryResult.getRecords());
-        jg.writeBooleanField("moreAvailable", queryResult.isMoreAvailable());
+        jg.writeFieldName("overallSummary");
+        SummaryMarshaler.marshal(jg, overallSummary);
+        jg.writeFieldName("transactionSummaries");
+        SummaryMarshaler.instance().marshalIterable(jg, queryResult.records());
+        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
     @GET("/backend/performance/metrics")
-    String getMetrics(String content) throws IOException, SQLException {
-        logger.debug("getMetrics(): content={}", content);
-        AggregateRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, AggregateRequest.class);
+    String getMetrics(String queryString) throws Exception {
+        logger.debug("getMetrics(): queryString={}", queryString);
+        AggregateRequest request = QueryStrings.decode(queryString, AggregateRequest.class);
         List<Aggregate> aggregates;
-        String transactionName = request.getTransactionName();
+        String transactionName = request.transactionName();
         if (transactionName == null) {
-            aggregates = aggregateDao.readOverallAggregates(request.getTransactionType(),
-                    request.getFrom(), request.getTo());
+            aggregates = aggregateDao.readOverallAggregates(request.transactionType(),
+                    request.from(), request.to());
         } else {
-            aggregates = aggregateDao.readTransactionAggregates(request.getTransactionType(),
-                    transactionName, request.getFrom(), request.getTo());
+            aggregates = aggregateDao.readTransactionAggregates(request.transactionType(),
+                    transactionName, request.from(), request.to());
         }
         List<StackedPoint> stackedPoints = Lists.newArrayList();
         for (Aggregate aggregate : aggregates) {
@@ -188,51 +187,51 @@ class AggregateJsonService {
             Aggregate aggregate = stackedPoint.getAggregate();
             if (lastAggregate == null) {
                 // first aggregate
-                addInitialUpslope(request.getFrom(), aggregate.getCaptureTime(), dataSeriesList,
+                addInitialUpslope(request.from(), aggregate.captureTime(), dataSeriesList,
                         otherDataSeries);
             } else {
-                addGapIfNeeded(lastAggregate.getCaptureTime(), aggregate.getCaptureTime(),
+                addGapIfNeeded(lastAggregate.captureTime(), aggregate.captureTime(),
                         dataSeriesList, otherDataSeries);
             }
             lastAggregate = aggregate;
             MutableLongMap<String> stackedMetrics = stackedPoint.getStackedMetrics();
-            long totalOtherMicros = aggregate.getTotalMicros();
+            long totalOtherMicros = aggregate.totalMicros();
             for (DataSeries dataSeries : dataSeriesList) {
                 MutableLong totalMicros = stackedMetrics.get(dataSeries.getName());
                 if (totalMicros == null) {
-                    dataSeries.add(aggregate.getCaptureTime(), 0);
+                    dataSeries.add(aggregate.captureTime(), 0);
                 } else {
                     // convert to average seconds
-                    dataSeries.add(aggregate.getCaptureTime(),
-                            (totalMicros.longValue() / (double) aggregate.getTransactionCount())
+                    dataSeries.add(aggregate.captureTime(),
+                            (totalMicros.longValue() / (double) aggregate.transactionCount())
                                     / MICROSECONDS_PER_SECOND);
                     totalOtherMicros -= totalMicros.longValue();
                 }
             }
-            if (aggregate.getTransactionCount() == 0) {
-                otherDataSeries.add(aggregate.getCaptureTime(), 0);
+            if (aggregate.transactionCount() == 0) {
+                otherDataSeries.add(aggregate.captureTime(), 0);
             } else {
                 // convert to average seconds
-                otherDataSeries.add(aggregate.getCaptureTime(),
-                        (totalOtherMicros / (double) aggregate.getTransactionCount())
+                otherDataSeries.add(aggregate.captureTime(),
+                        (totalOtherMicros / (double) aggregate.transactionCount())
                                 / MICROSECONDS_PER_SECOND);
             }
         }
         if (lastAggregate != null) {
-            addFinalDownslope(request.getTo(), dataSeriesList, otherDataSeries,
-                    lastAggregate.getCaptureTime());
+            addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
+                    lastAggregate.captureTime());
         }
         dataSeriesList.add(otherDataSeries);
 
         MergedAggregate mergedAggregate = aggregateCommonService.getMergedAggregate(aggregates);
         long traceCount;
         if (transactionName == null) {
-            traceCount = traceDao.readOverallCount(request.getTransactionType(), request.getFrom(),
-                    request.getTo());
+            traceCount = traceDao.readOverallCount(request.transactionType(), request.from(),
+                    request.to());
         } else {
-            traceCount = traceDao.readTransactionCount(request.getTransactionType(),
+            traceCount = traceDao.readTransactionCount(request.transactionType(),
                     transactionName,
-                    request.getFrom(), request.getTo());
+                    request.from(), request.to());
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -246,31 +245,31 @@ class AggregateJsonService {
     }
 
     @GET("/backend/performance/transaction-summaries")
-    String getTransactionSummaries(String content) throws IOException, SQLException {
-        logger.debug("getTransactionSummaries(): content={}", content);
+    String getTransactionSummaries(String queryString) throws Exception {
+        logger.debug("getTransactionSummaries(): queryString={}", queryString);
         AggregateRequestWithLimit request =
-                ObjectMappers.readRequiredValue(mapper, content, AggregateRequestWithLimit.class);
+                QueryStrings.decode(queryString, AggregateRequestWithLimit.class);
         QueryResult<Summary> queryResult =
-                aggregateDao.readTransactionSummaries(request.getTransactionType(),
-                        request.getFrom(), request.getTo(), request.getLimit());
+                aggregateDao.readTransactionSummaries(request.transactionType(),
+                        request.from(), request.to(), request.limit());
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeObjectField("transactionSummaries", queryResult.getRecords());
-        jg.writeBooleanField("moreAvailable", queryResult.isMoreAvailable());
+        jg.writeFieldName("transactionSummaries");
+        SummaryMarshaler.instance().marshalIterable(jg, queryResult.records());
+        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
     @GET("/backend/performance/profile")
-    String getProfile(String content) throws IOException, SQLException {
-        logger.debug("getProfile(): content={}", content);
-        ProfileRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, ProfileRequest.class);
+    String getProfile(String queryString) throws Exception {
+        logger.debug("getProfile(): queryString={}", queryString);
+        ProfileRequest request = QueryStrings.decode(queryString, ProfileRequest.class);
         AggregateProfileNode profile = aggregateCommonService.getProfile(
-                request.getTransactionType(), request.getTransactionName(), request.getFrom(),
-                request.getTo(), request.getTruncateLeafPercentage());
+                request.transactionType(), request.transactionName(), request.from(),
+                request.to(), request.truncateLeafPercentage());
         return mapper.writeValueAsString(profile);
     }
 
@@ -306,7 +305,7 @@ class AggregateJsonService {
             return null;
         }
         Aggregate aggregate = aggregates.peek();
-        if (aggregate.getCaptureTime() == captureTime) {
+        if (aggregate.captureTime() == captureTime) {
             // advance iterator
             aggregates.next();
             return aggregate;
@@ -369,115 +368,6 @@ class AggregateJsonService {
         }
     }
 
-    private static class AggregateRequest {
-
-        private final long from;
-        private final long to;
-        private final String transactionType;
-        @Nullable
-        private final String transactionName;
-
-        @JsonCreator
-        AggregateRequest(@JsonProperty("from") @Nullable Long from,
-                @JsonProperty("to") @Nullable Long to,
-                @JsonProperty("transactionType") @Nullable String transactionType,
-                @JsonProperty("transactionName") @Nullable String transactionName)
-                throws JsonMappingException {
-            checkRequiredProperty(from, "from");
-            checkRequiredProperty(to, "to");
-            checkRequiredProperty(transactionType, "transactionType");
-            this.from = from;
-            this.to = to;
-            this.transactionType = transactionType;
-            this.transactionName = transactionName;
-        }
-
-        long getFrom() {
-            return from;
-        }
-
-        long getTo() {
-            return to;
-        }
-
-        String getTransactionType() {
-            return transactionType;
-        }
-
-        @Nullable
-        private String getTransactionName() {
-            return transactionName;
-        }
-    }
-
-    private static class AggregateRequestWithLimit extends AggregateRequest {
-
-        private final int limit;
-
-        @JsonCreator
-        AggregateRequestWithLimit(@JsonProperty("from") @Nullable Long from,
-                @JsonProperty("to") @Nullable Long to,
-                @JsonProperty("transactionType") @Nullable String transactionType,
-                @JsonProperty("transactionName") @Nullable String transactionName,
-                @JsonProperty("limit") @Nullable Integer limit)
-                throws JsonMappingException {
-            super(from, to, transactionType, transactionName);
-            checkRequiredProperty(limit, "limit");
-            this.limit = limit;
-        }
-
-        private int getLimit() {
-            return limit;
-        }
-    }
-
-    private static class ProfileRequest {
-
-        private final long from;
-        private final long to;
-        private final String transactionType;
-        private final String transactionName;
-        private final double truncateLeafPercentage;
-
-        @JsonCreator
-        ProfileRequest(@JsonProperty("from") @Nullable Long from,
-                @JsonProperty("to") @Nullable Long to,
-                @JsonProperty("transactionType") @Nullable String transactionType,
-                @JsonProperty("transactionName") @Nullable String transactionName,
-                @JsonProperty("truncateLeafPercentage") double truncateLeafPercentage)
-                throws JsonMappingException {
-            checkRequiredProperty(from, "from");
-            checkRequiredProperty(to, "to");
-            checkRequiredProperty(transactionType, "transactionType");
-            checkRequiredProperty(transactionName, "transactionName");
-            this.from = from;
-            this.to = to;
-            this.transactionType = transactionType;
-            this.transactionName = transactionName;
-            this.truncateLeafPercentage = truncateLeafPercentage;
-        }
-
-        private long getFrom() {
-            return from;
-        }
-
-        private long getTo() {
-            return to;
-        }
-
-        private String getTransactionType() {
-            return transactionType;
-        }
-
-        private String getTransactionName() {
-            return transactionName;
-        }
-
-        private double getTruncateLeafPercentage() {
-            return truncateLeafPercentage;
-        }
-    }
-
     private static class StackedPoint {
 
         private final Aggregate aggregate;
@@ -485,7 +375,7 @@ class AggregateJsonService {
         private final MutableLongMap<String> stackedMetrics;
 
         private static StackedPoint create(Aggregate aggregate) throws IOException {
-            String metrics = aggregate.getMetrics();
+            String metrics = aggregate.metrics();
             if (metrics == null) {
                 return new StackedPoint(aggregate, new MutableLongMap<String>());
             }
@@ -548,5 +438,34 @@ class AggregateJsonService {
         private long longValue() {
             return value;
         }
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class AggregateRequest {
+        abstract long from();
+        abstract long to();
+        abstract String transactionType();
+        abstract @Nullable String transactionName();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class AggregateRequestWithLimit {
+        abstract long from();
+        abstract long to();
+        abstract String transactionType();
+        abstract @Nullable String transactionName();
+        abstract int limit();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class ProfileRequest {
+        abstract long from();
+        abstract long to();
+        abstract String transactionType();
+        abstract String transactionName();
+        abstract double truncateLeafPercentage();
     }
 }

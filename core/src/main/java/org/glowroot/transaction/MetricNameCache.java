@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.transaction.model.ImmutableMetricNameImpl;
 import org.glowroot.transaction.model.MetricNameImpl;
 
 // used to ensure one instance per name so that pointer equality can be used instead of String
@@ -37,7 +38,7 @@ class MetricNameCache {
             CacheBuilder.newBuilder().build(new CacheLoader<String, MetricNameImpl>() {
                 @Override
                 public MetricNameImpl load(String name) {
-                    return new MetricNameImpl(name);
+                    return ImmutableMetricNameImpl.of(name);
                 }
             });
 

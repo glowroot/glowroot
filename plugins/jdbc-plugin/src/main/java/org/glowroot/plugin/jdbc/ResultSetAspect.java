@@ -18,7 +18,7 @@ package org.glowroot.plugin.jdbc;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;

@@ -16,166 +16,48 @@
 package org.glowroot.weaving;
 
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.List;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.objectweb.asm.Type;
+import javax.annotation.Nullable;
 
-import org.glowroot.markers.Immutable;
+import org.immutables.value.Value;
 
 // an AnalyzedClass is never created for Object.class
 // Strings are interned to reduce memory footprint of AnalyzedWorld
-@Immutable
-public class AnalyzedClass {
+@Value.Immutable
+public abstract class AnalyzedClass {
 
-    private final int modifiers;
-    private final String name;
+    // this.name = name.intern();
+    // this.superName = superName == null ? null : superName.intern();
+    // this.interfaceNames = AnalyzedMethod.internStringList(interfaceNames);
+
+    abstract int modifiers();
+    abstract String name();
     // null superName means the super class is Object.class
     // (an AnalyzedClass is never created for Object.class)
-    @Nullable
-    private final String superName;
-    private final ImmutableList<String> interfaceNames;
-    private final ImmutableList<AnalyzedMethod> analyzedMethods;
+    abstract @Nullable String superName();
+    abstract List<String> interfaceNames();
+    abstract List<AnalyzedMethod> analyzedMethods();
+    abstract List<MixinType> mixinTypes();
 
-    private final ImmutableList<MixinType> mixinTypes;
-
-    // interfaces that do not extend anything have null superClass
-    static AnalyzedClass from(int modifiers, String name, @Nullable String superName,
-            List<String> interfaceNames, List<AnalyzedMethod> methods) {
-        return new AnalyzedClass(modifiers, name, superName, interfaceNames, methods,
-                ImmutableList.<MixinType>of());
-    }
-
-    private AnalyzedClass(int modifiers, String name, @Nullable String superName,
-            List<String> interfaceNames, List<AnalyzedMethod> analyzedMethods,
-            List<MixinType> mixinTypes) {
-        this.modifiers = modifiers;
-        this.name = name.intern();
-        this.superName = superName == null ? null : superName.intern();
-        this.interfaceNames = AnalyzedMethod.internStringList(interfaceNames);
-        this.analyzedMethods = ImmutableList.copyOf(analyzedMethods);
-        this.mixinTypes = ImmutableList.copyOf(mixinTypes);
-    }
-
+    // not using @Value.Derived to keep down memory footprint
     boolean isInterface() {
-        return Modifier.isInterface(modifiers);
+        return Modifier.isInterface(modifiers());
     }
 
+    // not using @Value.Derived to keep down memory footprint
     boolean isAbstract() {
-        return Modifier.isAbstract(modifiers);
-    }
-
-    String getName() {
-        return name;
-    }
-
-    // null superName means the super class is Object.class
-    // (an AnalyzedClass is never created for Object.class)
-    @Nullable
-    String getSuperName() {
-        return superName;
-    }
-
-    ImmutableList<String> getInterfaceNames() {
-        return interfaceNames;
-    }
-
-    List<AnalyzedMethod> getAnalyzedMethods() {
-        return analyzedMethods;
-    }
-
-    ImmutableList<MixinType> getMixinTypes() {
-        return mixinTypes;
+        return Modifier.isAbstract(modifiers());
     }
 
     boolean hasReweavableAdvice() {
-        for (AnalyzedMethod analyzedMethod : analyzedMethods) {
-            for (Advice advice : analyzedMethod.getAdvisors()) {
-                if (advice.isReweavable()) {
+        for (AnalyzedMethod analyzedMethod : analyzedMethods()) {
+            for (Advice advice : analyzedMethod.advisors()) {
+                if (advice.reweavable()) {
                     return true;
                 }
             }
         }
         return false;
-    }
-
-    @Override
-    public boolean equals(@Nullable Object obj) {
-        if (obj instanceof AnalyzedClass) {
-            AnalyzedClass that = (AnalyzedClass) obj;
-            return Objects.equal(modifiers, that.modifiers)
-                    && Objects.equal(name, that.name)
-                    && Objects.equal(superName, that.superName)
-                    && Objects.equal(interfaceNames, that.interfaceNames)
-                    && Objects.equal(analyzedMethods, that.analyzedMethods);
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(modifiers, name, superName, interfaceNames, analyzedMethods);
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("modifiers", modifiers)
-                .add("name", name)
-                .add("superName", superName)
-                .add("interfaceNames", interfaceNames)
-                .add("methods", analyzedMethods)
-                .toString();
-    }
-
-    static Builder builder(int modifiers, String name, @Nullable String superName,
-            ImmutableList<String> interfaceNames) {
-        return new Builder(modifiers, name, superName, interfaceNames);
-    }
-
-    static class Builder {
-
-        private final int modifiers;
-        private final String name;
-        @Nullable
-        private final String superName;
-        private final List<String> interfaceNames;
-        private final List<AnalyzedMethod> methods = Lists.newArrayList();
-        private final List<MixinType> mixinTypes = Lists.newArrayList();
-
-        private Builder(int modifiers, String name, @Nullable String superName,
-                ImmutableList<String> interfaceNames) {
-            this.modifiers = modifiers;
-            this.name = name;
-            this.superName = superName;
-            this.interfaceNames = interfaceNames;
-        }
-
-        AnalyzedMethod addAnalyzedMethod(int access, String name, String desc,
-                @Nullable String signature, List<String> exceptions, List<Advice> advisors) {
-            List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
-            AnalyzedMethod method = AnalyzedMethod.from(name, parameterTypes,
-                    Type.getReturnType(desc), access, signature, exceptions, advisors);
-            methods.add(method);
-            return method;
-        }
-
-        void addMixinType(MixinType mixinType) {
-            mixinTypes.add(mixinType);
-        }
-
-        void addMixinTypes(List<MixinType> mixinTypes) {
-            this.mixinTypes.addAll(mixinTypes);
-        }
-
-        AnalyzedClass build() {
-            return new AnalyzedClass(modifiers, name, superName, interfaceNames, methods,
-                    mixinTypes);
-        }
     }
 }

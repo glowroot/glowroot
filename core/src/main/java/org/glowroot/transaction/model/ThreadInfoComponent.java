@@ -20,17 +20,18 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.MoreObjects;
 import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.markers.GuardedBy;
+import javax.annotation.concurrent.GuardedBy;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

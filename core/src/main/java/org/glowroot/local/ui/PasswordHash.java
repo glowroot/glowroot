@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.config;
+package org.glowroot.local.ui;
 
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;

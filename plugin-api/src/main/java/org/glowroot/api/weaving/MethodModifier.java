@@ -17,5 +17,5 @@ package org.glowroot.api.weaving;
 
 public enum MethodModifier {
 
-    PUBLIC, PRIVATE, PROTECTED, PACKAGE_PRIVATE, STATIC, NOT_STATIC, ABSTRACT;
+    PUBLIC, PRIVATE, PROTECTED, PACKAGE_PRIVATE, STATIC, NOT_STATIC;
 }

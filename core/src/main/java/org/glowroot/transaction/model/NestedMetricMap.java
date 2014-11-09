@@ -15,7 +15,7 @@
  */
 package org.glowroot.transaction.model;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 // micro-optimized map for nested metrics
 class NestedMetricMap {
@@ -26,7 +26,7 @@ class NestedMetricMap {
     @Nullable
     TransactionMetricImpl get(MetricNameImpl metricName) {
         // this mask requires table length to be a power of 2
-        int bucket = metricName.getSpecialHashCode() & (table.length - 1);
+        int bucket = metricName.specialHashCode() & (table.length - 1);
         Entry entry = table[bucket];
         while (true) {
             if (entry == null) {
@@ -41,7 +41,7 @@ class NestedMetricMap {
 
     void put(MetricNameImpl metricName, TransactionMetricImpl transactionMetric) {
         Entry newEntry = new Entry(metricName, transactionMetric);
-        int bucket = metricName.getSpecialHashCode() & (table.length - 1);
+        int bucket = metricName.specialHashCode() & (table.length - 1);
         Entry entry = table[bucket];
         if (entry == null) {
             table[bucket] = newEntry;

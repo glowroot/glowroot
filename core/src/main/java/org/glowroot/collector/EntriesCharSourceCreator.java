@@ -31,7 +31,6 @@ import org.glowroot.api.internal.ExceptionInfo;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.Ticker;
-import org.glowroot.markers.Immutable;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Profile.StackTraceElementPlus;
 import org.glowroot.transaction.model.TraceEntry;
@@ -57,7 +56,6 @@ public class EntriesCharSourceCreator {
         jw.writeEndArray();
     }
 
-    @Immutable
     private static class EntriesCharSource extends CharSource {
 
         private final List<TraceEntry> entries;
@@ -204,12 +202,12 @@ public class EntriesCharSourceCreator {
 
         private void writeException(ExceptionInfo exception, JsonGenerator jg) throws IOException {
             jg.writeStartObject();
-            jg.writeStringField("display", exception.getDisplay());
+            jg.writeStringField("display", exception.display());
             jg.writeFieldName("stackTrace");
-            writeStackTrace(exception.getStackTrace(), jg);
+            writeStackTrace(exception.stackTrace(), jg);
             jg.writeNumberField("framesInCommonWithCaused",
-                    exception.getFramesInCommonWithCaused());
-            ExceptionInfo cause = exception.getCause();
+                    exception.framesInCommonWithCaused());
+            ExceptionInfo cause = exception.cause();
             if (cause != null) {
                 jg.writeFieldName("cause");
                 writeException(cause, jg);

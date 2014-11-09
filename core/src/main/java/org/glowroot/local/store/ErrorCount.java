@@ -15,43 +15,18 @@
  */
 package org.glowroot.local.store;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
-import org.glowroot.markers.UsedByJsonBinding;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
-@UsedByJsonBinding
-public class ErrorCount {
+@Value.Immutable
+@Json.Marshaled
+public abstract class ErrorCount {
+    // TODO add OverallErrorCount and remove both @Nullable annotations
+    public abstract @Nullable String transactionType();
+    public abstract @Nullable String transactionName();
+    public abstract long errorCount();
 
-    @Nullable
-    private final String transactionType;
-    @Nullable
-    private final String transactionName;
-    private final long errorCount;
-    private final long transactionCount;
-
-    ErrorCount(@Nullable String transactionType, @Nullable String transactionName, long errorCount,
-            long transactionCount) {
-        this.transactionType = transactionType;
-        this.transactionName = transactionName;
-        this.errorCount = errorCount;
-        this.transactionCount = transactionCount;
-    }
-
-    @Nullable
-    public String getTransactionType() {
-        return transactionType;
-    }
-
-    @Nullable
-    public String getTransactionName() {
-        return transactionName;
-    }
-
-    public long getErrorCount() {
-        return errorCount;
-    }
-
-    public long getTransactionCount() {
-        return transactionCount;
-    }
+    public abstract long transactionCount();
 }

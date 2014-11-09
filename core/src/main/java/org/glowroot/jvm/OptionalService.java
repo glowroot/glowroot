@@ -15,21 +15,21 @@
  */
 package org.glowroot.jvm;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import org.checkerframework.checker.nullness.qual.Nullable;
-
-import org.glowroot.markers.Immutable;
-import org.glowroot.markers.UsedByJsonBinding;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
 public abstract class OptionalService<T> {
 
     static <T> OptionalService<T> available(T service) {
-        return new NonLazyOptionalService<T>(new Availability(true, ""), service);
+        return new NonLazyOptionalService<T>(ImmutableAvailability.of(true, ""), service);
     }
 
     static <T> OptionalService<T> unavailable(String reason) {
-        return new NonLazyOptionalService<T>(new Availability(false, reason), null);
+        return new NonLazyOptionalService<T>(ImmutableAvailability.of(false, reason), null);
     }
 
     static <T> OptionalService<T> lazy(Supplier<OptionalService<T>> supplier) {
@@ -41,26 +41,14 @@ public abstract class OptionalService<T> {
     @Nullable
     public abstract T getService();
 
-    @UsedByJsonBinding
-    @Immutable
-    public static class Availability {
-
-        private final boolean available;
+    @Value.Immutable
+    @Json.Marshaled
+    public abstract static class Availability {
+        @Value.Parameter
+        public abstract boolean isAvailable();
         // reason only needed when available is false
-        private final String reason;
-
-        public Availability(boolean available, String reason) {
-            this.available = available;
-            this.reason = reason;
-        }
-
-        public boolean isAvailable() {
-            return available;
-        }
-
-        public String getReason() {
-            return reason;
-        }
+        @Value.Parameter
+        public abstract String getReason();
     }
 
     private static class NonLazyOptionalService<T> extends OptionalService<T> {

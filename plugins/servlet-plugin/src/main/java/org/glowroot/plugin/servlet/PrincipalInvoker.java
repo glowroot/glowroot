@@ -17,7 +17,7 @@ package org.glowroot.plugin.servlet;
 
 import java.lang.reflect.Method;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;

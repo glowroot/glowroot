@@ -20,34 +20,37 @@ import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
-import com.google.common.io.CharStreams;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.common.marshal.Marshaling;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.api.weaving.MethodModifier;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.CapturePoint;
+import org.glowroot.config.CapturePoint.CaptureKind;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.JsonViews.UiView;
+import org.glowroot.config.ImmutableCapturePoint;
+import org.glowroot.config.MarshalingRoutines;
 import org.glowroot.local.ui.UiAnalyzedMethod.UiAnalyzedMethodOrdering;
 import org.glowroot.transaction.AdviceCache;
 import org.glowroot.transaction.TransactionModule;
 
-import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
 
@@ -55,7 +58,7 @@ import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
 class CapturePointJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(CapturePointJsonService.class);
-    private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final ObjectMapper mapper = new ObjectMapper();
     private static final Splitter splitter = Splitter.on(' ').omitEmptyStrings();
 
     private final ConfigService configService;
@@ -74,19 +77,17 @@ class CapturePointJsonService {
     @GET("/backend/config/capture-points")
     String getCapturePoint() throws IOException, SQLException {
         logger.debug("getCapturePoint()");
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        jg.writeFieldName("configs");
-        writer.writeValue(jg, configService.getCapturePoints());
-        jg.writeBooleanField("jvmOutOfSync",
-                adviceCache.isOutOfSync(configService.getCapturePoints()));
-        jg.writeBooleanField("jvmRetransformClassesSupported",
-                transactionModule.isJvmRetransformClassesSupported());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
+        List<CapturePoint> configs = configService.getCapturePoints();
+        List<CapturePointDto> configDtos = Lists.newArrayList();
+        for (CapturePoint config : configs) {
+            configDtos.add(CapturePointDto.fromConfig(config));
+        }
+        return Marshaling.toJson(ImmutableCapturePointResponse.builder()
+                .addAllConfigs(configDtos)
+                .jvmOutOfSync(adviceCache.isOutOfSync(configService.getCapturePoints()))
+                .jvmRetransformClassesSupported(
+                        transactionModule.isJvmRetransformClassesSupported())
+                .build());
     }
 
     // this is marked as @GET so it can be used without update rights (e.g. demo instance)
@@ -108,46 +109,44 @@ class CapturePointJsonService {
     }
 
     @GET("/backend/config/matching-class-names")
-    String getMatchingClassNames(String content) throws IOException {
-        logger.debug("getMatchingClassNames(): content={}", content);
-        ClassNamesRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, ClassNamesRequest.class);
+    String getMatchingClassNames(String queryString) throws Exception {
+        logger.debug("getMatchingClassNames(): queryString={}", queryString);
+        ClassNamesRequest request = QueryStrings.decode(queryString, ClassNamesRequest.class);
         List<String> matchingClassNames = classpathCache.getMatchingClassNames(
-                request.getPartialClassName(), request.getLimit());
+                request.partialClassName(), request.limit());
         return mapper.writeValueAsString(matchingClassNames);
     }
 
     @GET("/backend/config/matching-method-names")
-    String getMatchingMethodNames(String content) throws IOException {
-        logger.debug("getMatchingMethodNames(): content={}", content);
-        MethodNamesRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, MethodNamesRequest.class);
-        List<String> matchingMethodNames = getMatchingMethodNames(request.getClassName(),
-                request.getPartialMethodName(), request.getLimit());
+    String getMatchingMethodNames(String queryString) throws Exception {
+        logger.debug("getMatchingMethodNames(): queryString={}", queryString);
+        MethodNamesRequest request = QueryStrings.decode(queryString, MethodNamesRequest.class);
+        List<String> matchingMethodNames = getMatchingMethodNames(request.className(),
+                request.partialMethodName(), request.limit());
         return mapper.writeValueAsString(matchingMethodNames);
     }
 
     @GET("/backend/config/method-signatures")
-    String getMethodSignatures(String content) throws IOException {
-        logger.debug("getMethodSignatures(): content={}", content);
+    String getMethodSignatures(String queryString) throws Exception {
+        logger.debug("getMethodSignatures(): queryString={}", queryString);
         MethodSignaturesRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, MethodSignaturesRequest.class);
+                QueryStrings.decode(queryString, MethodSignaturesRequest.class);
         List<UiAnalyzedMethod> analyzedMethods =
-                getAnalyzedMethods(request.getClassName(), request.getMethodName());
+                getAnalyzedMethods(request.className(), request.methodName());
         ArrayNode matchingMethods = mapper.createArrayNode();
         for (UiAnalyzedMethod analyzedMethod : analyzedMethods) {
             ObjectNode matchingMethod = mapper.createObjectNode();
-            matchingMethod.put("name", analyzedMethod.getName());
+            matchingMethod.put("name", analyzedMethod.name());
             ArrayNode parameterTypes = mapper.createArrayNode();
-            for (String parameterType : analyzedMethod.getParameterTypes()) {
+            for (String parameterType : analyzedMethod.parameterTypes()) {
                 parameterTypes.add(parameterType);
             }
             matchingMethod.set("parameterTypes", parameterTypes);
-            matchingMethod.put("returnType", analyzedMethod.getReturnType());
+            matchingMethod.put("returnType", analyzedMethod.returnType());
             ArrayNode modifiers = mapper.createArrayNode();
             // strip final and synchronized from displayed modifiers since they have no impact on
             // the weaver's method matching
-            int reducedModifiers = analyzedMethod.getModifiers() & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
+            int reducedModifiers = analyzedMethod.modifiers() & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
             String modifierNames = Modifier.toString(reducedModifiers);
             for (String modifier : splitter.split(modifierNames)) {
                 modifiers.add(modifier.toLowerCase(Locale.ENGLISH));
@@ -158,35 +157,25 @@ class CapturePointJsonService {
         return mapper.writeValueAsString(matchingMethods);
     }
 
-    @POST("/backend/config/capture-points/+")
-    String addCapturePoint(String content) throws IOException {
+    @POST("/backend/config/capture-points/add")
+    String addCapturePoint(String content) throws Exception {
         logger.debug("addCapturePoint(): content={}", content);
-        CapturePoint capturePoint =
-                ObjectMappers.readRequiredValue(mapper, content, CapturePoint.class);
+        CapturePointDto capturePointDto = Marshaling.fromJson(content, CapturePointDto.class);
+        CapturePoint capturePoint = capturePointDto.toConfig();
         configService.insertCapturePoint(capturePoint);
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        writer.writeValue(jg, capturePoint);
-        jg.close();
-        return sb.toString();
+        return Marshaling.toJson(CapturePointDto.fromConfig(capturePoint));
     }
 
-    @POST("/backend/config/capture-points/([0-9a-f]+)")
-    String updateCapturePoint(String priorVersion, String content) throws IOException {
-        logger.debug("updateCapturePoint(): priorVersion={}, content={}", priorVersion, content);
-        CapturePoint capturePoint =
-                ObjectMappers.readRequiredValue(mapper, content, CapturePoint.class);
-        configService.updateCapturePoint(priorVersion, capturePoint);
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        writer.writeValue(jg, capturePoint);
-        jg.close();
-        return sb.toString();
+    @POST("/backend/config/capture-points/update")
+    String updateCapturePoint(String content) throws IOException {
+        logger.debug("updateCapturePoint(): content={}", content);
+        CapturePointDto capturePointDto = Marshaling.fromJson(content, CapturePointDto.class);
+        CapturePoint capturePoint = capturePointDto.toConfig();
+        configService.updateCapturePoint(capturePoint, capturePointDto.version().get());
+        return Marshaling.toJson(CapturePointDto.fromConfig(capturePoint));
     }
 
-    @POST("/backend/config/capture-points/-")
+    @POST("/backend/config/capture-points/remove")
     void removeCapturePoint(String content) throws IOException {
         logger.debug("removeCapturePoint(): content={}", content);
         String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
@@ -199,10 +188,10 @@ class CapturePointJsonService {
         String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
         Set<String> methodNames = Sets.newHashSet();
         for (UiAnalyzedMethod analyzedMethod : classpathCache.getAnalyzedMethods(className)) {
-            if (Modifier.isNative(analyzedMethod.getModifiers())) {
+            if (Modifier.isNative(analyzedMethod.modifiers())) {
                 continue;
             }
-            String methodName = analyzedMethod.getName();
+            String methodName = analyzedMethod.name();
             if (methodName.equals("<init>") || methodName.equals("<clinit>")) {
                 // static initializers are not supported by weaver
                 // (see AdviceMatcher.isMethodNameMatch())
@@ -226,10 +215,10 @@ class CapturePointJsonService {
         // use set to remove duplicate methods (e.g. same class loaded by multiple class loaders)
         Set<UiAnalyzedMethod> analyzedMethods = Sets.newHashSet();
         for (UiAnalyzedMethod analyzedMethod : classpathCache.getAnalyzedMethods(className)) {
-            if (Modifier.isNative(analyzedMethod.getModifiers())) {
+            if (Modifier.isNative(analyzedMethod.modifiers())) {
                 continue;
             }
-            if (analyzedMethod.getName().equals(methodName)) {
+            if (analyzedMethod.name().equals(methodName)) {
                 analyzedMethods.add(analyzedMethod);
             }
         }
@@ -237,79 +226,109 @@ class CapturePointJsonService {
         return UiAnalyzedMethodOrdering.INSTANCE.sortedCopy(analyzedMethods);
     }
 
-    private static class ClassNamesRequest {
-
-        private final String partialClassName;
-        private final int limit;
-
-        @JsonCreator
-        ClassNamesRequest(@JsonProperty("partialClassName") @Nullable String partialClassName,
-                @JsonProperty("limit") int limit) throws JsonMappingException {
-            checkRequiredProperty(partialClassName, "partialClassName");
-            this.partialClassName = partialClassName;
-            this.limit = limit;
-        }
-
-        private String getPartialClassName() {
-            return partialClassName;
-        }
-
-        private int getLimit() {
-            return limit;
-        }
+    @Value.Immutable
+    abstract static class ClassNamesRequest {
+        abstract String partialClassName();
+        abstract int limit();
     }
 
-    private static class MethodNamesRequest {
-
-        private final String className;
-        private final String partialMethodName;
-        private final int limit;
-
-        @JsonCreator
-        MethodNamesRequest(@JsonProperty("className") @Nullable String className,
-                @JsonProperty("partialMethodName") @Nullable String partialMethodName,
-                @JsonProperty("limit") int limit) throws JsonMappingException {
-            checkRequiredProperty(className, "className");
-            checkRequiredProperty(partialMethodName, "partialMethodName");
-            this.className = className;
-            this.partialMethodName = partialMethodName;
-            this.limit = limit;
-        }
-
-        private String getClassName() {
-            return className;
-        }
-
-        private String getPartialMethodName() {
-            return partialMethodName;
-        }
-
-        private int getLimit() {
-            return limit;
-        }
+    @Value.Immutable
+    abstract static class MethodNamesRequest {
+        abstract String className();
+        abstract String partialMethodName();
+        abstract int limit();
     }
 
-    private static class MethodSignaturesRequest {
+    @Value.Immutable
+    abstract static class MethodSignaturesRequest {
+        abstract String className();
+        abstract String methodName();
+    }
 
-        private final String className;
-        private final String methodName;
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class CapturePointResponse {
+        @Json.ForceEmpty
+        abstract List<CapturePointDto> configs();
+        abstract boolean jvmOutOfSync();
+        abstract boolean jvmRetransformClassesSupported();
+    }
 
-        @JsonCreator
-        MethodSignaturesRequest(@JsonProperty("className") @Nullable String className,
-                @JsonProperty("methodName") @Nullable String methodName)
-                throws JsonMappingException {
-            checkRequiredProperty(className, "className");
-            checkRequiredProperty(methodName, "methodName");
-            this.className = className;
-            this.methodName = methodName;
+    @Value.Immutable
+    @Json.Marshaled
+    @Json.Import({MarshalingRoutines.class})
+    abstract static class CapturePointDto {
+
+        abstract String className();
+        abstract String methodName();
+        @Json.ForceEmpty
+        abstract List<String> methodParameterTypes();
+        abstract Optional<String> methodReturnType();
+        @Json.ForceEmpty
+        abstract List<MethodModifier> methodModifiers();
+        abstract CaptureKind captureKind();
+        abstract Optional<String> metricName();
+        abstract Optional<String> traceEntryTemplate();
+        @Json.ForceEmpty
+        abstract @Nullable Long traceEntryStackThresholdMillis();
+        abstract Optional<Boolean> traceEntryCaptureSelfNested();
+        abstract Optional<String> transactionType();
+        abstract Optional<String> transactionNameTemplate();
+        abstract Optional<String> transactionUserTemplate();
+        @Json.ForceEmpty
+        abstract Map<String, String> transactionCustomAttributeTemplates();
+        @Json.ForceEmpty
+        abstract @Nullable Long traceStoreThresholdMillis();
+        abstract Optional<String> enabledProperty();
+        abstract Optional<String> traceEntryEnabledProperty();
+        abstract Optional<String> version(); // null for insert operations
+
+        private static CapturePointDto fromConfig(CapturePoint config) {
+            return ImmutableCapturePointDto.builder()
+                    .className(config.className())
+                    .methodName(config.methodName())
+                    .addAllMethodParameterTypes(config.methodParameterTypes())
+                    .methodReturnType(config.methodReturnType())
+                    .addAllMethodModifiers(config.methodModifiers())
+                    .captureKind(config.captureKind())
+                    .metricName(config.metricName())
+                    .traceEntryTemplate(config.traceEntryTemplate())
+                    .traceEntryStackThresholdMillis(config.traceEntryStackThresholdMillis())
+                    .traceEntryCaptureSelfNested(config.traceEntryCaptureSelfNested())
+                    .transactionType(config.transactionType())
+                    .transactionNameTemplate(config.transactionNameTemplate())
+                    .transactionUserTemplate(config.transactionUserTemplate())
+                    .putAllTransactionCustomAttributeTemplates(
+                            config.transactionCustomAttributeTemplates())
+                    .traceStoreThresholdMillis(config.traceStoreThresholdMillis())
+                    .enabledProperty(config.enabledProperty())
+                    .traceEntryEnabledProperty(config.traceEntryEnabledProperty())
+                    .version(config.version())
+                    .build();
         }
 
-        private String getClassName() {
-            return className;
-        }
+        private CapturePoint toConfig() {
+            return ImmutableCapturePoint.builder()
+                    .className(className())
+                    .methodName(methodName())
+                    .addAllMethodParameterTypes(methodParameterTypes())
+                    .methodReturnType(methodReturnType().or(""))
+                    .addAllMethodModifiers(methodModifiers())
+                    .captureKind(captureKind())
+                    .metricName(metricName().or(""))
+                    .traceEntryTemplate(traceEntryTemplate().or(""))
+                    .traceEntryStackThresholdMillis(traceEntryStackThresholdMillis())
+                    .traceEntryCaptureSelfNested(traceEntryCaptureSelfNested().or(false))
+                    .transactionType(transactionType().or(""))
+                    .transactionNameTemplate(transactionNameTemplate().or(""))
+                    .transactionUserTemplate(transactionUserTemplate().or(""))
+                    .putAllTransactionCustomAttributeTemplates(
+                            transactionCustomAttributeTemplates())
+                    .traceStoreThresholdMillis(traceStoreThresholdMillis())
+                    .enabledProperty(enabledProperty().or(""))
+                    .traceEntryEnabledProperty(traceEntryEnabledProperty().or(""))
+                    .build();
 
-        private String getMethodName() {
-            return methodName;
         }
     }
 }

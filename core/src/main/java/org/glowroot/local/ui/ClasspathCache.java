@@ -25,7 +25,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -35,6 +34,8 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
+
+import javax.annotation.Nullable;
 
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
@@ -50,7 +51,6 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.TreeMultimap;
 import com.google.common.io.Closer;
 import com.google.common.io.Resources;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -60,8 +60,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
-import org.glowroot.markers.GuardedBy;
+import javax.annotation.concurrent.GuardedBy;
 import org.glowroot.weaving.AnalyzedWorld;
+import org.glowroot.weaving.ClassNames;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
@@ -217,19 +218,17 @@ class ClasspathCache {
                 // don't add synthetic methods to the analyzed model
                 continue;
             }
-            List<Type> parameterTypes = Lists.newArrayList();
+            ImmutableUiAnalyzedMethod.Builder builder = ImmutableUiAnalyzedMethod.builder();
+            builder.name(method.getName());
             for (Class<?> parameterType : method.getParameterTypes()) {
-                parameterTypes.add(Type.getType(parameterType));
+                builder.addParameterTypes(parameterType.getName());
             }
-            Type returnType = Type.getType(method.getReturnType());
-            // don't add synthetic methods to the analyzed model
-            List<String> exceptions = Lists.newArrayList();
+            builder.returnType(method.getReturnType().getName());
+            builder.modifiers(method.getModifiers());
             for (Class<?> exceptionType : method.getExceptionTypes()) {
-                exceptions.add(Type.getInternalName(exceptionType));
+                builder.addExceptions(exceptionType.getName());
             }
-            UiAnalyzedMethod analyzedMethod = UiAnalyzedMethod.from(method.getName(),
-                    parameterTypes, returnType, method.getModifiers(), null, exceptions);
-            analyzedMethods.add(analyzedMethod);
+            analyzedMethods.add(builder.build());
         }
         return analyzedMethods;
     }
@@ -410,15 +409,23 @@ class ClasspathCache {
         @Nullable
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String/*@Nullable*/[] exceptions) {
-            if ((access & ACC_SYNTHETIC) == 0) {
+            if ((access & ACC_SYNTHETIC) != 0) {
                 // don't add synthetic methods to the analyzed model
-                List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
-                Type returnType = Type.getReturnType(desc);
-                List<String> exceptionList = exceptions == null ? ImmutableList.<String>of()
-                        : Arrays.asList(exceptions);
-                analyzedMethods.add(UiAnalyzedMethod.from(name, parameterTypes, returnType, access,
-                        signature, exceptionList));
+                return null;
             }
+            ImmutableUiAnalyzedMethod.Builder builder = ImmutableUiAnalyzedMethod.builder();
+            builder.name(name);
+            for (Type parameterType : Type.getArgumentTypes(desc)) {
+                builder.addParameterTypes(parameterType.getClassName());
+            }
+            builder.returnType(Type.getReturnType(desc).getClassName());
+            builder.modifiers(access);
+            if (exceptions != null) {
+                for (String exception : exceptions) {
+                    builder.addExceptions(ClassNames.fromInternalName(exception));
+                }
+            }
+            analyzedMethods.add(builder.build());
             return null;
         }
 

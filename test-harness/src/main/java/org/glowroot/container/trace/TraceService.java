@@ -19,8 +19,9 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Stopwatch;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 public abstract class TraceService {
 

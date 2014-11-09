@@ -31,7 +31,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.GuardedBy;
+import javax.annotation.concurrent.GuardedBy;
 
 class GcInfoComponent {
 

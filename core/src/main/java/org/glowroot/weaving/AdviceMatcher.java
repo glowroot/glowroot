@@ -19,36 +19,32 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.weaving.MethodModifier;
-import org.glowroot.markers.Immutable;
 
-@Immutable
-class AdviceMatcher {
+@Value.Immutable
+abstract class AdviceMatcher {
 
     private static final Logger logger = LoggerFactory.getLogger(AdviceMatcher.class);
-
-    private final Advice advice;
 
     static ImmutableList<AdviceMatcher> getAdviceMatchers(String className, List<Advice> advisors) {
         List<AdviceMatcher> adviceMatchers = Lists.newArrayList();
         for (Advice advice : advisors) {
             if (AdviceMatcher.isClassNameMatch(className, advice)) {
-                adviceMatchers.add(new AdviceMatcher(advice));
+                adviceMatchers.add(ImmutableAdviceMatcher.of(advice));
             }
         }
         return ImmutableList.copyOf(adviceMatchers);
     }
 
-    private AdviceMatcher(Advice advice) {
-        this.advice = advice;
-    }
+    @Value.Parameter
+    abstract Advice advice();
 
     boolean isMethodLevelMatch(String methodName, List<Type> parameterTypes, Type returnType,
             int modifiers) {
@@ -58,10 +54,6 @@ class AdviceMatcher {
         return isMethodReturnMatch(returnType) && isMethodModifiersMatch(modifiers);
     }
 
-    Advice getAdvice() {
-        return advice;
-    }
-
     private boolean isMethodNameMatch(String methodName) {
         if (methodName.equals("<clinit>")) {
             // static initializers are not supported
@@ -69,18 +61,18 @@ class AdviceMatcher {
         }
         if (methodName.equals("<init>")) {
             // constructors only match by exact name (don't want patterns to match constructors)
-            return advice.getPointcut().methodName().equals("<init>");
+            return advice().pointcut().methodName().equals("<init>");
         }
-        Pattern pointcutMethodNamePattern = advice.getPointcutMethodNamePattern();
+        Pattern pointcutMethodNamePattern = advice().pointcutMethodNamePattern();
         if (pointcutMethodNamePattern == null) {
-            return advice.getPointcut().methodName().equals(methodName);
+            return advice().pointcut().methodName().equals(methodName);
         } else {
             return pointcutMethodNamePattern.matcher(methodName).matches();
         }
     }
 
     private boolean isMethodParameterTypesMatch(List<Type> parameterTypes) {
-        String[] pointcutMethodParameterTypes = advice.getPointcut().methodParameterTypes();
+        String[] pointcutMethodParameterTypes = advice().pointcut().methodParameterTypes();
         for (int i = 0; i < pointcutMethodParameterTypes.length; i++) {
             if (pointcutMethodParameterTypes[i].equals("..")) {
                 if (i != pointcutMethodParameterTypes.length - 1) {
@@ -107,13 +99,13 @@ class AdviceMatcher {
     }
 
     private boolean isMethodReturnMatch(Type returnType) {
-        String pointcutMethodReturn = advice.getPointcut().methodReturnType();
+        String pointcutMethodReturn = advice().pointcut().methodReturnType();
         return pointcutMethodReturn.isEmpty()
                 || pointcutMethodReturn.equals(returnType.getClassName());
     }
 
     private boolean isMethodModifiersMatch(int modifiers) {
-        for (MethodModifier methodModifier : advice.getPointcut().methodModifiers()) {
+        for (MethodModifier methodModifier : advice().pointcut().methodModifiers()) {
             if (!isMethodModifierMatch(methodModifier, modifiers)) {
                 return false;
             }
@@ -136,24 +128,15 @@ class AdviceMatcher {
                 return Modifier.isStatic(modifiers);
             case NOT_STATIC:
                 return !Modifier.isStatic(modifiers);
-            case ABSTRACT:
-                return Modifier.isAbstract(modifiers);
             default:
                 return false;
         }
     }
 
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("advice", advice)
-                .toString();
-    }
-
     static boolean isClassNameMatch(String className, Advice advice) {
-        Pattern pointcutClassNamePattern = advice.getPointcutClassNamePattern();
+        Pattern pointcutClassNamePattern = advice.pointcutClassNamePattern();
         if (pointcutClassNamePattern == null) {
-            return advice.getPointcut().className().equals(className);
+            return advice.pointcut().className().equals(className);
         } else {
             return pointcutClassNamePattern.matcher(className).matches();
         }

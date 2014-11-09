@@ -17,26 +17,17 @@ package org.glowroot.local.store;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
+import org.immutables.value.Value;
 
-import org.glowroot.markers.Immutable;
+@Value.Immutable
+abstract class ParameterizedSql {
 
-@Immutable
-class ParameterizedSql {
+    @Value.Parameter
+    abstract String sql();
+    @Value.Parameter
+    abstract List<Object> args();
 
-    private final String sql;
-    private final ImmutableList<Object> args;
-
-    ParameterizedSql(String sql, List<Object> args) {
-        this.sql = sql;
-        this.args = ImmutableList.copyOf(args);
-    }
-
-    String getSql() {
-        return sql;
-    }
-
-    Object[] getArgs() {
-        return args.toArray(new Object[args.size()]);
+    Object[] argsAsArray() {
+        return args().toArray(new Object[args().size()]);
     }
 }

@@ -17,8 +17,9 @@ package org.glowroot.api;
 
 import java.util.concurrent.ConcurrentMap;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * This class is modeled after Guava's Optional class. It can be useful for plugins when returning a

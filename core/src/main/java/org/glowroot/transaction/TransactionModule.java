@@ -21,7 +21,7 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 import org.glowroot.api.PluginServices;
 import org.glowroot.common.Clock;
@@ -65,20 +65,20 @@ public class TransactionModule {
         this.threadAllocatedBytes = threadAllocatedBytes;
         ConfigService configService = configModule.getConfigService();
         transactionRegistry = new TransactionRegistry();
-        adviceCache = new AdviceCache(configModule.getPluginDescriptorCache().getAdvisors(),
+        adviceCache = new AdviceCache(configModule.getPluginDescriptorCache().advisors(),
                 configService.getCapturePoints(), instrumentation, dataDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
-                configModule.getPluginDescriptorCache().getMixinTypes(), extraBootResourceFinder);
+                configModule.getPluginDescriptorCache().mixinTypes(), extraBootResourceFinder);
         final MetricNameCache metricNameCache = new MetricNameCache();
         weavingTimerService = new WeavingTimerServiceImpl(transactionRegistry, metricNameCache);
 
         metricWrapperMethods =
-                configModule.getConfigService().getAdvancedConfig().isMetricWrapperMethods();
+                configModule.getConfigService().getAdvancedConfig().metricWrapperMethods();
         // instrumentation is null when debugging with IsolatedWeavingClassLoader
         // instead of javaagent
         if (instrumentation != null) {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
-                    configModule.getPluginDescriptorCache().getMixinTypes(),
+                    configModule.getPluginDescriptorCache().mixinTypes(),
                     adviceCache.getAdvisorsSupplier(), analyzedWorld, weavingTimerService,
                     metricWrapperMethods);
             PreInitializeWeavingClasses.preInitializeClasses();

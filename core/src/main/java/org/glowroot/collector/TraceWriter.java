@@ -32,43 +32,43 @@ public class TraceWriter {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeStringField("id", trace.getId());
-        jg.writeBooleanField("active", trace.isActive());
-        jg.writeBooleanField("partial", trace.isPartial());
-        jg.writeNumberField("startTime", trace.getStartTime());
-        jg.writeNumberField("captureTime", trace.getCaptureTime());
-        jg.writeNumberField("duration", trace.getDuration());
-        jg.writeStringField("transactionType", trace.getTransactionType());
-        jg.writeStringField("transactionName", trace.getTransactionName());
-        jg.writeStringField("headline", trace.getHeadline());
-        jg.writeStringField("error", trace.getError());
-        jg.writeStringField("user", trace.getUser());
-        String customAttributes = trace.getCustomAttributes();
+        jg.writeStringField("id", trace.id());
+        jg.writeBooleanField("active", trace.active());
+        jg.writeBooleanField("partial", trace.partial());
+        jg.writeNumberField("startTime", trace.startTime());
+        jg.writeNumberField("captureTime", trace.captureTime());
+        jg.writeNumberField("duration", trace.duration());
+        jg.writeStringField("transactionType", trace.transactionType());
+        jg.writeStringField("transactionName", trace.transactionName());
+        jg.writeStringField("headline", trace.headline());
+        jg.writeStringField("error", trace.error());
+        jg.writeStringField("user", trace.user());
+        String customAttributes = trace.customAttributes();
         if (customAttributes != null) {
             jg.writeFieldName("customAttributes");
             jg.writeRawValue(customAttributes);
         }
-        String metrics = trace.getMetrics();
+        String metrics = trace.metrics();
         if (metrics != null) {
             jg.writeFieldName("metrics");
             jg.writeRawValue(metrics);
         }
-        String threadInfo = trace.getThreadInfo();
+        String threadInfo = trace.threadInfo();
         if (threadInfo != null) {
             jg.writeFieldName("threadInfo");
             jg.writeRawValue(threadInfo);
         }
-        String gcInfos = trace.getGcInfos();
+        String gcInfos = trace.gcInfos();
         if (gcInfos != null) {
             jg.writeFieldName("gcInfos");
             jg.writeRawValue(gcInfos);
         }
         jg.writeStringField("entriesExistence",
-                trace.getEntriesExistence().name().toLowerCase(Locale.ENGLISH));
+                trace.entriesExistence().name().toLowerCase(Locale.ENGLISH));
         jg.writeStringField("profileExistence",
-                trace.getProfileExistence().name().toLowerCase(Locale.ENGLISH));
+                trace.profileExistence().name().toLowerCase(Locale.ENGLISH));
         jg.writeStringField("outlierProfileExistence",
-                trace.getOutlierProfileExistence().name().toLowerCase(Locale.ENGLISH));
+                trace.outlierProfileExistence().name().toLowerCase(Locale.ENGLISH));
         jg.writeEndObject();
         jg.close();
         return sb.toString();

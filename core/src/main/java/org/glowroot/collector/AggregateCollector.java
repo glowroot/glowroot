@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
-import org.glowroot.markers.GuardedBy;
+import javax.annotation.concurrent.GuardedBy;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Transaction;

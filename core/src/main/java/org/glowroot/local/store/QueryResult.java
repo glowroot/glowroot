@@ -30,11 +30,11 @@ public class QueryResult<T> {
         this.moreAvailable = moreAvailable;
     }
 
-    public List<T> getRecords() {
+    public List<T> records() {
         return records;
     }
 
-    public boolean isMoreAvailable() {
+    public boolean moreAvailable() {
         return moreAvailable;
     }
 

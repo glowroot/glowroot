@@ -21,10 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jboss.netty.channel.ChannelException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,7 +141,7 @@ public class LocalUiModule {
         final int numWorkerThreads = 1;
         int port;
         if (LocalUiModule.port == null) {
-            port = configService.getUserInterfaceConfig().getPort();
+            port = configService.getUserInterfaceConfig().port();
         } else {
             port = LocalUiModule.port;
         }

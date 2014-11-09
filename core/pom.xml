@@ -26,6 +26,19 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>value</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>value-standalone</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
       <version>5.0.3</version>
@@ -162,6 +175,24 @@
     </resources>
     <plugins>
       <plugin>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <!-- immutables annotations processors require java 7 -->
+                  <version>[1.7,)</version>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <version>1.3.2</version>
@@ -258,6 +289,35 @@
         </configuration>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <!-- TODO this is needed until https://jira.codehaus.org/browse/MSHADE-182 -->
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>com.coderplus.maven.plugins</groupId>
+                    <artifactId>copy-rename-maven-plugin</artifactId>
+                    <versionRange>[1.0,)</versionRange>
+                    <goals>
+                      <goal>rename</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore />
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <profiles>
@@ -271,6 +331,24 @@
       </activation>
       <build>
         <plugins>
+          <plugin>
+            <!-- TODO this is needed until https://jira.codehaus.org/browse/MSHADE-182 -->
+            <groupId>com.coderplus.maven.plugins</groupId>
+            <artifactId>copy-rename-maven-plugin</artifactId>
+            <version>1.0</version>
+            <executions>
+              <execution>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>rename</goal>
+                </goals>
+                <configuration>
+                  <sourceFile>target/classes/META-INF/services/org.immutables.common.marshal.internal.MarshalingContributor</sourceFile>
+                  <destinationFile>target/classes/META-INF/services/org.glowroot.shaded.immutables.common.marshal.internal.MarshalingContributor</destinationFile>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <artifactId>maven-shade-plugin</artifactId>
             <configuration>
@@ -289,8 +367,11 @@
                 <configuration>
                   <artifactSet>
                     <excludes>
-                      <!-- don't need this dependency at runtime since only annotations -->
+                      <!-- don't need these dependencies at runtime since only annotations -->
                       <exclude>${checker.qual.group.id}:${checker.qual.artifact.id}</exclude>
+                      <exclude>com.google.code.findbugs:jsr305</exclude>
+                      <!-- don't need this dependency at runtime since only annotation processor -->
+                      <exclude>org.immutables:value-standalone</exclude>
                     </excludes>
                   </artifactSet>
                   <filters>
@@ -298,6 +379,13 @@
                       <artifact>com.google.guava:guava</artifact>
                       <excludes>
                         <exclude>META-INF/beans.xml</exclude>
+                      </excludes>
+                    </filter>
+                    <filter>
+                      <artifact>org.immutables:common</artifact>
+                      <excludes>
+                        <exclude>META-INF/javax.ws.rs.ext.MessageBodyReader</exclude>
+                        <exclude>META-INF/javax.ws.rs.ext.MessageBodyWriter</exclude>
                       </excludes>
                     </filter>
                     <filter>
@@ -377,6 +465,10 @@
                       <!-- a couple of classes in guava are under this package name -->
                       <pattern>com.google.thirdparty</pattern>
                       <shadedPattern>org.glowroot.shaded.google.thirdparty</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>org.immutables</pattern>
+                      <shadedPattern>org.glowroot.shaded.immutables</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>com.fasterxml.jackson</pattern>

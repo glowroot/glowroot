@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
@@ -29,7 +31,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,10 +109,10 @@ public class MainEntryPoint {
         startupLogger.info("Glowroot listening at http://localhost:{}",
                 glowrootModule.getUiModule().getPort());
         List<PluginDescriptor> pluginDescriptors =
-                glowrootModule.getConfigModule().getPluginDescriptorCache().getPluginDescriptors();
+                glowrootModule.getConfigModule().getPluginDescriptorCache().pluginDescriptors();
         List<String> pluginNames = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            pluginNames.add(pluginDescriptor.getName());
+            pluginNames.add(pluginDescriptor.name());
         }
         if (!pluginNames.isEmpty()) {
             startupLogger.info("Glowroot plugins loaded: {}", Joiner.on(", ").join(pluginNames));

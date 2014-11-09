@@ -15,7 +15,9 @@
  */
 package org.glowroot.local.store;
 
-public enum StringComparator {
+import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
+
+public enum StringComparator implements LowercaseMarshaling {
 
     BEGINS("like", "%s%%"),
     EQUALS("=", "%s"),

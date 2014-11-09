@@ -116,7 +116,12 @@
                  class="inline-spinner hide"
                  style="height: 50px;">
             </div>
-            <div ng-repeat="methodSignature in methodSignatures">
+            <div ng-if="loadMethodSignatures">
+              {{methodSignatureText(methodSignatures[0])}}
+              <a href="" ng-click="onSelectMethodName()" style="padding-left: 20px;">expand</a>
+            </div>
+            <div ng-repeat="methodSignature in methodSignatures"
+                 ng-hide="loadMethodSignatures">
               <div class="radio">
                 <label>
                   <!-- need $parent.selectedSignature since ng-repeat creates a new scope
@@ -129,6 +134,9 @@
                   {{methodSignatureText(methodSignature)}}
                 </label>
               </div>
+            </div>
+            <div class="help-block">
+              Only the method name and parameter types are used in the capture point definition.
             </div>
           </div>
         </div>

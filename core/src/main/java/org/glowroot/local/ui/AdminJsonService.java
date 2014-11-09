@@ -22,11 +22,11 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
+import javax.annotation.Nullable;
+
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,11 +100,11 @@ class AdminJsonService {
             logger.warn("retransformClasses is not supported");
             return "{}";
         }
-        ImmutableList<CapturePoint> capturePoints = configService.getCapturePoints();
+        List<CapturePoint> capturePoints = configService.getCapturePoints();
         adviceCache.updateAdvisors(capturePoints, false);
         Set<String> classNames = Sets.newHashSet();
         for (CapturePoint capturePoint : capturePoints) {
-            classNames.add(capturePoint.getClassName());
+            classNames.add(capturePoint.className());
         }
         Set<Class<?>> classes = Sets.newHashSet();
         List<Class<?>> possibleNewReweavableClasses = getExistingSubClasses(classNames);

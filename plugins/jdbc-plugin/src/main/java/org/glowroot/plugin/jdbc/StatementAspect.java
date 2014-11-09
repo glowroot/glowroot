@@ -19,7 +19,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.sql.PreparedStatement;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MetricName;

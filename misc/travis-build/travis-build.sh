@@ -86,6 +86,20 @@ case "$1" in
                  # strip version from directory name
                  mv $HOME/checker-framework-* $HOME/checker-framework
                fi
+
+               set +e
+               git diff --exit-code > /dev/null
+               if [ $? -ne 0 ]
+               then
+                 echo you have unstaged changes!
+                 exit
+               fi
+               set -e
+
+               find -name *.java -print0 | xargs -0 sed -i 's|/\*>>>@UnknownInitialization|/*>>>@org.checkerframework.checker.initialization.qual.UnknownInitialization|g'
+               find -name *.java -print0 | xargs -0 sed -i 's|/\*@\([A-Za-z]*\)\*/|/*@org.checkerframework.checker.nullness.qual.\1*/|g'
+               find -name *.java -print0 | xargs -0 sed -i 's|import org.checkerframework.checker.nullness.qual.Nullable;|import javax.annotation.Nullable;|g'
+
                mvn clean compile -pl .,misc/license-resource-bundle,plugin-api,core,test-harness,plugins/jdbc-plugin,plugins/servlet-plugin,plugins/logger-plugin \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
@@ -94,7 +108,9 @@ case "$1" in
                                  -B \
                                  | sed 's/\[ERROR\] .*[\/]\([^\/.]*\.java\):\[\([0-9]*\),\([0-9]*\)\]/[ERROR] (\1:\2) [column \3]/'
                # preserve exit status from mvn (needed because of pipe to sed)
-               test ${PIPESTATUS[0]} -eq 0
+               mvn_status=${PIPESTATUS[0]}
+               git checkout -- .
+               test $mvn_status -eq 0
                ;;
 
   "saucelabs") if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" ]]

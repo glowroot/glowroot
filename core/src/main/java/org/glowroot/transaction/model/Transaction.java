@@ -18,6 +18,8 @@ package org.glowroot.transaction.model;
 import java.lang.management.ThreadInfo;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
@@ -26,7 +28,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.markers.GuardedBy;
+import javax.annotation.concurrent.GuardedBy;
 
 // contains all data that has been captured for a given transaction (e.g. a servlet request)
 //
@@ -327,9 +328,9 @@ public class Transaction {
         }
     }
 
-    public void setUser(@Nullable String user) {
+    public void setUser(String user) {
         // use the first non-null/non-empty user
-        if (this.user == null && user != null && !user.isEmpty()) {
+        if (this.user == null) {
             this.user = user;
         }
     }

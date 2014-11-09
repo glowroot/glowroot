@@ -17,159 +17,52 @@ package org.glowroot.config;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
-import org.glowroot.markers.Immutable;
+@Value.Immutable
+@Json.Marshaled
+abstract class Config {
 
-@Immutable
-class Config {
-
-    private final TraceConfig traceConfig;
-    private final ProfilingConfig profilingConfig;
-    private final UserRecordingConfig userRecordingConfig;
-    private final StorageConfig storageConfig;
-    private final UserInterfaceConfig userInterfaceConfig;
-    private final AdvancedConfig advancedConfig;
-    private final ImmutableList<PluginConfig> pluginConfigs;
-    private final ImmutableList<MBeanGauge> mbeanGauges;
-    private final ImmutableList<CapturePoint> capturePoints;
-
-    static Config getDefault(ImmutableList<PluginDescriptor> pluginDescriptors) {
-        return new Config(TraceConfig.getDefault(), ProfilingConfig.getDefault(),
-                UserRecordingConfig.getDefault(), StorageConfig.getDefault(),
-                UserInterfaceConfig.getDefault(pluginDescriptors), AdvancedConfig.getDefault(),
-                createPluginConfigs(pluginDescriptors), ImmutableList.<MBeanGauge>of(),
-                ImmutableList.<CapturePoint>of());
+    @Value.Default
+    @Json.Named("trace")
+    TraceConfig traceConfig() {
+        return ImmutableTraceConfig.builder().build();
     }
 
-    static Builder builder(Config base) {
-        return new Builder(base);
+    @Value.Default
+    @Json.Named("profiling")
+    ProfilingConfig profilingConfig() {
+        return ImmutableProfilingConfig.builder().build();
     }
 
-    Config(TraceConfig traceConfig, ProfilingConfig profilingConfig,
-            UserRecordingConfig userRecordingConfig, StorageConfig storageConfig,
-            UserInterfaceConfig userInterfaceConfig, AdvancedConfig advancedConfig,
-            List<PluginConfig> pluginConfigs, List<MBeanGauge> mbeanGauges,
-            List<CapturePoint> capturePoints) {
-        this.traceConfig = traceConfig;
-        this.profilingConfig = profilingConfig;
-        this.userRecordingConfig = userRecordingConfig;
-        this.storageConfig = storageConfig;
-        this.userInterfaceConfig = userInterfaceConfig;
-        this.advancedConfig = advancedConfig;
-        this.pluginConfigs = ImmutableList.copyOf(pluginConfigs);
-        this.mbeanGauges = ImmutableList.copyOf(mbeanGauges);
-        this.capturePoints = ImmutableList.copyOf(capturePoints);
+    @Value.Default
+    @Json.Named("userRecording")
+    UserRecordingConfig userRecordingConfig() {
+        return ImmutableUserRecordingConfig.builder().build();
     }
 
-    TraceConfig getTraceConfig() {
-        return traceConfig;
+    @Value.Default
+    @Json.Named("storage")
+    StorageConfig storageConfig() {
+        return ImmutableStorageConfig.builder().build();
     }
 
-    ProfilingConfig getProfilingConfig() {
-        return profilingConfig;
+    @Value.Default
+    @Json.Named("ui")
+    UserInterfaceConfig userInterfaceConfig() {
+        return ImmutableUserInterfaceConfig.builder().build();
     }
 
-    UserRecordingConfig getUserRecordingConfig() {
-        return userRecordingConfig;
+    @Value.Default
+    @Json.Named("advanced")
+    AdvancedConfig advancedConfig() {
+        return ImmutableAdvancedConfig.builder().build();
     }
 
-    StorageConfig getStorageConfig() {
-        return storageConfig;
-    }
+    @Json.Named("plugins")
+    abstract List<PluginConfig> pluginConfigs();
 
-    UserInterfaceConfig getUserInterfaceConfig() {
-        return userInterfaceConfig;
-    }
-
-    AdvancedConfig getAdvancedConfig() {
-        return advancedConfig;
-    }
-
-    ImmutableList<PluginConfig> getPluginConfigs() {
-        return pluginConfigs;
-    }
-
-    ImmutableList<MBeanGauge> getMBeanGauges() {
-        return mbeanGauges;
-    }
-
-    ImmutableList<CapturePoint> getCapturePoints() {
-        return capturePoints;
-    }
-
-    private static List<PluginConfig> createPluginConfigs(
-            ImmutableList<PluginDescriptor> pluginDescriptors) {
-        List<PluginConfig> pluginConfigs = Lists.newArrayList();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            pluginConfigs.add(PluginConfig.getDefault(pluginDescriptor));
-        }
-        return pluginConfigs;
-    }
-
-    static class Builder {
-
-        private TraceConfig traceConfig;
-        private ProfilingConfig profilingConfig;
-        private UserRecordingConfig userRecordingConfig;
-        private StorageConfig storageConfig;
-        private UserInterfaceConfig userInterfaceConfig;
-        private AdvancedConfig advancedConfig;
-        private List<PluginConfig> pluginConfigs;
-        private List<MBeanGauge> mbeanGauges;
-        private List<CapturePoint> capturePoints;
-
-        private Builder(Config base) {
-            traceConfig = base.traceConfig;
-            profilingConfig = base.profilingConfig;
-            userRecordingConfig = base.userRecordingConfig;
-            storageConfig = base.storageConfig;
-            userInterfaceConfig = base.userInterfaceConfig;
-            advancedConfig = base.advancedConfig;
-            pluginConfigs = base.pluginConfigs;
-            mbeanGauges = base.mbeanGauges;
-            capturePoints = base.capturePoints;
-        }
-        Builder traceConfig(TraceConfig traceConfig) {
-            this.traceConfig = traceConfig;
-            return this;
-        }
-        Builder profilingConfig(ProfilingConfig profilingConfig) {
-            this.profilingConfig = profilingConfig;
-            return this;
-        }
-        Builder userRecordingConfig(UserRecordingConfig userRecordingConfig) {
-            this.userRecordingConfig = userRecordingConfig;
-            return this;
-        }
-        Builder storageConfig(StorageConfig storageConfig) {
-            this.storageConfig = storageConfig;
-            return this;
-        }
-        Builder userInterfaceConfig(UserInterfaceConfig userInterfaceConfig) {
-            this.userInterfaceConfig = userInterfaceConfig;
-            return this;
-        }
-        Builder advancedConfig(AdvancedConfig advancedConfig) {
-            this.advancedConfig = advancedConfig;
-            return this;
-        }
-        Builder pluginConfigs(List<PluginConfig> pluginConfigs) {
-            this.pluginConfigs = pluginConfigs;
-            return this;
-        }
-        Builder mbeanGauges(List<MBeanGauge> mbeanGauges) {
-            this.mbeanGauges = mbeanGauges;
-            return this;
-        }
-        Builder capturePoints(List<CapturePoint> capturePoints) {
-            this.capturePoints = capturePoints;
-            return this;
-        }
-        Config build() {
-            return new Config(traceConfig, profilingConfig, userRecordingConfig, storageConfig,
-                    userInterfaceConfig, advancedConfig, pluginConfigs, mbeanGauges, capturePoints);
-        }
-    }
+    abstract List<MBeanGauge> mbeanGauges();
+    abstract List<CapturePoint> capturePoints();
 }

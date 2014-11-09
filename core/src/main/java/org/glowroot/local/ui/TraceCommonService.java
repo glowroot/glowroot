@@ -19,8 +19,9 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 
+import javax.annotation.Nullable;
+
 import com.google.common.io.CharSource;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.collector.EntriesCharSourceCreator;
 import org.glowroot.collector.ProfileCharSourceCreator;

@@ -15,78 +15,29 @@
  */
 package org.glowroot.config;
 
-import com.fasterxml.jackson.annotation.JsonView;
-import com.google.common.base.MoreObjects;
+import com.google.common.base.Charsets;
+import com.google.common.hash.Hashing;
+import org.immutables.common.marshal.Marshaling;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
-import org.glowroot.config.JsonViews.UiView;
-import org.glowroot.markers.Immutable;
-import org.glowroot.markers.UsedByJsonBinding;
-
-@Immutable
+@Value.Immutable
+@Json.Marshaled
 public class ProfilingConfig {
 
-    private final boolean enabled;
-    private final int intervalMillis;
-
-    private final String version;
-
-    static ProfilingConfig getDefault() {
-        final boolean enabled = true;
-        final int intervalMillis = 2000;
-        return new ProfilingConfig(enabled, intervalMillis);
+    @Value.Default
+    public boolean enabled() {
+        return true;
     }
 
-    public static Overlay overlay(ProfilingConfig base) {
-        return new Overlay(base);
+    @Value.Default
+    public int intervalMillis() {
+        return 2000;
     }
 
-    private ProfilingConfig(boolean enabled, int intervalMillis) {
-        this.enabled = enabled;
-        this.intervalMillis = intervalMillis;
-        version = VersionHashes.sha1(enabled, intervalMillis);
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public int getIntervalMillis() {
-        return intervalMillis;
-    }
-
-    @JsonView(UiView.class)
-    public String getVersion() {
-        return version;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("enabled", enabled)
-                .add("intervalMillis", intervalMillis)
-                .add("version", version)
-                .toString();
-    }
-
-    // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
-    @UsedByJsonBinding
-    public static class Overlay {
-
-        private boolean enabled;
-        private int intervalMillis;
-
-        private Overlay(ProfilingConfig base) {
-            enabled = base.enabled;
-            intervalMillis = base.intervalMillis;
-        }
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
-        public void setIntervalMillis(int intervalMillis) {
-            this.intervalMillis = intervalMillis;
-        }
-        public ProfilingConfig build() {
-            return new ProfilingConfig(enabled, intervalMillis);
-        }
+    @Value.Derived
+    @Json.Ignore
+    public String version() {
+        return Hashing.sha1().hashString(Marshaling.toJson(this), Charsets.UTF_8).toString();
     }
 }

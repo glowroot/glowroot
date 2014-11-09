@@ -20,10 +20,11 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Objects;
 import com.google.common.io.CharSource;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.Existence;
@@ -33,7 +34,7 @@ import org.glowroot.markers.UsedByJsonBinding;
 
 class AggregateCommonService {
 
-    private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     private final AggregateDao aggregateDao;
 
@@ -48,19 +49,19 @@ class AggregateCommonService {
         Existence profileExistence = Existence.NO;
         long profileSampleCount = 0;
         for (Aggregate aggregate : aggregates) {
-            totalMicros += aggregate.getTotalMicros();
-            count += aggregate.getTransactionCount();
+            totalMicros += aggregate.totalMicros();
+            count += aggregate.transactionCount();
             AggregateMetric toBeMergedSyntheticRootMetric =
-                    mapper.readValue(aggregate.getMetrics(), AggregateMetric.class);
+                    mapper.readValue(aggregate.metrics(), AggregateMetric.class);
             mergeMatchedMetric(toBeMergedSyntheticRootMetric, syntheticRootMetric);
             if (profileExistence == Existence.NO) {
-                profileExistence = aggregate.getProfileExistence();
+                profileExistence = aggregate.profileExistence();
             } else if (profileExistence == Existence.EXPIRED
-                    && aggregate.getProfileExistence() == Existence.YES) {
+                    && aggregate.profileExistence() == Existence.YES) {
                 profileExistence = Existence.YES;
             }
-            if (aggregate.getProfileExistence() == Existence.YES) {
-                profileSampleCount += aggregate.getProfileSampleCount();
+            if (aggregate.profileExistence() == Existence.YES) {
+                profileSampleCount += aggregate.profileSampleCount();
             }
         }
         AggregateMetric rootMetric = syntheticRootMetric;

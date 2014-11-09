@@ -17,8 +17,9 @@ package org.glowroot.transaction;
 
 import java.util.Collection;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.Sets;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.transaction.model.Transaction;
 

@@ -15,12 +15,13 @@
  */
 package org.glowroot.container.config;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 

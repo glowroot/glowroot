@@ -161,7 +161,6 @@ glowroot.controller('ConfigMBeanGaugeCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      delete postData.version;
       // java.lang:name=PS Eden Space,type=MemoryPool
       var parts = postData.mbeanObjectName.split(/[:,]/);
       postData.name = parts[0];
@@ -177,9 +176,9 @@ glowroot.controller('ConfigMBeanGaugeCtrl', [
       var url;
       var version = $scope.config.version;
       if (version) {
-        url = 'backend/config/mbean-gauge/' + version;
+        url = 'backend/config/mbean-gauges/update';
       } else {
-        url = 'backend/config/mbean-gauge/+';
+        url = 'backend/config/mbean-gauges/add';
       }
       $http.post(url, postData)
           .success(function (data) {
@@ -197,7 +196,7 @@ glowroot.controller('ConfigMBeanGaugeCtrl', [
 
     $scope.delete = function (deferred) {
       if ($scope.config.version) {
-        $http.post('backend/config/mbean-gauge/-', '"' + $scope.config.version + '"')
+        $http.post('backend/config/mbean-gauges/remove', '"' + $scope.config.version + '"')
             .success(function (data) {
               $scope.$parent.removeGauge($scope.gauge);
               deferred.resolve('Deleted');

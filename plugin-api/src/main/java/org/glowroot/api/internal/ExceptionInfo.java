@@ -19,19 +19,21 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.value.Value;
 
 // this class primarily exists because Exceptions are not thread safe
-public class ExceptionInfo {
+@Value.Immutable
+public abstract class ExceptionInfo {
 
-    private final String display;
+    public abstract String display();
     // for inner cause exceptions, stackTrace only includes frames not in common with caused
-    private final ImmutableList<StackTraceElement> stackTrace;
+    public abstract List<StackTraceElement> stackTrace();
     // this is for printing '... 18 more' at end of cause instead of entire stack trace
-    private final int framesInCommonWithCaused;
-    @Nullable
-    private final ExceptionInfo cause;
+    public abstract int framesInCommonWithCaused();
+    public abstract @Nullable ExceptionInfo cause();
 
     public static ExceptionInfo from(Throwable t) {
         return from(t, null);
@@ -39,7 +41,6 @@ public class ExceptionInfo {
 
     private static ExceptionInfo from(Throwable t,
             @Nullable List<StackTraceElement> causedStackTrace) {
-
         int framesInCommon = 0;
         ImmutableList<StackTraceElement> stackTrace = ImmutableList.copyOf(t.getStackTrace());
         if (causedStackTrace != null) {
@@ -59,42 +60,16 @@ public class ExceptionInfo {
                 stackTrace = stackTrace.subList(0, stackTrace.size() - framesInCommon);
             }
         }
+        ImmutableExceptionInfo.Builder builder = ImmutableExceptionInfo.builder()
+                .display(t.toString())
+                .addAllStackTrace(stackTrace)
+                .framesInCommonWithCaused(framesInCommon);
         Throwable cause = t.getCause();
-        if (cause == null) {
-            return new ExceptionInfo(t.toString(), stackTrace, null, framesInCommon);
-        } else {
+        if (cause != null) {
             // pass t's original stack trace to construct the nested cause
             // (not stackTraces, which now has common frames removed)
-            return new ExceptionInfo(t.toString(), stackTrace, from(cause,
-                    Arrays.asList(t.getStackTrace())), framesInCommon);
+            builder.cause(from(cause, Arrays.asList(t.getStackTrace())));
         }
-    }
-
-    private ExceptionInfo(String display, List<StackTraceElement> stackTrace,
-            @Nullable ExceptionInfo cause, int framesInCommon) {
-        this.display = display;
-        this.stackTrace = ImmutableList.copyOf(stackTrace);
-        this.cause = cause;
-        this.framesInCommonWithCaused = framesInCommon;
-    }
-
-    public String getDisplay() {
-        return display;
-    }
-
-    // don't return ImmutableList since tests have maven dependency on plugin-api, they will always
-    // include unshaded plugin-api, while core may be shaded, in which case NoSuchMethodError will
-    // occur since shaded core thinks this method returns shaded ImmutableList
-    public List<StackTraceElement> getStackTrace() {
-        return stackTrace;
-    }
-
-    public int getFramesInCommonWithCaused() {
-        return framesInCommonWithCaused;
-    }
-
-    @Nullable
-    public ExceptionInfo getCause() {
-        return cause;
+        return builder.build();
     }
 }

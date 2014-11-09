@@ -17,13 +17,14 @@ package org.glowroot.container.impl;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.config.AdvancedConfig;
@@ -144,7 +145,7 @@ class HttpConfigService implements ConfigService {
 
     @Override
     public List<MBeanGauge> getMBeanGauges() throws Exception {
-        String response = httpClient.get("/backend/config/mbean-gauge");
+        String response = httpClient.get("/backend/config/mbean-gauges");
         ArrayNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ArrayNode.class);
         List<MBeanGauge> configs = Lists.newArrayList();
         for (JsonNode childNode : rootNode) {
@@ -157,25 +158,26 @@ class HttpConfigService implements ConfigService {
 
     // returns new version
     @Override
-    public String addMBeanGauge(MBeanGauge mbeanGauge) throws Exception {
-        String response = httpClient.post("/backend/config/mbean-gauge/+",
+    public MBeanGauge addMBeanGauge(MBeanGauge mbeanGauge) throws Exception {
+        String response = httpClient.post("/backend/config/mbean-gauges/add",
                 mapper.writeValueAsString(mbeanGauge));
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
-        JsonNode versionNode = ObjectMappers.getRequiredChildNode(configNode, "version");
-        return versionNode.asText();
+        return mapper.readValue(mapper.treeAsTokens(configNode), MBeanGauge.class);
     }
 
     @Override
-    public void updateMBeanGauge(String version, MBeanGauge mbeanGauge)
-            throws Exception {
-        httpClient.post("/backend/config/mbean-gauge/" + version,
+    public MBeanGauge updateMBeanGauge(MBeanGauge mbeanGauge) throws Exception {
+        String response = httpClient.post("/backend/config/mbean-gauges/update",
                 mapper.writeValueAsString(mbeanGauge));
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
+        return mapper.readValue(mapper.treeAsTokens(configNode), MBeanGauge.class);
     }
 
     @Override
     public void removeMBeanGauge(String version) throws Exception {
-        httpClient.post("/backend/config/mbean-gauge/-", mapper.writeValueAsString(version));
+        httpClient.post("/backend/config/mbean-gauges/remove", mapper.writeValueAsString(version));
     }
 
     @Override
@@ -189,24 +191,23 @@ class HttpConfigService implements ConfigService {
 
     // returns new version
     @Override
-    public String addCapturePoint(CapturePoint capturePoint) throws Exception {
-        String response = httpClient.post("/backend/config/capture-points/+",
+    public CapturePoint addCapturePoint(CapturePoint capturePoint) throws Exception {
+        String response = httpClient.post("/backend/config/capture-points/add",
                 mapper.writeValueAsString(capturePoint));
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        JsonNode versionNode = ObjectMappers.getRequiredChildNode(rootNode, "version");
-        return versionNode.asText();
+        return ObjectMappers.readRequiredValue(mapper, response, CapturePoint.class);
     }
 
     @Override
-    public void updateCapturePoint(String version, CapturePoint capturePoint)
-            throws Exception {
-        httpClient.post("/backend/config/capture-points/" + version,
+    public CapturePoint updateCapturePoint(CapturePoint capturePoint) throws Exception {
+        String response = httpClient.post("/backend/config/capture-points/update",
                 mapper.writeValueAsString(capturePoint));
+        return ObjectMappers.readRequiredValue(mapper, response, CapturePoint.class);
     }
 
     @Override
     public void removeCapturePoint(String version) throws Exception {
-        httpClient.post("/backend/config/capture-points/-", mapper.writeValueAsString(version));
+        httpClient.post("/backend/config/capture-points/remove",
+                mapper.writeValueAsString(version));
     }
 
     @Override

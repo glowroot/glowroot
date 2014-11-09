@@ -17,9 +17,10 @@ package org.glowroot.api;
 
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +82,7 @@ public abstract class Message {
 
         @Nullable
         private final String template;
-        private final/*@Nullable*/String[] args;
+        private final @Nullable String[] args;
         private final Map<String, ? extends /*@Nullable*/Object> detail;
 
         private MessageImpl(@Nullable String template, @Nullable String[] args,

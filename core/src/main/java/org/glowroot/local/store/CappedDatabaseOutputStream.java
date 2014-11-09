@@ -111,14 +111,14 @@ class CappedDatabaseOutputStream extends OutputStream {
             // tasks in order to keep number of threads down), so force an fsync now
             fsyncIfNeeded();
         }
-        return FileBlock.from(blockStartIndex, currIndex - blockStartIndex);
+        return ImmutableFileBlock.of(blockStartIndex, currIndex - blockStartIndex);
     }
 
     boolean isOverwritten(FileBlock block) {
         // need to check lastResizeBaseIndex in case it was recently resized larger, in which case
         // currIndex - sizeBytes would be less than lastResizeBaseIndex
-        return block.getStartIndex() < lastResizeBaseIndex
-                || block.getStartIndex() < currIndex - sizeBytes;
+        return block.startIndex() < lastResizeBaseIndex
+                || block.startIndex() < currIndex - sizeBytes;
     }
 
     // this is ok to read outside of external synchronization around startBlock()/write()/endBlock()

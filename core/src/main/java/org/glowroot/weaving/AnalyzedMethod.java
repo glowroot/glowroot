@@ -18,151 +18,76 @@ package org.glowroot.weaving;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 
-import org.glowroot.markers.Immutable;
-
 // Strings are interned to reduce memory footprint of AnalyzedWorld
-@Immutable
-public class AnalyzedMethod {
+@Value.Immutable
+public abstract class AnalyzedMethod {
 
-    private final String name;
-    private final ImmutableList<String> parameterTypes;
-    private final String returnType;
-    private final int modifiers;
+    // static AnalyzedMethod from(String name, List<Type> parameterTypes, Type returnType,
+    // int modifiers, @Nullable String signature, List<String> exceptions,
+    // List<Advice> advisors) {
+    // List<String> parameterTypeNames = Lists.newArrayList();
+    // for (Type parameterType : parameterTypes) {
+    // parameterTypeNames.add(parameterType.getClassName());
+    // }
+    // String returnTypeName = returnType.getClassName();
+    // return new AnalyzedMethod(name, parameterTypeNames, returnTypeName, modifiers, signature,
+    // exceptions, advisors);
+    // }
 
-    // fields below are needed for public methods in case they end up fulfilling an interface in a
-    // subclass
-    @Nullable
-    private final String signature;
-    private final ImmutableList<String> exceptions;
+    // this.name = name.intern();
+    // this.parameterTypes = internStringList(parameterTypes);
+    // this.returnType = returnType.intern();
+    // this.signature = signature == null ? null : signature.intern();
+    // this.exceptions = internStringList(exceptions);
 
-    private final ImmutableList<Advice> advisors;
-
-    static AnalyzedMethod from(String name, List<Type> parameterTypes, Type returnType,
-            int modifiers, @Nullable String signature, List<String> exceptions,
-            List<Advice> advisors) {
-        List<String> parameterTypeNames = Lists.newArrayList();
-        for (Type parameterType : parameterTypes) {
-            parameterTypeNames.add(parameterType.getClassName());
-        }
-        String returnTypeName = returnType.getClassName();
-        return new AnalyzedMethod(name, parameterTypeNames, returnTypeName, modifiers, signature,
-                exceptions, advisors);
-    }
-
-    private AnalyzedMethod(String name, List<String> parameterTypes, String returnType,
-            int modifiers, @Nullable String signature, List<String> exceptions,
-            List<Advice> advisors) {
-        this.name = name.intern();
-        this.parameterTypes = internStringList(parameterTypes);
-        this.returnType = returnType.intern();
-        this.modifiers = modifiers;
-        this.signature = signature == null ? null : signature.intern();
-        this.exceptions = internStringList(exceptions);
-        this.advisors = ImmutableList.copyOf(advisors);
-    }
-
-    public String getName() {
-        return name;
-    }
-
+    public abstract String name();
     // these are class names
-    public ImmutableList<String> getParameterTypes() {
-        return parameterTypes;
-    }
+    public abstract List<String> parameterTypes();
+    public abstract String returnType();
+    public abstract int modifiers();
 
-    public String getReturnType() {
-        return returnType;
-    }
-
-    public int getModifiers() {
-        return modifiers;
-    }
+    // signature, exceptions and advisors are needed for public methods in case they end up
+    // fulfilling an interface in a subclass
 
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
-    @Nullable
-    String getSignature() {
-        return signature;
-    }
-
+    abstract @Nullable String signature();
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
-    ImmutableList<String> getExceptions() {
-        return exceptions;
-    }
+    abstract List<String> exceptions();
+    abstract List<Advice> advisors();
 
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
     String getDesc() {
+        List<String> parameterTypes = parameterTypes();
         Type[] types = new Type[parameterTypes.size()];
         for (int i = 0; i < parameterTypes.size(); i++) {
             types[i] = getType(parameterTypes.get(i));
         }
-        return Type.getMethodDescriptor(getType(returnType), types);
-    }
-
-    ImmutableList<Advice> getAdvisors() {
-        return advisors;
+        return Type.getMethodDescriptor(getType(returnType()), types);
     }
 
     boolean isOverriddenBy(String methodName, List<Type> parameterTypes) {
-        if (Modifier.isPrivate(this.modifiers)) {
+        if (Modifier.isPrivate(modifiers())) {
             return false;
         }
-        if (!methodName.equals(name)) {
+        if (!methodName.equals(name())) {
             return false;
         }
-        if (parameterTypes.size() != this.parameterTypes.size()) {
+        if (parameterTypes.size() != parameterTypes().size()) {
             return false;
         }
         for (int i = 0; i < parameterTypes.size(); i++) {
-            if (!parameterTypes.get(i).getClassName().equals(this.parameterTypes.get(i))) {
+            if (!parameterTypes.get(i).getClassName().equals(parameterTypes().get(i))) {
                 return false;
             }
         }
         return true;
-    }
-
-    // equals and hashCode are only defined in terms of name and parameterTypes since those uniquely
-    // identify a method within a given class
-    // this is currently important because AnalyzedMethod is used as a map key in
-    // WeavingClassVisitor
-    @Override
-    public boolean equals(@Nullable Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (obj instanceof AnalyzedMethod) {
-            AnalyzedMethod that = (AnalyzedMethod) obj;
-            return Objects.equal(name, that.name)
-                    && Objects.equal(parameterTypes, that.parameterTypes);
-        }
-        return false;
-    }
-
-    // equals and hashCode are only defined in terms of name and parameterTypes since those uniquely
-    // identify a method within a given class
-    // this is currently important because AnalyzedMethod is used as a map key in
-    // WeavingClassVisitor
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(name, parameterTypes);
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("name", name)
-                .add("parameterTypes", parameterTypes)
-                .add("returnType", returnType)
-                .add("modifiers", modifiers)
-                .add("signature", signature)
-                .add("exceptions", exceptions)
-                .toString();
     }
 
     static ImmutableList<String> internStringList(List<String> strings) {

@@ -15,7 +15,7 @@
  */
 package org.glowroot.advicegen;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 import org.glowroot.advicegen.MessageTemplate.ArgPathPart;
 import org.glowroot.advicegen.MessageTemplate.ConstantPart;

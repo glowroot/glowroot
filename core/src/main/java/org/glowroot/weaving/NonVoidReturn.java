@@ -15,8 +15,9 @@
  */
 package org.glowroot.weaving;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.OptionalReturn;
 import org.glowroot.markers.UsedByGeneratedBytecode;

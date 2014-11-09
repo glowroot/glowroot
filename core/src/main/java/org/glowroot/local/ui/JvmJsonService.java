@@ -22,7 +22,6 @@ import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Array;
-import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -34,6 +33,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
+import javax.annotation.Nullable;
 import javax.management.JMException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -41,11 +41,7 @@ import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
@@ -58,15 +54,17 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import com.google.common.primitives.Ints;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.common.marshal.Marshaling;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.GaugePoint;
-import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.MBeanGauge;
 import org.glowroot.jvm.HeapDumps;
+import org.glowroot.jvm.ImmutableAvailability;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 import org.glowroot.jvm.OptionalService;
 import org.glowroot.jvm.OptionalService.Availability;
@@ -76,14 +74,12 @@ import org.glowroot.local.store.GaugePointDao;
 import org.glowroot.markers.UsedByJsonBinding;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.common.ObjectMappers.nullToEmpty;
 
 @JsonService
 class JvmJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(JvmJsonService.class);
-    private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     private static final Ordering<ThreadInfo> threadInfoOrdering =
             new Ordering<ThreadInfo>() {
@@ -169,27 +165,24 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/gauge-points")
-    String getGaugePoints(String content) throws IOException, SQLException {
-        logger.debug("getGaugePoints(): {}", content);
-        ObjectMapper mapper = ObjectMappers.create();
-        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-        GaugePointRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, GaugePointRequest.class);
+    String getGaugePoints(String queryString) throws Exception {
+        logger.debug("getGaugePoints(): {}", queryString);
+        GaugePointRequest request = QueryStrings.decode(queryString, GaugePointRequest.class);
         List<List<Number/*@Nullable*/[]>> series = Lists.newArrayList();
-        for (String gaugeName : request.getGaugeNames()) {
+        for (String gaugeName : request.gaugeNames()) {
             ImmutableList<GaugePoint> gaugePoints =
-                    gaugePointDao.readGaugePoints(gaugeName, request.getFrom(), request.getTo());
+                    gaugePointDao.readGaugePoints(gaugeName, request.from(), request.to());
             List<Number/*@Nullable*/[]> points = Lists.newArrayList();
             GaugePoint lastGaugePoint = null;
             for (GaugePoint gaugePoint : gaugePoints) {
                 if (lastGaugePoint != null) {
                     long millisecondsSinceLastPoint =
-                            gaugePoint.getCaptureTime() - lastGaugePoint.getCaptureTime();
+                            gaugePoint.captureTime() - lastGaugePoint.captureTime();
                     if (millisecondsSinceLastPoint > fixedGaugeIntervalMillis * 1.5) {
                         points.add(null);
                     }
                 }
-                points.add(new Number[] {gaugePoint.getCaptureTime(), gaugePoint.getValue()});
+                points.add(new Number[] {gaugePoint.captureTime(), gaugePoint.value()});
                 lastGaugePoint = gaugePoint;
             }
             series.add(points);
@@ -202,8 +195,8 @@ class JvmJsonService {
         logger.debug("getAllGaugeNames()");
         List<String> gaugeNames = Lists.newArrayList();
         for (MBeanGauge mbeanGauge : configService.getMBeanGauges()) {
-            for (String mbeanAttributeName : mbeanGauge.getMBeanAttributeNames()) {
-                gaugeNames.add(mbeanGauge.getName() + "/" + mbeanAttributeName);
+            for (String mbeanAttributeName : mbeanGauge.mbeanAttributeNames()) {
+                gaugeNames.add(mbeanGauge.name() + "/" + mbeanAttributeName);
             }
         }
         ImmutableList<String> sortedGaugeNames =
@@ -244,13 +237,9 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/mbean-tree")
-    String getMBeanTree(String content) throws IOException, JMException, InterruptedException {
-        logger.debug("getMBeanTree(): {}", content);
-        // ACCEPT_SINGLE_VALUE_AS_ARRAY needed to map expanded whether it is single value or array
-        ObjectMapper mapper =
-                new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
-        MBeanTreeRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, MBeanTreeRequest.class);
+    String getMBeanTree(String queryString) throws Exception {
+        logger.debug("getMBeanTree(): {}", queryString);
+        MBeanTreeRequest request = QueryStrings.decode(queryString, MBeanTreeRequest.class);
         Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null, null);
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
@@ -268,7 +257,7 @@ class JvmJsonService {
                 String value = propertyValues.get(i);
                 if (i == propertyValues.size() - 1) {
                     String name = objectName.toString();
-                    if (request.getExpanded().contains(name)) {
+                    if (request.expanded().contains(name)) {
                         Map<String, /*@Nullable*/Object> sortedAttributeMap =
                                 getMBeanSortedAttributeMap(objectName);
                         node.addLeafNode(
@@ -285,12 +274,11 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/mbean-attribute-map")
-    String getMBeanAttributeMap(String content) throws IOException, JMException,
-            InterruptedException {
-        logger.debug("getMBeanAttributeMap(): content={}", content);
+    String getMBeanAttributeMap(String queryString) throws Exception {
+        logger.debug("getMBeanAttributeMap(): content={}", queryString);
         MBeanAttributeMapRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, MBeanAttributeMapRequest.class);
-        ObjectName objectName = ObjectName.getInstance(request.getObjectName());
+                QueryStrings.decode(queryString, MBeanAttributeMapRequest.class);
+        ObjectName objectName = ObjectName.getInstance(request.objectName());
         Map<String, /*@Nullable*/Object> attributeMap = getMBeanSortedAttributeMap(objectName);
         return mapper.writeValueAsString(attributeMap);
     }
@@ -361,16 +349,15 @@ class JvmJsonService {
     @POST("/backend/jvm/check-disk-space")
     String checkDiskSpace(String content) throws IOException {
         logger.debug("checkDiskSpace(): content={}", content);
-        RequestWithDirectory request = ObjectMappers.readRequiredValue(mapper, content,
-                RequestWithDirectory.class);
-        File dir = new File(request.getDirectory());
+        RequestWithDirectory request = Marshaling.fromJson(content, RequestWithDirectory.class);
+        File dir = new File(request.directory());
         if (!dir.exists()) {
             return "{\"error\": \"Directory doesn't exist\"}";
         }
         if (!dir.isDirectory()) {
             return "{\"error\": \"Path is not a directory\"}";
         }
-        long diskSpace = new File(request.getDirectory()).getFreeSpace();
+        long diskSpace = new File(request.directory()).getFreeSpace();
         return Long.toString(diskSpace);
     }
 
@@ -378,9 +365,8 @@ class JvmJsonService {
     String dumpHeap(String content) throws IOException, JMException, InterruptedException {
         logger.debug("dumpHeap(): content={}", content);
         HeapDumps service = OptionalJsonServices.validateAvailability(heapDumps);
-        RequestWithDirectory request = ObjectMappers.readRequiredValue(mapper, content,
-                RequestWithDirectory.class);
-        File dir = new File(request.getDirectory());
+        RequestWithDirectory request = Marshaling.fromJson(content, RequestWithDirectory.class);
+        File dir = new File(request.directory());
         if (!dir.exists()) {
             return "{\"error\": \"Directory doesn't exist\"}";
         }
@@ -429,27 +415,27 @@ class JvmJsonService {
     private static Availability getThreadCpuTimeAvailability() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         if (!threadMXBean.isThreadCpuTimeSupported()) {
-            return new Availability(false, "java.lang.management.ThreadMXBean"
+            return ImmutableAvailability.of(false, "java.lang.management.ThreadMXBean"
                     + ".isThreadCpuTimeSupported() returned false");
         }
         if (!threadMXBean.isThreadCpuTimeEnabled()) {
-            return new Availability(false, "java.lang.management.ThreadMXBean"
+            return ImmutableAvailability.of(false, "java.lang.management.ThreadMXBean"
                     + ".isThreadCpuTimeEnabled() returned false");
         }
-        return new Availability(true, "");
+        return ImmutableAvailability.of(true, "");
     }
 
     private static Availability getThreadContentionAvailability() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         if (!threadMXBean.isThreadContentionMonitoringSupported()) {
-            return new Availability(false, "java.lang.management.ThreadMXBean"
+            return ImmutableAvailability.of(false, "java.lang.management.ThreadMXBean"
                     + ".isThreadContentionMonitoringSupported() returned false");
         }
         if (!threadMXBean.isThreadContentionMonitoringEnabled()) {
-            return new Availability(false, "java.lang.management.ThreadMXBean"
+            return ImmutableAvailability.of(false, "java.lang.management.ThreadMXBean"
                     + ".isThreadContentionMonitoringEnabled() returned false");
         }
-        return new Availability(true, "");
+        return ImmutableAvailability.of(true, "");
     }
 
     @Nullable
@@ -547,55 +533,6 @@ class JvmJsonService {
         }
     }
 
-    @UsedByJsonBinding
-    static class GaugePointRequest {
-
-        private final long from;
-        private final long to;
-        private final ImmutableList<String> gaugeNames;
-
-        @JsonCreator
-        GaugePointRequest(@JsonProperty("from") @Nullable Long from,
-                @JsonProperty("to") @Nullable Long to,
-                @JsonProperty("gaugeNames") @Nullable List<String> gaugeNames)
-                throws JsonMappingException {
-            checkRequiredProperty(from, "from");
-            checkRequiredProperty(to, "to");
-            this.from = from;
-            this.to = to;
-            this.gaugeNames = ImmutableList.copyOf(nullToEmpty(gaugeNames));
-        }
-
-        private long getFrom() {
-            return from;
-        }
-
-        private long getTo() {
-            return to;
-        }
-
-        private ImmutableList<String> getGaugeNames() {
-            return gaugeNames;
-        }
-    }
-
-    @UsedByJsonBinding
-    static class RequestWithDirectory {
-
-        private final String directory;
-
-        @JsonCreator
-        RequestWithDirectory(@JsonProperty("directory") @Nullable String directory)
-                throws JsonMappingException {
-            checkRequiredProperty(directory, "directory");
-            this.directory = directory;
-        }
-
-        private String getDirectory() {
-            return directory;
-        }
-    }
-
     interface MBeanTreeNode {
 
         static final Ordering<MBeanTreeNode> ordering = new Ordering<MBeanTreeNode>() {
@@ -687,34 +624,29 @@ class JvmJsonService {
         }
     }
 
-    private static class MBeanTreeRequest {
-
-        private final List<String> expanded;
-
-        @JsonCreator
-        MBeanTreeRequest(@JsonProperty("expanded") @Nullable List<String> expanded)
-                throws JsonMappingException {
-            this.expanded = nullToEmpty(expanded);
-        }
-
-        public List<String> getExpanded() {
-            return expanded;
-        }
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class GaugePointRequest {
+        abstract long from();
+        abstract long to();
+        abstract List<String> gaugeNames();
     }
 
-    private static class MBeanAttributeMapRequest {
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class RequestWithDirectory {
+        abstract String directory();
+    }
 
-        private final String objectName;
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class MBeanTreeRequest {
+        abstract public List<String> expanded();
+    }
 
-        @JsonCreator
-        MBeanAttributeMapRequest(@JsonProperty("objectName") @Nullable String objectName)
-                throws JsonMappingException {
-            checkRequiredProperty(objectName, "objectName");
-            this.objectName = objectName;
-        }
-
-        private String getObjectName() {
-            return objectName;
-        }
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class MBeanAttributeMapRequest {
+        abstract String objectName();
     }
 }

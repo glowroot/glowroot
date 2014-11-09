@@ -21,7 +21,8 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,16 +65,16 @@ public class StorageModule {
         }
         final ConfigService configService = configModule.getConfigService();
         dataSource.setQueryTimeoutSeconds(
-                configService.getAdvancedConfig().getInternalQueryTimeoutSeconds());
+                configService.getAdvancedConfig().internalQueryTimeoutSeconds());
         configService.addConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
                 dataSource.setQueryTimeoutSeconds(
-                        configService.getAdvancedConfig().getInternalQueryTimeoutSeconds());
+                        configService.getAdvancedConfig().internalQueryTimeoutSeconds());
             }
         });
         this.dataSource = dataSource;
-        int cappedDatabaseSizeMb = configService.getStorageConfig().getCappedDatabaseSizeMb();
+        int cappedDatabaseSizeMb = configService.getStorageConfig().cappedDatabaseSizeMb();
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
         aggregateDao = new AggregateDao(dataSource, cappedDatabase);

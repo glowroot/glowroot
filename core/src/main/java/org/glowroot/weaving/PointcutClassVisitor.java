@@ -15,8 +15,9 @@
  */
 package org.glowroot.weaving;
 
+import javax.annotation.Nullable;
+
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;

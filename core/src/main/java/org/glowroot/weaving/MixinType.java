@@ -20,11 +20,10 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.List;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import javax.annotation.Nullable;
+
 import com.google.common.io.Resources;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,22 +31,17 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.MixinInit;
 
-public class MixinType {
+@Value.Immutable
+public abstract class MixinType {
 
     private static final Logger logger = LoggerFactory.getLogger(MixinType.class);
 
-    private final ImmutableList<String> targets;
-    private final Type implementation;
-    private final ImmutableList<Type> interfaces;
-    @Nullable
-    private final String initMethodName;
-    private final byte[] implementationBytes;
-
     public static MixinType from(Mixin mixin, Class<?> implementation) throws IOException {
-        ImmutableList<String> targets = ImmutableList.copyOf(mixin.target());
-        List<Type> interfaces = Lists.newArrayList();
+        ImmutableMixinType.Builder builder = ImmutableMixinType.builder();
+        builder.addTargets(mixin.target());
+        builder.implementation(Type.getType(implementation));
         for (Class<?> iface : implementation.getInterfaces()) {
-            interfaces.add(Type.getType(iface));
+            builder.addInterfaces(Type.getType(iface));
         }
         String initMethodName = null;
         for (Method method : implementation.getDeclaredMethods()) {
@@ -69,6 +63,7 @@ public class MixinType {
                 initMethodName = method.getName();
             }
         }
+        builder.initMethodName(initMethodName);
         ClassLoader loader = implementation.getClassLoader();
         String resourceName = implementation.getName().replace('.', '/') + ".class";
         URL url;
@@ -80,48 +75,14 @@ public class MixinType {
         if (url == null) {
             throw new IllegalStateException("Could not find resource: " + resourceName);
         }
-        byte[] implementationBytes = Resources.toByteArray(url);
-        return new MixinType(targets, Type.getType(implementation), interfaces, initMethodName,
-                implementationBytes);
+        builder.implementationBytes(Resources.toByteArray(url));
+        return builder.build();
     }
 
-    private MixinType(List<String> targets, Type implementation, List<Type> interfaces,
-            @Nullable String initMethodName, byte[] implementationBytes) {
-        this.targets = ImmutableList.copyOf(targets);
-        this.implementation = implementation;
-        this.interfaces = ImmutableList.copyOf(interfaces);
-        this.initMethodName = initMethodName;
-        this.implementationBytes = implementationBytes;
-    }
-
-    ImmutableList<String> getTargets() {
-        return targets;
-    }
-
-    Type getImplementation() {
-        return implementation;
-    }
-
-    ImmutableList<Type> getInterfaces() {
-        return interfaces;
-    }
-
+    abstract List<String> targets();
+    abstract Type implementation();
+    abstract List<Type> interfaces();
     @Nullable
-    String getInitMethodName() {
-        return initMethodName;
-    }
-
-    byte[] getImplementationBytes() {
-        return implementationBytes;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("targets", targets)
-                .add("implementation", implementation)
-                .add("interfaces", interfaces)
-                .add("initMethodName", initMethodName)
-                .toString();
-    }
+    abstract String initMethodName();
+    abstract byte[] implementationBytes();
 }

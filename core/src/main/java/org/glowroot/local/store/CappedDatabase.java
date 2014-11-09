@@ -35,8 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Ticker;
-import org.glowroot.markers.GuardedBy;
-import org.glowroot.markers.Immutable;
+import javax.annotation.concurrent.GuardedBy;
 import org.glowroot.markers.OnlyUsedByTests;
 
 public class CappedDatabase {
@@ -110,7 +109,6 @@ public class CappedDatabase {
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
     }
 
-    @Immutable
     private class FileBlockCharSource extends CharSource {
 
         private final FileBlock block;
@@ -145,7 +143,7 @@ public class CappedDatabase {
 
         @Override
         public int read(byte[] bytes, int off, int len) throws IOException {
-            long blockRemaining = block.getLength() - blockIndex;
+            long blockRemaining = block.length() - blockIndex;
             if (blockRemaining == 0) {
                 return -1;
             }
@@ -153,7 +151,7 @@ public class CappedDatabase {
                 if (out.isOverwritten(block)) {
                     throw new IOException("Block rolled over mid-read");
                 }
-                long filePosition = out.convertToFilePosition(block.getStartIndex() + blockIndex);
+                long filePosition = out.convertToFilePosition(block.startIndex() + blockIndex);
                 inFile.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + filePosition);
                 long fileRemaining = out.getSizeKb() * 1024L - filePosition;
                 int numToRead = (int) Longs.min(len, blockRemaining, fileRemaining);

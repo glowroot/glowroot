@@ -31,7 +31,7 @@ glowroot.controller('ConfigPluginCtrl', [
         enabled: data.config.enabled,
         version: data.config.version
       };
-      $scope.config.properties = angular.copy(data.descriptor.properties);
+      $scope.config.properties = angular.copy(data.propertyDescriptors);
       for (var j = 0; j < $scope.config.properties.length; j++) {
         var property = $scope.config.properties[j];
         property.value = data.config.properties[property.name];

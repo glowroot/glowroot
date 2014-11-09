@@ -15,7 +15,7 @@
  */
 package org.glowroot.transaction.model;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 public class CurrentTransactionMetricHolder {
 

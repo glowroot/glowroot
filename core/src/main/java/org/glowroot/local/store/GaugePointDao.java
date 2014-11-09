@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.GaugePoint;
 import org.glowroot.collector.GaugePointRepository;
+import org.glowroot.collector.ImmutableGaugePoint;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.RowMapper;
 import org.glowroot.local.store.Schemas.Column;
@@ -36,13 +37,13 @@ public class GaugePointDao implements GaugePointRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(GaugePointDao.class);
 
-    private static final ImmutableList<Column> gaugePointColumns = ImmutableList.of(
-            new Column("gauge_name", Types.VARCHAR),
-            new Column("capture_time", Types.BIGINT),
-            new Column("value", Types.DOUBLE));
+    private static final ImmutableList<Column> gaugePointColumns = ImmutableList.<Column>of(
+            ImmutableColumn.of("gauge_name", Types.VARCHAR),
+            ImmutableColumn.of("capture_time", Types.BIGINT),
+            ImmutableColumn.of("value", Types.DOUBLE));
 
     private static final ImmutableList<Index> gaugePointIndexes =
-            ImmutableList.of(new Index("gauge_point_idx",
+            ImmutableList.<Index>of(ImmutableIndex.of("gauge_point_idx",
                     ImmutableList.of("gauge_name", "capture_time", "value")));
 
     private final DataSource dataSource;
@@ -61,9 +62,9 @@ public class GaugePointDao implements GaugePointRepository {
                 @Override
                 public void addBatches(PreparedStatement preparedStatement) throws SQLException {
                     for (GaugePoint gaugePoint : gaugePoints) {
-                        preparedStatement.setString(1, gaugePoint.getGaugeName());
-                        preparedStatement.setLong(2, gaugePoint.getCaptureTime());
-                        preparedStatement.setDouble(3, gaugePoint.getValue());
+                        preparedStatement.setString(1, gaugePoint.gaugeName());
+                        preparedStatement.setLong(2, gaugePoint.captureTime());
+                        preparedStatement.setDouble(3, gaugePoint.value());
                         preparedStatement.addBatch();
                     }
                 }
@@ -109,7 +110,11 @@ public class GaugePointDao implements GaugePointRepository {
             }
             long captureTime = resultSet.getLong(2);
             double value = resultSet.getDouble(3);
-            return new GaugePoint(gaugeName, captureTime, value);
+            return ImmutableGaugePoint.builder()
+                    .gaugeName(gaugeName)
+                    .captureTime(captureTime)
+                    .value(value)
+                    .build();
         }
     }
 }

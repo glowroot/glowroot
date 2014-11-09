@@ -19,19 +19,19 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.common.marshal.Marshaling;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.PluginServices.ConfigListener;
-import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.CapturePoint;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
@@ -44,7 +44,7 @@ import org.glowroot.local.ui.Layout.LayoutPlugin;
 class LayoutJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(LayoutJsonService.class);
-    private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final JsonFactory jsonFactory = new JsonFactory();
 
     private final String version;
     private final ConfigService configService;
@@ -85,7 +85,7 @@ class LayoutJsonService {
                     fixedGaugeIntervalSeconds);
             layout = localLayout;
         }
-        return mapper.writeValueAsString(localLayout);
+        return Marshaling.toJson(localLayout);
     }
 
     String getLayoutVersion() {
@@ -96,13 +96,13 @@ class LayoutJsonService {
                     fixedGaugeIntervalSeconds);
             layout = localLayout;
         }
-        return localLayout.getVersion();
+        return localLayout.version();
     }
 
     String getUnauthenticatedLayout() throws IOException {
         logger.debug("getUnauthenticatedLayout()");
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeBooleanField("needsAuthentication", true);
         jg.writeStringField("footerMessage", "version " + version);
@@ -115,28 +115,28 @@ class LayoutJsonService {
             PluginDescriptorCache pluginDescriptorCache, @Nullable HeapDumps heapDumps,
             long fixedAggregateIntervalSeconds, long fixedGaugeIntervalSeconds) {
         List<LayoutPlugin> plugins = Lists.newArrayList();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
-            String id = pluginDescriptor.getId();
-            String name = pluginDescriptor.getName();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.pluginDescriptors()) {
+            String id = pluginDescriptor.id();
+            String name = pluginDescriptor.name();
             // by convention, strip off trailing " Plugin"
             if (name.endsWith(" Plugin")) {
                 name = name.substring(0, name.lastIndexOf(" Plugin"));
             }
-            plugins.add(new LayoutPlugin(id, name));
+            plugins.add(ImmutableLayoutPlugin.builder().id(id).name(name).build());
         }
         // use linked hash set to maintain ordering in case there is no default transaction type
         Set<String> transactionTypes = Sets.newLinkedHashSet();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
-            transactionTypes.addAll(pluginDescriptor.getTransactionTypes());
+        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.pluginDescriptors()) {
+            transactionTypes.addAll(pluginDescriptor.transactionTypes());
         }
         for (CapturePoint capturePoint : configService.getCapturePoints()) {
-            String transactionType = capturePoint.getTransactionType();
+            String transactionType = capturePoint.transactionType();
             if (!transactionType.isEmpty()) {
                 transactionTypes.add(transactionType);
             }
         }
         String defaultTransactionType = configService.getUserInterfaceConfig()
-                .getDefaultTransactionType();
+                .defaultTransactionType();
         List<String> orderedTransactionTypes = Lists.newArrayList();
         if (transactionTypes.isEmpty()) {
             defaultTransactionType = "<no transaction types defined>";
@@ -152,17 +152,17 @@ class LayoutJsonService {
         orderedTransactionTypes.addAll(Ordering.from(String.CASE_INSENSITIVE_ORDER).sortedCopy(
                 transactionTypes));
         Set<String> transactionCustomAttributes = Sets.newTreeSet();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
-            transactionCustomAttributes.addAll(pluginDescriptor.getTransactionCustomAttributes());
+        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.pluginDescriptors()) {
+            transactionCustomAttributes.addAll(pluginDescriptor.transactionCustomAttributes());
         }
-        return Layout.builder()
+        return ImmutableLayout.builder()
                 .jvmHeapDump(heapDumps != null)
                 .footerMessage("version " + version)
-                .passwordEnabled(configService.getUserInterfaceConfig().isPasswordEnabled())
-                .plugins(plugins)
-                .transactionTypes(orderedTransactionTypes)
+                .passwordEnabled(configService.getUserInterfaceConfig().passwordEnabled())
+                .addAllPlugins(plugins)
+                .addAllTransactionTypes(orderedTransactionTypes)
                 .defaultTransactionType(defaultTransactionType)
-                .transactionCustomAttributes(ImmutableList.copyOf(transactionCustomAttributes))
+                .addAllTransactionCustomAttributes(transactionCustomAttributes)
                 .fixedAggregateIntervalSeconds(fixedAggregateIntervalSeconds)
                 .fixedGaugeIntervalSeconds(fixedGaugeIntervalSeconds)
                 .build();

@@ -15,13 +15,13 @@
  */
 package org.glowroot.container.config;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -33,11 +33,9 @@ public class UserInterfaceConfig {
     private int sessionTimeoutMinutes;
 
     // used for submitting a password change
-    @Nullable
-    private String currentPassword;
+    private String currentPassword = "";
     // used for submitting a password change
-    @Nullable
-    private String newPassword;
+    private String newPassword = "";
 
     private final String version;
 
@@ -70,7 +68,6 @@ public class UserInterfaceConfig {
         this.sessionTimeoutMinutes = sessionTimeoutMinutes;
     }
 
-    @JsonIgnore
     public boolean isPasswordEnabled() {
         return passwordEnabled;
     }

@@ -15,6 +15,8 @@
  */
 package org.glowroot.collector;
 
-public enum Existence {
+import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
+
+public enum Existence implements LowercaseMarshaling {
     YES, NO, EXPIRED;
 }

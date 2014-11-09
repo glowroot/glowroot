@@ -19,12 +19,13 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
@@ -93,14 +94,14 @@ public class LocalContainer implements Container {
         PluginDescriptorCache pluginDescriptorCache =
                 glowrootModule.getConfigModule().getPluginDescriptorCache();
         AdviceCache adviceCache = glowrootModule.getTransactionModule().getAdviceCache();
-        loader.setMixinTypes(pluginDescriptorCache.getMixinTypesNeverShaded());
+        loader.setMixinTypes(pluginDescriptorCache.mixinTypes());
         List<Advice> advisors = Lists.newArrayList();
         advisors.addAll(adviceCache.getAdvisors());
         loader.setAdvisors(advisors);
         loader.setWeavingTimerService(
                 glowrootModule.getTransactionModule().getWeavingTimerService());
         loader.setMetricWrapperMethods(glowrootModule.getConfigModule().getConfigService()
-                .getAdvancedConfig().isMetricWrapperMethods());
+                .getAdvancedConfig().metricWrapperMethods());
         loader.addBridgeClasses(AppUnderTest.class, AppUnderTestServices.class);
         // TODO add hook to optionally exclude guava package which improves integration-test
         // performance

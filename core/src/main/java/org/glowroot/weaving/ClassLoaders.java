@@ -65,10 +65,10 @@ public class ClassLoaders {
 
     public static Class<?> defineClass(LazyDefinedClass lazyDefinedClass, ClassLoader loader)
             throws ReflectiveException {
-        for (LazyDefinedClass dependency : lazyDefinedClass.getDependencies()) {
+        for (LazyDefinedClass dependency : lazyDefinedClass.dependencies()) {
             defineClass(dependency, loader);
         }
-        return defineClass(lazyDefinedClass.getType().getClassName(), lazyDefinedClass.getBytes(),
+        return defineClass(lazyDefinedClass.type().getClassName(), lazyDefinedClass.bytes(),
                 loader);
     }
 
@@ -113,11 +113,11 @@ public class ClassLoaders {
             JarOutputStream jarOut) throws IOException {
         for (LazyDefinedClass lazyDefinedClass : lazyDefinedClasses) {
             JarEntry jarEntry =
-                    new JarEntry(lazyDefinedClass.getType().getInternalName() + ".class");
+                    new JarEntry(lazyDefinedClass.type().getInternalName() + ".class");
             jarOut.putNextEntry(jarEntry);
-            jarOut.write(lazyDefinedClass.getBytes());
+            jarOut.write(lazyDefinedClass.bytes());
             jarOut.closeEntry();
-            generate(lazyDefinedClass.getDependencies(), jarOut);
+            generate(lazyDefinedClass.dependencies(), jarOut);
         }
     }
 }

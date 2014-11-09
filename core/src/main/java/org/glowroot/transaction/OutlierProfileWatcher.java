@@ -48,11 +48,11 @@ class OutlierProfileWatcher extends ScheduledRunnable {
     @Override
     protected void runInternal() {
         TraceConfig config = configService.getTraceConfig();
-        if (!config.isOutlierProfilingEnabled()) {
+        if (!config.outlierProfilingEnabled()) {
             return;
         }
         long currentTick = ticker.read();
-        int initialDelayMillis = config.getOutlierProfilingInitialDelayMillis();
+        int initialDelayMillis = config.outlierProfilingInitialDelayMillis();
         long stackTraceThresholdTime = currentTick
                 - MILLISECONDS.toNanos(initialDelayMillis - PERIOD_MILLIS);
         for (Transaction transaction : transactionRegistry.getTransactions()) {
@@ -74,13 +74,13 @@ class OutlierProfileWatcher extends ScheduledRunnable {
         long initialDelayRemainingMillis =
                 getInitialDelayForCommand(transaction.getStartTick(), currentTick, config);
         profileRunnable.scheduleWithFixedDelay(scheduledExecutor, initialDelayRemainingMillis,
-                config.getOutlierProfilingIntervalMillis(), MILLISECONDS);
+                config.outlierProfilingIntervalMillis(), MILLISECONDS);
         transaction.setOutlierProfileRunnable(profileRunnable);
     }
 
     private static long getInitialDelayForCommand(long startTick, long currentTick,
             TraceConfig config) {
         long traceDurationMillis = NANOSECONDS.toMillis(currentTick - startTick);
-        return Math.max(0, config.getOutlierProfilingInitialDelayMillis() - traceDurationMillis);
+        return Math.max(0, config.outlierProfilingInitialDelayMillis() - traceDurationMillis);
     }
 }

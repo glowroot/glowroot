@@ -15,7 +15,7 @@
  */
 package org.glowroot.weaving;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 public interface Misc {
 

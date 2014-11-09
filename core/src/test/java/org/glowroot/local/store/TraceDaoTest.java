@@ -66,19 +66,29 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
         traceDao.store(trace, entries, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
-                false, null, null, null, null, null, null, null, null, null, null, null, 1);
+        TracePointQuery query = ImmutableTracePointQuery.builder()
+                .from(0)
+                .to(100)
+                .durationLow(0)
+                .durationHigh(Long.MAX_VALUE)
+                .transactionType("unit test")
+                .errorOnly(false)
+                .profiledOnly(false)
+                .limit(1)
+                .build();
+        // new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
+        // false, null, null, null, null, null, null, null, null, null, null, null, 1);
         // when
         QueryResult<TracePoint> queryResult = traceDao.readPoints(query);
-        Trace trace2 = traceDao.readTrace(queryResult.getRecords().get(0).getId());
+        Trace trace2 = traceDao.readTrace(queryResult.records().get(0).id());
         // then
-        assertThat(trace2.getId()).isEqualTo(trace.getId());
-        assertThat(trace2.isPartial()).isEqualTo(trace.isPartial());
-        assertThat(trace2.getStartTime()).isEqualTo(trace.getStartTime());
-        assertThat(trace2.getCaptureTime()).isEqualTo(trace.getCaptureTime());
-        assertThat(trace2.getDuration()).isEqualTo(trace.getDuration());
-        assertThat(trace2.getHeadline()).isEqualTo("test headline");
-        assertThat(trace2.getUser()).isEqualTo(trace.getUser());
+        assertThat(trace2.id()).isEqualTo(trace.id());
+        assertThat(trace2.partial()).isEqualTo(trace.partial());
+        assertThat(trace2.startTime()).isEqualTo(trace.startTime());
+        assertThat(trace2.captureTime()).isEqualTo(trace.captureTime());
+        assertThat(trace2.duration()).isEqualTo(trace.duration());
+        assertThat(trace2.headline()).isEqualTo("test headline");
+        assertThat(trace2.user()).isEqualTo(trace.user());
     }
 
     @Test
@@ -87,13 +97,20 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
         traceDao.store(trace, entries, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, trace.getDuration(),
-                trace.getDuration(), "unit test", false, false, null, null, null, null, null,
-                null, null, null, null, null, null, 1);
+        TracePointQuery query = ImmutableTracePointQuery.builder()
+                .from(0)
+                .to(100)
+                .durationLow(trace.duration())
+                .durationHigh(trace.duration())
+                .transactionType("unit test")
+                .errorOnly(false)
+                .profiledOnly(false)
+                .limit(1)
+                .build();
         // when
         QueryResult<TracePoint> queryResult = traceDao.readPoints(query);
         // then
-        assertThat(queryResult.getRecords()).hasSize(1);
+        assertThat(queryResult.records()).hasSize(1);
     }
 
     @Test
@@ -102,13 +119,20 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
         traceDao.store(trace, entries, null, null);
-        TracePointQuery query = new TracePointQuery(0, 0, trace.getDuration() + 1,
-                trace.getDuration() + 2, "unit test", false, false, null, null, null, null,
-                null, null, null, null, null, null, null, 1);
+        TracePointQuery query = ImmutableTracePointQuery.builder()
+                .from(0)
+                .to(0)
+                .durationLow(trace.duration() + 1)
+                .durationHigh(trace.duration() + 2)
+                .transactionType("unit test")
+                .errorOnly(false)
+                .profiledOnly(false)
+                .limit(1)
+                .build();
         // when
         QueryResult<TracePoint> queryResult = traceDao.readPoints(query);
         // then
-        assertThat(queryResult.getRecords()).isEmpty();
+        assertThat(queryResult.records()).isEmpty();
     }
 
     @Test
@@ -117,87 +141,145 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
         traceDao.store(trace, entries, null, null);
-        TracePointQuery query = new TracePointQuery(0, 0, trace.getDuration() - 2,
-                trace.getDuration() - 1, "unit test", false, false, null, null, null, null,
-                null, null, null, null, null, null, null, 1);
+        TracePointQuery query = ImmutableTracePointQuery.builder()
+                .from(0)
+                .to(0)
+                .durationLow(trace.duration() - 2)
+                .durationHigh(trace.duration() - 1)
+                .transactionType("unit test")
+                .errorOnly(false)
+                .profiledOnly(false)
+                .limit(1)
+                .build();
         // when
         QueryResult<TracePoint> queryResult = traceDao.readPoints(query);
         // then
-        assertThat(queryResult.getRecords()).isEmpty();
+        assertThat(queryResult.records()).isEmpty();
     }
 
     @Test
-    public void shouldReadTraceWithAttributeQualifier() throws SQLException {
+    public void shouldReadTraceWithCustomAttributeQualifier() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
         traceDao.store(trace, entries, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
-                false, null, null, null, null, null, null, null, null, "abc",
-                StringComparator.EQUALS, "xyz", 1);
+        TracePointQuery query = ImmutableTracePointQuery.builder()
+                .from(0)
+                .to(100)
+                .durationLow(0)
+                .durationHigh(Long.MAX_VALUE)
+                .transactionType("unit test")
+                .customAttributeName("abc")
+                .customAttributeValueComparator(StringComparator.EQUALS)
+                .customAttributeValue("xyz")
+                .errorOnly(false)
+                .profiledOnly(false)
+                .limit(1)
+                .build();
         // when
         QueryResult<TracePoint> queryResult = traceDao.readPoints(query);
         // then
-        assertThat(queryResult.getRecords()).hasSize(1);
+        assertThat(queryResult.records()).hasSize(1);
     }
 
     @Test
-    public void shouldReadTraceWithAttributeQualifier2() throws SQLException {
+    public void shouldReadTraceWithCustomAttributeQualifier2() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
         traceDao.store(trace, entries, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
-                false, null, null, null, null, null, null, null, null, "abc", null, null, 1);
+        TracePointQuery query = ImmutableTracePointQuery.builder()
+                .from(0)
+                .to(100)
+                .durationLow(0)
+                .durationHigh(Long.MAX_VALUE)
+                .transactionType("unit test")
+                .customAttributeName("abc")
+                .customAttributeValueComparator(null)
+                .customAttributeValue(null)
+                .errorOnly(false)
+                .profiledOnly(false)
+                .limit(1)
+                .build();
         // when
         QueryResult<TracePoint> queryResult = traceDao.readPoints(query);
         // then
-        assertThat(queryResult.getRecords()).hasSize(1);
+        assertThat(queryResult.records()).hasSize(1);
     }
 
     @Test
-    public void shouldReadTraceWithAttributeQualifier3() throws SQLException {
+    public void shouldReadTraceWithCustomAttributeQualifier3() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
         traceDao.store(trace, entries, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
-                false, null, null, null, null, null, null, null, null, null,
-                StringComparator.EQUALS, "xyz", 1);
+        TracePointQuery query = ImmutableTracePointQuery.builder()
+                .from(0)
+                .to(100)
+                .durationLow(0)
+                .durationHigh(Long.MAX_VALUE)
+                .transactionType("unit test")
+                .customAttributeName(null)
+                .customAttributeValueComparator(StringComparator.EQUALS)
+                .customAttributeValue("xyz")
+                .errorOnly(false)
+                .profiledOnly(false)
+                .limit(1)
+                .build();
         // when
         QueryResult<TracePoint> queryResult = traceDao.readPoints(query);
         // then
-        assertThat(queryResult.getRecords()).hasSize(1);
+        assertThat(queryResult.records()).hasSize(1);
     }
 
     @Test
-    public void shouldNotReadTraceWithNonMatchingAttributeQualifier() throws SQLException {
+    public void shouldNotReadTraceWithNonMatchingCustomAttributeQualifier() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
         traceDao.store(trace, entries, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
-                false, null, null, null, null, null, null, null, null, "abc",
-                StringComparator.EQUALS, "abc", 1);
+        TracePointQuery query = ImmutableTracePointQuery.builder()
+                .from(0)
+                .to(100)
+                .durationLow(0)
+                .durationHigh(Long.MAX_VALUE)
+                .transactionType("unit test")
+                .customAttributeName("abc")
+                .customAttributeValueComparator(StringComparator.EQUALS)
+                .customAttributeValue("abc")
+                .errorOnly(false)
+                .profiledOnly(false)
+                .limit(1)
+                .build();
         // when
         QueryResult<TracePoint> queryResult = traceDao.readPoints(query);
         // then
-        assertThat(queryResult.getRecords()).isEmpty();
+        assertThat(queryResult.records()).isEmpty();
     }
 
     @Test
-    public void shouldNotReadTraceWithNonMatchingAttributeQualifier2() throws SQLException {
+    public void shouldNotReadTraceWithNonMatchingCustomAttributeQualifier2() throws SQLException {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
         traceDao.store(trace, entries, null, null);
-        TracePointQuery query = new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
-                false, null, null, null, null, null, null, null, null, null,
-                StringComparator.EQUALS, "xyz1", 1);
+        TracePointQuery query = ImmutableTracePointQuery.builder()
+                .from(0)
+                .to(100)
+                .durationLow(0)
+                .durationHigh(Long.MAX_VALUE)
+                .transactionType("unit test")
+                .customAttributeName(null)
+                .customAttributeValueComparator(StringComparator.EQUALS)
+                .customAttributeValue("xyz1")
+                .errorOnly(false)
+                .profiledOnly(false)
+                .limit(1)
+                .build();
         // when
         QueryResult<TracePoint> queryResult = traceDao.readPoints(query);
         // then
-        assertThat(queryResult.getRecords()).isEmpty();
+        assertThat(queryResult.records()).isEmpty();
     }
 
     @Test

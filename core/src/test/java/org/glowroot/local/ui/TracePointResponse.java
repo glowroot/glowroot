@@ -47,15 +47,15 @@ class TracePointResponse {
         this.activePoints = activePoints;
     }
 
-    List<RawPoint> getNormalPoints() {
+    List<RawPoint> normalPoints() {
         return normalPoints;
     }
 
-    List<RawPoint> getErrorPoints() {
+    List<RawPoint> errorPoints() {
         return errorPoints;
     }
 
-    List<RawPoint> getActivePoints() {
+    List<RawPoint> activePoints() {
         return activePoints;
     }
 
@@ -72,15 +72,15 @@ class TracePointResponse {
             id = point.get(2).asText();
         }
 
-        long getCaptureTime() {
+        long captureTime() {
             return captureTime;
         }
 
-        double getDurationSeconds() {
+        double durationSeconds() {
             return durationSeconds;
         }
 
-        String getId() {
+        String id() {
             return id;
         }
 

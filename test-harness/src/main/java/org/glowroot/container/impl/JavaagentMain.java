@@ -34,6 +34,7 @@ import org.glowroot.Agent;
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.config.ConfigService.OptimisticLockException;
+import org.glowroot.config.ImmutableTraceConfig;
 import org.glowroot.config.TraceConfig;
 
 public class JavaagentMain {
@@ -109,13 +110,12 @@ public class JavaagentMain {
         }
         org.glowroot.config.ConfigService configService =
                 glowrootModule.getConfigModule().getConfigService();
-        TraceConfig traceConfig = configService.getTraceConfig();
+        TraceConfig config = configService.getTraceConfig();
         // conditional check is needed to prevent config file timestamp update when testing
         // ConfigFileLastModifiedTest.shouldNotUpdateFileOnStartupIfNoChanges()
-        if (traceConfig.getStoreThresholdMillis() != 0) {
-            TraceConfig.Overlay overlay = TraceConfig.overlay(traceConfig);
-            overlay.setStoreThresholdMillis(0);
-            configService.updateTraceConfig(overlay.build(), traceConfig.getVersion());
+        if (config.storeThresholdMillis() != 0) {
+            TraceConfig updatedConfig = ((ImmutableTraceConfig) config).withStoreThresholdMillis(0);
+            configService.updateTraceConfig(updatedConfig, config.version());
         }
     }
 

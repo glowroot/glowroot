@@ -3,7 +3,6 @@ jdk:
   - oraclejdk8
   - oraclejdk7
   - openjdk7
-  - openjdk6
 before_install:
   - npm install -g bower grunt-cli
   - "export DISPLAY=:99.0"

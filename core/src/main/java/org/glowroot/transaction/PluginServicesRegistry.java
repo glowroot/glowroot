@@ -15,12 +15,13 @@
  */
 package org.glowroot.transaction;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.PluginServices;
 import org.glowroot.markers.UsedByReflection;

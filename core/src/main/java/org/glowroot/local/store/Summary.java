@@ -15,35 +15,16 @@
  */
 package org.glowroot.local.store;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
-import org.glowroot.markers.UsedByJsonBinding;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
-@UsedByJsonBinding
-public class Summary {
-
-    @Nullable
-    private final String transactionName;
+@Value.Immutable
+@Json.Marshaled
+public abstract class Summary {
+    public abstract @Nullable String transactionName();
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
-    private final long totalMicros;
-    private final long transactionCount;
-
-    Summary(@Nullable String transactionName, long totalMicros, long transactionCount) {
-        this.transactionName = transactionName;
-        this.totalMicros = totalMicros;
-        this.transactionCount = transactionCount;
-    }
-
-    @Nullable
-    public String getTransactionName() {
-        return transactionName;
-    }
-
-    public long getTotalMicros() {
-        return totalMicros;
-    }
-
-    public long getTransactionCount() {
-        return transactionCount;
-    }
+    public abstract long totalMicros();
+    public abstract long transactionCount();
 }

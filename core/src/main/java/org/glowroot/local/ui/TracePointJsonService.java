@@ -24,8 +24,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 
+import javax.annotation.Nullable;
+
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -33,14 +35,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
-import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.Ticker;
+import org.glowroot.local.store.ImmutableTracePoint;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.StringComparator;
 import org.glowroot.local.store.TraceDao;
@@ -55,7 +56,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 class TracePointJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TracePointJsonService.class);
-    private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final JsonFactory jsonFactory = new JsonFactory();
 
     private final TraceDao traceDao;
     private final TransactionRegistry transactionRegistry;
@@ -73,10 +74,9 @@ class TracePointJsonService {
     }
 
     @GET("/backend/trace/points")
-    String getPoints(String content) throws IOException, SQLException {
-        logger.debug("getPoints(): content={}", content);
-        TracePointQuery query = ObjectMappers.readRequiredValue(mapper, content,
-                TracePointQuery.class);
+    String getPoints(String queryString) throws Exception {
+        logger.debug("getPoints(): queryString={}", queryString);
+        TracePointQuery query = QueryStrings.decode(queryString, TracePointQuery.class);
         return new Handler(query).handle();
     }
 
@@ -103,16 +103,16 @@ class TracePointJsonService {
                 captureTick = ticker.read();
             }
             QueryResult<TracePoint> queryResult = getStoredAndPendingPoints(captureActiveTraces);
-            List<TracePoint> points = queryResult.getRecords();
+            List<TracePoint> points = queryResult.records();
             removeDuplicatesBetweenActiveTracesAndPoints(activeTraces, points);
             return writeResponse(points, activeTraces, captureTime, captureTick,
-                    queryResult.isMoreAvailable());
+                    queryResult.moreAvailable());
         }
 
         private boolean shouldCaptureActiveTraces() {
             long currentTimeMillis = clock.currentTimeMillis();
-            return (query.getTo() == 0 || query.getTo() > currentTimeMillis)
-                    && query.getFrom() < currentTimeMillis;
+            return (query.to() == 0 || query.to() > currentTimeMillis)
+                    && query.from() < currentTimeMillis;
         }
 
         private QueryResult<TracePoint> getStoredAndPendingPoints(boolean captureActiveTraces)
@@ -128,11 +128,11 @@ class TracePointJsonService {
             }
             QueryResult<TracePoint> queryResult = traceDao.readPoints(query);
             // create single merged and limited list of points
-            List<TracePoint> orderedPoints = Lists.newArrayList(queryResult.getRecords());
+            List<TracePoint> orderedPoints = Lists.newArrayList(queryResult.records());
             for (TracePoint pendingPoint : matchingPendingPoints) {
                 insertIntoOrderedPoints(pendingPoint, orderedPoints);
             }
-            return new QueryResult<TracePoint>(orderedPoints, queryResult.isMoreAvailable());
+            return new QueryResult<TracePoint>(orderedPoints, queryResult.moreAvailable());
         }
 
         private List<Transaction> getMatchingActiveTraces() {
@@ -160,8 +160,8 @@ class TracePointJsonService {
                             return transaction.getStartTick();
                         }
                     }));
-            if (activeTraces.size() > query.getLimit()) {
-                activeTraces = activeTraces.subList(0, query.getLimit());
+            if (activeTraces.size() > query.limit()) {
+                activeTraces = activeTraces.subList(0, query.limit());
             }
             return activeTraces;
         }
@@ -178,8 +178,13 @@ class TracePointJsonService {
                         && matchesError(transaction)
                         && matchesUser(transaction)
                         && matchesCustomAttribute(transaction)) {
-                    points.add(TracePoint.from(transaction.getId(), clock.currentTimeMillis(),
-                            transaction.getDuration(), transaction.getError() != null));
+                    ImmutableTracePoint point = ImmutableTracePoint.builder()
+                            .id(transaction.getId())
+                            .captureTime(clock.currentTimeMillis())
+                            .duration(transaction.getDuration())
+                            .error(transaction.getError() != null)
+                            .build();
+                    points.add(point);
                 }
             }
             return points;
@@ -187,15 +192,15 @@ class TracePointJsonService {
 
         private boolean matchesDuration(Transaction transaction) {
             long duration = transaction.getDuration();
-            if (duration < query.getDurationLow()) {
+            if (duration < query.durationLow()) {
                 return false;
             }
-            Long durationHigh = query.getDurationHigh();
+            Long durationHigh = query.durationHigh();
             return durationHigh == null || duration <= durationHigh;
         }
 
         private boolean matchesTransactionType(Transaction transaction) {
-            String transactionType = query.getTransactionType();
+            String transactionType = query.transactionType();
             if (Strings.isNullOrEmpty(transactionType)) {
                 return true;
             }
@@ -203,37 +208,37 @@ class TracePointJsonService {
         }
 
         private boolean matchesErrorOnly(Transaction transaction) {
-            return !query.isErrorOnly() || transaction.getError() != null;
+            return !query.errorOnly() || transaction.getError() != null;
         }
 
         private boolean matchesProfiledOnly(Transaction transaction) {
-            return !query.isProfiledOnly() || transaction.isProfiled();
+            return !query.profiledOnly() || transaction.isProfiled();
         }
 
         private boolean matchesHeadline(Transaction transaction) {
-            return matchesUsingStringComparator(query.getHeadlineComparator(), query.getHeadline(),
+            return matchesUsingStringComparator(query.headlineComparator(), query.headline(),
                     transaction.getHeadline());
         }
 
         private boolean matchesTransactionName(Transaction transaction) {
-            return matchesUsingStringComparator(query.getTransactionNameComparator(),
-                    query.getTransactionName(), transaction.getTransactionName());
+            return matchesUsingStringComparator(query.transactionNameComparator(),
+                    query.transactionName(), transaction.getTransactionName());
         }
 
         private boolean matchesError(Transaction transaction) {
-            return matchesUsingStringComparator(query.getErrorComparator(), query.getError(),
+            return matchesUsingStringComparator(query.errorComparator(), query.error(),
                     transaction.getError());
         }
 
         private boolean matchesUser(Transaction transaction) {
-            return matchesUsingStringComparator(query.getUserComparator(), query.getUser(),
+            return matchesUsingStringComparator(query.userComparator(), query.user(),
                     transaction.getUser());
         }
 
         private boolean matchesCustomAttribute(Transaction transaction) {
-            if (Strings.isNullOrEmpty(query.getCustomAttributeName())
-                    && (query.getCustomAttributeValueComparator() == null
-                    || Strings.isNullOrEmpty(query.getCustomAttributeValue()))) {
+            if (Strings.isNullOrEmpty(query.customAttributeName())
+                    && (query.customAttributeValueComparator() == null
+                    || Strings.isNullOrEmpty(query.customAttributeValue()))) {
                 // no custom attribute filter
                 return true;
             }
@@ -242,13 +247,13 @@ class TracePointJsonService {
             for (Entry<String, Collection<String>> entry : customAttributes.entrySet()) {
                 String customAttributeName = entry.getKey();
                 if (!matchesUsingStringComparator(StringComparator.EQUALS,
-                        query.getCustomAttributeName(), customAttributeName)) {
+                        query.customAttributeName(), customAttributeName)) {
                     // name doesn't match, no need to test values
                     continue;
                 }
                 for (String customAttributeValue : entry.getValue()) {
-                    if (matchesUsingStringComparator(query.getCustomAttributeValueComparator(),
-                            query.getCustomAttributeValue(), customAttributeValue)) {
+                    if (matchesUsingStringComparator(query.customAttributeValueComparator(),
+                            query.customAttributeValue(), customAttributeValue)) {
                         // found matching name and value
                         return true;
                     }
@@ -291,18 +296,18 @@ class TracePointJsonService {
             // check if duplicate and capture insertion index at the same time
             for (int i = 0; i < orderedPoints.size(); i++) {
                 TracePoint point = orderedPoints.get(i);
-                if (pendingPoint.getId().equals(point.getId())) {
+                if (pendingPoint.id().equals(point.id())) {
                     duplicateIndex = i;
                     break;
                 }
-                if (pendingPoint.getDuration() > point.getDuration()) {
+                if (pendingPoint.duration() > point.duration()) {
                     insertionIndex = i;
                     break;
                 }
             }
             if (duplicateIndex != -1) {
                 TracePoint point = orderedPoints.get(duplicateIndex);
-                if (pendingPoint.getDuration() > point.getDuration()) {
+                if (pendingPoint.duration() > point.duration()) {
                     // prefer the pending trace, it must be a partial trace that has just completed
                     orderedPoints.set(duplicateIndex, pendingPoint);
                 }
@@ -321,8 +326,8 @@ class TracePointJsonService {
                 Transaction activeTransaction = i.next();
                 for (Iterator<TracePoint> j = points.iterator(); j.hasNext();) {
                     TracePoint point = j.next();
-                    if (activeTransaction.getId().equals(point.getId())) {
-                        if (activeTransaction.getDuration() > point.getDuration()) {
+                    if (activeTransaction.getId().equals(point.id())) {
+                        if (activeTransaction.getDuration() > point.duration()) {
                             // prefer the active trace, it must be a partial trace that hasn't
                             // completed yet
                             j.remove();
@@ -340,26 +345,26 @@ class TracePointJsonService {
         private String writeResponse(List<TracePoint> points, List<Transaction> activeTraces,
                 long captureTime, long captureTick, boolean limitExceeded) throws IOException {
             StringBuilder sb = new StringBuilder();
-            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+            JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
             jg.writeArrayFieldStart("normalPoints");
             for (TracePoint point : points) {
-                if (!point.isError()) {
+                if (!point.error()) {
                     jg.writeStartArray();
-                    jg.writeNumber(point.getCaptureTime());
-                    jg.writeNumber(point.getDuration() / 1000000000.0);
-                    jg.writeString(point.getId());
+                    jg.writeNumber(point.captureTime());
+                    jg.writeNumber(point.duration() / 1000000000.0);
+                    jg.writeString(point.id());
                     jg.writeEndArray();
                 }
             }
             jg.writeEndArray();
             jg.writeArrayFieldStart("errorPoints");
             for (TracePoint point : points) {
-                if (point.isError()) {
+                if (point.error()) {
                     jg.writeStartArray();
-                    jg.writeNumber(point.getCaptureTime());
-                    jg.writeNumber(point.getDuration() / 1000000000.0);
-                    jg.writeString(point.getId());
+                    jg.writeNumber(point.captureTime());
+                    jg.writeNumber(point.duration() / 1000000000.0);
+                    jg.writeString(point.id());
                     jg.writeEndArray();
                 }
             }

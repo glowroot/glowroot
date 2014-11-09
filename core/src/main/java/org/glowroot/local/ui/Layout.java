@@ -17,196 +17,35 @@ package org.glowroot.local.ui;
 
 import java.util.List;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.collect.ImmutableList;
-import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import com.google.common.base.Charsets;
+import com.google.common.hash.Hashing;
+import org.immutables.common.marshal.Marshaling;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
-import org.glowroot.config.VersionHashes;
-import org.glowroot.markers.Immutable;
-import org.glowroot.markers.UsedByJsonBinding;
+@Value.Immutable
+@Json.Marshaled
+public abstract class Layout {
 
-@UsedByJsonBinding
-@Immutable
-public class Layout {
+    public abstract boolean jvmHeapDump();
+    public abstract String footerMessage();
+    public abstract boolean passwordEnabled();
+    public abstract List<LayoutPlugin> plugins();
+    public abstract List<String> transactionTypes();
+    public abstract String defaultTransactionType();
+    public abstract List<String> transactionCustomAttributes();
+    public abstract long fixedAggregateIntervalSeconds();
+    public abstract long fixedGaugeIntervalSeconds();
 
-    private final boolean jvmHeapDump;
-    private final String footerMessage;
-    private final boolean passwordEnabled;
-    private final ImmutableList<LayoutPlugin> plugins;
-    private final ImmutableList<String> transactionTypes;
-    private final String defaultTransactionType;
-    private final ImmutableList<String> transactionCustomAttributes;
-    private final long fixedAggregateIntervalSeconds;
-    private final long fixedGaugeIntervalSeconds;
-    private final String version;
-
-    static Builder builder() {
-        return new Builder();
+    @Value.Derived
+    public String version() {
+        return Hashing.sha1().hashString(Marshaling.toJson(this), Charsets.UTF_8).toString();
     }
 
-    Layout(boolean jvmHeapDump, String footerMessage, boolean passwordEnabled,
-            List<LayoutPlugin> plugins, List<String> transactionTypes,
-            String defaultTransactionType, List<String> transactionCustomAttributes,
-            long fixedAggregateIntervalSeconds, long fixedGaugeIntervalSeconds) {
-        this.jvmHeapDump = jvmHeapDump;
-        this.footerMessage = footerMessage;
-        this.passwordEnabled = passwordEnabled;
-        this.plugins = ImmutableList.copyOf(plugins);
-        this.transactionTypes = ImmutableList.copyOf(transactionTypes);
-        this.defaultTransactionType = defaultTransactionType;
-        this.transactionCustomAttributes = ImmutableList.copyOf(transactionCustomAttributes);
-        this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
-        this.fixedGaugeIntervalSeconds = fixedGaugeIntervalSeconds;
-        version = VersionHashes.sha1(jvmHeapDump, footerMessage, passwordEnabled, transactionTypes,
-                defaultTransactionType, transactionCustomAttributes, fixedAggregateIntervalSeconds,
-                fixedGaugeIntervalSeconds);
-    }
-
-    public boolean isJvmHeapDump() {
-        return jvmHeapDump;
-    }
-
-    public String getFooterMessage() {
-        return footerMessage;
-    }
-
-    public boolean isPasswordEnabled() {
-        return passwordEnabled;
-    }
-
-    public ImmutableList<LayoutPlugin> getPlugins() {
-        return plugins;
-    }
-
-    public ImmutableList<String> getTransactionTypes() {
-        return transactionTypes;
-    }
-
-    public String getDefaultTransactionType() {
-        return defaultTransactionType;
-    }
-
-    public ImmutableList<String> getTransactionCustomAttributes() {
-        return transactionCustomAttributes;
-    }
-
-    public long getFixedAggregateIntervalSeconds() {
-        return fixedAggregateIntervalSeconds;
-    }
-
-    public long getFixedGaugeIntervalSeconds() {
-        return fixedGaugeIntervalSeconds;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("jvmHeapDump", jvmHeapDump)
-                .add("footerMessage", footerMessage)
-                .add("passwordEnabled", passwordEnabled)
-                .add("plugins", plugins)
-                .add("transactionTypes", transactionTypes)
-                .add("defaultTransactionType", defaultTransactionType)
-                .add("transactionCustomAttributes", transactionCustomAttributes)
-                .add("fixedAggregateIntervalSeconds", fixedAggregateIntervalSeconds)
-                .add("fixedGaugeIntervalSeconds", fixedGaugeIntervalSeconds)
-                .toString();
-    }
-
-    @UsedByJsonBinding
-    @Immutable
-    public static class LayoutPlugin {
-
-        private final String id;
-        private final String name;
-
-        public LayoutPlugin(String id, String name) {
-            this.id = id;
-            this.name = name;
-        }
-
-        public String getId() {
-            return id;
-        }
-        public String getName() {
-            return name;
-        }
-    }
-
-    static class Builder {
-
-        private boolean jvmHeapDump;
-        @MonotonicNonNull
-        private String footerMessage;
-        private boolean passwordEnabled;
-        private List<LayoutPlugin> plugins = ImmutableList.of();
-        private List<String> transactionTypes = ImmutableList.of();
-        @MonotonicNonNull
-        private String defaultTransactionType;
-        private List<String> transactionCustomAttributes = ImmutableList.of();
-        private long fixedAggregateIntervalSeconds;
-        private long fixedGaugeIntervalSeconds;
-
-        private Builder() {}
-
-        Builder jvmHeapDump(boolean jvmHeapDump) {
-            this.jvmHeapDump = jvmHeapDump;
-            return this;
-        }
-
-        @EnsuresNonNull("footerMessage")
-        Builder footerMessage(String footerMessage) {
-            this.footerMessage = footerMessage;
-            return this;
-        }
-
-        Builder passwordEnabled(boolean passwordEnabled) {
-            this.passwordEnabled = passwordEnabled;
-            return this;
-        }
-
-        Builder plugins(List<LayoutPlugin> plugins) {
-            this.plugins = plugins;
-            return this;
-        }
-
-        Builder transactionTypes(List<String> transactionTypes) {
-            this.transactionTypes = transactionTypes;
-            return this;
-        }
-
-        @EnsuresNonNull("defaultTransactionType")
-        Builder defaultTransactionType(String defaultTransactionType) {
-            this.defaultTransactionType = defaultTransactionType;
-            return this;
-        }
-
-        Builder transactionCustomAttributes(List<String> transactionCustomAttributes) {
-            this.transactionCustomAttributes = transactionCustomAttributes;
-            return this;
-        }
-
-        Builder fixedAggregateIntervalSeconds(long fixedAggregateIntervalSeconds) {
-            this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
-            return this;
-        }
-
-        Builder fixedGaugeIntervalSeconds(long fixedGaugeIntervalSeconds) {
-            this.fixedGaugeIntervalSeconds = fixedGaugeIntervalSeconds;
-            return this;
-        }
-
-        @RequiresNonNull({"footerMessage", "defaultTransactionType"})
-        Layout build() {
-            return new Layout(jvmHeapDump, footerMessage, passwordEnabled, plugins,
-                    transactionTypes, defaultTransactionType, transactionCustomAttributes,
-                    fixedAggregateIntervalSeconds, fixedGaugeIntervalSeconds);
-        }
+    @Value.Immutable
+    @Json.Marshaled
+    public abstract static class LayoutPlugin {
+        public abstract String id();
+        public abstract String name();
     }
 }

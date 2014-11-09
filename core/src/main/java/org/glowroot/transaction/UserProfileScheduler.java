@@ -37,15 +37,15 @@ class UserProfileScheduler {
 
     void maybeScheduleUserProfiling(Transaction transaction, String user) {
         UserRecordingConfig userRecordingConfig = configService.getUserRecordingConfig();
-        if (!userRecordingConfig.isEnabled()) {
+        if (!userRecordingConfig.enabled()) {
             return;
         }
-        if (!user.equalsIgnoreCase(userRecordingConfig.getUser())) {
+        if (!user.equalsIgnoreCase(userRecordingConfig.user())) {
             return;
         }
         // schedule the first stack collection for configured interval after trace start (or
         // immediately, if trace duration already exceeds configured collection interval)
-        int intervalMillis = userRecordingConfig.getProfileIntervalMillis();
+        int intervalMillis = userRecordingConfig.profileIntervalMillis();
         ScheduledRunnable profileRunnable =
                 new TransactionProfileRunnable(transaction, false, configService);
         long initialDelay =

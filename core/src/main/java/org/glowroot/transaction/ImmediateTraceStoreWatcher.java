@@ -51,7 +51,7 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
     @Override
     protected void runInternal() {
         int immediatePartialStoreThresholdSeconds =
-                configService.getAdvancedConfig().getImmediatePartialStoreThresholdSeconds();
+                configService.getAdvancedConfig().immediatePartialStoreThresholdSeconds();
         long immediatePartialStoreTick = ticker.read()
                 - SECONDS.toNanos(immediatePartialStoreThresholdSeconds)
                 + MILLISECONDS.toNanos(PERIOD_MILLIS);

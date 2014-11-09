@@ -21,13 +21,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
@@ -53,7 +54,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     private List<AnalyzedClass> superAnalyzedClasses = ImmutableList.of();
 
-    private AnalyzedClass./*@MonotonicNonNull*/Builder analyzedClassBuilder;
+    private ImmutableAnalyzedClass./*@MonotonicNonNull*/Builder analyzedClassBuilder;
 
     @MonotonicNonNull
     private AnalyzedClass analyzedClass;
@@ -75,8 +76,8 @@ class AnalyzingClassVisitor extends ClassVisitor {
             String/*@Nullable*/[] interfaceInternalNamesNullable) {
 
         AnalyzedClass nonInterestingAnalyzedClass =
-                visitAndSometimesReturnNonInterestingAnalyzedClass(version, access, internalName,
-                        signature, superInternalName, interfaceInternalNamesNullable);
+                visitAndSometimesReturnNonInterestingAnalyzedClass(access, internalName,
+                        superInternalName, interfaceInternalNamesNullable);
         if (nonInterestingAnalyzedClass != null) {
             analyzedClass = nonInterestingAnalyzedClass;
             throw ShortCircuitException.INSTANCE;
@@ -84,9 +85,8 @@ class AnalyzingClassVisitor extends ClassVisitor {
     }
 
     @Nullable
-    public AnalyzedClass visitAndSometimesReturnNonInterestingAnalyzedClass(int version,
-            int access, String internalName, @Nullable String signature,
-            @Nullable String superInternalName,
+    public AnalyzedClass visitAndSometimesReturnNonInterestingAnalyzedClass(int access,
+            String internalName, @Nullable String superInternalName,
             String/*@Nullable*/[] interfaceInternalNamesNullable) {
 
         ImmutableList<String> interfaceNames = ImmutableList.of();
@@ -95,14 +95,17 @@ class AnalyzingClassVisitor extends ClassVisitor {
         }
         String className = ClassNames.fromInternalName(internalName);
         String superClassName = ClassNames.fromInternalName(superInternalName);
-        analyzedClassBuilder =
-                AnalyzedClass.builder(access, className, superClassName, interfaceNames);
+        analyzedClassBuilder = ImmutableAnalyzedClass.builder()
+                .modifiers(access)
+                .name(className)
+                .superName(superClassName)
+                .addAllInterfaceNames(interfaceNames);
         adviceMatchers = AdviceMatcher.getAdviceMatchers(className, advisors);
         if (Modifier.isInterface(access)) {
             ImmutableList<MixinType> matchedMixinTypes = getMatchedMixinTypes(className,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             superAnalyzedClasses = ImmutableList.of();
-            analyzedClassBuilder.addMixinTypes(matchedMixinTypes);
+            analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
             if (adviceMatchers.isEmpty()) {
                 return analyzedClassBuilder.build();
             } else {
@@ -122,11 +125,11 @@ class AnalyzingClassVisitor extends ClassVisitor {
         superAnalyzedClasses.addAll(interfaceAnalyzedHierarchy);
         matchedMixinTypes =
                 getMatchedMixinTypes(className, superAnalyzedHierarchy, interfaceAnalyzedHierarchy);
-        analyzedClassBuilder.addMixinTypes(matchedMixinTypes);
+        analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
 
         boolean hasSuperAdvice = false;
         for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
-            if (!analyzedClass.getAnalyzedMethods().isEmpty()) {
+            if (!analyzedClass.analyzedMethods().isEmpty()) {
                 hasSuperAdvice = true;
                 break;
             }
@@ -162,8 +165,22 @@ class AnalyzingClassVisitor extends ClassVisitor {
                 : Arrays.asList(exceptions);
         if (!matchingAdvisors.isEmpty()) {
             checkNotNull(analyzedClassBuilder, "Call to visit() is required");
-            analyzedClassBuilder.addAnalyzedMethod(access, name, desc, signature, exceptionList,
-                    matchingAdvisors);
+
+            ImmutableAnalyzedMethod.Builder builder = ImmutableAnalyzedMethod.builder();
+            builder.name(name);
+            for (Type parameterType : parameterTypes) {
+                builder.addParameterTypes(parameterType.getClassName());
+            }
+            builder.returnType(Type.getReturnType(desc).getClassName())
+                    .modifiers(access)
+                    .signature(signature);
+            if (exceptions != null) {
+                for (String exception : exceptions) {
+                    builder.addExceptions(ClassNames.fromInternalName(exception));
+                }
+            }
+            builder.addAllAdvisors(matchingAdvisors);
+            analyzedClassBuilder.addAnalyzedMethods(builder.build());
         }
         return matchingAdvisors;
     }
@@ -206,12 +223,12 @@ class AnalyzingClassVisitor extends ClassVisitor {
             }
         }
         for (AnalyzedClass newInterfaceAnalyzedClass : newInterfaceAnalyzedClasses) {
-            matchedMixinTypes.addAll(newInterfaceAnalyzedClass.getMixinTypes());
+            matchedMixinTypes.addAll(newInterfaceAnalyzedClass.mixinTypes());
         }
         // remove mixins that were already implemented in a super class
         for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
             if (!superAnalyzedClass.isInterface()) {
-                matchedMixinTypes.removeAll(superAnalyzedClass.getMixinTypes());
+                matchedMixinTypes.removeAll(superAnalyzedClass.mixinTypes());
             }
         }
         return ImmutableList.copyOf(matchedMixinTypes);
@@ -223,15 +240,15 @@ class AnalyzingClassVisitor extends ClassVisitor {
         for (AdviceMatcher adviceMatcher : adviceMatchers) {
             if (adviceMatcher.isMethodLevelMatch(methodName, parameterTypes, returnType,
                     modifiers)) {
-                matchingAdvisors.add(adviceMatcher.getAdvice());
+                matchingAdvisors.add(adviceMatcher.advice());
             }
         }
         // look at super types
         checkNotNull(superAnalyzedClasses, "Call to visit() is required");
         for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
-            for (AnalyzedMethod analyzedMethod : analyzedClass.getAnalyzedMethods()) {
+            for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
                 if (analyzedMethod.isOverriddenBy(methodName, parameterTypes)) {
-                    matchingAdvisors.addAll(analyzedMethod.getAdvisors());
+                    matchingAdvisors.addAll(analyzedMethod.advisors());
                 }
             }
         }

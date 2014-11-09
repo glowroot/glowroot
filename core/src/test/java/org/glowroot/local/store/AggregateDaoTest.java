@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.Existence;
+import org.glowroot.collector.ImmutableAggregate;
 import org.glowroot.common.Ticker;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,42 +69,115 @@ public class AggregateDaoTest {
     @Test
     public void shouldReadTransactions() throws SQLException {
         // given
-        Aggregate overallAggregate =
-                new Aggregate("a type", null, 10000, 1000000, 0, 10, "", Existence.NO, 0, null);
+        Aggregate overallAggregate = ImmutableAggregate.builder()
+                .transactionType("a type")
+                .transactionName(null)
+                .captureTime(10000)
+                .totalMicros(1000000)
+                .errorCount(0)
+                .transactionCount(10)
+                .metrics("")
+                .profileExistence(Existence.NO)
+                .profileSampleCount(0)
+                .build();
         List<Aggregate> transactionAggregates = Lists.newArrayList();
-        transactionAggregates.add(new Aggregate("a type", "one", 10000, 100000, 0, 1, "",
-                Existence.NO, 0, null));
-        transactionAggregates.add(new Aggregate("a type", "two", 10000, 300000, 0, 2, "",
-                Existence.NO, 0, null));
-        transactionAggregates.add(new Aggregate("a type", "seven", 10000, 1400000, 0, 7, "",
-                Existence.NO, 0, null));
+        transactionAggregates.add(ImmutableAggregate.builder()
+                .transactionType("a type")
+                .transactionName("one")
+                .captureTime(10000)
+                .totalMicros(100000)
+                .errorCount(0)
+                .transactionCount(1)
+                .metrics("")
+                .profileExistence(Existence.NO)
+                .profileSampleCount(0)
+                .build());
+        transactionAggregates.add(ImmutableAggregate.builder()
+                .transactionType("a type")
+                .transactionName("two")
+                .captureTime(10000)
+                .totalMicros(300000)
+                .errorCount(0)
+                .transactionCount(2)
+                .metrics("")
+                .profileExistence(Existence.NO)
+                .profileSampleCount(0)
+                .build());
+        transactionAggregates.add(ImmutableAggregate.builder()
+                .transactionType("a type")
+                .transactionName("seven")
+                .captureTime(10000)
+                .totalMicros(1400000)
+                .errorCount(0)
+                .transactionCount(7)
+                .metrics("")
+                .profileExistence(Existence.NO)
+                .profileSampleCount(0)
+                .build());
         aggregateDao.store(ImmutableList.of(overallAggregate), transactionAggregates);
 
-        Aggregate overallPoint2 =
-                new Aggregate("a type", null, 20000, 1000000, 0, 10, "", Existence.NO, 0, null);
-        List<Aggregate> aggregates2 = Lists.newArrayList();
-        aggregates2.add(new Aggregate("a type", "one", 20000, 100000, 0, 1, "", Existence.NO, 0,
-                null));
-        aggregates2.add(new Aggregate("a type", "two", 20000, 300000, 0, 2, "", Existence.NO, 0,
-                null));
-        aggregates2.add(new Aggregate("a type", "seven", 20000, 1400000, 0, 7, "", Existence.NO, 0,
-                null));
-        aggregateDao.store(ImmutableList.of(overallPoint2), aggregates2);
+        Aggregate overallAggregate2 = ImmutableAggregate.builder()
+                .transactionType("a type")
+                .transactionName(null)
+                .captureTime(20000)
+                .totalMicros(1000000)
+                .errorCount(0)
+                .transactionCount(10)
+                .metrics("")
+                .profileExistence(Existence.NO)
+                .profileSampleCount(0)
+                .build();
+        List<Aggregate> transactionAggregates2 = Lists.newArrayList();
+        transactionAggregates2.add(ImmutableAggregate.builder()
+                .transactionType("a type")
+                .transactionName("one")
+                .captureTime(20000)
+                .totalMicros(100000)
+                .errorCount(0)
+                .transactionCount(1)
+                .metrics("")
+                .profileExistence(Existence.NO)
+                .profileSampleCount(0)
+                .build());
+        transactionAggregates2.add(ImmutableAggregate.builder()
+                .transactionType("a type")
+                .transactionName("two")
+                .captureTime(20000)
+                .totalMicros(300000)
+                .errorCount(0)
+                .transactionCount(2)
+                .metrics("")
+                .profileExistence(Existence.NO)
+                .profileSampleCount(0)
+                .build());
+        transactionAggregates2.add(ImmutableAggregate.builder()
+                .transactionType("a type")
+                .transactionName("seven")
+                .captureTime(20000)
+                .totalMicros(1400000)
+                .errorCount(0)
+                .transactionCount(7)
+                .metrics("")
+                .profileExistence(Existence.NO)
+                .profileSampleCount(0)
+                .build());
+
+        aggregateDao.store(ImmutableList.of(overallAggregate2), transactionAggregates2);
         // when
         List<Aggregate> overallAggregates = aggregateDao.readOverallAggregates("a type", 0, 100000);
         QueryResult<Summary> queryResult =
                 aggregateDao.readTransactionSummaries("a type", 0, 100000, 10);
         // then
         assertThat(overallAggregates).hasSize(2);
-        assertThat(queryResult.getRecords()).hasSize(3);
-        assertThat(queryResult.getRecords().get(0).getTransactionName()).isEqualTo("seven");
-        assertThat(queryResult.getRecords().get(0).getTotalMicros()).isEqualTo(2800000);
-        assertThat(queryResult.getRecords().get(0).getTransactionCount()).isEqualTo(14);
-        assertThat(queryResult.getRecords().get(1).getTransactionName()).isEqualTo("two");
-        assertThat(queryResult.getRecords().get(1).getTotalMicros()).isEqualTo(600000);
-        assertThat(queryResult.getRecords().get(1).getTransactionCount()).isEqualTo(4);
-        assertThat(queryResult.getRecords().get(2).getTransactionName()).isEqualTo("one");
-        assertThat(queryResult.getRecords().get(2).getTotalMicros()).isEqualTo(200000);
-        assertThat(queryResult.getRecords().get(2).getTransactionCount()).isEqualTo(2);
+        assertThat(queryResult.records()).hasSize(3);
+        assertThat(queryResult.records().get(0).transactionName()).isEqualTo("seven");
+        assertThat(queryResult.records().get(0).totalMicros()).isEqualTo(2800000);
+        assertThat(queryResult.records().get(0).transactionCount()).isEqualTo(14);
+        assertThat(queryResult.records().get(1).transactionName()).isEqualTo("two");
+        assertThat(queryResult.records().get(1).totalMicros()).isEqualTo(600000);
+        assertThat(queryResult.records().get(1).transactionCount()).isEqualTo(4);
+        assertThat(queryResult.records().get(2).transactionName()).isEqualTo("one");
+        assertThat(queryResult.records().get(2).totalMicros()).isEqualTo(200000);
+        assertThat(queryResult.records().get(2).transactionCount()).isEqualTo(2);
     }
 }

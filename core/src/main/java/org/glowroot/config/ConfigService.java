@@ -21,16 +21,13 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.base.Charsets;
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +38,7 @@ public class ConfigService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigService.class);
 
-    private final PluginDescriptorCache pluginDescriptorCache;
-    private final File configFile;
+    private final ConfigFile configFile;
     private final Object writeLock = new Object();
 
     private final Set<ConfigListener> configListeners = Sets.newCopyOnWriteArraySet();
@@ -53,56 +49,56 @@ public class ConfigService {
 
     ConfigService(File dataDir, PluginDescriptorCache pluginDescriptorCache) {
         logger.debug("<init>()");
-        this.pluginDescriptorCache = pluginDescriptorCache;
-        configFile = new File(dataDir, "config.json");
+        configFile = new ConfigFile(new File(dataDir, "config.json"),
+                pluginDescriptorCache.pluginDescriptors());
         try {
-            config = loadConfig(configFile, pluginDescriptorCache.getPluginDescriptors());
+            config = configFile.loadConfig();
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
-            config = Config.getDefault(pluginDescriptorCache.getPluginDescriptors());
+            config = configFile.getDefaultConfig();
         }
     }
 
     public TraceConfig getTraceConfig() {
-        return config.getTraceConfig();
+        return config.traceConfig();
     }
 
     public ProfilingConfig getProfilingConfig() {
-        return config.getProfilingConfig();
+        return config.profilingConfig();
     }
 
     public UserRecordingConfig getUserRecordingConfig() {
-        return config.getUserRecordingConfig();
+        return config.userRecordingConfig();
     }
 
     public StorageConfig getStorageConfig() {
-        return config.getStorageConfig();
+        return config.storageConfig();
     }
 
     public UserInterfaceConfig getUserInterfaceConfig() {
-        return config.getUserInterfaceConfig();
+        return config.userInterfaceConfig();
     }
 
     public AdvancedConfig getAdvancedConfig() {
-        return config.getAdvancedConfig();
+        return config.advancedConfig();
     }
 
     @Nullable
     public PluginConfig getPluginConfig(String pluginId) {
-        for (PluginConfig pluginConfig : config.getPluginConfigs()) {
-            if (pluginId.equals(pluginConfig.getId())) {
+        for (PluginConfig pluginConfig : config.pluginConfigs()) {
+            if (pluginId.equals(pluginConfig.id())) {
                 return pluginConfig;
             }
         }
         return null;
     }
 
-    public ImmutableList<MBeanGauge> getMBeanGauges() {
-        return config.getMBeanGauges();
+    public List<MBeanGauge> getMBeanGauges() {
+        return config.mbeanGauges();
     }
 
-    public ImmutableList<CapturePoint> getCapturePoints() {
-        return config.getCapturePoints();
+    public List<CapturePoint> getCapturePoints() {
+        return config.capturePoints();
     }
 
     public void addConfigListener(ConfigListener listener) {
@@ -117,154 +113,146 @@ public class ConfigService {
             throws OptimisticLockException, IOException {
         boolean notifyPluginConfigListeners;
         synchronized (writeLock) {
-            if (!config.getTraceConfig().getVersion().equals(priorVersion)) {
+            if (!config.traceConfig().version().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
-            boolean previousEnabled = config.getTraceConfig().isEnabled();
-            Config updatedConfig = Config.builder(config)
-                    .traceConfig(traceConfig)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            boolean previousEnabled = config.traceConfig().enabled();
+            Config updatedConfig = ((ImmutableConfig) config).withTraceConfig(traceConfig);
+            configFile.write(updatedConfig);
             config = updatedConfig;
-            notifyPluginConfigListeners = config.getTraceConfig().isEnabled() != previousEnabled;
+            notifyPluginConfigListeners = config.traceConfig().enabled() != previousEnabled;
         }
         notifyConfigListeners();
         if (notifyPluginConfigListeners) {
             notifyAllPluginConfigListeners();
         }
-        return traceConfig.getVersion();
+        return traceConfig.version();
     }
 
     public String updateProfilingConfig(ProfilingConfig profilingConfig, String priorVersion)
             throws OptimisticLockException, IOException {
         synchronized (writeLock) {
-            if (!config.getProfilingConfig().getVersion().equals(priorVersion)) {
+            if (!config.profilingConfig().version().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
-            Config updatedConfig = Config.builder(config)
-                    .profilingConfig(profilingConfig)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            Config updatedConfig = ((ImmutableConfig) config).withProfilingConfig(profilingConfig);
+            configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return profilingConfig.getVersion();
+        return profilingConfig.version();
     }
 
     public String updateUserRecordingConfig(UserRecordingConfig userRecordingConfig,
             String priorVersion) throws OptimisticLockException, IOException {
         synchronized (writeLock) {
-            if (!config.getUserRecordingConfig().getVersion().equals(priorVersion)) {
+            if (!config.userRecordingConfig().version().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
-            Config updatedConfig = Config.builder(config)
-                    .userRecordingConfig(userRecordingConfig)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            Config updatedConfig =
+                    ((ImmutableConfig) config).withUserRecordingConfig(userRecordingConfig);
+            configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return userRecordingConfig.getVersion();
+        return userRecordingConfig.version();
     }
 
     public String updateStorageConfig(StorageConfig storageConfig, String priorVersion)
             throws OptimisticLockException, IOException {
         synchronized (writeLock) {
-            if (!config.getStorageConfig().getVersion().equals(priorVersion)) {
+            if (!config.storageConfig().version().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
-            Config updatedConfig = Config.builder(config)
-                    .storageConfig(storageConfig)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            Config updatedConfig = ((ImmutableConfig) config).withStorageConfig(storageConfig);
+            configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return storageConfig.getVersion();
+        return storageConfig.version();
     }
 
     public String updateUserInterfaceConfig(UserInterfaceConfig userInterfaceConfig,
             String priorVersion) throws OptimisticLockException, IOException {
         synchronized (writeLock) {
-            if (!config.getUserInterfaceConfig().getVersion().equals(priorVersion)) {
+            if (!config.userInterfaceConfig().version().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
-            Config updatedConfig = Config.builder(config)
-                    .userInterfaceConfig(userInterfaceConfig)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            Config updatedConfig =
+                    ((ImmutableConfig) config).withUserInterfaceConfig(userInterfaceConfig);
+            configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return userInterfaceConfig.getVersion();
+        return userInterfaceConfig.version();
     }
 
     public String updateAdvancedConfig(AdvancedConfig advancedConfig, String priorVersion)
             throws OptimisticLockException, IOException {
         synchronized (writeLock) {
-            if (!config.getAdvancedConfig().getVersion().equals(priorVersion)) {
+            if (!config.advancedConfig().version().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
-            Config updatedConfig = Config.builder(config)
-                    .advancedConfig(advancedConfig)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            Config updatedConfig = ((ImmutableConfig) config).withAdvancedConfig(advancedConfig);
+            configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return advancedConfig.getVersion();
+        return advancedConfig.version();
     }
 
     public String updatePluginConfig(PluginConfig pluginConfig, String priorVersion)
             throws OptimisticLockException, IOException {
         synchronized (writeLock) {
-            List<PluginConfig> pluginConfigs = Lists.newArrayList(config.getPluginConfigs());
+            List<PluginConfig> pluginConfigs = Lists.newArrayList(config.pluginConfigs());
+            boolean found = false;
             for (ListIterator<PluginConfig> i = pluginConfigs.listIterator(); i.hasNext();) {
                 PluginConfig loopPluginConfig = i.next();
-                if (pluginConfig.getId().equals(loopPluginConfig.getId())) {
-                    if (!loopPluginConfig.getVersion().equals(priorVersion)) {
+                if (pluginConfig.id().equals(loopPluginConfig.id())) {
+                    if (!loopPluginConfig.version().equals(priorVersion)) {
                         throw new OptimisticLockException();
                     }
                     i.set(pluginConfig);
+                    found = true;
+                    break;
                 }
             }
-            Config updatedConfig = Config.builder(config)
-                    .pluginConfigs(pluginConfigs)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            if (!found) {
+                throw new IllegalStateException("Plugin config not found: " + pluginConfig.id());
+            }
+            Config updatedConfig = ((ImmutableConfig) config).withPluginConfigs(pluginConfigs);
+            configFile.write(updatedConfig);
             config = updatedConfig;
         }
-        notifyPluginConfigListeners(pluginConfig.getId());
-        return pluginConfig.getVersion();
+        notifyPluginConfigListeners(pluginConfig.id());
+        return pluginConfig.version();
     }
 
     public String insertMBeanGauge(MBeanGauge mbeanGauge) throws IOException,
             DuplicateMBeanObjectNameException {
         synchronized (writeLock) {
-            List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.getMBeanGauges());
+            List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.mbeanGauges());
             // check for duplicate mbeanObjectName
             for (MBeanGauge loopMBeanGauge : mbeanGauges) {
-                if (loopMBeanGauge.getMBeanObjectName().equals(mbeanGauge.getMBeanObjectName())) {
+                if (loopMBeanGauge.mbeanObjectName().equals(mbeanGauge.mbeanObjectName())) {
                     throw new DuplicateMBeanObjectNameException();
                 }
             }
             mbeanGauges.add(mbeanGauge);
-            Config updatedConfig = Config.builder(config)
-                    .mbeanGauges(mbeanGauges)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            Config updatedConfig = ((ImmutableConfig) config).withMbeanGauges(mbeanGauges);
+            configFile.write(updatedConfig);
             config = updatedConfig;
         }
-        return mbeanGauge.getVersion();
+        return mbeanGauge.version();
     }
 
-    public String updateMBeanGauge(String priorVersion, MBeanGauge mbeanGauge)
+    public String updateMBeanGauge(MBeanGauge mbeanGauge, String priorVersion)
             throws IOException {
         synchronized (writeLock) {
-            List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.getMBeanGauges());
+            List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.mbeanGauges());
             boolean found = false;
             for (ListIterator<MBeanGauge> i = mbeanGauges.listIterator(); i.hasNext();) {
-                if (priorVersion.equals(i.next().getVersion())) {
+                if (priorVersion.equals(i.next().version())) {
                     i.set(mbeanGauge);
                     found = true;
                     break;
@@ -273,21 +261,19 @@ public class ConfigService {
             if (!found) {
                 throw new IOException("Gauge config not found: " + priorVersion);
             }
-            Config updatedConfig = Config.builder(config)
-                    .mbeanGauges(mbeanGauges)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            Config updatedConfig = ((ImmutableConfig) config).withMbeanGauges(mbeanGauges);
+            configFile.write(updatedConfig);
             config = updatedConfig;
         }
-        return mbeanGauge.getVersion();
+        return mbeanGauge.version();
     }
 
     public void deleteMBeanGauge(String version) throws IOException {
         synchronized (writeLock) {
-            List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.getMBeanGauges());
+            List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.mbeanGauges());
             boolean found = false;
             for (ListIterator<MBeanGauge> i = mbeanGauges.listIterator(); i.hasNext();) {
-                if (version.equals(i.next().getVersion())) {
+                if (version.equals(i.next().version())) {
                     i.remove();
                     found = true;
                     break;
@@ -296,35 +282,31 @@ public class ConfigService {
             if (!found) {
                 throw new IOException("Gauge config not found: " + version);
             }
-            Config updatedConfig = Config.builder(config)
-                    .mbeanGauges(mbeanGauges)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            Config updatedConfig = ((ImmutableConfig) config).withMbeanGauges(mbeanGauges);
+            configFile.write(updatedConfig);
             config = updatedConfig;
         }
     }
 
     public String insertCapturePoint(CapturePoint capturePoint) throws IOException {
         synchronized (writeLock) {
-            List<CapturePoint> capturePoints = Lists.newArrayList(config.getCapturePoints());
+            List<CapturePoint> capturePoints = Lists.newArrayList(config.capturePoints());
             capturePoints.add(capturePoint);
-            Config updatedConfig = Config.builder(config)
-                    .capturePoints(capturePoints)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            Config updatedConfig = ((ImmutableConfig) config).withCapturePoints(capturePoints);
+            configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return capturePoint.getVersion();
+        return capturePoint.version();
     }
 
-    public String updateCapturePoint(String priorVersion, CapturePoint capturePoint)
+    public String updateCapturePoint(CapturePoint capturePoint, String priorVersion)
             throws IOException {
         synchronized (writeLock) {
-            List<CapturePoint> capturePoints = Lists.newArrayList(config.getCapturePoints());
+            List<CapturePoint> capturePoints = Lists.newArrayList(config.capturePoints());
             boolean found = false;
             for (ListIterator<CapturePoint> i = capturePoints.listIterator(); i.hasNext();) {
-                if (priorVersion.equals(i.next().getVersion())) {
+                if (priorVersion.equals(i.next().version())) {
                     i.set(capturePoint);
                     found = true;
                     break;
@@ -334,22 +316,20 @@ public class ConfigService {
                 logger.warn("aspect config unique hash not found: {}", priorVersion);
                 return priorVersion;
             }
-            Config updatedConfig = Config.builder(config)
-                    .capturePoints(capturePoints)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            Config updatedConfig = ((ImmutableConfig) config).withCapturePoints(capturePoints);
+            configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return capturePoint.getVersion();
+        return capturePoint.version();
     }
 
     public void deleteCapturePoint(String version) throws IOException {
         synchronized (writeLock) {
-            List<CapturePoint> capturePoints = Lists.newArrayList(config.getCapturePoints());
+            List<CapturePoint> capturePoints = Lists.newArrayList(config.capturePoints());
             boolean found = false;
             for (ListIterator<CapturePoint> i = capturePoints.listIterator(); i.hasNext();) {
-                if (version.equals(i.next().getVersion())) {
+                if (version.equals(i.next().version())) {
                     i.remove();
                     found = true;
                     break;
@@ -359,10 +339,8 @@ public class ConfigService {
                 logger.warn("aspect config version not found: {}", version);
                 return;
             }
-            Config updatedConfig = Config.builder(config)
-                    .capturePoints(capturePoints)
-                    .build();
-            ConfigMapper.writeValue(configFile, updatedConfig);
+            Config updatedConfig = ((ImmutableConfig) config).withCapturePoints(capturePoints);
+            configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
@@ -392,76 +370,10 @@ public class ConfigService {
 
     @OnlyUsedByTests
     public void resetAllConfig() throws IOException {
-        if (!configFile.delete()) {
-            throw new IOException("Could not delete file: " + configFile.getCanonicalPath());
-        }
-        config = loadConfig(configFile, pluginDescriptorCache.getPluginDescriptors());
+        configFile.delete();
+        config = configFile.loadConfig();
         notifyConfigListeners();
         notifyAllPluginConfigListeners();
-    }
-
-    // the 2 methods below are only used by test harness (LocalContainer), so that tests will still
-    // succeed even if core is shaded (e.g. compiled from maven) and test-harness is compiled
-    // against unshaded core (e.g. compiled previously in IDE)
-    //
-    // don't return ImmutableList
-    @OnlyUsedByTests
-    public List<MBeanGauge> getMBeanGaugesNeverShaded() {
-        return getMBeanGauges();
-    }
-
-    // don't return ImmutableList, see comment above
-    @OnlyUsedByTests
-    public List<CapturePoint> getCapturePointsNeverShaded() {
-        return config.getCapturePoints();
-    }
-
-    private static Config loadConfig(File configFile,
-            ImmutableList<PluginDescriptor> pluginDescriptors) throws IOException {
-        if (!configFile.exists()) {
-            Config config = Config.getDefault(pluginDescriptors);
-            ConfigMapper.writeValue(configFile, config);
-            return config;
-        }
-        String content = Files.toString(configFile, Charsets.UTF_8);
-        Config config;
-        String warningMessage = null;
-        try {
-            config = new ConfigMapper(pluginDescriptors).readValue(content);
-        } catch (JsonProcessingException e) {
-            logger.warn("error processing config file: {}", configFile.getAbsolutePath(), e);
-            File backupFile = new File(configFile.getParentFile(), configFile.getName()
-                    + ".invalid-orig");
-            config = Config.getDefault(pluginDescriptors);
-            try {
-                Files.copy(configFile, backupFile);
-                warningMessage = "due to an error in the config file, it has been backed up to"
-                        + " extension '.invalid-orig' and overwritten with the default config";
-            } catch (IOException f) {
-                logger.warn("error making a copy of the invalid config file before overwriting it",
-                        f);
-                warningMessage = "due to an error in the config file, it has been overwritten with"
-                        + " the default config";
-            }
-        }
-        // it's nice to update config.json on startup if it is missing some/all config
-        // properties so that the file contents can be reviewed/updated/copied if desired
-        writeToFileIfNeeded(config, configFile, content);
-        if (warningMessage != null) {
-            logger.warn(warningMessage);
-        }
-        return config;
-    }
-
-    private static void writeToFileIfNeeded(Config config, File configFile, String existingContent)
-            throws IOException {
-        String content = ConfigMapper.writeValueAsString(config);
-        if (content.equals(existingContent)) {
-            // it's nice to preserve the correct modification stamp on the file to track when it was
-            // last really changed
-            return;
-        }
-        Files.write(content, configFile, Charsets.UTF_8);
     }
 
     @SuppressWarnings("serial")

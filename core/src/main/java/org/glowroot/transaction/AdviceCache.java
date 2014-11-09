@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -29,7 +31,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.advicegen.AdviceGenerator;
 import org.glowroot.config.CapturePoint;
@@ -52,10 +53,9 @@ public class AdviceCache {
 
     private volatile ImmutableList<Advice> allAdvisors;
 
-    AdviceCache(ImmutableList<Advice> pluginAdvisors,
-            ImmutableList<CapturePoint> reweavableCapturePoints,
+    AdviceCache(List<Advice> pluginAdvisors, List<CapturePoint> reweavableCapturePoints,
             @Nullable Instrumentation instrumentation, File dataDir) throws IOException {
-        this.pluginAdvisors = pluginAdvisors;
+        this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
         this.instrumentation = instrumentation;
         this.dataDir = dataDir;
         updateAdvisors(reweavableCapturePoints, true);
@@ -71,9 +71,8 @@ public class AdviceCache {
     }
 
     @EnsuresNonNull({"reweavableAdvisors", "reweavableCapturePointVersions", "allAdvisors"})
-    public void updateAdvisors(/*>>>@org.checkerframework.checker.initialization.qual.UnknownInitialization(AdviceCache.class) AdviceCache this,*/
-            ImmutableList<CapturePoint> reweavableCapturePoints, boolean cleanTmpDir)
-            throws IOException {
+    public void updateAdvisors(/*>>>@UnknownInitialization(AdviceCache.class) AdviceCache this,*/
+            List<CapturePoint> reweavableCapturePoints, boolean cleanTmpDir) throws IOException {
         ImmutableMap<Advice, LazyDefinedClass> advisors =
                 AdviceGenerator.createAdvisors(reweavableCapturePoints, null);
         if (instrumentation == null) {
@@ -105,10 +104,10 @@ public class AdviceCache {
         allAdvisors = ImmutableList.copyOf(Iterables.concat(pluginAdvisors, reweavableAdvisors));
     }
 
-    public boolean isOutOfSync(ImmutableList<CapturePoint> reweavableCapturePoints) {
+    public boolean isOutOfSync(List<CapturePoint> reweavableCapturePoints) {
         Set<String> versions = Sets.newHashSet();
         for (CapturePoint reweavableCapturePoint : reweavableCapturePoints) {
-            versions.add(reweavableCapturePoint.getVersion());
+            versions.add(reweavableCapturePoint.version());
         }
         return !versions.equals(this.reweavableCapturePointVersions);
     }
@@ -117,7 +116,7 @@ public class AdviceCache {
             List<CapturePoint> reweavableCapturePoints) {
         Set<String> versions = Sets.newHashSet();
         for (CapturePoint reweavableCapturePoint : reweavableCapturePoints) {
-            versions.add(reweavableCapturePoint.getVersion());
+            versions.add(reweavableCapturePoint.version());
         }
         return ImmutableSet.copyOf(versions);
     }

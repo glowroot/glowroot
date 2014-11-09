@@ -15,34 +15,14 @@
  */
 package org.glowroot.weaving;
 
-import com.google.common.collect.ImmutableList;
+import java.util.List;
+
+import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 
-public class LazyDefinedClass {
-
-    private final Type type;
-    private final byte[] bytes;
-    private final ImmutableList<LazyDefinedClass> dependencies;
-
-    public LazyDefinedClass(Type type, byte[] bytes) {
-        this(type, bytes, ImmutableList.<LazyDefinedClass>of());
-    }
-
-    public LazyDefinedClass(Type type, byte[] bytes, ImmutableList<LazyDefinedClass> dependencies) {
-        this.type = type;
-        this.bytes = bytes;
-        this.dependencies = dependencies;
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public byte[] getBytes() {
-        return bytes;
-    }
-
-    public ImmutableList<LazyDefinedClass> getDependencies() {
-        return dependencies;
-    }
+@Value.Immutable
+public abstract class LazyDefinedClass {
+    public abstract Type type();
+    public abstract byte[] bytes();
+    public abstract List<LazyDefinedClass> dependencies();
 }

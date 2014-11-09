@@ -17,14 +17,16 @@ package org.glowroot.weaving;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
+import java.util.List;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Label;
@@ -101,8 +103,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         this.bootstrapClassLoader = bootstrapClassLoader;
         boolean needsTryCatch = false;
         for (Advice advice : advisors) {
-            if (advice.getPointcut().ignoreSelfNested() || advice.getOnThrowAdvice() != null
-                    || advice.getOnAfterAdvice() != null) {
+            if (advice.pointcut().ignoreSelfNested() || advice.onThrowAdvice() != null
+                    || advice.onAfterAdvice() != null) {
                 needsTryCatch = true;
                 break;
             }
@@ -183,7 +185,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 }
                 Integer travelerLocalIndex = travelerLocals.get(advice);
                 if (travelerLocalIndex != null) {
-                    Type travelerType = advice.getTravelerType();
+                    Type travelerType = advice.travelerType();
                     if (travelerType == null) {
                         logger.error("visitLocalVariable(): traveler local index is not null,"
                                 + " but traveler type is null");
@@ -264,16 +266,16 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     private void defineAndEvaluateEnabledLocalVar(Advice advice) {
         Integer enabledLocal = null;
-        Method isEnabledAdvice = advice.getIsEnabledAdvice();
+        Method isEnabledAdvice = advice.isEnabledAdvice();
         if (isEnabledAdvice != null) {
-            loadMethodParameters(advice.getIsEnabledParameters(), 0, -1, advice.getAdviceType(),
+            loadMethodParameters(advice.isEnabledParameters(), 0, -1, advice.adviceType(),
                     IsEnabled.class);
-            invokeStatic(advice.getAdviceType(), isEnabledAdvice);
+            invokeStatic(advice.adviceType(), isEnabledAdvice);
             enabledLocal = newLocal(Type.BOOLEAN_TYPE);
             enabledLocals.put(advice, enabledLocal);
             storeLocal(enabledLocal);
         }
-        if (advice.getPointcut().ignoreSelfNested()) {
+        if (advice.pointcut().ignoreSelfNested()) {
             // originalAdviceFlowLocal must be defined/initialized outside of any code branches
             // since it is referenced later on in resetAdviceFlowIfNecessary()
             int adviceFlowHolderLocal = newLocal(adviceFlowHolderType);
@@ -295,7 +297,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 enabledLocals.put(advice, enabledLocal);
                 // it will be initialized below
             }
-            getStatic(advice.getAdviceType(), "glowroot$advice$flow$outer$holder",
+            getStatic(advice.adviceType(), "glowroot$advice$flow$outer$holder",
                     adviceFlowOuterHolderType);
             invokeVirtual(adviceFlowOuterHolderType, Method.getMethod(
                     AdviceFlowHolder.class.getName() + " getInnerHolder()"));
@@ -324,11 +326,11 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     }
 
     private void defineTravelerLocalVar(Advice advice) {
-        Method onBeforeAdvice = advice.getOnBeforeAdvice();
+        Method onBeforeAdvice = advice.onBeforeAdvice();
         if (onBeforeAdvice == null) {
             return;
         }
-        Type travelerType = advice.getTravelerType();
+        Type travelerType = advice.travelerType();
         if (travelerType == null) {
             return;
         }
@@ -340,7 +342,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     }
 
     private void invokeOnBefore(Advice advice, @Nullable Integer travelerLocal) {
-        Method onBeforeAdvice = advice.getOnBeforeAdvice();
+        Method onBeforeAdvice = advice.onBeforeAdvice();
         if (onBeforeAdvice == null) {
             return;
         }
@@ -351,9 +353,9 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
             loadLocal(enabledLocal);
             visitJumpInsn(IFEQ, onBeforeBlockEnd);
         }
-        loadMethodParameters(advice.getOnBeforeParameters(), 0, -1, advice.getAdviceType(),
+        loadMethodParameters(advice.onBeforeParameters(), 0, -1, advice.adviceType(),
                 OnBefore.class);
-        invokeStatic(advice.getAdviceType(), onBeforeAdvice);
+        invokeStatic(advice.adviceType(), onBeforeAdvice);
         if (travelerLocal != null) {
             storeLocal(travelerLocal);
         }
@@ -363,7 +365,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     }
 
     private void visitOnReturnAdvice(Advice advice, int opcode) {
-        Method onReturnAdvice = advice.getOnReturnAdvice();
+        Method onReturnAdvice = advice.onReturnAdvice();
         if (onReturnAdvice == null) {
             return;
         }
@@ -384,8 +386,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         if (onReturnAdvice.getArgumentTypes().length > 0) {
             // @BindReturn must be the first argument to @OnReturn (if present)
             int startIndex = 0;
-            AdviceParameter parameter = advice.getOnReturnParameters().get(0);
-            switch (parameter.getKind()) {
+            AdviceParameter parameter = advice.onReturnParameters().get(0);
+            switch (parameter.kind()) {
                 case RETURN:
                     loadNonOptionalReturnValue(opcode, parameter);
                     startIndex = 1;
@@ -398,8 +400,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                     // first argument is not @BindReturn
                     break;
             }
-            loadMethodParameters(advice.getOnReturnParameters(), startIndex,
-                    travelerLocals.get(advice), advice.getAdviceType(), OnReturn.class);
+            loadMethodParameters(advice.onReturnParameters(), startIndex,
+                    travelerLocals.get(advice), advice.adviceType(), OnReturn.class);
         }
         int sort = onReturnAdvice.getReturnType().getSort();
         if (sort == Type.LONG || sort == Type.DOUBLE) {
@@ -407,15 +409,15 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         } else if (sort != Type.VOID) {
             pop();
         }
-        invokeStatic(advice.getAdviceType(), onReturnAdvice);
+        invokeStatic(advice.adviceType(), onReturnAdvice);
     }
 
     private void loadNonOptionalReturnValue(int opcode, AdviceParameter parameter) {
         if (opcode == RETURN) {
             logger.warn("cannot use @BindReturn on a @Pointcut returning void");
-            pushDefault(parameter.getType());
+            pushDefault(parameter.type());
         } else {
-            boolean primitive = parameter.getType().getSort() < Type.ARRAY;
+            boolean primitive = parameter.type().getSort() < Type.ARRAY;
             loadReturnValue(opcode, !primitive);
         }
     }
@@ -449,7 +451,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     private void visitOnThrowAdvice() {
         for (Advice advice : Lists.reverse(advisors)) {
-            Method onThrowAdvice = advice.getOnThrowAdvice();
+            Method onThrowAdvice = advice.onThrowAdvice();
             if (onThrowAdvice == null) {
                 continue;
             }
@@ -461,17 +463,17 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 visitJumpInsn(IFEQ, onThrowBlockEnd);
             }
             if (onThrowAdvice.getArgumentTypes().length == 0) {
-                invokeStatic(advice.getAdviceType(), onThrowAdvice);
+                invokeStatic(advice.adviceType(), onThrowAdvice);
             } else {
                 int startIndex = 0;
-                if (advice.getOnThrowParameters().get(0).getKind() == ParameterKind.THROWABLE) {
+                if (advice.onThrowParameters().get(0).kind() == ParameterKind.THROWABLE) {
                     // @BindThrowable must be the first argument to @OnThrow (if present)
                     dup();
                     startIndex++;
                 }
-                loadMethodParameters(advice.getOnThrowParameters(), startIndex,
-                        travelerLocals.get(advice), advice.getAdviceType(), OnThrow.class);
-                invokeStatic(advice.getAdviceType(), onThrowAdvice);
+                loadMethodParameters(advice.onThrowParameters(), startIndex,
+                        travelerLocals.get(advice), advice.adviceType(), OnThrow.class);
+                invokeStatic(advice.adviceType(), onThrowAdvice);
             }
             if (onThrowBlockEnd != null) {
                 visitLabel(onThrowBlockEnd);
@@ -480,7 +482,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     }
 
     private void visitOnAfterAdvice(Advice advice) {
-        Method onAfterAdvice = advice.getOnAfterAdvice();
+        Method onAfterAdvice = advice.onAfterAdvice();
         if (onAfterAdvice == null) {
             return;
         }
@@ -491,9 +493,9 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
             loadLocal(enabledLocal);
             visitJumpInsn(IFEQ, onAfterBlockEnd);
         }
-        loadMethodParameters(advice.getOnAfterParameters(), 0, travelerLocals.get(advice),
-                advice.getAdviceType(), OnAfter.class);
-        invokeStatic(advice.getAdviceType(), onAfterAdvice);
+        loadMethodParameters(advice.onAfterParameters(), 0, travelerLocals.get(advice),
+                advice.adviceType(), OnAfter.class);
+        invokeStatic(advice.adviceType(), onAfterAdvice);
         if (onAfterBlockEnd != null) {
             visitLabel(onAfterBlockEnd);
         }
@@ -501,7 +503,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     private void resetAdviceFlowIfNecessary() {
         for (Advice advice : advisors) {
-            if (advice.getPointcut().ignoreSelfNested()) {
+            if (advice.pointcut().ignoreSelfNested()) {
                 Integer enabledLocal = enabledLocals.get(advice);
                 Integer originalAdviceFlowLocal = originalAdviceFlowLocals.get(advice);
                 Integer adviceFlowHolderLocal = adviceFlowHolderLocals.get(advice);
@@ -528,14 +530,14 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         }
     }
 
-    private void loadMethodParameters(ImmutableList<AdviceParameter> parameters, int startIndex,
+    private void loadMethodParameters(List<AdviceParameter> parameters, int startIndex,
             @Nullable Integer travelerLocal, Type adviceType,
             Class<? extends Annotation> annotationType) {
 
         int argIndex = 0;
         for (int i = startIndex; i < parameters.size(); i++) {
             AdviceParameter parameter = parameters.get(i);
-            switch (parameter.getKind()) {
+            switch (parameter.kind()) {
                 case RECEIVER:
                     loadTarget();
                     break;
@@ -564,8 +566,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                     // this should have been caught during Advice construction, but just in case:
                     logger.warn("the @{} method in {} has an unexpected parameter kind {} at index"
                             + " {}", annotationType.getSimpleName(), adviceType.getClassName(),
-                            parameter.getKind(), i);
-                    pushDefault(parameter.getType());
+                            parameter.kind(), i);
+                    pushDefault(parameter.type());
                     break;
             }
         }
@@ -589,11 +591,11 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
             logger.warn("the @{} method in {} has more @{} arguments than the number of args in"
                     + " the target method", annotationType.getSimpleName(),
                     adviceType.getClassName(), BindParameter.class.getSimpleName());
-            pushDefault(parameter.getType());
+            pushDefault(parameter.type());
             return;
         }
         loadArg(argIndex);
-        boolean primitive = parameter.getType().getSort() < Type.ARRAY;
+        boolean primitive = parameter.type().getSort() < Type.ARRAY;
         if (!primitive) {
             // autobox
             box(argumentTypes[argIndex]);
@@ -615,7 +617,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
             logger.warn("the @{} method in {} requested @{} but @{} returns void",
                     annotationType.getSimpleName(), adviceType.getClassName(),
                     BindTraveler.class.getSimpleName(), OnBefore.class.getSimpleName());
-            pushDefault(parameter.getType());
+            pushDefault(parameter.type());
         } else {
             loadLocal(travelerLocal);
         }
@@ -623,7 +625,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     @RequiresNonNull("metaHolderInternalName")
     private void loadClassMeta(AdviceParameter parameter) {
-        Type classMetaFieldType = parameter.getType();
+        Type classMetaFieldType = parameter.type();
         String classMetaFieldName = "glowroot$class$meta$"
                 + classMetaFieldType.getInternalName().replace('/', '$');
         if (bootstrapClassLoader) {
@@ -640,7 +642,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     @RequiresNonNull({"metaHolderInternalName", "methodMetaGroupUniqueNum"})
     private void loadMethodMeta(AdviceParameter parameter) {
-        Type methodMetaFieldType = parameter.getType();
+        Type methodMetaFieldType = parameter.type();
         String methodMetaFieldName = "glowroot$method$meta$" + methodMetaGroupUniqueNum + '$'
                 + methodMetaFieldType.getInternalName().replace('/', '$');
         if (bootstrapClassLoader) {

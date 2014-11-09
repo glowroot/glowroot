@@ -36,6 +36,7 @@ public class PreInitializeWeavingClassesTest {
         // accepts the WeavingTimerService interface and so WeavingTimerServiceImpl would otherwise
         // go unseen
         globalCollector.registerClass("org/glowroot/transaction/WeavingTimerServiceImpl");
+        globalCollector.registerClass("org/glowroot/weaving/ImmutableAdvice");
         // "call" AnalyzedWorld constructor to capture types used by LoadingCache
         // (so these types will be in the list of possible subtypes later on)
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(

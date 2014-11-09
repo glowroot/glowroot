@@ -17,7 +17,7 @@ package org.glowroot.container.config;
 
 import java.util.List;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 public interface ConfigService {
 
@@ -56,17 +56,17 @@ public interface ConfigService {
 
     List<MBeanGauge> getMBeanGauges() throws Exception;
 
-    String addMBeanGauge(MBeanGauge mbeanGauge) throws Exception;
+    MBeanGauge addMBeanGauge(MBeanGauge mbeanGauge) throws Exception;
 
-    void updateMBeanGauge(String version, MBeanGauge mbeanGauge) throws Exception;
+    MBeanGauge updateMBeanGauge(MBeanGauge mbeanGauge) throws Exception;
 
     void removeMBeanGauge(String version) throws Exception;
 
     List<CapturePoint> getCapturePoints() throws Exception;
 
-    String addCapturePoint(CapturePoint capturePoint) throws Exception;
+    CapturePoint addCapturePoint(CapturePoint capturePoint) throws Exception;
 
-    void updateCapturePoint(String version, CapturePoint capturePoint) throws Exception;
+    CapturePoint updateCapturePoint(CapturePoint capturePoint) throws Exception;
 
     void removeCapturePoint(String version) throws Exception;
 

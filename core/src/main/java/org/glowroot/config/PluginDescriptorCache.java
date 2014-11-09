@@ -24,38 +24,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.common.marshal.Marshaling;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.advicegen.AdviceGenerator;
 import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.common.ObjectMappers;
-import org.glowroot.markers.Immutable;
-import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.weaving.Advice;
-import org.glowroot.weaving.Advice.AdviceConstructionException;
+import org.glowroot.weaving.AdviceBuilder;
+import org.glowroot.weaving.AdviceBuilder.AdviceConstructionException;
 import org.glowroot.weaving.ClassLoaders;
 import org.glowroot.weaving.LazyDefinedClass;
 import org.glowroot.weaving.MixinType;
 
-@Immutable
-public class PluginDescriptorCache {
+@Value.Immutable
+public abstract class PluginDescriptorCache {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginDescriptorCache.class);
-    private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final ImmutableList<PluginDescriptor> pluginDescriptors;
-    private final ImmutableList<MixinType> mixinTypes;
-    private final ImmutableList<Advice> advisors;
+    public abstract List<PluginDescriptor> pluginDescriptors();
+    public abstract List<MixinType> mixinTypes();
+    public abstract List<Advice> advisors();
 
     static PluginDescriptorCache create(PluginCache pluginCache,
             @Nullable Instrumentation instrumentation, File dataDir) throws IOException,
@@ -72,7 +70,7 @@ public class PluginDescriptorCache {
         }
         ClassLoader tempIsolatedClassLoader = new IsolatedClassLoader(pluginJars);
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            for (String aspect : pluginDescriptor.getAspects()) {
+            for (String aspect : pluginDescriptor.aspects()) {
                 try {
                     Class<?> aspectClass = Class.forName(aspect, false, tempIsolatedClassLoader);
                     advisors.addAll(getAdvisors(aspectClass));
@@ -82,7 +80,7 @@ public class PluginDescriptorCache {
                 }
             }
             lazyAdvisors.putAll(AdviceGenerator.createAdvisors(
-                    pluginDescriptor.getCapturePoints(), pluginDescriptor.getId()));
+                    pluginDescriptor.capturePoints(), pluginDescriptor.id()));
         }
         for (Entry<Advice, LazyDefinedClass> entry : lazyAdvisors.entrySet()) {
             advisors.add(entry.getKey());
@@ -103,7 +101,11 @@ public class PluginDescriptorCache {
                         instrumentation, jarFile);
             }
         }
-        return new PluginDescriptorCache(pluginDescriptors, mixinTypes, advisors);
+        return ImmutablePluginDescriptorCache.builder()
+                .addAllPluginDescriptors(sorted(pluginDescriptors))
+                .addAllMixinTypes(mixinTypes)
+                .addAllAdvisors(advisors)
+                .build();
     }
 
     static PluginDescriptorCache createInViewerMode(PluginCache pluginCache) throws IOException,
@@ -113,55 +115,9 @@ public class PluginDescriptorCache {
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             pluginDescriptorsWithoutAdvice.add(pluginDescriptor.copyWithoutAdvice());
         }
-        return new PluginDescriptorCache(pluginDescriptorsWithoutAdvice,
-                ImmutableList.<MixinType>of(), ImmutableList.<Advice>of());
-    }
-
-    private PluginDescriptorCache(List<PluginDescriptor> pluginDescriptors,
-            List<MixinType> mixinTypes, List<Advice> advisors) {
-        // sorted for display to console during startup and for plugin config sidebar menu
-        this.pluginDescriptors =
-                PluginDescriptor.specialOrderingByName.immutableSortedCopy(pluginDescriptors);
-        this.mixinTypes = ImmutableList.copyOf(mixinTypes);
-        this.advisors = ImmutableList.copyOf(advisors);
-    }
-
-    public ImmutableList<PluginDescriptor> getPluginDescriptors() {
-        return pluginDescriptors;
-    }
-
-    @Nullable
-    public PluginDescriptor getPluginDescriptor(String pluginId) {
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            if (pluginDescriptor.getId().equals(pluginId)) {
-                return pluginDescriptor;
-            }
-        }
-        return null;
-    }
-
-    public ImmutableList<MixinType> getMixinTypes() {
-        return mixinTypes;
-    }
-
-    public ImmutableList<Advice> getAdvisors() {
-        return advisors;
-    }
-
-    // the 2 methods below are only used by test harness (LocalContainer), so that tests will still
-    // succeed even if core is shaded (e.g. compiled from maven) and test-harness is compiled
-    // against unshaded core (e.g. compiled previously in IDE)
-    //
-    // don't return ImmutableList
-    @OnlyUsedByTests
-    public List<MixinType> getMixinTypesNeverShaded() {
-        return getMixinTypes();
-    }
-
-    // don't return ImmutableList, see comment above
-    @OnlyUsedByTests
-    public List<Advice> getAdvisorsNeverShaded() {
-        return getAdvisors();
+        return ImmutablePluginDescriptorCache.builder()
+                .addAllPluginDescriptors(sorted(pluginDescriptorsWithoutAdvice))
+                .build();
     }
 
     private static List<PluginDescriptor> readPluginDescriptors(PluginCache pluginCache)
@@ -171,7 +127,7 @@ public class PluginDescriptorCache {
             try {
                 String content = Resources.toString(url, Charsets.UTF_8);
                 PluginDescriptor pluginDescriptor =
-                        ObjectMappers.readRequiredValue(mapper, content, PluginDescriptor.class);
+                        Marshaling.fromJson(content, PluginDescriptor.class);
                 pluginDescriptors.add(pluginDescriptor);
             } catch (JsonProcessingException e) {
                 logger.error("error parsing plugin descriptor: {}", url.toExternalForm(), e);
@@ -180,12 +136,17 @@ public class PluginDescriptorCache {
         return pluginDescriptors;
     }
 
+    // sorted for display to console during startup and for plugin config sidebar menu
+    private static List<PluginDescriptor> sorted(List<PluginDescriptor> pluginDescriptors) {
+        return PluginDescriptor.specialOrderingByName.immutableSortedCopy(pluginDescriptors);
+    }
+
     private static List<Advice> getAdvisors(Class<?> aspectClass) {
         List<Advice> advisors = Lists.newArrayList();
         for (Class<?> memberClass : aspectClass.getClasses()) {
             if (memberClass.isAnnotationPresent(Pointcut.class)) {
                 try {
-                    advisors.add(Advice.from(memberClass, false));
+                    advisors.add(new AdviceBuilder(memberClass, false).build());
                 } catch (AdviceConstructionException e) {
                     logger.error("error creating advice: {}", memberClass.getName(), e);
                 }

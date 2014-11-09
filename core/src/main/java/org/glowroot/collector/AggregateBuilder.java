@@ -18,11 +18,12 @@ package org.glowroot.collector;
 import java.io.IOException;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.TransactionMetricImpl;
@@ -70,9 +71,18 @@ class AggregateBuilder {
     Aggregate build(long captureTime) throws IOException {
         String profile = getProfileJson();
         Existence profileExistence = profile != null ? Existence.YES : Existence.NO;
-        return new Aggregate(transactionType, transactionName, captureTime, totalMicros,
-                errorCount, transactionCount, getMetricsJson(), profileExistence,
-                profileSampleCount, profile);
+        return ImmutableAggregate.builder()
+                .transactionType(transactionType)
+                .transactionName(transactionName)
+                .captureTime(captureTime)
+                .totalMicros(totalMicros)
+                .errorCount(errorCount)
+                .transactionCount(transactionCount)
+                .metrics(getMetricsJson())
+                .profileExistence(profileExistence)
+                .profileSampleCount(profileSampleCount)
+                .profile(profile)
+                .build();
     }
 
     private void addToMetrics(TransactionMetricImpl transactionMetric,

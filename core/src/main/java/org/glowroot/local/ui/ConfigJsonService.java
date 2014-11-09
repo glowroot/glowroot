@@ -19,47 +19,50 @@ import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.io.CharStreams;
-import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.immutables.common.marshal.Marshaling;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.OptimisticLockException;
-import org.glowroot.config.JsonViews.UiView;
+import org.glowroot.config.ImmutableAdvancedConfig;
+import org.glowroot.config.ImmutablePluginConfig;
+import org.glowroot.config.ImmutableProfilingConfig;
+import org.glowroot.config.ImmutableStorageConfig;
+import org.glowroot.config.ImmutableTraceConfig;
+import org.glowroot.config.ImmutableUserInterfaceConfig;
+import org.glowroot.config.ImmutableUserRecordingConfig;
+import org.glowroot.config.MarshalingRoutines;
 import org.glowroot.config.PluginConfig;
+import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.config.ProfilingConfig;
+import org.glowroot.config.PropertyDescriptor;
+import org.glowroot.config.PropertyValue;
 import org.glowroot.config.StorageConfig;
 import org.glowroot.config.TraceConfig;
 import org.glowroot.config.UserInterfaceConfig;
-import org.glowroot.config.UserInterfaceConfig.CurrentPasswordIncorrectException;
 import org.glowroot.config.UserRecordingConfig;
 import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.transaction.TransactionModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
 
 @JsonService
 class ConfigJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
-    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ConfigService configService;
     private final CappedDatabase cappedDatabase;
@@ -89,58 +92,38 @@ class ConfigJsonService {
     @GET("/backend/config/trace")
     String getTraceConfig() throws IOException, SQLException {
         logger.debug("getTraceConfig()");
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getTraceConfig());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
+        TraceConfig config = configService.getTraceConfig();
+        return Marshaling.toJson(ImmutableTraceConfigResponse.builder()
+                .config(TraceConfigDto.fromConfig(config))
+                .build());
     }
 
     @GET("/backend/config/profiling")
     String getProfilingConfig() throws IOException, SQLException {
         logger.debug("getProfilingConfig()");
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getProfilingConfig());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
+        ProfilingConfig config = configService.getProfilingConfig();
+        return Marshaling.toJson(ImmutableProfilingConfigResponse.builder()
+                .config(ProfilingConfigDto.fromConfig(config))
+                .build());
     }
 
     @GET("/backend/config/user-recording")
     String getUserRecordingConfig() throws IOException, SQLException {
         logger.debug("getUserRecordingConfig()");
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getUserRecordingConfig());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
+        UserRecordingConfig config = configService.getUserRecordingConfig();
+        return Marshaling.toJson(ImmutableUserRecordingConfigResponse.builder()
+                .config(UserRecordingConfigDto.fromConfig(config))
+                .build());
     }
 
     @GET("/backend/config/storage")
     String getStorage() throws IOException, SQLException {
         logger.debug("getStorage()");
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getStorageConfig());
-        jg.writeStringField("dataDir", dataDir.getCanonicalPath());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
+        StorageConfig config = configService.getStorageConfig();
+        return Marshaling.toJson(ImmutableStorageConfigResponse.builder()
+                .config(StorageConfigDto.fromConfig(config))
+                .dataDir(dataDir.getCanonicalPath())
+                .build());
     }
 
     @GET("/backend/config/user-interface")
@@ -148,58 +131,45 @@ class ConfigJsonService {
         logger.debug("getUserInterface()");
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        writeUserInterface(jg, writer);
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
+        return getUserInterface(false);
     }
 
     @GET("/backend/config/advanced")
     String getAdvanced() throws IOException, SQLException {
         logger.debug("getAdvanced()");
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getAdvancedConfig());
-        jg.writeBooleanField("metricWrapperMethodsActive",
-                transactionModule.isMetricWrapperMethods());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
+        AdvancedConfig config = configService.getAdvancedConfig();
+        return Marshaling.toJson(ImmutableAdvancedConfigResponse.builder()
+                .config(AdvancedConfigDto.fromConfig(config))
+                .metricWrapperMethodsActive(transactionModule.isMetricWrapperMethods())
+                .build());
     }
 
     @GET("/backend/config/plugin/(.+)")
     String getPluginConfig(String pluginId) throws IOException, SQLException {
         logger.debug("getPluginConfig(): pluginId={}", pluginId);
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        jg.writeFieldName("descriptor");
-        writer.writeValue(jg, pluginDescriptorCache.getPluginDescriptor(pluginId));
-        jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getPluginConfig(pluginId));
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
+        PluginConfig config = configService.getPluginConfig(pluginId);
+        PluginDescriptor pluginDescriptor = null;
+        for (PluginDescriptor descriptor : pluginDescriptorCache.pluginDescriptors()) {
+            if (descriptor.id().equals(pluginId)) {
+                pluginDescriptor = descriptor;
+                break;
+            }
+        }
+        if (config == null || pluginDescriptor == null) {
+            throw new IllegalArgumentException("Plugin id not found: " + pluginId);
+        }
+        return Marshaling.toJson(ImmutablePluginConfigResponse.builder()
+                .addAllPropertyDescriptors(pluginDescriptor.properties())
+                .config(PluginConfigDto.fromConfig(config))
+                .build());
     }
 
     @POST("/backend/config/trace")
     String updateTraceConfig(String content) throws IOException, SQLException {
         logger.debug("updateTraceConfig(): content={}", content);
-        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        String priorVersion = getAndRemoveVersionNode(configNode);
-        TraceConfig config = configService.getTraceConfig();
-        TraceConfig.Overlay overlay = TraceConfig.overlay(config);
-        mapper.readerForUpdating(overlay).readValue(configNode);
+        TraceConfigDto configDto = Marshaling.fromJson(content, TraceConfigDto.class);
         try {
-            configService.updateTraceConfig(overlay.build(), priorVersion);
+            configService.updateTraceConfig(configDto.toConfig(), configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -209,13 +179,9 @@ class ConfigJsonService {
     @POST("/backend/config/profiling")
     String updateProfilingConfig(String content) throws IOException, SQLException {
         logger.debug("updateProfilingConfig(): content={}", content);
-        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        String priorVersion = getAndRemoveVersionNode(configNode);
-        ProfilingConfig config = configService.getProfilingConfig();
-        ProfilingConfig.Overlay overlay = ProfilingConfig.overlay(config);
-        mapper.readerForUpdating(overlay).readValue(configNode);
+        ProfilingConfigDto configDto = Marshaling.fromJson(content, ProfilingConfigDto.class);
         try {
-            configService.updateProfilingConfig(overlay.build(), priorVersion);
+            configService.updateProfilingConfig(configDto.toConfig(), configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -225,13 +191,10 @@ class ConfigJsonService {
     @POST("/backend/config/user-recording")
     String updateUserRecordingConfig(String content) throws IOException, SQLException {
         logger.debug("updateUserRecordingConfig(): content={}", content);
-        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        String priorVersion = getAndRemoveVersionNode(configNode);
-        UserRecordingConfig config = configService.getUserRecordingConfig();
-        UserRecordingConfig.Overlay overlay = UserRecordingConfig.overlay(config);
-        mapper.readerForUpdating(overlay).readValue(configNode);
+        UserRecordingConfigDto configDto =
+                Marshaling.fromJson(content, UserRecordingConfigDto.class);
         try {
-            configService.updateUserRecordingConfig(overlay.build(), priorVersion);
+            configService.updateUserRecordingConfig(configDto.toConfig(), configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -241,18 +204,14 @@ class ConfigJsonService {
     @POST("/backend/config/storage")
     String updateStorageConfig(String content) throws IOException, SQLException {
         logger.debug("updateStorageConfig(): content={}", content);
-        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        String priorVersion = getAndRemoveVersionNode(configNode);
-        StorageConfig config = configService.getStorageConfig();
-        StorageConfig.Overlay overlay = StorageConfig.overlay(config);
-        mapper.readerForUpdating(overlay).readValue(configNode);
+        StorageConfigDto configDto = Marshaling.fromJson(content, StorageConfigDto.class);
         try {
-            configService.updateStorageConfig(overlay.build(), priorVersion);
+            configService.updateStorageConfig(configDto.toConfig(), configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         // resize() doesn't do anything if the new and old value are the same
-        cappedDatabase.resize(configService.getStorageConfig().getCappedDatabaseSizeMb() * 1024);
+        cappedDatabase.resize(configService.getStorageConfig().cappedDatabaseSizeMb() * 1024);
         return getStorage();
     }
 
@@ -262,51 +221,54 @@ class ConfigJsonService {
         logger.debug("updateUserInterfaceConfig(): content={}", content);
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
-        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        String priorVersion = getAndRemoveVersionNode(configNode);
-        UserInterfaceConfig config = configService.getUserInterfaceConfig();
-        UserInterfaceConfig.Overlay overlay = UserInterfaceConfig.overlay(config);
-        mapper.readerForUpdating(overlay).readValue(configNode);
-        UserInterfaceConfig updatedConfig;
-        try {
-            updatedConfig = overlay.build();
-        } catch (CurrentPasswordIncorrectException e) {
-            return "{\"currentPasswordIncorrect\":true}";
+        UserInterfaceConfigDto configDto =
+                Marshaling.fromJson(content, UserInterfaceConfigDto.class);
+        ImmutableUserInterfaceConfig.Builder builder = ImmutableUserInterfaceConfig.builder()
+                .defaultTransactionType(configDto.defaultTransactionType())
+                .port(configDto.port())
+                .sessionTimeoutMinutes(configDto.sessionTimeoutMinutes());
+        UserInterfaceConfig priorConfig = configService.getUserInterfaceConfig();
+        if (configDto.currentPassword().length() > 0 || configDto.newPassword().length() > 0) {
+            try {
+                builder.passwordHash(verifyAndGenerateNewPasswordHash(configDto.currentPassword(),
+                        configDto.newPassword(), priorConfig.passwordHash()));
+            } catch (CurrentPasswordIncorrectException e) {
+                return "{\"currentPasswordIncorrect\":true}";
+            }
+        } else {
+            builder.passwordHash(priorConfig.passwordHash());
         }
+        UserInterfaceConfig config = builder.build();
         try {
-            configService.updateUserInterfaceConfig(updatedConfig, priorVersion);
+            configService.updateUserInterfaceConfig(config, configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         // only create/delete session on successful update
-        if (!config.isPasswordEnabled() && updatedConfig.isPasswordEnabled()) {
+        if (!priorConfig.passwordEnabled() && config.passwordEnabled()) {
             httpSessionManager.createSession(response);
-        } else if (config.isPasswordEnabled() && !updatedConfig.isPasswordEnabled()) {
+        } else if (priorConfig.passwordEnabled() && !config.passwordEnabled()) {
             httpSessionManager.deleteSession(response);
         }
         // lastly deal with ui port change
-        if (config.getPort() != updatedConfig.getPort()) {
+        if (priorConfig.port() != config.port()) {
             try {
-                httpServer.changePort(updatedConfig.getPort());
+                httpServer.changePort(config.port());
                 response.headers().set("Glowroot-Port-Changed", "true");
             } catch (PortChangeFailedException e) {
                 logger.error(e.getMessage(), e);
-                return getUserInterfaceWithPortChangeFailed();
+                return getUserInterface(true);
             }
         }
-        return getUserInterface();
+        return getUserInterface(false);
     }
 
     @POST("/backend/config/advanced")
     String updateAdvancedConfig(String content) throws IOException, SQLException {
         logger.debug("updateAdvancedConfig(): content={}", content);
-        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        String priorVersion = getAndRemoveVersionNode(configNode);
-        AdvancedConfig config = configService.getAdvancedConfig();
-        AdvancedConfig.Overlay overlay = AdvancedConfig.overlay(config);
-        mapper.readerForUpdating(overlay).readValue(configNode);
+        AdvancedConfigDto configDto = Marshaling.fromJson(content, AdvancedConfigDto.class);
         try {
-            configService.updateAdvancedConfig(overlay.build(), priorVersion);
+            configService.updateAdvancedConfig(configDto.toConfig(), configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -316,18 +278,9 @@ class ConfigJsonService {
     @POST("/backend/config/plugin/(.+)")
     String updatePluginConfig(String pluginId, String content) throws IOException, SQLException {
         logger.debug("updatePluginConfig(): pluginId={}, content={}", pluginId, content);
-        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
-        JsonNode versionNode = configNode.get("version");
-        validateVersionNode(versionNode);
-        String priorVersion = versionNode.asText();
-        PluginConfig config = configService.getPluginConfig(pluginId);
-        if (config == null) {
-            throw new IllegalArgumentException("Plugin id '" + pluginId + "' not found");
-        }
-        PluginConfig.Builder builder = PluginConfig.builder(config);
-        builder.overlay(configNode);
+        PluginConfigDto configDto = Marshaling.fromJson(content, PluginConfigDto.class);
         try {
-            configService.updatePluginConfig(builder.build(), priorVersion);
+            configService.updatePluginConfig(configDto.toConfig(pluginId), configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -335,39 +288,303 @@ class ConfigJsonService {
     }
 
     @RequiresNonNull("httpServer")
-    private String getUserInterfaceWithPortChangeFailed() throws IOException {
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartObject();
-        writeUserInterface(jg, writer);
-        jg.writeBooleanField("portChangeFailed", true);
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
+    private String getUserInterface(boolean portChangeFailed) {
+        UserInterfaceConfig config = configService.getUserInterfaceConfig();
+        UserInterfaceConfigDto configDto = ImmutableUserInterfaceConfigDto.builder()
+                .defaultTransactionType(config.defaultTransactionType())
+                .port(config.port())
+                .passwordEnabled(config.passwordEnabled())
+                .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
+                .version(config.version())
+                .build();
+        return Marshaling.toJson(ImmutableUserInterfaceConfigResponse.builder()
+                .config(configDto)
+                .activePort(httpServer.getPort())
+                .portChangeFailed(portChangeFailed)
+                .build());
     }
 
-    @RequiresNonNull("httpServer")
-    private void writeUserInterface(JsonGenerator jg, ObjectWriter writer) throws IOException {
-        jg.writeFieldName("config");
-        writer.writeValue(jg, configService.getUserInterfaceConfig());
-        jg.writeNumberField("activePort", httpServer.getPort());
-    }
-
-    private String getAndRemoveVersionNode(ObjectNode configNode) {
-        JsonNode versionNode = configNode.get("version");
-        validateVersionNode(versionNode);
-        configNode.remove("version");
-        return versionNode.asText();
-    }
-
-    @EnsuresNonNull("#1")
-    private void validateVersionNode(@Nullable JsonNode versionNode) {
-        if (versionNode == null) {
-            throw new JsonServiceException(BAD_REQUEST, "Version is missing");
+    private static String verifyAndGenerateNewPasswordHash(String currentPassword,
+            String newPassword, String originalPasswordHash) throws GeneralSecurityException,
+            CurrentPasswordIncorrectException {
+        if (currentPassword.isEmpty() && !newPassword.isEmpty()) {
+            // enabling password
+            if (!originalPasswordHash.isEmpty()) {
+                // UI validation prevents this from happening
+                throw new IllegalStateException("Password is already enabled");
+            }
+            return PasswordHash.createHash(newPassword);
+        } else if (!currentPassword.isEmpty() && newPassword.isEmpty()) {
+            // disabling password
+            if (!PasswordHash.validatePassword(currentPassword, originalPasswordHash)) {
+                throw new CurrentPasswordIncorrectException();
+            }
+            return "";
+        } else if (currentPassword.isEmpty() && newPassword.isEmpty()) {
+            // UI validation prevents this from happening
+            throw new IllegalStateException("Current and new password are both empty");
+        } else {
+            // changing password
+            if (!PasswordHash.validatePassword(currentPassword, originalPasswordHash)) {
+                throw new CurrentPasswordIncorrectException();
+            }
+            return PasswordHash.createHash(newPassword);
         }
-        if (!versionNode.isTextual()) {
-            throw new JsonServiceException(BAD_REQUEST, "Version is not a string value");
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class TraceConfigResponse {
+        abstract TraceConfigDto config();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class ProfilingConfigResponse {
+        abstract ProfilingConfigDto config();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class UserRecordingConfigResponse {
+        abstract UserRecordingConfigDto config();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class StorageConfigResponse {
+        abstract StorageConfigDto config();
+        abstract String dataDir();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class UserInterfaceConfigResponse {
+        abstract UserInterfaceConfigDto config();
+        abstract int activePort();
+        abstract boolean portChangeFailed();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class AdvancedConfigResponse {
+        abstract AdvancedConfigDto config();
+        abstract boolean metricWrapperMethodsActive();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class PluginConfigResponse {
+        abstract PluginConfigDto config();
+        @Json.ForceEmpty
+        abstract List<PropertyDescriptor> propertyDescriptors();
+    }
+
+    // these DTOs are only different from underlying config objects in that they contain the version
+    // attribute, and that they have no default attribute values
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class TraceConfigDto {
+
+        abstract boolean enabled();
+        abstract int storeThresholdMillis();
+        abstract boolean outlierProfilingEnabled();
+        abstract int outlierProfilingInitialDelayMillis();
+        abstract int outlierProfilingIntervalMillis();
+        abstract String version();
+
+        private static TraceConfigDto fromConfig(TraceConfig config) {
+            return ImmutableTraceConfigDto.builder()
+                    .enabled(config.enabled())
+                    .storeThresholdMillis(config.storeThresholdMillis())
+                    .outlierProfilingEnabled(config.outlierProfilingEnabled())
+                    .outlierProfilingInitialDelayMillis(config.outlierProfilingInitialDelayMillis())
+                    .outlierProfilingIntervalMillis(config.outlierProfilingIntervalMillis())
+                    .version(config.version())
+                    .build();
+        }
+
+        private TraceConfig toConfig() {
+            return ImmutableTraceConfig.builder()
+                    .enabled(enabled())
+                    .storeThresholdMillis(storeThresholdMillis())
+                    .outlierProfilingEnabled(outlierProfilingEnabled())
+                    .outlierProfilingInitialDelayMillis(outlierProfilingInitialDelayMillis())
+                    .outlierProfilingIntervalMillis(outlierProfilingIntervalMillis())
+                    .build();
         }
     }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class ProfilingConfigDto {
+
+        abstract boolean enabled();
+        abstract int intervalMillis();
+        abstract String version();
+
+        private static ProfilingConfigDto fromConfig(ProfilingConfig config) {
+            return ImmutableProfilingConfigDto.builder()
+                    .enabled(config.enabled())
+                    .intervalMillis(config.intervalMillis())
+                    .version(config.version())
+                    .build();
+        }
+
+        private ProfilingConfig toConfig() {
+            return ImmutableProfilingConfig.builder()
+                    .enabled(enabled())
+                    .intervalMillis(intervalMillis())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class UserRecordingConfigDto {
+
+        abstract boolean enabled();
+        abstract String user();
+        abstract int profileIntervalMillis();
+        abstract String version();
+
+        private static UserRecordingConfigDto fromConfig(UserRecordingConfig config) {
+            return ImmutableUserRecordingConfigDto.builder()
+                    .enabled(config.enabled())
+                    .user(config.user())
+                    .profileIntervalMillis(config.profileIntervalMillis())
+                    .version(config.version())
+                    .build();
+        }
+
+        private UserRecordingConfig toConfig() {
+            return ImmutableUserRecordingConfig.builder()
+                    .enabled(enabled())
+                    .user(user())
+                    .profileIntervalMillis(profileIntervalMillis())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class StorageConfigDto {
+
+        abstract int aggregateExpirationHours();
+        abstract int traceExpirationHours();
+        abstract int cappedDatabaseSizeMb();
+        abstract String version();
+
+        private static StorageConfigDto fromConfig(StorageConfig config) {
+            return ImmutableStorageConfigDto.builder()
+                    .aggregateExpirationHours(config.aggregateExpirationHours())
+                    .traceExpirationHours(config.traceExpirationHours())
+                    .cappedDatabaseSizeMb(config.cappedDatabaseSizeMb())
+                    .version(config.version())
+                    .build();
+        }
+
+        private StorageConfig toConfig() {
+            return ImmutableStorageConfig.builder()
+                    .aggregateExpirationHours(aggregateExpirationHours())
+                    .traceExpirationHours(traceExpirationHours())
+                    .cappedDatabaseSizeMb(cappedDatabaseSizeMb())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class UserInterfaceConfigDto {
+
+        abstract String defaultTransactionType();
+        abstract int port();
+        abstract boolean passwordEnabled();
+        // only used for requests
+        @Value.Default
+        String currentPassword() {
+            return "";
+        }
+        // only used for requests
+        @Value.Default
+        String newPassword() {
+            return "";
+        }
+        abstract int sessionTimeoutMinutes();
+        abstract String version();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class AdvancedConfigDto {
+
+        abstract boolean metricWrapperMethods();
+        abstract int immediatePartialStoreThresholdSeconds();
+        abstract int maxTraceEntriesPerTransaction();
+        abstract int maxStackTraceSamplesPerTransaction();
+        abstract boolean captureThreadInfo();
+        abstract boolean captureGcInfo();
+        abstract int mbeanGaugeNotFoundDelaySeconds();
+        abstract int internalQueryTimeoutSeconds();
+        abstract String version();
+
+        private static AdvancedConfigDto fromConfig(AdvancedConfig config) {
+            return ImmutableAdvancedConfigDto.builder()
+                    .metricWrapperMethods(config.metricWrapperMethods())
+                    .immediatePartialStoreThresholdSeconds(
+                            config.immediatePartialStoreThresholdSeconds())
+                    .maxTraceEntriesPerTransaction(config.maxTraceEntriesPerTransaction())
+                    .maxStackTraceSamplesPerTransaction(config.maxStackTraceSamplesPerTransaction())
+                    .captureThreadInfo(config.captureThreadInfo())
+                    .captureGcInfo(config.captureGcInfo())
+                    .mbeanGaugeNotFoundDelaySeconds(config.mbeanGaugeNotFoundDelaySeconds())
+                    .internalQueryTimeoutSeconds(config.internalQueryTimeoutSeconds())
+                    .version(config.version())
+                    .build();
+        }
+
+        private AdvancedConfig toConfig() {
+            return ImmutableAdvancedConfig.builder()
+                    .metricWrapperMethods(metricWrapperMethods())
+                    .immediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds())
+                    .maxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction())
+                    .maxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction())
+                    .captureThreadInfo(captureThreadInfo())
+                    .captureGcInfo(captureGcInfo())
+                    .mbeanGaugeNotFoundDelaySeconds(mbeanGaugeNotFoundDelaySeconds())
+                    .internalQueryTimeoutSeconds(internalQueryTimeoutSeconds())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    @Json.Import({MarshalingRoutines.class})
+    abstract static class PluginConfigDto {
+
+        abstract boolean enabled();
+        @Json.ForceEmpty
+        abstract Map<String, PropertyValue> properties();
+        abstract String version();
+
+        private static PluginConfigDto fromConfig(PluginConfig config) {
+            return ImmutablePluginConfigDto.builder()
+                    .enabled(config.enabled())
+                    .putAllProperties(config.properties())
+                    .version(config.version())
+                    .build();
+        }
+
+        private PluginConfig toConfig(String id) {
+            return ImmutablePluginConfig.builder()
+                    .id(id)
+                    .enabled(enabled())
+                    .putAllProperties(properties())
+                    .build();
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class CurrentPasswordIncorrectException extends Exception {}
 }

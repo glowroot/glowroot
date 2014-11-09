@@ -18,11 +18,12 @@ package org.glowroot.container.impl;
 import java.io.InputStream;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.container.common.ObjectMappers;
 import org.glowroot.container.impl.TracePointResponse.RawPoint;

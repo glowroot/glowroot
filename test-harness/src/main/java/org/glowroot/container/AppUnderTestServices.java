@@ -19,6 +19,7 @@ import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
+import org.glowroot.config.ImmutablePluginConfig;
 import org.glowroot.config.PluginConfig;
 
 public class AppUnderTestServices {
@@ -31,13 +32,12 @@ public class AppUnderTestServices {
 
     public void setPluginEnabled(String pluginId, boolean enabled) throws Exception {
         ConfigService configService = getConfigService();
-        PluginConfig base = configService.getPluginConfig(pluginId);
-        if (base == null) {
+        PluginConfig config = configService.getPluginConfig(pluginId);
+        if (config == null) {
             throw new IllegalStateException("Plugin not found for pluginId: " + pluginId);
         }
-        PluginConfig.Builder config = PluginConfig.builder(base);
-        config.enabled(enabled);
-        configService.updatePluginConfig(config.build(), base.getVersion());
+        PluginConfig updatedConfig = ((ImmutablePluginConfig) config).withEnabled(enabled);
+        configService.updatePluginConfig(updatedConfig, config.version());
     }
 
     private static ConfigService getConfigService() {

@@ -61,10 +61,10 @@ public class ReweaveCountTest {
         config.setMethodReturnType("");
         config.setCaptureKind(CaptureKind.METRIC);
         config.setMetricName("x");
-        String configVersion = container.getConfigService().addCapturePoint(config);
+        config = container.getConfigService().addCapturePoint(config);
         int reweaveCount = container.getConfigService().reweavePointcuts();
         assertThat(reweaveCount).isEqualTo(2);
-        container.getConfigService().removeCapturePoint(configVersion);
+        container.getConfigService().removeCapturePoint(config.getVersion());
         reweaveCount = container.getConfigService().reweavePointcuts();
         assertThat(reweaveCount).isEqualTo(2);
     }

@@ -15,8 +15,9 @@
  */
 package org.glowroot.weaving.preinit;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class ReferencedMethod implements Comparable<ReferencedMethod> {
 

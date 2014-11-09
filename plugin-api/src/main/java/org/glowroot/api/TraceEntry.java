@@ -17,7 +17,7 @@ package org.glowroot.api;
 
 import java.util.concurrent.TimeUnit;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnReturn;

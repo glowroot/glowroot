@@ -15,7 +15,7 @@
  */
 package org.glowroot.api;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 /**
  * For modeling an optional return value from a method when it is unknown whether that method

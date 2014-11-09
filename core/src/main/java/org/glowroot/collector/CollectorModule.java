@@ -17,7 +17,7 @@ package org.glowroot.collector;
 
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;

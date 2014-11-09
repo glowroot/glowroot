@@ -15,18 +15,18 @@
  */
 package org.glowroot.local.store;
 
-import com.google.common.base.MoreObjects;
+import org.immutables.value.Value;
 
-import org.glowroot.markers.Immutable;
+@Value.Immutable
+abstract class FileBlock {
 
-@Immutable
-class FileBlock {
+    @Value.Parameter
+    abstract long startIndex();
+    @Value.Parameter
+    abstract long length();
 
-    private final long startIndex;
-    private final long length;
-
-    static FileBlock from(long startIndex, long length) {
-        return new FileBlock(startIndex, length);
+    String getId() {
+        return startIndex() + ":" + length();
     }
 
     static FileBlock from(String id) throws InvalidBlockIdFormatException {
@@ -37,7 +37,7 @@ class FileBlock {
         try {
             long startIndex = Long.parseLong(parts[0]);
             long length = Long.parseLong(parts[1]);
-            return new FileBlock(startIndex, length);
+            return ImmutableFileBlock.of(startIndex, length);
         } catch (NumberFormatException e) {
             throw new InvalidBlockIdFormatException(e);
         }
@@ -46,32 +46,7 @@ class FileBlock {
     static FileBlock expired() {
         // startIndex == -1 is always expired since it is always before
         // CappedDatabaseOutputStream.lastCompactionBaseIndex
-        return new FileBlock(-1, 0);
-    }
-
-    private FileBlock(long startIndex, long length) {
-        this.startIndex = startIndex;
-        this.length = length;
-    }
-
-    long getStartIndex() {
-        return startIndex;
-    }
-
-    long getLength() {
-        return length;
-    }
-
-    String getId() {
-        return startIndex + ":" + length;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("startIndex", startIndex)
-                .add("length", length)
-                .toString();
+        return ImmutableFileBlock.of(-1, 0);
     }
 
     @SuppressWarnings("serial")

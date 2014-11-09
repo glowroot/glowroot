@@ -32,7 +32,6 @@ import org.glowroot.container.Container;
 import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.config.CapturePoint;
 import org.glowroot.container.config.CapturePoint.CaptureKind;
-import org.glowroot.container.config.CapturePoint.MethodModifier;
 import org.glowroot.container.config.MBeanGauge;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.ProfilingConfig;
@@ -196,10 +195,10 @@ public class ConfigTest {
     public void shouldUpdateCapturePoint() throws Exception {
         // given
         CapturePoint config = createCapturePoint();
-        String version = container.getConfigService().addCapturePoint(config);
+        config = container.getConfigService().addCapturePoint(config);
         // when
         updateAllFields(config);
-        container.getConfigService().updateCapturePoint(version, config);
+        container.getConfigService().updateCapturePoint(config);
         // then
         List<CapturePoint> configs = container.getConfigService().getCapturePoints();
         assertThat(configs).hasSize(1);
@@ -210,9 +209,9 @@ public class ConfigTest {
     public void shouldDeleteCapturePoint() throws Exception {
         // given
         CapturePoint config = createCapturePoint();
-        String version = container.getConfigService().addCapturePoint(config);
+        config = container.getConfigService().addCapturePoint(config);
         // when
-        container.getConfigService().removeCapturePoint(version);
+        container.getConfigService().removeCapturePoint(config.getVersion());
         // then
         List<CapturePoint> configs = container.getConfigService().getCapturePoints();
         assertThat(configs).isEmpty();
@@ -234,10 +233,10 @@ public class ConfigTest {
     public void shouldUpdateMBeanGauge() throws Exception {
         // given
         MBeanGauge config = createMBeanGauge();
-        String version = container.getConfigService().addMBeanGauge(config);
+        config = container.getConfigService().addMBeanGauge(config);
         // when
         updateAllFields(config);
-        container.getConfigService().updateMBeanGauge(version, config);
+        container.getConfigService().updateMBeanGauge(config);
         // then
         List<MBeanGauge> configs = container.getConfigService().getMBeanGauges();
         assertThat(configs).hasSize(1);
@@ -248,9 +247,9 @@ public class ConfigTest {
     public void shouldDeleteMBeanGauge() throws Exception {
         // given
         MBeanGauge config = createMBeanGauge();
-        String version = container.getConfigService().addMBeanGauge(config);
+        config = container.getConfigService().addMBeanGauge(config);
         // when
-        container.getConfigService().removeMBeanGauge(version);
+        container.getConfigService().removeMBeanGauge(config.getVersion());
         // then
         List<? extends MBeanGauge> configs =
                 container.getConfigService().getMBeanGauges();
@@ -345,7 +344,6 @@ public class ConfigTest {
         config.setMethodName("yak");
         config.setMethodParameterTypes(Lists.newArrayList("java.lang.String", "java.util.List"));
         config.setMethodReturnType("void");
-        config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC, MethodModifier.STATIC));
         config.setCaptureKind(CaptureKind.TRANSACTION);
         config.setMetricName("yako");
         config.setTraceEntryTemplate("yak(): {{0}}, {{1}} => {{?}}");
@@ -367,12 +365,6 @@ public class ConfigTest {
                     ImmutableList.of(config.getMethodParameterTypes().get(0) + "c"));
         }
         config.setMethodReturnType(config.getMethodReturnType() + "d");
-        if (config.getMethodModifiers().contains(MethodModifier.PUBLIC)) {
-            config.setMethodModifiers(ImmutableList.of(MethodModifier.PRIVATE));
-        } else {
-            config.setMethodModifiers(
-                    ImmutableList.of(MethodModifier.PUBLIC, MethodModifier.STATIC));
-        }
         if (config.getCaptureKind() == CaptureKind.METRIC) {
             config.setCaptureKind(CaptureKind.TRACE_ENTRY);
         } else {

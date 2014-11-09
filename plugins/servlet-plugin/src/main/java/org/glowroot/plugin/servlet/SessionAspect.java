@@ -17,7 +17,7 @@ package org.glowroot.plugin.servlet;
 
 import java.util.Map.Entry;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.weaving.BindClassMeta;

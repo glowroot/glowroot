@@ -15,98 +15,37 @@
  */
 package org.glowroot.config;
 
-import com.fasterxml.jackson.annotation.JsonView;
-import com.google.common.base.MoreObjects;
+import com.google.common.base.Charsets;
+import com.google.common.hash.Hashing;
+import org.immutables.common.marshal.Marshaling;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
-import org.glowroot.config.JsonViews.UiView;
-import org.glowroot.markers.Immutable;
-import org.glowroot.markers.UsedByJsonBinding;
-
-@Immutable
-public class StorageConfig {
+@Value.Immutable
+@Json.Marshaled
+public abstract class StorageConfig {
 
     // currently aggregate expiration should be at least as big as trace expiration
     // errors/messages page depends on this for calculating error percentage when using the filter
-    private final int aggregateExpirationHours;
-    private final int traceExpirationHours;
+    @Value.Default
+    public int aggregateExpirationHours() {
+        return 24 * 7;
+    }
+
+    @Value.Default
+    public int traceExpirationHours() {
+        return 24 * 7;
+    }
+
     // size of capped database for storing trace details (entries and profiles)
-    private final int cappedDatabaseSizeMb;
-
-    private final String version;
-
-    static StorageConfig getDefault() {
-        // default values should be conservative
-        final int aggregateExpirationHours = 24 * 7;
-        final int traceExpirationHours = 24 * 7;
-        final int cappedDatabaseSizeMb = 1000;
-        return new StorageConfig(aggregateExpirationHours, traceExpirationHours,
-                cappedDatabaseSizeMb);
+    @Value.Default
+    public int cappedDatabaseSizeMb() {
+        return 1000;
     }
 
-    public static Overlay overlay(StorageConfig base) {
-        return new Overlay(base);
-    }
-
-    private StorageConfig(int aggregateExpirationHours, int traceExpirationHours,
-            int cappedDatabaseSizeMb) {
-        this.aggregateExpirationHours = aggregateExpirationHours;
-        this.traceExpirationHours = traceExpirationHours;
-        this.cappedDatabaseSizeMb = cappedDatabaseSizeMb;
-        this.version = VersionHashes.sha1(traceExpirationHours, cappedDatabaseSizeMb);
-    }
-
-    public int getAggregateExpirationHours() {
-        return aggregateExpirationHours;
-    }
-
-    public int getTraceExpirationHours() {
-        return traceExpirationHours;
-    }
-
-    public int getCappedDatabaseSizeMb() {
-        return cappedDatabaseSizeMb;
-    }
-
-    @JsonView(UiView.class)
-    public String getVersion() {
-        return version;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("aggregateExpirationHours", aggregateExpirationHours)
-                .add("traceExpirationHours", traceExpirationHours)
-                .add("cappedDatabaseSizeMb", cappedDatabaseSizeMb)
-                .add("version", version)
-                .toString();
-    }
-
-    // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
-    @UsedByJsonBinding
-    public static class Overlay {
-
-        private int aggregateExpirationHours;
-        private int traceExpirationHours;
-        private int cappedDatabaseSizeMb;
-
-        private Overlay(StorageConfig base) {
-            aggregateExpirationHours = base.aggregateExpirationHours;
-            traceExpirationHours = base.traceExpirationHours;
-            cappedDatabaseSizeMb = base.cappedDatabaseSizeMb;
-        }
-        public void setAggregateExpirationHours(int aggregateExpirationHours) {
-            this.aggregateExpirationHours = aggregateExpirationHours;
-        }
-        public void setTraceExpirationHours(int traceExpirationHours) {
-            this.traceExpirationHours = traceExpirationHours;
-        }
-        public void setCappedDatabaseSizeMb(int cappedDatabaseSizeMb) {
-            this.cappedDatabaseSizeMb = cappedDatabaseSizeMb;
-        }
-        public StorageConfig build() {
-            return new StorageConfig(aggregateExpirationHours, traceExpirationHours,
-                    cappedDatabaseSizeMb);
-        }
+    @Value.Derived
+    @Json.Ignore
+    public String version() {
+        return Hashing.sha1().hashString(Marshaling.toJson(this), Charsets.UTF_8).toString();
     }
 }

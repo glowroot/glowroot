@@ -25,6 +25,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Supplier;
 import com.google.common.cache.CacheBuilder;
@@ -33,7 +35,6 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
@@ -133,7 +134,7 @@ public class AnalyzedWorld {
     void add(AnalyzedClass analyzedClass, @Nullable ClassLoader loader) {
         ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses = getAnalyzedClasses(loader);
         // analyzedClass.getName() is already interned
-        loaderAnalyzedClasses.put(analyzedClass.getName(), analyzedClass);
+        loaderAnalyzedClasses.put(analyzedClass.name(), analyzedClass);
     }
 
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
@@ -175,11 +176,11 @@ public class AnalyzedWorld {
         }
         List<AnalyzedClass> superTypes = Lists.newArrayList();
         superTypes.add(analyzedClass);
-        String superName = analyzedClass.getSuperName();
+        String superName = analyzedClass.superName();
         if (superName != null && !superName.equals("java.lang.Object")) {
             superTypes.addAll(getSuperClasses(superName, loader, parseContext));
         }
-        for (String interfaceName : analyzedClass.getInterfaceNames()) {
+        for (String interfaceName : analyzedClass.interfaceNames()) {
             superTypes.addAll(getSuperClasses(interfaceName, loader, parseContext));
         }
         return superTypes;
@@ -217,7 +218,7 @@ public class AnalyzedWorld {
             AnalyzedClass analyzedClass) {
         // analyzedClass.getName() is already interned
         AnalyzedClass existingAnalyzedClass =
-                loaderAnalyzedClasses.putIfAbsent(analyzedClass.getName(), analyzedClass);
+                loaderAnalyzedClasses.putIfAbsent(analyzedClass.name(), analyzedClass);
         if (existingAnalyzedClass != null) {
             // (rare) concurrent AnalyzedClass creation, use the one that made it into the map
             return existingAnalyzedClass;
@@ -348,8 +349,8 @@ public class AnalyzedWorld {
             // a class was loaded by Class.forName() above that was not previously loaded which
             // means weaving was bypassed since ClassFileTransformer.transform() is not re-entrant
             analyzedClass = createAnalyzedClassPlanC(clazz, advisors.get());
-            for (AnalyzedMethod analyzedMethod : analyzedClass.getAnalyzedMethods()) {
-                if (!analyzedMethod.getAdvisors().isEmpty()) {
+            for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
+                if (!analyzedMethod.advisors().isEmpty()) {
                     logger.warn("{} was not woven with requested advice (it was first encountered"
                             + " during the weaving of one of its {} and the resource {}.class"
                             + " could not be found in class loader {}, so {} had to be explicitly"
@@ -385,9 +386,17 @@ public class AnalyzedWorld {
     // now that the type has been loaded anyways, build the analyzed class via reflection
     private static AnalyzedClass createAnalyzedClassPlanC(Class<?> clazz,
             ImmutableList<Advice> advisors) {
+        ImmutableAnalyzedClass.Builder classBuilder = ImmutableAnalyzedClass.builder();
+        classBuilder.modifiers(clazz.getModifiers());
+        classBuilder.name(clazz.getName());
+        Class<?> superClass = clazz.getSuperclass();
+        String superName = superClass == null ? null : superClass.getName();
+        classBuilder.superName(superName);
+        for (Class<?> interfaceClass : clazz.getInterfaces()) {
+            classBuilder.addInterfaceNames(interfaceClass.getName());
+        }
         List<AdviceMatcher> adviceMatchers =
                 AdviceMatcher.getAdviceMatchers(clazz.getName(), advisors);
-        List<AnalyzedMethod> analyzedMethods = Lists.newArrayList();
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isSynthetic()) {
                 // don't add synthetic methods to the analyzed model
@@ -401,24 +410,21 @@ public class AnalyzedWorld {
             List<Advice> matchingAdvisors = getMatchingAdvisors(method.getModifiers(),
                     method.getName(), parameterTypes, returnType, adviceMatchers);
             if (!matchingAdvisors.isEmpty()) {
-                List<String> exceptions = Lists.newArrayList();
-                for (Class<?> exceptionType : method.getExceptionTypes()) {
-                    exceptions.add(Type.getInternalName(exceptionType));
+                ImmutableAnalyzedMethod.Builder methodBuilder = ImmutableAnalyzedMethod.builder();
+                methodBuilder.name(method.getName());
+                for (Type parameterType : parameterTypes) {
+                    methodBuilder.addParameterTypes(parameterType.getClassName());
                 }
-                AnalyzedMethod analyzedMethod = AnalyzedMethod.from(method.getName(),
-                        parameterTypes, returnType, method.getModifiers(), null, exceptions,
-                        matchingAdvisors);
-                analyzedMethods.add(analyzedMethod);
+                methodBuilder.returnType(returnType.getClassName());
+                methodBuilder.modifiers(method.getModifiers());
+                for (Class<?> exceptionType : method.getExceptionTypes()) {
+                    methodBuilder.addExceptions(exceptionType.getName());
+                }
+                methodBuilder.addAllAdvisors(matchingAdvisors);
+                classBuilder.addAnalyzedMethods(methodBuilder.build());
             }
         }
-        List<String> interfaceNames = Lists.newArrayList();
-        for (Class<?> interfaceClass : clazz.getInterfaces()) {
-            interfaceNames.add(interfaceClass.getName());
-        }
-        Class<?> superClass = clazz.getSuperclass();
-        String superName = superClass == null ? null : superClass.getName();
-        return AnalyzedClass.from(clazz.getModifiers(), clazz.getName(), superName, interfaceNames,
-                analyzedMethods);
+        return classBuilder.build();
     }
 
     private static List<Advice> getMatchingAdvisors(int access, String name,
@@ -426,7 +432,7 @@ public class AnalyzedWorld {
         List<Advice> matchingAdvisors = Lists.newArrayList();
         for (AdviceMatcher adviceMatcher : adviceMatchers) {
             if (adviceMatcher.isMethodLevelMatch(name, parameterTypes, returnType, access)) {
-                matchingAdvisors.add(adviceMatcher.getAdvice());
+                matchingAdvisors.add(adviceMatcher.advice());
             }
         }
         return matchingAdvisors;

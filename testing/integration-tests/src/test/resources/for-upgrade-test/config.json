@@ -12,7 +12,7 @@
   },
   "userRecording": {
     "enabled": false,
-    "user": null,
+    "user": "",
     "profileIntervalMillis": 10
   },
   "storage": {

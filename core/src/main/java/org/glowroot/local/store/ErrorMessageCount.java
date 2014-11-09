@@ -15,24 +15,12 @@
  */
 package org.glowroot.local.store;
 
-import org.glowroot.markers.UsedByJsonBinding;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
-@UsedByJsonBinding
-public class ErrorMessageCount {
-
-    private final String message;
-    private final long count;
-
-    ErrorMessageCount(String message, long count) {
-        this.message = message;
-        this.count = count;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public long getCount() {
-        return count;
-    }
+@Value.Immutable
+@Json.Marshaled
+public abstract class ErrorMessageCount {
+    public abstract String message();
+    public abstract long count();
 }

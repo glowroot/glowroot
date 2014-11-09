@@ -22,7 +22,7 @@ glowroot.controller('ConfigMBeanGaugeListCtrl', [
   'httpErrors',
   function ($scope, $http, httpErrors) {
 
-    $http.get('backend/config/mbean-gauge')
+    $http.get('backend/config/mbean-gauges')
         .success(function (data) {
           $scope.loaded = true;
           $scope.gauges = data;

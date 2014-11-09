@@ -20,17 +20,19 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
+import javax.annotation.Nullable;
+
+import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharSource;
 import com.google.common.util.concurrent.RateLimiter;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigService;
-import org.glowroot.markers.GuardedBy;
+import javax.annotation.concurrent.GuardedBy;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.UsedByReflection;
 import org.glowroot.transaction.TransactionCollector;
@@ -78,10 +80,10 @@ public class TransactionCollectorImpl implements TransactionCollector {
             return true;
         }
         // check if should store for user recording
-        if (configService.getUserRecordingConfig().isEnabled()) {
+        if (configService.getUserRecordingConfig().enabled()) {
             String user = transaction.getUser();
-            if (user != null
-                    && user.equalsIgnoreCase(configService.getUserRecordingConfig().getUser())) {
+            if (!Strings.isNullOrEmpty(user)
+                    && user.equalsIgnoreCase(configService.getUserRecordingConfig().user())) {
                 return true;
             }
         }
@@ -92,7 +94,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
             return true;
         }
         // fall back to default trace store threshold
-        traceStoreThresholdMillis = configService.getTraceConfig().getStoreThresholdMillis();
+        traceStoreThresholdMillis = configService.getTraceConfig().storeThresholdMillis();
         return transaction.getDuration() >= MILLISECONDS.toNanos(traceStoreThresholdMillis);
     }
 

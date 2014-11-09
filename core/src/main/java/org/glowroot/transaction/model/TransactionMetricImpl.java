@@ -18,12 +18,13 @@ package org.glowroot.transaction.model;
 import java.io.IOException;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.MetricName;
 import org.glowroot.common.Ticker;
@@ -185,7 +186,7 @@ public class TransactionMetricImpl implements TransactionMetricExt {
     }
 
     public String getName() {
-        return metricName.getName();
+        return metricName.name();
     }
 
     // only called by transaction thread

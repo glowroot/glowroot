@@ -20,6 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharSource;
 
+import org.glowroot.collector.Existence;
+import org.glowroot.collector.ImmutableTrace;
 import org.glowroot.collector.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -29,8 +31,9 @@ class TraceTestData {
     private static final AtomicInteger counter = new AtomicInteger();
 
     static Trace createTrace() {
-        return Trace.builder()
+        return ImmutableTrace.builder()
                 .id("abc" + counter.getAndIncrement())
+                .active(false)
                 .partial(false)
                 .startTime(1)
                 .captureTime(11)
@@ -41,6 +44,9 @@ class TraceTestData {
                 .user("j")
                 .customAttributes("{\"abc\":\"xyz\", \"xyz\":\"abc\"}")
                 .customAttributesForIndexing(ImmutableSetMultimap.of("abc", "xyz", "xyz", "abc"))
+                .entriesExistence(Existence.NO)
+                .outlierProfileExistence(Existence.NO)
+                .profileExistence(Existence.NO)
                 .build();
     }
 

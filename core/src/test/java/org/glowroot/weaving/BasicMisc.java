@@ -18,7 +18,7 @@ package org.glowroot.weaving;
 import java.lang.annotation.Retention;
 import java.lang.reflect.Method;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 

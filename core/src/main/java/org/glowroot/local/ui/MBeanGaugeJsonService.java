@@ -21,41 +21,41 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import javax.annotation.Nullable;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.common.marshal.Marshaling;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.DuplicateMBeanObjectNameException;
-import org.glowroot.config.JsonViews.UiView;
+import org.glowroot.config.ImmutableMBeanGauge;
 import org.glowroot.config.MBeanGauge;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
-import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 
 @JsonService
 class MBeanGaugeJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(MBeanGaugeJsonService.class);
-    private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final JsonFactory jsonFactory = new JsonFactory();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     private final ConfigService configService;
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
@@ -66,56 +66,55 @@ class MBeanGaugeJsonService {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
     }
 
-    @GET("/backend/config/mbean-gauge")
+    @GET("/backend/config/mbean-gauges")
     String getMBeanGauge() throws IOException, SQLException {
         logger.debug("getMBeanGauge()");
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        jg.writeStartArray();
+        List<MBeanGaugeResponse> responses = Lists.newArrayList();
         for (MBeanGauge mbeanGauge : configService.getMBeanGauges()) {
-            writeMBeanGauge(mbeanGauge, jg, writer);
+            responses.add(buildResponse(mbeanGauge));
         }
-        jg.writeEndArray();
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+        Marshaling.marshalerFor(MBeanGaugeResponse.class).marshalIterable(jg, responses);
         jg.close();
         return sb.toString();
     }
 
     @GET("/backend/config/matching-mbean-objects")
-    String getMatchingMBeanObjects(String content) throws IOException, InterruptedException {
-        logger.debug("getMatchingMBeanObjects(): content={}", content);
+    String getMatchingMBeanObjects(String queryString) throws Exception {
+        logger.debug("getMatchingMBeanObjects(): queryString={}", queryString);
         MBeanObjectNameRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, MBeanObjectNameRequest.class);
+                QueryStrings.decode(queryString, MBeanObjectNameRequest.class);
         Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null,
-                new ObjectNameQueryExp(request.getPartialMBeanObjectName()));
+                new ObjectNameQueryExp(request.partialMBeanObjectName()));
         List<String> names = Lists.newArrayList();
         for (ObjectName objectName : objectNames) {
             names.add(objectName.toString());
         }
         ImmutableList<String> sortedNames =
                 Ordering.from(String.CASE_INSENSITIVE_ORDER).immutableSortedCopy(names);
-        if (sortedNames.size() > request.getLimit()) {
-            sortedNames = sortedNames.subList(0, request.getLimit());
+        if (sortedNames.size() > request.limit()) {
+            sortedNames = sortedNames.subList(0, request.limit());
         }
         return mapper.writeValueAsString(names);
     }
 
     @GET("/backend/config/mbean-attributes")
-    String getMBeanAttributes(String content) throws IOException {
-        logger.debug("getMBeanAttributes(): content={}", content);
+    String getMBeanAttributes(String queryString) throws Exception {
+        logger.debug("getMBeanAttributes(): queryString={}", queryString);
         MBeanAttributeNamesRequest request =
-                ObjectMappers.readRequiredValue(mapper, content, MBeanAttributeNamesRequest.class);
+                QueryStrings.decode(queryString, MBeanAttributeNamesRequest.class);
         boolean duplicateMBean = false;
         for (MBeanGauge mbeanGauge : configService.getMBeanGauges()) {
-            if (mbeanGauge.getMBeanObjectName().equals(request.getMBeanObjectName())
-                    && !mbeanGauge.getVersion().equals(request.getMBeanGaugeVersion())) {
+            if (mbeanGauge.mbeanObjectName().equals(request.mbeanObjectName())
+                    && !mbeanGauge.version().equals(request.mbeanGaugeVersion())) {
                 duplicateMBean = true;
                 break;
             }
         }
         MBeanInfo mbeanInfo;
         try {
-            mbeanInfo = getMBeanInfo(request.getMBeanObjectName());
+            mbeanInfo = getMBeanInfo(request.mbeanObjectName());
         } catch (Exception e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
@@ -132,11 +131,11 @@ class MBeanGaugeJsonService {
         return sb.toString();
     }
 
-    @POST("/backend/config/mbean-gauge/+")
+    @POST("/backend/config/mbean-gauges/add")
     String addMBeanGauge(String content) throws IOException {
         logger.debug("addMBeanGauge(): content={}", content);
-        MBeanGauge mbeanGauge =
-                ObjectMappers.readRequiredValue(mapper, content, MBeanGauge.class);
+        MBeanGaugeDto mbeanGaugeDto = Marshaling.fromJson(content, MBeanGaugeDto.class);
+        MBeanGauge mbeanGauge = mbeanGaugeDto.toConfig();
         try {
             configService.insertMBeanGauge(mbeanGauge);
         } catch (DuplicateMBeanObjectNameException e) {
@@ -144,53 +143,45 @@ class MBeanGaugeJsonService {
             logger.debug(e.getMessage(), e);
             throw new JsonServiceException(CONFLICT, "mbeanObjectName");
         }
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        writeMBeanGauge(mbeanGauge, jg, writer);
-        jg.close();
-        return sb.toString();
+        return Marshaling.toJson(buildResponse(mbeanGauge));
     }
 
-    @POST("/backend/config/mbean-gauge/([0-9a-f]+)")
-    String updateMBeanGauge(String priorVersion, String content) throws IOException {
-        logger.debug("updateMBeanGauge(): priorVersion={}, content={}", priorVersion, content);
-        MBeanGauge mbeanGauge =
-                ObjectMappers.readRequiredValue(mapper, content, MBeanGauge.class);
-        configService.updateMBeanGauge(priorVersion, mbeanGauge);
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        ObjectWriter writer = mapper.writerWithView(UiView.class);
-        writeMBeanGauge(mbeanGauge, jg, writer);
-        jg.close();
-        return sb.toString();
+    @POST("/backend/config/mbean-gauges/update")
+    String updateMBeanGauge(String content) throws IOException {
+        logger.debug("updateMBeanGauge(): content={}", content);
+        MBeanGaugeDto mbeanGaugeDto = Marshaling.fromJson(content, MBeanGaugeDto.class);
+        MBeanGauge mbeanGauge = mbeanGaugeDto.toConfig();
+        String version = mbeanGaugeDto.version();
+        if (version == null) {
+            throw new IllegalArgumentException("Missing required request property: version");
+        }
+        configService.updateMBeanGauge(mbeanGauge, version);
+        return Marshaling.toJson(buildResponse(mbeanGauge));
     }
 
-    @POST("/backend/config/mbean-gauge/-")
+    @POST("/backend/config/mbean-gauges/remove")
     void removeMBeanGauge(String content) throws IOException {
         logger.debug("removeMBeanGauge(): content={}", content);
         String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
         configService.deleteMBeanGauge(version);
     }
 
-    private void writeMBeanGauge(MBeanGauge mbeanGauge, JsonGenerator jg, ObjectWriter writer)
-            throws IOException {
-        jg.writeStartObject();
-        jg.writeFieldName("config");
-        writer.writeValue(jg, mbeanGauge);
+    private MBeanGaugeResponse buildResponse(MBeanGauge mbeanGauge) {
         MBeanInfo mbeanInfo = null;
         try {
-            mbeanInfo = getMBeanInfo(mbeanGauge.getMBeanObjectName());
+            mbeanInfo = getMBeanInfo(mbeanGauge.mbeanObjectName());
         } catch (Exception e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
         }
-        jg.writeBooleanField("mbeanUnavailable", mbeanInfo == null);
-        if (mbeanInfo != null) {
-            jg.writeObjectField("mbeanAvailableAttributeNames",
-                    getAttributeNames(mbeanInfo));
+        ImmutableMBeanGaugeResponse.Builder builder = ImmutableMBeanGaugeResponse.builder()
+                .config(MBeanGaugeDto.fromConfig(mbeanGauge));
+        if (mbeanInfo == null) {
+            builder.mbeanUnavailable(true);
+        } else {
+            builder.addAllMbeanAvailableAttributeNames(getAttributeNames(mbeanInfo));
         }
-        jg.writeEndObject();
+        return builder.build();
     }
 
     private MBeanInfo getMBeanInfo(String objectName) throws Exception {
@@ -213,55 +204,6 @@ class MBeanGaugeJsonService {
         return attributeNames;
     }
 
-    private static class MBeanObjectNameRequest {
-
-        private final String partialMBeanObjectName;
-        private final int limit;
-
-        @JsonCreator
-        MBeanObjectNameRequest(
-                @JsonProperty("partialMBeanObjectName") @Nullable String partialMBeanObjectName,
-                @JsonProperty("limit") int limit) throws JsonMappingException {
-            checkRequiredProperty(partialMBeanObjectName, "partialMBeanObjectName");
-            this.partialMBeanObjectName = partialMBeanObjectName;
-            this.limit = limit;
-        }
-
-        private String getPartialMBeanObjectName() {
-            return partialMBeanObjectName;
-        }
-
-        private int getLimit() {
-            return limit;
-        }
-    }
-
-    private static class MBeanAttributeNamesRequest {
-
-        private final String mbeanObjectName;
-        @Nullable
-        private final String mbeanGaugeVersion;
-
-        @JsonCreator
-        MBeanAttributeNamesRequest(
-                @JsonProperty("mbeanObjectName") @Nullable String mbeanObjectName,
-                @JsonProperty("mbeanGaugeVersion") @Nullable String mbeanGaugeVersion)
-                throws JsonMappingException {
-            checkRequiredProperty(mbeanObjectName, "mbeanObjectName");
-            this.mbeanObjectName = mbeanObjectName;
-            this.mbeanGaugeVersion = mbeanGaugeVersion;
-        }
-
-        private String getMBeanObjectName() {
-            return mbeanObjectName;
-        }
-
-        @Nullable
-        private String getMBeanGaugeVersion() {
-            return mbeanGaugeVersion;
-        }
-    }
-
     @SuppressWarnings("serial")
     private static class ObjectNameQueryExp implements QueryExp {
 
@@ -278,5 +220,57 @@ class MBeanGaugeJsonService {
 
         @Override
         public void setMBeanServer(MBeanServer s) {}
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class MBeanObjectNameRequest {
+        abstract String partialMBeanObjectName();
+        abstract int limit();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class MBeanAttributeNamesRequest {
+        abstract String mbeanObjectName();
+        abstract @Nullable String mbeanGaugeVersion();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class MBeanGaugeResponse {
+        abstract MBeanGaugeDto config();
+        @Value.Default
+        boolean mbeanUnavailable() {
+            return false;
+        }
+        abstract List<String> mbeanAvailableAttributeNames();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class MBeanGaugeDto {
+
+        abstract String name();
+        abstract String mbeanObjectName();
+        abstract List<String> mbeanAttributeNames();
+        abstract @Nullable String version();  // null for insert operations
+
+        private static MBeanGaugeDto fromConfig(MBeanGauge config) {
+            return ImmutableMBeanGaugeDto.builder()
+                    .name(config.name())
+                    .mbeanObjectName(config.mbeanObjectName())
+                    .addAllMbeanAttributeNames(config.mbeanAttributeNames())
+                    .version(config.version())
+                    .build();
+        }
+
+        private MBeanGauge toConfig() {
+            return ImmutableMBeanGauge.builder()
+                    .name(name())
+                    .mbeanObjectName(mbeanObjectName())
+                    .addAllMbeanAttributeNames(mbeanAttributeNames())
+                    .build();
+        }
     }
 }

@@ -24,9 +24,6 @@ import com.google.common.base.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.Immutable;
-
-@Immutable
 public class HeapDumps {
 
     private static final String MBEAN_NAME = "com.sun.management:type=HotSpotDiagnostic";

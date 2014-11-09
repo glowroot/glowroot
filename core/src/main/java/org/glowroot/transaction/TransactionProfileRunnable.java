@@ -52,7 +52,7 @@ class TransactionProfileRunnable extends ScheduledRunnable {
         ThreadInfo threadInfo =
                 threadBean.getThreadInfo(transaction.getThreadId(), Integer.MAX_VALUE);
         transaction.captureStackTrace(threadInfo, outlier,
-                configService.getAdvancedConfig().getMaxStackTraceSamplesPerTransaction());
+                configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction());
     }
 
     @Override

@@ -19,7 +19,7 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.security.CodeSource;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 class Viewer {
 

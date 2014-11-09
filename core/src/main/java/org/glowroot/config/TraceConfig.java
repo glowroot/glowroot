@@ -15,15 +15,15 @@
  */
 package org.glowroot.config;
 
-import com.fasterxml.jackson.annotation.JsonView;
-import com.google.common.base.MoreObjects;
+import com.google.common.base.Charsets;
+import com.google.common.hash.Hashing;
+import org.immutables.common.marshal.Marshaling;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
-import org.glowroot.config.JsonViews.UiView;
-import org.glowroot.markers.Immutable;
-import org.glowroot.markers.UsedByJsonBinding;
-
-@Immutable
-public class TraceConfig {
+@Value.Immutable
+@Json.Marshaled
+public abstract class TraceConfig {
 
     // if tracing is disabled mid-trace there should be no issue
     // active traces will not accumulate additional entries
@@ -34,116 +34,37 @@ public class TraceConfig {
     // continue not to accumulate entries
     // and they will not be logged / emailed even if they exceed the defined
     // thresholds
-    private final boolean enabled;
-    // 0 means log all traces, -1 means log no traces
-    private final int storeThresholdMillis;
+    @Value.Default
+    public boolean enabled() {
+        return true;
+    }
 
-    private final boolean outlierProfilingEnabled;
+    // 0 means log all traces, -1 means log no traces
+    @Value.Default
+    public int storeThresholdMillis() {
+        return 3000;
+    }
+
+    @Value.Default
+    public boolean outlierProfilingEnabled() {
+        return true;
+    }
+
     // minimum is imposed because of OutlierProfileWatcher#PERIOD_MILLIS
     // -1 means no stack traces are gathered, should be minimum 100 milliseconds
-    private final int outlierProfilingInitialDelayMillis;
-    private final int outlierProfilingIntervalMillis;
-
-    private final String version;
-
-    static TraceConfig getDefault() {
-        // default values should be conservative
-        final boolean enabled = true;
-        final int storeThresholdMillis = 3000;
-        final boolean outlierProfilingEnabled = true;
-        final int outlierProfilingInitialDelayMillis = 10000;
-        final int outlierProfilingIntervalMillis = 1000;
-        return new TraceConfig(enabled, storeThresholdMillis, outlierProfilingEnabled,
-                outlierProfilingInitialDelayMillis, outlierProfilingIntervalMillis);
+    @Value.Default
+    public int outlierProfilingInitialDelayMillis() {
+        return 10000;
     }
 
-    public static Overlay overlay(TraceConfig base) {
-        return new Overlay(base);
+    @Value.Default
+    public int outlierProfilingIntervalMillis() {
+        return 1000;
     }
 
-    private TraceConfig(boolean enabled, int storeThresholdMillis, boolean outlierProfilingEnabled,
-            int outlierProfilingInitialDelayMillis, int outlierProfilingIntervalMillis) {
-        this.enabled = enabled;
-        this.storeThresholdMillis = storeThresholdMillis;
-        this.outlierProfilingEnabled = outlierProfilingEnabled;
-        this.outlierProfilingInitialDelayMillis = outlierProfilingInitialDelayMillis;
-        this.outlierProfilingIntervalMillis = outlierProfilingIntervalMillis;
-        this.version = VersionHashes.sha1(enabled, storeThresholdMillis, outlierProfilingEnabled,
-                outlierProfilingInitialDelayMillis, outlierProfilingIntervalMillis);
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public int getStoreThresholdMillis() {
-        return storeThresholdMillis;
-    }
-
-    public boolean isOutlierProfilingEnabled() {
-        return outlierProfilingEnabled;
-    }
-
-    public int getOutlierProfilingInitialDelayMillis() {
-        return outlierProfilingInitialDelayMillis;
-    }
-
-    public int getOutlierProfilingIntervalMillis() {
-        return outlierProfilingIntervalMillis;
-    }
-
-    @JsonView(UiView.class)
-    public String getVersion() {
-        return version;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("enabed", enabled)
-                .add("storeThresholdMillis", storeThresholdMillis)
-                .add("outlierProfilingEnabled", outlierProfilingEnabled)
-                .add("outlierProfilingInitialDelayMillis", outlierProfilingInitialDelayMillis)
-                .add("outlierProfilingIntervalMillis", outlierProfilingIntervalMillis)
-                .add("version", version)
-                .toString();
-    }
-
-    // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
-    @UsedByJsonBinding
-    public static class Overlay {
-
-        private boolean enabled;
-        private int storeThresholdMillis;
-        private boolean outlierProfilingEnabled;
-        private int outlierProfilingInitialDelayMillis;
-        private int outlierProfilingIntervalMillis;
-
-        private Overlay(TraceConfig base) {
-            enabled = base.enabled;
-            storeThresholdMillis = base.storeThresholdMillis;
-            outlierProfilingEnabled = base.outlierProfilingEnabled;
-            outlierProfilingInitialDelayMillis = base.outlierProfilingInitialDelayMillis;
-            outlierProfilingIntervalMillis = base.outlierProfilingIntervalMillis;
-        }
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
-        public void setStoreThresholdMillis(int storeThresholdMillis) {
-            this.storeThresholdMillis = storeThresholdMillis;
-        }
-        public void setOutlierProfilingEnabled(boolean outlierProfilingEnabled) {
-            this.outlierProfilingEnabled = outlierProfilingEnabled;
-        }
-        public void setOutlierProfilingInitialDelayMillis(int outlierProfilingInitialDelayMillis) {
-            this.outlierProfilingInitialDelayMillis = outlierProfilingInitialDelayMillis;
-        }
-        public void setOutlierProfilingIntervalMillis(int outlierProfilingIntervalMillis) {
-            this.outlierProfilingIntervalMillis = outlierProfilingIntervalMillis;
-        }
-        public TraceConfig build() {
-            return new TraceConfig(enabled, storeThresholdMillis, outlierProfilingEnabled,
-                    outlierProfilingInitialDelayMillis, outlierProfilingIntervalMillis);
-        }
+    @Value.Derived
+    @Json.Ignore
+    public String version() {
+        return Hashing.sha1().hashString(Marshaling.toJson(this), Charsets.UTF_8).toString();
     }
 }

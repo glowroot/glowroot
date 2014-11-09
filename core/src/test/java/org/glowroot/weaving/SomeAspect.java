@@ -15,7 +15,7 @@
  */
 package org.glowroot.weaving;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 import org.glowroot.api.OptionalReturn;
 import org.glowroot.api.weaving.BindClassMeta;

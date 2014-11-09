@@ -17,27 +17,25 @@ package org.glowroot.container.config;
 
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class PluginConfig {
-
-    private final String id;
 
     private boolean enabled;
     private final Map<String, /*@Nullable*/Object> properties;
 
     private final String version;
 
-    public PluginConfig(String id, String version) {
-        this.id = id;
+    public PluginConfig(String version) {
         properties = Maps.newHashMap();
         this.version = version;
     }
@@ -79,8 +77,7 @@ public class PluginConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(id, that.id)
-                    && Objects.equal(enabled, that.enabled)
+            return Objects.equal(enabled, that.enabled)
                     && Objects.equal(properties, that.properties);
         }
         return false;
@@ -91,13 +88,12 @@ public class PluginConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(id, enabled, properties);
+        return Objects.hashCode(enabled, properties);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("id", id)
                 .add("enabled", enabled)
                 .add("properties", properties)
                 .add("version", version)
@@ -105,15 +101,13 @@ public class PluginConfig {
     }
 
     @JsonCreator
-    static PluginConfig readValue(@JsonProperty("id") @Nullable String id,
-            @JsonProperty("enabled") @Nullable Boolean enabled,
+    static PluginConfig readValue(@JsonProperty("enabled") @Nullable Boolean enabled,
             @JsonProperty("properties") @Nullable Map<String, /*@Nullable*/Object> properties,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(id, "id");
         checkRequiredProperty(enabled, "enabled");
         checkRequiredProperty(properties, "properties");
         checkRequiredProperty(version, "version");
-        PluginConfig config = new PluginConfig(id, version);
+        PluginConfig config = new PluginConfig(version);
         config.setEnabled(enabled);
         config.properties.putAll(properties);
         return config;

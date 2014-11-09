@@ -23,13 +23,14 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.markers.GuardedBy;
+import javax.annotation.concurrent.GuardedBy;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

@@ -20,7 +20,6 @@ import java.net.URL;
 import java.util.Enumeration;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -32,7 +31,6 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.CapturePoint;
 import org.glowroot.container.config.CapturePoint.CaptureKind;
-import org.glowroot.container.config.CapturePoint.MethodModifier;
 import org.glowroot.weaving.AnalyzedWorld;
 import org.glowroot.weaving.ClassNames;
 
@@ -85,7 +83,6 @@ public class AnalyzedClassPlanBTest {
         config.setMethodName("y");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
-        config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setCaptureKind(CaptureKind.METRIC);
         config.setMetricName("y");
         container.getConfigService().addCapturePoint(config);

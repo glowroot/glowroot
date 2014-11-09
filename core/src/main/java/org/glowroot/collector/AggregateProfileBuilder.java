@@ -20,7 +20,7 @@ import java.util.List;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
-import org.glowroot.markers.GuardedBy;
+import javax.annotation.concurrent.GuardedBy;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.ProfileNode;
 

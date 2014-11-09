@@ -18,10 +18,9 @@ package org.glowroot.advicegen;
 import java.util.Collections;
 import java.util.List;
 
-import org.glowroot.advicegen.Beans;
-
 import com.google.common.collect.Lists;
 import org.junit.Test;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BeansTest {

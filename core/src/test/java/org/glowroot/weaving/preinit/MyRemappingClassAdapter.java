@@ -17,7 +17,8 @@ package org.glowroot.weaving.preinit;
 
 import java.util.Arrays;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
+
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 

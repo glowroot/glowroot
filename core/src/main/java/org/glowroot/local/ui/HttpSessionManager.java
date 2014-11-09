@@ -22,9 +22,10 @@ import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.http.Cookie;
 import org.jboss.netty.handler.codec.http.CookieDecoder;
@@ -68,7 +69,8 @@ class HttpSessionManager {
         boolean success;
         String password = request.getContent().toString(Charsets.ISO_8859_1);
         try {
-            success = configService.getUserInterfaceConfig().validatePassword(password);
+            success = validatePassword(password,
+                    configService.getUserInterfaceConfig().passwordHash());
         } catch (GeneralSecurityException e) {
             logger.error(e.getMessage(), e);
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
@@ -88,7 +90,7 @@ class HttpSessionManager {
     }
 
     boolean needsAuthentication(HttpRequest request) {
-        if (!configService.getUserInterfaceConfig().isPasswordEnabled()) {
+        if (!configService.getUserInterfaceConfig().passwordEnabled()) {
             return false;
         }
         String sessionId = getSessionId(request);
@@ -156,12 +158,22 @@ class HttpSessionManager {
     }
 
     private void updateExpiration(String sessionId) {
-        int timeoutMinutes = configService.getUserInterfaceConfig().getSessionTimeoutMinutes();
+        int timeoutMinutes = configService.getUserInterfaceConfig().sessionTimeoutMinutes();
         if (timeoutMinutes == 0) {
             sessionExpirations.put(sessionId, Long.MAX_VALUE);
         } else {
             sessionExpirations.put(sessionId,
                     clock.currentTimeMillis() + MINUTES.toMillis(timeoutMinutes));
+        }
+    }
+
+    private static boolean validatePassword(String password, String passwordHash)
+            throws GeneralSecurityException {
+        if (passwordHash.isEmpty()) {
+            // need special case for empty password
+            return password.isEmpty();
+        } else {
+            return PasswordHash.validatePassword(password, passwordHash);
         }
     }
 }

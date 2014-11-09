@@ -67,7 +67,7 @@ public class CappedDatabaseOutputStreamTest {
         FileBlock block = cappedOut.endBlock();
         cappedOut.sync();
         // then
-        assertThat(block.getStartIndex()).isEqualTo(0);
+        assertThat(block.startIndex()).isEqualTo(0);
         long currIndex = in.readLong();
         int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
@@ -100,7 +100,7 @@ public class CappedDatabaseOutputStreamTest {
         out.flush();
         FileBlock block = cappedOut.endBlock();
         // then
-        assertThat(block.getStartIndex()).isEqualTo(600);
+        assertThat(block.startIndex()).isEqualTo(600);
         long currIndex = in.readLong();
         int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
@@ -140,7 +140,7 @@ public class CappedDatabaseOutputStreamTest {
         out.flush();
         FileBlock block = cappedOut.endBlock();
         // then
-        assertThat(block.getStartIndex()).isEqualTo(1200);
+        assertThat(block.startIndex()).isEqualTo(1200);
         long currIndex = in.readLong();
         int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
@@ -177,7 +177,7 @@ public class CappedDatabaseOutputStreamTest {
         cappedOut.resize(2);
         in = new RandomAccessFile(tempFile, "r");
         // then
-        assertThat(block.getStartIndex()).isEqualTo(600);
+        assertThat(block.startIndex()).isEqualTo(600);
         long currIndex = in.readLong();
         int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();

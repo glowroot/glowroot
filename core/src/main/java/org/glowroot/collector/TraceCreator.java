@@ -19,11 +19,12 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map.Entry;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharStreams;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.transaction.model.TransactionMetricImpl;
@@ -54,7 +55,7 @@ public class TraceCreator {
     // (without using synchronization to block updates to the trace while it is being read)
     private static Trace createTrace(Transaction transaction, boolean active, boolean partial,
             long captureTime, long captureTick) throws IOException {
-        Trace.Builder builder = Trace.builder();
+        ImmutableTrace.Builder builder = ImmutableTrace.builder();
         builder.id(transaction.getId());
         builder.active(active);
         builder.partial(partial);

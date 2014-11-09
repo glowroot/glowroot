@@ -18,12 +18,14 @@ package org.glowroot.transaction;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,9 +118,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             if (pluginConfig == null) {
                 List<String> ids = Lists.newArrayList();
                 List<PluginDescriptor> pluginDescriptors =
-                        pluginDescriptorCache.getPluginDescriptors();
+                        pluginDescriptorCache.pluginDescriptors();
                 for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-                    ids.add(pluginDescriptor.getId());
+                    ids.add(pluginDescriptor.id());
                 }
                 logger.warn("unexpected plugin id: {} (available plugin ids are {})", pluginId,
                         Joiner.on(", ").join(ids));
@@ -142,9 +144,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         if (pluginConfig == null) {
             return "";
-        } else {
-            return pluginConfig.getStringProperty(name);
         }
+        return pluginConfig.getStringProperty(name);
     }
 
     @Override
@@ -165,9 +166,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         if (pluginConfig == null) {
             return null;
-        } else {
-            return pluginConfig.getDoubleProperty(name);
         }
+        return pluginConfig.getDoubleProperty(name);
     }
 
     @Override
@@ -322,9 +322,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Override
     public void setTransactionUser(@Nullable String user) {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
-        if (transaction != null) {
+        if (transaction != null && !Strings.isNullOrEmpty(user)) {
             transaction.setUser(user);
-            if (user != null && transaction.getUserProfileRunnable() == null) {
+            if (transaction.getUserProfileRunnable() == null) {
                 userProfileScheduler.maybeScheduleUserProfiling(transaction, user);
             }
         }
@@ -364,22 +364,22 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     public void onChange() {
         TraceConfig traceConfig = configService.getTraceConfig();
         if (pluginId == null) {
-            enabled = traceConfig.isEnabled();
+            enabled = traceConfig.enabled();
         } else {
             PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
             if (pluginConfig == null) {
                 // pluginId was already validated at construction time so this should not happen
                 logger.error("plugin config not found for plugin id: {}", pluginId);
-                enabled = traceConfig.isEnabled();
+                enabled = traceConfig.enabled();
             } else {
-                enabled = traceConfig.isEnabled() && pluginConfig.isEnabled();
+                enabled = traceConfig.enabled() && pluginConfig.enabled();
                 this.pluginConfig = pluginConfig;
             }
         }
         AdvancedConfig advancedConfig = configService.getAdvancedConfig();
-        maxTraceEntriesPerTransaction = advancedConfig.getMaxTraceEntriesPerTransaction();
-        captureThreadInfo = advancedConfig.isCaptureThreadInfo();
-        captureGcInfo = advancedConfig.isCaptureGcInfo();
+        maxTraceEntriesPerTransaction = advancedConfig.maxTraceEntriesPerTransaction();
+        captureThreadInfo = advancedConfig.captureThreadInfo();
+        captureGcInfo = advancedConfig.captureGcInfo();
     }
 
     private TraceEntry startTraceEntry(Transaction transaction, MetricName metricName,

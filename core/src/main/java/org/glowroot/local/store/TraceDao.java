@@ -19,21 +19,22 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
+
+import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Existence;
+import org.glowroot.collector.ImmutableTrace;
 import org.glowroot.collector.Trace;
 import org.glowroot.collector.TraceRepository;
 import org.glowroot.local.store.DataSource.BatchAdder;
@@ -41,7 +42,6 @@ import org.glowroot.local.store.DataSource.RowMapper;
 import org.glowroot.local.store.FileBlock.InvalidBlockIdFormatException;
 import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
-import org.glowroot.local.store.Schemas.PrimaryKeyColumn;
 import org.glowroot.markers.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -50,48 +50,49 @@ public class TraceDao implements TraceRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
 
-    private static final ImmutableList<Column> traceColumns = ImmutableList.of(
-            new PrimaryKeyColumn("id", Types.VARCHAR),
-            new Column("partial", Types.BIGINT),
-            new Column("start_time", Types.BIGINT),
-            new Column("capture_time", Types.BIGINT),
-            new Column("duration", Types.BIGINT), // nanoseconds
-            new Column("transaction_type", Types.VARCHAR),
-            new Column("transaction_name", Types.VARCHAR),
-            new Column("headline", Types.VARCHAR),
-            new Column("error", Types.BOOLEAN), // for searching only
-            new Column("profiled", Types.BOOLEAN), // for searching only
-            new Column("error_message", Types.VARCHAR),
-            new Column("user", Types.VARCHAR),
-            new Column("custom_attributes", Types.VARCHAR), // json data
-            new Column("metrics", Types.VARCHAR), // json data
-            new Column("thread_info", Types.VARCHAR), // json data
-            new Column("gc_infos", Types.VARCHAR), // json data
-            new Column("entries_id", Types.VARCHAR), // capped database id
-            new Column("profile_id", Types.VARCHAR), // capped database id
-            new Column("outlier_profile_id", Types.VARCHAR)); // capped database id
+    private static final ImmutableList<Column> traceColumns = ImmutableList.<Column>of(
+            ImmutablePrimaryKeyColumn.of("id", Types.VARCHAR),
+            ImmutableColumn.of("partial", Types.BIGINT),
+            ImmutableColumn.of("start_time", Types.BIGINT),
+            ImmutableColumn.of("capture_time", Types.BIGINT),
+            ImmutableColumn.of("duration", Types.BIGINT), // nanoseconds
+            ImmutableColumn.of("transaction_type", Types.VARCHAR),
+            ImmutableColumn.of("transaction_name", Types.VARCHAR),
+            ImmutableColumn.of("headline", Types.VARCHAR),
+            ImmutableColumn.of("error", Types.BOOLEAN), // for searching only
+            ImmutableColumn.of("profiled", Types.BOOLEAN), // for searching only
+            ImmutableColumn.of("error_message", Types.VARCHAR),
+            ImmutableColumn.of("user", Types.VARCHAR),
+            ImmutableColumn.of("custom_attributes", Types.VARCHAR), // json data
+            ImmutableColumn.of("metrics", Types.VARCHAR), // json data
+            ImmutableColumn.of("thread_info", Types.VARCHAR), // json data
+            ImmutableColumn.of("gc_infos", Types.VARCHAR), // json data
+            ImmutableColumn.of("entries_id", Types.VARCHAR), // capped database id
+            ImmutableColumn.of("profile_id", Types.VARCHAR), // capped database id
+            ImmutableColumn.of("outlier_profile_id", Types.VARCHAR)); // capped database id
 
     // capture_time column is used for expiring records without using FK with on delete cascade
     private static final ImmutableList<Column> transactionCustomAttributeColumns =
-            ImmutableList.of(
-                    new Column("trace_id", Types.VARCHAR),
-                    new Column("name", Types.VARCHAR),
-                    new Column("value", Types.VARCHAR),
-                    new Column("capture_time", Types.BIGINT));
+            ImmutableList.<Column>of(
+                    ImmutableColumn.of("trace_id", Types.VARCHAR),
+                    ImmutableColumn.of("name", Types.VARCHAR),
+                    ImmutableColumn.of("value", Types.VARCHAR),
+                    ImmutableColumn.of("capture_time", Types.BIGINT));
 
     // TODO all of the columns needed for the trace points query are no longer in the same index
     // (number of columns has grown), either update the index or the comment
     //
     // this index includes all of the columns needed for the trace points query so h2 can return
     // result set directly from the index without having to reference the table for each row
-    private static final ImmutableList<Index> traceIndexes = ImmutableList.of(
-            new Index("trace_idx", ImmutableList.of("capture_time", "transaction_type", "duration",
-                    "id", "error")),
+    private static final ImmutableList<Index> traceIndexes = ImmutableList.<Index>of(
+            ImmutableIndex.of("trace_idx", ImmutableList.of("capture_time", "transaction_type",
+                    "duration", "id", "error")),
             // trace_error_message_idx is for readErrorMessageCounts()
-            new Index("trace_error_message_idx", ImmutableList.of("transaction_type",
+            ImmutableIndex.of("trace_error_message_idx", ImmutableList.of("transaction_type",
                     "transaction_name", "capture_time", "error_message")),
             // trace_count_idx is for readOverallCount()
-            new Index("trace_count_idx", ImmutableList.of("transaction_type", "capture_time")));
+            ImmutableIndex.of("trace_count_idx",
+                    ImmutableList.of("transaction_type", "capture_time")));
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
@@ -122,14 +123,14 @@ public class TraceDao implements TraceRepository {
                     + " transaction_type, transaction_name, headline, error, profiled,"
                     + " error_message, user, custom_attributes, metrics, thread_info, gc_infos,"
                     + " entries_id, profile_id, outlier_profile_id) values (?, ?, ?, ?, ?, ?, ?,"
-                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", trace.getId(), trace.isPartial(),
-                    trace.getStartTime(), trace.getCaptureTime(), trace.getDuration(),
-                    trace.getTransactionType(), trace.getTransactionName(), trace.getHeadline(),
-                    trace.getError() != null, profileId != null, trace.getError(), trace.getUser(),
-                    trace.getCustomAttributes(), trace.getMetrics(), trace.getThreadInfo(),
-                    trace.getGcInfos(), entriesId, profileId, outlierProfileId);
+                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", trace.id(), trace.partial(),
+                    trace.startTime(), trace.captureTime(), trace.duration(),
+                    trace.transactionType(), trace.transactionName(), trace.headline(),
+                    trace.error() != null, profileId != null, trace.error(), trace.user(),
+                    trace.customAttributes(), trace.metrics(), trace.threadInfo(),
+                    trace.gcInfos(), entriesId, profileId, outlierProfileId);
             final ImmutableSetMultimap<String, String> customAttributesForIndexing =
-                    trace.getCustomAttributesForIndexing();
+                    trace.customAttributesForIndexing();
             if (customAttributesForIndexing == null) {
                 logger.warn("trace customAttributesForIndex was not provided");
             } else if (!customAttributesForIndexing.isEmpty()) {
@@ -141,10 +142,10 @@ public class TraceDao implements TraceRepository {
                         // customAttributesForIndexing is final and null check performed above
                         checkNotNull(customAttributesForIndexing);
                         for (Entry<String, String> entry : customAttributesForIndexing.entries()) {
-                            preparedStatement.setString(1, trace.getId());
+                            preparedStatement.setString(1, trace.id());
                             preparedStatement.setString(2, entry.getKey());
                             preparedStatement.setString(3, entry.getValue());
-                            preparedStatement.setLong(4, trace.getCaptureTime());
+                            preparedStatement.setLong(4, trace.captureTime());
                             preparedStatement.addBatch();
                         }
                     }
@@ -157,10 +158,10 @@ public class TraceDao implements TraceRepository {
 
     public QueryResult<TracePoint> readPoints(TracePointQuery query) throws SQLException {
         ParameterizedSql parameterizedSql = getParameterizedSql(query);
-        ImmutableList<TracePoint> points = dataSource.query(parameterizedSql.getSql(),
-                new TracePointRowMapper(), parameterizedSql.getArgs());
+        ImmutableList<TracePoint> points = dataSource.query(parameterizedSql.sql(),
+                new TracePointRowMapper(), parameterizedSql.argsAsArray());
         // one extra record over the limit is fetched above to identify if the limit was hit
-        return QueryResult.from(points, query.getLimit());
+        return QueryResult.from(points, query.limit());
     }
 
     public long readTransactionCount(String transactionType, String transactionName,
@@ -180,17 +181,17 @@ public class TraceDao implements TraceRepository {
     public ImmutableList<ErrorPoint> readErrorPoints(ErrorMessageQuery query, long resolutionMillis)
             throws SQLException {
         ParameterizedSql parameterizedSql = getErrorPointParameterizedSql(query, resolutionMillis);
-        return dataSource.query(parameterizedSql.getSql(), new ErrorPointRowMapper(),
-                parameterizedSql.getArgs());
+        return dataSource.query(parameterizedSql.sql(), new ErrorPointRowMapper(),
+                parameterizedSql.argsAsArray());
     }
 
     public QueryResult<ErrorMessageCount> readErrorMessageCounts(ErrorMessageQuery query)
             throws SQLException {
         ParameterizedSql parameterizedSql = getErrorMessageCountParameterizedSql(query);
-        ImmutableList<ErrorMessageCount> points = dataSource.query(parameterizedSql.getSql(),
-                new ErrorMessageCountRowMapper(), parameterizedSql.getArgs());
+        ImmutableList<ErrorMessageCount> points = dataSource.query(parameterizedSql.sql(),
+                new ErrorMessageCountRowMapper(), parameterizedSql.argsAsArray());
         // one extra record over the limit is fetched above to identify if the limit was hit
-        return QueryResult.from(points, query.getLimit());
+        return QueryResult.from(points, query.limit());
     }
 
     @Nullable
@@ -306,80 +307,80 @@ public class TraceDao implements TraceRepository {
         List<Object> args = Lists.newArrayList();
         ParameterizedSql customAttributeJoin = getTraceCustomAttributeJoin(query);
         if (customAttributeJoin != null) {
-            sql += customAttributeJoin.getSql();
-            args.addAll(Arrays.asList(customAttributeJoin.getArgs()));
+            sql += customAttributeJoin.sql();
+            args.addAll(customAttributeJoin.args());
         } else {
             sql += " where";
         }
         sql += " trace.capture_time > ? and trace.capture_time <= ?";
-        args.add(query.getFrom());
-        args.add(query.getTo());
-        long durationLow = query.getDurationLow();
+        args.add(query.from());
+        args.add(query.to());
+        long durationLow = query.durationLow();
         if (durationLow != 0) {
             sql += " and trace.duration >= ?";
             args.add(durationLow);
         }
-        Long durationHigh = query.getDurationHigh();
+        Long durationHigh = query.durationHigh();
         if (durationHigh != null) {
             sql += " and trace.duration <= ?";
             args.add(durationHigh);
         }
-        String transactionType = query.getTransactionType();
+        String transactionType = query.transactionType();
         if (!Strings.isNullOrEmpty(transactionType)) {
             sql += " and trace.transaction_type = ?";
             args.add(transactionType);
         }
-        if (query.isErrorOnly()) {
+        if (query.errorOnly()) {
             sql += " and trace.error = ?";
             args.add(true);
         }
-        if (query.isProfiledOnly()) {
+        if (query.profiledOnly()) {
             sql += " and trace.profiled = ?";
             args.add(true);
         }
-        StringComparator transactionNameComparator = query.getTransactionNameComparator();
-        String transactionName = query.getTransactionName();
+        StringComparator transactionNameComparator = query.transactionNameComparator();
+        String transactionName = query.transactionName();
         if (transactionNameComparator != null && !Strings.isNullOrEmpty(transactionName)) {
             sql += " and upper(trace.transaction_name) "
                     + transactionNameComparator.getComparator() + " ?";
             args.add(transactionNameComparator.formatParameter(
                     transactionName.toUpperCase(Locale.ENGLISH)));
         }
-        StringComparator headlineComparator = query.getHeadlineComparator();
-        String headline = query.getHeadline();
+        StringComparator headlineComparator = query.headlineComparator();
+        String headline = query.headline();
         if (headlineComparator != null && !Strings.isNullOrEmpty(headline)) {
             sql += " and upper(trace.headline) " + headlineComparator.getComparator() + " ?";
             args.add(headlineComparator.formatParameter(headline.toUpperCase(Locale.ENGLISH)));
         }
-        StringComparator errorComparator = query.getErrorComparator();
-        String error = query.getError();
+        StringComparator errorComparator = query.errorComparator();
+        String error = query.error();
         if (errorComparator != null && !Strings.isNullOrEmpty(error)) {
             sql += " and upper(trace.error_message) " + errorComparator.getComparator() + " ?";
             args.add(errorComparator.formatParameter(error.toUpperCase(Locale.ENGLISH)));
         }
-        StringComparator userComparator = query.getUserComparator();
-        String user = query.getUser();
+        StringComparator userComparator = query.userComparator();
+        String user = query.user();
         if (userComparator != null && !Strings.isNullOrEmpty(user)) {
             sql += " and upper(trace.user) " + userComparator.getComparator() + " ?";
             args.add(userComparator.formatParameter(user.toUpperCase(Locale.ENGLISH)));
         }
         sql += " order by trace.duration desc limit ?";
         // +1 is to identify if limit was exceeded
-        args.add(query.getLimit() + 1);
-        return new ParameterizedSql(sql, args);
+        args.add(query.limit() + 1);
+        return ImmutableParameterizedSql.of(sql, args);
     }
 
     @Nullable
     private static ParameterizedSql getTraceCustomAttributeJoin(TracePointQuery query) {
         String criteria = "";
         List<Object> criteriaArgs = Lists.newArrayList();
-        String customAttributeName = query.getCustomAttributeName();
+        String customAttributeName = query.customAttributeName();
         if (!Strings.isNullOrEmpty(customAttributeName)) {
             criteria += " upper(attr.name) = ? and";
             criteriaArgs.add(customAttributeName.toUpperCase(Locale.ENGLISH));
         }
-        StringComparator customAttributeValueComparator = query.getCustomAttributeValueComparator();
-        String customAttributeValue = query.getCustomAttributeValue();
+        StringComparator customAttributeValueComparator = query.customAttributeValueComparator();
+        String customAttributeValue = query.customAttributeValue();
         if (customAttributeValueComparator != null
                 && !Strings.isNullOrEmpty(customAttributeValue)) {
             criteria += " upper(attr.value) " + customAttributeValueComparator.getComparator()
@@ -393,10 +394,10 @@ public class TraceDao implements TraceRepository {
             String sql = ", trace_custom_attribute attr where attr.trace_id = trace.id and"
                     + " attr.capture_time > ? and attr.capture_time <= ? and" + criteria;
             List<Object> args = Lists.newArrayList();
-            args.add(query.getFrom());
-            args.add(query.getTo());
+            args.add(query.from());
+            args.add(query.to());
             args.addAll(criteriaArgs);
-            return new ParameterizedSql(sql, args);
+            return ImmutableParameterizedSql.of(sql, args);
         }
     }
 
@@ -408,54 +409,54 @@ public class TraceDao implements TraceRepository {
         String sql = "select " + captureTimeSql + ", count(*) from trace where error = ?";
         List<Object> args = Lists.newArrayList();
         args.add(true);
-        String transactionType = query.getTransactionType();
-        String transactionName = query.getTransactionName();
+        String transactionType = query.transactionType();
+        String transactionName = query.transactionName();
         if (transactionType != null && transactionName != null) {
             sql += " and transaction_type = ? and transaction_name = ?";
             args.add(transactionType);
             args.add(transactionName);
         }
         sql += " and capture_time >= ? and capture_time <= ? and error = ?";
-        args.add(query.getFrom());
-        args.add(query.getTo());
+        args.add(query.from());
+        args.add(query.to());
         args.add(true);
-        for (String include : query.getIncludes()) {
+        for (String include : query.includes()) {
             sql += " and upper(error_message) like ?";
             args.add('%' + include.toUpperCase(Locale.ENGLISH) + '%');
         }
-        for (String exclude : query.getExcludes()) {
+        for (String exclude : query.excludes()) {
             sql += " and upper(error_message) not like ?";
             args.add('%' + exclude.toUpperCase(Locale.ENGLISH) + '%');
         }
         sql += " group by " + captureTimeSql + " order by " + captureTimeSql;
-        return new ParameterizedSql(sql, args);
+        return ImmutableParameterizedSql.of(sql, args);
     }
 
     private ParameterizedSql getErrorMessageCountParameterizedSql(ErrorMessageQuery query) {
         String sql = "select error_message, count(*) from trace where error = ?";
         List<Object> args = Lists.newArrayList();
         args.add(true);
-        String transactionType = query.getTransactionType();
-        String transactionName = query.getTransactionName();
+        String transactionType = query.transactionType();
+        String transactionName = query.transactionName();
         if (transactionType != null && transactionName != null) {
             sql += " and transaction_type = ? and transaction_name = ?";
             args.add(transactionType);
             args.add(transactionName);
         }
         sql += " and capture_time >= ? and capture_time <= ? and error = ?";
-        args.add(query.getFrom());
-        args.add(query.getTo());
+        args.add(query.from());
+        args.add(query.to());
         args.add(true);
-        for (String include : query.getIncludes()) {
+        for (String include : query.includes()) {
             sql += " and upper(error_message) like ?";
             args.add('%' + include.toUpperCase(Locale.ENGLISH) + '%');
         }
-        for (String exclude : query.getExcludes()) {
+        for (String exclude : query.excludes()) {
             sql += " and upper(error_message) not like ?";
             args.add('%' + exclude.toUpperCase(Locale.ENGLISH) + '%');
         }
         sql += " group by error_message order by count(*) desc";
-        return new ParameterizedSql(sql, args);
+        return ImmutableParameterizedSql.of(sql, args);
     }
 
     private static void upgradeTraceTable(DataSource dataSource) throws SQLException {
@@ -463,14 +464,14 @@ public class TraceDao implements TraceRepository {
             return;
         }
         for (Column column : dataSource.getColumns("trace")) {
-            if (column.getName().equals("grouping")) {
+            if (column.name().equals("grouping")) {
                 dataSource.execute("alter table trace alter column grouping rename to"
                         + " transaction_name");
                 dataSource.execute("alter table trace add column headline varchar");
                 dataSource.execute("update trace set headline = transaction_name");
                 break;
             }
-            if (column.getName().equals("bucket")) {
+            if (column.name().equals("bucket")) {
                 // first grouping was renamed to bucket, then to transaction_name
                 dataSource.execute("alter table trace alter column bucket rename to"
                         + " transaction_name");
@@ -485,8 +486,12 @@ public class TraceDao implements TraceRepository {
             String id = resultSet.getString(1);
             // this checkNotNull is safe since id is the primary key and cannot be null
             checkNotNull(id);
-            return TracePoint.from(id, resultSet.getLong(2), resultSet.getLong(3),
-                    resultSet.getBoolean(4));
+            return ImmutableTracePoint.builder()
+                    .id(id)
+                    .captureTime(resultSet.getLong(2))
+                    .duration(resultSet.getLong(3))
+                    .error(resultSet.getBoolean(4))
+                    .build();
         }
     }
 
@@ -497,11 +502,12 @@ public class TraceDao implements TraceRepository {
         @Override
         @SuppressWarnings("contracts.precondition.not.satisfied")
         public Trace mapRow(ResultSet resultSet) throws SQLException {
-            Trace.Builder trace = Trace.builder();
+            ImmutableTrace.Builder trace = ImmutableTrace.builder();
             String id = resultSet.getString(1);
             // this checkNotNull is safe since id is the primary key and cannot be null
             checkNotNull(id);
             trace.id(id);
+            trace.active(false);
             trace.partial(resultSet.getBoolean(2));
             trace.startTime(resultSet.getLong(3));
             trace.captureTime(resultSet.getLong(4));
@@ -551,9 +557,10 @@ public class TraceDao implements TraceRepository {
     private static class ErrorMessageCountRowMapper implements RowMapper<ErrorMessageCount> {
         @Override
         public ErrorMessageCount mapRow(ResultSet resultSet) throws SQLException {
-            String errorMessage = resultSet.getString(1);
-            long count = resultSet.getLong(2);
-            return new ErrorMessageCount(Strings.nullToEmpty(errorMessage), count);
+            return ImmutableErrorMessageCount.builder()
+                    .message(Strings.nullToEmpty(resultSet.getString(1)))
+                    .count(resultSet.getLong(2))
+                    .build();
         }
     }
 

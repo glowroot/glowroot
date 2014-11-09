@@ -36,17 +36,7 @@ public class JarFileShadingIT {
 
     @Test
     public void shouldCheckThatJarIsWellShaded() throws IOException {
-        File glowrootCoreJarFile = ClassPath.getGlowrootCoreJarFile();
-        if (glowrootCoreJarFile == null) {
-            if (System.getProperty("surefire.test.class.path") != null) {
-                throw new IllegalStateException(
-                        "Running inside maven and can't find glowroot-core.jar on class path");
-            }
-            // try to cover the non-standard case when running outside of maven (e.g. inside an IDE)
-            glowrootCoreJarFile = getGlowrootCoreJarFileFromRelativePath();
-            // don't worry if glowroot jar can't be found while running outside of maven
-            Assume.assumeNotNull(glowrootCoreJarFile);
-        }
+        Assume.assumeTrue(isShaded());
         List<String> acceptableEntries = Lists.newArrayList();
         acceptableEntries.add("glowroot\\..*");
         acceptableEntries.add("org/");
@@ -54,9 +44,12 @@ public class JarFileShadingIT {
         acceptableEntries.add("META-INF/");
         acceptableEntries.add("META-INF/maven/.*");
         acceptableEntries.add("META-INF/glowroot\\..*");
+        acceptableEntries.add("META-INF/services/");
+        acceptableEntries.add("META-INF/services/org.glowroot\\..*");
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
         acceptableEntries.add("META-INF/LICENSE");
         acceptableEntries.add("META-INF/NOTICE");
+        File glowrootCoreJarFile = ClassPath.getGlowrootCoreJarFile();
         JarFile jarFile = new JarFile(glowrootCoreJarFile);
         List<String> unacceptableEntries = Lists.newArrayList();
         for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements();) {
@@ -96,5 +89,14 @@ public class JarFileShadingIT {
             }
         }
         return false;
+    }
+
+    private static boolean isShaded() {
+        try {
+            Class.forName("org.glowroot.shaded.slf4j.Logger");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }

@@ -18,6 +18,8 @@ package org.glowroot.container.config;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -25,7 +27,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkNotNullValuesForProperty;
@@ -238,6 +239,11 @@ public class CapturePoint {
 
     public void setTraceEntryEnabledProperty(String traceEntryEnabledProperty) {
         this.traceEntryEnabledProperty = traceEntryEnabledProperty;
+    }
+
+    @Nullable
+    public String getVersion() {
+        return version;
     }
 
     @Override

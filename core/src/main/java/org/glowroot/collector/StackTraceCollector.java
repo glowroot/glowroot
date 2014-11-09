@@ -21,8 +21,9 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,8 +80,8 @@ class StackTraceCollector implements Runnable {
     }
 
     void updateScheduleIfNeeded() {
-        boolean newEnabled = configService.getProfilingConfig().isEnabled();
-        int newIntervalMillis = configService.getProfilingConfig().getIntervalMillis();
+        boolean newEnabled = configService.getProfilingConfig().enabled();
+        int newIntervalMillis = configService.getProfilingConfig().intervalMillis();
         if (newEnabled != currentEnabled || newIntervalMillis != currentIntervalMillis) {
             if (currentFuture != null) {
                 currentFuture.cancel(false);
@@ -96,7 +97,7 @@ class StackTraceCollector implements Runnable {
 
     private void runInternal() {
         ProfilingConfig config = configService.getProfilingConfig();
-        if (!config.isEnabled()) {
+        if (!config.enabled()) {
             return;
         }
         List<Transaction> transactions =
@@ -112,7 +113,7 @@ class StackTraceCollector implements Runnable {
                 ManagementFactory.getThreadMXBean().getThreadInfo(threadIds, Integer.MAX_VALUE);
         for (int i = 0; i < transactions.size(); i++) {
             transactions.get(i).captureStackTrace(threadInfos[i], false,
-                    configService.getAdvancedConfig().getMaxStackTraceSamplesPerTransaction());
+                    configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction());
         }
     }
 

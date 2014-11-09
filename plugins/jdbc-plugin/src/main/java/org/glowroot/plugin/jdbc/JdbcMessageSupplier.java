@@ -15,9 +15,10 @@
  */
 package org.glowroot.plugin.jdbc;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;

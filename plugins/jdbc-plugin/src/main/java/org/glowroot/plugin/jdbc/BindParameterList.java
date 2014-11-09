@@ -18,8 +18,9 @@ package org.glowroot.plugin.jdbc;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.Iterators;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 // micro-optimized list for bind parameters
 class BindParameterList implements Iterable</*@Nullable*/Object> {

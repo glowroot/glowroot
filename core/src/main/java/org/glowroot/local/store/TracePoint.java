@@ -15,52 +15,12 @@
  */
 package org.glowroot.local.store;
 
-import com.google.common.base.MoreObjects;
+import org.immutables.value.Value;
 
-import org.glowroot.markers.Immutable;
-
-@Immutable
-public class TracePoint {
-
-    private final String id;
-    private final long captureTime;
-    private final double duration; // nanoseconds
-    private final boolean error;
-
-    public static TracePoint from(String id, long captureTime, double duration, boolean error) {
-        return new TracePoint(id, captureTime, duration, error);
-    }
-
-    private TracePoint(String id, long captureTime, double duration, boolean error) {
-        this.id = id;
-        this.captureTime = captureTime;
-        this.duration = duration;
-        this.error = error;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public long getCaptureTime() {
-        return captureTime;
-    }
-
-    public double getDuration() {
-        return duration;
-    }
-
-    public boolean isError() {
-        return error;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("id", id)
-                .add("captureTime", captureTime)
-                .add("duration", duration)
-                .add("error", error)
-                .toString();
-    }
+@Value.Immutable
+public abstract class TracePoint {
+    public abstract String id();
+    public abstract long captureTime();
+    public abstract double duration();
+    public abstract boolean error();
 }

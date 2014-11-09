@@ -54,6 +54,7 @@ public class AggregateCollectorTest {
         Transaction transaction = mock(Transaction.class);
         TransactionMetricImpl transactionMetric = mock(TransactionMetricImpl.class);
         when(transactionMetric.getName()).thenReturn("test 123");
+        when(transaction.getTransactionType()).thenReturn("a type");
         when(transaction.getDuration()).thenReturn(MILLISECONDS.toNanos(123));
         when(transaction.getRootMetric()).thenReturn(transactionMetric);
         // when
@@ -90,7 +91,7 @@ public class AggregateCollectorTest {
                 List<Aggregate> transactionAggregates) {
             // only capture first non-zero value
             if (totalMicros == 0 && !overallAggregates.isEmpty()) {
-                totalMicros = overallAggregates.get(0).getTotalMicros();
+                totalMicros = overallAggregates.get(0).totalMicros();
             }
         }
 

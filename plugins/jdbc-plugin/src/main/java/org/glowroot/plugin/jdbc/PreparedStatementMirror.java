@@ -17,10 +17,11 @@ package org.glowroot.plugin.jdbc;
 
 import java.util.Collection;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
 import com.google.common.hash.HashCode;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 // used to capture and mirror the state of prepared statements since the underlying
 // PreparedStatement values cannot be inspected after they have been set

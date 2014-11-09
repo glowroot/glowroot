@@ -41,11 +41,11 @@ class ReaperRunnable extends ScheduledRunnable {
     @Override
     protected void runInternal() {
         long aggregateCaptureTime = clock.currentTimeMillis()
-                - HOURS.toMillis(configService.getStorageConfig().getAggregateExpirationHours());
+                - HOURS.toMillis(configService.getStorageConfig().aggregateExpirationHours());
         aggregateDao.deleteBefore(aggregateCaptureTime);
 
         long traceCaptureTime = clock.currentTimeMillis()
-                - HOURS.toMillis(configService.getStorageConfig().getTraceExpirationHours());
+                - HOURS.toMillis(configService.getStorageConfig().traceExpirationHours());
         traceDao.deleteBefore(traceCaptureTime);
 
         // TODO separate expiration for gauge data?
