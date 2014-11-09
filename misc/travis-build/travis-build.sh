@@ -85,9 +85,6 @@ case "$1" in
                  unzip $HOME/checker-framework.zip -d $HOME
                  # strip version from directory name
                  mv $HOME/checker-framework-* $HOME/checker-framework
-                 # remove @argfile from javac_maven since that requires adding argfile to each module directory
-                 sed -i 's/@argfile //' $HOME/checker-framework/checker/bin/javac_maven.bat
-                 sed -i 's/"\\@argfile" //' $HOME/checker-framework/checker/bin/javac_maven
                fi
                mvn clean compile -pl .,misc/license-resource-bundle,plugin-api,core,test-harness,plugins/jdbc-plugin,plugins/servlet-plugin,plugins/logger-plugin \
                                  -Pchecker \
