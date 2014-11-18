@@ -72,8 +72,7 @@ public class UserInterfaceConfig {
         return passwordEnabled;
     }
 
-    @Nullable
-    public String getCurrentPassword() {
+    public @Nullable String getCurrentPassword() {
         return currentPassword;
     }
 
@@ -81,8 +80,7 @@ public class UserInterfaceConfig {
         this.currentPassword = currentPassword;
     }
 
-    @Nullable
-    public String getNewPassword() {
+    public @Nullable String getNewPassword() {
         return newPassword;
     }
 

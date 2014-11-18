@@ -27,10 +27,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 class Accessor {
 
     private final AccessorType accessorType;
-    @Nullable
-    private final Method method;
-    @Nullable
-    private final Field field;
+    private final @Nullable Method method;
+    private final @Nullable Field field;
 
     static Accessor fromMethod(Method method) {
         return new Accessor(method);

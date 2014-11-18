@@ -45,8 +45,7 @@ public class TransactionModule {
     private final TransactionRegistry transactionRegistry;
     private final AdviceCache adviceCache;
     private final WeavingTimerService weavingTimerService;
-    @Nullable
-    private final ThreadAllocatedBytes threadAllocatedBytes;
+    private final @Nullable ThreadAllocatedBytes threadAllocatedBytes;
 
     private final ImmediateTraceStoreWatcher immedateTraceStoreWatcher;
     private final OutlierProfileWatcher outlierProfileWatcher;

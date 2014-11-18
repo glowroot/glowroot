@@ -26,12 +26,9 @@ import com.google.common.collect.Maps;
 
 class ClassCollector {
 
-    @Nullable
-    private String superInternalNames;
-    @Nullable
-    private ImmutableList<String> interfaceInternalNames;
-    @Nullable
-    private ImmutableList<String> allSuperInternalNames;
+    private @Nullable String superInternalNames;
+    private @Nullable ImmutableList<String> interfaceInternalNames;
+    private @Nullable ImmutableList<String> allSuperInternalNames;
 
     // map key is the method "name:desc"
     private final Map<String, MethodCollector> methodCollectors = Maps.newHashMap();

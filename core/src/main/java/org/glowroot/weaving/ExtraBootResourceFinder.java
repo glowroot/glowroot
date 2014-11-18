@@ -37,8 +37,7 @@ public class ExtraBootResourceFinder {
         this.jarFiles = jarFiles;
     }
 
-    @Nullable
-    public URL findResource(String name) {
+    public @Nullable URL findResource(String name) {
         for (File pluginJar : jarFiles) {
             try {
                 URL url = new URL("jar:" + pluginJar.toURI() + "!/" + name);

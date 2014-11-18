@@ -36,6 +36,7 @@ import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
@@ -60,7 +61,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
-import javax.annotation.concurrent.GuardedBy;
 import org.glowroot.weaving.AnalyzedWorld;
 import org.glowroot.weaving.ClassNames;
 
@@ -75,8 +75,7 @@ class ClasspathCache {
     private static final Logger logger = LoggerFactory.getLogger(ClasspathCache.class);
 
     private final AnalyzedWorld analyzedWorld;
-    @Nullable
-    private final Instrumentation instrumentation;
+    private final @Nullable Instrumentation instrumentation;
 
     // using sets of URIs because URLs have expensive equals and hashcode methods
     // see http://michaelscharf.blogspot.com/2006/11/javaneturlequals-and-hashcode-make.html
@@ -406,8 +405,7 @@ class ClasspathCache {
         }
 
         @Override
-        @Nullable
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String/*@Nullable*/[] exceptions) {
             if ((access & ACC_SYNTHETIC) != 0) {
                 // don't add synthetic methods to the analyzed model

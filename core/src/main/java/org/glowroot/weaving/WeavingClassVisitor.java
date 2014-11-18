@@ -97,16 +97,14 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private final ClassWriter cw;
 
-    @Nullable
-    private final ClassLoader loader;
+    private final @Nullable ClassLoader loader;
 
     private final AnalyzingClassVisitor analyzingClassVisitor;
     private final AnalyzedWorld analyzedWorld;
 
     private final boolean metricWrapperMethods;
 
-    @MonotonicNonNull
-    private Type type;
+    private @MonotonicNonNull Type type;
 
     private boolean throwShortCircuitException;
     private boolean interfaceSoNothingToWeave;
@@ -115,12 +113,10 @@ class WeavingClassVisitor extends ClassVisitor {
 
     // these are for handling class and method metas
     private boolean maybeHasMetas;
-    @MonotonicNonNull
-    private MethodVisitor clinitMethodVisitor;
+    private @MonotonicNonNull MethodVisitor clinitMethodVisitor;
     private final Set<Type> classMetaTypes = Sets.newHashSet();
     private final Set<MethodMetaGroup> methodMetaGroups = Sets.newHashSet();
-    @MonotonicNonNull
-    private String metaHolderInternalName;
+    private @MonotonicNonNull String metaHolderInternalName;
     private int methodMetaCounter;
 
     public WeavingClassVisitor(ClassWriter cw, ImmutableList<Advice> advisors,
@@ -192,8 +188,7 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     @Override
-    @Nullable
-    public MethodVisitor visitMethod(int access, String name, String desc,
+    public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
         if (throwShortCircuitException) {
             // this is in visitMethod because need to check annotations first
@@ -462,8 +457,7 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
-    @Nullable
-    private Integer collectMetasAtMethod(Iterable<Advice> matchingAdvisors, String desc) {
+    private @Nullable Integer collectMetasAtMethod(Iterable<Advice> matchingAdvisors, String desc) {
         Set<Type> methodMetaTypes = Sets.newHashSet();
         for (Advice matchingAdvice : matchingAdvisors) {
             classMetaTypes.addAll(matchingAdvice.classMetaTypes());

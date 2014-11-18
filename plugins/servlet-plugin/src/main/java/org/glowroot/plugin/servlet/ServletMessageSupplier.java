@@ -54,33 +54,27 @@ class ServletMessageSupplier extends MessageSupplier {
 
     private final String requestMethod;
     private final String requestUri;
-    @Nullable
-    private final String requestQueryString;
+    private final @Nullable String requestQueryString;
 
-    @MonotonicNonNull
-    private volatile ImmutableMap<String, Object> requestParameters;
+    private volatile @MonotonicNonNull ImmutableMap<String, Object> requestParameters;
 
     private final ImmutableMap<String, Object> requestHeaders;
 
     private final ResponseHeaders responseHeaders = new ResponseHeaders();
 
     // the initial value is the sessionId as it was present at the beginning of the request
-    @Nullable
-    private final String sessionIdInitialValue;
-    @MonotonicNonNull
-    private volatile String sessionIdUpdatedValue;
+    private final @Nullable String sessionIdInitialValue;
+    private volatile @MonotonicNonNull String sessionIdUpdatedValue;
 
     // session attributes may not be thread safe, so they must be converted to Strings
     // within the request processing thread, which can then be safely read by the trace storage
     // thread (and live viewing thread also)
     // the initial value map contains the session attributes as they were present at the beginning
     // of the request
-    @Nullable
-    private final ImmutableMap<String, String> sessionAttributeInitialValueMap;
+    private final @Nullable ImmutableMap<String, String> sessionAttributeInitialValueMap;
 
     // ConcurrentHashMap does not allow null values, so need to use Optional values
-    @MonotonicNonNull
-    private volatile ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
+    private volatile @MonotonicNonNull ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
     ServletMessageSupplier(String requestMethod, String requestUri,
             @Nullable String requestQueryString, ImmutableMap<String, Object> requestHeaders,

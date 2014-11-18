@@ -28,14 +28,10 @@ public class SessionInvoker {
 
     private static final Logger logger = LoggerFactory.getLogger(SessionInvoker.class);
 
-    @Nullable
-    private final Method getIdMethod;
-    @Nullable
-    private final Method isNewMethod;
-    @Nullable
-    private final Method getAttributeMethod;
-    @Nullable
-    private final Method getAttributeNamesMethod;
+    private final @Nullable Method getIdMethod;
+    private final @Nullable Method isNewMethod;
+    private final @Nullable Method getAttributeMethod;
+    private final @Nullable Method getAttributeNamesMethod;
 
     public SessionInvoker(Class<?> clazz) {
         Class<?> httpSessionClass = null;
@@ -84,8 +80,7 @@ public class SessionInvoker {
         }
     }
 
-    @Nullable
-    public Object getAttribute(Object session, String name) {
+    public @Nullable Object getAttribute(Object session, String name) {
         if (getAttributeMethod == null) {
             return null;
         }
@@ -115,8 +110,7 @@ public class SessionInvoker {
         }
     }
 
-    @Nullable
-    private static Method getMethod(@Nullable Class<?> clazz, String methodName,
+    private static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName,
             Class<?>... parameterTypes) {
         if (clazz == null) {
             return null;

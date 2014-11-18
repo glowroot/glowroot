@@ -28,8 +28,7 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 public class UserRecordingConfig {
 
     private boolean enabled;
-    @Nullable
-    private String user;
+    private @Nullable String user;
     private int profileIntervalMillis;
 
     private final String version;
@@ -46,8 +45,7 @@ public class UserRecordingConfig {
         this.enabled = enabled;
     }
 
-    @Nullable
-    public String getUser() {
+    public @Nullable String getUser() {
         return user;
     }
 

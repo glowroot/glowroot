@@ -193,8 +193,7 @@ public class Slf4jAspect {
     private static class LogAdviceTraveler {
         private final TraceEntry traceEntry;
         private final String formattedMessage;
-        @Nullable
-        private final Throwable throwable;
+        private final @Nullable Throwable throwable;
         private LogAdviceTraveler(TraceEntry traceEntry, String formattedMessage,
                 @Nullable Throwable throwable) {
             this.traceEntry = traceEntry;

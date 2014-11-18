@@ -22,8 +22,7 @@ import org.glowroot.config.PropertyDescriptor.PropertyType;
 public class PropertyValue {
 
     // can be boolean, @Nullable Double or @NonNull String
-    @Nullable
-    private final Object value;
+    private final @Nullable Object value;
 
     static PropertyValue getDefaultValue(PropertyType type) {
         switch (type) {
@@ -42,8 +41,7 @@ public class PropertyValue {
         this.value = value;
     }
 
-    @Nullable
-    public Object value() {
+    public @Nullable Object value() {
         return value;
     }
 }

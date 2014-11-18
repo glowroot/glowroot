@@ -26,8 +26,7 @@ import com.google.common.base.Throwables;
 class StatementCloser {
 
     private final Statement statement;
-    @Nullable
-    private Throwable thrown;
+    private @Nullable Throwable thrown;
 
     StatementCloser(Statement statement) {
         this.statement = statement;

@@ -83,8 +83,7 @@ public class Beans {
 
     private Beans() {}
 
-    @Nullable
-    public static Object value(@Nullable Object obj, String path) {
+    public static @Nullable Object value(@Nullable Object obj, String path) {
         if (obj == null) {
             return null;
         }
@@ -217,8 +216,7 @@ public class Beans {
         return builder.build();
     }
 
-    @Nullable
-    private static String getPropertyName(Method method) {
+    private static @Nullable String getPropertyName(Method method) {
         if (method.getParameterTypes().length > 0) {
             return null;
         }

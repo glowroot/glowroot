@@ -21,6 +21,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -31,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import javax.annotation.concurrent.GuardedBy;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -51,12 +51,10 @@ class ThreadInfoComponent {
     private final long threadWaitedTimeStart;
     private final long threadAllocatedBytesStart;
 
-    @Nullable
-    private final ThreadAllocatedBytes threadAllocatedBytes;
+    private final @Nullable ThreadAllocatedBytes threadAllocatedBytes;
 
     @GuardedBy("lock")
-    @MonotonicNonNull
-    private volatile String completedJsonValue;
+    private volatile @MonotonicNonNull String completedJsonValue;
 
     private final Object lock = new Object();
 

@@ -60,8 +60,7 @@ public class Reflections {
         }
     }
 
-    @Nullable
-    public static Object invoke(Method method, Object obj, @Nullable Object... args)
+    public static @Nullable Object invoke(Method method, Object obj, @Nullable Object... args)
             throws ReflectiveException {
         try {
             return method.invoke(obj, args);
@@ -79,8 +78,7 @@ public class Reflections {
         }
     }
 
-    @Nullable
-    public static Object invokeStatic(Method method, @Nullable Object... args)
+    public static @Nullable Object invokeStatic(Method method, @Nullable Object... args)
             throws ReflectiveException {
         try {
             return method.invoke(null, args);

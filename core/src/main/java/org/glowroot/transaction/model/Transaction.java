@@ -19,6 +19,7 @@ import java.lang.management.ThreadInfo;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
@@ -38,7 +39,6 @@ import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import javax.annotation.concurrent.GuardedBy;
 
 // contains all data that has been captured for a given transaction (e.g. a servlet request)
 //
@@ -69,33 +69,26 @@ public class Transaction {
     private volatile boolean explicitSetTransactionName;
 
     // trace-level error, only used if root entry doesn't have an ErrorMessage
-    @Nullable
-    private volatile String error;
+    private volatile @Nullable String error;
 
-    @Nullable
-    private volatile String user;
+    private volatile @Nullable String user;
 
     // lazy loaded to reduce memory when custom attributes are not used
     @GuardedBy("customAttributes")
-    @MonotonicNonNull
-    private volatile SetMultimap<String, String> customAttributes;
+    private volatile @MonotonicNonNull SetMultimap<String, String> customAttributes;
 
     private final TransactionMetricImpl rootMetric;
 
-    @Nullable
-    private final ThreadInfoComponent threadInfoComponent;
-    @Nullable
-    private final GcInfoComponent gcInfoComponent;
+    private final @Nullable ThreadInfoComponent threadInfoComponent;
+    private final @Nullable GcInfoComponent gcInfoComponent;
 
     // root entry for this trace
     private final TraceEntryComponent traceEntryComponent;
 
     // stack trace data constructed from profiling
-    @MonotonicNonNull
-    private volatile Profile profile;
+    private volatile @MonotonicNonNull Profile profile;
     // stack trace data constructed from outlier profiling
-    @MonotonicNonNull
-    private volatile Profile outlierProfile;
+    private volatile @MonotonicNonNull Profile outlierProfile;
 
     private final long threadId;
 
@@ -105,12 +98,9 @@ public class Transaction {
 
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
-    @Nullable
-    private volatile ScheduledRunnable userProfileRunnable;
-    @Nullable
-    private volatile ScheduledRunnable outlierProfileRunnable;
-    @Nullable
-    private volatile ScheduledRunnable immedateTraceStoreRunnable;
+    private volatile @Nullable ScheduledRunnable userProfileRunnable;
+    private volatile @Nullable ScheduledRunnable outlierProfileRunnable;
+    private volatile @Nullable ScheduledRunnable immedateTraceStoreRunnable;
 
     // memory barrier is used to ensure memory visibility of entries and metrics at key points,
     // namely after each entry
@@ -194,8 +184,7 @@ public class Transaction {
         return ((ReadableMessage) messageSupplier.get()).getText();
     }
 
-    @Nullable
-    public String getError() {
+    public @Nullable String getError() {
         // don't prefer the root entry error message since it is likely a more generic error
         // message, e.g. servlet response sendError(500)
         if (error != null) {
@@ -208,8 +197,7 @@ public class Transaction {
         return message.getText();
     }
 
-    @Nullable
-    public String getUser() {
+    public @Nullable String getUser() {
         return user;
     }
 
@@ -235,14 +223,12 @@ public class Transaction {
         return rootMetric;
     }
 
-    @Nullable
-    public TransactionMetricImpl getCurrentTransactionMetric() {
+    public @Nullable TransactionMetricImpl getCurrentTransactionMetric() {
         return rootMetric.getCurrentTransactionMetricHolder().get();
     }
 
     // can be called from a non-transaction thread
-    @Nullable
-    public String getThreadInfoJson() {
+    public @Nullable String getThreadInfoJson() {
         if (threadInfoComponent == null) {
             return null;
         }
@@ -250,8 +236,7 @@ public class Transaction {
     }
 
     // can be called from a non-transaction thread
-    @Nullable
-    public String getGcInfosJson() {
+    public @Nullable String getGcInfosJson() {
         if (gcInfoComponent == null) {
             return null;
         }
@@ -275,13 +260,11 @@ public class Transaction {
         return profile != null;
     }
 
-    @Nullable
-    public Profile getProfile() {
+    public @Nullable Profile getProfile() {
         return profile;
     }
 
-    @Nullable
-    public Profile getOutlierProfile() {
+    public @Nullable Profile getOutlierProfile() {
         return outlierProfile;
     }
 
@@ -289,18 +272,15 @@ public class Transaction {
         return storeThresholdMillisOverride;
     }
 
-    @Nullable
-    public ScheduledRunnable getUserProfileRunnable() {
+    public @Nullable ScheduledRunnable getUserProfileRunnable() {
         return userProfileRunnable;
     }
 
-    @Nullable
-    public ScheduledRunnable getOutlierProfileRunnable() {
+    public @Nullable ScheduledRunnable getOutlierProfileRunnable() {
         return outlierProfileRunnable;
     }
 
-    @Nullable
-    public ScheduledRunnable getImmedateTraceStoreRunnable() {
+    public @Nullable ScheduledRunnable getImmedateTraceStoreRunnable() {
         return immedateTraceStoreRunnable;
     }
 

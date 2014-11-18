@@ -36,8 +36,7 @@ class AggregateBuilder {
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     private final String transactionType;
-    @Nullable
-    private final String transactionName;
+    private final @Nullable String transactionName;
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
     private long totalMicros;
     private long errorCount;
@@ -108,8 +107,7 @@ class AggregateBuilder {
         return sb.toString();
     }
 
-    @Nullable
-    private String getProfileJson() throws IOException {
+    private @Nullable String getProfileJson() throws IOException {
         synchronized (aggregateProfile.getLock()) {
             return ProfileCharSourceCreator.createProfileJson(
                     aggregateProfile.getSyntheticRootNode());

@@ -28,6 +28,7 @@ import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
@@ -42,7 +43,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
-import javax.annotation.concurrent.GuardedBy;
 import org.glowroot.markers.OnlyUsedByTests;
 
 public class DataSource {
@@ -54,8 +54,7 @@ public class DataSource {
             Boolean.getBoolean("glowroot.internal.h2.localServer");
 
     // null means use memDb
-    @Nullable
-    private final File dbFile;
+    private final @Nullable File dbFile;
     private final Thread shutdownHookThread;
     private final Object lock = new Object();
     @GuardedBy("lock")

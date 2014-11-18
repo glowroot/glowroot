@@ -43,11 +43,9 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
-    @Nullable
-    private final ClassLoader loader;
+    private final @Nullable ClassLoader loader;
     private final AnalyzedWorld analyzedWorld;
-    @Nullable
-    private final CodeSource codeSource;
+    private final @Nullable CodeSource codeSource;
 
     private ImmutableList<AdviceMatcher> adviceMatchers = ImmutableList.of();
     private ImmutableList<MixinType> matchedMixinTypes = ImmutableList.of();
@@ -56,8 +54,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     private ImmutableAnalyzedClass./*@MonotonicNonNull*/Builder analyzedClassBuilder;
 
-    @MonotonicNonNull
-    private AnalyzedClass analyzedClass;
+    private @MonotonicNonNull AnalyzedClass analyzedClass;
 
     public AnalyzingClassVisitor(ImmutableList<Advice> advisors,
             ImmutableList<MixinType> mixinTypes, @Nullable ClassLoader loader,
@@ -84,8 +81,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
         }
     }
 
-    @Nullable
-    public AnalyzedClass visitAndSometimesReturnNonInterestingAnalyzedClass(int access,
+    public @Nullable AnalyzedClass visitAndSometimesReturnNonInterestingAnalyzedClass(int access,
             String internalName, @Nullable String superInternalName,
             String/*@Nullable*/[] interfaceInternalNamesNullable) {
 
@@ -142,8 +138,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
     }
 
     @Override
-    @Nullable
-    public MethodVisitor visitMethod(int access, String name, String desc,
+    public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
         visitMethodAndReturnAdvisors(access, name, desc, signature, exceptions);
         return null;

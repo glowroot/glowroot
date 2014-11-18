@@ -62,20 +62,17 @@ public class TransactionMetricImpl implements TransactionMetricExt {
     // synchronized access during metric capture which is important
     //
     // lazy initialize to save memory in common case where this is a leaf metric
-    @MonotonicNonNull
-    private NestedMetricMap nestedMetrics;
+    private @MonotonicNonNull NestedMetricMap nestedMetrics;
 
     // separate list for thread safe access by other threads (e.g. partial trace capture and
     // active trace viewer)
     //
     // lazy initialize to save memory in common case where this is a leaf metric
-    @MonotonicNonNull
-    private volatile List<TransactionMetricImpl> threadSafeNestedMetrics;
+    private volatile @MonotonicNonNull List<TransactionMetricImpl> threadSafeNestedMetrics;
 
     // parent and currentTransactionMetricHolder don't need to be thread safe as they are only
     // accessed by the transaction thread
-    @Nullable
-    private final TransactionMetricImpl parent;
+    private final @Nullable TransactionMetricImpl parent;
     private final CurrentTransactionMetricHolder currentTransactionMetricHolder;
 
     private final Ticker ticker;

@@ -26,8 +26,7 @@ import com.google.common.collect.ImmutableMap;
 
 class HttpSessions {
 
-    @Nullable
-    static ImmutableMap<String, String> getSessionAttributes(Object session,
+    static @Nullable ImmutableMap<String, String> getSessionAttributes(Object session,
             SessionInvoker sessionInvoker) {
         Set<String> capturePaths = ServletPluginProperties.captureSessionAttributePaths();
         if (capturePaths.isEmpty()) {
@@ -68,15 +67,14 @@ class HttpSessions {
         }
         return captureMap.build();
     }
-    @Nullable
-    static String getSessionAttributeTextValue(Object session, String attributePath,
+
+    static @Nullable String getSessionAttributeTextValue(Object session, String attributePath,
             SessionInvoker sessionInvoker) {
         Object value = getSessionAttribute(session, attributePath, sessionInvoker);
         return (value == null) ? null : value.toString();
     }
 
-    @Nullable
-    static Object getSessionAttribute(Object session, String attributePath,
+    static @Nullable Object getSessionAttribute(Object session, String attributePath,
             SessionInvoker sessionInvoker) {
         int index = attributePath.indexOf('.');
         if (index == -1) {

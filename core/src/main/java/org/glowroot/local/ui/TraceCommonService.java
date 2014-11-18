@@ -185,14 +185,12 @@ class TraceCommonService {
                 active.getStartTick(), ticker.read());
     }
 
-    @Nullable
-    private CharSource createOutlierProfile(Transaction active) {
+    private @Nullable CharSource createOutlierProfile(Transaction active) {
         return ProfileCharSourceCreator.createProfileCharSource(
                 active.getOutlierProfile());
     }
 
-    @Nullable
-    private CharSource createProfile(Transaction active) {
+    private @Nullable CharSource createProfile(Transaction active) {
         return ProfileCharSourceCreator.createProfileCharSource(
                 active.getProfile());
     }
@@ -201,12 +199,9 @@ class TraceCommonService {
 
         private final Trace trace;
         private final String traceJson;
-        @Nullable
-        private final CharSource entries;
-        @Nullable
-        private final CharSource profile;
-        @Nullable
-        private final CharSource outlierProfile;
+        private @Nullable final CharSource entries;
+        private @Nullable final CharSource profile;
+        private @Nullable final CharSource outlierProfile;
 
         private TraceExport(Trace trace, String traceJson, @Nullable CharSource entries,
                 @Nullable CharSource profile, @Nullable CharSource outlierProfile) {
@@ -243,8 +238,7 @@ class TraceCommonService {
 
     // this method exists because tests cannot use (sometimes) shaded guava CharSource
     @OnlyUsedByTests
-    @Nullable
-    public String getEntriesString(String traceId) throws SQLException, IOException {
+    public @Nullable String getEntriesString(String traceId) throws SQLException, IOException {
         CharSource entries = getEntries(traceId);
         if (entries == null) {
             return null;
@@ -254,8 +248,7 @@ class TraceCommonService {
 
     // this method exists because tests cannot use (sometimes) shaded guava CharSource
     @OnlyUsedByTests
-    @Nullable
-    public String getProfileString(String traceId) throws SQLException, IOException {
+    public @Nullable String getProfileString(String traceId) throws SQLException, IOException {
         CharSource profile = getProfile(traceId);
         if (profile == null) {
             return null;
@@ -265,8 +258,8 @@ class TraceCommonService {
 
     // this method exists because tests cannot use (sometimes) shaded guava CharSource
     @OnlyUsedByTests
-    @Nullable
-    public String getOutlierProfileString(String traceId) throws SQLException, IOException {
+    public @Nullable String getOutlierProfileString(String traceId) throws SQLException,
+            IOException {
         CharSource profile = getOutlierProfile(traceId);
         if (profile == null) {
             return null;

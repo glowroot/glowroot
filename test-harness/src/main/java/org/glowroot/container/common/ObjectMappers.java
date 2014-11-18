@@ -205,8 +205,8 @@ public class ObjectMappers {
         }
 
         @Override
-        @Nullable
-        public Enum<?> deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+        public @Nullable Enum<?> deserialize(JsonParser jp, DeserializationContext ctxt)
+                throws IOException {
             String text = jp.getText();
             Enum<?> constant = enumMap.get(text);
             if (constant == null) {

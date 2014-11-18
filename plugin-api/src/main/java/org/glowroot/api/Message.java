@@ -80,8 +80,7 @@ public abstract class Message {
 
         private static final Logger logger = LoggerFactory.getLogger(MessageImpl.class);
 
-        @Nullable
-        private final String template;
+        private final @Nullable String template;
         private final @Nullable String[] args;
         private final Map<String, ? extends /*@Nullable*/Object> detail;
 
@@ -141,8 +140,7 @@ public abstract class Message {
                     .toString();
         }
 
-        @PolyNull
-        private static String truncateToMessageCharLimit(@PolyNull String s) {
+        private static @PolyNull String truncateToMessageCharLimit(@PolyNull String s) {
             if (s == null || s.length() <= MESSAGE_CHAR_LIMIT) {
                 return s;
             } else {

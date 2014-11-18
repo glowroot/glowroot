@@ -29,8 +29,7 @@ import org.glowroot.markers.UsedByReflection;
 @UsedByReflection
 public class PluginServicesRegistry {
 
-    @Nullable
-    private static volatile PluginServicesRegistry INSTANCE;
+    private static volatile @Nullable PluginServicesRegistry INSTANCE;
 
     private final LoadingCache<String, PluginServices> pluginServices;
 
@@ -63,8 +62,7 @@ public class PluginServicesRegistry {
     //
     // null return value indicates glowroot hasn't started yet
     @UsedByReflection
-    @Nullable
-    public static PluginServices get(@Nullable String pluginId) {
+    public static @Nullable PluginServices get(@Nullable String pluginId) {
         PluginServicesRegistry instanceLocal = INSTANCE;
         if (instanceLocal == null) {
             return null;

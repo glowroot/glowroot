@@ -30,8 +30,7 @@ class StatementMirror {
     //
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is adding batches into the statement and executing it
-    @Nullable
-    private List<String> batchedSql;
+    private @Nullable List<String> batchedSql;
 
     // the lastRecordCountObject is stored so that its numRows field can be incremented inside the
     // advice for ResultSet.next()
@@ -46,8 +45,7 @@ class StatementMirror {
     //
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is adding batches into the statement and executing it
-    @Nullable
-    private RecordCountObject lastRecordCountObject;
+    private @Nullable RecordCountObject lastRecordCountObject;
 
     void addBatch(String sql) {
         // synchronization isn't an issue here as this method is called only by

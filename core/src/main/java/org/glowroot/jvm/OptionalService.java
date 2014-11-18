@@ -38,8 +38,7 @@ public abstract class OptionalService<T> {
 
     public abstract Availability getAvailability();
 
-    @Nullable
-    public abstract T getService();
+    public abstract @Nullable T getService();
 
     @Value.Immutable
     @Json.Marshaled
@@ -54,8 +53,7 @@ public abstract class OptionalService<T> {
     private static class NonLazyOptionalService<T> extends OptionalService<T> {
 
         private final Availability availability;
-        @Nullable
-        private final T service;
+        private final @Nullable T service;
 
         public NonLazyOptionalService(Availability availability, @Nullable T service) {
             this.availability = availability;
@@ -68,8 +66,7 @@ public abstract class OptionalService<T> {
         }
 
         @Override
-        @Nullable
-        public T getService() {
+        public @Nullable T getService() {
             return service;
         }
     }
@@ -88,8 +85,7 @@ public abstract class OptionalService<T> {
         }
 
         @Override
-        @Nullable
-        public T getService() {
+        public @Nullable T getService() {
             return supplier.get().getService();
         }
     }

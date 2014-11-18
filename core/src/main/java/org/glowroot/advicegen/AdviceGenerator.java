@@ -93,11 +93,9 @@ public class AdviceGenerator {
     private static final AtomicInteger counter = new AtomicInteger();
 
     private final CapturePoint capturePoint;
-    @Nullable
-    private final String pluginId;
+    private final @Nullable String pluginId;
     private final String adviceInternalName;
-    @Nullable
-    private final String methodMetaInternalName;
+    private final @Nullable String methodMetaInternalName;
 
     public static ImmutableMap<Advice, LazyDefinedClass> createAdvisors(
             List<CapturePoint> capturePoints, @Nullable String pluginId) {

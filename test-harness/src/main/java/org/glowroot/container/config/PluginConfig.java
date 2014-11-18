@@ -52,8 +52,7 @@ public class PluginConfig {
         return properties.containsKey(name);
     }
 
-    @Nullable
-    public Object getProperty(String name) {
+    public @Nullable Object getProperty(String name) {
         return properties.get(name);
     }
 

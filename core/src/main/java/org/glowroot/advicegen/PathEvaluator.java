@@ -56,8 +56,7 @@ public class PathEvaluator {
         }
     }
 
-    @Nullable
-    public Object evaluateOnBase(Object base) throws IllegalArgumentException,
+    public @Nullable Object evaluateOnBase(Object base) throws IllegalArgumentException,
             IllegalAccessException, InvocationTargetException {
         Object curr = base;
         for (Accessor accessor : accessors) {

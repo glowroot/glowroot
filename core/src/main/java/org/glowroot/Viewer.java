@@ -29,8 +29,7 @@ class Viewer {
         MainEntryPoint.runViewer(getGlowrootJarFile());
     }
 
-    @Nullable
-    public static File getGlowrootJarFile() throws URISyntaxException {
+    public static @Nullable File getGlowrootJarFile() throws URISyntaxException {
         CodeSource codeSource = Viewer.class.getProtectionDomain().getCodeSource();
         if (codeSource == null) {
             return null;

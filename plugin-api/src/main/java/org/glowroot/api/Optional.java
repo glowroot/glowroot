@@ -54,8 +54,7 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
      * @param defaultValue
      * @return
      */
-    @Nullable
-    public abstract T or(@Nullable T defaultValue);
+    public abstract @Nullable T or(@Nullable T defaultValue);
 
     /**
      * Returns the contained instance if it is present; {@code null} otherwise. If the instance is
@@ -63,8 +62,7 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
      * 
      * @return
      */
-    @Nullable
-    public abstract T orNull();
+    public abstract @Nullable T orNull();
 
     /**
      * Returns an {@code Optional} instance with no contained reference.
@@ -128,13 +126,11 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
             return false;
         }
         @Override
-        @Nullable
-        public Object or(@Nullable Object defaultValue) {
+        public @Nullable Object or(@Nullable Object defaultValue) {
             return defaultValue;
         }
         @Override
-        @Nullable
-        public Object orNull() {
+        public @Nullable Object orNull() {
             return null;
         }
     }
@@ -169,8 +165,7 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
             return reference;
         }
         @Override
-        @Nullable
-        public T orNull() {
+        public @Nullable T orNull() {
             return reference;
         }
     }

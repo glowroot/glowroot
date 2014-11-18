@@ -55,12 +55,10 @@ public class LocalUiModule {
     private static final Logger logger = LoggerFactory.getLogger(LocalUiModule.class);
 
     // this is used for the demo site so there can be a standby instance on a different port
-    @Nullable
-    private static final Integer port = Integer.getInteger("glowroot.internal.ui.port");
+    private static final @Nullable Integer port = Integer.getInteger("glowroot.internal.ui.port");
 
     // httpServer is only null if it could not even bind to port 0 (any available port)
-    @Nullable
-    private final HttpServer httpServer;
+    private final @Nullable HttpServer httpServer;
 
     // only stored/exposed for tests
     private final AggregateCommonService aggregateCommonService;
@@ -153,6 +151,7 @@ public class LocalUiModule {
             configJsonService.setHttpServer(httpServer);
         }
     }
+
     public int getPort() {
         if (httpServer == null) {
             return -1;
@@ -196,10 +195,10 @@ public class LocalUiModule {
         }
     }
 
-    @Nullable
-    private static HttpServer buildHttpServer(String bindAddress, int port, int numWorkerThreads,
-            HttpSessionManager httpSessionManager, IndexHtmlHttpService indexHtmlHttpService,
-            LayoutJsonService layoutJsonService, TraceDetailHttpService traceDetailHttpService,
+    private static @Nullable HttpServer buildHttpServer(String bindAddress, int port,
+            int numWorkerThreads, HttpSessionManager httpSessionManager,
+            IndexHtmlHttpService indexHtmlHttpService, LayoutJsonService layoutJsonService,
+            TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService, List<Object> jsonServices) {
 
         String resourceBase = "org/glowroot/local/ui/app-dist";

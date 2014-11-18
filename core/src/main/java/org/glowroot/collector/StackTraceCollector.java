@@ -46,8 +46,7 @@ class StackTraceCollector implements Runnable {
 
     private volatile boolean currentEnabled;
     private volatile int currentIntervalMillis;
-    @Nullable
-    private volatile Future<?> currentFuture;
+    private volatile @Nullable Future<?> currentFuture;
 
     public static StackTraceCollector create(TransactionRegistry transactionRegistry,
             ConfigService configService, ScheduledExecutorService scheduledExecutor) {

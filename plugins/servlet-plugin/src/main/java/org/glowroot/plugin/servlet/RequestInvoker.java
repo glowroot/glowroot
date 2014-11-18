@@ -31,24 +31,15 @@ public class RequestInvoker {
 
     private static final Logger logger = LoggerFactory.getLogger(RequestInvoker.class);
 
-    @Nullable
-    private final Method getSessionMethod;
-    @Nullable
-    private final Method getMethodMethod;
-    @Nullable
-    private final Method getRequestURIMethod;
-    @Nullable
-    private final Method getQueryStringMethod;
-    @Nullable
-    private final Method getHeaderMethod;
-    @Nullable
-    private final Method getHeadersMethod;
-    @Nullable
-    private final Method getHeaderNamesMethod;
-    @Nullable
-    private final Method getUserPrincipalMethod;
-    @Nullable
-    private final Method getParameterMapMethod;
+    private final @Nullable Method getSessionMethod;
+    private final @Nullable Method getMethodMethod;
+    private final @Nullable Method getRequestURIMethod;
+    private final @Nullable Method getQueryStringMethod;
+    private final @Nullable Method getHeaderMethod;
+    private final @Nullable Method getHeadersMethod;
+    private final @Nullable Method getHeaderNamesMethod;
+    private final @Nullable Method getUserPrincipalMethod;
+    private final @Nullable Method getParameterMapMethod;
 
     private final PrincipalInvoker principalInvoker;
 
@@ -76,8 +67,7 @@ public class RequestInvoker {
         principalInvoker = new PrincipalInvoker(clazz);
     }
 
-    @Nullable
-    public Object getSession(Object request) {
+    public @Nullable Object getSession(Object request) {
         if (getSessionMethod == null) {
             return null;
         }
@@ -124,8 +114,7 @@ public class RequestInvoker {
 
     // don't convert null to empty, since null means no query string, while empty means
     // url ended with ? but nothing after that
-    @Nullable
-    public String getQueryString(Object request) {
+    public @Nullable String getQueryString(Object request) {
         if (getQueryStringMethod == null) {
             return null;
         }
@@ -137,8 +126,7 @@ public class RequestInvoker {
         }
     }
 
-    @Nullable
-    public String getHeader(Object request, String name) {
+    public @Nullable String getHeader(Object request, String name) {
         if (getHeaderMethod == null) {
             return null;
         }
@@ -186,8 +174,7 @@ public class RequestInvoker {
         }
     }
 
-    @Nullable
-    public String getUserPrincipalName(Object request) {
+    public @Nullable String getUserPrincipalName(Object request) {
         if (getUserPrincipalMethod == null) {
             return null;
         }
@@ -222,8 +209,7 @@ public class RequestInvoker {
         }
     }
 
-    @Nullable
-    private static Method getMethod(@Nullable Class<?> clazz, String methodName,
+    private static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName,
             Class<?>... parameterTypes) {
         if (clazz == null) {
             return null;

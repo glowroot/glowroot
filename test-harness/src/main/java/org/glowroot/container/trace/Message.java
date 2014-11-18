@@ -28,8 +28,7 @@ import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
 public class Message {
 
-    @Nullable
-    private final String text;
+    private final @Nullable String text;
     // can't use ImmutableMap since detail can have null values
     private final Map<String, /*@Nullable*/Object> detail;
 
@@ -38,8 +37,7 @@ public class Message {
         this.detail = detail;
     }
 
-    @Nullable
-    public String getText() {
+    public @Nullable String getText() {
         return text;
     }
 

@@ -29,16 +29,12 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class MBeanGauge {
 
-    @Nullable
-    private String name;
-    @Nullable
-    private String mbeanObjectName;
-    @Nullable
-    private List<String> mbeanAttributeNames;
+    private @Nullable String name;
+    private @Nullable String mbeanObjectName;
+    private @Nullable List<String> mbeanAttributeNames;
 
     // null for new MBeanGauge records that haven't been sent to server yet
-    @Nullable
-    private final String version;
+    private @Nullable final String version;
 
     // used to create new MBeanGauge records that haven't been sent to server yet
     public MBeanGauge() {
@@ -49,8 +45,7 @@ public class MBeanGauge {
         this.version = version;
     }
 
-    @Nullable
-    public String getName() {
+    public @Nullable String getName() {
         return name;
     }
 
@@ -58,8 +53,7 @@ public class MBeanGauge {
         this.name = name;
     }
 
-    @Nullable
-    public String getMBeanObjectName() {
+    public @Nullable String getMBeanObjectName() {
         return mbeanObjectName;
     }
 
@@ -67,8 +61,7 @@ public class MBeanGauge {
         this.mbeanObjectName = mbeanObjectName;
     }
 
-    @Nullable
-    public List<String> getMBeanAttributeNames() {
+    public @Nullable List<String> getMBeanAttributeNames() {
         return mbeanAttributeNames;
     }
 
@@ -76,8 +69,7 @@ public class MBeanGauge {
         this.mbeanAttributeNames = mbeanAttributeNames;
     }
 
-    @Nullable
-    public String getVersion() {
+    public @Nullable String getVersion() {
         return version;
     }
 

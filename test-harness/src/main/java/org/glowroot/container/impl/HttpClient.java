@@ -48,8 +48,7 @@ public class HttpClient {
 
     private final AsyncHttpClient asyncHttpClient;
     private volatile int port;
-    @Nullable
-    private volatile Cookie sessionIdCookie;
+    private volatile @Nullable Cookie sessionIdCookie;
 
     public HttpClient(int uiPort) {
         this.port = uiPort;

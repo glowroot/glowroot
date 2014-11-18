@@ -35,10 +35,8 @@ import static org.glowroot.common.ObjectMappers.nullToEmpty;
 class AggregateProfileNode {
 
     // null for synthetic root only
-    @Nullable
-    private final String stackTraceElement;
-    @Nullable
-    private final String leafThreadState;
+    private final @Nullable String stackTraceElement;
+    private final @Nullable String leafThreadState;
     private int sampleCount;
     private List<String> metricNames;
     private final List<AggregateProfileNode> childNodes;
@@ -82,13 +80,11 @@ class AggregateProfileNode {
     }
 
     // null for synthetic root only
-    @Nullable
-    public String getStackTraceElement() {
+    public @Nullable String getStackTraceElement() {
         return stackTraceElement;
     }
 
-    @Nullable
-    public String getLeafThreadState() {
+    public @Nullable String getLeafThreadState() {
         return leafThreadState;
     }
 

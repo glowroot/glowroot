@@ -57,8 +57,7 @@ public class LazyPlatformMBeanServer {
         }
     }
 
-    @MonotonicNonNull
-    private volatile MBeanServer mbeanServer;
+    private volatile @MonotonicNonNull MBeanServer mbeanServer;
 
     public void getObjectInstance(ObjectName name) throws InstanceNotFoundException,
             InterruptedException {

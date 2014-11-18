@@ -60,24 +60,21 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final TransactionCollector transactionCollector;
     private final ConfigService configService;
     private final MetricNameCache metricNameCache;
-    @Nullable
-    private final ThreadAllocatedBytes threadAllocatedBytes;
+    private final @Nullable ThreadAllocatedBytes threadAllocatedBytes;
     private final UserProfileScheduler userProfileScheduler;
     private final Clock clock;
     private final Ticker ticker;
 
     // pluginId is either the id of a registered plugin or it is null
     // (see validation in constructor)
-    @Nullable
-    private final String pluginId;
+    private final @Nullable String pluginId;
 
     // cache for fast read access
     private volatile boolean enabled;
     private volatile boolean captureThreadInfo;
     private volatile boolean captureGcInfo;
     private volatile int maxTraceEntriesPerTransaction;
-    @MonotonicNonNull
-    private volatile PluginConfig pluginConfig;
+    private volatile @MonotonicNonNull PluginConfig pluginConfig;
 
     static PluginServicesImpl create(TransactionRegistry transactionRegistry,
             TransactionCollector transactionCollector, ConfigService configService,
@@ -158,8 +155,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    @Nullable
-    public Double getDoubleProperty(String name) {
+    public @Nullable Double getDoubleProperty(String name) {
         if (name == null) {
             logger.error("getDoubleProperty(): argument 'name' must be non-null");
             return null;
@@ -568,8 +564,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             return NopCompletedEntry.INSTANCE;
         }
         @Override
-        @Nullable
-        public MessageSupplier getMessageSupplier() {
+        public @Nullable MessageSupplier getMessageSupplier() {
             return null;
         }
     }

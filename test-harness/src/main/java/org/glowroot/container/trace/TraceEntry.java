@@ -35,12 +35,9 @@ public class TraceEntry {
     private final boolean active;
     private final int nestingLevel;
     // message is null for entries created via PluginServices.addErrorEntry()
-    @Nullable
-    private final Message message;
-    @Nullable
-    private final ErrorMessage error;
-    @Nullable
-    private final ImmutableList<String> stackTrace;
+    private final @Nullable Message message;
+    private final @Nullable ErrorMessage error;
+    private final @Nullable ImmutableList<String> stackTrace;
     private final boolean limitExceededMarker;
     private final boolean limitExtendedMarker;
 
@@ -107,18 +104,15 @@ public class TraceEntry {
         return nestingLevel;
     }
 
-    @Nullable
-    public Message getMessage() {
+    public @Nullable Message getMessage() {
         return message;
     }
 
-    @Nullable
-    public ErrorMessage getError() {
+    public @Nullable ErrorMessage getError() {
         return error;
     }
 
-    @Nullable
-    public ImmutableList<String> getStackTrace() {
+    public @Nullable ImmutableList<String> getStackTrace() {
         return stackTrace;
     }
 

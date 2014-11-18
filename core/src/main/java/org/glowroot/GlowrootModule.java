@@ -330,8 +330,7 @@ public class GlowrootModule {
 
     private static class TransactionCollectorProxy implements TransactionCollector {
 
-        @MonotonicNonNull
-        private volatile TransactionCollector instance;
+        private volatile @MonotonicNonNull TransactionCollector instance;
 
         @Override
         public void onCompletedTransaction(Transaction transaction) {

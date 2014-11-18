@@ -298,8 +298,7 @@ class AggregateJsonService {
         return metricNames;
     }
 
-    @Nullable
-    private Aggregate getNextAggregateIfMatching(PeekingIterator<Aggregate> aggregates,
+    private @Nullable Aggregate getNextAggregateIfMatching(PeekingIterator<Aggregate> aggregates,
             long captureTime) {
         if (!aggregates.hasNext()) {
             return null;

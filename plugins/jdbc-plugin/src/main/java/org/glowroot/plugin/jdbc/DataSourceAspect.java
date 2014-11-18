@@ -125,8 +125,7 @@ public class DataSourceAspect {
 
     private static class GetConnectionMessageSupplier extends MessageSupplier {
 
-        @MonotonicNonNull
-        private volatile String autoCommit;
+        private volatile @MonotonicNonNull String autoCommit;
 
         @Override
         public Message get() {

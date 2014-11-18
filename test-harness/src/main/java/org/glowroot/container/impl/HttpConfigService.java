@@ -133,8 +133,7 @@ class HttpConfigService implements ConfigService {
     }
 
     @Override
-    @Nullable
-    public PluginConfig getPluginConfig(String pluginId) throws Exception {
+    public @Nullable PluginConfig getPluginConfig(String pluginId) throws Exception {
         return getConfig("/backend/config/plugin/" + pluginId, PluginConfig.class);
     }
 

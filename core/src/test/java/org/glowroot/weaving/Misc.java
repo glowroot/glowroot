@@ -21,8 +21,7 @@ public interface Misc {
 
     public void execute1();
 
-    @Nullable
-    public CharSequence executeWithReturn();
+    public @Nullable CharSequence executeWithReturn();
 
     public void executeWithArgs(String one, int two);
 }

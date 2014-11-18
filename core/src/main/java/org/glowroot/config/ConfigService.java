@@ -83,8 +83,7 @@ public class ConfigService {
         return config.advancedConfig();
     }
 
-    @Nullable
-    public PluginConfig getPluginConfig(String pluginId) {
+    public @Nullable PluginConfig getPluginConfig(String pluginId) {
         for (PluginConfig pluginConfig : config.pluginConfigs()) {
             if (pluginId.equals(pluginConfig.id())) {
                 return pluginConfig;

@@ -36,8 +36,7 @@ class PreparedStatementMirror extends StatementMirror {
     private boolean parametersCopied;
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is setting parameter values into the prepared statement and executing it
-    @Nullable
-    private Collection<BindParameterList> batchedParameters;
+    private @Nullable Collection<BindParameterList> batchedParameters;
 
     public PreparedStatementMirror(String sql) {
         this.sql = sql;
@@ -63,8 +62,7 @@ class PreparedStatementMirror extends StatementMirror {
         }
     }
 
-    @Nullable
-    public BindParameterList getParametersCopy() {
+    public @Nullable BindParameterList getParametersCopy() {
         parametersCopied = true;
         return parameters;
     }

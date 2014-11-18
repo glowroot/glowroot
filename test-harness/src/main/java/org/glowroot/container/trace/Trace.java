@@ -43,14 +43,11 @@ public class Trace {
     private final String transactionType;
     private final String transactionName;
     private final String headline;
-    @Nullable
-    private final String error;
-    @Nullable
-    private final String user;
+    private final @Nullable String error;
+    private final @Nullable String user;
     private final ImmutableSetMultimap<String, String> customAttributes;
     private final TraceMetric rootMetric;
-    @Nullable
-    private final TraceThreadInfo threadInfo;
+    private final @Nullable TraceThreadInfo threadInfo;
     private final ImmutableList<TraceGcInfo> gcInfos;
     private final Existence entriesExistence;
     private final Existence profileExistence;
@@ -119,13 +116,11 @@ public class Trace {
         return headline;
     }
 
-    @Nullable
-    public String getError() {
+    public @Nullable String getError() {
         return error;
     }
 
-    @Nullable
-    public String getUser() {
+    public @Nullable String getUser() {
         return user;
     }
 
@@ -137,8 +132,7 @@ public class Trace {
         return rootMetric;
     }
 
-    @Nullable
-    public TraceThreadInfo getThreadInfo() {
+    public @Nullable TraceThreadInfo getThreadInfo() {
         return threadInfo;
     }
 

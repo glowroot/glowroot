@@ -122,8 +122,7 @@ public abstract class PluginConfig {
         return value == null ? false : value;
     }
 
-    @Nullable
-    public Double getDoubleProperty(String name) {
+    public @Nullable Double getDoubleProperty(String name) {
         Optional<Double> value = doubleProperties().get(name);
         return value == null ? null : value.orNull();
     }

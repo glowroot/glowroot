@@ -102,8 +102,7 @@ class PluginCache {
         return ImmutableList.copyOf(pluginDescriptorFiles);
     }
 
-    @Nullable
-    private static File getPluginsDir(File glowrootJarFile) throws IOException,
+    private static @Nullable File getPluginsDir(File glowrootJarFile) throws IOException,
             URISyntaxException {
         File pluginsDir = new File(glowrootJarFile.getParentFile(), "plugins");
         if (!pluginsDir.exists()) {

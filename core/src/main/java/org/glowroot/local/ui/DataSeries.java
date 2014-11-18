@@ -26,8 +26,7 @@ class DataSeries {
 
     // null is used for 'Other' data series
     @JsonProperty
-    @Nullable
-    private final String name;
+    private final @Nullable String name;
     @JsonProperty
     private final List<Number/*@Nullable*/[]> data = Lists.newArrayList();
 

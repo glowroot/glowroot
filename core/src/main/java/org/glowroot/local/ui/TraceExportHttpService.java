@@ -61,9 +61,8 @@ class TraceExportHttpService implements HttpService {
     }
 
     @Override
-    @Nullable
-    public HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException,
-            SQLException {
+    public @Nullable HttpResponse handleRequest(HttpRequest request, Channel channel)
+            throws IOException, SQLException {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);

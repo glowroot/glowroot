@@ -25,8 +25,7 @@ import org.glowroot.markers.UsedByGeneratedBytecode;
 @UsedByGeneratedBytecode
 public class NonVoidReturn implements OptionalReturn {
 
-    @Nullable
-    private final Object returnValue;
+    private final @Nullable Object returnValue;
 
     public static OptionalReturn create(@Nullable Object returnValue) {
         return new NonVoidReturn(returnValue);
@@ -37,8 +36,7 @@ public class NonVoidReturn implements OptionalReturn {
     }
 
     @Override
-    @Nullable
-    public Object getValue() {
+    public @Nullable Object getValue() {
         return returnValue;
     }
 

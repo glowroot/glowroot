@@ -40,8 +40,7 @@ public class ProfileCharSourceCreator {
 
     private ProfileCharSourceCreator() {}
 
-    @Nullable
-    public static CharSource createProfileCharSource(@Nullable Profile profile) {
+    public static @Nullable CharSource createProfileCharSource(@Nullable Profile profile) {
         if (profile == null) {
             return null;
         }
@@ -54,8 +53,7 @@ public class ProfileCharSourceCreator {
         }
     }
 
-    @Nullable
-    static String createProfileJson(ProfileNode syntheticRootNode) {
+    static @Nullable String createProfileJson(ProfileNode syntheticRootNode) {
         ProfileNode rootNode;
         if (syntheticRootNode.getChildNodes().isEmpty()) {
             return null;

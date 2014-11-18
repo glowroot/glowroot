@@ -82,8 +82,7 @@ public class BasicMisc extends SuperBasicMisc implements Misc, Misc2, Misc3 {
         public void execute1() {}
 
         @Override
-        @Nullable
-        public String executeWithReturn() {
+        public @Nullable String executeWithReturn() {
             return null;
         }
 

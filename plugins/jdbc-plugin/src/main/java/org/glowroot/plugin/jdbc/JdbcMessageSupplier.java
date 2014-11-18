@@ -25,20 +25,16 @@ import org.glowroot.api.MessageSupplier;
 
 class JdbcMessageSupplier extends MessageSupplier {
 
-    @Nullable
-    private final String sql;
+    private final @Nullable String sql;
 
     // parameters and batchedParameters cannot both be non-null
 
     // cannot use ImmutableList for parameters since it can contain null elements
-    @Nullable
-    private final BindParameterList parameters;
-    @Nullable
-    private final ImmutableList<BindParameterList> batchedParameters;
+    private final @Nullable BindParameterList parameters;
+    private final @Nullable ImmutableList<BindParameterList> batchedParameters;
 
     // this is only used for batching of non-PreparedStatements
-    @Nullable
-    private final ImmutableList<String> batchedSqls;
+    private final @Nullable ImmutableList<String> batchedSqls;
 
     private final RecordCountObject recordCountObject = new RecordCountObject();
 

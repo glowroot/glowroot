@@ -47,8 +47,7 @@ public class MainEntryPoint {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     // this static field is only present for tests
-    @MonotonicNonNull
-    private static volatile GlowrootModule glowrootModule;
+    private static volatile @MonotonicNonNull GlowrootModule glowrootModule;
 
     private MainEntryPoint() {}
 

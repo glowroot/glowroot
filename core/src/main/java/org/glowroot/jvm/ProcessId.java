@@ -21,8 +21,7 @@ import javax.annotation.Nullable;
 
 public class ProcessId {
 
-    @Nullable
-    private static final String pid;
+    private static final @Nullable String pid;
 
     static {
         pid = initPid();
@@ -30,13 +29,11 @@ public class ProcessId {
 
     private ProcessId() {}
 
-    @Nullable
-    public static String getPid() {
+    public static @Nullable String getPid() {
         return pid;
     }
 
-    @Nullable
-    private static String initPid() {
+    private static @Nullable String initPid() {
         String runtimeName = ManagementFactory.getRuntimeMXBean().getName();
         int index = runtimeName.indexOf('@');
         if (index > 0) {

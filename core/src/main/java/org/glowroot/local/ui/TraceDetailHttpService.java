@@ -48,8 +48,8 @@ class TraceDetailHttpService implements HttpService {
     // TODO test this can still return "{expired: true}" if user viewing trace, and it expires
     // before they expand detail
     @Override
-    @Nullable
-    public HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
+    public @Nullable HttpResponse handleRequest(HttpRequest request, Channel channel)
+            throws IOException {
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();
         String traceComponent = path.substring(path.lastIndexOf('/') + 1);

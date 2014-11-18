@@ -107,8 +107,7 @@ public class SpyingLogbackFilter extends Filter<ILoggingEvent> {
         return counts;
     }
 
-    @Nullable
-    private static SpyingLogbackFilter getSpyingLogbackFilter() {
+    private static @Nullable SpyingLogbackFilter getSpyingLogbackFilter() {
         Appender<ILoggingEvent> consoleAppender = getConsoleAppender();
         return getSpyingLogbackFilter(consoleAppender);
     }
@@ -125,8 +124,8 @@ public class SpyingLogbackFilter extends Filter<ILoggingEvent> {
         throw new IllegalStateException("No console appender found");
     }
 
-    @Nullable
-    private static SpyingLogbackFilter getSpyingLogbackFilter(Appender<ILoggingEvent> appender) {
+    private static @Nullable SpyingLogbackFilter getSpyingLogbackFilter(
+            Appender<ILoggingEvent> appender) {
         for (Filter<ILoggingEvent> filter : appender.getCopyOfAttachedFiltersList()) {
             if (filter instanceof SpyingLogbackFilter) {
                 return (SpyingLogbackFilter) filter;

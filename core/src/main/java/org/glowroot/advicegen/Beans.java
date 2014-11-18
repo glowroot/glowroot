@@ -69,13 +69,11 @@ public class Beans {
 
     private Beans() {}
 
-    @Nullable
-    public static Object value(@Nullable Object obj, String[] path) {
+    public static @Nullable Object value(@Nullable Object obj, String[] path) {
         return value(obj, path, 0);
     }
 
-    @Nullable
-    public static Object value(@Nullable Object obj, String[] path, int currIndex) {
+    public static @Nullable Object value(@Nullable Object obj, String[] path, int currIndex) {
         if (obj == null) {
             return null;
         }
@@ -123,8 +121,7 @@ public class Beans {
         return accessor;
     }
 
-    @Nullable
-    public static Accessor findAccessor(Class<?> clazz, String name) {
+    public static @Nullable Accessor findAccessor(Class<?> clazz, String name) {
         if (clazz.getComponentType() != null && name.equals("length")) {
             return Accessor.arrayLength();
         }

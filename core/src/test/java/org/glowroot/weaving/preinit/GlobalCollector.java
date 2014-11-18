@@ -194,8 +194,7 @@ public class GlobalCollector {
         return Optional.of(classCollector);
     }
 
-    @Nullable
-    private ClassCollector createClassCollector(String internalName) {
+    private @Nullable ClassCollector createClassCollector(String internalName) {
         if (ClassLoader.getSystemResource(internalName + ".class") == null) {
             // no need to log error for H2 optional geometry support
             if (!internalName.startsWith("com/vividsolutions/jts/")) {

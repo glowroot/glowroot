@@ -28,8 +28,7 @@ import static org.objectweb.asm.Opcodes.ASM5;
 class MyRemappingClassAdapter extends ClassVisitor {
 
     private final ClassCollector typeCollector;
-    @Nullable
-    private String internalName;
+    private @Nullable String internalName;
 
     MyRemappingClassAdapter(ClassCollector remapper) {
         super(ASM5);

@@ -26,13 +26,11 @@ public class ClassPath {
 
     private ClassPath() {}
 
-    @Nullable
-    public static File getGlowrootCoreJarFile() {
+    public static @Nullable File getGlowrootCoreJarFile() {
         return getJarFile("glowroot-core-[0-9.]+(-SNAPSHOT)?.jar");
     }
 
-    @Nullable
-    private static File getJarFile(String pattern) {
+    private static @Nullable File getJarFile(String pattern) {
         String classpath = StandardSystemProperty.JAVA_CLASS_PATH.value();
         if (classpath == null) {
             return null;

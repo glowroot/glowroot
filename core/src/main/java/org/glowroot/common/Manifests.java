@@ -33,8 +33,7 @@ public class Manifests {
 
     private Manifests() {}
 
-    @Nullable
-    public static Manifest getManifest(Class<?> clazz) throws IOException {
+    public static @Nullable Manifest getManifest(Class<?> clazz) throws IOException {
         URL classURL = clazz.getResource(clazz.getSimpleName() + ".class");
         if (classURL == null) {
             logger.warn("url for class is unexpectedly null: {}", clazz);

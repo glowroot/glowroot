@@ -53,8 +53,7 @@ class LayoutJsonService {
     private final long fixedAggregateIntervalSeconds;
     private final long fixedGaugeIntervalSeconds;
 
-    @Nullable
-    private volatile Layout layout;
+    private volatile @Nullable Layout layout;
 
     LayoutJsonService(String version, ConfigService configService,
             PluginDescriptorCache pluginDescriptorCache, OptionalService<HeapDumps> heapDumps,

@@ -33,8 +33,7 @@ public class ExceptionInfo {
     private final String display;
     private final ImmutableList<String> stackTrace;
     private final int framesInCommonWithCaused;
-    @Nullable
-    private final ExceptionInfo cause;
+    private final @Nullable ExceptionInfo cause;
 
     private ExceptionInfo(String display, List<String> stackTrace,
             int framesInCommonWithCaused, @Nullable ExceptionInfo cause) {
@@ -56,8 +55,7 @@ public class ExceptionInfo {
         return framesInCommonWithCaused;
     }
 
-    @Nullable
-    public ExceptionInfo getCause() {
+    public @Nullable ExceptionInfo getCause() {
         return cause;
     }
 

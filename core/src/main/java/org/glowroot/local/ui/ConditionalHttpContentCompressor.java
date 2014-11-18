@@ -28,8 +28,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 class ConditionalHttpContentCompressor extends HttpContentCompressor {
 
     @Override
-    @Nullable
-    protected EncoderEmbedder<ChannelBuffer> newContentEncoder(HttpMessage msg,
+    protected @Nullable EncoderEmbedder<ChannelBuffer> newContentEncoder(HttpMessage msg,
             String acceptEncoding) throws Exception {
         String contentType = msg.headers().get(CONTENT_TYPE);
         if (contentType != null && contentType.equals(MediaType.ZIP.toString())) {

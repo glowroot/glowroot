@@ -34,46 +34,31 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class CapturePoint {
 
-    @Nullable
-    private String className;
-    @Nullable
-    private String methodName;
+    private @Nullable String className;
+    private @Nullable String methodName;
     private ImmutableList<String> methodParameterTypes;
-    @Nullable
-    private String methodReturnType;
+    private @Nullable String methodReturnType;
     private ImmutableList<MethodModifier> methodModifiers;
-    @Nullable
-    private CaptureKind captureKind;
+    private @Nullable CaptureKind captureKind;
 
-    @Nullable
-    private String metricName;
+    private @Nullable String metricName;
 
-    @Nullable
-    private String traceEntryTemplate;
-    @Nullable
-    private Long traceEntryStackThresholdMillis;
+    private @Nullable String traceEntryTemplate;
+    private @Nullable Long traceEntryStackThresholdMillis;
     private boolean traceEntryCaptureSelfNested;
 
-    @Nullable
-    private String transactionType;
-    @Nullable
-    private String transactionNameTemplate;
-    @Nullable
-    private String transactionUserTemplate;
-    @Nullable
-    private Map<String, String> transactionCustomAttributeTemplates;
+    private @Nullable String transactionType;
+    private @Nullable String transactionNameTemplate;
+    private @Nullable String transactionUserTemplate;
+    private @Nullable Map<String, String> transactionCustomAttributeTemplates;
 
-    @Nullable
-    private Long traceStoreThresholdMillis;
+    private @Nullable Long traceStoreThresholdMillis;
 
-    @Nullable
-    private String enabledProperty;
-    @Nullable
-    private String traceEntryEnabledProperty;
+    private @Nullable String enabledProperty;
+    private @Nullable String traceEntryEnabledProperty;
 
     // null for new CapturePoint records that haven't been sent to server yet
-    @Nullable
-    private final String version;
+    private @Nullable final String version;
 
     // used to create new CapturePoint records that haven't been sent to server yet
     public CapturePoint() {
@@ -90,8 +75,7 @@ public class CapturePoint {
         this.version = version;
     }
 
-    @Nullable
-    public String getClassName() {
+    public @Nullable String getClassName() {
         return className;
     }
 
@@ -99,8 +83,7 @@ public class CapturePoint {
         this.className = className;
     }
 
-    @Nullable
-    public String getMethodName() {
+    public @Nullable String getMethodName() {
         return methodName;
     }
 
@@ -116,8 +99,7 @@ public class CapturePoint {
         this.methodParameterTypes = ImmutableList.copyOf(methodParameterTypes);
     }
 
-    @Nullable
-    public String getMethodReturnType() {
+    public @Nullable String getMethodReturnType() {
         return methodReturnType;
     }
 
@@ -133,8 +115,7 @@ public class CapturePoint {
         this.methodModifiers = ImmutableList.copyOf(methodModifiers);
     }
 
-    @Nullable
-    public CaptureKind getCaptureKind() {
+    public @Nullable CaptureKind getCaptureKind() {
         return captureKind;
     }
 
@@ -142,8 +123,7 @@ public class CapturePoint {
         this.captureKind = captureKind;
     }
 
-    @Nullable
-    public String getMetricName() {
+    public @Nullable String getMetricName() {
         return metricName;
     }
 
@@ -151,8 +131,7 @@ public class CapturePoint {
         this.metricName = metricName;
     }
 
-    @Nullable
-    public String getTraceEntryTemplate() {
+    public @Nullable String getTraceEntryTemplate() {
         return traceEntryTemplate;
     }
 
@@ -160,8 +139,7 @@ public class CapturePoint {
         this.traceEntryTemplate = traceEntryTemplate;
     }
 
-    @Nullable
-    public Long getTraceEntryStackThresholdMillis() {
+    public @Nullable Long getTraceEntryStackThresholdMillis() {
         return traceEntryStackThresholdMillis;
     }
 
@@ -177,8 +155,7 @@ public class CapturePoint {
         this.traceEntryCaptureSelfNested = traceEntryCaptureSelfNested;
     }
 
-    @Nullable
-    public String getTransactionType() {
+    public @Nullable String getTransactionType() {
         return transactionType;
     }
 
@@ -186,8 +163,7 @@ public class CapturePoint {
         this.transactionType = transactionType;
     }
 
-    @Nullable
-    public String getTransactionNameTemplate() {
+    public @Nullable String getTransactionNameTemplate() {
         return transactionNameTemplate;
     }
 
@@ -195,8 +171,7 @@ public class CapturePoint {
         this.transactionNameTemplate = transactionNameTemplate;
     }
 
-    @Nullable
-    public String getTransactionUserTemplate() {
+    public @Nullable String getTransactionUserTemplate() {
         return transactionUserTemplate;
     }
 
@@ -204,8 +179,7 @@ public class CapturePoint {
         this.transactionUserTemplate = transactionUserTemplate;
     }
 
-    @Nullable
-    public Map<String, String> getTransactionCustomAttributeTemplates() {
+    public @Nullable Map<String, String> getTransactionCustomAttributeTemplates() {
         return transactionCustomAttributeTemplates;
     }
 
@@ -214,8 +188,7 @@ public class CapturePoint {
         this.transactionCustomAttributeTemplates = transactionCustomAttributeTemplates;
     }
 
-    @Nullable
-    public Long getTraceStoreThresholdMillis() {
+    public @Nullable Long getTraceStoreThresholdMillis() {
         return traceStoreThresholdMillis;
     }
 
@@ -223,8 +196,7 @@ public class CapturePoint {
         this.traceStoreThresholdMillis = traceStoreThresholdMillis;
     }
 
-    @Nullable
-    public String getEnabledProperty() {
+    public @Nullable String getEnabledProperty() {
         return enabledProperty;
     }
 
@@ -232,8 +204,7 @@ public class CapturePoint {
         this.enabledProperty = enabledProperty;
     }
 
-    @Nullable
-    public String getTraceEntryEnabledProperty() {
+    public @Nullable String getTraceEntryEnabledProperty() {
         return traceEntryEnabledProperty;
     }
 
@@ -241,8 +212,7 @@ public class CapturePoint {
         this.traceEntryEnabledProperty = traceEntryEnabledProperty;
     }
 
-    @Nullable
-    public String getVersion() {
+    public @Nullable String getVersion() {
         return version;
     }
 

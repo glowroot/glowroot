@@ -54,8 +54,7 @@ class ChunkedInputs {
         }
 
         @Override
-        @Nullable
-        public Object nextChunk() throws IOException {
+        public @Nullable Object nextChunk() throws IOException {
             if (hasMoreBytes()) {
                 return readNextChunk();
             } else if (!hasSentTerminatingChunk) {

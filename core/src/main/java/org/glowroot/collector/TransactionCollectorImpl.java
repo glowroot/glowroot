@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
@@ -32,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigService;
-import javax.annotation.concurrent.GuardedBy;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.UsedByReflection;
 import org.glowroot.transaction.TransactionCollector;
@@ -54,8 +54,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
     private final ExecutorService executorService;
     private final ConfigService configService;
     private final TraceRepository traceRepository;
-    @Nullable
-    private final AggregateCollector aggregateCollector;
+    private final @Nullable AggregateCollector aggregateCollector;
     private final Clock clock;
     private final Ticker ticker;
     private final Set<Transaction> pendingCompleteTransactions = Sets.newCopyOnWriteArraySet();

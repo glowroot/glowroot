@@ -336,9 +336,8 @@ public class SessionAttributeTest {
         assertThat(getUpdatedSessionAttributes(entries)).isNull();
     }
 
-    @Nullable
     @SuppressWarnings("unchecked")
-    private static Map<String, String> getSessionAttributes(List<TraceEntry> entries) {
+    private static @Nullable Map<String, String> getSessionAttributes(List<TraceEntry> entries) {
         Map<String, Object> detail = entries.get(0).getMessage().getDetail();
         if (detail == null) {
             return null;
@@ -347,9 +346,9 @@ public class SessionAttributeTest {
         }
     }
 
-    @Nullable
     @SuppressWarnings("unchecked")
-    private static Map<String, String> getUpdatedSessionAttributes(List<TraceEntry> entries) {
+    private static @Nullable Map<String, String> getUpdatedSessionAttributes(
+            List<TraceEntry> entries) {
         Map<String, Object> detail = entries.get(0).getMessage().getDetail();
         if (detail == null) {
             return null;

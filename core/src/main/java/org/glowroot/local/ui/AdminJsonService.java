@@ -54,8 +54,7 @@ class AdminJsonService {
     private final ConfigService configService;
     private final AdviceCache adviceCache;
     private final AnalyzedWorld analyzedWorld;
-    @Nullable
-    private final Instrumentation instrumentation;
+    private final @Nullable Instrumentation instrumentation;
     private final TransactionCollectorImpl transactionCollector;
     private final DataSource dataSource;
     private final TransactionRegistry transactionRegistry;

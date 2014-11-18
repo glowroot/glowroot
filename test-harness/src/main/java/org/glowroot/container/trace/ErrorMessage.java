@@ -28,8 +28,7 @@ import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
 public class ErrorMessage extends Message {
 
-    @Nullable
-    private final ExceptionInfo exception;
+    private final @Nullable ExceptionInfo exception;
 
     private ErrorMessage(@Nullable String text, Map<String, /*@Nullable*/Object> detail,
             @Nullable ExceptionInfo exception) {
@@ -37,8 +36,7 @@ public class ErrorMessage extends Message {
         this.exception = exception;
     }
 
-    @Nullable
-    public ExceptionInfo getException() {
+    public @Nullable ExceptionInfo getException() {
         return exception;
     }
 

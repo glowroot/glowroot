@@ -24,13 +24,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import javax.annotation.concurrent.GuardedBy;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -191,8 +190,7 @@ public class Profile {
         return stackTracePlus;
     }
 
-    @Nullable
-    private static String getMetricName(StackTraceElement stackTraceElement) {
+    private static @Nullable String getMetricName(StackTraceElement stackTraceElement) {
         Matcher matcher = metricMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
         if (matcher.matches()) {
             String group = matcher.group(1);

@@ -71,8 +71,7 @@ public class ResultSetAspect {
             return resultSet.hasGlowrootStatementMirror() && pluginEnabled;
         }
         @OnBefore
-        @Nullable
-        public static TransactionMetric onBefore() {
+        public static @Nullable TransactionMetric onBefore() {
             if (metricEnabled) {
                 return pluginServices.startTransactionMetric(metricName);
             } else {

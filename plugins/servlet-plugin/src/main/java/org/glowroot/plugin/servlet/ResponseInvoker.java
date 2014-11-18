@@ -26,8 +26,7 @@ public class ResponseInvoker {
 
     private static final Logger logger = LoggerFactory.getLogger(ResponseInvoker.class);
 
-    @Nullable
-    private final Method getContentTypeMethod;
+    private final @Nullable Method getContentTypeMethod;
 
     public ResponseInvoker(Class<?> clazz) {
         Class<?> servletResponseClass = null;
@@ -40,8 +39,7 @@ public class ResponseInvoker {
         getContentTypeMethod = getMethod(servletResponseClass, "getContentType");
     }
 
-    @Nullable
-    public String getContentType(Object response) {
+    public @Nullable String getContentType(Object response) {
         if (getContentTypeMethod == null) {
             // this method only exists since Servlet 2.4 (e.g. since Tomcat 5.5.x)
             // intentionally returning null here to be detected by caller
@@ -59,8 +57,7 @@ public class ResponseInvoker {
         }
     }
 
-    @Nullable
-    private static Method getMethod(@Nullable Class<?> clazz, String methodName,
+    private static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName,
             Class<?>... parameterTypes) {
         if (clazz == null) {
             return null;

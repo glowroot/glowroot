@@ -798,8 +798,7 @@ public class SomeAspect {
             return true;
         }
         @OnBefore
-        @Nullable
-        public static Object onBefore() {
+        public static @Nullable Object onBefore() {
             return null;
         }
         @OnAfter

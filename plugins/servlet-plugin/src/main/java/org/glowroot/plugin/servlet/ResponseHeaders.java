@@ -47,8 +47,7 @@ class ResponseHeaders {
 
     // map key is uppercase for case-insensitivity
     // implementation is LinkedHashMap to preserve insertion order
-    @MonotonicNonNull
-    private Map<String, ResponseHeader> responseHeaders;
+    private @MonotonicNonNull Map<String, ResponseHeader> responseHeaders;
 
     synchronized Map<String, Object> getMapOfStrings() {
         if (responseHeaders == null) {

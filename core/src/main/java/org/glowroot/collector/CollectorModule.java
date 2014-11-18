@@ -42,12 +42,9 @@ public class CollectorModule {
     }
 
     private final TransactionCollectorImpl transactionCollector;
-    @Nullable
-    private final AggregateCollector aggregateCollector;
-    @Nullable
-    private final GaugeCollector gaugeCollector;
-    @Nullable
-    private final StackTraceCollector stackTraceCollector;
+    private final @Nullable AggregateCollector aggregateCollector;
+    private final @Nullable GaugeCollector gaugeCollector;
+    private final @Nullable StackTraceCollector stackTraceCollector;
 
     public CollectorModule(Clock clock, Ticker ticker, JvmModule jvmModule,
             ConfigModule configModule, TraceRepository traceRepository,

@@ -194,8 +194,7 @@ public class TraceDao implements TraceRepository {
         return QueryResult.from(points, query.limit());
     }
 
-    @Nullable
-    public Trace readTrace(String traceId) throws SQLException {
+    public @Nullable Trace readTrace(String traceId) throws SQLException {
         List<Trace> traces = dataSource.query("select id, partial, start_time, capture_time,"
                 + " duration, transaction_type, transaction_name, headline, error_message, user,"
                 + " custom_attributes, metrics, thread_info, gc_infos, entries_id, profile_id,"
@@ -209,18 +208,15 @@ public class TraceDao implements TraceRepository {
         return traces.get(0);
     }
 
-    @Nullable
-    public CharSource readEntries(String traceId) throws SQLException {
+    public @Nullable CharSource readEntries(String traceId) throws SQLException {
         return readFromCappedDatabase("entries_id", traceId);
     }
 
-    @Nullable
-    public CharSource readProfile(String traceId) throws SQLException {
+    public @Nullable CharSource readProfile(String traceId) throws SQLException {
         return readFromCappedDatabase("profile_id", traceId);
     }
 
-    @Nullable
-    public CharSource readOutlierProfile(String traceId) throws SQLException {
+    public @Nullable CharSource readOutlierProfile(String traceId) throws SQLException {
         return readFromCappedDatabase("outlier_profile_id", traceId);
     }
 
@@ -251,8 +247,7 @@ public class TraceDao implements TraceRepository {
         }
     }
 
-    @Nullable
-    private CharSource readFromCappedDatabase(String columnName, String traceId)
+    private @Nullable CharSource readFromCappedDatabase(String columnName, String traceId)
             throws SQLException {
         List<String> ids = dataSource.query("select " + columnName + " from trace where id = ?",
                 new SingleStringRowMapper(), traceId);
@@ -278,8 +273,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @OnlyUsedByTests
-    @Nullable
-    public Trace getLastTrace() throws SQLException {
+    public @Nullable Trace getLastTrace() throws SQLException {
         List<String> ids = dataSource.query("select id from trace order by capture_time desc"
                 + " limit 1", new StringRowMapper());
         if (ids.isEmpty()) {
@@ -370,8 +364,7 @@ public class TraceDao implements TraceRepository {
         return ImmutableParameterizedSql.of(sql, args);
     }
 
-    @Nullable
-    private static ParameterizedSql getTraceCustomAttributeJoin(TracePointQuery query) {
+    private static @Nullable ParameterizedSql getTraceCustomAttributeJoin(TracePointQuery query) {
         String criteria = "";
         List<Object> criteriaArgs = Lists.newArrayList();
         String customAttributeName = query.customAttributeName();

@@ -58,8 +58,7 @@ class NestedMetricMap {
 
         private final MetricNameImpl metricName;
         private final TransactionMetricImpl transactionMetric;
-        @Nullable
-        private Entry nextEntry;
+        private @Nullable Entry nextEntry;
 
         private Entry(MetricNameImpl metricName, TransactionMetricImpl transactionMetric) {
             this.metricName = metricName;

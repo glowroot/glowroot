@@ -38,8 +38,7 @@ class PointcutClassVisitor extends ClassVisitor {
 
     private final ClassWriter cw;
 
-    @MonotonicNonNull
-    private String internalName;
+    private @MonotonicNonNull String internalName;
     private boolean clinit;
 
     PointcutClassVisitor(ClassWriter cw) {

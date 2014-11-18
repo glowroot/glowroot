@@ -21,6 +21,8 @@ import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.concurrent.GuardedBy;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.MoreObjects;
@@ -31,8 +33,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.concurrent.GuardedBy;
-
 class GcInfoComponent {
 
     private static final Logger logger = LoggerFactory.getLogger(GcInfoComponent.class);
@@ -41,8 +41,7 @@ class GcInfoComponent {
     private final ImmutableMap<String, GarbageCollectorInfo> garbageCollectorInfos;
 
     @GuardedBy("lock")
-    @MonotonicNonNull
-    private volatile String completedJsonValue;
+    private volatile @MonotonicNonNull String completedJsonValue;
 
     private final Object lock = new Object();
 

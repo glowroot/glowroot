@@ -212,8 +212,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
         private List<MixinType> mixinTypes = Lists.newArrayList();
         private List<Advice> advisors = Lists.newArrayList();
-        @MonotonicNonNull
-        private WeavingTimerService weavingTimerService;
+        private @MonotonicNonNull WeavingTimerService weavingTimerService;
         private boolean metricWrapperMethods = true;
         private final List<Class<?>> bridgeClasses = Lists.newArrayList();
         private final List<String> excludePackages = Lists.newArrayList();

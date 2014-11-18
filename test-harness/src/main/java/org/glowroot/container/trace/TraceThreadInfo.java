@@ -24,14 +24,10 @@ import com.google.common.base.MoreObjects;
 
 public class TraceThreadInfo {
 
-    @Nullable
-    private final Long threadCpuTime;
-    @Nullable
-    private final Long threadBlockedTime;
-    @Nullable
-    private final Long threadWaitedTime;
-    @Nullable
-    private final Long threadAllocatedBytes;
+    private final @Nullable Long threadCpuTime;
+    private final @Nullable Long threadBlockedTime;
+    private final @Nullable Long threadWaitedTime;
+    private final @Nullable Long threadAllocatedBytes;
 
     private TraceThreadInfo(@Nullable Long threadCpuTime, @Nullable Long threadBlockedTime,
             @Nullable Long threadWaitedTime, @Nullable Long threadAllocatedBytes) {
@@ -41,23 +37,19 @@ public class TraceThreadInfo {
         this.threadAllocatedBytes = threadAllocatedBytes;
     }
 
-    @Nullable
-    public Long getThreadCpuTime() {
+    public @Nullable Long getThreadCpuTime() {
         return threadCpuTime;
     }
 
-    @Nullable
-    public Long getThreadBlockedTime() {
+    public @Nullable Long getThreadBlockedTime() {
         return threadBlockedTime;
     }
 
-    @Nullable
-    public Long getThreadWaitedTime() {
+    public @Nullable Long getThreadWaitedTime() {
         return threadWaitedTime;
     }
 
-    @Nullable
-    public Long getThreadAllocatedBytes() {
+    public @Nullable Long getThreadAllocatedBytes() {
         return threadAllocatedBytes;
     }
 

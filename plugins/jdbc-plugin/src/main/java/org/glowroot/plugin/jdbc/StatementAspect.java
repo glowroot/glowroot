@@ -69,11 +69,9 @@ public class StatementAspect {
     public static class HasStatementMirrorImpl implements HasStatementMirror {
         // the field and method names are verbose to avoid conflict since they will become fields
         // and methods in all classes that extend java.sql.Statement or java.sql.ResultSet
-        @Nullable
-        private volatile StatementMirror glowrootStatementMirror;
+        private volatile @Nullable StatementMirror glowrootStatementMirror;
         @Override
-        @Nullable
-        public StatementMirror getGlowrootStatementMirror() {
+        public @Nullable StatementMirror getGlowrootStatementMirror() {
             return glowrootStatementMirror;
         }
         @Override
@@ -105,8 +103,7 @@ public class StatementAspect {
         private static final MetricName metricName =
                 pluginServices.getMetricName(PrepareAdvice.class);
         @OnBefore
-        @Nullable
-        public static TransactionMetric onBefore() {
+        public static @Nullable TransactionMetric onBefore() {
             if (pluginServices.isEnabled()) {
                 return pluginServices.startTransactionMetric(metricName);
             } else {
@@ -232,8 +229,7 @@ public class StatementAspect {
             return statement.hasGlowrootStatementMirror();
         }
         @OnBefore
-        @Nullable
-        public static TraceEntry onBefore(@BindReceiver HasStatementMirror statement,
+        public static @Nullable TraceEntry onBefore(@BindReceiver HasStatementMirror statement,
                 @BindParameter String sql) {
             StatementMirror mirror = statement.getGlowrootStatementMirror();
             if (mirror == null) {
@@ -289,8 +285,8 @@ public class StatementAspect {
             return preparedStatement.hasGlowrootStatementMirror();
         }
         @OnBefore
-        @Nullable
-        public static TraceEntry onBefore(@BindReceiver HasStatementMirror preparedStatement) {
+        public static @Nullable TraceEntry onBefore(
+                @BindReceiver HasStatementMirror preparedStatement) {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
             if (mirror == null) {
@@ -349,8 +345,7 @@ public class StatementAspect {
             return statement.hasGlowrootStatementMirror();
         }
         @OnBefore
-        @Nullable
-        public static TraceEntry onBefore(@BindReceiver HasStatementMirror statement) {
+        public static @Nullable TraceEntry onBefore(@BindReceiver HasStatementMirror statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror =
                         (PreparedStatementMirror) statement.getGlowrootStatementMirror();

@@ -132,8 +132,7 @@ class SocketCommander {
     static class ResponseWrapper implements Serializable {
         private static final long serialVersionUID = 1L;
         private final int commandNum;
-        @Nullable
-        private final Object response;
+        private final @Nullable Object response;
         ResponseWrapper(int commandNum, @Nullable Object response) {
             this.commandNum = commandNum;
             this.response = response;
@@ -141,8 +140,7 @@ class SocketCommander {
         private int getCommandNum() {
             return commandNum;
         }
-        @Nullable
-        private Object getResponse() {
+        private @Nullable Object getResponse() {
             return response;
         }
         @Override
@@ -156,8 +154,7 @@ class SocketCommander {
 
     private static class ResponseHolder {
         private boolean hasResponse;
-        @Nullable
-        private Object response;
+        private @Nullable Object response;
     }
 
     private class SocketIn implements Runnable {

@@ -47,8 +47,7 @@ public abstract class PropertyDescriptor {
     public abstract String name();
     public abstract PropertyType type();
     @Json.Named("default")
-    @Nullable
-    abstract PropertyValue defaultValue();
+    abstract @Nullable PropertyValue defaultValue();
     @Value.Default
     public boolean hidden() {
         return false;

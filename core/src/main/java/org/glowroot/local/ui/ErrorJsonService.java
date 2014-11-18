@@ -261,9 +261,8 @@ class ErrorJsonService {
 
     // TODO consolidate copy-pasted code below with AggregateJsonService
 
-    @Nullable
-    private ErrorPoint getNextErrorPointIfMatching(PeekingIterator<ErrorPoint> errorPoints,
-            long captureTime) {
+    private @Nullable ErrorPoint getNextErrorPointIfMatching(
+            PeekingIterator<ErrorPoint> errorPoints, long captureTime) {
         if (!errorPoints.hasNext()) {
             return null;
         }

@@ -65,14 +65,11 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private final ImmutableList<Advice> advisors;
     private final Type[] argumentTypes;
     private final Type returnType;
-    @Nullable
-    private final String metaHolderInternalName;
-    @Nullable
-    private final Integer methodMetaGroupUniqueNum;
+    private final @Nullable String metaHolderInternalName;
+    private final @Nullable Integer methodMetaGroupUniqueNum;
     private final boolean bootstrapClassLoader;
     private final boolean needsTryCatch;
-    @Nullable
-    private final MethodVisitor outerMethodVisitor;
+    private final @Nullable MethodVisitor outerMethodVisitor;
 
     private final Map<Advice, Integer> adviceFlowHolderLocals = Maps.newHashMap();
     // the adviceFlow stores the value in the holder at the beginning of the advice so the holder
@@ -81,10 +78,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private final Map<Advice, Integer> enabledLocals = Maps.newHashMap();
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
 
-    @MonotonicNonNull
-    private Label methodStartLabel;
-    @MonotonicNonNull
-    private Label catchStartLabel;
+    private @MonotonicNonNull Label methodStartLabel;
+    private @MonotonicNonNull Label catchStartLabel;
     private boolean visitedLocalVariableThis;
 
     WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,

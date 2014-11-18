@@ -49,8 +49,7 @@ public class StorageModule {
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugePointDao gaugePointDao;
-    @Nullable
-    private final ReaperRunnable reaperRunnable;
+    private final @Nullable ReaperRunnable reaperRunnable;
 
     public StorageModule(File dataDir, Map<String, String> properties, Ticker ticker, Clock clock,
             ConfigModule configModule, ScheduledExecutorService scheduledExecutor,

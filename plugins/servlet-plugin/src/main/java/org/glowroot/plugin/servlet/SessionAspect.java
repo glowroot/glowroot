@@ -125,8 +125,7 @@ public class SessionAspect {
         }
     }
 
-    @Nullable
-    private static ServletMessageSupplier getServletMessageSupplier(String sessionId) {
+    private static @Nullable ServletMessageSupplier getServletMessageSupplier(String sessionId) {
         ServletMessageSupplier servletMessageSupplier = ServletAspect.getServletMessageSupplier();
         if (servletMessageSupplier == null) {
             // this thread is not executing a servlet request, e.g. this could be a background

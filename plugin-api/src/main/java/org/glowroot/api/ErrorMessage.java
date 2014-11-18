@@ -111,12 +111,9 @@ public abstract class ErrorMessage {
     // making it (obviously) accessible to plugin implementations
     private static class ErrorMessageImpl extends ErrorMessage implements ReadableErrorMessage {
 
-        @Nullable
-        private final String text;
-        @Nullable
-        private final ExceptionInfo exceptionInfo;
-        @Nullable
-        private final Map<String, ? extends /*@Nullable*/Object> detail;
+        private final @Nullable String text;
+        private final @Nullable ExceptionInfo exceptionInfo;
+        private final @Nullable Map<String, ? extends /*@Nullable*/Object> detail;
 
         private ErrorMessageImpl(@Nullable String text, @Nullable ExceptionInfo exceptionInfo,
                 @Nullable Map<String, ? extends /*@Nullable*/Object> detail) {
@@ -131,14 +128,12 @@ public abstract class ErrorMessage {
         }
 
         @Override
-        @Nullable
-        public ExceptionInfo getExceptionInfo() {
+        public @Nullable ExceptionInfo getExceptionInfo() {
             return exceptionInfo;
         }
 
         @Override
-        @Nullable
-        public Map<String, ? extends /*@Nullable*/Object> getDetail() {
+        public @Nullable Map<String, ? extends /*@Nullable*/Object> getDetail() {
             return detail;
         }
 

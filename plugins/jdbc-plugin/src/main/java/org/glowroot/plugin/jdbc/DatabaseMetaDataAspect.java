@@ -61,8 +61,7 @@ public class DatabaseMetaDataAspect {
                     && pluginServices.getBooleanProperty("captureDatabaseMetaDataTraceEntries");
         }
         @OnBefore
-        @Nullable
-        public static Object onBefore(@BindMethodName String methodName) {
+        public static @Nullable Object onBefore(@BindMethodName String methodName) {
             if (pluginServices.isEnabled()) {
                 if (entryEnabled) {
                     return pluginServices.startTraceEntry(MessageSupplier.from("jdbc metadata:"

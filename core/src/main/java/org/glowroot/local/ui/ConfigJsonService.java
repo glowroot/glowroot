@@ -71,8 +71,7 @@ class ConfigJsonService {
     private final HttpSessionManager httpSessionManager;
     private final TransactionModule transactionModule;
 
-    @MonotonicNonNull
-    private volatile HttpServer httpServer;
+    private volatile @MonotonicNonNull HttpServer httpServer;
 
     ConfigJsonService(ConfigService configService, CappedDatabase cappedDatabase,
             PluginDescriptorCache pluginDescriptorCache, File dataDir,

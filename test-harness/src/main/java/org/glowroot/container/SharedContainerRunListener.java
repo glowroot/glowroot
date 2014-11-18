@@ -24,22 +24,18 @@ import org.junit.runner.notification.RunListener;
 public class SharedContainerRunListener extends RunListener {
 
     private static volatile boolean useSharedContainer;
-    @Nullable
-    private static volatile Container sharedLocalContainer;
-    @Nullable
-    private static volatile Container sharedJavaagentContainer;
+    private static volatile @Nullable Container sharedLocalContainer;
+    private static volatile @Nullable Container sharedJavaagentContainer;
 
     public static boolean useSharedContainer() {
         return useSharedContainer;
     }
 
-    @Nullable
-    public static Container getSharedLocalContainer() {
+    public static @Nullable Container getSharedLocalContainer() {
         return sharedLocalContainer;
     }
 
-    @Nullable
-    public static Container getSharedJavaagentContainer() {
+    public static @Nullable Container getSharedJavaagentContainer() {
         return sharedJavaagentContainer;
     }
 

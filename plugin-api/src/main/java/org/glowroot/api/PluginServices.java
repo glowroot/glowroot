@@ -157,8 +157,7 @@ public abstract class PluginServices {
      * @return the value of the {@code Double} plugin property, or {@code null} if there is no
      *         {@code Double} plugin property with the specified {@code name}
      */
-    @Nullable
-    public abstract Double getDoubleProperty(String name);
+    public abstract @Nullable Double getDoubleProperty(String name);
 
     /**
      * Returns the {@code MetricName} instance for the specified {@code adviceClass}.

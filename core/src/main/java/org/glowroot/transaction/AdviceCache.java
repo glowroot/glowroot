@@ -44,8 +44,7 @@ public class AdviceCache {
     private static final AtomicInteger jarFileCounter = new AtomicInteger();
 
     private final ImmutableList<Advice> pluginAdvisors;
-    @Nullable
-    private final Instrumentation instrumentation;
+    private final @Nullable Instrumentation instrumentation;
     private final File dataDir;
 
     private volatile ImmutableList<Advice> reweavableAdvisors;

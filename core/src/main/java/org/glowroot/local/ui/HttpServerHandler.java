@@ -226,9 +226,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
     }
 
-    @Nullable
-    private HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException,
-            SQLException {
+    private @Nullable HttpResponse handleRequest(HttpRequest request, Channel channel)
+            throws IOException, SQLException {
         logger.debug("handleRequest(): request.uri={}", request.getUri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();
@@ -448,8 +447,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
     }
 
-    @Nullable
-    private static Object callMethod(Object object, String methodName, String[] args,
+    private static @Nullable Object callMethod(Object object, String methodName, String[] args,
             String requestText, HttpResponse response) throws ReflectiveException {
         List<Class<?>> parameterTypes = Lists.newArrayList();
         List<Object> parameters = Lists.newArrayList();

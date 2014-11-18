@@ -31,11 +31,9 @@ public class TraceEntry {
 
     private static final TraceEntry limitExtendedMarker = new TraceEntry(null, 0, 0, null);
 
-    @Nullable
-    private final MessageSupplier messageSupplier;
+    private final @Nullable MessageSupplier messageSupplier;
     // not volatile, so depends on memory barrier in Trace for visibility
-    @Nullable
-    private ErrorMessage errorMessage;
+    private @Nullable ErrorMessage errorMessage;
 
     private final long startTick;
     // not volatile, so depends on memory barrier in Trace for visibility
@@ -46,11 +44,9 @@ public class TraceEntry {
     private final int nestingLevel;
 
     // the associated metric, stored here so it can be accessed in org.glowroot.api.TraceEntry.end()
-    @Nullable
-    private final TransactionMetricExt transactionMetric;
+    private final @Nullable TransactionMetricExt transactionMetric;
     // not volatile, so depends on memory barrier in Trace for visibility
-    @Nullable
-    private ImmutableList<StackTraceElement> stackTrace;
+    private @Nullable ImmutableList<StackTraceElement> stackTrace;
 
     TraceEntry(@Nullable MessageSupplier messageSupplier, long startTick, int nesting,
             @Nullable TransactionMetricExt transactionMetric) {
@@ -60,13 +56,11 @@ public class TraceEntry {
         this.transactionMetric = transactionMetric;
     }
 
-    @Nullable
-    public MessageSupplier getMessageSupplier() {
+    public @Nullable MessageSupplier getMessageSupplier() {
         return messageSupplier;
     }
 
-    @Nullable
-    public ReadableErrorMessage getErrorMessage() {
+    public @Nullable ReadableErrorMessage getErrorMessage() {
         return (ReadableErrorMessage) errorMessage;
     }
 
@@ -86,8 +80,7 @@ public class TraceEntry {
         return nestingLevel;
     }
 
-    @Nullable
-    public ImmutableList<StackTraceElement> getStackTrace() {
+    public @Nullable ImmutableList<StackTraceElement> getStackTrace() {
         return stackTrace;
     }
 

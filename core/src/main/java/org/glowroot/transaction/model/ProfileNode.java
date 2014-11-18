@@ -27,16 +27,13 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 public class ProfileNode {
 
-    @Nullable
-    private final StackTraceElement stackTraceElement;
-    @Nullable
-    private final State leafThreadState;
+    private final @Nullable StackTraceElement stackTraceElement;
+    private final @Nullable State leafThreadState;
     private int sampleCount;
     // using List over Set in order to preserve ordering
     // may contain duplicates (common from weaving groups of overloaded methods), these are filtered
     // out later when profile is written to json
-    @MonotonicNonNull
-    private ImmutableList<String> metricNames;
+    private @MonotonicNonNull ImmutableList<String> metricNames;
     // nodes mostly have a single child node, and rarely have more than two child nodes
     private final List<ProfileNode> childNodes = Lists.newArrayListWithCapacity(2);
 
@@ -71,13 +68,11 @@ public class ProfileNode {
     }
 
     // only returns null for synthetic root
-    @Nullable
-    public StackTraceElement getStackTraceElement() {
+    public @Nullable StackTraceElement getStackTraceElement() {
         return stackTraceElement;
     }
 
-    @Nullable
-    public State getLeafThreadState() {
+    public @Nullable State getLeafThreadState() {
         return leafThreadState;
     }
 

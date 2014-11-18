@@ -94,8 +94,7 @@ public class AnalyzedWorld {
     private final Supplier<ImmutableList<Advice>> advisors;
     private final ImmutableList<MixinType> mixinTypes;
 
-    @Nullable
-    private final ExtraBootResourceFinder extraBootResourceFinder;
+    private final @Nullable ExtraBootResourceFinder extraBootResourceFinder;
 
     private final AnalyzedClass javaLangObjectAnalyzedClass;
 
@@ -247,8 +246,8 @@ public class AnalyzedWorld {
         return classes;
     }
 
-    @Nullable
-    private AnalyzedClass getExistingAnalyzedClass(String className, @Nullable ClassLoader loader) {
+    private @Nullable AnalyzedClass getExistingAnalyzedClass(String className,
+            @Nullable ClassLoader loader) {
         ClassLoader analyzedLoader = getAnalyzedLoader(className, loader);
         if (analyzedLoader == null) {
             return bootstrapLoaderWorld.get(className);
@@ -256,8 +255,8 @@ public class AnalyzedWorld {
         return world.getUnchecked(analyzedLoader).get(className);
     }
 
-    @Nullable
-    private ClassLoader getAnalyzedLoader(String className, @Nullable ClassLoader loader) {
+    private @Nullable ClassLoader getAnalyzedLoader(String className,
+            @Nullable ClassLoader loader) {
         if (loader == null) {
             return null;
         }
@@ -440,8 +439,7 @@ public class AnalyzedWorld {
 
     static class ParseContext {
         private final String className;
-        @Nullable
-        private final CodeSource codeSource;
+        private final @Nullable CodeSource codeSource;
         ParseContext(String className, @Nullable CodeSource codeSource) {
             this.codeSource = codeSource;
             this.className = className;

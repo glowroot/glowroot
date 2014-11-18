@@ -26,8 +26,7 @@ public class PrincipalInvoker {
 
     private static final Logger logger = LoggerFactory.getLogger(PrincipalInvoker.class);
 
-    @Nullable
-    private final Method getNameMethod;
+    private final @Nullable Method getNameMethod;
 
     public PrincipalInvoker(Class<?> clazz) {
         Class<?> principalClass = null;
@@ -40,8 +39,7 @@ public class PrincipalInvoker {
         getNameMethod = getMethod(principalClass, "getName");
     }
 
-    @Nullable
-    public String getName(Object principal) {
+    public @Nullable String getName(Object principal) {
         if (getNameMethod == null) {
             return null;
         }
@@ -53,8 +51,7 @@ public class PrincipalInvoker {
         }
     }
 
-    @Nullable
-    private static Method getMethod(@Nullable Class<?> clazz, String methodName,
+    private static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName,
             Class<?>... parameterTypes) {
         if (clazz == null) {
             return null;

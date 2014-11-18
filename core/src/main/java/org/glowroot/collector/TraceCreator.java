@@ -86,8 +86,7 @@ public class TraceCreator {
         return builder.build();
     }
 
-    @Nullable
-    private static String writeCustomAttributesAsString(
+    private static @Nullable String writeCustomAttributesAsString(
             ImmutableSetMultimap<String, String> attributes) throws IOException {
         if (attributes.isEmpty()) {
             return null;
@@ -107,8 +106,7 @@ public class TraceCreator {
         return sb.toString();
     }
 
-    @Nullable
-    private static String writeMetricsAsString(TransactionMetricImpl rootMetric)
+    private static @Nullable String writeMetricsAsString(TransactionMetricImpl rootMetric)
             throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));

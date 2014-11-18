@@ -26,8 +26,7 @@ import com.google.common.base.Throwables;
 class ResultSetCloser {
 
     private final ResultSet resultSet;
-    @Nullable
-    private Throwable thrown;
+    private @Nullable Throwable thrown;
 
     ResultSetCloser(ResultSet resultSet) {
         this.resultSet = resultSet;

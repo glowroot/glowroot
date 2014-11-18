@@ -50,8 +50,7 @@ public class ServletInitAspect {
             return ServletPluginProperties.captureStartup() && pluginServices.isEnabled();
         }
         @OnBefore
-        @Nullable
-        public static TraceEntry onBefore(@BindReceiver Object listener) {
+        public static @Nullable TraceEntry onBefore(@BindReceiver Object listener) {
             String transactionName =
                     "servlet context initialized / " + listener.getClass().getName();
             return pluginServices.startTransaction("Startup", transactionName,

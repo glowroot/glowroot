@@ -89,10 +89,8 @@ public class AdviceBuilder {
 
     private final ImmutableAdvice.Builder builder = ImmutableAdvice.builder();
 
-    @Nullable
-    private final Class<?> adviceClass;
-    @Nullable
-    private final LazyDefinedClass lazyAdviceClass;
+    private final @Nullable Class<?> adviceClass;
+    private final @Nullable LazyDefinedClass lazyAdviceClass;
 
     private boolean hasIsEnabledAdvice;
     private boolean hasOnBeforeAdvice;
@@ -252,8 +250,7 @@ public class AdviceBuilder {
         hasOnAfterAdvice = true;
     }
 
-    @Nullable
-    private static Pattern buildPattern(String maybePattern) {
+    private static @Nullable Pattern buildPattern(String maybePattern) {
         if (maybePattern.startsWith("/") && maybePattern.endsWith("/")) {
             // full regex power
             return Pattern.compile(maybePattern.substring(1, maybePattern.length() - 1));
@@ -305,8 +302,7 @@ public class AdviceBuilder {
         return parameters;
     }
 
-    @Nullable
-    private static Class<? extends Annotation> getValidBindAnnotationType(
+    private static @Nullable Class<? extends Annotation> getValidBindAnnotationType(
             Annotation[] parameterAnnotations,
             ImmutableList<Class<? extends Annotation>> validBindAnnotationTypes)
             throws AdviceConstructionException {

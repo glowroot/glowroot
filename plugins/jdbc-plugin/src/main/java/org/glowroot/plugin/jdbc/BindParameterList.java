@@ -25,8 +25,7 @@ import com.google.common.collect.Iterators;
 // micro-optimized list for bind parameters
 class BindParameterList implements Iterable</*@Nullable*/Object> {
 
-    @Nullable
-    private Object[] parameters;
+    private @Nullable Object[] parameters;
     private int size;
 
     static BindParameterList copyOf(BindParameterList bindParameterList) {

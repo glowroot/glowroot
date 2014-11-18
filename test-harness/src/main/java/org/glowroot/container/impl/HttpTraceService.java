@@ -65,8 +65,7 @@ class HttpTraceService extends TraceService {
     }
 
     @Override
-    @Nullable
-    public Trace getLastTrace() throws Exception {
+    public @Nullable Trace getLastTrace() throws Exception {
         String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
                 + "&duration-low=0&limit=1000");
         TracePointResponse response =
@@ -84,8 +83,7 @@ class HttpTraceService extends TraceService {
     }
 
     @Override
-    @Nullable
-    protected Trace getActiveTrace() throws Exception {
+    protected @Nullable Trace getActiveTrace() throws Exception {
         String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
                 + "&duration-low=0&limit=1000");
         TracePointResponse response =
@@ -102,22 +100,19 @@ class HttpTraceService extends TraceService {
     }
 
     @Override
-    @Nullable
-    public List<TraceEntry> getEntries(String traceId) throws Exception {
+    public @Nullable List<TraceEntry> getEntries(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/entries?trace-id=" + traceId);
         return mapper.readValue(content, new TypeReference<List<TraceEntry>>() {});
     }
 
     @Override
-    @Nullable
-    public ProfileNode getProfile(String traceId) throws Exception {
+    public @Nullable ProfileNode getProfile(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/profile?trace-id=" + traceId);
         return mapper.readValue(content, ProfileNode.class);
     }
 
     @Override
-    @Nullable
-    public ProfileNode getOutlierProfile(String traceId) throws Exception {
+    public @Nullable ProfileNode getOutlierProfile(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/outlier-profile?trace-id=" + traceId);
         return mapper.readValue(content, ProfileNode.class);
     }

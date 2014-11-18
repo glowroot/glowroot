@@ -82,7 +82,6 @@ public abstract class MixinType {
     abstract List<String> targets();
     abstract Type implementation();
     abstract List<Type> interfaces();
-    @Nullable
-    abstract String initMethodName();
+    abstract @Nullable String initMethodName();
     abstract byte[] implementationBytes();
 }

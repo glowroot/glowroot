@@ -279,8 +279,7 @@ public class AggregateDao implements AggregateRepository {
 
     private class AggregateRowMapper implements RowMapper<Aggregate> {
         private final String transactionType;
-        @Nullable
-        private final String transactionName;
+        private final @Nullable String transactionName;
         private AggregateRowMapper(String transactionType, @Nullable String transactionName) {
             this.transactionType = transactionType;
             this.transactionName = transactionName;

@@ -19,11 +19,9 @@ import javax.annotation.Nullable;
 
 public class CurrentTransactionMetricHolder {
 
-    @Nullable
-    private TransactionMetricImpl currentTransactionMetric;
+    private @Nullable TransactionMetricImpl currentTransactionMetric;
 
-    @Nullable
-    public TransactionMetricImpl get() {
+    public @Nullable TransactionMetricImpl get() {
         return currentTransactionMetric;
     }
 

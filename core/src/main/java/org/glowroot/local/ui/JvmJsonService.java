@@ -438,8 +438,7 @@ class JvmJsonService {
         return ImmutableAvailability.of(true, "");
     }
 
-    @Nullable
-    private static String getHeapDumpPathFromCommandLine() {
+    private @Nullable static String getHeapDumpPathFromCommandLine() {
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         for (String arg : runtimeMXBean.getInputArguments()) {
             if (arg.startsWith("-XX:HeapDumpPath=")) {
@@ -486,8 +485,7 @@ class JvmJsonService {
     // #ALLOWED_CLASSNAMES_LIST
     //
     // TODO some of the above attribute value types are not handled yet
-    @Nullable
-    private Object getMBeanAttributeValue(@Nullable Object value) {
+    private @Nullable Object getMBeanAttributeValue(@Nullable Object value) {
         if (value == null) {
             return null;
         } else if (value instanceof CompositeData) {
@@ -594,8 +592,7 @@ class JvmJsonService {
         private final String nodeName;
         private final String objectName;
         private final boolean expanded;
-        @Nullable
-        private final Map<String, /*@Nullable*/Object> attributeMap;
+        private final @Nullable Map<String, /*@Nullable*/Object> attributeMap;
 
         private MBeanTreeLeafNode(String nodeName, String objectName, boolean expanded,
                 @Nullable Map<String, /*@Nullable*/Object> attributeMap) {
@@ -618,8 +615,7 @@ class JvmJsonService {
             return expanded;
         }
 
-        @Nullable
-        public Map<String, /*@Nullable*/Object> getAttributeMap() {
+        public @Nullable Map<String, /*@Nullable*/Object> getAttributeMap() {
             return attributeMap;
         }
     }

@@ -31,17 +31,14 @@ public abstract class TraceService {
 
     public abstract InputStream getTraceExport(String string) throws Exception;
 
-    @Nullable
-    public abstract Trace getLastTrace() throws Exception;
+    public abstract @Nullable Trace getLastTrace() throws Exception;
 
-    @Nullable
-    protected abstract Trace getActiveTrace() throws Exception;
+    protected abstract @Nullable Trace getActiveTrace() throws Exception;
 
     // this method blocks for an active trace to be available because
     // sometimes need to give container enough time to start up and for the trace to hit its store
     // threshold
-    @Nullable
-    public Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception {
+    public @Nullable Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
         Trace trace = null;
         // try at least once (e.g. in case timeoutMillis == 0)
@@ -57,14 +54,11 @@ public abstract class TraceService {
         return trace;
     }
 
-    @Nullable
-    public abstract List<TraceEntry> getEntries(String traceId) throws Exception;
+    public abstract @Nullable List<TraceEntry> getEntries(String traceId) throws Exception;
 
-    @Nullable
-    public abstract ProfileNode getProfile(String traceId) throws Exception;
+    public abstract @Nullable ProfileNode getProfile(String traceId) throws Exception;
 
-    @Nullable
-    public abstract ProfileNode getOutlierProfile(String traceId) throws Exception;
+    public abstract @Nullable ProfileNode getOutlierProfile(String traceId) throws Exception;
 
     public abstract void deleteAll() throws Exception;
 }

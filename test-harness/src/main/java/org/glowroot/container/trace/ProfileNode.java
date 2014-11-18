@@ -31,10 +31,8 @@ import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 
 public class ProfileNode {
 
-    @Nullable
-    private final String stackTraceElement;
-    @Nullable
-    private final String leafThreadState;
+    private final @Nullable String stackTraceElement;
+    private final @Nullable String leafThreadState;
     private final int sampleCount;
     private final ImmutableList<String> metricNames;
     private final ImmutableList<ProfileNode> childNodes;
@@ -49,13 +47,11 @@ public class ProfileNode {
     }
 
     // null for synthetic root only
-    @Nullable
-    public String getStackTraceElement() {
+    public @Nullable String getStackTraceElement() {
         return stackTraceElement;
     }
 
-    @Nullable
-    public String getLeafThreadState() {
+    public @Nullable String getLeafThreadState() {
         return leafThreadState;
     }
 

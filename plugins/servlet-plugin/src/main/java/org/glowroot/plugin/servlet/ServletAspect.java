@@ -218,8 +218,7 @@ public class ServletAspect {
         }
     }
 
-    @Nullable
-    static ServletMessageSupplier getServletMessageSupplier() {
+    static @Nullable ServletMessageSupplier getServletMessageSupplier() {
         return topLevel.get();
     }
 }

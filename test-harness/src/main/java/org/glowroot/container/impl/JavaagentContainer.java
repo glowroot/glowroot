@@ -284,8 +284,7 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         private final InputStream in;
         private final OutputStream out;
         // the one place ever that StringBuffer's synchronization is useful :-)
-        @Nullable
-        private final StringBuffer capturedOutput;
+        private final @Nullable StringBuffer capturedOutput;
 
         private ConsoleOutputPipe(InputStream in, OutputStream out, boolean captureOutput) {
             this.in = in;
@@ -317,8 +316,7 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
             }
         }
 
-        @Nullable
-        private String getCapturedOutput() {
+        private @Nullable String getCapturedOutput() {
             return capturedOutput == null ? null : capturedOutput.toString();
         }
     }
