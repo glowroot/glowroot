@@ -135,6 +135,20 @@
       <version>2.5.0</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <!-- dependency of jackrabbit-core that is marked "provided" so not transitively inherited -->
+      <groupId>javax.jcr</groupId>
+      <artifactId>jcr</artifactId>
+      <version>2.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is included to test weaving against jdk 1.7 bytecode -->
+      <groupId>io.undertow</groupId>
+      <artifactId>undertow-core</artifactId>
+      <version>1.2.0.Beta5</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -378,13 +392,13 @@
                     </relocation>
                     <relocation>
                       <!-- this shades guava's use of java util logging which is needed to prevent
-                           java util logging from being initialized early (e.g. in the case of
-                           wildfly which wants to do some setup before jul is initialized) -->
+                        java util logging from being initialized early (e.g. in the case of
+                        wildfly which wants to do some setup before jul is initialized) -->
                       <pattern>java.util.logging</pattern>
                       <shadedPattern>org.glowroot.shaded.jul</shadedPattern>
                       <excludes>
                         <!-- don't shade the system property key "java.util.logging.manager"
-                             (unshaded string is needed in LazyPlatformMBeanServer) -->
+                          (unshaded string is needed in LazyPlatformMBeanServer) -->
                         <exclude>java.util.logging.manager</exclude>
                       </excludes>
                     </relocation>

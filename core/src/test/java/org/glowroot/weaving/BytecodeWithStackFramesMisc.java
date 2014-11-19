@@ -15,20 +15,18 @@
  */
 package org.glowroot.weaving;
 
-import org.apache.jackrabbit.core.persistence.pool.BundleDbPersistenceManager;
+import com.google.common.reflect.Reflection;
+import org.xnio.Buffers;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-public class JsrInlinedMethodMisc implements Misc {
+public class BytecodeWithStackFramesMisc implements Misc {
 
     @Override
     public void execute1() {}
 
     @Override
     public String executeWithReturn() {
-        return BundleDbPersistenceManager.class.getName();
+        Reflection.initialize(Buffers.class);
+        return "";
     }
 
     @Override

@@ -104,8 +104,8 @@ class Weaver {
             // stackmap information to be consistent with the bytecode in order to pass
             // verification."
             //
-            ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_MAXS
-                    + ClassWriter.COMPUTE_FRAMES, analyzedWorld, loader, codeSource, className);
+            ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES,
+                    analyzedWorld, loader, codeSource, className);
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors.get(), mixinTypes,
                     loader, analyzedWorld, codeSource, metricWrapperMethods);
             ClassReader cr = new ClassReader(classBytes);
@@ -124,8 +124,8 @@ class Weaver {
             if (shortCircuitException || cv.isInterfaceSoNothingToWeave()) {
                 return null;
             } else if (pointcutClassFoundException) {
-                ClassWriter cw2 = new ComputeFramesClassWriter(ClassWriter.COMPUTE_MAXS
-                        + ClassWriter.COMPUTE_FRAMES, analyzedWorld, loader, codeSource, className);
+                ClassWriter cw2 = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES,
+                        analyzedWorld, loader, codeSource, className);
                 PointcutClassVisitor cv2 = new PointcutClassVisitor(cw2);
                 ClassReader cr2 = new ClassReader(classBytes);
                 cr2.accept(new JSRInlinerClassVisitor(cv2), ClassReader.SKIP_FRAMES);
@@ -133,8 +133,8 @@ class Weaver {
             } else {
                 byte[] wovenBytes = cw.toByteArray();
                 if (verifyWeaving) {
-                    verifyBytecode(classBytes, className, false);
-                    verifyBytecode(wovenBytes, className, true);
+                    verifyBytecode(classBytes, className, loader, false);
+                    verifyBytecode(wovenBytes, className, loader, true);
                 }
                 return wovenBytes;
             }
@@ -154,17 +154,18 @@ class Weaver {
                 .toString();
     }
 
-    private static void verifyBytecode(byte[] bytes, String className, boolean woven) {
+    private static void verifyBytecode(byte[] bytes, String className,
+            @Nullable ClassLoader loader, boolean woven) {
         ClassReader verifyClassReader = new ClassReader(bytes);
         try {
-            CheckClassAdapter.verify(verifyClassReader, false, new PrintWriter(System.err));
-        } catch (Exception e) {
+            CheckClassAdapter.verify(verifyClassReader, loader, false, new PrintWriter(System.err));
+        } catch (Throwable t) {
             if (woven) {
                 logger.warn("error verifying class {} (after weaving): {}", className,
-                        e.getMessage(), e);
+                        t.getMessage(), t);
             } else {
                 logger.warn("error verifying class {} (before weaving): {}", className,
-                        e.getMessage(), e);
+                        t.getMessage(), t);
             }
         }
     }

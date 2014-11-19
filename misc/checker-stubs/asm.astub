@@ -48,3 +48,11 @@ public class JSRInlinerAdapter {
     public JSRInlinerAdapter(@Nullable MethodVisitor mv, int access, String name, String desc,
             @Nullable String signature, String @Nullable [] exceptions);
 }
+
+/* ========================================================================== */
+package org.objectweb.asm.util;
+
+public class CheckClassAdapter {
+    public static void verify(ClassReader cr, @Nullable ClassLoader loader, boolean dump,
+            PrintWriter pw);
+}

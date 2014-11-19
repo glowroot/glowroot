@@ -152,7 +152,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             // the weaving itself)
             inWeaving.set(true);
             try {
-                byte[] wovenBytes = weaver.weave(bytes, name, null, this);
+                byte[] wovenBytes =
+                        weaver.weave(bytes, ClassNames.toInternalName(name), null, this);
                 if (wovenBytes == null) {
                     return bytes;
                 } else {

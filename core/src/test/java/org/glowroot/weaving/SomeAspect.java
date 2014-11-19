@@ -900,7 +900,12 @@ public class SomeAspect {
     @Pointcut(className = "org.apache.jackrabbit.core.persistence.pool.BundleDbPersistenceManager",
             methodName = "loadBundle",
             methodParameterTypes = {"org.apache.jackrabbit.core.id.NodeId"})
-    public static class TestJSRInlinedMethodAdvice {}
+    public static class TestJSRMethodAdvice {}
+
+    // test weaving against 1.7 bytecode with stack frames
+    @Pointcut(className = "org.xnio.Buffers", methodName = "*",
+            methodParameterTypes = {".."})
+    public static class TestBytecodeWithStackFramesAdvice {}
 
     public static class TestClassMeta {
 

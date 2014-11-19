@@ -17,7 +17,9 @@ package org.glowroot.weaving;
 
 import java.lang.reflect.Array;
 
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -77,8 +79,9 @@ import org.glowroot.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
 import org.glowroot.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
 import org.glowroot.weaving.SomeAspect.StaticAdvice;
 import org.glowroot.weaving.SomeAspect.SuperBasicAdvice;
+import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice;
 import org.glowroot.weaving.SomeAspect.TestClassMeta;
-import org.glowroot.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
+import org.glowroot.weaving.SomeAspect.TestJSRMethodAdvice;
 import org.glowroot.weaving.SomeAspect.TestMethodMeta;
 import org.glowroot.weaving.SomeAspect.ThrowableToStringAdvice;
 import org.glowroot.weaving.SomeAspect.WildMethodAdvice;
@@ -1145,10 +1148,18 @@ public class WeaverTest {
     }
 
     @Test
-    // test weaving against JSR bytecode that ends up being inlined via JSRInlinerAdapter
-    public void shouldWeaveJsrInlinedBytecode() throws Exception {
-        Misc test = newWovenObject(JsrInlinedMethodMisc.class, Misc.class,
-                TestJSRInlinedMethodAdvice.class);
+    // test weaving against JSR bytecode
+    public void shouldWeaveJsrBytecode() throws Exception {
+        Misc test = newWovenObject(JsrMethodMisc.class, Misc.class, TestJSRMethodAdvice.class);
+        test.executeWithReturn();
+    }
+
+    @Test
+    // test weaving against jdk 1.7 bytecode with stack frames
+    public void shouldWeaveBytecodeWithStackFrames() throws Exception {
+        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
+                TestBytecodeWithStackFramesAdvice.class);
         test.executeWithReturn();
     }
 
