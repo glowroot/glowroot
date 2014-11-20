@@ -23,14 +23,14 @@ import javax.annotation.Nullable;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 
-public class PathEvaluator {
+class PathEvaluator {
 
     private static final Splitter splitter = Splitter.on('.').omitEmptyStrings();
 
     private final Accessor[] accessors;
     private final String/*@Nullable*/[] remainingPath;
 
-    public PathEvaluator(Class<?> baseClass, String path) {
+    PathEvaluator(Class<?> baseClass, String path) {
         List<String> parts = Lists.newArrayList(splitter.split(path));
         List<Accessor> accessors = Lists.newArrayList();
         Class<?> currClass = baseClass;
@@ -56,8 +56,9 @@ public class PathEvaluator {
         }
     }
 
-    public @Nullable Object evaluateOnBase(Object base) throws IllegalArgumentException,
-            IllegalAccessException, InvocationTargetException {
+    @Nullable
+    Object evaluateOnBase(Object base) throws IllegalArgumentException, IllegalAccessException,
+            InvocationTargetException {
         Object curr = base;
         for (Accessor accessor : accessors) {
             curr = accessor.evaluate(curr);

@@ -30,7 +30,7 @@ import com.google.common.collect.MapMaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Beans {
+class Beans {
 
     private static final Logger logger = LoggerFactory.getLogger(Beans.class);
 
@@ -69,11 +69,11 @@ public class Beans {
 
     private Beans() {}
 
-    public static @Nullable Object value(@Nullable Object obj, String[] path) {
+    static @Nullable Object value(@Nullable Object obj, String[] path) {
         return value(obj, path, 0);
     }
 
-    public static @Nullable Object value(@Nullable Object obj, String[] path, int currIndex) {
+    private static @Nullable Object value(@Nullable Object obj, String[] path, int currIndex) {
         if (obj == null) {
             return null;
         }
@@ -121,7 +121,7 @@ public class Beans {
         return accessor;
     }
 
-    public static @Nullable Accessor findAccessor(Class<?> clazz, String name) {
+    static @Nullable Accessor findAccessor(Class<?> clazz, String name) {
         if (clazz.getComponentType() != null && name.equals("length")) {
             return Accessor.arrayLength();
         }

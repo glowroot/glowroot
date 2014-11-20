@@ -59,6 +59,10 @@ class BindParameterList implements Iterable</*@Nullable*/Object> {
         return size;
     }
 
+    boolean isEmpty() {
+        return size == 0;
+    }
+
     void clear() {
         Arrays.fill(parameters, null);
         size = 0;

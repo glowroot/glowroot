@@ -113,13 +113,12 @@ class WeavingClassVisitor extends ClassVisitor {
 
     // these are for handling class and method metas
     private boolean maybeHasMetas;
-    private @MonotonicNonNull MethodVisitor clinitMethodVisitor;
     private final Set<Type> classMetaTypes = Sets.newHashSet();
     private final Set<MethodMetaGroup> methodMetaGroups = Sets.newHashSet();
     private @MonotonicNonNull String metaHolderInternalName;
     private int methodMetaCounter;
 
-    public WeavingClassVisitor(ClassWriter cw, ImmutableList<Advice> advisors,
+    public WeavingClassVisitor(ClassWriter cw, List<Advice> advisors,
             ImmutableList<MixinType> mixinTypes, @Nullable ClassLoader loader,
             AnalyzedWorld analyzedWorld, @Nullable CodeSource codeSource,
             boolean metricWrapperMethods) {
@@ -569,11 +568,11 @@ class WeavingClassVisitor extends ClassVisitor {
                 continue;
             }
             for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.analyzedMethods()) {
-                Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(superAnalyzedMethod);
+                AnalyzedMethodKey key = AnalyzedMethodKey.wrap(superAnalyzedMethod);
+                Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(key);
                 if (matchingAdvisorSet == null) {
                     matchingAdvisorSet = Sets.newHashSet();
-                    matchingAdvisorSets.put(AnalyzedMethodKey.wrap(superAnalyzedMethod),
-                            matchingAdvisorSet);
+                    matchingAdvisorSets.put(key, matchingAdvisorSet);
                 }
                 matchingAdvisorSet.addAll(superAnalyzedMethod.advisors());
             }
@@ -642,13 +641,14 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @SuppressWarnings("serial")
     static class ShortCircuitException extends RuntimeException {
-        static ShortCircuitException INSTANCE = new ShortCircuitException();
+        static final ShortCircuitException INSTANCE = new ShortCircuitException();
         private ShortCircuitException() {}
     }
 
     @SuppressWarnings("serial")
     static class PointcutClassFoundException extends RuntimeException {
-        private static PointcutClassFoundException INSTANCE = new PointcutClassFoundException();
+        private static final PointcutClassFoundException INSTANCE =
+                new PointcutClassFoundException();
         private PointcutClassFoundException() {}
     }
 

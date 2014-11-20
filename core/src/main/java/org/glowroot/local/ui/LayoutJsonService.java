@@ -23,19 +23,17 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
-import org.immutables.common.marshal.Marshaling;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.common.Marshaling2;
 import org.glowroot.config.CapturePoint;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
-import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.OptionalService;
 import org.glowroot.local.ui.Layout.LayoutPlugin;
@@ -43,12 +41,11 @@ import org.glowroot.local.ui.Layout.LayoutPlugin;
 @JsonService
 class LayoutJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(LayoutJsonService.class);
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     private final String version;
     private final ConfigService configService;
-    private final PluginDescriptorCache pluginDescriptorCache;
+    private final ImmutableList<PluginDescriptor> pluginDescriptors;
     private final OptionalService<HeapDumps> heapDumps;
     private final long fixedAggregateIntervalSeconds;
     private final long fixedGaugeIntervalSeconds;
@@ -56,11 +53,11 @@ class LayoutJsonService {
     private volatile @Nullable Layout layout;
 
     LayoutJsonService(String version, ConfigService configService,
-            PluginDescriptorCache pluginDescriptorCache, OptionalService<HeapDumps> heapDumps,
+            List<PluginDescriptor> pluginDescriptors, OptionalService<HeapDumps> heapDumps,
             long fixedAggregateIntervalSeconds, long fixedGaugeIntervalSeconds) {
         this.version = version;
         this.configService = configService;
-        this.pluginDescriptorCache = pluginDescriptorCache;
+        this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         this.heapDumps = heapDumps;
         this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
         this.fixedGaugeIntervalSeconds = fixedGaugeIntervalSeconds;
@@ -78,18 +75,18 @@ class LayoutJsonService {
     String getLayout() throws IOException {
         Layout localLayout = layout;
         if (localLayout == null) {
-            localLayout = buildLayout(version, configService, pluginDescriptorCache,
+            localLayout = buildLayout(version, configService, pluginDescriptors,
                     heapDumps.getService(), fixedAggregateIntervalSeconds,
                     fixedGaugeIntervalSeconds);
             layout = localLayout;
         }
-        return Marshaling.toJson(localLayout);
+        return Marshaling2.toJson(localLayout);
     }
 
     String getLayoutVersion() {
         Layout localLayout = layout;
         if (localLayout == null) {
-            localLayout = buildLayout(version, configService, pluginDescriptorCache,
+            localLayout = buildLayout(version, configService, pluginDescriptors,
                     heapDumps.getService(), fixedAggregateIntervalSeconds,
                     fixedGaugeIntervalSeconds);
             layout = localLayout;
@@ -109,10 +106,10 @@ class LayoutJsonService {
     }
 
     private static Layout buildLayout(String version, ConfigService configService,
-            PluginDescriptorCache pluginDescriptorCache, @Nullable HeapDumps heapDumps,
+            List<PluginDescriptor> pluginDescriptors, @Nullable HeapDumps heapDumps,
             long fixedAggregateIntervalSeconds, long fixedGaugeIntervalSeconds) {
         List<LayoutPlugin> plugins = Lists.newArrayList();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.pluginDescriptors()) {
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             String id = pluginDescriptor.id();
             String name = pluginDescriptor.name();
             // by convention, strip off trailing " Plugin"
@@ -123,7 +120,7 @@ class LayoutJsonService {
         }
         // use linked hash set to maintain ordering in case there is no default transaction type
         Set<String> transactionTypes = Sets.newLinkedHashSet();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.pluginDescriptors()) {
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             transactionTypes.addAll(pluginDescriptor.transactionTypes());
         }
         for (CapturePoint capturePoint : configService.getCapturePoints()) {
@@ -149,7 +146,7 @@ class LayoutJsonService {
         orderedTransactionTypes.addAll(Ordering.from(String.CASE_INSENSITIVE_ORDER).sortedCopy(
                 transactionTypes));
         Set<String> transactionCustomAttributes = Sets.newTreeSet();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.pluginDescriptors()) {
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             transactionCustomAttributes.addAll(pluginDescriptor.transactionCustomAttributes());
         }
         return ImmutableLayout.builder()

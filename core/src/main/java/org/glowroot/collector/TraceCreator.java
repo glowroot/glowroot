@@ -17,6 +17,7 @@ package org.glowroot.collector;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
@@ -26,6 +27,9 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharStreams;
 
+import org.glowroot.common.Marshaling2;
+import org.glowroot.transaction.model.GcInfoComponent.GcInfo;
+import org.glowroot.transaction.model.ThreadInfoComponent.ThreadInfoData;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.transaction.model.TransactionMetricImpl;
 
@@ -70,8 +74,14 @@ public class TraceCreator {
         builder.customAttributes(writeCustomAttributesAsString(transaction.getCustomAttributes()));
         builder.customAttributesForIndexing(transaction.getCustomAttributes());
         builder.metrics(writeMetricsAsString(transaction.getRootMetric()));
-        builder.threadInfo(transaction.getThreadInfoJson());
-        builder.gcInfos(transaction.getGcInfosJson());
+        ThreadInfoData threadInfo = transaction.getThreadInfo();
+        if (threadInfo != null) {
+            builder.threadInfo(Marshaling2.toJson(threadInfo));
+        }
+        List<GcInfo> gcInfos = transaction.getGcInfos();
+        if (gcInfos != null) {
+            builder.gcInfos(Marshaling2.toJson(gcInfos, GcInfo.class));
+        }
         builder.entriesExistence(Existence.YES);
         if (transaction.getOutlierProfile() == null) {
             builder.outlierProfileExistence(Existence.NO);

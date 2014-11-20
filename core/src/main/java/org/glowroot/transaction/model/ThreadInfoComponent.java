@@ -15,7 +15,6 @@
  */
 package org.glowroot.transaction.model;
 
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -23,22 +22,16 @@ import java.lang.management.ThreadMXBean;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.MoreObjects;
-import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
 import org.glowroot.jvm.ThreadAllocatedBytes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-class ThreadInfoComponent {
-
-    private static final Logger logger = LoggerFactory.getLogger(ThreadInfoComponent.class);
-    private static final JsonFactory jsonFactory = new JsonFactory();
+public class ThreadInfoComponent {
 
     private static final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
     private static final boolean isThreadCpuTimeSupported = threadMXBean.isThreadCpuTimeSupported();
@@ -46,15 +39,12 @@ class ThreadInfoComponent {
             threadMXBean.isThreadContentionMonitoringSupported();
 
     private final long threadId;
-    private final long threadCpuTimeStart;
-    private final long threadBlockedTimeStart;
-    private final long threadWaitedTimeStart;
-    private final long threadAllocatedBytesStart;
+    private final ThreadInfoSnapshot startingSnapshot;
 
     private final @Nullable ThreadAllocatedBytes threadAllocatedBytes;
 
     @GuardedBy("lock")
-    private volatile @MonotonicNonNull String completedJsonValue;
+    private volatile @MonotonicNonNull ThreadInfoData completedThreadInfo;
 
     private final Object lock = new Object();
 
@@ -63,76 +53,56 @@ class ThreadInfoComponent {
         ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
         // thread info for current thread cannot be null
         checkNotNull(threadInfo);
+        ImmutableThreadInfoSnapshot.Builder builder = ImmutableThreadInfoSnapshot.builder();
         if (isThreadCpuTimeSupported) {
-            threadCpuTimeStart = threadMXBean.getCurrentThreadCpuTime();
-        } else {
-            threadCpuTimeStart = -1;
+            builder.threadCpuTime(threadMXBean.getCurrentThreadCpuTime());
         }
         if (isThreadContentionMonitoringSupported) {
-            threadBlockedTimeStart = threadInfo.getBlockedTime();
-            threadWaitedTimeStart = threadInfo.getWaitedTime();
-        } else {
-            threadBlockedTimeStart = -1;
-            threadWaitedTimeStart = -1;
+            builder.threadBlockedTime(threadInfo.getBlockedTime());
+            builder.threadWaitedTime(threadInfo.getWaitedTime());
         }
         if (threadAllocatedBytes != null) {
-            threadAllocatedBytesStart =
-                    threadAllocatedBytes.getThreadAllocatedBytesSafely(threadId);
-        } else {
-            threadAllocatedBytesStart = -1;
+            builder.threadAllocatedBytes(
+                    threadAllocatedBytes.getThreadAllocatedBytesSafely(threadId));
         }
         this.threadAllocatedBytes = threadAllocatedBytes;
+        startingSnapshot = builder.build();
     }
 
     // must be called from transaction thread
     void onTraceComplete() {
         synchronized (lock) {
-            completedJsonValue = writeValueAsString();
+            completedThreadInfo = getThreadInfo();
         }
     }
 
     // safe to be called from another thread
-    String writeValueAsString() {
+    ThreadInfoData getThreadInfo() {
         synchronized (lock) {
-            if (completedJsonValue == null) {
+            if (completedThreadInfo == null) {
                 // transaction thread is still alive (and cannot terminate in the middle of this
-                // method
-                // because of above lock), so safe to capture ThreadMXBean.getThreadInfo() and
-                // ThreadMXBean.getThreadCpuTime() for the transaction thread
-                StringBuilder sb = new StringBuilder();
-                try {
-                    JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-                    writeValue(jg);
-                    jg.close();
-                } catch (IOException e) {
-                    logger.warn(e.getMessage(), e);
-                    return "{}";
-                }
-                return sb.toString();
+                // method because of above lock), so safe to capture ThreadMXBean.getThreadInfo()
+                // and ThreadMXBean.getThreadCpuTime() for the transaction thread
+                return getThreadInfoInternal();
             } else {
-                return completedJsonValue;
+                return completedThreadInfo;
             }
         }
     }
 
-    private void writeValue(JsonGenerator jg) throws IOException {
+    private ThreadInfoData getThreadInfoInternal() {
+        ImmutableThreadInfoData.Builder builder = ImmutableThreadInfoData.builder();
         ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
         if (threadInfo == null) {
             // thread must have just recently terminated
-            jg.writeStartObject();
-            jg.writeFieldName("garbageCollectorInfos");
-            jg.writeStartArray();
-            jg.writeEndArray();
-            jg.writeEndObject();
-            return;
+            return builder.build();
         }
-        jg.writeStartObject();
         if (isThreadCpuTimeSupported) {
             // getThreadCpuTime() returns -1 if CPU time measurement is disabled (which is different
             // than whether or not it is supported)
             long threadCpuTime = threadMXBean.getThreadCpuTime(threadId);
-            if (threadCpuTimeStart != -1 && threadCpuTime != -1) {
-                jg.writeNumberField("threadCpuTime", threadCpuTime - threadCpuTimeStart);
+            if (startingSnapshot.threadCpuTime() != -1 && threadCpuTime != -1) {
+                builder.threadCpuTime(threadCpuTime - startingSnapshot.threadCpuTime());
             }
         }
         if (isThreadContentionMonitoringSupported) {
@@ -140,31 +110,58 @@ class ThreadInfoComponent {
             // disabled (which is different than whether or not it is supported)
             long threadBlockedTime = threadInfo.getBlockedTime();
             long threadWaitedTime = threadInfo.getWaitedTime();
-            if (threadBlockedTimeStart != -1 && threadBlockedTime != -1) {
-                jg.writeNumberField("threadBlockedTime",
-                        threadBlockedTime - threadBlockedTimeStart);
+            if (startingSnapshot.threadBlockedTime() != -1 && threadBlockedTime != -1) {
+                builder.threadBlockedTime(threadBlockedTime - startingSnapshot.threadBlockedTime());
             }
-            if (threadWaitedTimeStart != -1 && threadWaitedTime != -1) {
-                jg.writeNumberField("threadWaitedTime", threadWaitedTime - threadWaitedTimeStart);
+            if (startingSnapshot.threadWaitedTime() != -1 && threadWaitedTime != -1) {
+                builder.threadWaitedTime(threadWaitedTime - startingSnapshot.threadWaitedTime());
             }
         }
         if (threadAllocatedBytes != null) {
             long allocatedBytes = threadAllocatedBytes.getThreadAllocatedBytesSafely(threadId);
-            if (threadAllocatedBytesStart != -1 && allocatedBytes != -1) {
-                jg.writeNumberField("threadAllocatedBytes",
-                        allocatedBytes - threadAllocatedBytesStart);
+            if (startingSnapshot.threadAllocatedBytes() != -1 && allocatedBytes != -1) {
+                builder.threadAllocatedBytes(
+                        allocatedBytes - startingSnapshot.threadAllocatedBytes());
             }
         }
-        jg.writeEndObject();
+        return builder.build();
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("threadId", threadId)
-                .add("threadCpuTimeStart", threadCpuTimeStart)
-                .add("threadBlockedTimeStart", threadBlockedTimeStart)
-                .add("threadWaitedTimeStart", threadWaitedTimeStart)
+                .add("startingSnapshot", startingSnapshot)
                 .toString();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class ThreadInfoSnapshot {
+        @Value.Default
+        long threadCpuTime() {
+            return -1;
+        }
+        @Value.Default
+        long threadBlockedTime() {
+            return -1;
+        }
+        @Value.Default
+        long threadWaitedTime() {
+            return -1;
+        }
+        @Value.Default
+        long threadAllocatedBytes() {
+            return -1;
+        }
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    public abstract static class ThreadInfoData {
+        abstract @Nullable Long threadCpuTime();
+        abstract @Nullable Long threadBlockedTime();
+        abstract @Nullable Long threadWaitedTime();
+        abstract @Nullable Long threadAllocatedBytes();
     }
 }

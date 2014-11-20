@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import javax.annotation.Nullable;
-import javax.management.JMException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.ObjectName;
@@ -123,7 +122,7 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/process")
-    String getProcess() throws IOException, JMException {
+    String getProcess() throws Exception {
         String pid = ProcessId.getPid();
         String command = System.getProperty("sun.java.command");
         String mainClass = null;
@@ -321,7 +320,7 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/heap-dump-defaults")
-    String getHeapDumpDefaults() throws IOException, JMException {
+    String getHeapDumpDefaults() throws Exception {
         String heapDumpPath = getHeapDumpPathFromCommandLine();
         if (Strings.isNullOrEmpty(heapDumpPath)) {
             String javaTempDir = MoreObjects.firstNonNull(
@@ -352,7 +351,7 @@ class JvmJsonService {
     }
 
     @POST("/backend/jvm/dump-heap")
-    String dumpHeap(String content) throws IOException, JMException, InterruptedException {
+    String dumpHeap(String content) throws Exception {
         HeapDumps service = OptionalJsonServices.validateAvailability(heapDumps);
         RequestWithDirectory request = Marshaling.fromJson(content, RequestWithDirectory.class);
         File dir = new File(request.directory());
@@ -437,7 +436,7 @@ class JvmJsonService {
     }
 
     private Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(ObjectName objectName)
-            throws JMException, InterruptedException {
+            throws Exception {
         MBeanInfo mBeanInfo = lazyPlatformMBeanServer.getMBeanInfo(objectName);
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
@@ -519,7 +518,7 @@ class JvmJsonService {
         }
     }
 
-    interface MBeanTreeNode {
+    private interface MBeanTreeNode {
 
         static final Ordering<MBeanTreeNode> ordering = new Ordering<MBeanTreeNode>() {
             @Override

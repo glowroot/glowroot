@@ -36,7 +36,6 @@ import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.CappedDatabase;
@@ -74,7 +73,6 @@ public class LocalUiModule {
             String version) {
 
         ConfigService configService = configModule.getConfigService();
-        PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();
 
         AggregateDao aggregateDao = storageModule.getAggregateDao();
         TraceDao traceDao = storageModule.getTraceDao();
@@ -87,7 +85,7 @@ public class LocalUiModule {
         TransactionRegistry transactionRegistry = transactionModule.getTransactionRegistry();
 
         LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
-                pluginDescriptorCache, jvmModule.getHeapDumps(),
+                configModule.getPluginDescriptors(), jvmModule.getHeapDumps(),
                 collectorModule.getFixedAggregateIntervalSeconds(),
                 collectorModule.getFixedGaugeIntervalSeconds());
         HttpSessionManager httpSessionManager =
@@ -112,7 +110,8 @@ public class LocalUiModule {
                 gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),
                 jvmModule.getHeapDumps(), collectorModule.getFixedGaugeIntervalSeconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
-                pluginDescriptorCache, dataDir, httpSessionManager, transactionModule);
+                configModule.getPluginDescriptors(), dataDir, httpSessionManager,
+                transactionModule);
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, instrumentation);
         CapturePointJsonService capturePointJsonService = new CapturePointJsonService(
                 configService, transactionModule.getAdviceCache(), classpathCache,

@@ -15,6 +15,8 @@
  */
 package org.glowroot.local.ui;
 
+import javax.annotation.Nonnull;
+
 import org.glowroot.jvm.OptionalService;
 
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_IMPLEMENTED;
@@ -23,8 +25,8 @@ class OptionalJsonServices {
 
     private OptionalJsonServices() {}
 
-    static <T extends /*@NonNull*/Object> T validateAvailability(
-            OptionalService<T> optionalService) {
+    @Nonnull
+    static <T> T validateAvailability(OptionalService<T> optionalService) {
         T service = optionalService.getService();
         if (service == null) {
             throw new JsonServiceException(NOT_IMPLEMENTED,

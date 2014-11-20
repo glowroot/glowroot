@@ -15,7 +15,6 @@
  */
 package org.glowroot.advicegen;
 
-import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,12 +25,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.util.TraceClassVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,9 +79,6 @@ import static org.objectweb.asm.Opcodes.V1_5;
 public class AdviceGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(AdviceGenerator.class);
-
-    private static final boolean dumpBytecode =
-            Boolean.getBoolean("glowroot.internal.bytecode.dump");
 
     private static final String HANDLE_CLASS_NAME =
             "org/glowroot/transaction/PluginServicesRegistry";
@@ -174,15 +168,9 @@ public class AdviceGenerator {
             addOnChangeMethod(cw);
         }
         cw.visitEnd();
-        byte[] bytes = cw.toByteArray();
-        if (dumpBytecode) {
-            ClassReader cr = new ClassReader(bytes);
-            TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
-            cr.accept(tcv, ClassReader.SKIP_FRAMES);
-        }
         ImmutableLazyDefinedClass.Builder builder = ImmutableLazyDefinedClass.builder()
                 .type(Type.getObjectType(adviceInternalName))
-                .bytes(bytes);
+                .bytes(cw.toByteArray());
         if (methodMetaClass != null) {
             builder.addDependencies(methodMetaClass);
         }

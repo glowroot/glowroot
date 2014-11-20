@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -61,10 +60,12 @@ class ConfigFile {
 
     ConfigFile(File file, List<PluginDescriptor> pluginDescriptors) {
         this.file = file;
-        this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
+        // sorted by id for writing to config file
+        this.pluginDescriptors =
+                PluginDescriptor.orderingById.immutableSortedCopy(pluginDescriptors);
     }
 
-    Config readValue(String content) throws IOException {
+    private Config readValue(String content) throws IOException {
         Config config = Marshaling.fromJson(content, Config.class);
         UserInterfaceConfig userInterfaceConfig = config.userInterfaceConfig();
         if (userInterfaceConfig.defaultTransactionType() == null) {
@@ -204,8 +205,7 @@ class ConfigFile {
     private static class CustomPrettyPrinter extends DefaultPrettyPrinter {
 
         @Override
-        public void writeObjectFieldValueSeparator(JsonGenerator jg) throws IOException,
-                JsonGenerationException {
+        public void writeObjectFieldValueSeparator(JsonGenerator jg) throws IOException {
             jg.writeRaw(": ");
         }
     }

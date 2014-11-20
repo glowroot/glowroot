@@ -178,10 +178,6 @@ public class TransactionMetricImpl implements TransactionMetricExt {
         selfNestingLevel--;
     }
 
-    public MetricName getMetricName() {
-        return metricName;
-    }
-
     public String getName() {
         return metricName.name();
     }

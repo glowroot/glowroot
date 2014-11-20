@@ -68,12 +68,12 @@ public class TraceGcInfoTest {
         container.executeAppUnderTest(ShouldGenerateGarbage.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceGcInfo> garbageCollectorInfos = trace.getGcInfos();
+        List<TraceGcInfo> gcInfos = trace.getGcInfos();
         long collectionCount = 0;
         long collectionTime = 0;
-        for (TraceGcInfo garbageCollectionInfo : garbageCollectorInfos) {
-            collectionCount += garbageCollectionInfo.getCollectionCount();
-            collectionTime += garbageCollectionInfo.getCollectionTime();
+        for (TraceGcInfo gcInfo : gcInfos) {
+            collectionCount += gcInfo.getCollectionCount();
+            collectionTime += gcInfo.getCollectionTime();
         }
         assertThat(collectionCount).isGreaterThanOrEqualTo(5);
         assertThat(collectionTime).isGreaterThanOrEqualTo(5);
@@ -96,20 +96,18 @@ public class TraceGcInfoTest {
             }
         }
         private static long collectionCount() {
-            List<GarbageCollectorMXBean> garbageCollectorBeans =
-                    ManagementFactory.getGarbageCollectorMXBeans();
+            List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
             long total = 0;
-            for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
-                total += garbageCollectorBean.getCollectionCount();
+            for (GarbageCollectorMXBean gcBean : gcBeans) {
+                total += gcBean.getCollectionCount();
             }
             return total;
         }
         private static long collectionTime() {
-            List<GarbageCollectorMXBean> garbageCollectorBeans =
-                    ManagementFactory.getGarbageCollectorMXBeans();
+            List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
             long total = 0;
-            for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
-                total += garbageCollectorBean.getCollectionTime();
+            for (GarbageCollectorMXBean gcBean : gcBeans) {
+                total += gcBean.getCollectionTime();
             }
             return total;
         }

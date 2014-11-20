@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateRepository;
-import org.glowroot.collector.Existence;
 import org.glowroot.collector.ImmutableAggregate;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.ResultSetExtractor;
@@ -266,12 +265,19 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    // TODO delete 100 at a time similar to TraceDao.deleteBefore()
     void deleteBefore(long captureTime) {
         try {
-            dataSource.update("delete from overall_aggregate where capture_time < ?", captureTime);
-            dataSource.update("delete from transaction_aggregate where capture_time < ?",
-                    captureTime);
+            // delete 100 at a time, which is both faster than deleting all at once, and doesn't
+            // lock the single jdbc connection for one large chunk of time
+            while (true) {
+                int deleted = dataSource.update(
+                        "delete from overall_aggregate where capture_time < ?", captureTime);
+                deleted += dataSource.update(
+                        "delete from transaction_aggregate where capture_time < ?", captureTime);
+                if (deleted == 0) {
+                    break;
+                }
+            }
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -298,25 +304,10 @@ public class AggregateDao implements AggregateRepository {
                     .errorCount(resultSet.getLong(3))
                     .transactionCount(resultSet.getLong(4))
                     .metrics(checkNotNull(resultSet.getString(7))) // metrics should never be null
-                    .profileExistence(getExistence(resultSet.getString(6)))
+                    .profileExistence(
+                            RowMappers.getExistence(resultSet.getString(6), cappedDatabase))
                     .profileSampleCount(resultSet.getLong(5))
                     .build();
-        }
-        private Existence getExistence(@Nullable String fileBlockId) throws SQLException {
-            if (fileBlockId == null) {
-                return Existence.NO;
-            }
-            FileBlock fileBlock;
-            try {
-                fileBlock = FileBlock.from(fileBlockId);
-            } catch (InvalidBlockIdFormatException e) {
-                throw new SQLException(e);
-            }
-            if (cappedDatabase.isExpired(fileBlock)) {
-                return Existence.EXPIRED;
-            } else {
-                return Existence.YES;
-            }
         }
     }
 

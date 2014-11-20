@@ -78,7 +78,7 @@ class StackTraceCollector implements Runnable {
         }
     }
 
-    void updateScheduleIfNeeded() {
+    private void updateScheduleIfNeeded() {
         boolean newEnabled = configService.getProfilingConfig().enabled();
         int newIntervalMillis = configService.getProfilingConfig().intervalMillis();
         if (newEnabled != currentEnabled || newIntervalMillis != currentIntervalMillis) {

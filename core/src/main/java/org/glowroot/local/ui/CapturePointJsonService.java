@@ -17,7 +17,6 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,6 +38,7 @@ import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.api.weaving.MethodModifier;
+import org.glowroot.common.Marshaling2;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.CapturePoint;
 import org.glowroot.config.CapturePoint.CaptureKind;
@@ -72,13 +72,13 @@ class CapturePointJsonService {
     }
 
     @GET("/backend/config/capture-points")
-    String getCapturePoint() throws IOException, SQLException {
+    String getCapturePoint() throws Exception {
         List<CapturePoint> configs = configService.getCapturePoints();
         List<CapturePointDto> configDtos = Lists.newArrayList();
         for (CapturePoint config : configs) {
             configDtos.add(CapturePointDto.fromConfig(config));
         }
-        return Marshaling.toJson(ImmutableCapturePointResponse.builder()
+        return Marshaling2.toJson(ImmutableCapturePointResponse.builder()
                 .addAllConfigs(configDtos)
                 .jvmOutOfSync(adviceCache.isOutOfSync(configService.getCapturePoints()))
                 .jvmRetransformClassesSupported(
@@ -154,7 +154,7 @@ class CapturePointJsonService {
         CapturePointDto capturePointDto = Marshaling.fromJson(content, CapturePointDto.class);
         CapturePoint capturePoint = capturePointDto.toConfig();
         configService.insertCapturePoint(capturePoint);
-        return Marshaling.toJson(CapturePointDto.fromConfig(capturePoint));
+        return Marshaling2.toJson(CapturePointDto.fromConfig(capturePoint));
     }
 
     @POST("/backend/config/capture-points/update")
@@ -162,7 +162,7 @@ class CapturePointJsonService {
         CapturePointDto capturePointDto = Marshaling.fromJson(content, CapturePointDto.class);
         CapturePoint capturePoint = capturePointDto.toConfig();
         configService.updateCapturePoint(capturePoint, capturePointDto.version().get());
-        return Marshaling.toJson(CapturePointDto.fromConfig(capturePoint));
+        return Marshaling2.toJson(CapturePointDto.fromConfig(capturePoint));
     }
 
     @POST("/backend/config/capture-points/remove")

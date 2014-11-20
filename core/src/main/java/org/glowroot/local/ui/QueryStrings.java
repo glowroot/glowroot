@@ -29,7 +29,6 @@ import com.google.common.collect.Maps;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 
 import org.glowroot.common.Reflections;
-import org.glowroot.common.Reflections.ReflectiveException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -43,8 +42,9 @@ class QueryStrings {
                 }
             });
 
-    static <T> T decode(String queryString, Class<T> clazz) throws ClassNotFoundException,
-            ReflectiveException {
+    private QueryStrings() {}
+
+    static <T> T decode(String queryString, Class<T> clazz) throws Exception {
         String className = createImmutableClassName(clazz);
         Class<?> immutableClass = Class.forName(className);
         Method builderMethod = Reflections.getDeclaredMethod(immutableClass, "builder");

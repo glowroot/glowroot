@@ -18,7 +18,6 @@ package org.glowroot.plugin.servlet;
 import java.lang.reflect.Method;
 import java.util.Enumeration;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import javax.annotation.Nullable;
 
@@ -26,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
+import org.glowroot.plugin.servlet.Invokers.EmptyStringEnumeration;
 
 public class RequestInvoker {
 
@@ -54,15 +54,15 @@ public class RequestInvoker {
         } catch (ClassNotFoundException e) {
             logger.warn(e.getMessage(), e);
         }
-        getSessionMethod = getMethod(httpServletRequestClass, "getSession", boolean.class);
-        getMethodMethod = getMethod(httpServletRequestClass, "getMethod");
-        getRequestURIMethod = getMethod(httpServletRequestClass, "getRequestURI");
-        getQueryStringMethod = getMethod(httpServletRequestClass, "getQueryString");
-        getHeaderMethod = getMethod(httpServletRequestClass, "getHeader", String.class);
-        getHeadersMethod = getMethod(httpServletRequestClass, "getHeaders", String.class);
-        getHeaderNamesMethod = getMethod(httpServletRequestClass, "getHeaderNames");
-        getUserPrincipalMethod = getMethod(httpServletRequestClass, "getUserPrincipal");
-        getParameterMapMethod = getMethod(servletRequestClass, "getParameterMap");
+        getSessionMethod = Invokers.getMethod(httpServletRequestClass, "getSession", boolean.class);
+        getMethodMethod = Invokers.getMethod(httpServletRequestClass, "getMethod");
+        getRequestURIMethod = Invokers.getMethod(httpServletRequestClass, "getRequestURI");
+        getQueryStringMethod = Invokers.getMethod(httpServletRequestClass, "getQueryString");
+        getHeaderMethod = Invokers.getMethod(httpServletRequestClass, "getHeader", String.class);
+        getHeadersMethod = Invokers.getMethod(httpServletRequestClass, "getHeaders", String.class);
+        getHeaderNamesMethod = Invokers.getMethod(httpServletRequestClass, "getHeaderNames");
+        getUserPrincipalMethod = Invokers.getMethod(httpServletRequestClass, "getUserPrincipal");
+        getParameterMapMethod = Invokers.getMethod(servletRequestClass, "getParameterMap");
 
         principalInvoker = new PrincipalInvoker(clazz);
     }
@@ -206,38 +206,6 @@ public class RequestInvoker {
         } catch (Throwable t) {
             logger.warn("error calling ServletRequest.getParameterMap()", t);
             return ImmutableMap.of();
-        }
-    }
-
-    private static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName,
-            Class<?>... parameterTypes) {
-        if (clazz == null) {
-            return null;
-        }
-        try {
-            return clazz.getMethod(methodName, parameterTypes);
-        } catch (SecurityException e) {
-            logger.warn(e.getMessage(), e);
-            return null;
-        } catch (NoSuchMethodException e) {
-            logger.warn(e.getMessage(), e);
-            return null;
-        }
-    }
-
-    private static class EmptyStringEnumeration implements Enumeration<String> {
-
-        private static final Enumeration<String> INSTANCE =
-                new EmptyStringEnumeration();
-
-        @Override
-        public boolean hasMoreElements() {
-            return false;
-        }
-
-        @Override
-        public String nextElement() {
-            throw new NoSuchElementException();
         }
     }
 }

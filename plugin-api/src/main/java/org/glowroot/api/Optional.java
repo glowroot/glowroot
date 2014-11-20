@@ -27,7 +27,7 @@ import com.google.common.base.Objects;
  * {@code null} values, but if values are wrapped in {@code Optional}, then Glowroot will unwrap the
  * values and treat {@link Optional#absent()} the same as {@code null}.
  */
-public abstract class Optional<T extends /*@NonNull*/Object> {
+public abstract class Optional</*@NonNull*/T> {
 
     /**
      * Returns the contained instance, which must be present. If the instance might be absent, use
@@ -70,7 +70,7 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
      * @return an {@code Optional} instance with no contained reference
      */
     @SuppressWarnings("unchecked")
-    public static <T extends /*@NonNull*/Object> Optional<T> absent() {
+    public static </*@NonNull*/T> Optional<T> absent() {
         return (Optional<T>) Absent.INSTANCE;
     }
 
@@ -83,7 +83,7 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
      * @return an {@code Optional} instance with no contained reference
      */
     @SuppressWarnings({"unchecked"})
-    public static <T extends /*@NonNull*/Object> Optional<T> absent(Class<T> clazz) {
+    public static </*@NonNull*/T> Optional<T> absent(Class<T> clazz) {
         return (Optional<T>) Absent.INSTANCE;
     }
 
@@ -93,7 +93,7 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
      * @param reference
      * @return an {@code Optional} instance containing the given non-{@code null} reference
      */
-    public static <T extends /*@NonNull*/Object> Optional<T> of(T reference) {
+    public static </*@NonNull*/T> Optional<T> of(T reference) {
         return new Present<T>(reference);
     }
 
@@ -105,8 +105,7 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
      * @return an {@code Optional} instance containing the reference, or {@link Optional#absent} if
      *         {@code nullableReference} is {@code null}
      */
-    public static <T extends /*@Nullable*/Object> Optional</*@NonNull*/T> fromNullable(
-            T nullableReference) {
+    public static <T> Optional</*@NonNull*/T> fromNullable(T nullableReference) {
         if (nullableReference == null) {
             return absent();
         } else {
@@ -135,7 +134,7 @@ public abstract class Optional<T extends /*@NonNull*/Object> {
         }
     }
 
-    private static class Present<T extends /*@NonNull*/Object> extends Optional<T> {
+    private static class Present</*@NonNull*/T> extends Optional<T> {
         private final T reference;
         public Present(T reference) {
             this.reference = reference;

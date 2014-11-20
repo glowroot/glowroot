@@ -19,9 +19,10 @@ import java.util.List;
 
 import com.google.common.base.Charsets;
 import com.google.common.hash.Hashing;
-import org.immutables.common.marshal.Marshaling;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
+
+import org.glowroot.common.Marshaling2;
 
 @Value.Immutable
 @Json.Marshaled
@@ -35,6 +36,6 @@ public abstract class MBeanGauge {
     @Value.Derived
     @Json.Ignore
     public String version() {
-        return Hashing.sha1().hashString(Marshaling.toJson(this), Charsets.UTF_8).toString();
+        return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
     }
 }

@@ -19,6 +19,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
@@ -28,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.common.Ticker;
-import javax.annotation.concurrent.GuardedBy;
 
 // this supports updating by a single thread and reading by multiple threads
 class TraceEntryComponent {

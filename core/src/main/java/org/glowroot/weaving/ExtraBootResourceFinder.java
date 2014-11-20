@@ -18,6 +18,7 @@ package org.glowroot.weaving;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -33,11 +34,12 @@ public class ExtraBootResourceFinder {
 
     private final ImmutableList<File> jarFiles;
 
-    public ExtraBootResourceFinder(ImmutableList<File> jarFiles) {
-        this.jarFiles = jarFiles;
+    public ExtraBootResourceFinder(List<File> jarFiles) {
+        this.jarFiles = ImmutableList.copyOf(jarFiles);
     }
 
-    public @Nullable URL findResource(String name) {
+    @Nullable
+    URL findResource(String name) {
         for (File pluginJar : jarFiles) {
             try {
                 URL url = new URL("jar:" + pluginJar.toURI() + "!/" + name);

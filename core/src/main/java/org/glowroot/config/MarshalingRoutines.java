@@ -87,7 +87,7 @@ public class MarshalingRoutines {
         }
     }
 
-    public static Multiline unmarshal(JsonParser parser,
+    static Multiline unmarshal(JsonParser parser,
             @SuppressWarnings("unused") @Nullable Multiline instanceNull,
             @SuppressWarnings("unused") Class<Multiline> expectedClass) throws IOException {
         JsonToken token = parser.getCurrentToken();

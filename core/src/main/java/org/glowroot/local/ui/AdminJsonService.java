@@ -17,7 +17,6 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
-import java.lang.instrument.UnmodifiableClassException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
@@ -88,7 +87,7 @@ class AdminJsonService {
     }
 
     @POST("/backend/admin/reweave-capture-points")
-    String reweaveCapturePoints() throws IOException, UnmodifiableClassException {
+    String reweaveCapturePoints() throws Exception {
         if (instrumentation == null) {
             logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
             return "{}";

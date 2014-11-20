@@ -24,17 +24,14 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
 import com.google.common.hash.Hashing;
-import org.immutables.common.marshal.Marshaling;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Marshaling2;
 import org.glowroot.config.PropertyDescriptor.PropertyType;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
 @Json.Marshaled
@@ -42,15 +39,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public abstract class PluginConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginConfig.class);
-
-    static final Ordering<PluginConfig> orderingById = new Ordering<PluginConfig>() {
-        @Override
-        public int compare(@Nullable PluginConfig left, @Nullable PluginConfig right) {
-            checkNotNull(left);
-            checkNotNull(right);
-            return left.id().compareToIgnoreCase(right.id());
-        }
-    };
 
     public abstract String id();
     @Value.Default
@@ -109,7 +97,7 @@ public abstract class PluginConfig {
     @Value.Derived
     @Json.Ignore
     public String version() {
-        return Hashing.sha1().hashString(Marshaling.toJson(this), Charsets.UTF_8).toString();
+        return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
     }
 
     public String getStringProperty(String name) {

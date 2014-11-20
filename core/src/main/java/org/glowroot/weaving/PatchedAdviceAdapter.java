@@ -20,7 +20,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.Method;
 
-public class PatchedAdviceAdapter extends AdviceAdapter {
+class PatchedAdviceAdapter extends AdviceAdapter {
 
     protected PatchedAdviceAdapter(int api, MethodVisitor mv, int access, String name,
             String desc) {

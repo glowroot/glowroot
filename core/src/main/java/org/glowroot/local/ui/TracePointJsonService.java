@@ -35,8 +35,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
@@ -55,7 +53,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @JsonService
 class TracePointJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TracePointJsonService.class);
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     private final TraceDao traceDao;
@@ -87,7 +84,7 @@ class TracePointJsonService {
             this.query = request;
         }
 
-        private String handle() throws IOException, SQLException {
+        private String handle() throws Exception {
             boolean captureActiveTraces = shouldCaptureActiveTraces();
             List<Transaction> activeTraces = Lists.newArrayList();
             long captureTime = 0;
@@ -154,7 +151,7 @@ class TracePointJsonService {
                     Ordering.natural().onResultOf(new Function<Transaction, Long>() {
                         @Override
                         public Long apply(@Nullable Transaction transaction) {
-                            // sorting activeTraces which is List<@NonNull Trace>
+                            // sorting activeTraces which is List<@NonNull Transaction>
                             checkNotNull(transaction);
                             return transaction.getStartTick();
                         }

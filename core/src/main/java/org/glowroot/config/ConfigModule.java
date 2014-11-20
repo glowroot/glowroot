@@ -16,42 +16,30 @@
 package org.glowroot.config;
 
 import java.io.File;
-import java.io.IOException;
-import java.lang.instrument.Instrumentation;
-import java.net.URISyntaxException;
+import java.util.List;
 
 import javax.annotation.Nullable;
-
-import com.google.common.collect.ImmutableList;
 
 public class ConfigModule {
 
     private final PluginCache pluginCache;
-    private final PluginDescriptorCache pluginDescriptorCache;
     private final ConfigService configService;
 
-    public ConfigModule(File dataDir, @Nullable Instrumentation instrumentation,
-            @Nullable File glowrootJarFile, boolean viewerModeEnabled) throws IOException,
-            URISyntaxException {
-        pluginCache = new PluginCache(glowrootJarFile);
-        if (viewerModeEnabled) {
-            pluginDescriptorCache = PluginDescriptorCache.createInViewerMode(pluginCache);
-        } else {
-            pluginDescriptorCache =
-                    PluginDescriptorCache.create(pluginCache, instrumentation, dataDir);
-        }
-        configService = new ConfigService(dataDir, pluginDescriptorCache);
+    public ConfigModule(File dataDir, @Nullable File glowrootJarFile, boolean viewerModeEnabled)
+            throws Exception {
+        pluginCache = PluginCache.create(glowrootJarFile, viewerModeEnabled);
+        configService = new ConfigService(dataDir, pluginCache.pluginDescriptors());
     }
 
-    public PluginDescriptorCache getPluginDescriptorCache() {
-        return pluginDescriptorCache;
+    public List<PluginDescriptor> getPluginDescriptors() {
+        return pluginCache.pluginDescriptors();
     }
 
     public ConfigService getConfigService() {
         return configService;
     }
 
-    public ImmutableList<File> getPluginJars() {
-        return pluginCache.getPluginJars();
+    public List<File> getPluginJars() {
+        return pluginCache.pluginJars();
     }
 }

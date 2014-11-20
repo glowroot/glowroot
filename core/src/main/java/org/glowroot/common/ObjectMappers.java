@@ -30,8 +30,8 @@ public class ObjectMappers {
 
     private ObjectMappers() {}
 
-    public static <T extends /*@Nullable*/Object> T readRequiredValue(ObjectMapper mapper,
-            String content, Class<T> valueType) throws IOException {
+    public static <T> T readRequiredValue(ObjectMapper mapper, String content, Class<T> valueType)
+            throws IOException {
         T value = mapper.readValue(content, valueType);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
@@ -40,8 +40,8 @@ public class ObjectMappers {
     }
 
     @EnsuresNonNull("#1")
-    public static <T extends /*@Nullable*/Object> void checkRequiredProperty(T reference,
-            String fieldName) throws JsonMappingException {
+    public static <T> void checkRequiredProperty(T reference, String fieldName)
+            throws JsonMappingException {
         if (reference == null) {
             throw new JsonMappingException("Null value not allowed for field: " + fieldName);
         }
@@ -49,8 +49,8 @@ public class ObjectMappers {
 
     @PolyNull
     @SuppressWarnings("return.type.incompatible")
-    public static <T extends /*@Nullable*/Object> List</*@NonNull*/T> checkNotNullItemsForProperty(
-            @PolyNull List<T> list, String fieldName) throws JsonMappingException {
+    public static <T> List</*@NonNull*/T> checkNotNullItemsForProperty(@PolyNull List<T> list,
+            String fieldName) throws JsonMappingException {
         if (list == null) {
             return null;
         }

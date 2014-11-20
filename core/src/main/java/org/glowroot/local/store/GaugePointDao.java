@@ -90,10 +90,17 @@ public class GaugePointDao implements GaugePointRepository {
         }
     }
 
-    // TODO delete 100 at a time similar to SnapshotDao.deleteBefore()
     void deleteBefore(long captureTime) {
         try {
-            dataSource.update("delete from gauge_point where capture_time < ?", captureTime);
+            // delete 100 at a time, which is both faster than deleting all at once, and doesn't
+            // lock the single jdbc connection for one large chunk of time
+            while (true) {
+                int deleted = dataSource.update("delete from gauge_point where capture_time < ?",
+                        captureTime);
+                if (deleted == 0) {
+                    break;
+                }
+            }
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -105,7 +112,6 @@ public class GaugePointDao implements GaugePointRepository {
             String gaugeName = resultSet.getString(1);
             if (gaugeName == null) {
                 // gauge_name should never be null
-                // TODO provide better fallback here
                 throw new SQLException("Found null gauge_name in gauge_point");
             }
             long captureTime = resultSet.getLong(2);

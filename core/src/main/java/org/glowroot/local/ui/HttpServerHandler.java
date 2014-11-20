@@ -154,8 +154,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     // @SuppressWarnings needed until this Checker Framework bug is fixed:
     // https://code.google.com/p/checker-framework/issues/detail?id=293
     @SuppressWarnings("initialization")
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws IOException,
-            SQLException, InterruptedException {
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         HttpRequest request = (HttpRequest) e.getMessage();
         logger.debug("messageReceived(): request.uri={}", request.getUri());
         Channel channel = e.getChannel();
@@ -228,7 +227,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     }
 
     private @Nullable HttpResponse handleRequest(HttpRequest request, Channel channel)
-            throws IOException, SQLException {
+            throws Exception {
         logger.debug("handleRequest(): request.uri={}", request.getUri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();

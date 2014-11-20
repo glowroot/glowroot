@@ -27,7 +27,7 @@ import org.immutables.value.Value;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable(prehash = true)
-public abstract class UiAnalyzedMethod {
+abstract class UiAnalyzedMethod {
 
     public abstract String name();
     // these are class names

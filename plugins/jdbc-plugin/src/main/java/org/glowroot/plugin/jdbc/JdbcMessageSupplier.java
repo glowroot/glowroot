@@ -109,7 +109,7 @@ class JdbcMessageSupplier extends MessageSupplier {
     }
 
     private void appendParameters(StringBuilder sb) {
-        if (isUsingParameters() && parameters.size() > 0) {
+        if (isUsingParameters() && !parameters.isEmpty()) {
             appendParameters(sb, parameters);
         } else if (isUsingBatchedParameters()) {
             for (BindParameterList oneParameters : batchedParameters) {

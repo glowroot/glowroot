@@ -37,7 +37,6 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.h2.jdbc.JdbcSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +88,7 @@ public class DataSource {
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
-    public void setQueryTimeoutSeconds(Integer queryTimeoutSeconds) {
+    void setQueryTimeoutSeconds(Integer queryTimeoutSeconds) {
         this.queryTimeoutSeconds = queryTimeoutSeconds;
     }
 
@@ -151,8 +150,8 @@ public class DataSource {
         }
     }
 
-    <T extends /*@NonNull*/Object> ImmutableList<T> query(String sql, RowMapper<T> rowMapper,
-            Object... args) throws SQLException {
+    </*@NonNull*/T> ImmutableList<T> query(String sql, RowMapper<T> rowMapper, Object... args)
+            throws SQLException {
         debug(sql, args);
         synchronized (lock) {
             if (closing) {
@@ -181,29 +180,14 @@ public class DataSource {
         }
     }
 
-    @Nullable
-    <T> T query(String sql, ResultSetExtractor<T> rse, Object... args) throws SQLException {
+    </*@Nullable*/T> T query(String sql, ResultSetExtractor<T> rse, Object... args)
+            throws SQLException {
         debug(sql, args);
         synchronized (lock) {
             if (closing) {
                 return null;
             }
-            PreparedStatement preparedStatement = prepareStatement(sql);
-            for (int i = 0; i < args.length; i++) {
-                preparedStatement.setObject(i + 1, args[i]);
-            }
-            // setQueryTimeout() affects all statements of this connection (at least with h2)
-            preparedStatement.setQueryTimeout(queryTimeoutSeconds);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            ResultSetCloser closer = new ResultSetCloser(resultSet);
-            try {
-                return rse.extractData(resultSet);
-            } catch (Throwable t) {
-                throw closer.rethrow(t);
-            } finally {
-                closer.close();
-            }
-            // don't need to close statement since they are all cached and used under lock
+            return queryUnderLock(sql, args, rse);
         }
     }
 
@@ -300,8 +284,8 @@ public class DataSource {
     }
 
     // lock must be acquired prior to calling this method
-    private <T> T queryUnderLock(String sql, Object[] args, ResultSetExtractor<T> rse)
-            throws SQLException {
+    private </*@Nullable*/T> T queryUnderLock(String sql, Object[] args,
+            ResultSetExtractor<T> rse) throws SQLException {
         PreparedStatement preparedStatement = prepareStatement(sql);
         for (int i = 0; i < args.length; i++) {
             preparedStatement.setObject(i + 1, args[i]);
@@ -357,16 +341,7 @@ public class DataSource {
                 url = "jdbc:h2:" + dbPath;
             }
             url += ";db_close_on_exit=false";
-            try {
-                return DriverManager.getConnection(url, props);
-            } catch (JdbcSQLException e) {
-                if (e.getMessage().endsWith(" [90020-176]")) {
-                    // convert to DataSourceLockedException
-                    throw new DataSourceLockedException();
-                } else {
-                    throw e;
-                }
-            }
+            return DriverManager.getConnection(url, props);
         }
     }
 
@@ -404,11 +379,6 @@ public class DataSource {
 
     interface ResultSetExtractor<T> {
         T extractData(ResultSet resultSet) throws SQLException;
-    }
-
-    @SuppressWarnings("serial")
-    public static class DataSourceLockedException extends SQLException {
-        private DataSourceLockedException() {}
     }
 
     // this replaces H2's default shutdown hook (see jdbc connection db_close_on_exit=false above)

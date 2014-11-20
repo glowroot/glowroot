@@ -26,10 +26,12 @@ import org.objectweb.asm.Type;
 
 import org.glowroot.common.Reflections;
 import org.glowroot.common.Reflections.ReflectiveException;
+import org.glowroot.markers.UsedByGeneratedBytecode;
 
 // can't generate classes in bootstrap class loader, so this is needed for storing meta holders
 // similar technique is not good for non-bootstrap class loaders anyways since then weak references
 // would need to be used to prevent retention of meta holders
+@UsedByGeneratedBytecode
 public class BootstrapMetaHolders {
 
     private static final Map<String, Integer> classMetaHolderIndexes =
@@ -40,6 +42,8 @@ public class BootstrapMetaHolders {
             Lists.newCopyOnWriteArrayList();
     private static final List</*@Nullable*/MethodMetaHolder> methodMetaHolders =
             Lists.newCopyOnWriteArrayList();
+
+    private BootstrapMetaHolders() {}
 
     public static int reserveClassMetaHolderIndex(String metaHolderInternalName,
             String classMetaFieldName) {
@@ -165,7 +169,8 @@ public class BootstrapMetaHolders {
                                 Reflections.getConstructor(classMetaClass, Class.class);
                         classMeta = Reflections.invoke(constructor, wovenClass);
                     } catch (ReflectiveException e) {
-                        throw new IllegalStateException("Error instantiating @BindClassMeta class");
+                        throw new IllegalStateException("Error instantiating @BindClassMeta class",
+                                e);
                     }
                 }
             }

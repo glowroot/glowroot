@@ -73,28 +73,20 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
         this.bridgeClasses = ImmutableList.copyOf(bridgeClasses);
         this.excludePackages = ImmutableList.copyOf(excludePackages);
-        Supplier<ImmutableList<Advice>> advisorsSupplier =
-                Suppliers.ofInstance(ImmutableList.copyOf(advisors));
+        Supplier<List<Advice>> advisorsSupplier =
+                Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
         AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier, mixinTypes, null);
         Weaver weaver = new Weaver(advisorsSupplier, mixinTypes, analyzedWorld,
                 weavingTimerService, metricWrapperMethods);
         this.weaver = weaver;
     }
 
-    public <S extends /*@Nullable*/Object, T extends S> S newInstance(Class<T> implClass,
-            Class<S> bridgeClass) throws BridgeInstantiationException {
+    public </*@Nullable*/S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
+            throws Exception {
         if (!isBridgeable(bridgeClass.getName())) {
-            throw new BridgeInstantiationException("Class '" + bridgeClass + "' is not bridgeable");
+            throw new IllegalStateException("Class '" + bridgeClass + "' is not bridgeable");
         }
-        try {
-            return bridgeClass.cast(loadClass(implClass.getName()).newInstance());
-        } catch (ClassNotFoundException e) {
-            throw new BridgeInstantiationException(e);
-        } catch (InstantiationException e) {
-            throw new BridgeInstantiationException(e);
-        } catch (IllegalAccessException e) {
-            throw new BridgeInstantiationException(e);
-        }
+        return bridgeClass.cast(loadClass(implClass.getName()).newInstance());
     }
 
     @Override
@@ -195,16 +187,6 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             // log exception at trace level
             logger.trace(e.getMessage(), e);
             return false;
-        }
-    }
-
-    @SuppressWarnings("serial")
-    public static class BridgeInstantiationException extends Exception {
-        private BridgeInstantiationException(Exception cause) {
-            super(cause);
-        }
-        private BridgeInstantiationException(String message) {
-            super(message);
         }
     }
 

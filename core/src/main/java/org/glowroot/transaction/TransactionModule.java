@@ -64,10 +64,11 @@ public class TransactionModule {
         this.threadAllocatedBytes = threadAllocatedBytes;
         ConfigService configService = configModule.getConfigService();
         transactionRegistry = new TransactionRegistry();
-        adviceCache = new AdviceCache(configModule.getPluginDescriptorCache().advisors(),
-                configService.getCapturePoints(), instrumentation, dataDir);
+        adviceCache = new AdviceCache(configModule.getPluginDescriptors(),
+                configModule.getPluginJars(), configService.getCapturePoints(), instrumentation,
+                dataDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
-                configModule.getPluginDescriptorCache().mixinTypes(), extraBootResourceFinder);
+                adviceCache.getMixinTypes(), extraBootResourceFinder);
         final MetricNameCache metricNameCache = new MetricNameCache();
         weavingTimerService = new WeavingTimerServiceImpl(transactionRegistry, metricNameCache);
 
@@ -77,9 +78,8 @@ public class TransactionModule {
         // instead of javaagent
         if (instrumentation != null) {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
-                    configModule.getPluginDescriptorCache().mixinTypes(),
-                    adviceCache.getAdvisorsSupplier(), analyzedWorld, weavingTimerService,
-                    metricWrapperMethods);
+                    adviceCache.getMixinTypes(), adviceCache.getAdvisorsSupplier(), analyzedWorld,
+                    weavingTimerService, metricWrapperMethods);
             PreInitializeWeavingClasses.preInitializeClasses();
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
@@ -111,8 +111,8 @@ public class TransactionModule {
             public PluginServices create(@Nullable String pluginId) {
                 return PluginServicesImpl.create(transactionRegistry, transactionCollector,
                         configModule.getConfigService(), metricNameCache, threadAllocatedBytes,
-                        userProfileScheduler, ticker, clock,
-                        configModule.getPluginDescriptorCache(), pluginId);
+                        userProfileScheduler, ticker, clock, configModule.getPluginDescriptors(),
+                        pluginId);
             }
         };
         PluginServicesRegistry.initStaticState(pluginServicesFactory);

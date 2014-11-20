@@ -20,9 +20,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
-import java.net.URISyntaxException;
 import java.nio.channels.FileLock;
-import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,7 +35,6 @@ import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -94,7 +92,7 @@ public class GlowrootModule {
         File lockFile = new File(tmpDir, ".lock");
         try {
             Files.createParentDirs(lockFile);
-            Files.touch(lockFile);
+            lockFile.createNewFile();
         } catch (IOException e) {
             throw new StartupFailedException(e);
         }
@@ -114,11 +112,8 @@ public class GlowrootModule {
 
         // init config module
         try {
-            configModule = new ConfigModule(dataDir, instrumentation, glowrootJarFile,
-                    viewerModeEnabled);
-        } catch (IOException e) {
-            throw new StartupFailedException(e);
-        } catch (URISyntaxException e) {
+            configModule = new ConfigModule(dataDir, glowrootJarFile, viewerModeEnabled);
+        } catch (Exception e) {
             throw new StartupFailedException(e);
         }
 
@@ -137,7 +132,7 @@ public class GlowrootModule {
         ExtraBootResourceFinder extraBootResourceFinder = null;
         if (instrumentation != null && glowrootJarFile != null) {
             try {
-                ImmutableList<File> pluginJars = configModule.getPluginJars();
+                List<File> pluginJars = configModule.getPluginJars();
                 for (File pluginJar : pluginJars) {
                     instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(pluginJar));
                 }
@@ -167,9 +162,7 @@ public class GlowrootModule {
         try {
             storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
                     scheduledExecutor, viewerModeEnabled);
-        } catch (SQLException e) {
-            throw new StartupFailedException(e);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new StartupFailedException(e);
         }
         collectorModule = new CollectorModule(clock, ticker, jvmModule, configModule,
@@ -180,8 +173,7 @@ public class GlowrootModule {
         transactionCollectorProxy.setInstance(collectorModule.getTransactionCollector());
         // now init plugins to give them a chance to do something in their static initializer
         // e.g. append their package to jboss.modules.system.pkgs
-        for (PluginDescriptor pluginDescriptor : configModule.getPluginDescriptorCache()
-                .pluginDescriptors()) {
+        for (PluginDescriptor pluginDescriptor : configModule.getPluginDescriptors()) {
             for (String aspect : pluginDescriptor.aspects()) {
                 try {
                     Class.forName(aspect, true, GlowrootModule.class.getClassLoader());
@@ -308,10 +300,6 @@ public class GlowrootModule {
 
         private StartupFailedException(Throwable cause) {
             super(cause);
-        }
-
-        private StartupFailedException(String message) {
-            super(message);
         }
 
         private StartupFailedException() {

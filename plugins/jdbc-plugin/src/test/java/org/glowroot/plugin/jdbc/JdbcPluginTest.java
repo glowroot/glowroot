@@ -561,8 +561,7 @@ public class JdbcPluginTest {
     // <scope>test</scope>
     // </dependency>
     @SuppressWarnings("unused")
-    private static Connection createSqlServerConnection() throws ClassNotFoundException,
-            SQLException {
+    private static Connection createSqlServerConnection() throws Exception {
         // set up database
         Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
         Connection connection =

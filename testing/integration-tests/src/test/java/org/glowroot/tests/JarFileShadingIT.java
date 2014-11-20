@@ -16,7 +16,6 @@
 package org.glowroot.tests;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.List;
@@ -27,7 +26,6 @@ import com.google.common.collect.Lists;
 import org.junit.Assume;
 import org.junit.Test;
 
-import org.glowroot.MainEntryPoint;
 import org.glowroot.container.ClassPath;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,27 +57,6 @@ public class JarFileShadingIT {
             }
         }
         assertThat(unacceptableEntries).isEmpty();
-    }
-
-    // try to cover the non-standard case when running from inside an IDE
-    private static File getGlowrootCoreJarFileFromRelativePath() {
-        String classesDir = MainEntryPoint.class.getProtectionDomain().getCodeSource()
-                .getLocation().getFile();
-        // guessing this is target/classes
-        File targetDir = new File(classesDir).getParentFile();
-        File[] possibleMatches = targetDir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.matches("glowroot-core-[0-9.]+(-SNAPSHOT)?.jar");
-            }
-        });
-        if (possibleMatches == null || possibleMatches.length == 0) {
-            return null;
-        } else if (possibleMatches.length == 1) {
-            return possibleMatches[0];
-        } else {
-            throw new IllegalStateException("More than one possible match found for glowroot.jar");
-        }
     }
 
     private static boolean acceptableJarEntry(JarEntry jarEntry, List<String> acceptableEntries) {

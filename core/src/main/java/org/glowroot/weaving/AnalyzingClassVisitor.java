@@ -56,12 +56,12 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     private @MonotonicNonNull AnalyzedClass analyzedClass;
 
-    public AnalyzingClassVisitor(ImmutableList<Advice> advisors,
-            ImmutableList<MixinType> mixinTypes, @Nullable ClassLoader loader,
-            AnalyzedWorld analyzedWorld, @Nullable CodeSource codeSource) {
+    public AnalyzingClassVisitor(List<Advice> advisors, List<MixinType> mixinTypes,
+            @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
+            @Nullable CodeSource codeSource) {
         super(ASM5);
-        this.mixinTypes = mixinTypes;
-        this.advisors = advisors;
+        this.mixinTypes = ImmutableList.copyOf(mixinTypes);
+        this.advisors = ImmutableList.copyOf(advisors);
         this.loader = loader;
         this.analyzedWorld = analyzedWorld;
         this.codeSource = codeSource;
@@ -156,11 +156,8 @@ class AnalyzingClassVisitor extends ClassVisitor {
         Type returnType = Type.getReturnType(desc);
         List<Advice> matchingAdvisors =
                 getMatchingAdvisors(name, parameterTypes, returnType, access);
-        List<String> exceptionList = exceptions == null ? ImmutableList.<String>of()
-                : Arrays.asList(exceptions);
         if (!matchingAdvisors.isEmpty()) {
             checkNotNull(analyzedClassBuilder, "Call to visit() is required");
-
             ImmutableAnalyzedMethod.Builder builder = ImmutableAnalyzedMethod.builder();
             builder.name(name);
             for (Type parameterType : parameterTypes) {

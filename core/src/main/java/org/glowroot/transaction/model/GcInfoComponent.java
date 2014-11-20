@@ -15,7 +15,6 @@
  */
 package org.glowroot.transaction.model;
 
-import java.io.IOException;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.List;
@@ -23,133 +22,109 @@ import java.util.Set;
 
 import javax.annotation.concurrent.GuardedBy;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class GcInfoComponent {
+public class GcInfoComponent {
 
     private static final Logger logger = LoggerFactory.getLogger(GcInfoComponent.class);
-    private static final JsonFactory jsonFactory = new JsonFactory();
 
-    private final ImmutableMap<String, GarbageCollectorInfo> garbageCollectorInfos;
+    private final ImmutableMap<String, GcSnapshot> gcSnapshots;
 
     @GuardedBy("lock")
-    private volatile @MonotonicNonNull String completedJsonValue;
+    private volatile @MonotonicNonNull List<GcInfo> completedGcInfos;
 
     private final Object lock = new Object();
 
     public GcInfoComponent() {
-        List<GarbageCollectorMXBean> garbageCollectorBeans =
-                ManagementFactory.getGarbageCollectorMXBeans();
-        ImmutableMap.Builder<String, GarbageCollectorInfo> infos = ImmutableMap.builder();
-        for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
-            GarbageCollectorInfo info = new GarbageCollectorInfo(garbageCollectorBean);
-            infos.put(garbageCollectorBean.getName(), info);
+        List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
+        ImmutableMap.Builder<String, GcSnapshot> infos = ImmutableMap.builder();
+        for (GarbageCollectorMXBean gcBean : gcBeans) {
+            GcSnapshot info = ImmutableGcSnapshot.builder()
+                    .collectionCount(gcBean.getCollectionCount())
+                    .collectionTime(gcBean.getCollectionTime())
+                    .build();
+            infos.put(gcBean.getName(), info);
         }
-        this.garbageCollectorInfos = infos.build();
+        this.gcSnapshots = infos.build();
     }
 
     // must be called from transaction thread
     void onTraceComplete() {
         synchronized (lock) {
-            completedJsonValue = writeValueAsString();
+            completedGcInfos = getGcInfos();
         }
     }
 
     // safe to be called from another thread
-    String writeValueAsString() {
+    List<GcInfo> getGcInfos() {
         synchronized (lock) {
-            if (completedJsonValue == null) {
+            if (completedGcInfos == null) {
                 // transaction thread is still alive (and cannot terminate in the middle of this
                 // method because of above lock), so safe to capture ThreadMXBean.getThreadInfo()
                 // and ThreadMXBean.getThreadCpuTime() for the transaction thread
-                StringBuilder sb = new StringBuilder();
-                try {
-                    JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-                    writeValue(jg);
-                    jg.close();
-                } catch (IOException e) {
-                    logger.warn(e.getMessage(), e);
-                    return "{}";
-                }
-                return sb.toString();
+                return getGcInfosInternal();
             } else {
-                return completedJsonValue;
+                return completedGcInfos;
             }
         }
     }
 
-    private void writeValue(JsonGenerator jg) throws IOException {
-        Set<String> unmatchedNames = Sets.newHashSet(garbageCollectorInfos.keySet());
-        List<GarbageCollectorMXBean> garbageCollectorBeans =
-                ManagementFactory.getGarbageCollectorMXBeans();
-        jg.writeStartArray();
-        for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
-            String name = garbageCollectorBean.getName();
-            GarbageCollectorInfo garbageCollectorInfo = garbageCollectorInfos.get(name);
-            if (garbageCollectorInfo == null) {
+    private List<GcInfo> getGcInfosInternal() {
+        Set<String> unmatchedNames = Sets.newHashSet(gcSnapshots.keySet());
+        List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
+        List<GcInfo> gcInfos = Lists.newArrayList();
+        for (GarbageCollectorMXBean gcBean : gcBeans) {
+            String name = gcBean.getName();
+            GcSnapshot gcSnapshot = gcSnapshots.get(name);
+            if (gcSnapshot == null) {
                 logger.warn("garbage collector bean {} did not exist at start of trace", name);
                 continue;
             }
             unmatchedNames.remove(name);
-            long collectionCountEnd = garbageCollectorBean.getCollectionCount();
-            long collectionTimeEnd = garbageCollectorBean.getCollectionTime();
-            if (collectionCountEnd == garbageCollectorInfo.getCollectionCountStart()) {
+            long collectionCountEnd = gcBean.getCollectionCount();
+            long collectionTimeEnd = gcBean.getCollectionTime();
+            if (collectionCountEnd == gcSnapshot.collectionCount()) {
                 // no new collections, so don't write it out
                 continue;
             }
-            jg.writeStartObject();
-            jg.writeStringField("name", name);
-            jg.writeNumberField("collectionCount",
-                    collectionCountEnd - garbageCollectorInfo.getCollectionCountStart());
-            jg.writeNumberField("collectionTime",
-                    collectionTimeEnd - garbageCollectorInfo.getCollectionTimeStart());
-            jg.writeEndObject();
+            gcInfos.add(ImmutableGcInfo.builder()
+                    .name(name)
+                    .collectionCount(collectionCountEnd - gcSnapshot.collectionCount())
+                    .collectionTime(collectionTimeEnd - gcSnapshot.collectionTime())
+                    .build());
         }
-        jg.writeEndArray();
         for (String unmatchedName : unmatchedNames) {
             logger.warn("garbage collector bean {} did not exist at end of trace", unmatchedName);
         }
+        return gcInfos;
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("garbageCollectorInfos", garbageCollectorInfos)
+                .add("gcSnapshots", gcSnapshots)
                 .toString();
     }
 
-    private static class GarbageCollectorInfo {
+    @Value.Immutable
+    abstract static class GcSnapshot {
+        abstract long collectionCount();
+        abstract long collectionTime();
+    }
 
-        private final long collectionCountStart;
-        private final long collectionTimeStart;
-
-        private GarbageCollectorInfo(GarbageCollectorMXBean garbageCollectorBean) {
-            collectionCountStart = garbageCollectorBean.getCollectionCount();
-            collectionTimeStart = garbageCollectorBean.getCollectionTime();
-        }
-
-        private long getCollectionCountStart() {
-            return collectionCountStart;
-        }
-
-        private long getCollectionTimeStart() {
-            return collectionTimeStart;
-        }
-
-        @Override
-        public String toString() {
-            return MoreObjects.toStringHelper(this)
-                    .add("collectionCountStart", collectionCountStart)
-                    .add("collectionTimeStart", collectionTimeStart)
-                    .toString();
-        }
+    @Value.Immutable
+    @Json.Marshaled
+    public abstract static class GcInfo {
+        abstract String name();
+        abstract long collectionCount();
+        abstract long collectionTime();
     }
 }

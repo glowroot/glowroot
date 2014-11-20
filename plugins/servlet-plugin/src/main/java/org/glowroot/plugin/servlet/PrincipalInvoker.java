@@ -36,7 +36,7 @@ public class PrincipalInvoker {
         } catch (ClassNotFoundException e) {
             logger.warn(e.getMessage(), e);
         }
-        getNameMethod = getMethod(principalClass, "getName");
+        getNameMethod = Invokers.getMethod(principalClass, "getName");
     }
 
     public @Nullable String getName(Object principal) {
@@ -48,22 +48,6 @@ public class PrincipalInvoker {
         } catch (Throwable t) {
             logger.warn("error calling Principal.getName()", t);
             return "<error calling Principal.getName()>";
-        }
-    }
-
-    private static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName,
-            Class<?>... parameterTypes) {
-        if (clazz == null) {
-            return null;
-        }
-        try {
-            return clazz.getMethod(methodName, parameterTypes);
-        } catch (SecurityException e) {
-            logger.warn(e.getMessage(), e);
-            return null;
-        } catch (NoSuchMethodException e) {
-            logger.warn(e.getMessage(), e);
-            return null;
         }
     }
 }

@@ -234,7 +234,6 @@ public class PreInitializeStorageShutdownClasses {
         types.add("org.glowroot.local.store.CappedDatabaseOutputStream$FsyncRunnable");
         types.add("org.glowroot.local.store.DataSource");
         types.add("org.glowroot.local.store.DataSource$1");
-        types.add("org.glowroot.local.store.DataSource$DataSourceLockedException");
         types.add("org.glowroot.local.store.DataSource$ShutdownHookThread");
         return types;
     }

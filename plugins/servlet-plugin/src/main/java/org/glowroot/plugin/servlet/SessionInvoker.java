@@ -17,12 +17,12 @@ package org.glowroot.plugin.servlet;
 
 import java.lang.reflect.Method;
 import java.util.Enumeration;
-import java.util.NoSuchElementException;
 
 import javax.annotation.Nullable;
 
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
+import org.glowroot.plugin.servlet.Invokers.EmptyStringEnumeration;
 
 public class SessionInvoker {
 
@@ -41,10 +41,10 @@ public class SessionInvoker {
         } catch (ClassNotFoundException e) {
             logger.warn(e.getMessage(), e);
         }
-        getIdMethod = getMethod(httpSessionClass, "getId");
-        isNewMethod = getMethod(httpSessionClass, "isNew");
-        getAttributeMethod = getMethod(httpSessionClass, "getAttribute", String.class);
-        getAttributeNamesMethod = getMethod(httpSessionClass, "getAttributeNames");
+        getIdMethod = Invokers.getMethod(httpSessionClass, "getId");
+        isNewMethod = Invokers.getMethod(httpSessionClass, "isNew");
+        getAttributeMethod = Invokers.getMethod(httpSessionClass, "getAttribute", String.class);
+        getAttributeNamesMethod = Invokers.getMethod(httpSessionClass, "getAttributeNames");
     }
 
     public String getId(Object session) {
@@ -107,37 +107,6 @@ public class SessionInvoker {
         } catch (Throwable t) {
             logger.warn("error calling HttpSession.getAttributeNames()", t);
             return EmptyStringEnumeration.INSTANCE;
-        }
-    }
-
-    private static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName,
-            Class<?>... parameterTypes) {
-        if (clazz == null) {
-            return null;
-        }
-        try {
-            return clazz.getMethod(methodName, parameterTypes);
-        } catch (SecurityException e) {
-            logger.warn(e.getMessage(), e);
-            return null;
-        } catch (NoSuchMethodException e) {
-            logger.warn(e.getMessage(), e);
-            return null;
-        }
-    }
-
-    private static class EmptyStringEnumeration implements Enumeration<String> {
-
-        private static final Enumeration<String> INSTANCE = new EmptyStringEnumeration();
-
-        @Override
-        public boolean hasMoreElements() {
-            return false;
-        }
-
-        @Override
-        public String nextElement() {
-            throw new NoSuchElementException();
         }
     }
 }

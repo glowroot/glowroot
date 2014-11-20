@@ -19,33 +19,34 @@ import java.util.List;
 
 import com.google.common.base.Charsets;
 import com.google.common.hash.Hashing;
-import org.immutables.common.marshal.Marshaling;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
 
+import org.glowroot.common.Marshaling2;
+
 @Value.Immutable
 @Json.Marshaled
-public abstract class Layout {
+abstract class Layout {
 
-    public abstract boolean jvmHeapDump();
-    public abstract String footerMessage();
-    public abstract boolean passwordEnabled();
-    public abstract List<LayoutPlugin> plugins();
-    public abstract List<String> transactionTypes();
-    public abstract String defaultTransactionType();
-    public abstract List<String> transactionCustomAttributes();
-    public abstract long fixedAggregateIntervalSeconds();
-    public abstract long fixedGaugeIntervalSeconds();
+    abstract boolean jvmHeapDump();
+    abstract String footerMessage();
+    abstract boolean passwordEnabled();
+    abstract List<LayoutPlugin> plugins();
+    abstract List<String> transactionTypes();
+    abstract String defaultTransactionType();
+    abstract List<String> transactionCustomAttributes();
+    abstract long fixedAggregateIntervalSeconds();
+    abstract long fixedGaugeIntervalSeconds();
 
     @Value.Derived
     public String version() {
-        return Hashing.sha1().hashString(Marshaling.toJson(this), Charsets.UTF_8).toString();
+        return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
     }
 
     @Value.Immutable
     @Json.Marshaled
-    public abstract static class LayoutPlugin {
-        public abstract String id();
-        public abstract String name();
+    abstract static class LayoutPlugin {
+        abstract String id();
+        abstract String name();
     }
 }

@@ -23,13 +23,8 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 // an AnalyzedClass is never created for Object.class
-// Strings are interned to reduce memory footprint of AnalyzedWorld
 @Value.Immutable
-public abstract class AnalyzedClass {
-
-    // this.name = name.intern();
-    // this.superName = superName == null ? null : superName.intern();
-    // this.interfaceNames = AnalyzedMethod.internStringList(interfaceNames);
+abstract class AnalyzedClass {
 
     abstract int modifiers();
     abstract String name();

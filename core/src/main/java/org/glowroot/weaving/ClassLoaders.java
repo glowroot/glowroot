@@ -63,7 +63,7 @@ public class ClassLoaders {
         }
     }
 
-    public static Class<?> defineClass(LazyDefinedClass lazyDefinedClass, ClassLoader loader)
+    static Class<?> defineClass(LazyDefinedClass lazyDefinedClass, ClassLoader loader)
             throws ReflectiveException {
         for (LazyDefinedClass dependency : lazyDefinedClass.dependencies()) {
             defineClass(dependency, loader);
@@ -72,7 +72,7 @@ public class ClassLoaders {
                 loader);
     }
 
-    public static Class<?> defineClass(String name, byte[] bytes, ClassLoader loader)
+    static Class<?> defineClass(String name, byte[] bytes, ClassLoader loader)
             throws ReflectiveException {
         Method defineClassMethod = Reflections.getDeclaredMethod(ClassLoader.class, "defineClass",
                 String.class, byte[].class, int.class, int.class);
@@ -84,11 +84,9 @@ public class ClassLoaders {
 
     public static void cleanPreviouslyGeneratedJars(File generatedJarDir,
             String deleteJarsWithPrefix) throws IOException {
-        if (generatedJarDir.exists() && generatedJarDir.isFile()) {
-            if (!generatedJarDir.delete()) {
-                throw new IOException("Could not delete file: "
-                        + generatedJarDir.getAbsolutePath());
-            }
+        if (generatedJarDir.exists() && generatedJarDir.isFile() && !generatedJarDir.delete()) {
+            throw new IOException("Could not delete file: "
+                    + generatedJarDir.getAbsolutePath());
         }
         if (!generatedJarDir.exists() && !generatedJarDir.mkdirs()) {
             throw new IOException("Could not create directory: "
@@ -101,10 +99,8 @@ public class ClassLoaders {
                     + generatedJarDir.getAbsolutePath());
         }
         for (File file : files) {
-            if (file.getName().startsWith(deleteJarsWithPrefix)) {
-                if (!file.delete()) {
-                    throw new IOException("Could not delete file: " + file.getAbsolutePath());
-                }
+            if (file.getName().startsWith(deleteJarsWithPrefix) && !file.delete()) {
+                throw new IOException("Could not delete file: " + file.getAbsolutePath());
             }
         }
     }

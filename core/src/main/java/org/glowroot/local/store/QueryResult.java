@@ -18,7 +18,6 @@ package org.glowroot.local.store;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 public class QueryResult<T> {
 
@@ -38,15 +37,11 @@ public class QueryResult<T> {
         return moreAvailable;
     }
 
-    static <T extends /*@NonNull*/Object> QueryResult<T> from(ImmutableList<T> records, int limit) {
+    static </*@NonNull*/T> QueryResult<T> from(ImmutableList<T> records, int limit) {
         if (records.size() > limit) {
             return new QueryResult<T>(records.subList(0, limit), true);
         } else {
             return new QueryResult<T>(records, false);
         }
-    }
-
-    static <T> QueryResult<T> empty() {
-        return new QueryResult<T>(Lists.<T>newArrayList(), false);
     }
 }

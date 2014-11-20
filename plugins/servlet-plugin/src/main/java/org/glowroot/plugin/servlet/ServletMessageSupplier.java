@@ -123,9 +123,6 @@ class ServletMessageSupplier extends MessageSupplier {
     }
 
     void setResponseHeader(String name, @Nullable String value) {
-        if (name.equalsIgnoreCase("Content-Type")) {
-            // TODO SERVLET 2.4
-        }
         if (value == null) {
             responseHeaders.setHeader(name, "");
         } else {

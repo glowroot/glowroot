@@ -15,9 +15,7 @@
  */
 package org.glowroot.container.impl;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -83,8 +81,7 @@ public class HttpClient {
         asyncHttpClient.close();
     }
 
-    private Response execute(BoundRequestBuilder request) throws InterruptedException,
-            ExecutionException, IOException {
+    private Response execute(BoundRequestBuilder request) throws Exception {
         populateSessionIdCookie(request);
         Response response = request.execute().get();
         extractSessionIdCookie(response);

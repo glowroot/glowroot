@@ -38,7 +38,6 @@ import java.util.jar.Manifest;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
-import com.google.common.base.Function;
 import com.google.common.base.Splitter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -104,15 +103,11 @@ class ClasspathCache {
         // also check loaded classes, e.g. for groovy classes
         Iterator<String> i = classNames.keySet().iterator();
         if (instrumentation != null) {
-            i = Iterators.concat(i, Iterators.transform(
-                    Iterators.forArray(instrumentation.getAllLoadedClasses()),
-                    new Function<Class, String>() {
-                        @Override
-                        public String apply(@Nullable Class input) {
-                            checkNotNull(input);
-                            return input.getName();
-                        }
-                    }));
+            List<String> loadedClassNames = Lists.newArrayList();
+            for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
+                loadedClassNames.add(clazz.getName());
+            }
+            i = Iterators.concat(i, loadedClassNames.iterator());
         }
         while (i.hasNext()) {
             String className = i.next();
@@ -329,8 +324,7 @@ class ClasspathCache {
             if (file.isFile() && name.endsWith(".class")) {
                 URI fileUri = new File(dir, name).toURI();
                 String className = prefix + name.substring(0, name.lastIndexOf('.'));
-                // share interned className with AnalyzedClass
-                newClassNames.put(className.intern(), fileUri);
+                newClassNames.put(className, fileUri);
             } else if (file.isDirectory()) {
                 loadClassNamesFromDirectory(file, prefix + name + ".", newClassNames);
             }
@@ -353,33 +347,36 @@ class ClasspathCache {
                     }
                 }
             }
-            JarEntry jarEntry;
-            while ((jarEntry = jarIn.getNextJarEntry()) != null) {
-                if (jarEntry.isDirectory()) {
-                    continue;
-                }
-                String name = jarEntry.getName();
-                if (name.endsWith(".class")) {
-                    String className = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
-                    // TODO test if this works with jar loaded over http protocol
-                    try {
-                        String path = jarUri.getPath();
-                        if (path.endsWith("/")) {
-                            path = path.substring(0, path.length() - 1);
-                        }
-                        URI fileURI =
-                                new URI("jar", jarUri.getScheme() + ":" + path + "!/" + name, "");
-                        // share interned className with AnalyzedClass
-                        newClassNames.put(className.intern(), fileURI);
-                    } catch (URISyntaxException e) {
-                        logger.error(e.getMessage(), e);
-                    }
-                }
-            }
+            loadClassNamesFromJarInputStream(jarIn, jarUri, newClassNames);
         } catch (Throwable t) {
             throw closer.rethrow(t);
         } finally {
             closer.close();
+        }
+    }
+
+    private static void loadClassNamesFromJarInputStream(JarInputStream jarIn,
+            URI jarUri, Multimap<String, URI> newClassNames) throws IOException {
+        JarEntry jarEntry;
+        while ((jarEntry = jarIn.getNextJarEntry()) != null) {
+            if (jarEntry.isDirectory()) {
+                continue;
+            }
+            String name = jarEntry.getName();
+            if (name.endsWith(".class")) {
+                String className = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
+                // TODO test if this works with jar loaded over http protocol
+                try {
+                    String path = jarUri.getPath();
+                    if (path.endsWith("/")) {
+                        path = path.substring(0, path.length() - 1);
+                    }
+                    URI fileURI = new URI("jar", jarUri.getScheme() + ":" + path + "!/" + name, "");
+                    newClassNames.put(className, fileURI);
+                } catch (URISyntaxException e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
         }
     }
 

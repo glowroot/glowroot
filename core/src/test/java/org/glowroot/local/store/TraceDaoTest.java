@@ -16,7 +16,6 @@
 package org.glowroot.local.store;
 
 import java.io.File;
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,7 +39,7 @@ public class TraceDaoTest {
     private TraceDao traceDao;
 
     @Before
-    public void beforeEachTest() throws SQLException, IOException {
+    public void beforeEachTest() throws Exception {
         dataSource = new DataSource();
         if (dataSource.tableExists("trace")) {
             dataSource.execute("drop table trace");

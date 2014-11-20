@@ -17,7 +17,6 @@ package org.glowroot.config;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.Ordering;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -26,23 +25,12 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
 import org.glowroot.config.MarshalingRoutines.Multiline;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 @Value.Immutable
 @Json.Marshaled
 @Json.Import({MarshalingRoutines.class})
 public abstract class PropertyDescriptor {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertyDescriptor.class);
-
-    static final Ordering<PropertyDescriptor> orderingByName = new Ordering<PropertyDescriptor>() {
-        @Override
-        public int compare(@Nullable PropertyDescriptor left, @Nullable PropertyDescriptor right) {
-            checkNotNull(left);
-            checkNotNull(right);
-            return left.name().compareToIgnoreCase(right.name());
-        }
-    };
 
     public abstract String name();
     public abstract PropertyType type();

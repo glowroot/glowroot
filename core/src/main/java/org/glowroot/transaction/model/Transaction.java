@@ -16,6 +16,7 @@
 package org.glowroot.transaction.model;
 
 import java.lang.management.ThreadInfo;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
@@ -39,6 +40,8 @@ import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
 import org.glowroot.jvm.ThreadAllocatedBytes;
+import org.glowroot.transaction.model.GcInfoComponent.GcInfo;
+import org.glowroot.transaction.model.ThreadInfoComponent.ThreadInfoData;
 
 // contains all data that has been captured for a given transaction (e.g. a servlet request)
 //
@@ -213,7 +216,7 @@ public class Transaction {
         return ImmutableSetMultimap.copyOf(orderedCustomAttributes);
     }
 
-    public boolean readMemoryBarrier() {
+    private boolean readMemoryBarrier() {
         return memoryBarrier;
     }
 
@@ -228,19 +231,19 @@ public class Transaction {
     }
 
     // can be called from a non-transaction thread
-    public @Nullable String getThreadInfoJson() {
+    public @Nullable ThreadInfoData getThreadInfo() {
         if (threadInfoComponent == null) {
             return null;
         }
-        return threadInfoComponent.writeValueAsString();
+        return threadInfoComponent.getThreadInfo();
     }
 
     // can be called from a non-transaction thread
-    public @Nullable String getGcInfosJson() {
+    public @Nullable List<GcInfo> getGcInfos() {
         if (gcInfoComponent == null) {
             return null;
         }
-        return gcInfoComponent.writeValueAsString();
+        return gcInfoComponent.getGcInfos();
     }
 
     public TraceEntry getTraceEntryComponent() {

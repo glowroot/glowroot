@@ -26,6 +26,8 @@ import com.google.common.collect.ImmutableMap;
 
 class HttpSessions {
 
+    private HttpSessions() {}
+
     static @Nullable ImmutableMap<String, String> getSessionAttributes(Object session,
             SessionInvoker sessionInvoker) {
         Set<String> capturePaths = ServletPluginProperties.captureSessionAttributePaths();

@@ -24,6 +24,7 @@ import javax.management.InstanceNotFoundException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -61,52 +62,57 @@ class GaugeCollector extends ScheduledRunnable {
     protected void runInternal() {
         List<GaugePoint> gaugePoints = Lists.newArrayList();
         for (MBeanGauge mbeanGauge : configService.getMBeanGauges()) {
-            try {
-                long captureTime = clock.currentTimeMillis();
-                ObjectName objectName = ObjectName.getInstance(mbeanGauge.mbeanObjectName());
-                for (String mbeanAttributeName : mbeanGauge.mbeanAttributeNames()) {
-                    Object attributeValue;
-                    try {
-                        attributeValue = lazyPlatformMBeanServer.getAttribute(objectName,
-                                mbeanAttributeName);
-                    } catch (InstanceNotFoundException e) {
-                        logger.debug(e.getMessage(), e);
-                        // other attributes for this mbean will give same error, so log mbean not
-                        // found and break out of attribute loop
-                        logFirstTimeMBeanNotFound(mbeanGauge);
-                        break;
-                    } catch (AttributeNotFoundException e) {
-                        logger.debug(e.getMessage(), e);
-                        logFirstTimeMBeanAttributeNotFound(mbeanGauge, mbeanAttributeName);
-                        continue;
-                    } catch (Exception e) {
-                        logger.debug(e.getMessage(), e);
-                        // using toString() instead of getMessage() in order to capture exception
-                        // class name
-                        logFirstTimeMBeanAttributeError(mbeanGauge, mbeanAttributeName,
-                                e.toString());
-                        continue;
-                    }
-                    if (attributeValue instanceof Number) {
-                        double value = ((Number) attributeValue).doubleValue();
-                        gaugePoints.add(ImmutableGaugePoint.builder()
-                                .gaugeName(mbeanGauge.name() + "/" + mbeanAttributeName)
-                                .captureTime(captureTime)
-                                .value(value)
-                                .build());
-                    } else {
-                        logFirstTimeMBeanAttributeError(mbeanGauge, mbeanAttributeName,
-                                "MBean attribute value is not a number");
-                    }
-                }
-            } catch (MalformedObjectNameException e) {
-                logger.debug(e.getMessage(), e);
-                // using toString() instead of getMessage() in order to capture exception
-                // class name
-                logFirstTimeMBeanException(mbeanGauge, e.toString());
-            }
+            gaugePoints.addAll(runInternal(mbeanGauge));
         }
         gaugePointRepository.store(gaugePoints);
+    }
+
+    private List<GaugePoint> runInternal(MBeanGauge mbeanGauge) {
+        ObjectName objectName;
+        try {
+            objectName = ObjectName.getInstance(mbeanGauge.mbeanObjectName());
+        } catch (MalformedObjectNameException e) {
+            logger.debug(e.getMessage(), e);
+            // using toString() instead of getMessage() in order to capture exception class name
+            logFirstTimeMBeanException(mbeanGauge, e.toString());
+            return ImmutableList.of();
+        }
+        long captureTime = clock.currentTimeMillis();
+        List<GaugePoint> gaugePoints = Lists.newArrayList();
+        for (String mbeanAttributeName : mbeanGauge.mbeanAttributeNames()) {
+            Object attributeValue;
+            try {
+                attributeValue =
+                        lazyPlatformMBeanServer.getAttribute(objectName, mbeanAttributeName);
+            } catch (InstanceNotFoundException e) {
+                logger.debug(e.getMessage(), e);
+                // other attributes for this mbean will give same error, so log mbean not
+                // found and break out of attribute loop
+                logFirstTimeMBeanNotFound(mbeanGauge);
+                break;
+            } catch (AttributeNotFoundException e) {
+                logger.debug(e.getMessage(), e);
+                logFirstTimeMBeanAttributeNotFound(mbeanGauge, mbeanAttributeName);
+                continue;
+            } catch (Exception e) {
+                logger.debug(e.getMessage(), e);
+                // using toString() instead of getMessage() in order to capture exception class name
+                logFirstTimeMBeanAttributeError(mbeanGauge, mbeanAttributeName, e.toString());
+                continue;
+            }
+            if (attributeValue instanceof Number) {
+                double value = ((Number) attributeValue).doubleValue();
+                gaugePoints.add(ImmutableGaugePoint.builder()
+                        .gaugeName(mbeanGauge.name() + "/" + mbeanAttributeName)
+                        .captureTime(captureTime)
+                        .value(value)
+                        .build());
+            } else {
+                logFirstTimeMBeanAttributeError(mbeanGauge, mbeanAttributeName,
+                        "MBean attribute value is not a number");
+            }
+        }
+        return gaugePoints;
     }
 
     // relatively common, so nice message

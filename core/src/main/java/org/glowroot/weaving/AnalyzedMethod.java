@@ -20,38 +20,17 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 
-// Strings are interned to reduce memory footprint of AnalyzedWorld
 @Value.Immutable
-public abstract class AnalyzedMethod {
+abstract class AnalyzedMethod {
 
-    // static AnalyzedMethod from(String name, List<Type> parameterTypes, Type returnType,
-    // int modifiers, @Nullable String signature, List<String> exceptions,
-    // List<Advice> advisors) {
-    // List<String> parameterTypeNames = Lists.newArrayList();
-    // for (Type parameterType : parameterTypes) {
-    // parameterTypeNames.add(parameterType.getClassName());
-    // }
-    // String returnTypeName = returnType.getClassName();
-    // return new AnalyzedMethod(name, parameterTypeNames, returnTypeName, modifiers, signature,
-    // exceptions, advisors);
-    // }
-
-    // this.name = name.intern();
-    // this.parameterTypes = internStringList(parameterTypes);
-    // this.returnType = returnType.intern();
-    // this.signature = signature == null ? null : signature.intern();
-    // this.exceptions = internStringList(exceptions);
-
-    public abstract String name();
+    abstract String name();
     // these are class names
-    public abstract List<String> parameterTypes();
-    public abstract String returnType();
-    public abstract int modifiers();
+    abstract List<String> parameterTypes();
+    abstract String returnType();
+    abstract int modifiers();
 
     // signature, exceptions and advisors are needed for public methods in case they end up
     // fulfilling an interface in a subclass
@@ -88,14 +67,6 @@ public abstract class AnalyzedMethod {
             }
         }
         return true;
-    }
-
-    static ImmutableList<String> internStringList(List<String> strings) {
-        List<String> internedStrings = Lists.newArrayListWithCapacity(strings.size());
-        for (String string : strings) {
-            internedStrings.add(string.intern());
-        }
-        return ImmutableList.copyOf(internedStrings);
     }
 
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()

@@ -53,7 +53,7 @@ public class StorageModule {
 
     public StorageModule(File dataDir, Map<String, String> properties, Ticker ticker, Clock clock,
             ConfigModule configModule, ScheduledExecutorService scheduledExecutor,
-            boolean viewerModeEnabled) throws SQLException, IOException {
+            boolean viewerModeEnabled) throws Exception {
         // mem db is only used for testing (by glowroot-test-container)
         String h2MemDb = properties.get("internal.h2.memdb");
         final DataSource dataSource;

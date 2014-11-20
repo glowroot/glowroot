@@ -19,7 +19,9 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -116,7 +118,7 @@ class HttpSessionManager {
             sessionExpirations.remove(sessionId);
         }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        deleteSession(response);
+        deleteSessionCookie(response);
         return response;
     }
 
@@ -129,10 +131,10 @@ class HttpSessionManager {
         cookie.setPath("/");
         cookieEncoder.addCookie(cookie);
         response.headers().add(SET_COOKIE, cookieEncoder.encode());
-        // TODO clean up expired sessions
+        purgeExpiredSessions();
     }
 
-    void deleteSession(HttpResponse response) {
+    void deleteSessionCookie(HttpResponse response) {
         CookieEncoder cookieEncoder = new CookieEncoder(true);
         Cookie cookie = new DefaultCookie("GLOWROOT_SESSION_ID", "");
         cookie.setHttpOnly(true);
@@ -140,6 +142,10 @@ class HttpSessionManager {
         cookie.setPath("/");
         cookieEncoder.addCookie(cookie);
         response.headers().add(SET_COOKIE, cookieEncoder.encode());
+    }
+
+    void clearAllSessions() {
+        sessionExpirations.clear();
     }
 
     @Nullable
@@ -164,6 +170,15 @@ class HttpSessionManager {
         } else {
             sessionExpirations.put(sessionId,
                     clock.currentTimeMillis() + MINUTES.toMillis(timeoutMinutes));
+        }
+    }
+
+    private void purgeExpiredSessions() {
+        Iterator<Entry<String, Long>> i = sessionExpirations.entrySet().iterator();
+        while (i.hasNext()) {
+            if (i.next().getValue() < clock.currentTimeMillis()) {
+                i.remove();
+            }
         }
     }
 

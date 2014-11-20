@@ -54,7 +54,7 @@ class TraceCommonService {
     }
 
     @Nullable
-    Trace getTrace(String traceId) throws IOException, SQLException {
+    Trace getTrace(String traceId) throws Exception {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Transaction active : transactionRegistry.getTransactions()) {
@@ -138,7 +138,7 @@ class TraceCommonService {
     }
 
     @Nullable
-    TraceExport getExport(String traceId) throws IOException, SQLException {
+    TraceExport getExport(String traceId) throws Exception {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Transaction active : transactionRegistry.getTransactions()) {
@@ -238,7 +238,7 @@ class TraceCommonService {
 
     // this method exists because tests cannot use (sometimes) shaded guava CharSource
     @OnlyUsedByTests
-    public @Nullable String getEntriesString(String traceId) throws SQLException, IOException {
+    public @Nullable String getEntriesString(String traceId) throws Exception {
         CharSource entries = getEntries(traceId);
         if (entries == null) {
             return null;
@@ -248,7 +248,7 @@ class TraceCommonService {
 
     // this method exists because tests cannot use (sometimes) shaded guava CharSource
     @OnlyUsedByTests
-    public @Nullable String getProfileString(String traceId) throws SQLException, IOException {
+    public @Nullable String getProfileString(String traceId) throws Exception {
         CharSource profile = getProfile(traceId);
         if (profile == null) {
             return null;
@@ -258,8 +258,7 @@ class TraceCommonService {
 
     // this method exists because tests cannot use (sometimes) shaded guava CharSource
     @OnlyUsedByTests
-    public @Nullable String getOutlierProfileString(String traceId) throws SQLException,
-            IOException {
+    public @Nullable String getOutlierProfileString(String traceId) throws Exception {
         CharSource profile = getOutlierProfile(traceId);
         if (profile == null) {
             return null;

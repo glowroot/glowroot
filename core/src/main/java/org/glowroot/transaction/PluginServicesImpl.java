@@ -44,7 +44,6 @@ import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
-import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.config.TraceConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.transaction.model.MetricNameImpl;
@@ -80,10 +79,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             TransactionCollector transactionCollector, ConfigService configService,
             MetricNameCache metricNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock,
-            PluginDescriptorCache pluginDescriptorCache, @Nullable String pluginId) {
+            List<PluginDescriptor> pluginDescriptors, @Nullable String pluginId) {
         PluginServicesImpl pluginServices = new PluginServicesImpl(transactionRegistry,
                 transactionCollector, configService, metricNameCache, threadAllocatedBytes,
-                userProfileScheduler, ticker, clock, pluginDescriptorCache, pluginId);
+                userProfileScheduler, ticker, clock, pluginDescriptors, pluginId);
         // add config listeners first before caching configuration property values to avoid a
         // (remotely) possible race condition
         configService.addConfigListener(pluginServices);
@@ -99,7 +98,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             TransactionCollector transactionCollector, ConfigService configService,
             MetricNameCache metricNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock,
-            PluginDescriptorCache pluginDescriptorCache, @Nullable String pluginId) {
+            List<PluginDescriptor> pluginDescriptors, @Nullable String pluginId) {
         this.transactionRegistry = transactionRegistry;
         this.transactionCollector = transactionCollector;
         this.configService = configService;
@@ -114,8 +113,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
             if (pluginConfig == null) {
                 List<String> ids = Lists.newArrayList();
-                List<PluginDescriptor> pluginDescriptors =
-                        pluginDescriptorCache.pluginDescriptors();
                 for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
                     ids.add(pluginDescriptor.id());
                 }
@@ -575,8 +572,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         public void stop() {}
     }
 
-    public static class NopTransactionMetricExt implements TransactionMetricExt {
-        public static final NopTransactionMetricExt INSTANCE = new NopTransactionMetricExt();
+    private static class NopTransactionMetricExt implements TransactionMetricExt {
+        private static final NopTransactionMetricExt INSTANCE = new NopTransactionMetricExt();
         @Override
         public void stop() {}
         @Override

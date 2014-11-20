@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.tests.javaagent;
+package org.glowroot.tests;
 
 import java.net.ConnectException;
 import java.net.ServerSocket;
@@ -40,9 +40,7 @@ public class ChangePortTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        // TODO move this class out of javaagent package once LocalContainer uses http same as
-        // JavaagentContainer
-        container = Containers.getSharedJavaagentContainer();
+        container = Containers.getSharedContainer();
         asyncHttpClient = new AsyncHttpClient();
     }
 

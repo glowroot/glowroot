@@ -37,11 +37,12 @@ public class PropertyValue {
         }
     }
 
-    public PropertyValue(@Nullable Object value) {
+    PropertyValue(@Nullable Object value) {
         this.value = value;
     }
 
-    public @Nullable Object value() {
+    @Nullable
+    Object value() {
         return value;
     }
 }

@@ -133,7 +133,7 @@ abstract class AdviceMatcher {
         }
     }
 
-    static boolean isClassNameMatch(String className, Advice advice) {
+    private static boolean isClassNameMatch(String className, Advice advice) {
         Pattern pointcutClassNamePattern = advice.pointcutClassNamePattern();
         if (pointcutClassNamePattern == null) {
             return advice.pointcut().className().equals(className);

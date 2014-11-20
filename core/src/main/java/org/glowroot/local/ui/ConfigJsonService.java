@@ -16,12 +16,11 @@
 package org.glowroot.local.ui;
 
 import java.io.File;
-import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.common.marshal.Marshaling;
@@ -31,6 +30,7 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Marshaling2;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.OptimisticLockException;
@@ -44,7 +44,6 @@ import org.glowroot.config.ImmutableUserRecordingConfig;
 import org.glowroot.config.MarshalingRoutines;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
-import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.config.ProfilingConfig;
 import org.glowroot.config.PropertyDescriptor;
 import org.glowroot.config.PropertyValue;
@@ -66,7 +65,7 @@ class ConfigJsonService {
 
     private final ConfigService configService;
     private final CappedDatabase cappedDatabase;
-    private final PluginDescriptorCache pluginDescriptorCache;
+    private final ImmutableList<PluginDescriptor> pluginDescriptors;
     private final File dataDir;
     private final HttpSessionManager httpSessionManager;
     private final TransactionModule transactionModule;
@@ -74,11 +73,11 @@ class ConfigJsonService {
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     ConfigJsonService(ConfigService configService, CappedDatabase cappedDatabase,
-            PluginDescriptorCache pluginDescriptorCache, File dataDir,
+            List<PluginDescriptor> pluginDescriptors, File dataDir,
             HttpSessionManager httpSessionManager, TransactionModule transactionModule) {
         this.configService = configService;
         this.cappedDatabase = cappedDatabase;
-        this.pluginDescriptorCache = pluginDescriptorCache;
+        this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         this.dataDir = dataDir;
         this.httpSessionManager = httpSessionManager;
         this.transactionModule = transactionModule;
@@ -89,59 +88,59 @@ class ConfigJsonService {
     }
 
     @GET("/backend/config/trace")
-    String getTraceConfig() throws IOException, SQLException {
+    String getTraceConfig() throws Exception {
         TraceConfig config = configService.getTraceConfig();
-        return Marshaling.toJson(ImmutableTraceConfigResponse.builder()
+        return Marshaling2.toJson(ImmutableTraceConfigResponse.builder()
                 .config(TraceConfigDto.fromConfig(config))
                 .build());
     }
 
     @GET("/backend/config/profiling")
-    String getProfilingConfig() throws IOException, SQLException {
+    String getProfilingConfig() throws Exception {
         ProfilingConfig config = configService.getProfilingConfig();
-        return Marshaling.toJson(ImmutableProfilingConfigResponse.builder()
+        return Marshaling2.toJson(ImmutableProfilingConfigResponse.builder()
                 .config(ProfilingConfigDto.fromConfig(config))
                 .build());
     }
 
     @GET("/backend/config/user-recording")
-    String getUserRecordingConfig() throws IOException, SQLException {
+    String getUserRecordingConfig() throws Exception {
         UserRecordingConfig config = configService.getUserRecordingConfig();
-        return Marshaling.toJson(ImmutableUserRecordingConfigResponse.builder()
+        return Marshaling2.toJson(ImmutableUserRecordingConfigResponse.builder()
                 .config(UserRecordingConfigDto.fromConfig(config))
                 .build());
     }
 
     @GET("/backend/config/storage")
-    String getStorage() throws IOException, SQLException {
+    String getStorage() throws Exception {
         StorageConfig config = configService.getStorageConfig();
-        return Marshaling.toJson(ImmutableStorageConfigResponse.builder()
+        return Marshaling2.toJson(ImmutableStorageConfigResponse.builder()
                 .config(StorageConfigDto.fromConfig(config))
                 .dataDir(dataDir.getCanonicalPath())
                 .build());
     }
 
     @GET("/backend/config/user-interface")
-    String getUserInterface() throws IOException, SQLException {
+    String getUserInterface() throws Exception {
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
         return getUserInterface(false);
     }
 
     @GET("/backend/config/advanced")
-    String getAdvanced() throws IOException, SQLException {
+    String getAdvanced() throws Exception {
         AdvancedConfig config = configService.getAdvancedConfig();
-        return Marshaling.toJson(ImmutableAdvancedConfigResponse.builder()
+        return Marshaling2.toJson(ImmutableAdvancedConfigResponse.builder()
                 .config(AdvancedConfigDto.fromConfig(config))
                 .metricWrapperMethodsActive(transactionModule.isMetricWrapperMethods())
                 .build());
     }
 
     @GET("/backend/config/plugin/(.+)")
-    String getPluginConfig(String pluginId) throws IOException, SQLException {
+    String getPluginConfig(String pluginId) throws Exception {
         PluginConfig config = configService.getPluginConfig(pluginId);
         PluginDescriptor pluginDescriptor = null;
-        for (PluginDescriptor descriptor : pluginDescriptorCache.pluginDescriptors()) {
+        for (PluginDescriptor descriptor : pluginDescriptors) {
             if (descriptor.id().equals(pluginId)) {
                 pluginDescriptor = descriptor;
                 break;
@@ -150,14 +149,14 @@ class ConfigJsonService {
         if (config == null || pluginDescriptor == null) {
             throw new IllegalArgumentException("Plugin id not found: " + pluginId);
         }
-        return Marshaling.toJson(ImmutablePluginConfigResponse.builder()
+        return Marshaling2.toJson(ImmutablePluginConfigResponse.builder()
                 .addAllPropertyDescriptors(pluginDescriptor.properties())
                 .config(PluginConfigDto.fromConfig(config))
                 .build());
     }
 
     @POST("/backend/config/trace")
-    String updateTraceConfig(String content) throws IOException, SQLException {
+    String updateTraceConfig(String content) throws Exception {
         TraceConfigDto configDto = Marshaling.fromJson(content, TraceConfigDto.class);
         try {
             configService.updateTraceConfig(configDto.toConfig(), configDto.version());
@@ -168,7 +167,7 @@ class ConfigJsonService {
     }
 
     @POST("/backend/config/profiling")
-    String updateProfilingConfig(String content) throws IOException, SQLException {
+    String updateProfilingConfig(String content) throws Exception {
         ProfilingConfigDto configDto = Marshaling.fromJson(content, ProfilingConfigDto.class);
         try {
             configService.updateProfilingConfig(configDto.toConfig(), configDto.version());
@@ -179,7 +178,7 @@ class ConfigJsonService {
     }
 
     @POST("/backend/config/user-recording")
-    String updateUserRecordingConfig(String content) throws IOException, SQLException {
+    String updateUserRecordingConfig(String content) throws Exception {
         UserRecordingConfigDto configDto =
                 Marshaling.fromJson(content, UserRecordingConfigDto.class);
         try {
@@ -191,7 +190,7 @@ class ConfigJsonService {
     }
 
     @POST("/backend/config/storage")
-    String updateStorageConfig(String content) throws IOException, SQLException {
+    String updateStorageConfig(String content) throws Exception {
         StorageConfigDto configDto = Marshaling.fromJson(content, StorageConfigDto.class);
         try {
             configService.updateStorageConfig(configDto.toConfig(), configDto.version());
@@ -204,8 +203,7 @@ class ConfigJsonService {
     }
 
     @POST("/backend/config/user-interface")
-    String updateUserInterfaceConfig(String content, HttpResponse response) throws IOException,
-            GeneralSecurityException, SQLException {
+    String updateUserInterfaceConfig(String content, HttpResponse response) throws Exception {
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
         UserInterfaceConfigDto configDto =
@@ -235,7 +233,8 @@ class ConfigJsonService {
         if (!priorConfig.passwordEnabled() && config.passwordEnabled()) {
             httpSessionManager.createSession(response);
         } else if (priorConfig.passwordEnabled() && !config.passwordEnabled()) {
-            httpSessionManager.deleteSession(response);
+            httpSessionManager.clearAllSessions();
+            httpSessionManager.deleteSessionCookie(response);
         }
         // lastly deal with ui port change
         if (priorConfig.port() != config.port()) {
@@ -251,7 +250,7 @@ class ConfigJsonService {
     }
 
     @POST("/backend/config/advanced")
-    String updateAdvancedConfig(String content) throws IOException, SQLException {
+    String updateAdvancedConfig(String content) throws Exception {
         AdvancedConfigDto configDto = Marshaling.fromJson(content, AdvancedConfigDto.class);
         try {
             configService.updateAdvancedConfig(configDto.toConfig(), configDto.version());
@@ -262,7 +261,7 @@ class ConfigJsonService {
     }
 
     @POST("/backend/config/plugin/(.+)")
-    String updatePluginConfig(String pluginId, String content) throws IOException, SQLException {
+    String updatePluginConfig(String pluginId, String content) throws Exception {
         PluginConfigDto configDto = Marshaling.fromJson(content, PluginConfigDto.class);
         try {
             configService.updatePluginConfig(configDto.toConfig(pluginId), configDto.version());
@@ -282,7 +281,7 @@ class ConfigJsonService {
                 .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
                 .version(config.version())
                 .build();
-        return Marshaling.toJson(ImmutableUserInterfaceConfigResponse.builder()
+        return Marshaling2.toJson(ImmutableUserInterfaceConfigResponse.builder()
                 .config(configDto)
                 .activePort(httpServer.getPort())
                 .portChangeFailed(portChangeFailed)
@@ -571,5 +570,5 @@ class ConfigJsonService {
     }
 
     @SuppressWarnings("serial")
-    public static class CurrentPasswordIncorrectException extends Exception {}
+    private static class CurrentPasswordIncorrectException extends Exception {}
 }

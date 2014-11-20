@@ -33,10 +33,4 @@ public abstract class MetricNameImpl implements MetricName {
     int specialHashCode() {
         return nextSpecialHashCode.getAndIncrement();
     }
-
-    public static MetricNameImpl create(String name) {
-        return ImmutableMetricNameImpl.builder()
-                .name(name)
-                .build();
-    }
 }

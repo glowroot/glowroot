@@ -31,7 +31,6 @@ import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.common.SpyingLogbackFilter;
 import org.glowroot.common.SpyingLogbackFilter.MessageCount;
-import org.glowroot.config.PluginDescriptorCache;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.AppUnderTestServices;
 import org.glowroot.container.Container;
@@ -91,10 +90,8 @@ public class LocalContainer implements Container {
         JavaagentMain.setTraceStoreThresholdMillisToZero();
         final GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        PluginDescriptorCache pluginDescriptorCache =
-                glowrootModule.getConfigModule().getPluginDescriptorCache();
         AdviceCache adviceCache = glowrootModule.getTransactionModule().getAdviceCache();
-        loader.setMixinTypes(pluginDescriptorCache.mixinTypes());
+        loader.setMixinTypes(adviceCache.getMixinTypes());
         List<Advice> advisors = Lists.newArrayList();
         advisors.addAll(adviceCache.getAdvisors());
         loader.setAdvisors(advisors);

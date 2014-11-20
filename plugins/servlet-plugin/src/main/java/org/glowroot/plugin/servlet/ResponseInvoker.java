@@ -36,7 +36,7 @@ public class ResponseInvoker {
         } catch (ClassNotFoundException e) {
             logger.warn(e.getMessage(), e);
         }
-        getContentTypeMethod = getMethod(servletResponseClass, "getContentType");
+        getContentTypeMethod = Invokers.getMethod(servletResponseClass, "getContentType");
     }
 
     public @Nullable String getContentType(Object response) {
@@ -54,22 +54,6 @@ public class ResponseInvoker {
         } catch (Throwable t) {
             logger.warn("error calling ServletResponse.getContentType()", t);
             return "<error calling ServletResponse.getContentType()>";
-        }
-    }
-
-    private static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName,
-            Class<?>... parameterTypes) {
-        if (clazz == null) {
-            return null;
-        }
-        try {
-            return clazz.getMethod(methodName, parameterTypes);
-        } catch (SecurityException e) {
-            logger.warn(e.getMessage(), e);
-            return null;
-        } catch (NoSuchMethodException e) {
-            logger.warn(e.getMessage(), e);
-            return null;
         }
     }
 }

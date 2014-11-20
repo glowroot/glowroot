@@ -22,11 +22,11 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
 import com.google.common.hash.Hashing;
-import org.immutables.common.marshal.Marshaling;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.api.weaving.MethodModifier;
+import org.glowroot.common.Marshaling2;
 import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
 
 @Value.Immutable
@@ -91,7 +91,7 @@ public abstract class CapturePoint {
     @Value.Derived
     @Json.Ignore
     public String version() {
-        return Hashing.sha1().hashString(Marshaling.toJson(this), Charsets.UTF_8).toString();
+        return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
     }
 
     public boolean isMetricOrGreater() {

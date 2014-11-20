@@ -108,7 +108,7 @@ public class MainEntryPoint {
         startupLogger.info("Glowroot listening at http://localhost:{}",
                 glowrootModule.getUiModule().getPort());
         List<PluginDescriptor> pluginDescriptors =
-                glowrootModule.getConfigModule().getPluginDescriptorCache().pluginDescriptors();
+                glowrootModule.getConfigModule().getPluginDescriptors();
         List<String> pluginNames = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             pluginNames.add(pluginDescriptor.name());

@@ -59,13 +59,12 @@ public class LazyPlatformMBeanServer {
 
     private volatile @MonotonicNonNull MBeanServer mbeanServer;
 
-    public void getObjectInstance(ObjectName name) throws InstanceNotFoundException,
-            InterruptedException {
+    void getObjectInstance(ObjectName name) throws InstanceNotFoundException, InterruptedException {
         ensureInit();
         mbeanServer.getObjectInstance(name);
     }
 
-    public void invoke(ObjectName name, String operationName, Object[] params, String[] signature)
+    void invoke(ObjectName name, String operationName, Object[] params, String[] signature)
             throws InstanceNotFoundException, ReflectionException, MBeanException,
             InterruptedException {
         ensureInit();

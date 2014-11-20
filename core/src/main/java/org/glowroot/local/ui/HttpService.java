@@ -15,9 +15,6 @@
  */
 package org.glowroot.local.ui;
 
-import java.io.IOException;
-import java.sql.SQLException;
-
 import javax.annotation.Nullable;
 
 import org.jboss.netty.channel.Channel;
@@ -27,6 +24,5 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 interface HttpService {
 
     @Nullable
-    HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException,
-            SQLException;
+    HttpResponse handleRequest(HttpRequest request, Channel channel) throws Exception;
 }

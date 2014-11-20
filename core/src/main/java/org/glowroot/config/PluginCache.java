@@ -24,25 +24,33 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.io.Resources;
+import org.immutables.common.marshal.Marshaling;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class PluginCache {
+@Value.Immutable
+abstract class PluginCache {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginCache.class);
 
-    private final ImmutableList<File> pluginJars;
-    private final ImmutableList<URL> descriptorURLs;
+    abstract List<File> pluginJars();
+    abstract List<URL> descriptorURLs();
+    abstract List<PluginDescriptor> pluginDescriptors();
 
-    PluginCache(@Nullable File glowrootJarFile) throws URISyntaxException, IOException {
+    static PluginCache create(@Nullable File glowrootJarFile, boolean viewerModeEnabled)
+            throws URISyntaxException, IOException {
+        ImmutablePluginCache.Builder builder = ImmutablePluginCache.builder();
         List<URL> descriptorURLs = Lists.newArrayList();
-        if (glowrootJarFile == null) {
-            pluginJars = ImmutableList.of();
-        } else {
-            pluginJars = getPluginJars(glowrootJarFile);
+        if (glowrootJarFile != null) {
+            List<File> pluginJars = getPluginJars(glowrootJarFile);
+            builder.addAllPluginJars(pluginJars);
             for (File pluginJar : pluginJars) {
                 descriptorURLs.add(new URL("jar:" + pluginJar.toURI()
                         + "!/META-INF/glowroot.plugin.json"));
@@ -53,15 +61,13 @@ class PluginCache {
         }
         // also add descriptors on the class path (this is primarily for integration tests)
         descriptorURLs.addAll(getResources("META-INF/glowroot.plugin.json"));
-        this.descriptorURLs = ImmutableList.copyOf(descriptorURLs);
-    }
-
-    ImmutableList<File> getPluginJars() {
-        return pluginJars;
-    }
-
-    ImmutableList<URL> getDescriptorURLs() {
-        return descriptorURLs;
+        builder.addAllDescriptorURLs(descriptorURLs);
+        if (viewerModeEnabled) {
+            builder.addAllPluginDescriptors(createInViewerMode(descriptorURLs));
+        } else {
+            builder.addAllPluginDescriptors(readPluginDescriptors(descriptorURLs));
+        }
+        return builder.build();
     }
 
     private static ImmutableList<File> getPluginJars(File glowrootJarFile)
@@ -113,11 +119,42 @@ class PluginCache {
     }
 
     private static ImmutableList<URL> getResources(String resourceName) throws IOException {
-        ClassLoader loader = PluginDescriptorCache.class.getClassLoader();
+        ClassLoader loader = PluginCache.class.getClassLoader();
         if (loader == null) {
             return ImmutableList.copyOf(Iterators.forEnumeration(
                     ClassLoader.getSystemResources(resourceName)));
         }
         return ImmutableList.copyOf(Iterators.forEnumeration(loader.getResources(resourceName)));
+    }
+
+    private static List<PluginDescriptor> createInViewerMode(List<URL> descriptorURLs)
+            throws IOException, URISyntaxException {
+        List<PluginDescriptor> pluginDescriptors = readPluginDescriptors(descriptorURLs);
+        List<PluginDescriptor> pluginDescriptorsWithoutAdvice = Lists.newArrayList();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            pluginDescriptorsWithoutAdvice.add(pluginDescriptor.copyWithoutAdvice());
+        }
+        return sorted(pluginDescriptorsWithoutAdvice);
+    }
+
+    private static List<PluginDescriptor> readPluginDescriptors(List<URL> descriptorURLs)
+            throws IOException, URISyntaxException {
+        List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
+        for (URL url : descriptorURLs) {
+            try {
+                String content = Resources.toString(url, Charsets.UTF_8);
+                PluginDescriptor pluginDescriptor =
+                        Marshaling.fromJson(content, PluginDescriptor.class);
+                pluginDescriptors.add(pluginDescriptor);
+            } catch (JsonProcessingException e) {
+                logger.error("error parsing plugin descriptor: {}", url.toExternalForm(), e);
+            }
+        }
+        return sorted(pluginDescriptors);
+    }
+
+    // sorted for display to console during startup and for plugin config sidebar menu
+    private static List<PluginDescriptor> sorted(List<PluginDescriptor> pluginDescriptors) {
+        return PluginDescriptor.specialOrderingByName.immutableSortedCopy(pluginDescriptors);
     }
 }

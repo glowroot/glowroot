@@ -51,13 +51,13 @@ class Weaver {
     private static final boolean verifyWeaving =
             Boolean.getBoolean("glowroot.internal.weaving.verify");
 
-    private final Supplier<ImmutableList<Advice>> advisors;
+    private final Supplier<List<Advice>> advisors;
     private final ImmutableList<MixinType> mixinTypes;
     private final AnalyzedWorld analyzedWorld;
     private final WeavingTimerService weavingTimerService;
     private final boolean metricWrapperMethods;
 
-    Weaver(Supplier<ImmutableList<Advice>> advisors, List<MixinType> mixinTypes,
+    Weaver(Supplier<List<Advice>> advisors, List<MixinType> mixinTypes,
             AnalyzedWorld analyzedWorld, WeavingTimerService weavingTimerService,
             boolean metricWrapperMethods) {
         this.advisors = advisors;

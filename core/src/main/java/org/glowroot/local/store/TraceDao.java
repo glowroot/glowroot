@@ -33,7 +33,6 @@ import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.Existence;
 import org.glowroot.collector.ImmutableTrace;
 import org.glowroot.collector.Trace;
 import org.glowroot.collector.TraceRepository;
@@ -399,35 +398,21 @@ public class TraceDao implements TraceRepository {
         // need ".0" to force double result
         String captureTimeSql = "ceil(capture_time / " + resolutionMillis + ".0) * "
                 + resolutionMillis;
-        String sql = "select " + captureTimeSql + ", count(*) from trace where error = ?";
-        List<Object> args = Lists.newArrayList();
-        args.add(true);
-        String transactionType = query.transactionType();
-        String transactionName = query.transactionName();
-        if (transactionType != null && transactionName != null) {
-            sql += " and transaction_type = ? and transaction_name = ?";
-            args.add(transactionType);
-            args.add(transactionName);
-        }
-        sql += " and capture_time >= ? and capture_time <= ? and error = ?";
-        args.add(query.from());
-        args.add(query.to());
-        args.add(true);
-        for (String include : query.includes()) {
-            sql += " and upper(error_message) like ?";
-            args.add('%' + include.toUpperCase(Locale.ENGLISH) + '%');
-        }
-        for (String exclude : query.excludes()) {
-            sql += " and upper(error_message) not like ?";
-            args.add('%' + exclude.toUpperCase(Locale.ENGLISH) + '%');
-        }
-        sql += " group by " + captureTimeSql + " order by " + captureTimeSql;
-        return ImmutableParameterizedSql.of(sql, args);
+        return buildErrorMessageQuery(query,
+                "select " + captureTimeSql + ", count(*) from trace",
+                "group by " + captureTimeSql + " order by " + captureTimeSql);
     }
 
     private ParameterizedSql getErrorMessageCountParameterizedSql(ErrorMessageQuery query) {
-        String sql = "select error_message, count(*) from trace where error = ?";
+        return buildErrorMessageQuery(query, "select error_message, count(*) from trace",
+                "group by error_message order by count(*) desc");
+    }
+
+    private ParameterizedSql buildErrorMessageQuery(ErrorMessageQuery query, String selectClause,
+            String groupByClause) {
+        String sql = selectClause;
         List<Object> args = Lists.newArrayList();
+        sql += " where error = ?";
         args.add(true);
         String transactionType = query.transactionType();
         String transactionName = query.transactionName();
@@ -448,7 +433,7 @@ public class TraceDao implements TraceRepository {
             sql += " and upper(error_message) not like ?";
             args.add('%' + exclude.toUpperCase(Locale.ENGLISH) + '%');
         }
-        sql += " group by error_message order by count(*) desc";
+        sql += " " + groupByClause;
         return ImmutableParameterizedSql.of(sql, args);
     }
 
@@ -490,51 +475,34 @@ public class TraceDao implements TraceRepository {
 
     private class TraceRowMapper implements RowMapper<Trace> {
 
-        // TODO figure out how to get checker framework to pass without suppress warnings
-        // seems to have broken in checker 1.8.2 (or maybe just became more strict)
         @Override
-        @SuppressWarnings("contracts.precondition.not.satisfied")
         public Trace mapRow(ResultSet resultSet) throws SQLException {
-            ImmutableTrace.Builder trace = ImmutableTrace.builder();
             String id = resultSet.getString(1);
             // this checkNotNull is safe since id is the primary key and cannot be null
             checkNotNull(id);
-            trace.id(id);
-            trace.active(false);
-            trace.partial(resultSet.getBoolean(2));
-            trace.startTime(resultSet.getLong(3));
-            trace.captureTime(resultSet.getLong(4));
-            trace.duration(resultSet.getLong(5));
-            trace.transactionType(Strings.nullToEmpty(resultSet.getString(6)));
-            trace.transactionName(Strings.nullToEmpty(resultSet.getString(7)));
-            trace.headline(Strings.nullToEmpty(resultSet.getString(8)));
-            trace.error(resultSet.getString(9));
-            trace.user(resultSet.getString(10));
-            trace.customAttributes(resultSet.getString(11));
-            trace.metrics(resultSet.getString(12));
-            trace.threadInfo(resultSet.getString(13));
-            trace.gcInfos(resultSet.getString(14));
-            trace.entriesExistence(getExistence(resultSet.getString(15)));
-            trace.profileExistence(getExistence(resultSet.getString(16)));
-            trace.outlierProfileExistence(getExistence(resultSet.getString(17)));
-            return trace.build();
-        }
-
-        private Existence getExistence(@Nullable String fileBlockId) throws SQLException {
-            if (fileBlockId == null) {
-                return Existence.NO;
-            }
-            FileBlock fileBlock;
-            try {
-                fileBlock = FileBlock.from(fileBlockId);
-            } catch (InvalidBlockIdFormatException e) {
-                throw new SQLException(e);
-            }
-            if (cappedDatabase.isExpired(fileBlock)) {
-                return Existence.EXPIRED;
-            } else {
-                return Existence.YES;
-            }
+            return ImmutableTrace.builder()
+                    .id(id)
+                    .active(false)
+                    .partial(resultSet.getBoolean(2))
+                    .startTime(resultSet.getLong(3))
+                    .captureTime(resultSet.getLong(4))
+                    .duration(resultSet.getLong(5))
+                    .transactionType(Strings.nullToEmpty(resultSet.getString(6)))
+                    .transactionName(Strings.nullToEmpty(resultSet.getString(7)))
+                    .headline(Strings.nullToEmpty(resultSet.getString(8)))
+                    .error(resultSet.getString(9))
+                    .user(resultSet.getString(10))
+                    .customAttributes(resultSet.getString(11))
+                    .metrics(resultSet.getString(12))
+                    .threadInfo(resultSet.getString(13))
+                    .gcInfos(resultSet.getString(14))
+                    .entriesExistence(
+                            RowMappers.getExistence(resultSet.getString(15), cappedDatabase))
+                    .profileExistence(
+                            RowMappers.getExistence(resultSet.getString(16), cappedDatabase))
+                    .outlierProfileExistence(
+                            RowMappers.getExistence(resultSet.getString(17), cappedDatabase))
+                    .build();
         }
     }
 
@@ -557,7 +525,7 @@ public class TraceDao implements TraceRepository {
         }
     }
 
-    private final class StringRowMapper implements RowMapper<String> {
+    private static class StringRowMapper implements RowMapper<String> {
         @Override
         public String mapRow(ResultSet resultSet) throws SQLException {
             // this checkNotNull is safe since id is the primary key and cannot be null

@@ -46,6 +46,15 @@ public abstract class PluginDescriptor {
                 }
             };
 
+    static final Ordering<PluginDescriptor> orderingById = new Ordering<PluginDescriptor>() {
+        @Override
+        public int compare(@Nullable PluginDescriptor left, @Nullable PluginDescriptor right) {
+            checkNotNull(left);
+            checkNotNull(right);
+            return left.id().compareToIgnoreCase(right.id());
+        }
+    };
+
     public abstract String name();
     public abstract String id();
     public abstract String version();
@@ -55,7 +64,7 @@ public abstract class PluginDescriptor {
     public abstract List<CapturePoint> capturePoints();
     public abstract List<String> aspects();
 
-    public PluginDescriptor copyWithoutAdvice() {
+    PluginDescriptor copyWithoutAdvice() {
         return ((ImmutablePluginDescriptor) this)
                 .withCapturePoints()
                 .withAspects();

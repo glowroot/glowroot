@@ -355,7 +355,7 @@ public class AdviceBuilder {
 
     @SuppressWarnings("serial")
     public static class AdviceConstructionException extends Exception {
-        AdviceConstructionException(Throwable cause) {
+        private AdviceConstructionException(Throwable cause) {
             super(cause);
         }
         private AdviceConstructionException(@Nullable String message) {

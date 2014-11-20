@@ -23,7 +23,6 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,9 +41,9 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // hard-coded results in org.glowroot.weaving.PreInitializeWeavingClassesTest)
     // note: an exception is made for WeavingTimerService, see PreInitializeWeavingClassesTest for
     // explanation
-    public WeavingClassFileTransformer(List<MixinType> mixinTypes,
-            Supplier<ImmutableList<Advice>> advisors, AnalyzedWorld analyzedWorld,
-            WeavingTimerService weavingTimerService, boolean metricWrapperMethods) {
+    public WeavingClassFileTransformer(List<MixinType> mixinTypes, Supplier<List<Advice>> advisors,
+            AnalyzedWorld analyzedWorld, WeavingTimerService weavingTimerService,
+            boolean metricWrapperMethods) {
         weaver = new Weaver(advisors, mixinTypes, analyzedWorld, weavingTimerService,
                 metricWrapperMethods);
         // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
@@ -113,7 +112,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         return transformedBytes;
     }
 
-    public static boolean isInBootstrapClassLoader() {
+    private static boolean isInBootstrapClassLoader() {
         return WeavingClassFileTransformer.class.getClassLoader() == null;
     }
 }

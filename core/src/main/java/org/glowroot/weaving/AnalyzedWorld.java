@@ -91,19 +91,16 @@ public class AnalyzedWorld {
     private final ConcurrentMap<String, AnalyzedClass> bootstrapLoaderWorld =
             new ConcurrentHashMap<String, AnalyzedClass>();
 
-    private final Supplier<ImmutableList<Advice>> advisors;
+    private final Supplier<List<Advice>> advisors;
     private final ImmutableList<MixinType> mixinTypes;
 
     private final @Nullable ExtraBootResourceFinder extraBootResourceFinder;
 
-    private final AnalyzedClass javaLangObjectAnalyzedClass;
-
-    public AnalyzedWorld(Supplier<ImmutableList<Advice>> advisors, List<MixinType> mixinTypes,
+    public AnalyzedWorld(Supplier<List<Advice>> advisors, List<MixinType> mixinTypes,
             @Nullable ExtraBootResourceFinder extraBootResourceFinder) {
         this.advisors = advisors;
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.extraBootResourceFinder = extraBootResourceFinder;
-        javaLangObjectAnalyzedClass = createAnalyzedClassPlanC(Object.class, advisors.get());
     }
 
     public List<Class<?>> getClassesWithReweavableAdvice(boolean remove) {
@@ -132,7 +129,6 @@ public class AnalyzedWorld {
 
     void add(AnalyzedClass analyzedClass, @Nullable ClassLoader loader) {
         ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses = getAnalyzedClasses(loader);
-        // analyzedClass.getName() is already interned
         loaderAnalyzedClasses.put(analyzedClass.name(), analyzedClass);
     }
 
@@ -150,10 +146,6 @@ public class AnalyzedWorld {
     AnalyzedClass getAnalyzedClass(String className, @Nullable ClassLoader loader)
             throws ClassNotFoundException, IOException {
         return getOrCreateAnalyzedClass(className, loader);
-    }
-
-    AnalyzedClass getJavaLangObjectAnalyzedClass() {
-        return javaLangObjectAnalyzedClass;
     }
 
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
@@ -215,7 +207,6 @@ public class AnalyzedWorld {
     private AnalyzedClass putAnalyzedClass(
             ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses,
             AnalyzedClass analyzedClass) {
-        // analyzedClass.getName() is already interned
         AnalyzedClass existingAnalyzedClass =
                 loaderAnalyzedClasses.putIfAbsent(analyzedClass.name(), analyzedClass);
         if (existingAnalyzedClass != null) {
@@ -244,15 +235,6 @@ public class AnalyzedWorld {
             }
         }
         return classes;
-    }
-
-    private @Nullable AnalyzedClass getExistingAnalyzedClass(String className,
-            @Nullable ClassLoader loader) {
-        ClassLoader analyzedLoader = getAnalyzedLoader(className, loader);
-        if (analyzedLoader == null) {
-            return bootstrapLoaderWorld.get(className);
-        }
-        return world.getUnchecked(analyzedLoader).get(className);
     }
 
     private @Nullable ClassLoader getAnalyzedLoader(String className,
@@ -383,8 +365,7 @@ public class AnalyzedWorld {
     }
 
     // now that the type has been loaded anyways, build the analyzed class via reflection
-    private static AnalyzedClass createAnalyzedClassPlanC(Class<?> clazz,
-            ImmutableList<Advice> advisors) {
+    private static AnalyzedClass createAnalyzedClassPlanC(Class<?> clazz, List<Advice> advisors) {
         ImmutableAnalyzedClass.Builder classBuilder = ImmutableAnalyzedClass.builder();
         classBuilder.modifiers(clazz.getModifiers());
         classBuilder.name(clazz.getName());

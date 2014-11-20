@@ -15,6 +15,8 @@
  */
 package org.glowroot.weaving;
 
+import java.util.List;
+
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
@@ -31,7 +33,8 @@ public class ComputeFramesClassWriterTest {
 
     @Before
     public void beforeEachTest() {
-        Supplier<ImmutableList<Advice>> advisors = Suppliers.ofInstance(ImmutableList.<Advice>of());
+        Supplier<List<Advice>> advisors =
+                Suppliers.<List<Advice>>ofInstance(ImmutableList.<Advice>of());
         AnalyzedWorld analyzedWorld =
                 new AnalyzedWorld(advisors, ImmutableList.<MixinType>of(), null);
         cw = new ComputeFramesClassWriter(0, analyzedWorld, getClass().getClassLoader(), null,

@@ -18,7 +18,6 @@ package org.glowroot.local.ui;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -62,7 +61,7 @@ class TraceExportHttpService implements HttpService {
 
     @Override
     public @Nullable HttpResponse handleRequest(HttpRequest request, Channel channel)
-            throws IOException, SQLException {
+            throws Exception {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);

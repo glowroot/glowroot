@@ -17,10 +17,11 @@ package org.glowroot.collector;
 
 import java.util.List;
 
+import javax.annotation.concurrent.GuardedBy;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
-import javax.annotation.concurrent.GuardedBy;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.ProfileNode;
 

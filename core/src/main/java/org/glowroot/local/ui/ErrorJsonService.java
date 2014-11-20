@@ -32,8 +32,6 @@ import com.google.common.collect.PeekingIterator;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
 import org.glowroot.local.store.AggregateDao;
@@ -51,7 +49,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @JsonService
 class ErrorJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ErrorJsonService.class);
     private static final ObjectMapper mapper;
 
     static {
@@ -61,15 +58,15 @@ class ErrorJsonService {
 
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
-    private final Clock clock;
     private final long fixedAggregateIntervalMillis;
+    private final DataSeriesHelper dataSeriesHelper;
 
     ErrorJsonService(AggregateDao aggregateDao, TraceDao traceDao, Clock clock,
             long fixedAggregateIntervalSeconds) {
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
-        this.clock = clock;
         fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
+        dataSeriesHelper = new DataSeriesHelper(clock, fixedAggregateIntervalMillis);
     }
 
     @GET("/backend/error/transactions")
@@ -109,10 +106,10 @@ class ErrorJsonService {
         for (ErrorPoint overallErrorPoint : overallErrorPoints) {
             if (lastOverallErrorPoint == null) {
                 // first aggregate
-                addInitialUpslope(request.from(), overallErrorPoint.getCaptureTime(),
-                        dataSeriesList, otherDataSeries);
+                dataSeriesHelper.addInitialUpslope(request.from(),
+                        overallErrorPoint.getCaptureTime(), dataSeriesList, otherDataSeries);
             } else {
-                addGapIfNeeded(lastOverallErrorPoint.getCaptureTime(),
+                dataSeriesHelper.addGapIfNeeded(lastOverallErrorPoint.getCaptureTime(),
                         overallErrorPoint.getCaptureTime(), dataSeriesList, otherDataSeries);
             }
             lastOverallErrorPoint = overallErrorPoint;
@@ -139,7 +136,7 @@ class ErrorJsonService {
             }
         }
         if (lastOverallErrorPoint != null) {
-            addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
+            dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
                     lastOverallErrorPoint.getCaptureTime());
         }
         if (otherDataSeries != null) {
@@ -218,10 +215,11 @@ class ErrorJsonService {
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {
                 // first aggregate
-                addInitialUpslope(request.from(), errorPoint.getCaptureTime(), dataSeries);
-            } else {
-                addGapIfNeeded(lastErrorPoint.getCaptureTime(), errorPoint.getCaptureTime(),
+                dataSeriesHelper.addInitialUpslope(request.from(), errorPoint.getCaptureTime(),
                         dataSeries);
+            } else {
+                dataSeriesHelper.addGapIfNeeded(lastErrorPoint.getCaptureTime(),
+                        errorPoint.getCaptureTime(), dataSeries);
             }
             lastErrorPoint = errorPoint;
             long transactionCount = errorPoint.getTransactionCount();
@@ -236,7 +234,8 @@ class ErrorJsonService {
                     new Long[] {errorPoint.getErrorCount(), transactionCount});
         }
         if (lastErrorPoint != null) {
-            addFinalDownslope(request.to(), dataSeries, lastErrorPoint.getCaptureTime());
+            dataSeriesHelper.addFinalDownslope(request.to(), dataSeries,
+                    lastErrorPoint.getCaptureTime());
         }
     }
 
@@ -256,9 +255,7 @@ class ErrorJsonService {
         return sb.toString();
     }
 
-    // TODO consolidate copy-pasted code below with AggregateJsonService
-
-    private @Nullable ErrorPoint getNextErrorPointIfMatching(
+    private static @Nullable ErrorPoint getNextErrorPointIfMatching(
             PeekingIterator<ErrorPoint> errorPoints, long captureTime) {
         if (!errorPoints.hasNext()) {
             return null;
@@ -270,93 +267,6 @@ class ErrorJsonService {
             return errorPoint;
         }
         return null;
-    }
-
-    private void addInitialUpslope(long requestFrom, long captureTime,
-            List<DataSeries> dataSeriesList, @Nullable DataSeries otherDataSeries) {
-        long millisecondsFromEdge = captureTime - requestFrom;
-        if (millisecondsFromEdge < fixedAggregateIntervalMillis / 2) {
-            return;
-        }
-        // bring up from zero
-        for (DataSeries dataSeries : dataSeriesList) {
-            dataSeries.add(captureTime - fixedAggregateIntervalMillis / 2, 0);
-        }
-        if (otherDataSeries != null) {
-            otherDataSeries.add(captureTime - fixedAggregateIntervalMillis / 2, 0);
-        }
-    }
-
-    private void addGapIfNeeded(long lastCaptureTime, long captureTime,
-            List<DataSeries> dataSeriesList, @Nullable DataSeries otherDataSeries) {
-        long millisecondsSinceLastPoint = captureTime - lastCaptureTime;
-        if (millisecondsSinceLastPoint < fixedAggregateIntervalMillis * 1.5) {
-            return;
-        }
-        // gap between points, bring down to zero and then back up from zero to show gap
-        for (DataSeries dataSeries : dataSeriesList) {
-            addGap(dataSeries, lastCaptureTime, captureTime);
-        }
-        if (otherDataSeries != null) {
-            addGap(otherDataSeries, lastCaptureTime, captureTime);
-        }
-    }
-
-    private void addGap(DataSeries dataSeries, long lastCaptureTime, long captureTime) {
-        dataSeries.add(lastCaptureTime + fixedAggregateIntervalMillis / 2, 0);
-        dataSeries.addNull();
-        dataSeries.add(captureTime - fixedAggregateIntervalMillis / 2, 0);
-    }
-
-    private void addFinalDownslope(long requestCaptureTimeTo, List<DataSeries> dataSeriesList,
-            @Nullable DataSeries otherDataSeries, long lastCaptureTime) {
-        long millisecondsAgoFromNow = clock.currentTimeMillis() - lastCaptureTime;
-        if (millisecondsAgoFromNow < fixedAggregateIntervalMillis * 1.5) {
-            return;
-        }
-        long millisecondsFromEdge = requestCaptureTimeTo - lastCaptureTime;
-        if (millisecondsFromEdge < fixedAggregateIntervalMillis / 2) {
-            return;
-        }
-        // bring down to zero
-        for (DataSeries dataSeries : dataSeriesList) {
-            dataSeries.add(lastCaptureTime + fixedAggregateIntervalMillis / 2, 0);
-        }
-        if (otherDataSeries != null) {
-            otherDataSeries.add(lastCaptureTime + fixedAggregateIntervalMillis / 2, 0);
-        }
-    }
-
-    private void addInitialUpslope(long requestFrom, long captureTime, DataSeries dataSeries) {
-        long millisecondsFromEdge = captureTime - requestFrom;
-        if (millisecondsFromEdge < fixedAggregateIntervalMillis / 2) {
-            return;
-        }
-        // bring up from zero
-        dataSeries.add(captureTime - fixedAggregateIntervalMillis / 2, 0);
-    }
-
-    private void addGapIfNeeded(long lastCaptureTime, long captureTime, DataSeries dataSeries) {
-        long millisecondsSinceLastPoint = captureTime - lastCaptureTime;
-        if (millisecondsSinceLastPoint < fixedAggregateIntervalMillis * 1.5) {
-            return;
-        }
-        // gap between points, bring down to zero and then back up from zero to show gap
-        addGap(dataSeries, lastCaptureTime, captureTime);
-    }
-
-    private void addFinalDownslope(long requestCaptureTimeTo, DataSeries dataSeries,
-            long lastCaptureTime) {
-        long millisecondsAgoFromNow = clock.currentTimeMillis() - lastCaptureTime;
-        if (millisecondsAgoFromNow < fixedAggregateIntervalMillis * 1.5) {
-            return;
-        }
-        long millisecondsFromEdge = requestCaptureTimeTo - lastCaptureTime;
-        if (millisecondsFromEdge < fixedAggregateIntervalMillis / 2) {
-            return;
-        }
-        // bring down to zero
-        dataSeries.add(lastCaptureTime + fixedAggregateIntervalMillis / 2, 0);
     }
 
     @Value.Immutable

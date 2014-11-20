@@ -53,16 +53,14 @@ class AggregateJsonService {
     private final AggregateCommonService aggregateCommonService;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
-    private final Clock clock;
-    private final long fixedAggregateIntervalMillis;
+    private final DataSeriesHelper dataSeriesHelper;
 
     AggregateJsonService(AggregateCommonService aggregateCommonService, AggregateDao aggregateDao,
             TraceDao traceDao, Clock clock, long fixedAggregateIntervalSeconds) {
         this.aggregateCommonService = aggregateCommonService;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
-        this.clock = clock;
-        fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
+        dataSeriesHelper = new DataSeriesHelper(clock, fixedAggregateIntervalSeconds * 1000);
     }
 
     @GET("/backend/performance/transactions")
@@ -99,10 +97,10 @@ class AggregateJsonService {
         for (Aggregate overallAggregate : overallAggregates) {
             if (lastOverallAggregate == null) {
                 // first aggregate
-                addInitialUpslope(request.from(), overallAggregate.captureTime(),
+                dataSeriesHelper.addInitialUpslope(request.from(), overallAggregate.captureTime(),
                         dataSeriesList, otherDataSeries);
             } else {
-                addGapIfNeeded(lastOverallAggregate.captureTime(),
+                dataSeriesHelper.addGapIfNeeded(lastOverallAggregate.captureTime(),
                         overallAggregate.captureTime(), dataSeriesList, otherDataSeries);
             }
             lastOverallAggregate = overallAggregate;
@@ -131,7 +129,7 @@ class AggregateJsonService {
             }
         }
         if (lastOverallAggregate != null) {
-            addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
+            dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
                     lastOverallAggregate.captureTime());
         }
         if (otherDataSeries != null) {
@@ -182,11 +180,11 @@ class AggregateJsonService {
             Aggregate aggregate = stackedPoint.getAggregate();
             if (lastAggregate == null) {
                 // first aggregate
-                addInitialUpslope(request.from(), aggregate.captureTime(), dataSeriesList,
-                        otherDataSeries);
-            } else {
-                addGapIfNeeded(lastAggregate.captureTime(), aggregate.captureTime(),
+                dataSeriesHelper.addInitialUpslope(request.from(), aggregate.captureTime(),
                         dataSeriesList, otherDataSeries);
+            } else {
+                dataSeriesHelper.addGapIfNeeded(lastAggregate.captureTime(),
+                        aggregate.captureTime(), dataSeriesList, otherDataSeries);
             }
             lastAggregate = aggregate;
             MutableLongMap<String> stackedMetrics = stackedPoint.getStackedMetrics();
@@ -213,7 +211,7 @@ class AggregateJsonService {
             }
         }
         if (lastAggregate != null) {
-            addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
+            dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
                     lastAggregate.captureTime());
         }
         dataSeriesList.add(otherDataSeries);
@@ -291,8 +289,8 @@ class AggregateJsonService {
         return metricNames;
     }
 
-    private @Nullable Aggregate getNextAggregateIfMatching(PeekingIterator<Aggregate> aggregates,
-            long captureTime) {
+    private static @Nullable Aggregate getNextAggregateIfMatching(
+            PeekingIterator<Aggregate> aggregates, long captureTime) {
         if (!aggregates.hasNext()) {
             return null;
         }
@@ -303,61 +301,6 @@ class AggregateJsonService {
             return aggregate;
         }
         return null;
-    }
-
-    private void addInitialUpslope(long requestFrom, long captureTime,
-            List<DataSeries> dataSeriesList, @Nullable DataSeries otherDataSeries) {
-        long millisecondsFromEdge = captureTime - requestFrom;
-        if (millisecondsFromEdge < fixedAggregateIntervalMillis / 2) {
-            return;
-        }
-        // bring up from zero
-        for (DataSeries dataSeries : dataSeriesList) {
-            dataSeries.add(captureTime - fixedAggregateIntervalMillis / 2, 0);
-        }
-        if (otherDataSeries != null) {
-            otherDataSeries.add(captureTime - fixedAggregateIntervalMillis / 2, 0);
-        }
-    }
-
-    private void addGapIfNeeded(long lastCaptureTime, long captureTime,
-            List<DataSeries> dataSeriesList, @Nullable DataSeries otherDataSeries) {
-        long millisecondsSinceLastPoint = captureTime - lastCaptureTime;
-        if (millisecondsSinceLastPoint < fixedAggregateIntervalMillis * 1.5) {
-            return;
-        }
-        // gap between points, bring down to zero and then back up from zero to show gap
-        for (DataSeries dataSeries : dataSeriesList) {
-            addGap(dataSeries, lastCaptureTime, captureTime);
-        }
-        if (otherDataSeries != null) {
-            addGap(otherDataSeries, lastCaptureTime, captureTime);
-        }
-    }
-
-    private void addGap(DataSeries dataSeries, long lastCaptureTime, long captureTime) {
-        dataSeries.add(lastCaptureTime + fixedAggregateIntervalMillis / 2, 0);
-        dataSeries.addNull();
-        dataSeries.add(captureTime - fixedAggregateIntervalMillis / 2, 0);
-    }
-
-    private void addFinalDownslope(long requestCaptureTimeTo, List<DataSeries> dataSeriesList,
-            @Nullable DataSeries otherDataSeries, long lastCaptureTime) {
-        long millisecondsAgoFromNow = clock.currentTimeMillis() - lastCaptureTime;
-        if (millisecondsAgoFromNow < fixedAggregateIntervalMillis * 1.5) {
-            return;
-        }
-        long millisecondsFromEdge = requestCaptureTimeTo - lastCaptureTime;
-        if (millisecondsFromEdge < fixedAggregateIntervalMillis / 2) {
-            return;
-        }
-        // bring down to zero
-        for (DataSeries dataSeries : dataSeriesList) {
-            dataSeries.add(lastCaptureTime + fixedAggregateIntervalMillis / 2, 0);
-        }
-        if (otherDataSeries != null) {
-            otherDataSeries.add(lastCaptureTime + fixedAggregateIntervalMillis / 2, 0);
-        }
     }
 
     private static class StackedPoint {

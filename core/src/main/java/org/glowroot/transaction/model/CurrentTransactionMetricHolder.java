@@ -17,15 +17,16 @@ package org.glowroot.transaction.model;
 
 import javax.annotation.Nullable;
 
-public class CurrentTransactionMetricHolder {
+class CurrentTransactionMetricHolder {
 
     private @Nullable TransactionMetricImpl currentTransactionMetric;
 
-    public @Nullable TransactionMetricImpl get() {
+    @Nullable
+    TransactionMetricImpl get() {
         return currentTransactionMetric;
     }
 
-    public void set(@Nullable TransactionMetricImpl transactionMetric) {
+    void set(@Nullable TransactionMetricImpl transactionMetric) {
         this.currentTransactionMetric = transactionMetric;
     }
 }

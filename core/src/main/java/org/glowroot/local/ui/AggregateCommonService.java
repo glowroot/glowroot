@@ -16,7 +16,6 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -74,7 +73,7 @@ class AggregateCommonService {
 
     @Nullable
     AggregateProfileNode getProfile(String transactionType, String transactionName, long from,
-            long to, double truncateLeafPercentage) throws IOException, SQLException {
+            long to, double truncateLeafPercentage) throws Exception {
         List<CharSource> profiles =
                 aggregateDao.readProfiles(transactionType, transactionName, from, to);
         AggregateProfileNode syntheticRootNode = AggregateProfileNode.createSyntheticRootNode();

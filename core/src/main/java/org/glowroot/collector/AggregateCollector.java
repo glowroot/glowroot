@@ -22,6 +22,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 
+import javax.annotation.concurrent.GuardedBy;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
@@ -29,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
-import javax.annotation.concurrent.GuardedBy;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Transaction;

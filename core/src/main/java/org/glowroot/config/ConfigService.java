@@ -47,9 +47,8 @@ public class ConfigService {
 
     private volatile Config config;
 
-    ConfigService(File dataDir, PluginDescriptorCache pluginDescriptorCache) {
-        configFile = new ConfigFile(new File(dataDir, "config.json"),
-                pluginDescriptorCache.pluginDescriptors());
+    ConfigService(File dataDir, List<PluginDescriptor> pluginDescriptors) {
+        configFile = new ConfigFile(new File(dataDir, "config.json"), pluginDescriptors);
         try {
             config = configFile.loadConfig();
         } catch (IOException e) {
@@ -226,8 +225,8 @@ public class ConfigService {
         return pluginConfig.version();
     }
 
-    public String insertMBeanGauge(MBeanGauge mbeanGauge) throws IOException,
-            DuplicateMBeanObjectNameException {
+    public String insertMBeanGauge(MBeanGauge mbeanGauge) throws DuplicateMBeanObjectNameException,
+            IOException {
         synchronized (writeLock) {
             List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.mbeanGauges());
             // check for duplicate mbeanObjectName

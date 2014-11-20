@@ -101,7 +101,7 @@ class Accessor {
         }
     }
 
-    static enum AccessorType {
+    private static enum AccessorType {
         METHOD, FIELD, ARRAY_LENGTH
     }
 }

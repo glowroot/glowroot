@@ -58,7 +58,7 @@ public class Agent {
     // suppress warnings is used instead of annotating this method with @Nullable
     // just to avoid dependencies on other classes (in this case the @Nullable annotation)
     @SuppressWarnings("return.type.incompatible")
-    public static File getGlowrootJarFile() throws IOException, URISyntaxException {
+    private static File getGlowrootJarFile() throws IOException, URISyntaxException {
         CodeSource codeSource = Agent.class.getProtectionDomain().getCodeSource();
         if (codeSource == null) {
             if (System.getProperty("delegateJavaagent") != null) {
