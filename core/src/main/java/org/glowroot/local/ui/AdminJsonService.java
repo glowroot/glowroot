@@ -78,13 +78,11 @@ class AdminJsonService {
 
     @POST("/backend/admin/delete-all-aggregates")
     void deleteAllAggregates() {
-        logger.debug("deleteAllAggregates()");
         aggregateDao.deleteAll();
     }
 
     @POST("/backend/admin/delete-all-traces")
     void deleteAllTraces() {
-        logger.debug("deleteAllTraces()");
         traceDao.deleteAll();
         gaugePointDao.deleteAll();
     }
@@ -135,7 +133,6 @@ class AdminJsonService {
 
     @POST("/backend/admin/compact-data")
     void compactData() {
-        logger.debug("compactData()");
         try {
             dataSource.compact();
         } catch (SQLException e) {
@@ -147,28 +144,24 @@ class AdminJsonService {
     @OnlyUsedByTests
     @POST("/backend/admin/reset-all-config")
     void resetAllConfig() throws IOException {
-        logger.debug("resetAllConfig()");
         configService.resetAllConfig();
     }
 
     @OnlyUsedByTests
     @GET("/backend/admin/num-active-transactions")
     String getNumActiveTransactions() {
-        logger.debug("getNumActiveTransactions()");
         return Integer.toString(transactionRegistry.getTransactions().size());
     }
 
     @OnlyUsedByTests
     @GET("/backend/admin/num-pending-complete-transactions")
     String getNumPendingCompleteTransactions() {
-        logger.debug("getNumPendingCompleteTransactions()");
         return Integer.toString(transactionCollector.getPendingCompleteTransactions().size());
     }
 
     @OnlyUsedByTests
     @GET("/backend/admin/num-traces")
     String getNumTraces() throws SQLException {
-        logger.debug("getNumTraces()");
         return Long.toString(traceDao.count());
     }
 

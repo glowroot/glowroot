@@ -76,7 +76,6 @@ class LayoutJsonService {
     // layout data (or find out login is needed if required)
     @GET("/backend/layout")
     String getLayout() throws IOException {
-        logger.debug("getLayout()");
         Layout localLayout = layout;
         if (localLayout == null) {
             localLayout = buildLayout(version, configService, pluginDescriptorCache,
@@ -99,7 +98,6 @@ class LayoutJsonService {
     }
 
     String getUnauthenticatedLayout() throws IOException {
-        logger.debug("getUnauthenticatedLayout()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();

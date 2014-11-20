@@ -62,8 +62,8 @@ public class PreInitializeWeavingClasses {
             if (warnOnNotExists) {
                 logger.warn("class not found: {}", type);
             }
-            // log stack trace at debug level
-            logger.debug(e.getMessage(), e);
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
         }
     }
 

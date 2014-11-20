@@ -32,8 +32,6 @@ import com.google.common.collect.PeekingIterator;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.common.Clock;
@@ -49,7 +47,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @JsonService
 class AggregateJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(AggregateJsonService.class);
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final int MICROSECONDS_PER_SECOND = 1000000;
 
@@ -70,7 +67,6 @@ class AggregateJsonService {
 
     @GET("/backend/performance/transactions")
     String getTransactions(String queryString) throws Exception {
-        logger.debug("getTransactions(): queryString={}", queryString);
         AggregateRequestWithLimit request =
                 QueryStrings.decode(queryString, AggregateRequestWithLimit.class);
         Summary overallSummary = aggregateDao.readOverallSummary(request.transactionType(),
@@ -157,7 +153,6 @@ class AggregateJsonService {
 
     @GET("/backend/performance/metrics")
     String getMetrics(String queryString) throws Exception {
-        logger.debug("getMetrics(): queryString={}", queryString);
         AggregateRequest request = QueryStrings.decode(queryString, AggregateRequest.class);
         List<Aggregate> aggregates;
         String transactionName = request.transactionName();
@@ -246,7 +241,6 @@ class AggregateJsonService {
 
     @GET("/backend/performance/transaction-summaries")
     String getTransactionSummaries(String queryString) throws Exception {
-        logger.debug("getTransactionSummaries(): queryString={}", queryString);
         AggregateRequestWithLimit request =
                 QueryStrings.decode(queryString, AggregateRequestWithLimit.class);
         QueryResult<Summary> queryResult =
@@ -265,7 +259,6 @@ class AggregateJsonService {
 
     @GET("/backend/performance/profile")
     String getProfile(String queryString) throws Exception {
-        logger.debug("getProfile(): queryString={}", queryString);
         ProfileRequest request = QueryStrings.decode(queryString, ProfileRequest.class);
         AggregateProfileNode profile = aggregateCommonService.getProfile(
                 request.transactionType(), request.transactionName(), request.from(),

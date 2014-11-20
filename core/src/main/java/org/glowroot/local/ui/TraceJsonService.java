@@ -37,7 +37,6 @@ class TraceJsonService {
 
     @GET("/backend/trace/header/(.+)")
     String getTrace(String id) throws IOException, SQLException {
-        logger.debug("getTrace(): id={}", id);
         Trace trace = traceCommonService.getTrace(id);
         if (trace == null) {
             logger.debug("no trace found for id: {}", id);

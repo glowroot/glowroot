@@ -74,7 +74,6 @@ class ErrorJsonService {
 
     @GET("/backend/error/transactions")
     String getTransactions(String queryString) throws Exception {
-        logger.debug("getTransactions(): queryString={}", queryString);
         ErrorRequestWithLimit request =
                 QueryStrings.decode(queryString, ErrorRequestWithLimit.class);
 
@@ -162,7 +161,6 @@ class ErrorJsonService {
 
     @GET("/backend/error/messages")
     String getErrorMessages(String queryString) throws Exception {
-        logger.debug("getErrorMessages(): queryString={}", queryString);
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         ErrorMessageQuery request = QueryStrings.decode(queryString, ErrorMessageQuery.class);
@@ -244,7 +242,6 @@ class ErrorJsonService {
 
     @GET("/backend/error/transaction-summaries")
     String getTransactionSummaries(String queryString) throws Exception {
-        logger.debug("getTransactionSummaries(): queryString={}", queryString);
         ErrorRequestWithLimit request =
                 QueryStrings.decode(queryString, ErrorRequestWithLimit.class);
         QueryResult<ErrorCount> queryResult = aggregateDao.readTransactionErrorCounts(

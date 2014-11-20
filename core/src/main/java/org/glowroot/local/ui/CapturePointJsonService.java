@@ -37,8 +37,6 @@ import com.google.common.collect.Sets;
 import org.immutables.common.marshal.Marshaling;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.weaving.MethodModifier;
 import org.glowroot.common.ObjectMappers;
@@ -57,7 +55,6 @@ import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
 @JsonService
 class CapturePointJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(CapturePointJsonService.class);
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final Splitter splitter = Splitter.on(' ').omitEmptyStrings();
 
@@ -76,7 +73,6 @@ class CapturePointJsonService {
 
     @GET("/backend/config/capture-points")
     String getCapturePoint() throws IOException, SQLException {
-        logger.debug("getCapturePoint()");
         List<CapturePoint> configs = configService.getCapturePoints();
         List<CapturePointDto> configDtos = Lists.newArrayList();
         for (CapturePoint config : configs) {
@@ -93,7 +89,6 @@ class CapturePointJsonService {
     // this is marked as @GET so it can be used without update rights (e.g. demo instance)
     @GET("/backend/config/preload-classpath-cache")
     void preloadClasspathCache() throws IOException {
-        logger.debug("preloadClasspathCache()");
         // HttpServer is configured with a very small thread pool to keep number of threads down
         // (currently only a single thread), so spawn a background thread to perform the preloading
         // so it doesn't block other http requests
@@ -110,7 +105,6 @@ class CapturePointJsonService {
 
     @GET("/backend/config/matching-class-names")
     String getMatchingClassNames(String queryString) throws Exception {
-        logger.debug("getMatchingClassNames(): queryString={}", queryString);
         ClassNamesRequest request = QueryStrings.decode(queryString, ClassNamesRequest.class);
         List<String> matchingClassNames = classpathCache.getMatchingClassNames(
                 request.partialClassName(), request.limit());
@@ -119,7 +113,6 @@ class CapturePointJsonService {
 
     @GET("/backend/config/matching-method-names")
     String getMatchingMethodNames(String queryString) throws Exception {
-        logger.debug("getMatchingMethodNames(): queryString={}", queryString);
         MethodNamesRequest request = QueryStrings.decode(queryString, MethodNamesRequest.class);
         List<String> matchingMethodNames = getMatchingMethodNames(request.className(),
                 request.partialMethodName(), request.limit());
@@ -128,7 +121,6 @@ class CapturePointJsonService {
 
     @GET("/backend/config/method-signatures")
     String getMethodSignatures(String queryString) throws Exception {
-        logger.debug("getMethodSignatures(): queryString={}", queryString);
         MethodSignaturesRequest request =
                 QueryStrings.decode(queryString, MethodSignaturesRequest.class);
         List<UiAnalyzedMethod> analyzedMethods =
@@ -159,7 +151,6 @@ class CapturePointJsonService {
 
     @POST("/backend/config/capture-points/add")
     String addCapturePoint(String content) throws Exception {
-        logger.debug("addCapturePoint(): content={}", content);
         CapturePointDto capturePointDto = Marshaling.fromJson(content, CapturePointDto.class);
         CapturePoint capturePoint = capturePointDto.toConfig();
         configService.insertCapturePoint(capturePoint);
@@ -168,7 +159,6 @@ class CapturePointJsonService {
 
     @POST("/backend/config/capture-points/update")
     String updateCapturePoint(String content) throws IOException {
-        logger.debug("updateCapturePoint(): content={}", content);
         CapturePointDto capturePointDto = Marshaling.fromJson(content, CapturePointDto.class);
         CapturePoint capturePoint = capturePointDto.toConfig();
         configService.updateCapturePoint(capturePoint, capturePointDto.version().get());
@@ -177,7 +167,6 @@ class CapturePointJsonService {
 
     @POST("/backend/config/capture-points/remove")
     void removeCapturePoint(String content) throws IOException {
-        logger.debug("removeCapturePoint(): content={}", content);
         String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
         configService.deleteCapturePoint(version);
     }

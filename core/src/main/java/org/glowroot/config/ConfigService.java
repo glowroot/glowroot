@@ -48,7 +48,6 @@ public class ConfigService {
     private volatile Config config;
 
     ConfigService(File dataDir, PluginDescriptorCache pluginDescriptorCache) {
-        logger.debug("<init>()");
         configFile = new ConfigFile(new File(dataDir, "config.json"),
                 pluginDescriptorCache.pluginDescriptors());
         try {

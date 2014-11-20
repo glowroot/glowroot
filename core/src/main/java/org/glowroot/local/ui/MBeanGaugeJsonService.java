@@ -68,7 +68,6 @@ class MBeanGaugeJsonService {
 
     @GET("/backend/config/mbean-gauges")
     String getMBeanGauge() throws IOException, SQLException {
-        logger.debug("getMBeanGauge()");
         List<MBeanGaugeResponse> responses = Lists.newArrayList();
         for (MBeanGauge mbeanGauge : configService.getMBeanGauges()) {
             responses.add(buildResponse(mbeanGauge));
@@ -82,7 +81,6 @@ class MBeanGaugeJsonService {
 
     @GET("/backend/config/matching-mbean-objects")
     String getMatchingMBeanObjects(String queryString) throws Exception {
-        logger.debug("getMatchingMBeanObjects(): queryString={}", queryString);
         MBeanObjectNameRequest request =
                 QueryStrings.decode(queryString, MBeanObjectNameRequest.class);
         Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null,
@@ -101,7 +99,6 @@ class MBeanGaugeJsonService {
 
     @GET("/backend/config/mbean-attributes")
     String getMBeanAttributes(String queryString) throws Exception {
-        logger.debug("getMBeanAttributes(): queryString={}", queryString);
         MBeanAttributeNamesRequest request =
                 QueryStrings.decode(queryString, MBeanAttributeNamesRequest.class);
         boolean duplicateMBean = false;
@@ -133,7 +130,6 @@ class MBeanGaugeJsonService {
 
     @POST("/backend/config/mbean-gauges/add")
     String addMBeanGauge(String content) throws IOException {
-        logger.debug("addMBeanGauge(): content={}", content);
         MBeanGaugeDto mbeanGaugeDto = Marshaling.fromJson(content, MBeanGaugeDto.class);
         MBeanGauge mbeanGauge = mbeanGaugeDto.toConfig();
         try {
@@ -148,7 +144,6 @@ class MBeanGaugeJsonService {
 
     @POST("/backend/config/mbean-gauges/update")
     String updateMBeanGauge(String content) throws IOException {
-        logger.debug("updateMBeanGauge(): content={}", content);
         MBeanGaugeDto mbeanGaugeDto = Marshaling.fromJson(content, MBeanGaugeDto.class);
         MBeanGauge mbeanGauge = mbeanGaugeDto.toConfig();
         String version = mbeanGaugeDto.version();
@@ -161,7 +156,6 @@ class MBeanGaugeJsonService {
 
     @POST("/backend/config/mbean-gauges/remove")
     void removeMBeanGauge(String content) throws IOException {
-        logger.debug("removeMBeanGauge(): content={}", content);
         String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
         configService.deleteMBeanGauge(version);
     }

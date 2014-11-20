@@ -34,6 +34,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -460,8 +461,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             method = Reflections.getDeclaredMethod(object.getClass(), methodName,
                     parameterTypes.toArray(new Class[parameterTypes.size()]));
         } catch (ReflectiveException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
             // try again with requestText
             parameterTypes.add(String.class);
             parameters.add(requestText);
@@ -469,8 +470,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                 method = Reflections.getDeclaredMethod(object.getClass(), methodName,
                         parameterTypes.toArray(new Class[parameterTypes.size()]));
             } catch (ReflectiveException f) {
-                // log exception at debug level
-                logger.debug(f.getMessage(), f);
+                // log exception at trace level
+                logger.trace(f.getMessage(), f);
                 // try again with response
                 parameterTypes.add(HttpResponse.class);
                 parameters.add(response);
@@ -478,11 +479,15 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                     method = Reflections.getDeclaredMethod(object.getClass(), methodName,
                             parameterTypes.toArray(new Class[parameterTypes.size()]));
                 } catch (ReflectiveException g) {
-                    // log exception at debug level
-                    logger.debug(g.getMessage(), g);
-                    throw new ReflectiveException(new NoSuchMethodException());
+                    // log exception at trace level
+                    logger.trace(g.getMessage(), g);
+                    throw new ReflectiveException(new NoSuchMethodException(methodName));
                 }
             }
+        }
+        if (logger.isDebugEnabled()) {
+            String params = Joiner.on(", ").join(parameters);
+            logger.debug("{}.{}(): {}", object.getClass().getSimpleName(), methodName, params);
         }
         return Reflections.invoke(method, object,
                 parameters.toArray(new Object[parameters.size()]));

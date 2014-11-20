@@ -120,7 +120,6 @@ public class StorageModule {
 
     @OnlyUsedByTests
     public void close() {
-        logger.debug("close()");
         if (reaperRunnable != null) {
             reaperRunnable.cancel();
         }

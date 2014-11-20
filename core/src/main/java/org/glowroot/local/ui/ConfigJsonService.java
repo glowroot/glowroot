@@ -90,7 +90,6 @@ class ConfigJsonService {
 
     @GET("/backend/config/trace")
     String getTraceConfig() throws IOException, SQLException {
-        logger.debug("getTraceConfig()");
         TraceConfig config = configService.getTraceConfig();
         return Marshaling.toJson(ImmutableTraceConfigResponse.builder()
                 .config(TraceConfigDto.fromConfig(config))
@@ -99,7 +98,6 @@ class ConfigJsonService {
 
     @GET("/backend/config/profiling")
     String getProfilingConfig() throws IOException, SQLException {
-        logger.debug("getProfilingConfig()");
         ProfilingConfig config = configService.getProfilingConfig();
         return Marshaling.toJson(ImmutableProfilingConfigResponse.builder()
                 .config(ProfilingConfigDto.fromConfig(config))
@@ -108,7 +106,6 @@ class ConfigJsonService {
 
     @GET("/backend/config/user-recording")
     String getUserRecordingConfig() throws IOException, SQLException {
-        logger.debug("getUserRecordingConfig()");
         UserRecordingConfig config = configService.getUserRecordingConfig();
         return Marshaling.toJson(ImmutableUserRecordingConfigResponse.builder()
                 .config(UserRecordingConfigDto.fromConfig(config))
@@ -117,7 +114,6 @@ class ConfigJsonService {
 
     @GET("/backend/config/storage")
     String getStorage() throws IOException, SQLException {
-        logger.debug("getStorage()");
         StorageConfig config = configService.getStorageConfig();
         return Marshaling.toJson(ImmutableStorageConfigResponse.builder()
                 .config(StorageConfigDto.fromConfig(config))
@@ -127,7 +123,6 @@ class ConfigJsonService {
 
     @GET("/backend/config/user-interface")
     String getUserInterface() throws IOException, SQLException {
-        logger.debug("getUserInterface()");
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
         return getUserInterface(false);
@@ -135,7 +130,6 @@ class ConfigJsonService {
 
     @GET("/backend/config/advanced")
     String getAdvanced() throws IOException, SQLException {
-        logger.debug("getAdvanced()");
         AdvancedConfig config = configService.getAdvancedConfig();
         return Marshaling.toJson(ImmutableAdvancedConfigResponse.builder()
                 .config(AdvancedConfigDto.fromConfig(config))
@@ -145,7 +139,6 @@ class ConfigJsonService {
 
     @GET("/backend/config/plugin/(.+)")
     String getPluginConfig(String pluginId) throws IOException, SQLException {
-        logger.debug("getPluginConfig(): pluginId={}", pluginId);
         PluginConfig config = configService.getPluginConfig(pluginId);
         PluginDescriptor pluginDescriptor = null;
         for (PluginDescriptor descriptor : pluginDescriptorCache.pluginDescriptors()) {
@@ -165,7 +158,6 @@ class ConfigJsonService {
 
     @POST("/backend/config/trace")
     String updateTraceConfig(String content) throws IOException, SQLException {
-        logger.debug("updateTraceConfig(): content={}", content);
         TraceConfigDto configDto = Marshaling.fromJson(content, TraceConfigDto.class);
         try {
             configService.updateTraceConfig(configDto.toConfig(), configDto.version());
@@ -177,7 +169,6 @@ class ConfigJsonService {
 
     @POST("/backend/config/profiling")
     String updateProfilingConfig(String content) throws IOException, SQLException {
-        logger.debug("updateProfilingConfig(): content={}", content);
         ProfilingConfigDto configDto = Marshaling.fromJson(content, ProfilingConfigDto.class);
         try {
             configService.updateProfilingConfig(configDto.toConfig(), configDto.version());
@@ -189,7 +180,6 @@ class ConfigJsonService {
 
     @POST("/backend/config/user-recording")
     String updateUserRecordingConfig(String content) throws IOException, SQLException {
-        logger.debug("updateUserRecordingConfig(): content={}", content);
         UserRecordingConfigDto configDto =
                 Marshaling.fromJson(content, UserRecordingConfigDto.class);
         try {
@@ -202,7 +192,6 @@ class ConfigJsonService {
 
     @POST("/backend/config/storage")
     String updateStorageConfig(String content) throws IOException, SQLException {
-        logger.debug("updateStorageConfig(): content={}", content);
         StorageConfigDto configDto = Marshaling.fromJson(content, StorageConfigDto.class);
         try {
             configService.updateStorageConfig(configDto.toConfig(), configDto.version());
@@ -217,7 +206,6 @@ class ConfigJsonService {
     @POST("/backend/config/user-interface")
     String updateUserInterfaceConfig(String content, HttpResponse response) throws IOException,
             GeneralSecurityException, SQLException {
-        logger.debug("updateUserInterfaceConfig(): content={}", content);
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
         UserInterfaceConfigDto configDto =
@@ -264,7 +252,6 @@ class ConfigJsonService {
 
     @POST("/backend/config/advanced")
     String updateAdvancedConfig(String content) throws IOException, SQLException {
-        logger.debug("updateAdvancedConfig(): content={}", content);
         AdvancedConfigDto configDto = Marshaling.fromJson(content, AdvancedConfigDto.class);
         try {
             configService.updateAdvancedConfig(configDto.toConfig(), configDto.version());
@@ -276,7 +263,6 @@ class ConfigJsonService {
 
     @POST("/backend/config/plugin/(.+)")
     String updatePluginConfig(String pluginId, String content) throws IOException, SQLException {
-        logger.debug("updatePluginConfig(): pluginId={}, content={}", pluginId, content);
         PluginConfigDto configDto = Marshaling.fromJson(content, PluginConfigDto.class);
         try {
             configService.updatePluginConfig(configDto.toConfig(pluginId), configDto.version());

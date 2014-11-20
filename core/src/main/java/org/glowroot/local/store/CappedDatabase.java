@@ -26,6 +26,8 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.concurrent.ScheduledExecutorService;
 
+import javax.annotation.concurrent.GuardedBy;
+
 import com.google.common.base.Charsets;
 import com.google.common.io.CharSource;
 import com.google.common.primitives.Longs;
@@ -35,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Ticker;
-import javax.annotation.concurrent.GuardedBy;
 import org.glowroot.markers.OnlyUsedByTests;
 
 public class CappedDatabase {
@@ -100,7 +101,6 @@ public class CappedDatabase {
 
     @OnlyUsedByTests
     void close() throws IOException {
-        logger.debug("close()");
         synchronized (lock) {
             closing = true;
             out.close();

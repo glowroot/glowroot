@@ -289,7 +289,6 @@ public class DataSource {
 
     @OnlyUsedByTests
     void close() throws SQLException {
-        logger.debug("close()");
         synchronized (lock) {
             if (closing) {
                 return;

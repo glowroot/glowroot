@@ -162,7 +162,6 @@ public class LocalUiModule {
 
     @OnlyUsedByTests
     public void close() {
-        logger.debug("close()");
         if (httpServer != null) {
             httpServer.close();
         }

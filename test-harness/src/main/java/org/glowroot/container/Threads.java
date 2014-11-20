@@ -176,8 +176,8 @@ public class Threads {
             Class.forName("org.glowroot.shaded.slf4j.Logger");
             return true;
         } catch (ClassNotFoundException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
             return false;
         }
     }

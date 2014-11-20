@@ -45,7 +45,8 @@ public class ExtraBootResourceFinder {
                 url.openStream();
                 return url;
             } catch (IOException e) {
-                logger.debug(e.getMessage(), e);
+                // log exception at trace level
+                logger.trace(e.getMessage(), e);
             }
         }
         return null;

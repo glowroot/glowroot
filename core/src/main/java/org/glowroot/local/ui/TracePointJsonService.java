@@ -75,7 +75,6 @@ class TracePointJsonService {
 
     @GET("/backend/trace/points")
     String getPoints(String queryString) throws Exception {
-        logger.debug("getPoints(): queryString={}", queryString);
         TracePointQuery query = QueryStrings.decode(queryString, TracePointQuery.class);
         return new Handler(query).handle();
     }

@@ -124,7 +124,6 @@ class JvmJsonService {
 
     @GET("/backend/jvm/process")
     String getProcess() throws IOException, JMException {
-        logger.debug("getProcess()");
         String pid = ProcessId.getPid();
         String command = System.getProperty("sun.java.command");
         String mainClass = null;
@@ -166,7 +165,6 @@ class JvmJsonService {
 
     @GET("/backend/jvm/gauge-points")
     String getGaugePoints(String queryString) throws Exception {
-        logger.debug("getGaugePoints(): {}", queryString);
         GaugePointRequest request = QueryStrings.decode(queryString, GaugePointRequest.class);
         List<List<Number/*@Nullable*/[]>> series = Lists.newArrayList();
         for (String gaugeName : request.gaugeNames()) {
@@ -192,7 +190,6 @@ class JvmJsonService {
 
     @GET("/backend/jvm/all-gauge-names")
     String getAllGaugeNames() throws IOException {
-        logger.debug("getAllGaugeNames()");
         List<String> gaugeNames = Lists.newArrayList();
         for (MBeanGauge mbeanGauge : configService.getMBeanGauges()) {
             for (String mbeanAttributeName : mbeanGauge.mbeanAttributeNames()) {
@@ -206,7 +203,6 @@ class JvmJsonService {
 
     @GET("/backend/jvm/system-properties")
     String getSystemProperties() throws IOException {
-        logger.debug("getSystemProperties()");
         Properties properties = System.getProperties();
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
@@ -238,7 +234,6 @@ class JvmJsonService {
 
     @GET("/backend/jvm/mbean-tree")
     String getMBeanTree(String queryString) throws Exception {
-        logger.debug("getMBeanTree(): {}", queryString);
         MBeanTreeRequest request = QueryStrings.decode(queryString, MBeanTreeRequest.class);
         Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null, null);
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
@@ -275,7 +270,6 @@ class JvmJsonService {
 
     @GET("/backend/jvm/mbean-attribute-map")
     String getMBeanAttributeMap(String queryString) throws Exception {
-        logger.debug("getMBeanAttributeMap(): content={}", queryString);
         MBeanAttributeMapRequest request =
                 QueryStrings.decode(queryString, MBeanAttributeMapRequest.class);
         ObjectName objectName = ObjectName.getInstance(request.objectName());
@@ -285,7 +279,6 @@ class JvmJsonService {
 
     @POST("/backend/jvm/perform-gc")
     void performGC() throws IOException {
-        logger.debug("performGC()");
         // using MemoryMXBean.gc() instead of System.gc() in hope that it will someday bypass
         // -XX:+DisableExplicitGC (see https://bugs.openjdk.java.net/browse/JDK-6396411)
         ManagementFactory.getMemoryMXBean().gc();
@@ -293,7 +286,6 @@ class JvmJsonService {
 
     @GET("/backend/jvm/thread-dump")
     String getThreadDump() throws IOException {
-        logger.debug("getThreadDump()");
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
         ThreadInfo[] threadInfos =
                 threadBean.getThreadInfo(threadBean.getAllThreadIds(), Integer.MAX_VALUE);
@@ -330,7 +322,6 @@ class JvmJsonService {
 
     @GET("/backend/jvm/heap-dump-defaults")
     String getHeapDumpDefaults() throws IOException, JMException {
-        logger.debug("getHeapDumpDefaults()");
         String heapDumpPath = getHeapDumpPathFromCommandLine();
         if (Strings.isNullOrEmpty(heapDumpPath)) {
             String javaTempDir = MoreObjects.firstNonNull(
@@ -348,7 +339,6 @@ class JvmJsonService {
 
     @POST("/backend/jvm/check-disk-space")
     String checkDiskSpace(String content) throws IOException {
-        logger.debug("checkDiskSpace(): content={}", content);
         RequestWithDirectory request = Marshaling.fromJson(content, RequestWithDirectory.class);
         File dir = new File(request.directory());
         if (!dir.exists()) {
@@ -363,7 +353,6 @@ class JvmJsonService {
 
     @POST("/backend/jvm/dump-heap")
     String dumpHeap(String content) throws IOException, JMException, InterruptedException {
-        logger.debug("dumpHeap(): content={}", content);
         HeapDumps service = OptionalJsonServices.validateAvailability(heapDumps);
         RequestWithDirectory request = Marshaling.fromJson(content, RequestWithDirectory.class);
         File dir = new File(request.directory());
@@ -395,7 +384,6 @@ class JvmJsonService {
 
     @GET("/backend/jvm/capabilities")
     String getCapabilities() throws IOException {
-        logger.debug("getCapabilities()");
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
