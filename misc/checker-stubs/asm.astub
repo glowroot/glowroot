@@ -42,6 +42,8 @@ public class GeneratorAdapter {
 public class LocalVariablesSorter {
     public void visitLocalVariable(String name, String desc, @Nullable String signature,
             Label start, Label end, int index);
+    public void visitFrame(int type, int nLocal, Object @Nullable [] local, int nStack,
+            Object @Nullable [] stack);
 }
 
 public class JSRInlinerAdapter {

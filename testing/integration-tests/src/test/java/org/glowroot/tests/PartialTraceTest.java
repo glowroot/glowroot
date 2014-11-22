@@ -69,7 +69,11 @@ public class PartialTraceTest {
         Future<Void> future = executorService.submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                container.executeAppUnderTest(ShouldGeneratePartialTrace.class);
+                try {
+                    container.executeAppUnderTest(ShouldGeneratePartialTrace.class);
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
                 return null;
             }
         });

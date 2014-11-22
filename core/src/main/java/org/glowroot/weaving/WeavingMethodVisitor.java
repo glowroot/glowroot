@@ -26,6 +26,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.objectweb.asm.AnnotationVisitor;
@@ -43,8 +44,6 @@ import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
-import org.glowroot.common.Reflections;
-import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.UsedByGeneratedBytecode;
 import org.glowroot.weaving.Advice.AdviceParameter;
 import org.glowroot.weaving.Advice.ParameterKind;
@@ -82,11 +81,13 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private @MonotonicNonNull Label catchStartLabel;
     private boolean visitedLocalVariableThis;
 
+    private Object/*@MonotonicNonNull*/[] implicitFrame;
+
     WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
             Iterable<Advice> advisors, @Nullable String metaHolderInternalName,
             @Nullable Integer methodMetaGroupUniqueNum, boolean bootstrapClassLoader,
             @Nullable MethodVisitor outerMethodVisitor) {
-        super(ASM5, mv, access, name, desc);
+        super(ASM5, new FrameDeduppingMethodVisitor(mv), access, name, desc);
         this.access = access;
         this.name = name;
         this.owner = owner;
@@ -118,7 +119,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     @Override
     protected void onMethodEnter() {
-        methodStartLabel = newLabel();
+        methodStartLabel = new Label();
         visitLabel(methodStartLabel);
         // enabled and traveler locals must be defined outside of the try block so they will be
         // accessible in the catch block
@@ -132,7 +133,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
             invokeOnBefore(advice, travelerLocals.get(advice));
         }
         if (needsTryCatch) {
-            catchStartLabel = newLabel();
+            catchStartLabel = new Label();
             visitLabel(catchStartLabel);
         }
     }
@@ -153,7 +154,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
             //
             // ClassReader always visits local variables at the very end (just prior to visitMaxs)
             // so this is a good place to put the outer end label for the local variable 'this'
-            Label outerEndLabel = newLabel();
+            Label outerEndLabel = new Label();
             visitLabel(outerEndLabel);
             super.visitLocalVariable(name, desc, signature, methodStartLabel, outerEndLabel, index);
             // at the same time, may as well define local vars for enabled and traveler as
@@ -200,22 +201,26 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     public void visitMaxs(int maxStack, int maxLocals) {
         if (needsTryCatch) {
             checkNotNull(catchStartLabel, "Call to onMethodEnter() is required");
-            Label catchEndLabel = newLabel();
-            Label catchHandlerLabel2 = newLabel();
+            Label catchEndLabel = new Label();
+            Label catchHandlerLabel2 = new Label();
             visitTryCatchBlock(catchStartLabel, catchEndLabel, catchEndLabel,
                     "org/glowroot/weaving/WeavingMethodVisitor$MarkerException");
             visitLabel(catchEndLabel);
-            invokeVirtual(MarkerException.TYPE, MarkerException.GET_CAUSE_METHOD);
-            throwException();
+            visitImplicitFramePlus("org/glowroot/weaving/WeavingMethodVisitor$MarkerException");
+            visitMethodInsn(INVOKEVIRTUAL,
+                    "org/glowroot/weaving/WeavingMethodVisitor$MarkerException",
+                    "getCause", "()Ljava/lang/Throwable;", false);
+            visitInsn(ATHROW);
             visitTryCatchBlock(catchStartLabel, catchEndLabel, catchHandlerLabel2,
                     "java/lang/Throwable");
+            visitImplicitFramePlus("java/lang/Throwable");
             visitLabel(catchHandlerLabel2);
             visitOnThrowAdvice();
             for (Advice advice : Lists.reverse(advisors)) {
-                visitOnAfterAdvice(advice);
+                visitOnAfterAdvice(advice, true);
             }
-            resetAdviceFlowIfNecessary();
-            throwException();
+            resetAdviceFlowIfNecessary(true);
+            visitInsn(ATHROW);
         }
         super.visitMaxs(maxStack, maxLocals);
     }
@@ -230,31 +235,40 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 // to prevent this, any exception that occurs inside @OnReturn or @OnAfter is caught
                 // and wrapped in a marker exception, and then unwrapped and re-thrown inside
                 // the overall try/catch block
-                Label innerCatchStartLabel = newLabel();
-                Label continueLabel = newLabel();
-                Label innerCatchEndLabel = newLabel();
+                Label innerCatchStartLabel = new Label();
+                Label continueLabel = new Label();
+                Label innerCatchEndLabel = new Label();
 
                 visitLabel(innerCatchStartLabel);
                 for (Advice advice : Lists.reverse(advisors)) {
                     visitOnReturnAdvice(advice, opcode);
-                    visitOnAfterAdvice(advice);
+                    visitOnAfterAdvice(advice, false);
                 }
-                resetAdviceFlowIfNecessary();
-                goTo(continueLabel);
+                resetAdviceFlowIfNecessary(false);
+                visitJumpInsn(GOTO, continueLabel);
 
                 visitTryCatchBlock(innerCatchStartLabel, innerCatchEndLabel, innerCatchEndLabel,
                         "java/lang/Throwable");
                 visitLabel(innerCatchEndLabel);
-                invokeStatic(MarkerException.TYPE, MarkerException.STATIC_FACTORY_METHOD);
-                throwException();
+                visitImplicitFramePlus("java/lang/Throwable");
+                visitMethodInsn(INVOKESTATIC,
+                        "org/glowroot/weaving/WeavingMethodVisitor$MarkerException",
+                        "from", "(Ljava/lang/Throwable;)" + MarkerException.TYPE.getDescriptor(),
+                        false);
+                visitInsn(ATHROW);
 
                 visitLabel(continueLabel);
+                if (returnType.getSort() == Type.VOID) {
+                    visitImplicitFramePlus();
+                } else {
+                    visitImplicitFramePlus(returnType);
+                }
             } else {
                 for (Advice advice : Lists.reverse(advisors)) {
                     visitOnReturnAdvice(advice, opcode);
-                    visitOnAfterAdvice(advice);
+                    visitOnAfterAdvice(advice, false);
                 }
-                resetAdviceFlowIfNecessary();
+                resetAdviceFlowIfNecessary(false);
             }
         }
     }
@@ -265,7 +279,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         if (isEnabledAdvice != null) {
             loadMethodParameters(advice.isEnabledParameters(), 0, -1, advice.adviceType(),
                     IsEnabled.class);
-            invokeStatic(advice.adviceType(), isEnabledAdvice);
+            visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                    isEnabledAdvice.getName(), isEnabledAdvice.getDescriptor(), false);
             enabledLocal = newLocal(Type.BOOLEAN_TYPE);
             enabledLocals.put(advice, enabledLocal);
             storeLocal(enabledLocal);
@@ -280,43 +295,49 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
             int originalAdviceFlowLocal = newLocal(Type.BOOLEAN_TYPE);
             originalAdviceFlowLocals.put(advice, originalAdviceFlowLocal);
-            push(false);
+            visitInsn(ICONST_0);
             storeLocal(originalAdviceFlowLocal);
 
-            Label setAdviceFlowBlockEnd = newLabel();
+            Label setAdviceFlowBlockEnd = new Label();
             if (enabledLocal != null) {
                 loadLocal(enabledLocal);
                 visitJumpInsn(IFEQ, setAdviceFlowBlockEnd);
             } else {
                 enabledLocal = newLocal(Type.BOOLEAN_TYPE);
                 enabledLocals.put(advice, enabledLocal);
-                // it will be initialized below
+                // temporary initial value to help with Java 7 stack frames
+                visitInsn(ICONST_0);
+                storeLocal(enabledLocal);
             }
-            getStatic(advice.adviceType(), "glowroot$advice$flow$outer$holder",
-                    adviceFlowOuterHolderType);
-            invokeVirtual(adviceFlowOuterHolderType, Method.getMethod(
-                    AdviceFlowHolder.class.getName() + " getInnerHolder()"));
-            dup();
+            visitFieldInsn(GETSTATIC, advice.adviceType().getInternalName(),
+                    "glowroot$advice$flow$outer$holder", adviceFlowOuterHolderType.getDescriptor());
+            visitMethodInsn(INVOKEVIRTUAL, adviceFlowOuterHolderType.getInternalName(),
+                    "getInnerHolder", "()" + adviceFlowHolderType.getDescriptor(), false);
+            visitInsn(DUP);
             storeLocal(adviceFlowHolderLocal);
-            invokeVirtual(adviceFlowHolderType, Method.getMethod("boolean isTop()"));
-            Label isTopBlockStart = newLabel();
-            dup();
+            visitMethodInsn(INVOKEVIRTUAL, adviceFlowHolderType.getInternalName(),
+                    "isTop", "()Z", false);
+            Label isTopBlockStart = new Label();
+            visitInsn(DUP);
             storeLocal(originalAdviceFlowLocal);
             visitJumpInsn(IFNE, isTopBlockStart);
             // !isTop()
-            push(false);
+            visitInsn(ICONST_0);
             storeLocal(enabledLocal);
-            goTo(setAdviceFlowBlockEnd);
+            visitJumpInsn(GOTO, setAdviceFlowBlockEnd);
             // enabled
             visitLabel(isTopBlockStart);
+            visitImplicitFramePlus();
             loadLocal(adviceFlowHolderLocal);
-            push(false);
+            visitInsn(ICONST_0);
             // note that setTop() is only called if enabled is true, so it only needs to be reset
             // at the end of the advice if enabled is true
-            invokeVirtual(adviceFlowHolderType, Method.getMethod("void setTop(boolean)"));
-            push(true);
+            visitMethodInsn(INVOKEVIRTUAL, adviceFlowHolderType.getInternalName(),
+                    "setTop", "(Z)V", false);
+            visitInsn(ICONST_1);
             storeLocal(enabledLocal);
             visitLabel(setAdviceFlowBlockEnd);
+            visitImplicitFramePlus();
         }
     }
 
@@ -344,18 +365,20 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         Integer enabledLocal = enabledLocals.get(advice);
         Label onBeforeBlockEnd = null;
         if (enabledLocal != null) {
-            onBeforeBlockEnd = newLabel();
+            onBeforeBlockEnd = new Label();
             loadLocal(enabledLocal);
             visitJumpInsn(IFEQ, onBeforeBlockEnd);
         }
         loadMethodParameters(advice.onBeforeParameters(), 0, -1, advice.adviceType(),
                 OnBefore.class);
-        invokeStatic(advice.adviceType(), onBeforeAdvice);
+        visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                onBeforeAdvice.getName(), onBeforeAdvice.getDescriptor(), false);
         if (travelerLocal != null) {
             storeLocal(travelerLocal);
         }
         if (onBeforeBlockEnd != null) {
             visitLabel(onBeforeBlockEnd);
+            visitImplicitFramePlus();
         }
     }
 
@@ -367,13 +390,18 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         Integer enabledLocal = enabledLocals.get(advice);
         Label onReturnBlockEnd = null;
         if (enabledLocal != null) {
-            onReturnBlockEnd = newLabel();
+            onReturnBlockEnd = new Label();
             loadLocal(enabledLocal);
             visitJumpInsn(IFEQ, onReturnBlockEnd);
         }
         weaveOnReturnAdvice(opcode, advice, onReturnAdvice);
         if (onReturnBlockEnd != null) {
             visitLabel(onReturnBlockEnd);
+            if (returnType.getSort() == Type.VOID) {
+                visitImplicitFramePlus();
+            } else {
+                visitImplicitFramePlus(returnType);
+            }
         }
     }
 
@@ -400,11 +428,12 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         }
         int sort = onReturnAdvice.getReturnType().getSort();
         if (sort == Type.LONG || sort == Type.DOUBLE) {
-            pop2();
+            visitInsn(POP2);
         } else if (sort != Type.VOID) {
-            pop();
+            visitInsn(POP);
         }
-        invokeStatic(advice.adviceType(), onReturnAdvice);
+        visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                onReturnAdvice.getName(), onReturnAdvice.getDescriptor(), false);
     }
 
     private void loadNonOptionalReturnValue(int opcode, AdviceParameter parameter) {
@@ -420,23 +449,23 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private void loadOptionalReturnValue(int opcode) {
         if (opcode == RETURN) {
             // void
-            mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/VoidReturn",
+            visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/VoidReturn",
                     "getInstance", "()Lorg/glowroot/api/OptionalReturn;", false);
         } else {
             loadReturnValue(opcode, true);
-            mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/NonVoidReturn", "create",
+            visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/NonVoidReturn", "create",
                     "(Ljava/lang/Object;)Lorg/glowroot/api/OptionalReturn;", false);
         }
     }
 
     private void loadReturnValue(int opcode, boolean autobox) {
         if (opcode == ARETURN || opcode == ATHROW) {
-            dup();
+            visitInsn(DUP);
         } else {
             if (opcode == LRETURN || opcode == DRETURN) {
-                dup2();
+                visitInsn(DUP2);
             } else {
-                dup();
+                visitInsn(DUP);
             }
             if (autobox) {
                 box(returnType);
@@ -453,30 +482,33 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
             Integer enabledLocal = enabledLocals.get(advice);
             Label onThrowBlockEnd = null;
             if (enabledLocal != null) {
-                onThrowBlockEnd = newLabel();
+                onThrowBlockEnd = new Label();
                 loadLocal(enabledLocal);
                 visitJumpInsn(IFEQ, onThrowBlockEnd);
             }
             if (onThrowAdvice.getArgumentTypes().length == 0) {
-                invokeStatic(advice.adviceType(), onThrowAdvice);
+                visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                        onThrowAdvice.getName(), onThrowAdvice.getDescriptor(), false);
             } else {
                 int startIndex = 0;
                 if (advice.onThrowParameters().get(0).kind() == ParameterKind.THROWABLE) {
                     // @BindThrowable must be the first argument to @OnThrow (if present)
-                    dup();
+                    visitInsn(DUP);
                     startIndex++;
                 }
                 loadMethodParameters(advice.onThrowParameters(), startIndex,
                         travelerLocals.get(advice), advice.adviceType(), OnThrow.class);
-                invokeStatic(advice.adviceType(), onThrowAdvice);
+                visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                        onThrowAdvice.getName(), onThrowAdvice.getDescriptor(), false);
             }
             if (onThrowBlockEnd != null) {
                 visitLabel(onThrowBlockEnd);
+                visitImplicitFramePlus("java/lang/Throwable");
             }
         }
     }
 
-    private void visitOnAfterAdvice(Advice advice) {
+    private void visitOnAfterAdvice(Advice advice, boolean insideOverallCatchHandler) {
         Method onAfterAdvice = advice.onAfterAdvice();
         if (onAfterAdvice == null) {
             return;
@@ -484,19 +516,27 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         Integer enabledLocal = enabledLocals.get(advice);
         Label onAfterBlockEnd = null;
         if (enabledLocal != null) {
-            onAfterBlockEnd = newLabel();
+            onAfterBlockEnd = new Label();
             loadLocal(enabledLocal);
             visitJumpInsn(IFEQ, onAfterBlockEnd);
         }
         loadMethodParameters(advice.onAfterParameters(), 0, travelerLocals.get(advice),
                 advice.adviceType(), OnAfter.class);
-        invokeStatic(advice.adviceType(), onAfterAdvice);
+        visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                onAfterAdvice.getName(), onAfterAdvice.getDescriptor(), false);
         if (onAfterBlockEnd != null) {
             visitLabel(onAfterBlockEnd);
+            if (insideOverallCatchHandler) {
+                visitImplicitFramePlus("java/lang/Throwable");
+            } else if (returnType.getSort() == Type.VOID) {
+                visitImplicitFramePlus();
+            } else {
+                visitImplicitFramePlus(returnType);
+            }
         }
     }
 
-    private void resetAdviceFlowIfNecessary() {
+    private void resetAdviceFlowIfNecessary(boolean insideOverallCatchHandler) {
         for (Advice advice : advisors) {
             if (advice.pointcut().ignoreSelfNested()) {
                 Integer enabledLocal = enabledLocals.get(advice);
@@ -511,16 +551,24 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 // (same condition as tested above)
                 checkNotNull(adviceFlowHolderLocal, "adviceFlowHolderLocal is null");
 
-                Label setAdviceFlowBlockEnd = newLabel();
+                Label setAdviceFlowBlockEnd = new Label();
                 loadLocal(enabledLocal);
                 visitJumpInsn(IFEQ, setAdviceFlowBlockEnd);
                 loadLocal(originalAdviceFlowLocal);
                 visitJumpInsn(IFEQ, setAdviceFlowBlockEnd);
                 // isTop was true at the beginning of the advice, need to reset it now
                 loadLocal(adviceFlowHolderLocal);
-                push(true);
-                invokeVirtual(adviceFlowHolderType, Method.getMethod("void setTop(boolean)"));
+                visitInsn(ICONST_1);
+                visitMethodInsn(INVOKEVIRTUAL, adviceFlowHolderType.getInternalName(),
+                        "setTop", "(Z)V", false);
                 visitLabel(setAdviceFlowBlockEnd);
+                if (insideOverallCatchHandler) {
+                    visitImplicitFramePlus("java/lang/Throwable");
+                } else if (returnType.getSort() == Type.VOID) {
+                    visitImplicitFramePlus();
+                } else {
+                    visitImplicitFramePlus(returnType);
+                }
             }
         }
     }
@@ -570,12 +618,12 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     private void loadTarget() {
         if (!Modifier.isStatic(access)) {
-            loadThis();
+            visitVarInsn(ALOAD, 0);
         } else {
             // cannot use push(Type) since .class constants are not supported in classes
             // that were compiled to jdk 1.4
-            push(owner.getClassName());
-            mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
+            visitLdcInsn(owner.getClassName());
+            visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
                     "(Ljava/lang/String;)Ljava/lang/Class;", false);
         }
     }
@@ -600,9 +648,9 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private void loadMethodName() {
         if (name.contains("$glowroot$metric$")) {
             // strip off internal metric identifier from method name
-            push(name.substring(0, name.indexOf("$glowroot$metric$")));
+            visitLdcInsn(name.substring(0, name.indexOf("$glowroot$metric$")));
         } else {
-            push(name);
+            visitLdcInsn(name);
         }
     }
 
@@ -627,11 +675,11 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
             int index = BootstrapMetaHolders.reserveClassMetaHolderIndex(metaHolderInternalName,
                     classMetaFieldName);
             push(index);
-            Method method = Method.getMethod("Object getClassMeta(int)");
-            invokeStatic(Type.getType(BootstrapMetaHolders.class), method);
+            visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/BootstrapMetaHolders",
+                    "getClassMeta", "(I)Ljava/lang/Object;", false);
         } else {
-            getStatic(Type.getObjectType(metaHolderInternalName), classMetaFieldName,
-                    classMetaFieldType);
+            visitFieldInsn(GETSTATIC, metaHolderInternalName, classMetaFieldName,
+                    classMetaFieldType.getDescriptor());
         }
     }
 
@@ -644,11 +692,70 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
             int index = BootstrapMetaHolders.reserveMethodMetaHolderIndex(metaHolderInternalName,
                     methodMetaFieldName);
             push(index);
-            Method method = Method.getMethod("Object getMethodMeta(int)");
-            invokeStatic(Type.getType(BootstrapMetaHolders.class), method);
+            visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/BootstrapMetaHolders",
+                    "getMethodMeta", "(I)Ljava/lang/Object;", false);
         } else {
-            getStatic(Type.getObjectType(metaHolderInternalName), methodMetaFieldName,
-                    methodMetaFieldType);
+            visitFieldInsn(GETSTATIC, metaHolderInternalName, methodMetaFieldName,
+                    methodMetaFieldType.getDescriptor());
+        }
+    }
+
+    private void visitImplicitFramePlus() {
+        visitImplicitFramePlus(null);
+    }
+
+    private void visitImplicitFramePlus(@Nullable Object stack) {
+        if (implicitFrame == null) {
+            createImplicitFrame();
+        }
+        if (stack == null) {
+            visitFrame(F_NEW, implicitFrame.length, implicitFrame, 0, null);
+        } else if (stack instanceof String) {
+            visitFrame(F_NEW, implicitFrame.length, implicitFrame, 1, new Object[] {stack});
+        } else if (stack instanceof Type) {
+            visitFrame(F_NEW, implicitFrame.length, implicitFrame, 1,
+                    new Object[] {getStackFrameVarType((Type) stack)});
+        } else {
+            throw new AssertionError("Unexpected argument type: " + stack.getClass().getName());
+        }
+    }
+
+    @EnsuresNonNull("implicitFrame")
+    private void createImplicitFrame() {
+        int i;
+        if (Modifier.isStatic(access)) {
+            implicitFrame = new Object[argumentTypes.length];
+            i = 0;
+        } else {
+            implicitFrame = new Object[argumentTypes.length + 1];
+            implicitFrame[0] = owner.getInternalName();
+            i = 1;
+        }
+        for (Type argumentType : argumentTypes) {
+            implicitFrame[i++] = getStackFrameVarType(argumentType);
+        }
+    }
+
+    private Object getStackFrameVarType(Type type) throws AssertionError {
+        switch (type.getSort()) {
+            case Type.BOOLEAN:
+            case Type.CHAR:
+            case Type.BYTE:
+            case Type.SHORT:
+            case Type.INT:
+                return INTEGER;
+            case Type.FLOAT:
+                return FLOAT;
+            case Type.LONG:
+                return LONG;
+            case Type.DOUBLE:
+                return DOUBLE;
+            case Type.ARRAY:
+            case Type.OBJECT:
+            case Type.METHOD:
+                return type.getInternalName();
+            default:
+                throw new AssertionError("Unexpected type: " + type);
         }
     }
 
@@ -658,25 +765,19 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 push(false);
                 break;
             case Type.CHAR:
-                push(0);
-                break;
             case Type.BYTE:
-                push(0);
-                break;
             case Type.SHORT:
-                push(0);
-                break;
             case Type.INT:
-                push(0);
+                visitInsn(ICONST_0);
                 break;
             case Type.FLOAT:
-                push(0f);
+                visitInsn(FCONST_0);
                 break;
             case Type.LONG:
-                push(0L);
+                visitInsn(LCONST_0);
                 break;
             case Type.DOUBLE:
-                push(0.0);
+                visitInsn(DCONST_0);
                 break;
             default:
                 visitInsn(ACONST_NULL);
@@ -709,19 +810,6 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     @SuppressWarnings("serial")
     public static class MarkerException extends RuntimeException {
         private static final Type TYPE = Type.getType(MarkerException.class);
-        private static final Method STATIC_FACTORY_METHOD;
-        private static final Method GET_CAUSE_METHOD;
-        static {
-            try {
-                STATIC_FACTORY_METHOD = Method.getMethod(Reflections.getMethod(
-                        MarkerException.class, "from", Throwable.class));
-                GET_CAUSE_METHOD =
-                        Method.getMethod(Reflections.getMethod(Throwable.class, "getCause"));
-            } catch (ReflectiveException e) {
-                // unrecoverable error
-                throw new AssertionError(e);
-            }
-        }
         // static methods are easier to call via bytecode than constructors
         @UsedByGeneratedBytecode
         public static MarkerException from(Throwable cause) {

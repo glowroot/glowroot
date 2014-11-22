@@ -70,7 +70,11 @@ public class MaxEntriesLimitTest {
         executorService.submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                container.executeAppUnderTest(GenerateLotsOfEntries.class);
+                try {
+                    container.executeAppUnderTest(GenerateLotsOfEntries.class);
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
                 return null;
             }
         });

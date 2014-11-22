@@ -80,8 +80,12 @@ import org.glowroot.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
 import org.glowroot.weaving.SomeAspect.StaticAdvice;
 import org.glowroot.weaving.SomeAspect.SuperBasicAdvice;
 import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice;
+import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice2;
+import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice3;
+import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice4;
+import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice5;
+import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice6;
 import org.glowroot.weaving.SomeAspect.TestClassMeta;
-import org.glowroot.weaving.SomeAspect.TestJSRMethodAdvice;
 import org.glowroot.weaving.SomeAspect.TestMethodMeta;
 import org.glowroot.weaving.SomeAspect.ThrowableToStringAdvice;
 import org.glowroot.weaving.SomeAspect.WildMethodAdvice;
@@ -1144,19 +1148,65 @@ public class WeaverTest {
     }
 
     @Test
-    // test weaving against JSR bytecode
-    public void shouldWeaveJsrBytecode() throws Exception {
-        Misc test = newWovenObject(JsrMethodMisc.class, Misc.class, TestJSRMethodAdvice.class);
-        test.executeWithReturn();
-    }
-
-    @Test
     // test weaving against jdk 1.7 bytecode with stack frames
     public void shouldWeaveBytecodeWithStackFrames() throws Exception {
         Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
         Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
                 TestBytecodeWithStackFramesAdvice.class);
         test.executeWithReturn();
+    }
+
+    @Test
+    // test weaving against jdk 1.7 bytecode with stack frames
+    public void shouldWeaveBytecodeWithStackFrames2() throws Exception {
+        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
+                TestBytecodeWithStackFramesAdvice2.class);
+        test.executeWithReturn();
+    }
+
+    @Test
+    // test weaving against jdk 1.7 bytecode with stack frames
+    public void shouldWeaveBytecodeWithStackFrames3() throws Exception {
+        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
+                TestBytecodeWithStackFramesAdvice3.class);
+        test.executeWithReturn();
+    }
+
+    @Test
+    // test weaving against jdk 1.7 bytecode with stack frames
+    public void shouldWeaveBytecodeWithStackFrames4() throws Exception {
+        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
+                TestBytecodeWithStackFramesAdvice4.class);
+        test.executeWithReturn();
+    }
+
+    @Test
+    // test weaving against jdk 1.7 bytecode with stack frames
+    public void shouldWeaveBytecodeWithStackFrames5() throws Exception {
+        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
+                TestBytecodeWithStackFramesAdvice5.class);
+        test.executeWithReturn();
+    }
+
+    @Test
+    // test weaving against jdk 1.7 bytecode with stack frames
+    public void shouldWeaveBytecodeWithStackFrames6() throws Exception {
+        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
+                TestBytecodeWithStackFramesAdvice6.class);
+        test.executeWithReturn();
+    }
+
+    @Test
+    // test weaving against jdk 1.7 bytecode with stack frames
+    public void shouldNotBombWithDuplicateFrames() throws Exception {
+        // this only tests FrameDeduppingMethodVisitor when test code is jdk 1.7 bytecode
+        // (compiled with -target 1.7)
+        newWovenObject(DuplicateStackFramesMisc.class, Misc.class, BasicAdvice.class);
     }
 
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,

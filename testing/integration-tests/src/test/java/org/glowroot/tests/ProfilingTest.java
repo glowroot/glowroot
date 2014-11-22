@@ -129,7 +129,11 @@ public class ProfilingTest {
         Future<Void> future = executorService.submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                container.executeAppUnderTest(ShouldWaitForInterrupt.class);
+                try {
+                    container.executeAppUnderTest(ShouldWaitForInterrupt.class);
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
                 return null;
             }
         });

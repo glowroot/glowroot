@@ -95,7 +95,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private static final AtomicLong metaHolderCounter = new AtomicLong();
 
-    private final ClassWriter cw;
+    private final ClassVisitor cv;
 
     private final @Nullable ClassLoader loader;
 
@@ -118,12 +118,12 @@ class WeavingClassVisitor extends ClassVisitor {
     private @MonotonicNonNull String metaHolderInternalName;
     private int methodMetaCounter;
 
-    public WeavingClassVisitor(ClassWriter cw, List<Advice> advisors,
+    public WeavingClassVisitor(ClassVisitor cv, List<Advice> advisors,
             ImmutableList<MixinType> mixinTypes, @Nullable ClassLoader loader,
             AnalyzedWorld analyzedWorld, @Nullable CodeSource codeSource,
             boolean metricWrapperMethods) {
-        super(ASM5, cw);
-        this.cw = cw;
+        super(ASM5, cv);
+        this.cv = cv;
         this.loader = loader;
         analyzingClassVisitor =
                 new AnalyzingClassVisitor(advisors, mixinTypes, loader, analyzedWorld, codeSource);
@@ -174,7 +174,7 @@ class WeavingClassVisitor extends ClassVisitor {
         type = Type.getObjectType(internalName);
         String/*@Nullable*/[] interfacesIncludingMixins = getInterfacesIncludingMixins(
                 interfaceInternalNamesNullable, analyzingClassVisitor.getMatchedMixinTypes());
-        cw.visit(version, access, internalName, signature, superInternalName,
+        cv.visit(version, access, internalName, signature, superInternalName,
                 interfacesIncludingMixins);
     }
 
@@ -183,7 +183,7 @@ class WeavingClassVisitor extends ClassVisitor {
         if (desc.equals("Lorg/glowroot/api/weaving/Pointcut;")) {
             throw PointcutClassFoundException.INSTANCE;
         }
-        return cw.visitAnnotation(desc, visible);
+        return cv.visitAnnotation(desc, visible);
     }
 
     @Override
@@ -202,13 +202,13 @@ class WeavingClassVisitor extends ClassVisitor {
         if (Modifier.isAbstract(access) || Modifier.isNative(access)
                 || (access & ACC_SYNTHETIC) != 0) {
             // don't try to weave abstract, native and synthetic methods
-            return cw.visitMethod(access, name, desc, signature, exceptions);
+            return cv.visitMethod(access, name, desc, signature, exceptions);
         }
         if (name.equals("<init>") && !analyzingClassVisitor.getMatchedMixinTypes().isEmpty()) {
             return visitInitWithMixin(access, name, desc, signature, exceptions, matchingAdvisors);
         }
         if (matchingAdvisors.isEmpty()) {
-            return cw.visitMethod(access, name, desc, signature, exceptions);
+            return cv.visitMethod(access, name, desc, signature, exceptions);
         }
         return visitMethodWithAdvice(access, name, desc, signature, exceptions, matchingAdvisors);
     }
@@ -245,7 +245,7 @@ class WeavingClassVisitor extends ClassVisitor {
                 }
             }
         }
-        cw.visitEnd();
+        cv.visitEnd();
     }
 
     boolean isInterfaceSoNothingToWeave() {
@@ -426,7 +426,7 @@ class WeavingClassVisitor extends ClassVisitor {
             @Nullable String signature, String/*@Nullable*/[] exceptions,
             List<Advice> matchingAdvisors) {
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, desc);
-        MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+        MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
         checkNotNull(mv);
         mv = new InitMixins(mv, access, name, desc, analyzingClassVisitor.getMatchedMixinTypes(),
                 type);
@@ -449,7 +449,7 @@ class WeavingClassVisitor extends ClassVisitor {
             return wrapWithSyntheticMetricMarkerMethods(access, name, desc, signature, exceptions,
                     matchingAdvisors, methodMetaUniqueNum);
         } else {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
             checkNotNull(mv);
             return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
                     metaHolderInternalName, methodMetaUniqueNum, loader == null, null);
@@ -500,7 +500,7 @@ class WeavingClassVisitor extends ClassVisitor {
             String nextMethodName = outerName + "$glowroot$metric$" + metricName.replace(' ', '$')
                     + '$' + innerMethodCounter++;
             int access = outerMethodVisitor == null ? outerAccess : innerAccess;
-            MethodVisitor mv = cw.visitMethod(access, currMethodName, desc, signature, exceptions);
+            MethodVisitor mv = cv.visitMethod(access, currMethodName, desc, signature, exceptions);
             checkNotNull(mv);
             GeneratorAdapter mg = new GeneratorAdapter(mv, access, nextMethodName, desc);
             if (!Modifier.isStatic(outerAccess)) {
@@ -520,7 +520,7 @@ class WeavingClassVisitor extends ClassVisitor {
             }
         }
         MethodVisitor mv =
-                cw.visitMethod(currMethodAccess, currMethodName, desc, signature, exceptions);
+                cv.visitMethod(currMethodAccess, currMethodName, desc, signature, exceptions);
         checkNotNull(mv);
         return new WeavingMethodVisitor(mv, currMethodAccess, currMethodName, desc, type,
                 matchingAdvisors, metaHolderInternalName, methodMetaUniqueNum, loader == null,
@@ -531,7 +531,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private void addMixin(MixinType mixinType) {
         ClassReader cr = new ClassReader(mixinType.implementationBytes());
         ClassNode cn = new ClassNode();
-        cr.accept(cn, ClassReader.SKIP_FRAMES);
+        cr.accept(cn, ClassReader.EXPAND_FRAMES);
         // SuppressWarnings because generics are explicitly removed from asm binaries
         // see http://forge.ow2.org/tracker/?group_id=23&atid=100023&func=detail&aid=316377
         @SuppressWarnings("unchecked")
@@ -550,7 +550,7 @@ class WeavingClassVisitor extends ClassVisitor {
             @SuppressWarnings("unchecked")
             String[] exceptions = Iterables.toArray(mn.exceptions, String.class);
             MethodVisitor mv =
-                    cw.visitMethod(mn.access, mn.name, mn.desc, mn.signature, exceptions);
+                    cv.visitMethod(mn.access, mn.name, mn.desc, mn.signature, exceptions);
             checkNotNull(mv);
             mn.accept(new RemappingMethodAdapter(mn.access, mn.desc, mv,
                     new SimpleRemapper(cn.name, type.getInternalName())));
