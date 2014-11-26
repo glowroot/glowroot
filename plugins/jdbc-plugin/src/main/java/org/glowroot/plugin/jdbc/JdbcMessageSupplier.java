@@ -85,13 +85,10 @@ class JdbcMessageSupplier extends MessageSupplier {
             sb.append(Integer.toString(batchedParameters.size()));
             sb.append(" x ");
         }
-        int numArgs = recordCountObject.hasPerformedNavigation() ? 2 : 1;
-        String[] args = new String[numArgs];
-        sb.append("{}");
-        args[0] = sql;
+        sb.append(sql);
         appendParameters(sb);
-        appendRowCount(sb, args);
-        return Message.from(sb.toString(), args);
+        appendRowCount(sb);
+        return Message.from(sb.toString());
     }
 
     RecordCountObject getRecordCountObject() {
@@ -118,18 +115,18 @@ class JdbcMessageSupplier extends MessageSupplier {
         }
     }
 
-    private void appendRowCount(StringBuilder sb, String[] args) {
+    private void appendRowCount(StringBuilder sb) {
         if (!recordCountObject.hasPerformedNavigation()) {
             return;
         }
-        sb.append(" => {}");
+        sb.append(" => ");
         int numRows = recordCountObject.getNumRows();
+        sb.append(numRows);
         if (numRows == 1) {
             sb.append(" row");
         } else {
             sb.append(" rows");
         }
-        args[1] = Integer.toString(numRows);
     }
 
     private static void appendBatchedSqls(StringBuilder sb, ImmutableList<String> batchedSqls) {

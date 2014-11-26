@@ -224,6 +224,20 @@ public class JdbcPluginTest {
     }
 
     @Test
+    public void testPreparedStatementThatHasInternalGlowrootToken() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecutePreparedStatementThatHasInternalGlowrootToken.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(2);
+        TraceEntry jdbcEntry = entries.get(1);
+        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee where name like ? ['{}'] => 0 rows");
+    }
+
+    @Test
     public void testCallableStatement() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
@@ -877,6 +891,35 @@ public class JdbcPluginTest {
                 }
                 preparedStatement.setBytes(2, bytes);
                 preparedStatement.execute();
+            } finally {
+                preparedStatement.close();
+            }
+        }
+    }
+
+    public static class ExecutePreparedStatementThatHasInternalGlowrootToken implements
+            AppUnderTest, TraceMarker {
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "select * from employee where name like ?");
+            try {
+                preparedStatement.setString(1, "{}");
+                preparedStatement.execute();
+                ResultSet rs = preparedStatement.getResultSet();
+                while (rs.next()) {
+                    rs.getString(1);
+                }
             } finally {
                 preparedStatement.close();
             }
