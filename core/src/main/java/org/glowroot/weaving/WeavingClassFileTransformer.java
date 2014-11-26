@@ -57,7 +57,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     //
     // so all exceptions must be caught and logged here or they will be lost
     @Override
-    public byte/*@Nullable*/[] transform(@Nullable ClassLoader loader, @Nullable String className,
+    public byte /*@Nullable*/[] transform(@Nullable ClassLoader loader, @Nullable String className,
             @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] bytes) {
         if (className == null) {
@@ -74,7 +74,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         }
     }
 
-    private byte/*@Nullable*/[] transformInternal(@Nullable ClassLoader loader, String className,
+    private byte /*@Nullable*/[] transformInternal(@Nullable ClassLoader loader, String className,
             @Nullable ProtectionDomain protectionDomain, byte[] bytes) {
         // don't weave glowroot classes, including shaded classes like h2 jdbc driver
         // (can't just match "org/glowroot/" since that would match integration test classes)

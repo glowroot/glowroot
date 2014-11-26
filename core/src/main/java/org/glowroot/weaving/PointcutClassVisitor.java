@@ -48,7 +48,7 @@ class PointcutClassVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String internalName, @Nullable String signature,
-            @Nullable String superInternalName, String/*@Nullable*/[] interfaceInternalNames) {
+            @Nullable String superInternalName, String /*@Nullable*/[] interfaceInternalNames) {
         this.internalName = internalName;
         cw.visit(version, access, internalName, signature, superInternalName,
                 interfaceInternalNames);
@@ -56,7 +56,7 @@ class PointcutClassVisitor extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc,
-            @Nullable String signature, String/*@Nullable*/[] exceptions) {
+            @Nullable String signature, String /*@Nullable*/[] exceptions) {
         if (name.equals("<clinit>")) {
             clinit = true;
             return cw.visitMethod(ACC_PRIVATE + ACC_STATIC, "glowroot$clinit", "()V", null, null);

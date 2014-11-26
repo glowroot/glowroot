@@ -59,7 +59,7 @@ class Weaver {
         this.metricWrapperMethods = metricWrapperMethods;
     }
 
-    byte/*@Nullable*/[] weave(byte[] classBytes, String className,
+    byte /*@Nullable*/[] weave(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         if (metricWrapperMethods) {
             return weave$glowroot$metric$glowroot$weaving$0(classBytes, className, codeSource,
@@ -70,12 +70,12 @@ class Weaver {
     }
 
     // weird method name is following "metric marker" method naming
-    private byte/*@Nullable*/[] weave$glowroot$metric$glowroot$weaving$0(byte[] classBytes,
+    private byte /*@Nullable*/[] weave$glowroot$metric$glowroot$weaving$0(byte[] classBytes,
             String className, @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         return weaveInternal(classBytes, className, codeSource, loader);
     }
 
-    private byte/*@Nullable*/[] weaveInternal(byte[] classBytes, String className,
+    private byte /*@Nullable*/[] weaveInternal(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         WeavingTimer weavingTimer = weavingTimerService.start();
         try {

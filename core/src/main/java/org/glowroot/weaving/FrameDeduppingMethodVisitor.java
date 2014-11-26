@@ -33,8 +33,8 @@ class FrameDeduppingMethodVisitor extends MethodVisitor {
     }
 
     @Override
-    public void visitFrame(int type, int nLocal, Object/*@Nullable*/[] local, int nStack,
-            Object/*@Nullable*/[] stack) {
+    public void visitFrame(int type, int nLocal, Object /*@Nullable*/[] local, int nStack,
+            Object /*@Nullable*/[] stack) {
         if (!skipNextFrame) {
             super.visitFrame(type, nLocal, local, nStack, stack);
         }

@@ -134,7 +134,7 @@ class WeavingClassVisitor extends ClassVisitor {
     @Override
     public void visit(int version, int access, String internalName, @Nullable String signature,
             @Nullable String superInternalName,
-            String/*@Nullable*/[] interfaceInternalNamesNullable) {
+            String /*@Nullable*/[] interfaceInternalNamesNullable) {
 
         AnalyzedClass nonInterestingAnalyzedClass =
                 analyzingClassVisitor.visitAndSometimesReturnNonInterestingAnalyzedClass(access,
@@ -172,7 +172,7 @@ class WeavingClassVisitor extends ClassVisitor {
             }
         }
         type = Type.getObjectType(internalName);
-        String/*@Nullable*/[] interfacesIncludingMixins = getInterfacesIncludingMixins(
+        String /*@Nullable*/[] interfacesIncludingMixins = getInterfacesIncludingMixins(
                 interfaceInternalNamesNullable, analyzingClassVisitor.getMatchedMixinTypes());
         cv.visit(version, access, internalName, signature, superInternalName,
                 interfacesIncludingMixins);
@@ -188,7 +188,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @Override
     public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
-            @Nullable String signature, String/*@Nullable*/[] exceptions) {
+            @Nullable String signature, String /*@Nullable*/[] exceptions) {
         if (throwShortCircuitException) {
             // this is in visitMethod because need to check annotations first
             throw ShortCircuitException.INSTANCE;
@@ -404,8 +404,8 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
-    private static String/*@Nullable*/[] getInterfacesIncludingMixins(
-            String/*@Nullable*/[] interfaces, ImmutableList<MixinType> matchedMixinTypes) {
+    private static String /*@Nullable*/[] getInterfacesIncludingMixins(
+            String /*@Nullable*/[] interfaces, ImmutableList<MixinType> matchedMixinTypes) {
         if (matchedMixinTypes.isEmpty()) {
             return interfaces;
         }
@@ -423,7 +423,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @RequiresNonNull("type")
     private MethodVisitor visitInitWithMixin(int access, String name, String desc,
-            @Nullable String signature, String/*@Nullable*/[] exceptions,
+            @Nullable String signature, String /*@Nullable*/[] exceptions,
             List<Advice> matchingAdvisors) {
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, desc);
         MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
@@ -442,7 +442,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @RequiresNonNull("type")
     private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
-            @Nullable String signature, String/*@Nullable*/[] exceptions,
+            @Nullable String signature, String /*@Nullable*/[] exceptions,
             Iterable<Advice> matchingAdvisors) {
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, desc);
         if (metricWrapperMethods && !name.equals("<init>")) {
@@ -482,7 +482,7 @@ class WeavingClassVisitor extends ClassVisitor {
     @RequiresNonNull("type")
     private WeavingMethodVisitor wrapWithSyntheticMetricMarkerMethods(int outerAccess,
             String outerName, String desc, @Nullable String signature,
-            String/*@Nullable*/[] exceptions, Iterable<Advice> matchingAdvisors,
+            String /*@Nullable*/[] exceptions, Iterable<Advice> matchingAdvisors,
             @Nullable Integer methodMetaUniqueNum) {
         int innerAccess = ACC_PRIVATE + ACC_FINAL + (outerAccess & ACC_STATIC);
         MethodVisitor outerMethodVisitor = null;

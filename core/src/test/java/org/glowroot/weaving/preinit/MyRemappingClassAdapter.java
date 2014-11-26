@@ -45,7 +45,7 @@ class MyRemappingClassAdapter extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc,
-            @Nullable String signature, String/*@Nullable*/[] exceptions) {
+            @Nullable String signature, String /*@Nullable*/[] exceptions) {
 
         ReferencedMethod referencedMethod = ReferencedMethod.from(internalName, name, desc);
         MethodCollector methodCollector = new MethodCollector();

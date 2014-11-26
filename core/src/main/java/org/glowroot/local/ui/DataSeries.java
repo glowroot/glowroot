@@ -28,7 +28,7 @@ class DataSeries {
     @JsonProperty
     private final @Nullable String name;
     @JsonProperty
-    private final List<Number/*@Nullable*/[]> data = Lists.newArrayList();
+    private final List<Number /*@Nullable*/[]> data = Lists.newArrayList();
 
     DataSeries(@Nullable String name) {
         this.name = name;

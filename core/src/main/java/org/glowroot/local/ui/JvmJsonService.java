@@ -165,11 +165,11 @@ class JvmJsonService {
     @GET("/backend/jvm/gauge-points")
     String getGaugePoints(String queryString) throws Exception {
         GaugePointRequest request = QueryStrings.decode(queryString, GaugePointRequest.class);
-        List<List<Number/*@Nullable*/[]>> series = Lists.newArrayList();
+        List<List<Number /*@Nullable*/[]>> series = Lists.newArrayList();
         for (String gaugeName : request.gaugeNames()) {
             ImmutableList<GaugePoint> gaugePoints =
                     gaugePointDao.readGaugePoints(gaugeName, request.from(), request.to());
-            List<Number/*@Nullable*/[]> points = Lists.newArrayList();
+            List<Number /*@Nullable*/[]> points = Lists.newArrayList();
             GaugePoint lastGaugePoint = null;
             for (GaugePoint gaugePoint : gaugePoints) {
                 if (lastGaugePoint != null) {

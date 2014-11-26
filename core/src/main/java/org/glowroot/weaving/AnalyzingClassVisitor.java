@@ -70,7 +70,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
     @Override
     public void visit(int version, int access, String internalName, @Nullable String signature,
             @Nullable String superInternalName,
-            String/*@Nullable*/[] interfaceInternalNamesNullable) {
+            String /*@Nullable*/[] interfaceInternalNamesNullable) {
 
         AnalyzedClass nonInterestingAnalyzedClass =
                 visitAndSometimesReturnNonInterestingAnalyzedClass(access, internalName,
@@ -83,7 +83,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     public @Nullable AnalyzedClass visitAndSometimesReturnNonInterestingAnalyzedClass(int access,
             String internalName, @Nullable String superInternalName,
-            String/*@Nullable*/[] interfaceInternalNamesNullable) {
+            String /*@Nullable*/[] interfaceInternalNamesNullable) {
 
         ImmutableList<String> interfaceNames = ImmutableList.of();
         if (interfaceInternalNamesNullable != null) {
@@ -139,7 +139,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     @Override
     public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
-            @Nullable String signature, String/*@Nullable*/[] exceptions) {
+            @Nullable String signature, String /*@Nullable*/[] exceptions) {
         visitMethodAndReturnAdvisors(access, name, desc, signature, exceptions);
         return null;
     }
@@ -151,7 +151,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
     }
 
     List<Advice> visitMethodAndReturnAdvisors(int access, String name, String desc,
-            @Nullable String signature, String/*@Nullable*/[] exceptions) {
+            @Nullable String signature, String /*@Nullable*/[] exceptions) {
         List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
         Type returnType = Type.getReturnType(desc);
         List<Advice> matchingAdvisors =

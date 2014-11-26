@@ -33,7 +33,7 @@ public class GenericMessageSupplier extends MessageSupplier {
     private final MessageTemplate template;
     private final String[] resolvedReceiverPathParts;
     private final String[] resolvedArgPathParts;
-    private volatile String/*@MonotonicNonNull*/[] resolvedReturnValuePathParts;
+    private volatile String /*@MonotonicNonNull*/[] resolvedReturnValuePathParts;
     private final String methodName;
 
     @UsedByGeneratedBytecode

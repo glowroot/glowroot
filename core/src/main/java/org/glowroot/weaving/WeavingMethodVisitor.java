@@ -81,7 +81,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private @MonotonicNonNull Label catchStartLabel;
     private boolean visitedLocalVariableThis;
 
-    private Object/*@MonotonicNonNull*/[] implicitFrame;
+    private Object /*@MonotonicNonNull*/[] implicitFrame;
 
     WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
             Iterable<Advice> advisors, @Nullable String metaHolderInternalName,

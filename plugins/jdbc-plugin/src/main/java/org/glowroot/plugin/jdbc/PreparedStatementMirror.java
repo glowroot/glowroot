@@ -102,7 +102,7 @@ class PreparedStatementMirror extends StatementMirror {
 
     static class ByteArrayParameterValue {
         private final int length;
-        private final byte/*@Nullable*/[] bytes;
+        private final byte /*@Nullable*/[] bytes;
         public ByteArrayParameterValue(byte[] bytes, boolean displayAsHex) {
             length = bytes.length;
             if (displayAsHex) {

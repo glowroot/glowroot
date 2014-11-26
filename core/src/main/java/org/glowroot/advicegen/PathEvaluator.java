@@ -28,7 +28,7 @@ class PathEvaluator {
     private static final Splitter splitter = Splitter.on('.').omitEmptyStrings();
 
     private final Accessor[] accessors;
-    private final String/*@Nullable*/[] remainingPath;
+    private final String /*@Nullable*/[] remainingPath;
 
     PathEvaluator(Class<?> baseClass, String path) {
         List<String> parts = Lists.newArrayList(splitter.split(path));
