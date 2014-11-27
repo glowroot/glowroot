@@ -38,20 +38,6 @@
       <version>2.3.2</version>
       <scope>runtime</scope>
     </dependency>
-    <dependency>
-      <!-- included in shaded jar so it can be run with -javaagent:target/microbenchmarks.jar -->
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-core</artifactId>
-      <version>${project.version}</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <!-- included in shaded jar so it can be run with -javaagent:target/microbenchmarks.jar -->
-      <groupId>org.glowroot.plugins</groupId>
-      <artifactId>jdbc-plugin</artifactId>
-      <version>${project.version}</version>
-      <scope>runtime</scope>
-    </dependency>
   </dependencies>
 
   <build>

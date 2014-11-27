@@ -29,16 +29,16 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.TraceEntry;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.microbenchmarks.core.support.TraceEntryWorthy;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
 @State(Scope.Thread)
 public class StoreBenchmark {
 

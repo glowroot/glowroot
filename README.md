@@ -8,6 +8,8 @@ Glowroot &nbsp;&nbsp; [![Build Status](https://travis-ci.org/glowroot/glowroot.p
 3. Start your application
 4. Connect to http://localhost:4000
 
+Glowroot supports Java 6+.
+
 ## Questions, bugs, feature requests
 
 Post 'em all to the [GitHub issue tracker](https://github.com/glowroot/glowroot/issues).
@@ -18,7 +20,7 @@ Post 'em all to the [GitHub issue tracker](https://github.com/glowroot/glowroot/
 
 Glowroot uses [Bower](http://bower.io) and [Grunt](http://gruntjs.com) to build its web assets (dependency management, Javascript concat/minify, LESS compile/minify, AngularJS template concat/minify, asset revving and more).
 
-To install Bower and Grunt, first install [Node.js](http://nodejs.org), then install Bower and Grunt from the command line:
+To install Bower and Grunt, first install [Node.js](https://nodejs.org), then install Bower and Grunt from the command line:
 
     npm install -g bower grunt-cli
 
@@ -28,11 +30,13 @@ From now on, building is easy:
 
 Binary and source distributions are built under distribution/target.
 
+Building requires Java 7+ (in order to perform [Immutables](https://immutables.github.io) annotation processing).
+
 #### How to hack on it
 
 Run org.glowroot.sandbox.ui.UiSandboxMain under a debugger inside your favorite IDE. It starts Glowroot and generates a variety of sample traces to give the UI something to display and to help with manual testing. Connect your browser to http://localhost:4000.
 
-If you are working on the UI, you either need to run 'grunt' to re-build the web assets after each change, or (better) run:
+If you are working on the UI, you either need to run 'grunt' to re-build the web assets after each change, or (better) run
 
     grunt serve
 
@@ -59,10 +63,10 @@ Thanks to [Sauce Labs](https://saucelabs.com), the WebDriver tests run against F
 
 ## Microbenchmarks
 
-Microbenchmarks to analyze the monitoring overhead are written using the excellent [JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmark harness. They can be built and run using:
+Microbenchmarks are used to analyze and tune the monitoring overhead. These are written using the excellent [JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmark harness, and can be built and run using
 
     mvn clean package
-    java -jar target/microbenchmarks.jar -jvmArgs -javaagent:target/microbenchmarks.jar
+    java -jar target/microbenchmarks.jar -jvmArgs -javaagent:path/to/glowroot.jar
 
 from the following locations:
 
@@ -72,7 +76,7 @@ from the following locations:
 
 ## Code quality
 
-[SonarQube](http://www.sonarqube.org) is used to check Java coding conventions, code coverage, duplicate code, package cycles and much more. It is run as part of every Travis CI build (see the job with TARGET=sonar) and the analysis is reported to [http://sonar.glowroot.org](http://sonar.glowroot.org).
+[SonarQube](http://www.sonarqube.org) is used to check Java coding conventions, code coverage, duplicate code, package cycles and much more. It is run as part of every Travis CI build (see the job with TARGET=sonar) and the analysis is reported to [https://sonar.glowroot.org](https://sonar.glowroot.org).
 
 [Checker Framework](http://types.cs.washington.edu/checker-framework/) is used to eliminate fear of `null` with its rigorous [Nullness Checker](http://types.cs.washington.edu/checker-framework/current/checker-framework-manual.html#nullness-checker). It is run as part of every Travis CI build (see the job with TARGET=checker) and any violation fails the build.
 

@@ -29,9 +29,9 @@ import org.openjdk.jmh.annotations.State;
 import org.glowroot.microbenchmarks.core.support.TransactionWorthy;
 
 @BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
 @State(Scope.Thread)
-public class TraceBenchmark {
+public class TransactionBenchmark {
 
     @Param
     private PointcutType pointcutType;

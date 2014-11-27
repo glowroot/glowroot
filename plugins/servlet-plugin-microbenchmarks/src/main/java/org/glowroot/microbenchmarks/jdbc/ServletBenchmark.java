@@ -34,7 +34,7 @@ import org.glowroot.microbenchmarks.jdbc.support.MockHttpResponse;
 import org.glowroot.microbenchmarks.jdbc.support.MockHttpServlet;
 
 @BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
 @State(Scope.Thread)
 public class ServletBenchmark {
 

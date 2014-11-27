@@ -16,14 +16,16 @@
 package org.glowroot.microbenchmarks.core;
 
 import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import com.google.common.base.Splitter;
+import com.google.common.base.StandardSystemProperty;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -32,6 +34,7 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
 @BenchmarkMode(Mode.SingleShotTime)
@@ -41,27 +44,36 @@ import org.openjdk.jmh.annotations.Warmup;
 @State(Scope.Thread)
 public class WeavingBenchmark {
 
-    private List<String> classNames;
+    private Set<String> classNames;
 
     @Setup
     public void setup() throws IOException {
-        classNames = new ArrayList<String>();
-        URL jarURL = WeavingBenchmark.class.getProtectionDomain().getCodeSource().getLocation();
-        JarFile jarFile = new JarFile(jarURL.getPath());
-        try {
-            Enumeration<JarEntry> e = jarFile.entries();
-            while (e.hasMoreElements()) {
-                JarEntry jarEntry = e.nextElement();
-                String name = jarEntry.getName();
-                if (name.startsWith("org/springframework/") && name.endsWith(".class")) {
-                    name = name.replace('/', '.');
-                    name = name.substring(0, name.length() - ".class".length());
-                    classNames.add(name);
-                }
+        classNames = new HashSet<String>();
+        for (String path : getClassPath()) {
+            if (!path.endsWith(".jar")) {
+                continue;
             }
-        } finally {
-            jarFile.close();
+            JarFile jarFile = new JarFile(path);
+            try {
+                Enumeration<JarEntry> e = jarFile.entries();
+                while (e.hasMoreElements()) {
+                    JarEntry jarEntry = e.nextElement();
+                    String name = jarEntry.getName();
+                    if (name.startsWith("org/springframework/") && name.endsWith(".class")) {
+                        name = name.replace('/', '.');
+                        name = name.substring(0, name.length() - ".class".length());
+                        classNames.add(name);
+                    }
+                }
+            } finally {
+                jarFile.close();
+            }
         }
+    }
+
+    @TearDown
+    public void tearDown() throws InterruptedException {
+        Thread.sleep(100);
     }
 
     @Benchmark
@@ -73,5 +85,10 @@ public class WeavingBenchmark {
                 // optional dependencies are not transitively included
             }
         }
+    }
+
+    private static List<String> getClassPath() {
+        String classPath = StandardSystemProperty.JAVA_CLASS_PATH.value();
+        return Splitter.on(StandardSystemProperty.PATH_SEPARATOR.value()).splitToList(classPath);
     }
 }
