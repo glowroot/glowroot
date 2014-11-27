@@ -64,7 +64,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
       <!-- spring-test 4.0 depends on servlet 3.0 -->
-      <version>3.2.11.RELEASE</version>
+      <version>3.2.12.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -72,7 +72,7 @@
         org.springframework.mock.web.MockHttpServletRequest -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>3.2.11.RELEASE</version>
+      <version>3.2.12.RELEASE</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
