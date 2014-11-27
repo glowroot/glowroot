@@ -42,11 +42,11 @@ case "$1" in
                                  -B
                ;;
 
-  "sonarqube") if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" ]]
+      "sonar") if [[ $SONAR_JDBC_URL ]]
                then
                  # need to skip shading when running jacoco, otherwise the bytecode changes done to
                  # the classes during shading and proguard-ing will modify the jacoco class id and
-                 # the sonarqube reports won't report usage of those bytecode modified classes
+                 # the sonar reports won't report usage of those bytecode modified classes
                  #
                  # jacoco destFile needs absolute path, otherwise it is relative to each submodule
                  #
@@ -60,19 +60,19 @@ case "$1" in
                  # using local harness since it is faster (and the default anyways)
                  #
                  # the sonar.jdbc.password system property is set in the pom.xml using the
-                 # environment variable SONARQUBE_DB_PASSWORD (instead of setting the system
+                 # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
                  #
-                 # need to use real IP address for jdbc connection since sonarqube.glowroot.org points to cloudflare
+                 # need to use real IP address for jdbc connection since sonar.glowroot.org points to cloudflare
                  mvn sonar:sonar -pl .,plugin-api,core,plugins/jdbc-plugin,plugins/servlet-plugin,plugins/logger-plugin \
-                                 -Dsonar.jdbc.url=jdbc:postgresql://54.88.183.212/sonar \
-                                 -Dsonar.jdbc.username=sonar \
-                                 -Dsonar.host.url=http://sonarqube.glowroot.org \
+                                 -Dsonar.jdbc.url=$SONAR_JDBC_URL \
+                                 -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
+                                 -Dsonar.host.url=$SONAR_HOST_URL \
                                  -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
                                  -Dglowroot.test.harness=local \
                                  -B
                else
-                 echo skipping, sonarqube analysis only runs against master repository and master branch
+                 echo skipping, sonar analysis only runs against master repository and master branch
                fi
                ;;
 
@@ -113,7 +113,7 @@ case "$1" in
                test $mvn_status -eq 0
                ;;
 
-  "saucelabs") if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" ]]
+  "saucelabs") if [[ $SAUCE_USERNAME ]]
                then
                  mvn clean install -DskipTests=true \
                                    -B

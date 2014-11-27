@@ -67,7 +67,7 @@
     <checker.qual.version>${project.version}</checker.qual.version>
     <!-- the sonar.jdbc.password system property is set here instead of on the command line so it is
          not visible to ps -->
-    <sonar.jdbc.password>${env.SONARQUBE_DB_PASSWORD}</sonar.jdbc.password>
+    <sonar.jdbc.password>${env.SONAR_JDBC_PASSWORD}</sonar.jdbc.password>
   </properties>
 
   <dependencyManagement>

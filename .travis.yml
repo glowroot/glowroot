@@ -14,7 +14,7 @@ matrix:
     - jdk: oraclejdk8
       env: TARGET=deploy
     - jdk: oraclejdk7
-      env: TARGET=sonarqube
+      env: TARGET=sonar
     - jdk: oraclejdk8
       env: TARGET=checker
       # firefox
@@ -42,12 +42,6 @@ matrix:
     - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=9
 env:
-  global:
-    - SONATYPE_USERNAME=trask
-    # SONATYPE_PASSWORD, only used for mvn deploy from glowroot/glowroot master branch
-    - secure: "YzGuP91Q/7L6rWXUvbGYqr+adYDXA7Cz8CwYjDhRiNK+M48Ta9s3gVbRzgrXyyACERZfrS8t1tqyk0broQiXp8YRSZIK2afjAYq+wI8xWKJsBGspv2Db77zavXEhfezdmnEd5GFMqtKpws2QRDwfJjkIiFBis+ZkUlNRMlFX0PM="
-    # SONARQUBE_DB_PASSWORD, only used for mvn sonar:sonar from glowroot/glowroot master branch
-    - secure: "TltnDS/ZNZWh/2Wdag9JGb3Xk9mZI9gFri7iNoOGcCKWnQ4UV+YNrlLHEG/Q3xrmnCxMwLjYZNEcUC8qHnxvwK9lxYgBi4ilWTxLJtpimJr2sASroQVq8dwgwLRrJLDZXInykaznlD6yBobO4L85OsdYuavabeP8Bq7ODbjQR0U="
   matrix:
     - TARGET=test GLOWROOT_UNSHADED=false GLOWROOT_HARNESS=javaagent
     - TARGET=test GLOWROOT_UNSHADED=false GLOWROOT_HARNESS=local
@@ -72,7 +66,4 @@ deploy:
     repo: glowroot/glowroot
     condition: "$TARGET = deploy"
 addons:
-  sauce_connect:
-    username: glowroot
-    access_key:
-      secure: "gywACGw1z8xcdNki4UGId8+GMYTMyEZQdwR/cqIVwjYj5FaHQ+kU+ImikXYQx4DJgldUo1/btgXxSwmOXwzo83TtQkG2nLsVB25KJHULHncchpARQF891rH+RjTceaPLtihfxoQd1Efsa8gS4QI2k6yGNRglCMymkrl27ajsJqE="
+  sauce_connect: true

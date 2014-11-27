@@ -72,7 +72,7 @@ from the following locations:
 
 ## Code quality
 
-[SonarQube](http://www.sonarqube.org) is used to check Java coding conventions, code coverage, duplicate code, package cycles and much more. It is run as part of every Travis CI build (see the job with TARGET=sonarqube) and the analysis is reported to [http://sonarqube.glowroot.org](http://sonarqube.glowroot.org).
+[SonarQube](http://www.sonarqube.org) is used to check Java coding conventions, code coverage, duplicate code, package cycles and much more. It is run as part of every Travis CI build (see the job with TARGET=sonar) and the analysis is reported to [http://sonar.glowroot.org](http://sonar.glowroot.org).
 
 [Checker Framework](http://types.cs.washington.edu/checker-framework/) is used to eliminate fear of `null` with its rigorous [Nullness Checker](http://types.cs.washington.edu/checker-framework/current/checker-framework-manual.html#nullness-checker). It is run as part of every Travis CI build (see the job with TARGET=checker) and any violation fails the build.
 
