@@ -43,6 +43,8 @@ glowroot.controller('ErrorsMessagesCtrl', [
 
     var dataSeriesExtra;
 
+    var chartFromToDefault;
+
     $scope.$watchCollection('[containerWidth, windowHeight]', function () {
       plot.resize();
       plot.setupGrid();
@@ -249,8 +251,6 @@ glowroot.controller('ErrorsMessagesCtrl', [
       $scope.errorFilterIncludes = includes;
       $scope.errorFilterExcludes = excludes;
     }
-
-    var chartFromToDefault;
 
     $scope.filter = {};
     $scope.chartFrom = Number($location.search().from);

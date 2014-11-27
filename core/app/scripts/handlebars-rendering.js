@@ -31,6 +31,8 @@ HandlebarsRendering = (function () {
   // indent1 must be sync'd with $indent1 variable in common-trace.less
   var indent1 = 1; // em
 
+  var traceEntryLineLength;
+
   Handlebars.registerHelper('eachKeyValuePair', function (map, options) {
     var buffer = '';
     if (map) {
@@ -42,7 +44,6 @@ HandlebarsRendering = (function () {
     }
     return buffer;
   });
-
 
   Handlebars.registerHelper('eachMetricOrdered', function (metrics, options) {
     var buffer = '';
@@ -419,8 +420,6 @@ HandlebarsRendering = (function () {
       $selector.addClass('hide');
     }
   }
-
-  var traceEntryLineLength;
 
   function initTraceEntryLineLength() {
     // using an average character (width-wise) 'o'

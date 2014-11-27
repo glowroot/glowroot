@@ -47,6 +47,8 @@ glowroot.controller('ErrorsTransactionsCtrl', [
     // this is used to calculate bar width under transaction name
     var maxTransactionSummaryBarValue;
 
+    var chartFromToDefault;
+
     $scope.$watchCollection('[containerWidth, windowHeight]', function () {
       plot.resize();
       plot.setupGrid();
@@ -244,8 +246,6 @@ glowroot.controller('ErrorsTransactionsCtrl', [
         plot.zoomOut();
       });
     };
-
-    var chartFromToDefault;
 
     $scope.filter = {};
     $scope.chartFrom = Number($location.search().from);

@@ -19,7 +19,7 @@
 glowroot.controller('ConfigCtrl', [
   '$scope',
   '$state',
-  function ($scope, $state) {
+  function ($scope) {
     // \u00b7 is &middot;
     document.title = 'Configuration \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'config';

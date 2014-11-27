@@ -40,6 +40,9 @@ glowroot.controller('TracesCtrl', [
 
     var appliedFilter;
 
+    var filterFromToDefault;
+    var filterLimitDefault;
+
     $scope.$watchCollection('[containerWidth, windowHeight]', function () {
       plot.resize();
       plot.setupGrid();
@@ -301,9 +304,6 @@ glowroot.controller('TracesCtrl', [
         value: 'notContains'
       }
     ];
-
-    var filterFromToDefault;
-    var filterLimitDefault;
 
     appliedFilter = {};
     appliedFilter.from = Number($location.search().from);

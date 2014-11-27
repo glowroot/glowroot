@@ -38,6 +38,9 @@ glowroot.controller('JvmGaugesCtrl', [
     var $chart = $('#chart');
 
     var keyedColorPool = keyedColorPools.create();
+
+    var chartFromToDefault;
+
     $scope.keyedColorPool = keyedColorPool;
 
     $scope.$watchCollection('[containerWidth, windowHeight]', function () {
@@ -358,8 +361,6 @@ glowroot.controller('JvmGaugesCtrl', [
         plot.zoomOut();
       });
     };
-
-    var chartFromToDefault;
 
     $scope.filter = {};
     $scope.chartFrom = Number($location.search().from);

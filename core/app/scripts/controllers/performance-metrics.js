@@ -42,6 +42,8 @@ glowroot.controller('PerformanceMetricsCtrl', [
 
     var keyedColorPool = keyedColorPools.create();
 
+    var chartFromToDefault;
+
     $scope.$watchCollection('[containerWidth, windowHeight]', function () {
       plot.resize();
       plot.setupGrid();
@@ -251,8 +253,6 @@ glowroot.controller('PerformanceMetricsCtrl', [
         plot.zoomOut();
       });
     };
-
-    var chartFromToDefault;
 
     $scope.filter = {};
     $scope.chartFrom = Number($location.search().from);

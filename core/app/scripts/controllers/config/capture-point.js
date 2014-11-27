@@ -24,7 +24,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
   'httpErrors',
   'queryStrings',
   'conversions',
-  function ($scope, $http, $timeout, confirmIfHasChanges, httpErrors, queryStrings, conversions) {
+  function ($scope, $http, $timeout, confirmIfHasChanges, httpErrors, queryStrings) {
     // don't initialize page binding object since it is inherited from pointcut-list.js
 
     function onNewData(data) {

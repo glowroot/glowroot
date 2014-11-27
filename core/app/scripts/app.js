@@ -102,7 +102,7 @@ glowroot.run([
           .success(function () {
             login.showLogin('You have been signed out');
           })
-          .error(function (error) {
+          .error(function (data) {
             // TODO
           });
     };

@@ -19,7 +19,7 @@
 glowroot.controller('JvmCtrl', [
   '$scope',
   '$state',
-  function ($scope, $state) {
+  function ($scope) {
     // \u00b7 is &middot;
     document.title = 'JVM \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'jvm';
