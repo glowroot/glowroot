@@ -55,7 +55,7 @@ They can also be found in the following locations and run as standard JUnit test
 * Jdbc plugin tests are under [plugins/jdbc-plugin](plugins/jdbc-plugin)
 * Logger plugin tests are under [plugins/logger-plugin-tests](plugins/logger-plugin-tests)
 
-Thanks to [Sauce Labs](https://saucelabs.com), the WebDriver tests run against Firefox (latest), Chrome (latest), Safari (5, 6, 7) and IE (9, 10, 11) as part of every Travis CI build (see the jobs with TARGET=saucelabs).
+Thanks to [Sauce Labs](https://saucelabs.com), the WebDriver tests run against Firefox (latest), Chrome (latest), Safari (6, 7, 8) and IE (9, 10, 11) as part of every Travis CI build (see the jobs with TARGET=saucelabs).
 
 ## Microbenchmarks
 
