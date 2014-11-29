@@ -215,9 +215,13 @@ class ClasspathCache {
             ImmutableUiAnalyzedMethod.Builder builder = ImmutableUiAnalyzedMethod.builder();
             builder.name(method.getName());
             for (Class<?> parameterType : method.getParameterTypes()) {
-                builder.addParameterTypes(parameterType.getName());
+                // Class.getName() for arrays returns internal notation (e.g. "[B" for byte array)
+                // so using Type.getType().getClassName() instead
+                builder.addParameterTypes(Type.getType(parameterType).getClassName());
             }
-            builder.returnType(method.getReturnType().getName());
+            // Class.getName() for arrays returns internal notation (e.g. "[B" for byte array)
+            // so using Type.getType().getClassName() instead
+            builder.returnType(Type.getType(method.getReturnType()).getClassName());
             builder.modifiers(method.getModifiers());
             for (Class<?> exceptionType : method.getExceptionTypes()) {
                 builder.addExceptions(exceptionType.getName());
