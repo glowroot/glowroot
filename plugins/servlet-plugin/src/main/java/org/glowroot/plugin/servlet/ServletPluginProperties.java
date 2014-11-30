@@ -36,7 +36,6 @@ class ServletPluginProperties {
     private static final String SESSION_USER_ATTRIBUTE_PROPERTY_NAME = "sessionUserAttribute";
     private static final String CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME =
             "captureSessionAttributes";
-    private static final String CAPTURE_SESSION_ID_PROPERTY_NAME = "captureSessionId";
     private static final String CAPTURE_STARTUP_PROPERTY_NAME = "captureStartup";
 
     private static final PluginServices pluginServices = PluginServices.get("servlet");
@@ -51,7 +50,6 @@ class ServletPluginProperties {
     private static volatile String sessionUserAttributePath = "";
     private static volatile ImmutableSet<String> captureSessionAttributePaths = ImmutableSet.of();
     private static volatile ImmutableSet<String> captureSessionAttributeNames = ImmutableSet.of();
-    private static volatile boolean captureSessionId;
     private static volatile boolean captureStartup;
 
     static {
@@ -96,10 +94,6 @@ class ServletPluginProperties {
         return captureSessionAttributeNames;
     }
 
-    static boolean captureSessionId() {
-        return captureSessionId;
-    }
-
     static boolean captureStartup() {
         return captureStartup;
     }
@@ -116,7 +110,6 @@ class ServletPluginProperties {
         captureSessionAttributePaths = ImmutableSet.copyOf(splitter
                 .split(captureSessionAttributesText));
         captureSessionAttributeNames = buildCaptureSessionAttributeNames();
-        captureSessionId = pluginServices.getBooleanProperty(CAPTURE_SESSION_ID_PROPERTY_NAME);
         captureStartup = pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
     }
 

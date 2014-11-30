@@ -81,13 +81,12 @@ public class ServletAspect {
                     DetailCapture.captureRequestHeaders(request, requestInvoker);
             if (session == null) {
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
-                        requestQueryString, requestHeaders, null, null);
+                        requestQueryString, requestHeaders, null);
             } else {
                 ImmutableMap<String, String> sessionAttributes =
                         HttpSessions.getSessionAttributes(session, sessionInvoker);
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
-                        requestQueryString, requestHeaders, sessionInvoker.getId(session),
-                        sessionAttributes);
+                        requestQueryString, requestHeaders, sessionAttributes);
             }
             topLevel.set(messageSupplier);
             TraceEntry traceEntry = pluginServices.startTransaction("Servlet", requestUri,

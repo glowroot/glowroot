@@ -23,11 +23,8 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindReceiver;
-import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
-import org.glowroot.api.weaving.OnBefore;
-import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.Pointcut;
 
 public class SessionAspect {
@@ -37,49 +34,6 @@ public class SessionAspect {
     /*
      * ================== Http Session Attributes ==================
      */
-
-    @Pointcut(className = "javax.servlet.http.HttpServletRequest", methodName = "getSession",
-            methodParameterTypes = {".."})
-    public static class GetSessionAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return pluginServices.isEnabled();
-        }
-        @OnReturn
-        public static void onReturn(@BindReturn @Nullable Object session,
-                @BindClassMeta SessionInvoker sessionInvoker) {
-            if (session == null) {
-                return;
-            }
-            // either getSession(), getSession(true) or getSession(false) has triggered this
-            // pointcut
-            // after calls to the first two (no-arg, and passing true), a new session may have been
-            // created (the third one -- passing false -- could be ignored but is harmless)
-            if (sessionInvoker.isNew(session)) {
-                ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
-                if (messageSupplier != null) {
-                    messageSupplier.setSessionIdUpdatedValue(sessionInvoker.getId(session));
-                }
-            }
-        }
-    }
-
-    @Pointcut(className = "javax.servlet.http.HttpSession", methodName = "invalidate")
-    public static class InvalidateAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return pluginServices.isEnabled();
-        }
-        @OnBefore
-        public static void onBefore(@BindReceiver Object session,
-                @BindClassMeta SessionInvoker sessionInvoker) {
-            String sessionId = sessionInvoker.getId(session);
-            ServletMessageSupplier messageSupplier = getServletMessageSupplier(sessionId);
-            if (messageSupplier != null) {
-                messageSupplier.setSessionIdUpdatedValue("");
-            }
-        }
-    }
 
     @Pointcut(className = "javax.servlet.http.HttpSession", methodName = "setAttribute|putValue",
             methodParameterTypes = {"java.lang.String", "java.lang.Object"})
@@ -98,8 +52,7 @@ public class SessionAspect {
             }
             // name is non-null per HttpSession.setAttribute() javadoc, but value may be null
             // (which per the javadoc is the same as calling removeAttribute())
-            String sessionId = sessionInvoker.getId(session);
-            ServletMessageSupplier messageSupplier = getServletMessageSupplier(sessionId);
+            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
             if (messageSupplier != null) {
                 updateUserIfApplicable(name, value, session, sessionInvoker);
                 updateSessionAttributesIfApplicable(messageSupplier, name, value, session,
@@ -122,29 +75,6 @@ public class SessionAspect {
             // calling HttpSession.setAttribute() with null value is the same as calling
             // removeAttribute(), per the setAttribute() javadoc
             SetAttributeAdvice.onAfter(realSession, name, null, sessionInvoker);
-        }
-    }
-
-    private static @Nullable ServletMessageSupplier getServletMessageSupplier(String sessionId) {
-        ServletMessageSupplier servletMessageSupplier = ServletAspect.getServletMessageSupplier();
-        if (servletMessageSupplier == null) {
-            // this thread is not executing a servlet request, e.g. this could be a background
-            // thread that is updating http session attributes
-            return null;
-        }
-        String supplierSessionId;
-        if (servletMessageSupplier.getSessionIdUpdatedValue() != null) {
-            supplierSessionId = servletMessageSupplier.getSessionIdUpdatedValue();
-        } else {
-            supplierSessionId = servletMessageSupplier.getSessionIdInitialValue();
-        }
-        if (sessionId.equals(supplierSessionId)) {
-            return servletMessageSupplier;
-        } else {
-            // the target session for this pointcut is not the same as the thread's
-            // ServletMessageSupplier, e.g. this could be a request that is updating attributes on
-            // a different http session
-            return null;
         }
     }
 

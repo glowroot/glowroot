@@ -33,15 +33,6 @@
       ]
     },
     {
-      "name": "captureSessionId",
-      "type": "boolean",
-      "label": "Session ID",
-      "checkboxLabel": "Capture the servlet session ID",
-      "description": [
-        "Capture the servlet session ID in the root trace entry."
-      ]
-    },
-    {
       "name": "captureStartup",
       "type": "boolean",
       "label": "Startup",

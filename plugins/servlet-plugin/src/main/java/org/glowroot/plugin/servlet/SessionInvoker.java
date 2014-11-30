@@ -28,8 +28,6 @@ public class SessionInvoker {
 
     private static final Logger logger = LoggerFactory.getLogger(SessionInvoker.class);
 
-    private final @Nullable Method getIdMethod;
-    private final @Nullable Method isNewMethod;
     private final @Nullable Method getAttributeMethod;
     private final @Nullable Method getAttributeNamesMethod;
 
@@ -41,43 +39,8 @@ public class SessionInvoker {
         } catch (ClassNotFoundException e) {
             logger.warn(e.getMessage(), e);
         }
-        getIdMethod = Invokers.getMethod(httpSessionClass, "getId");
-        isNewMethod = Invokers.getMethod(httpSessionClass, "isNew");
         getAttributeMethod = Invokers.getMethod(httpSessionClass, "getAttribute", String.class);
         getAttributeNamesMethod = Invokers.getMethod(httpSessionClass, "getAttributeNames");
-    }
-
-    public String getId(Object session) {
-        if (getIdMethod == null) {
-            return "";
-        }
-        try {
-            String id = (String) getIdMethod.invoke(session);
-            if (id == null) {
-                return "";
-            }
-            return id;
-        } catch (Throwable t) {
-            logger.warn("error calling HttpSession.getId()", t);
-            return "";
-        }
-    }
-
-    public boolean isNew(Object session) {
-        if (isNewMethod == null) {
-            return false;
-        }
-        try {
-            Boolean isNew = (Boolean) isNewMethod.invoke(session);
-            if (isNew == null) {
-                logger.warn("method unexpectedly returned null: HttpSession.isNew()");
-                return false;
-            }
-            return isNew;
-        } catch (Throwable t) {
-            logger.warn("error calling HttpSession.isNew()", t);
-            return false;
-        }
     }
 
     public @Nullable Object getAttribute(Object session, String name) {

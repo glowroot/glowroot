@@ -21,7 +21,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -62,10 +61,6 @@ class ServletMessageSupplier extends MessageSupplier {
 
     private final ResponseHeaders responseHeaders = new ResponseHeaders();
 
-    // the initial value is the sessionId as it was present at the beginning of the request
-    private final @Nullable String sessionIdInitialValue;
-    private volatile @MonotonicNonNull String sessionIdUpdatedValue;
-
     // session attributes may not be thread safe, so they must be converted to Strings
     // within the request processing thread, which can then be safely read by the trace storage
     // thread (and live viewing thread also)
@@ -78,13 +73,11 @@ class ServletMessageSupplier extends MessageSupplier {
 
     ServletMessageSupplier(String requestMethod, String requestUri,
             @Nullable String requestQueryString, ImmutableMap<String, Object> requestHeaders,
-            @Nullable String sessionId,
             @Nullable ImmutableMap<String, String> sessionAttributeMap) {
         this.requestMethod = requestMethod;
         this.requestUri = requestUri;
         this.requestQueryString = requestQueryString;
         this.requestHeaders = requestHeaders;
-        this.sessionIdInitialValue = sessionId;
         if (sessionAttributeMap == null || sessionAttributeMap.isEmpty()) {
             this.sessionAttributeInitialValueMap = null;
         } else {
@@ -154,10 +147,6 @@ class ServletMessageSupplier extends MessageSupplier {
         responseHeaders.addHeader(name, value);
     }
 
-    void setSessionIdUpdatedValue(String sessionId) {
-        this.sessionIdUpdatedValue = sessionId;
-    }
-
     void putSessionAttributeChangedValue(String name, @Nullable String value) {
         if (sessionAttributeUpdatedValueMap == null) {
             sessionAttributeUpdatedValueMap = Maps.newConcurrentMap();
@@ -165,26 +154,7 @@ class ServletMessageSupplier extends MessageSupplier {
         sessionAttributeUpdatedValueMap.put(name, Optional.fromNullable(value));
     }
 
-    @Nullable
-    String getSessionIdInitialValue() {
-        return sessionIdInitialValue;
-    }
-
-    @Nullable
-    String getSessionIdUpdatedValue() {
-        return sessionIdUpdatedValue;
-    }
-
     private void addSessionAttributeDetail(Map<String, Object> detail) {
-        if (ServletPluginProperties.captureSessionId()) {
-            if (sessionIdUpdatedValue != null) {
-                detail.put("Session ID (at beginning of this request)",
-                        Strings.nullToEmpty(sessionIdInitialValue));
-                detail.put("Session ID (updated during this request)", sessionIdUpdatedValue);
-            } else if (sessionIdInitialValue != null) {
-                detail.put("Session ID", sessionIdInitialValue);
-            }
-        }
         if (sessionAttributeInitialValueMap != null) {
             if (sessionAttributeUpdatedValueMap == null) {
                 // session attributes were captured at the beginning of the request, and no session

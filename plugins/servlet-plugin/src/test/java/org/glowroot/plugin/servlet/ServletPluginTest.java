@@ -205,27 +205,6 @@ public class ServletPluginTest {
     }
 
     @Test
-    public void testSessionInvalidate() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionId", true);
-        // when
-        container.executeAppUnderTest(InvalidateSession.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        assertThat(trace.getHeadline()).isEqualTo("/testservlet");
-        assertThat(trace.getTransactionName()).isEqualTo("/testservlet");
-        assertThat(entries.get(0).getMessage().getDetail()
-                .get("Session ID (at beginning of this request)")).isEqualTo("1234");
-        assertThat(entries.get(0).getMessage().getDetail()
-                .get("Session ID (updated during this request)")).isEqualTo("");
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo("/testservlet");
-        assertThat(entry.getMessage().getDetail().get("Request http method")).isEqualTo("GET");
-    }
-
-    @Test
     public void testServletContextInitialized() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureStartup", true);
