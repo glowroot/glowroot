@@ -599,8 +599,8 @@ public class SomeAspect {
             return true;
         }
         @OnReturn
-        public static String onReturn(@BindReturn String value) {
-            return "modified " + value;
+        public static String onReturn(@BindReturn String value, @BindMethodName String methodName) {
+            return "modified " + value + ":" + methodName;
         }
     }
 

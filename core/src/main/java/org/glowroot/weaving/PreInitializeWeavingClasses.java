@@ -366,7 +366,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.WeavingClassVisitor$PointcutClassFoundException");
         types.add("org.glowroot.weaving.WeavingClassVisitor$ShortCircuitException");
         types.add("org.glowroot.weaving.WeavingMethodVisitor");
-        types.add("org.glowroot.weaving.WeavingMethodVisitor$MarkerException");
         types.add("org.glowroot.weaving.WeavingTimerService");
         types.add("org.glowroot.weaving.WeavingTimerService$WeavingTimer");
         return types;

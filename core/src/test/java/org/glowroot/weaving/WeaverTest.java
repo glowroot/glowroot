@@ -134,6 +134,22 @@ public class WeaverTest {
     }
 
     @Test
+    public void shouldExecuteEnabledAdviceOnOnlyThrow() throws Exception {
+        // given
+        Misc test = newWovenObject(OnlyThrowingMisc.class, Misc.class, BasicAdvice.class);
+        // when
+        try {
+            test.execute1();
+        } catch (Throwable t) {
+        }
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
     public void shouldNotExecuteDisabledAdvice() throws Exception {
         // given
         BasicAdvice.disable();
@@ -580,7 +596,7 @@ public class WeaverTest {
         // when
         CharSequence returnValue = test.executeWithReturn();
         // then
-        assertThat(returnValue).isEqualTo("modified xyz");
+        assertThat(returnValue).isEqualTo("modified xyz:executeWithReturn");
     }
 
     // ===================== inheritance =====================

@@ -44,7 +44,6 @@ import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
-import org.glowroot.markers.UsedByGeneratedBytecode;
 import org.glowroot.weaving.Advice.AdviceParameter;
 import org.glowroot.weaving.Advice.ParameterKind;
 import org.glowroot.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
@@ -67,7 +66,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private final @Nullable String metaHolderInternalName;
     private final @Nullable Integer methodMetaGroupUniqueNum;
     private final boolean bootstrapClassLoader;
-    private final boolean needsTryCatch;
+    private final boolean needsOnReturn;
+    private final boolean needsOnThrow;
     private final @Nullable MethodVisitor outerMethodVisitor;
 
     private final Map<Advice, Integer> adviceFlowHolderLocals = Maps.newHashMap();
@@ -77,8 +77,11 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private final Map<Advice, Integer> enabledLocals = Maps.newHashMap();
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
 
+    private @MonotonicNonNull Integer returnOpcode;
+
     private @MonotonicNonNull Label methodStartLabel;
-    private @MonotonicNonNull Label catchStartLabel;
+    private @MonotonicNonNull Label onReturnLabel;
+    private @MonotonicNonNull Label onCatchStartLabel;
     private boolean visitedLocalVariableThis;
 
     private Object /*@MonotonicNonNull*/[] implicitFrame;
@@ -97,15 +100,23 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         this.metaHolderInternalName = metaHolderInternalName;
         this.methodMetaGroupUniqueNum = methodMetaGroupUniqueNum;
         this.bootstrapClassLoader = bootstrapClassLoader;
-        boolean needsTryCatch = false;
+        boolean needsOnReturn = false;
+        boolean needsOnThrow = false;
         for (Advice advice : advisors) {
-            if (advice.pointcut().ignoreSelfNested() || advice.onThrowAdvice() != null
-                    || advice.onAfterAdvice() != null) {
-                needsTryCatch = true;
+            if (advice.pointcut().ignoreSelfNested() || advice.onAfterAdvice() != null) {
+                needsOnReturn = true;
+                needsOnThrow = true;
                 break;
             }
+            if (advice.onReturnAdvice() != null) {
+                needsOnReturn = true;
+            }
+            if (advice.onThrowAdvice() != null) {
+                needsOnThrow = true;
+            }
         }
-        this.needsTryCatch = needsTryCatch;
+        this.needsOnReturn = needsOnReturn;
+        this.needsOnThrow = needsOnThrow;
         this.outerMethodVisitor = outerMethodVisitor;
     }
 
@@ -132,9 +143,28 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         for (Advice advice : advisors) {
             invokeOnBefore(advice, travelerLocals.get(advice));
         }
-        if (needsTryCatch) {
-            catchStartLabel = new Label();
-            visitLabel(catchStartLabel);
+        if (needsOnReturn) {
+            onReturnLabel = new Label();
+        }
+        if (needsOnThrow) {
+            onCatchStartLabel = new Label();
+            visitLabel(onCatchStartLabel);
+        }
+    }
+
+    @Override
+    public void visitInsn(int opcode) {
+        // TODO inside constructor need to call super for special constructor handling in
+        // AdviceAdapter
+        if (needsOnReturn && (opcode == RETURN || opcode == IRETURN || opcode == FRETURN
+                || opcode == ARETURN || opcode == LRETURN || opcode == DRETURN)) {
+            // ATHROW not included, instructions to catch throws will be written (if necessary) in
+            // visitMaxs
+            checkNotNull(onReturnLabel, "Call to onMethodEnter() is required");
+            returnOpcode = opcode;
+            visitJumpInsn(GOTO, onReturnLabel);
+        } else {
+            super.visitInsn(opcode);
         }
     }
 
@@ -145,6 +175,8 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         // the JSRInlinerAdapter writes the local variable "this" across different label ranges
         // so visitedLocalVariableThis is checked and updated to ensure this block is only executed
         // once per method
+        //
+        // TODO handle static methods also
         if (name.equals("this") && !visitedLocalVariableThis) {
             visitedLocalVariableThis = true;
             // this is only so that eclipse debugger will not display <unknown receiving type>
@@ -199,78 +231,48 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     @Override
     public void visitMaxs(int maxStack, int maxLocals) {
-        if (needsTryCatch) {
-            checkNotNull(catchStartLabel, "Call to onMethodEnter() is required");
-            Label catchEndLabel = new Label();
-            Label catchHandlerLabel2 = new Label();
-            visitTryCatchBlock(catchStartLabel, catchEndLabel, catchEndLabel,
-                    "org/glowroot/weaving/WeavingMethodVisitor$MarkerException");
-            visitLabel(catchEndLabel);
-            visitImplicitFramePlus("org/glowroot/weaving/WeavingMethodVisitor$MarkerException");
-            visitMethodInsn(INVOKEVIRTUAL,
-                    "org/glowroot/weaving/WeavingMethodVisitor$MarkerException",
-                    "getCause", "()Ljava/lang/Throwable;", false);
-            visitInsn(ATHROW);
-            visitTryCatchBlock(catchStartLabel, catchEndLabel, catchHandlerLabel2,
+        Label onCatchEndLabel = new Label();
+        if (needsOnThrow) {
+            visitLabel(onCatchEndLabel);
+        }
+        // returnOpCode can be null if only ATHROW in method in which case method doesn't need
+        // onReturn advice
+        if (needsOnReturn && returnOpcode != null) {
+            checkNotNull(onReturnLabel, "Call to onMethodEnter() is required");
+            visitLabel(onReturnLabel);
+            if (returnType.getSort() == Type.VOID) {
+                visitImplicitFramePlus();
+            } else {
+                visitImplicitFramePlus(returnType);
+            }
+            for (Advice advice : Lists.reverse(advisors)) {
+                visitOnReturnAdvice(advice, returnOpcode);
+                if (returnType.getSort() == Type.VOID) {
+                    visitOnAfterAdvice(advice, null);
+                } else {
+                    visitOnAfterAdvice(advice, returnType);
+                }
+            }
+            resetAdviceFlowIfNecessary(false);
+            // need to call this directly on mv, otherwise will go to onMethodExit() causing
+            // infinite loop
+            mv.visitInsn(returnOpcode);
+        }
+        if (needsOnThrow) {
+            checkNotNull(onCatchStartLabel, "Call to onMethodEnter() is required");
+            Label onCatchHandlerLabel = new Label();
+            visitTryCatchBlock(onCatchStartLabel, onCatchEndLabel, onCatchHandlerLabel,
                     "java/lang/Throwable");
+            visitLabel(onCatchHandlerLabel);
             visitImplicitFramePlus("java/lang/Throwable");
-            visitLabel(catchHandlerLabel2);
             visitOnThrowAdvice();
             for (Advice advice : Lists.reverse(advisors)) {
-                visitOnAfterAdvice(advice, true);
+                visitOnAfterAdvice(advice, "java/lang/Throwable");
             }
             resetAdviceFlowIfNecessary(true);
             visitInsn(ATHROW);
         }
         super.visitMaxs(maxStack, maxLocals);
-    }
-
-    @Override
-    protected void onMethodExit(int opcode) {
-        // instructions to catch throws will be written (if necessary) in visitMaxs
-        if (opcode != ATHROW) {
-            if (needsTryCatch) {
-                // if an exception occurs inside @OnReturn or @OnAfter advice, it will be caught by
-                // the overall try/catch and it will trigger @OnThrow and @OnAfter
-                // to prevent this, any exception that occurs inside @OnReturn or @OnAfter is caught
-                // and wrapped in a marker exception, and then unwrapped and re-thrown inside
-                // the overall try/catch block
-                Label innerCatchStartLabel = new Label();
-                Label continueLabel = new Label();
-                Label innerCatchEndLabel = new Label();
-
-                visitLabel(innerCatchStartLabel);
-                for (Advice advice : Lists.reverse(advisors)) {
-                    visitOnReturnAdvice(advice, opcode);
-                    visitOnAfterAdvice(advice, false);
-                }
-                resetAdviceFlowIfNecessary(false);
-                visitJumpInsn(GOTO, continueLabel);
-
-                visitTryCatchBlock(innerCatchStartLabel, innerCatchEndLabel, innerCatchEndLabel,
-                        "java/lang/Throwable");
-                visitLabel(innerCatchEndLabel);
-                visitImplicitFramePlus("java/lang/Throwable");
-                visitMethodInsn(INVOKESTATIC,
-                        "org/glowroot/weaving/WeavingMethodVisitor$MarkerException",
-                        "from", "(Ljava/lang/Throwable;)" + MarkerException.TYPE.getDescriptor(),
-                        false);
-                visitInsn(ATHROW);
-
-                visitLabel(continueLabel);
-                if (returnType.getSort() == Type.VOID) {
-                    visitImplicitFramePlus();
-                } else {
-                    visitImplicitFramePlus(returnType);
-                }
-            } else {
-                for (Advice advice : Lists.reverse(advisors)) {
-                    visitOnReturnAdvice(advice, opcode);
-                    visitOnAfterAdvice(advice, false);
-                }
-                resetAdviceFlowIfNecessary(false);
-            }
-        }
     }
 
     private void defineAndEvaluateEnabledLocalVar(Advice advice) {
@@ -406,17 +408,18 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     }
 
     private void weaveOnReturnAdvice(int opcode, Advice advice, Method onReturnAdvice) {
+        boolean leaveReturnValueOnStack = onReturnAdvice.getReturnType().getSort() == Type.VOID;
         if (onReturnAdvice.getArgumentTypes().length > 0) {
             // @BindReturn must be the first argument to @OnReturn (if present)
             int startIndex = 0;
             AdviceParameter parameter = advice.onReturnParameters().get(0);
             switch (parameter.kind()) {
                 case RETURN:
-                    loadNonOptionalReturnValue(opcode, parameter);
+                    loadNonOptionalReturnValue(opcode, parameter, leaveReturnValueOnStack);
                     startIndex = 1;
                     break;
                 case OPTIONAL_RETURN:
-                    loadOptionalReturnValue(opcode);
+                    loadOptionalReturnValue(opcode, leaveReturnValueOnStack);
                     startIndex = 1;
                     break;
                 default:
@@ -426,50 +429,42 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
             loadMethodParameters(advice.onReturnParameters(), startIndex,
                     travelerLocals.get(advice), advice.adviceType(), OnReturn.class);
         }
-        int sort = onReturnAdvice.getReturnType().getSort();
-        if (sort == Type.LONG || sort == Type.DOUBLE) {
-            visitInsn(POP2);
-        } else if (sort != Type.VOID) {
-            visitInsn(POP);
-        }
         visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                 onReturnAdvice.getName(), onReturnAdvice.getDescriptor(), false);
     }
 
-    private void loadNonOptionalReturnValue(int opcode, AdviceParameter parameter) {
+    private void loadNonOptionalReturnValue(int opcode, AdviceParameter parameter, boolean dup) {
         if (opcode == RETURN) {
             logger.warn("cannot use @BindReturn on a @Pointcut returning void");
             pushDefault(parameter.type());
         } else {
             boolean primitive = parameter.type().getSort() < Type.ARRAY;
-            loadReturnValue(opcode, !primitive);
+            loadReturnValue(opcode, dup, !primitive);
         }
     }
 
-    private void loadOptionalReturnValue(int opcode) {
+    private void loadOptionalReturnValue(int opcode, boolean dup) {
         if (opcode == RETURN) {
             // void
             visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/VoidReturn",
                     "getInstance", "()Lorg/glowroot/api/OptionalReturn;", false);
         } else {
-            loadReturnValue(opcode, true);
+            loadReturnValue(opcode, dup, true);
             visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/NonVoidReturn", "create",
                     "(Ljava/lang/Object;)Lorg/glowroot/api/OptionalReturn;", false);
         }
     }
 
-    private void loadReturnValue(int opcode, boolean autobox) {
-        if (opcode == ARETURN || opcode == ATHROW) {
-            visitInsn(DUP);
-        } else {
+    private void loadReturnValue(int opcode, boolean dup, boolean autobox) {
+        if (dup) {
             if (opcode == LRETURN || opcode == DRETURN) {
                 visitInsn(DUP2);
             } else {
                 visitInsn(DUP);
             }
-            if (autobox) {
-                box(returnType);
-            }
+        }
+        if (autobox && opcode != ARETURN && opcode != ATHROW) {
+            box(returnType);
         }
     }
 
@@ -508,7 +503,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         }
     }
 
-    private void visitOnAfterAdvice(Advice advice, boolean insideOverallCatchHandler) {
+    private void visitOnAfterAdvice(Advice advice, @Nullable Object stack) {
         Method onAfterAdvice = advice.onAfterAdvice();
         if (onAfterAdvice == null) {
             return;
@@ -526,13 +521,7 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 onAfterAdvice.getName(), onAfterAdvice.getDescriptor(), false);
         if (onAfterBlockEnd != null) {
             visitLabel(onAfterBlockEnd);
-            if (insideOverallCatchHandler) {
-                visitImplicitFramePlus("java/lang/Throwable");
-            } else if (returnType.getSort() == Type.VOID) {
-                visitImplicitFramePlus();
-            } else {
-                visitImplicitFramePlus(returnType);
-            }
+            visitImplicitFramePlus(stack);
         }
     }
 
@@ -796,27 +785,9 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 .add("adviceFlowHolderLocals", adviceFlowHolderLocals)
                 .add("enabledLocals", enabledLocals)
                 .add("travelerLocals", travelerLocals)
-                .add("needsTryCatch", needsTryCatch)
-                .add("catchStartLabel", catchStartLabel)
+                .add("needsTryCatch", needsOnReturn)
+                .add("catchStartLabel", onCatchStartLabel)
                 .add("methodStartLabel", methodStartLabel)
                 .toString();
-    }
-
-    // this is used to wrap exceptions that occur inside of @OnReturn and @OnAfter when the
-    // exception would otherwise be caught by the overall try/catch triggering @OnThrow and @OnAfter
-    //
-    // needs to be public since it is accessed from bytecode injected into other packages
-    @UsedByGeneratedBytecode
-    @SuppressWarnings("serial")
-    public static class MarkerException extends RuntimeException {
-        private static final Type TYPE = Type.getType(MarkerException.class);
-        // static methods are easier to call via bytecode than constructors
-        @UsedByGeneratedBytecode
-        public static MarkerException from(Throwable cause) {
-            return new MarkerException(cause);
-        }
-        private MarkerException(Throwable cause) {
-            super(cause);
-        }
     }
 }
