@@ -329,7 +329,8 @@ glowroot.controller('PerformanceMetricsCtrl', [
         from: $scope.chartFrom,
         to: $scope.chartTo,
         transactionType: $scope.transactionType,
-        transactionName: $scope.transactionName
+        transactionName: $scope.transactionName,
+        truncateLeafPercentage: 0.001
       };
       HandlebarsRendering.profileToggle($(event.target), '#profileOuter', null,
               'backend/performance/profile?' + queryStrings.encodeObject(query));

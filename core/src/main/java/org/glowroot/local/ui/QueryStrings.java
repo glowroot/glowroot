@@ -76,6 +76,8 @@ class QueryStrings {
                 value = Integer.parseInt(values.get(0));
             } else if (valueClass == long.class || valueClass == Long.class) {
                 value = Long.parseLong(values.get(0));
+            } else if (valueClass == double.class || valueClass == Double.class) {
+                value = Double.parseDouble(values.get(0));
             } else if (valueClass == boolean.class || valueClass == Boolean.class) {
                 value = Boolean.parseBoolean(values.get(0));
             } else if (Enum.class.isAssignableFrom(valueClass)) {

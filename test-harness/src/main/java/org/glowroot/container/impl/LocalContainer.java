@@ -193,6 +193,7 @@ public class LocalContainer implements Container {
             // this is the shared container and will be closed at the end of the run
             return;
         }
+        httpClient.close();
         glowrootModule.close();
         if (deleteDataDirOnClose) {
             TempDirs.deleteRecursively(dataDir);

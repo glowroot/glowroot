@@ -400,7 +400,7 @@ class AggregateJsonService {
         abstract long from();
         abstract long to();
         abstract String transactionType();
-        abstract String transactionName();
+        abstract @Nullable String transactionName();
         abstract double truncateLeafPercentage();
     }
 }

@@ -540,10 +540,6 @@ HandlebarsRendering = (function () {
         ret += escapeHtml(node.leafThreadState);
         ret += '</span><br>';
       }
-      if (node.ellipsed) {
-        ret += '<span class="inline-block" style="width: 4em; margin-left: ' + (level + 3) + 'em;">';
-        ret += '</span>...<br>';
-      }
       if (node.childNodes) {
         var childNodes = node.childNodes;
         // order child nodes by sampleCount (descending)
@@ -556,6 +552,12 @@ HandlebarsRendering = (function () {
         for (var i = 0; i < childNodes.length; i++) {
           ret += curr(childNodes[i], level + 1, metric);
         }
+      }
+      if (node.ellipsed) {
+        ret += '<span class="inline-block" style="width: 4em; margin-left: ' + (level + 1) + 'em;">';
+        ret += '</span>';
+        ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
+        ret += '<span class="inline-block" style="padding: 1px 1em;">(some branches < 0.1%)</span><br>';
       }
       return ret;
     }

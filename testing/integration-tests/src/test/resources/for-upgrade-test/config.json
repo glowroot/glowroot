@@ -1,14 +1,14 @@
 {
-  "traces": {
+  "trace": {
     "enabled": true,
     "storeThresholdMillis": 0,
     "outlierProfilingEnabled": true,
-    "outlierProfilingInitialDelayMillis": 3000,
+    "outlierProfilingInitialDelayMillis": 10000,
     "outlierProfilingIntervalMillis": 1000
   },
   "profiling": {
     "enabled": true,
-    "intervalMillis": 5000
+    "intervalMillis": 2000
   },
   "userRecording": {
     "enabled": false,
@@ -21,10 +21,10 @@
     "cappedDatabaseSizeMb": 1000
   },
   "ui": {
-    "defaultTransactionType": "Integration test",
+    "defaultTransactionType": "",
     "port": 0,
-    "passwordHash": "",
-    "sessionTimeoutMinutes": 30
+    "sessionTimeoutMinutes": 30,
+    "passwordHash": ""
   },
   "advanced": {
     "metricWrapperMethods": true,
@@ -41,20 +41,17 @@
       "id": "glowroot-integration-tests",
       "enabled": true,
       "properties": {
+        "starredHeadline": false,
         "alternateHeadline": "",
-        "captureTraceEntryStackTraces": false,
         "hasDefaultVal": "one",
+        "captureTraceEntryStackTraces": false,
         "levelFiveEnabled": false,
-        "levelFiveEntryEnabled": false,
-        "starredHeadline": false
+        "levelFiveEntryEnabled": false
       }
     },
     {
       "id": "glowroot-test-container",
-      "enabled": true,
-      "properties": { }
+      "enabled": true
     }
-  ],
-  "capturePoints": [ ],
-  "mbeanGauges": [ ]
+  ]
 }

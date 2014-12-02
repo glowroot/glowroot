@@ -238,9 +238,9 @@ class AggregateCollector {
             transactionBuilder.add(transaction.getDuration(), transaction.getError() != null);
             overallBuilder.addToMetrics(transaction.getRootMetric());
             transactionBuilder.addToMetrics(transaction.getRootMetric());
-            // only add profile to transaction, overall profile doesn't seem worth the overhead
             Profile profile = transaction.getProfile();
             if (profile != null) {
+                overallBuilder.addToProfile(profile);
                 transactionBuilder.addToProfile(profile);
             }
         }

@@ -18,6 +18,7 @@ package org.glowroot.local.ui;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 import javax.annotation.Nullable;
 
@@ -72,10 +73,15 @@ class AggregateCommonService {
     }
 
     @Nullable
-    AggregateProfileNode getProfile(String transactionType, String transactionName, long from,
-            long to, double truncateLeafPercentage) throws Exception {
-        List<CharSource> profiles =
-                aggregateDao.readProfiles(transactionType, transactionName, from, to);
+    AggregateProfileNode getProfile(String transactionType, @Nullable String transactionName,
+            long from, long to, double truncateLeafPercentage) throws Exception {
+        List<CharSource> profiles;
+        if (transactionName == null) {
+            profiles = aggregateDao.readOverallProfiles(transactionType, from, to);
+        } else {
+            profiles = aggregateDao.readTransactionProfiles(transactionType, transactionName, from,
+                    to);
+        }
         AggregateProfileNode syntheticRootNode = AggregateProfileNode.createSyntheticRootNode();
         for (CharSource profile : profiles) {
             if (profile == null) {
@@ -205,8 +211,9 @@ class AggregateCommonService {
             return rootMetric;
         }
 
-        public Existence getProfileExistence() {
-            return profileExistence;
+        public String getProfileExistence() {
+            // TODO use Immutables to get enum support via @Json.Import({MarshalingRoutines.class})
+            return profileExistence.name().toLowerCase(Locale.ENGLISH);
         }
 
         public long getProfileSampleCount() {

@@ -53,6 +53,8 @@ public class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("total_micros", Types.BIGINT), // microseconds
                     ImmutableColumn.of("error_count", Types.BIGINT),
                     ImmutableColumn.of("transaction_count", Types.BIGINT),
+                    ImmutableColumn.of("profile_sample_count", Types.BIGINT),
+                    ImmutableColumn.of("profile_id", Types.VARCHAR),  // capped database id
                     ImmutableColumn.of("metrics", Types.VARCHAR)); // json data
 
     private static final ImmutableList<Column> transactionAggregateColumns =
@@ -101,19 +103,26 @@ public class AggregateDao implements AggregateRepository {
             final List<Aggregate> transactionAggregates) {
         try {
             dataSource.batchUpdate("insert into overall_aggregate (transaction_type, capture_time,"
-                    + " total_micros, error_count, transaction_count, metrics) values (?, ?, ?, ?,"
-                    + " ?, ?)", new BatchAdder() {
+                    + " total_micros, error_count, transaction_count, profile_sample_count,"
+                    + " profile_id, metrics) values (?, ?, ?, ?, ?, ?, ?, ?)", new BatchAdder() {
                 @Override
                 public void addBatches(PreparedStatement preparedStatement)
                         throws SQLException {
                     for (Aggregate overallAggregate : overallAggregates) {
+                        String profileId = null;
+                        String profile = overallAggregate.profile();
+                        if (profile != null) {
+                            profileId = cappedDatabase.write(CharSource.wrap(profile)).getId();
+                        }
                         preparedStatement.setString(1,
                                 overallAggregate.transactionType());
                         preparedStatement.setLong(2, overallAggregate.captureTime());
                         preparedStatement.setLong(3, overallAggregate.totalMicros());
                         preparedStatement.setLong(4, overallAggregate.errorCount());
                         preparedStatement.setLong(5, overallAggregate.transactionCount());
-                        preparedStatement.setString(6, overallAggregate.metrics());
+                        preparedStatement.setLong(6, overallAggregate.profileSampleCount());
+                        preparedStatement.setString(7, profileId);
+                        preparedStatement.setString(8, overallAggregate.metrics());
                         preparedStatement.addBatch();
                     }
 
@@ -156,10 +165,11 @@ public class AggregateDao implements AggregateRepository {
     public ImmutableList<Aggregate> readOverallAggregates(String transactionType,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
         return dataSource.query("select capture_time, total_micros, error_count,"
-                + " transaction_count, null, null, metrics from overall_aggregate where"
-                + " transaction_type = ? and capture_time >= ? and capture_time <= ? order by"
-                + " capture_time", new AggregateRowMapper(transactionType, null),
-                transactionType, captureTimeFrom, captureTimeTo);
+                + " transaction_count, profile_sample_count, profile_id, metrics from"
+                + " overall_aggregate where transaction_type = ? and capture_time >= ? and"
+                + " capture_time <= ? order by capture_time",
+                new AggregateRowMapper(transactionType, null), transactionType, captureTimeFrom,
+                captureTimeTo);
     }
 
     public ImmutableList<Aggregate> readTransactionAggregates(String transactionType,
@@ -204,8 +214,16 @@ public class AggregateDao implements AggregateRepository {
         return QueryResult.from(transactions, limit);
     }
 
-    public ImmutableList<CharSource> readProfiles(String transactionType, String transactionName,
+    public ImmutableList<CharSource> readOverallProfiles(String transactionType,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
+        return dataSource.query("select profile_id from overall_aggregate where"
+                + " transaction_type = ? and capture_time >= ? and capture_time <= ? and"
+                + " profile_id is not null", new CharSourceRowMapper(), transactionType,
+                captureTimeFrom, captureTimeTo);
+    }
+
+    public ImmutableList<CharSource> readTransactionProfiles(String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo) throws SQLException {
         return dataSource.query("select profile_id from transaction_aggregate where"
                 + " transaction_type = ? and transaction_name = ? and capture_time >= ?"
                 + " and capture_time <= ? and profile_id is not null",
