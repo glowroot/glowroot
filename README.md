@@ -63,7 +63,7 @@ Thanks to [Sauce Labs](https://saucelabs.com), the WebDriver tests run against F
 
 ## Microbenchmarks
 
-Microbenchmarks are used to analyze and tune the monitoring overhead. These are written using the excellent [JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmark harness, and can be built and run using
+Microbenchmarks are written using the excellent [JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmark harness, and can be built and run using
 
     mvn clean package
     java -jar target/microbenchmarks.jar -jvmArgs -javaagent:path/to/glowroot.jar
@@ -73,6 +73,10 @@ from the following locations:
 * [testing/microbenchmarks](testing/microbenchmarks)
 * [plugins/servlet-plugin-microbenchmarks](plugins/servlet-plugin-microbenchmarks)
 * [plugins/jdbc-plugin-microbenchmarks](plugins/jdbc-plugin-microbenchmarks)
+
+## Overhead
+
+See the [glowroot-benchmark](https://github.com/glowroot/glowroot-benchmark) repository for a best effort to quantify the overhead by benchmarking the decently complex open source [Heat Clinic](http://demo.broadleafcommerce.org) demo application with and without Glowroot.
 
 ## Code quality
 
