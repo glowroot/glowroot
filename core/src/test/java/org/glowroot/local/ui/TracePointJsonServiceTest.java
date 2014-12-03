@@ -196,7 +196,7 @@ public class TracePointJsonServiceTest {
         when(transactionRegistry.getTransactions()).thenReturn(activeTransactions);
         // for now, assume all active traces will be stored
         when(transactionCollector.shouldStore(any(Transaction.class))).thenReturn(true);
-        when(transactionCollector.getPendingCompleteTransactions()).thenReturn(pendingTransactions);
+        when(transactionCollector.getPendingTransactions()).thenReturn(pendingTransactions);
         when(ticker.read()).thenReturn(currentTick);
         when(clock.currentTimeMillis()).thenReturn(currentTimeMillis);
 

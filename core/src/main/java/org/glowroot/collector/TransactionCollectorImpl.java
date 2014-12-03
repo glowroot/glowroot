@@ -57,7 +57,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
     private final @Nullable AggregateCollector aggregateCollector;
     private final Clock clock;
     private final Ticker ticker;
-    private final Set<Transaction> pendingCompleteTransactions = Sets.newCopyOnWriteArraySet();
+    private final Set<Transaction> pendingTransactions = Sets.newCopyOnWriteArraySet();
 
     private final RateLimiter warningRateLimiter = RateLimiter.create(1.0 / 60);
     @GuardedBy("warningLock")
@@ -97,21 +97,12 @@ public class TransactionCollectorImpl implements TransactionCollector {
         return transaction.getDuration() >= MILLISECONDS.toNanos(traceStoreThresholdMillis);
     }
 
-    public Collection<Transaction> getPendingCompleteTransactions() {
-        return pendingCompleteTransactions;
+    public Collection<Transaction> getPendingTransactions() {
+        return pendingTransactions;
     }
 
     @Override
     public void onCompletedTransaction(final Transaction transaction) {
-        boolean store = shouldStore(transaction);
-        if (store) {
-            if (pendingCompleteTransactions.size() < PENDING_LIMIT) {
-                pendingCompleteTransactions.add(transaction);
-            } else {
-                logPendingLimitWarning();
-                store = false;
-            }
-        }
         // capture time is calculated by the aggregator because it depends on monotonically
         // increasing capture times so it can flush aggregates without concern for new data
         // arriving with a prior capture time
@@ -124,16 +115,25 @@ public class TransactionCollectorImpl implements TransactionCollector {
         } else {
             captureTime = aggregateCollector.add(transaction);
         }
+        boolean store = shouldStore(transaction);
         if (store) {
-            // onCompleteAndShouldStore must be called by the transaction thread
-            transaction.onCompleteAndShouldStore();
+            // onCompleteAndShouldStore must be called by the transaction thread, and needs to be
+            // called before putting the transaction into the pendingTransactions (since it can be
+            // picked up from pendingTransactions by the UI)
+            transaction.onCompleteAndShouldStore(captureTime);
+            if (pendingTransactions.size() < PENDING_LIMIT) {
+                pendingTransactions.add(transaction);
+            } else {
+                logPendingLimitWarning();
+                store = false;
+            }
             Runnable command = new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        Trace trace = TraceCreator.createCompletedTrace(transaction, captureTime);
+                        Trace trace = TraceCreator.createCompletedTrace(transaction);
                         store(trace, transaction);
-                        pendingCompleteTransactions.remove(transaction);
+                        pendingTransactions.remove(transaction);
                     } catch (Throwable t) {
                         // log and terminate successfully
                         logger.error(t.getMessage(), t);

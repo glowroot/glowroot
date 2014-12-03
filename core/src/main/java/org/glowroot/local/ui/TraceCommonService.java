@@ -55,20 +55,20 @@ class TraceCommonService {
 
     @Nullable
     Trace getTrace(String traceId) throws Exception {
-        // check active traces first to make sure that the trace is not missed if it should complete
-        // after checking stored traces but before checking active traces
-        for (Transaction active : transactionRegistry.getTransactions()) {
-            if (active.getId().equals(traceId)) {
-                return createActiveTrace(active);
+        // check active transactions first to make sure that the transaction is not missed if it
+        // should complete after checking stored traces but before checking active transactions
+        for (Transaction activeTransaction : transactionRegistry.getTransactions()) {
+            if (activeTransaction.getId().equals(traceId)) {
+                return createActiveTrace(activeTransaction);
             }
         }
-        // then check pending transactions to make sure the trace is not missed if it is in between
-        // active and stored
-        Collection<Transaction> pendingCompleteTransactions =
-                transactionCollectorImpl.getPendingCompleteTransactions();
-        for (Transaction pendingComplete : pendingCompleteTransactions) {
-            if (pendingComplete.getId().equals(traceId)) {
-                return createPendingCompleteTrace(pendingComplete);
+        // then check pending transactions to make sure the transaction is not missed if it is in
+        // between active and stored
+        Collection<Transaction> pendingTransactions =
+                transactionCollectorImpl.getPendingTransactions();
+        for (Transaction pendingTransaction : pendingTransactions) {
+            if (pendingTransaction.getId().equals(traceId)) {
+                return TraceCreator.createCompletedTrace(pendingTransaction);
             }
         }
         return traceDao.readTrace(traceId);
@@ -87,7 +87,7 @@ class TraceCommonService {
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
         // and stored
-        for (Transaction pending : transactionCollectorImpl.getPendingCompleteTransactions()) {
+        for (Transaction pending : transactionCollectorImpl.getPendingTransactions()) {
             if (pending.getId().equals(traceId)) {
                 return createEntries(pending);
             }
@@ -108,7 +108,7 @@ class TraceCommonService {
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
         // and stored
-        for (Transaction pending : transactionCollectorImpl.getPendingCompleteTransactions()) {
+        for (Transaction pending : transactionCollectorImpl.getPendingTransactions()) {
             if (pending.getId().equals(traceId)) {
                 return createProfile(pending);
             }
@@ -129,7 +129,7 @@ class TraceCommonService {
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
         // and stored
-        for (Transaction pending : transactionCollectorImpl.getPendingCompleteTransactions()) {
+        for (Transaction pending : transactionCollectorImpl.getPendingTransactions()) {
             if (pending.getId().equals(traceId)) {
                 return createOutlierProfile(pending);
             }
@@ -150,9 +150,9 @@ class TraceCommonService {
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
         // and stored
-        for (Transaction pending : transactionCollectorImpl.getPendingCompleteTransactions()) {
+        for (Transaction pending : transactionCollectorImpl.getPendingTransactions()) {
             if (pending.getId().equals(traceId)) {
-                Trace trace = createPendingCompleteTrace(pending);
+                Trace trace = TraceCreator.createCompletedTrace(pending);
                 return new TraceExport(trace, TraceWriter.toString(trace), createEntries(pending),
                         createProfile(pending), createOutlierProfile(pending));
             }
@@ -170,13 +170,8 @@ class TraceCommonService {
         }
     }
 
-    private Trace createPendingCompleteTrace(Transaction pending) throws IOException {
-        return TraceCreator.createPendingTrace(pending, clock.currentTimeMillis(),
-                ticker.read());
-    }
-
-    private Trace createActiveTrace(Transaction active) throws IOException {
-        return TraceCreator.createActiveTrace(active, clock.currentTimeMillis(),
+    private Trace createActiveTrace(Transaction activeTransaction) throws IOException {
+        return TraceCreator.createActiveTrace(activeTransaction, clock.currentTimeMillis(),
                 ticker.read());
     }
 

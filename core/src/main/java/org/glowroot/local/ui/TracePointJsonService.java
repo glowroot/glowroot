@@ -164,7 +164,7 @@ class TracePointJsonService {
 
         private List<TracePoint> getMatchingPendingPoints() {
             List<TracePoint> points = Lists.newArrayList();
-            for (Transaction transaction : transactionCollector.getPendingCompleteTransactions()) {
+            for (Transaction transaction : transactionCollector.getPendingTransactions()) {
                 if (matchesDuration(transaction)
                         && matchesTransactionType(transaction)
                         && matchesErrorOnly(transaction)

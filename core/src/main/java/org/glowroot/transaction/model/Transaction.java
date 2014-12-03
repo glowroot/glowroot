@@ -105,6 +105,8 @@ public class Transaction {
     private volatile @Nullable ScheduledRunnable outlierProfileRunnable;
     private volatile @Nullable ScheduledRunnable immedateTraceStoreRunnable;
 
+    private long captureTime;
+
     // memory barrier is used to ensure memory visibility of entries and metrics at key points,
     // namely after each entry
     //
@@ -428,13 +430,18 @@ public class Transaction {
     }
 
     // called by the transaction thread
-    public void onCompleteAndShouldStore() {
+    public void onCompleteAndShouldStore(long captureTime) {
+        this.captureTime = captureTime;
         if (threadInfoComponent != null) {
             threadInfoComponent.onTraceComplete();
         }
         if (gcInfoComponent != null) {
             gcInfoComponent.onTraceComplete();
         }
+    }
+
+    public long getCaptureTime() {
+        return captureTime;
     }
 
     @Override

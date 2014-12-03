@@ -44,14 +44,9 @@ public class TraceCreator {
         return createTrace(transaction, true, transaction.isPartial(), captureTime, captureTick);
     }
 
-    public static Trace createPendingTrace(Transaction transaction, long captureTime,
-            long captureTick) throws IOException {
-        return createTrace(transaction, false, transaction.isPartial(), captureTime, captureTick);
-    }
-
-    static Trace createCompletedTrace(Transaction transaction, long captureTime)
-            throws IOException {
-        return createTrace(transaction, false, false, captureTime, transaction.getEndTick());
+    public static Trace createCompletedTrace(Transaction transaction) throws IOException {
+        return createTrace(transaction, false, false, transaction.getCaptureTime(),
+                transaction.getEndTick());
     }
 
     // timings for traces that are still active are normalized to the capture tick in order to

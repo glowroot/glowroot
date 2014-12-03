@@ -155,7 +155,7 @@ class AdminJsonService {
     @OnlyUsedByTests
     @GET("/backend/admin/num-pending-complete-transactions")
     String getNumPendingCompleteTransactions() {
-        return Integer.toString(transactionCollector.getPendingCompleteTransactions().size());
+        return Integer.toString(transactionCollector.getPendingTransactions().size());
     }
 
     @OnlyUsedByTests
