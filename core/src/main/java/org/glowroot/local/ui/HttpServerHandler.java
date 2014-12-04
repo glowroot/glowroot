@@ -41,6 +41,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
+import com.google.common.net.MediaType;
 import org.h2.api.ErrorCode;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -94,18 +95,18 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             "An established connection was aborted by the software in your host machine",
             "Connection reset by peer");
 
-    private static final ImmutableMap<String, String> mimeTypes =
-            ImmutableMap.<String, String>builder()
-                    .put("html", "text/html; charset=UTF-8")
-                    .put("js", "application/javascript; charset=UTF-8")
-                    .put("css", "text/css; charset=UTF-8")
-                    .put("png", "image/png")
-                    .put("ico", "image/x-icon")
-                    .put("woff", "application/font-woff")
-                    .put("eot", "application/vnd.ms-fontobject")
-                    .put("ttf", "application/x-font-ttf")
-                    .put("swf", "application/x-shockwave-flash")
-                    .put("map", "application/json")
+    private static final ImmutableMap<String, MediaType> mediaTypes =
+            ImmutableMap.<String, MediaType>builder()
+                    .put("html", MediaType.HTML_UTF_8)
+                    .put("js", MediaType.JAVASCRIPT_UTF_8)
+                    .put("css", MediaType.CSS_UTF_8)
+                    .put("png", MediaType.PNG)
+                    .put("ico", MediaType.ICO)
+                    .put("woff", MediaType.WOFF)
+                    .put("eot", MediaType.EOT)
+                    .put("ttf", MediaType.SFNT)
+                    .put("swf", MediaType.SHOCKWAVE_FLASH)
+                    .put("map", MediaType.JSON_UTF_8)
                     .build();
 
     private final ChannelGroup allChannels;
@@ -293,8 +294,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         String extension = path.substring(extensionStartIndex + 1);
-        String mimeType = mimeTypes.get(extension);
-        if (mimeType == null) {
+        MediaType mediaType = mediaTypes.get(extension);
+        if (mediaType == null) {
             logger.warn("path {} has unexpected extension: {}", path, extension);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
@@ -332,7 +333,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
         byte[] staticContent = Resources.toByteArray(url);
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
-        response.headers().add(Names.CONTENT_TYPE, mimeType);
+        response.headers().add(Names.CONTENT_TYPE, mediaType);
         response.headers().add(Names.CONTENT_LENGTH, staticContent.length);
         return response;
     }
@@ -368,7 +369,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
         if (responseText == null) {
             response.setContent(ChannelBuffers.EMPTY_BUFFER);
-            response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
             response.headers().add("Glowroot-Layout-Version", layoutJsonService.getLayoutVersion());
             HttpServices.preventCaching(response);
             return response;
@@ -376,14 +377,14 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         if (responseText instanceof String) {
             response.setContent(ChannelBuffers.copiedBuffer(responseText.toString(),
                     Charsets.ISO_8859_1));
-            response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
             response.headers().add("Glowroot-Layout-Version", layoutJsonService.getLayoutVersion());
             HttpServices.preventCaching(response);
             return response;
         }
         if (responseText instanceof byte[]) {
             response.setContent(ChannelBuffers.wrappedBuffer((byte[]) responseText));
-            response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
             response.headers().add("Glowroot-Layout-Version", layoutJsonService.getLayoutVersion());
             HttpServices.preventCaching(response);
             return response;
@@ -404,7 +405,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             jg.writeEndObject();
             jg.close();
             DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, status);
-            response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
             response.setContent(ChannelBuffers.copiedBuffer(sb.toString(), Charsets.ISO_8859_1));
             return response;
         } catch (IOException f) {
@@ -438,7 +439,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             jg.writeEndObject();
             jg.close();
             DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, status);
-            response.headers().add(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
             response.setContent(ChannelBuffers.copiedBuffer(sb.toString(), Charsets.ISO_8859_1));
             return response;
         } catch (IOException f) {
