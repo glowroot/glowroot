@@ -358,6 +358,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.PatchedAdviceAdapter");
         types.add("org.glowroot.weaving.PointcutClassVisitor");
         types.add("org.glowroot.weaving.Weaver");
+        types.add("org.glowroot.weaving.Weaver$ComputeFramesClassWriter");
+        types.add("org.glowroot.weaving.Weaver$JSRInlinerClassVisitor");
         types.add("org.glowroot.weaving.WeavingClassFileTransformer");
         types.add("org.glowroot.weaving.WeavingClassVisitor");
         types.add("org.glowroot.weaving.WeavingClassVisitor$AnalyzedMethodKey");
@@ -397,6 +399,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.TypeReference");
         types.add("org.objectweb.asm.commons.AdviceAdapter");
         types.add("org.objectweb.asm.commons.GeneratorAdapter");
+        types.add("org.objectweb.asm.commons.JSRInlinerAdapter");
+        types.add("org.objectweb.asm.commons.JSRInlinerAdapter$Instantiation");
         types.add("org.objectweb.asm.commons.LocalVariablesSorter");
         types.add("org.objectweb.asm.commons.Method");
         types.add("org.objectweb.asm.commons.Remapper");

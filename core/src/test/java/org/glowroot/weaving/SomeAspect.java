@@ -944,6 +944,12 @@ public class SomeAspect {
         public static void onAfter() {}
     }
 
+    @Pointcut(className = "TroublesomeBytecode", methodName = "*", methodParameterTypes = {".."})
+    public static class TestTroublesomeBytecodeAdvice {
+        @OnAfter
+        public static void onAfter() {}
+    }
+
     public static class TestClassMeta {
 
         private final Class<?> clazz;

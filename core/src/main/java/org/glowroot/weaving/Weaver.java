@@ -15,24 +15,32 @@
  */
 package org.glowroot.weaving;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.CodeSource;
 import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.weaving.AnalyzedWorld.ParseContext;
 import org.glowroot.weaving.WeavingClassVisitor.PointcutClassFoundException;
 import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
 import org.glowroot.weaving.WeavingTimerService.WeavingTimer;
+
+import static org.objectweb.asm.Opcodes.ASM5;
 
 class Weaver {
 
@@ -90,14 +98,16 @@ class Weaver {
             // Any tool that modifies bytecode in a version 51 classfile must be sure to update the
             // stackmap information to be consistent with the bytecode in order to pass
             // verification."
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            //
+            ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES,
+                    analyzedWorld, loader, codeSource, className);
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors.get(), mixinTypes,
                     loader, analyzedWorld, codeSource, metricWrapperMethods);
             ClassReader cr = new ClassReader(classBytes);
             boolean shortCircuitException = false;
             boolean pointcutClassFoundException = false;
             try {
-                cr.accept(cv, ClassReader.EXPAND_FRAMES);
+                cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
             } catch (ShortCircuitException e) {
                 shortCircuitException = true;
             } catch (PointcutClassFoundException e) {
@@ -109,10 +119,11 @@ class Weaver {
             if (shortCircuitException || cv.isInterfaceSoNothingToWeave()) {
                 return null;
             } else if (pointcutClassFoundException) {
-                ClassWriter cw2 = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+                ClassWriter cw2 = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES,
+                        analyzedWorld, loader, codeSource, className);
                 PointcutClassVisitor cv2 = new PointcutClassVisitor(cw2);
                 ClassReader cr2 = new ClassReader(classBytes);
-                cr2.accept(cv2, ClassReader.EXPAND_FRAMES);
+                cr2.accept(new JSRInlinerClassVisitor(cv2), ClassReader.SKIP_FRAMES);
                 return cw2.toByteArray();
             } else {
                 byte[] wovenBytes = cw.toByteArray();
@@ -150,6 +161,152 @@ class Weaver {
             } else {
                 logger.warn("error verifying class {} (before weaving): {}", className,
                         t.getMessage(), t);
+            }
+        }
+    }
+
+    private static class JSRInlinerClassVisitor extends ClassVisitor {
+
+        private final ClassVisitor cv;
+
+        private JSRInlinerClassVisitor(ClassVisitor cv) {
+            super(ASM5, cv);
+            this.cv = cv;
+        }
+
+        @Override
+        @Nullable
+        public MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String/*@Nullable*/[] exceptions) {
+            MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
+            return new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
+        }
+    }
+
+    @VisibleForTesting
+    static class ComputeFramesClassWriter extends ClassWriter {
+
+        private final AnalyzedWorld analyzedWorld;
+        @Nullable
+        private final ClassLoader loader;
+        private final ParseContext parseContext;
+
+        public ComputeFramesClassWriter(int flags, AnalyzedWorld analyzedWorld,
+                @Nullable ClassLoader loader, @Nullable CodeSource codeSource, String className) {
+            super(flags);
+            this.analyzedWorld = analyzedWorld;
+            this.loader = loader;
+            this.parseContext = new ParseContext(className, codeSource);
+        }
+
+        // implements logic similar to org.objectweb.asm.ClassWriter.getCommonSuperClass()
+        @Override
+        protected String getCommonSuperClass(String type1, String type2) {
+            if (type1.equals("java/lang/Object") || type2.equals("java/lang/Object")) {
+                return "java/lang/Object";
+            }
+            AnalyzedClass analyzedClass1;
+            try {
+                analyzedClass1 =
+                        analyzedWorld.getAnalyzedClass(ClassNames.fromInternalName(type1), loader);
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+                return "java/lang/Object";
+            } catch (ClassNotFoundException e) {
+                // log at debug level only since this code will fail anyways if it is actually used
+                // at runtime since type doesn't exist
+                logger.debug("type {} not found while parsing type {}", type1, parseContext, e);
+                return "java/lang/Object";
+            }
+            AnalyzedClass analyzedClass2;
+            try {
+                analyzedClass2 =
+                        analyzedWorld.getAnalyzedClass(ClassNames.fromInternalName(type2), loader);
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+                return "java/lang/Object";
+            } catch (ClassNotFoundException e) {
+                // log at debug level only since this code must not be getting used anyways, as it
+                // would fail on execution since the type doesn't exist
+                logger.debug("type {} not found while parsing type {}", type2, parseContext, e);
+                return "java/lang/Object";
+            }
+            return getCommonSuperClass(analyzedClass1, analyzedClass2, type1, type2);
+        }
+
+        private String getCommonSuperClass(AnalyzedClass analyzedClass1,
+                AnalyzedClass analyzedClass2, String type1, String type2) {
+            if (isAssignableFrom(analyzedClass1.name(), analyzedClass2)) {
+                return type1;
+            }
+            if (isAssignableFrom(analyzedClass2.name(), analyzedClass1)) {
+                return type2;
+            }
+            if (analyzedClass1.isInterface() || analyzedClass2.isInterface()) {
+                return "java/lang/Object";
+            }
+            // climb analyzedClass1 super class hierarchy and check if any of them are assignable
+            // from analyzedClass2
+            String superName = analyzedClass1.superName();
+            while (superName != null) {
+                if (isAssignableFrom(superName, analyzedClass2)) {
+                    return ClassNames.toInternalName(superName);
+                }
+                try {
+                    AnalyzedClass superAnalyzedClass =
+                            analyzedWorld.getAnalyzedClass(superName, loader);
+                    superName = superAnalyzedClass.superName();
+                } catch (IOException e) {
+                    logger.error(e.getMessage(), e);
+                    return "java/lang/Object";
+                } catch (ClassNotFoundException e) {
+                    // log at debug level only since this code must not be getting used anyways, as
+                    // it would fail on execution since the type doesn't exist
+                    logger.debug("type {} not found while parsing type {}", superName,
+                            parseContext, e);
+                    return "java/lang/Object";
+                }
+            }
+            return "java/lang/Object";
+        }
+
+        private boolean isAssignableFrom(String possibleSuperClassName,
+                AnalyzedClass analyzedClass) {
+            if (analyzedClass.name().equals(possibleSuperClassName)) {
+                return true;
+            }
+            for (String interfaceName : analyzedClass.interfaceNames()) {
+                try {
+                    AnalyzedClass interfaceAnalyzedClass =
+                            analyzedWorld.getAnalyzedClass(interfaceName, loader);
+                    if (isAssignableFrom(possibleSuperClassName, interfaceAnalyzedClass)) {
+                        return true;
+                    }
+                } catch (IOException e) {
+                    logger.error(e.getMessage(), e);
+                } catch (ClassNotFoundException e) {
+                    // log at debug level only since this code must not be getting used anyways, as
+                    // it would fail on execution since the type doesn't exist
+                    logger.debug("type {} not found while parsing type {}", interfaceName,
+                            parseContext, e);
+                }
+            }
+            String superName = analyzedClass.superName();
+            if (superName == null) {
+                return false;
+            }
+            try {
+                AnalyzedClass superAnalyzedClass =
+                        analyzedWorld.getAnalyzedClass(superName, loader);
+                return isAssignableFrom(possibleSuperClassName, superAnalyzedClass);
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+                return false;
+            } catch (ClassNotFoundException e) {
+                // log at debug level only since this code must not be getting used anyways, as it
+                // would fail on execution since the type doesn't exist
+                logger.debug("type {} not found while parsing type {}", superName, parseContext, e);
+                return false;
             }
         }
     }

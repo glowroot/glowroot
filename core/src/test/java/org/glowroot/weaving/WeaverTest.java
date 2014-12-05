@@ -87,6 +87,7 @@ import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice5;
 import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice6;
 import org.glowroot.weaving.SomeAspect.TestClassMeta;
 import org.glowroot.weaving.SomeAspect.TestMethodMeta;
+import org.glowroot.weaving.SomeAspect.TestTroublesomeBytecodeAdvice;
 import org.glowroot.weaving.SomeAspect.ThrowableToStringAdvice;
 import org.glowroot.weaving.SomeAspect.WildMethodAdvice;
 import org.glowroot.weaving.SomeAspectThreadLocals.IntegerThreadLocal;
@@ -1220,9 +1221,20 @@ public class WeaverTest {
     @Test
     // test weaving against jdk 1.7 bytecode with stack frames
     public void shouldNotBombWithDuplicateFrames() throws Exception {
-        // this only tests FrameDeduppingMethodVisitor when test code is jdk 1.7 bytecode
-        // (compiled with -target 1.7)
+        // TODO this test only proves something when -target 1.7 (which currently it never is during
+        // travis build)
+        assumeJdk7();
         newWovenObject(DuplicateStackFramesMisc.class, Misc.class, BasicAdvice.class);
+    }
+
+    @Test
+    public void shouldNotBombWithTroublesomeBytecode() throws Exception {
+        // this actually works with -target 1.6 as long as run using 1.7 jvm since it defines the
+        // troublesome bytecode at runtime as jdk 1.7 bytecode
+        assumeJdk7();
+        Misc test = newWovenObject(TroublesomeBytecodeMisc.class, Misc.class,
+                TestTroublesomeBytecodeAdvice.class);
+        test.execute1();
     }
 
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
@@ -1244,6 +1256,10 @@ public class WeaverTest {
                 IntegerThreadLocal.class);
         loader.addBridgeClasses(extraBridgeClasses);
         return loader.build().newInstance(implClass, bridgeClass);
+    }
+
+    private static void assumeJdk7() {
+        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
     }
 
     private static class NopWeavingTimerService implements WeavingTimerService {

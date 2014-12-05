@@ -71,7 +71,10 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             WeavingTimerService weavingTimerService, List<Class<?>> bridgeClasses,
             List<String> excludePackages, boolean metricWrapperMethods) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
-        this.bridgeClasses = ImmutableList.copyOf(bridgeClasses);
+        this.bridgeClasses = ImmutableList.<Class<?>>builder()
+                .addAll(bridgeClasses)
+                .add(IsolatedWeavingClassLoader.class)
+                .build();
         this.excludePackages = ImmutableList.copyOf(excludePackages);
         Supplier<List<Advice>> advisorsSupplier =
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
@@ -121,12 +124,16 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         } catch (IOException e) {
             throw new ClassNotFoundException("Error loading class", e);
         }
-        bytes = weaveClass(name, bytes);
+        return weaveAndDefineClass(name, bytes);
+    }
+
+    public Class<?> weaveAndDefineClass(String name, byte[] bytes) {
+        byte[] wovenBytes = weaveClass(name, bytes);
         String packageName = Reflection.getPackageName(name);
         if (getPackage(packageName) == null) {
             definePackage(packageName, null, null, null, null, null, null, null);
         }
-        return super.defineClass(name, bytes, 0, bytes.length);
+        return super.defineClass(name, wovenBytes, 0, wovenBytes.length);
     }
 
     private byte[] weaveClass(String name, byte[] bytes) throws ClassFormatError {
