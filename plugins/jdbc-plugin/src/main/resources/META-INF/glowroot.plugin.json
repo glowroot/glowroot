@@ -43,6 +43,27 @@
       ]
     },
     {
+      "name": "capturePreparedStatementCreation",
+      "type": "boolean",
+      "default": false,
+      "label": "Prepared statement creation",
+      "checkboxLabel": "Capture timing metrics for Connection.prepare*()",
+      "description": [
+        "Capture timing metrics for executions of Connection.prepareStatement() and",
+        " Connection.prepareCall()."
+      ]
+    },
+    {
+      "name": "captureStatementClose",
+      "type": "boolean",
+      "default": false,
+      "label": "Statement close",
+      "checkboxLabel": "Capture timing metrics for Statement.close()",
+      "description": [
+        "Capture timing metrics for executions of Statement.close()."
+      ]
+    },
+    {
       "name": "captureTransactionLifecycleTraceEntries",
       "type": "boolean",
       "label": "Transaction lifecycle",
@@ -60,13 +81,6 @@
       ]
     },
     {
-      "name": "captureDatabaseMetaDataTraceEntries",
-      "type": "boolean",
-      "label": "DatabaseMetaData",
-      "checkboxLabel": "Capture trace entries for DatabaseMetaData calls",
-      "description": "Capture trace entries for executions of DatabaseMetaData.*()"
-    },
-    {
       "name": "stackTraceThresholdMillis",
       "type": "double",
       "default": 1000.0,
@@ -79,7 +93,6 @@
     }
   ],
   "aspects": [
-    "org.glowroot.plugin.jdbc.DatabaseMetaDataAspect",
     "org.glowroot.plugin.jdbc.StatementAspect",
     "org.glowroot.plugin.jdbc.ResultSetAspect",
     "org.glowroot.plugin.jdbc.ConnectionAspect",

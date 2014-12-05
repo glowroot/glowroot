@@ -266,12 +266,12 @@ public class JdbcPluginTest {
                 "jdbc execution: insert into employee (name) values ('john doe')");
         TraceEntry jdbcCommitEntry = entries.get(2);
         assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc commit");
-        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(3);
+        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(2);
         // ordering is by total desc, so not fixed (though root metric will be first since it
         // encompasses all other timings)
         assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
         assertThat(trace.getRootMetric().getNestedMetricNames())
-                .containsOnly("jdbc execute", "jdbc commit", "jdbc statement close");
+                .containsOnly("jdbc execute", "jdbc commit");
     }
 
     @Test
@@ -288,12 +288,12 @@ public class JdbcPluginTest {
                 "jdbc execution: insert into employee (name) values ('john doe')");
         TraceEntry jdbcCommitEntry = entries.get(2);
         assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc rollback");
-        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(3);
+        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(2);
         // ordering is by total desc, so not fixed (though root metric will be first since it
         // encompasses all other timings)
         assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
         assertThat(trace.getRootMetric().getNestedMetricNames())
-                .containsOnly("jdbc execute", "jdbc rollback", "jdbc statement close");
+                .containsOnly("jdbc execute", "jdbc rollback");
     }
 
     @Test
@@ -312,44 +312,6 @@ public class JdbcPluginTest {
             }
         }
         assertThat(found).isTrue();
-    }
-
-    @Test
-    public void testMetadataMetricDisabledTraceEntry() throws Exception {
-        // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureDatabaseMetaDataTraceEntries", false);
-        // when
-        container.executeAppUnderTest(AccessMetaData.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        // may capture prepared statement used by driver internally to fetch metadata
-        assertThat(entries.size()).isGreaterThanOrEqualTo(1);
-        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(1);
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getNestedMetrics().get(0).getName())
-                .isEqualTo("jdbc metadata");
-    }
-
-    @Test
-    public void testMetadataMetricEnabledTraceEntry() throws Exception {
-        // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureDatabaseMetaDataTraceEntries", true);
-        // when
-        container.executeAppUnderTest(AccessMetaData.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        // may capture prepared statement used by driver internally to fetch metadata
-        assertThat(entries.size()).isGreaterThanOrEqualTo(2);
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc metadata:"
-                + " DatabaseMetaData.getTables()");
-        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(1);
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getNestedMetrics().get(0).getName())
-                .isEqualTo("jdbc metadata");
     }
 
     @Test

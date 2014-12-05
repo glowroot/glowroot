@@ -17,9 +17,9 @@ package org.glowroot.plugin.jdbc;
 
 class RecordCountObject {
 
-    // intentionally not for performance, but it does mean partial and active trace
+    // intentionally not volatile for performance, but it does mean partial and active trace
     // captures may see stale value (but partial and active trace captures use memory barrier in
-    // Trace to ensure the values are at least visible as of the end of the last trace entry)
+    // Transaction to ensure the values are at least visible as of the end of the last trace entry)
     private int numRows;
 
     private boolean hasPerformedNavigation;

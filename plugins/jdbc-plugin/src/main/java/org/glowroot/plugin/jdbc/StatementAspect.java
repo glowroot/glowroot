@@ -52,15 +52,25 @@ public class StatementAspect {
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
     private static volatile boolean captureBindParameters;
+    private static volatile boolean capturePreparedStatementCreation;
+    private static volatile boolean captureStatementClose;
 
     static {
         pluginServices.registerConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
                 captureBindParameters = pluginServices.getBooleanProperty("captureBindParameters");
+                capturePreparedStatementCreation = pluginServices.isEnabled()
+                        && pluginServices.getBooleanProperty("capturePreparedStatementCreation");
+                captureStatementClose = pluginServices.isEnabled()
+                        && pluginServices.getBooleanProperty("captureStatementClose");
             }
         });
         captureBindParameters = pluginServices.getBooleanProperty("captureBindParameters");
+        capturePreparedStatementCreation = pluginServices.isEnabled()
+                && pluginServices.getBooleanProperty("capturePreparedStatementCreation");
+        captureStatementClose = pluginServices.isEnabled()
+                && pluginServices.getBooleanProperty("captureStatementClose");
     }
 
     // ===================== Mixin =====================
@@ -104,7 +114,7 @@ public class StatementAspect {
                 pluginServices.getMetricName(PrepareAdvice.class);
         @OnBefore
         public static @Nullable TransactionMetric onBefore() {
-            if (pluginServices.isEnabled()) {
+            if (capturePreparedStatementCreation) {
                 return pluginServices.startTransactionMetric(metricName);
             } else {
                 return null;
@@ -433,7 +443,8 @@ public class StatementAspect {
             return statement.hasGlowrootStatementMirror() && pluginServices.isEnabled();
         }
         @OnBefore
-        public static TransactionMetric onBefore(@BindReceiver HasStatementMirror statement) {
+        public static @Nullable TransactionMetric onBefore(
+                @BindReceiver HasStatementMirror statement) {
             // help out gc a little by clearing the weak reference, don't want to solely rely on
             // this (and use strong reference) in case a jdbc driver implementation closes
             // statements in finalize by calling an internal method and not calling public close()
@@ -442,11 +453,17 @@ public class StatementAspect {
                 // this should always be true since just checked hasGlowrootStatementMirror() above
                 mirror.clearLastRecordCountObject();
             }
-            return pluginServices.startTransactionMetric(metricName);
+            if (captureStatementClose) {
+                return pluginServices.startTransactionMetric(metricName);
+            } else {
+                return null;
+            }
         }
         @OnAfter
-        public static void onAfter(@BindTraveler TransactionMetric transactionMetric) {
-            transactionMetric.stop();
+        public static void onAfter(@BindTraveler @Nullable TransactionMetric transactionMetric) {
+            if (transactionMetric != null) {
+                transactionMetric.stop();
+            }
         }
     }
 }
