@@ -70,12 +70,8 @@ public class ProfilingTest {
     @Test
     public void shouldReadProfile() throws Exception {
         // given
-        TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        traceConfig.setOutlierProfilingInitialDelayMillis(2000);
-        container.getConfigService().updateTraceConfig(traceConfig);
         ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-        profilingConfig.setEnabled(true);
-        profilingConfig.setIntervalMillis(10);
+        profilingConfig.setIntervalMillis(20);
         container.getConfigService().updateProfilingConfig(profilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
@@ -91,16 +87,11 @@ public class ProfilingTest {
     @Test
     public void shouldReadUserRecordingProfile() throws Exception {
         // given
-        TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        traceConfig.setStoreThresholdMillis(10000);
-        traceConfig.setOutlierProfilingInitialDelayMillis(1100);
-        traceConfig.setOutlierProfilingIntervalMillis(10);
-        container.getConfigService().updateTraceConfig(traceConfig);
         UserRecordingConfig userRecordingConfig =
                 container.getConfigService().getUserRecordingConfig();
         userRecordingConfig.setEnabled(true);
         userRecordingConfig.setUser("able");
-        userRecordingConfig.setProfileIntervalMillis(10);
+        userRecordingConfig.setProfileIntervalMillis(20);
         container.getConfigService().updateUserRecordingConfig(userRecordingConfig);
         ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
         profilingConfig.setEnabled(false);
@@ -150,8 +141,8 @@ public class ProfilingTest {
     public void shouldReadOutlierProfile() throws Exception {
         // given
         TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        traceConfig.setOutlierProfilingInitialDelayMillis(1100);
-        traceConfig.setOutlierProfilingIntervalMillis(10);
+        traceConfig.setOutlierProfilingInitialDelayMillis(100);
+        traceConfig.setOutlierProfilingIntervalMillis(20);
         container.getConfigService().updateTraceConfig(traceConfig);
         ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
         profilingConfig.setEnabled(false);
@@ -163,7 +154,7 @@ public class ProfilingTest {
         ProfileNode rootProfileNode = container.getTraceService().getOutlierProfile(trace.getId());
         assertThat(trace.getProfileExistence()).isEqualTo(Existence.NO);
         assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.YES);
-        // outlier profiler should have captured exactly 5 stack traces
+        // outlier profiler should have captured around 10 stack traces
         int sampleCount = rootProfileNode.getSampleCount();
         assertThat(sampleCount).isBetween(5, 15);
         assertThatTreeDoesNotContainSyntheticMetricWrapperMethods(rootProfileNode);
@@ -174,8 +165,8 @@ public class ProfilingTest {
         // given
         TraceConfig traceConfig = container.getConfigService().getTraceConfig();
         traceConfig.setOutlierProfilingEnabled(false);
-        traceConfig.setOutlierProfilingInitialDelayMillis(1100);
-        traceConfig.setOutlierProfilingIntervalMillis(10);
+        traceConfig.setOutlierProfilingInitialDelayMillis(100);
+        traceConfig.setOutlierProfilingIntervalMillis(20);
         container.getConfigService().updateTraceConfig(traceConfig);
         ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
         profilingConfig.setEnabled(false);
@@ -225,7 +216,7 @@ public class ProfilingTest {
         }
         @Override
         public void traceMarker() throws InterruptedException {
-            Threads.moreAccurateSleep(100);
+            Threads.moreAccurateSleep(200);
         }
     }
 
@@ -236,7 +227,7 @@ public class ProfilingTest {
         }
         @Override
         public void traceMarker() throws InterruptedException {
-            Threads.moreAccurateSleep(1200);
+            Threads.moreAccurateSleep(300);
         }
     }
 
@@ -252,7 +243,7 @@ public class ProfilingTest {
         public void traceMarker() throws InterruptedException {
             // normally the plugin/aspect should set the user, this is just a shortcut for test
             pluginServices.setTransactionUser("Able");
-            Threads.moreAccurateSleep(105);
+            Threads.moreAccurateSleep(200);
         }
     }
 }
