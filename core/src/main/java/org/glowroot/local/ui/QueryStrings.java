@@ -81,8 +81,10 @@ class QueryStrings {
             } else if (valueClass == boolean.class || valueClass == Boolean.class) {
                 value = Boolean.parseBoolean(values.get(0));
             } else if (Enum.class.isAssignableFrom(valueClass)) {
-                value = Enum.valueOf((Class<? extends Enum>) valueClass,
+                @SuppressWarnings({"unchecked", "rawtypes"})
+                Enum<?> enumValue = Enum.valueOf((Class<? extends Enum>) valueClass,
                         values.get(0).toUpperCase(Locale.ENGLISH));
+                value = enumValue;
             } else {
                 throw new IllegalStateException("Unexpected class: " + valueClass);
             }
@@ -90,7 +92,9 @@ class QueryStrings {
         }
         Method build = Reflections.getMethod(immutableBuilderClass, "build");
         build.setAccessible(true);
-        return (T) Reflections.invoke(build, builder);
+        @SuppressWarnings("unchecked")
+        T decoded = (T) Reflections.invoke(build, builder);
+        return decoded;
     }
 
     private static <T> String createImmutableClassName(Class<T> clazz) {

@@ -60,13 +60,13 @@
   </scm>
 
   <properties>
-    <!-- use custom-built jdk6 compatible checker framework annotations by default
-         except when actually running checker framework code quality tests -->
+    <!-- use custom-built jdk6 compatible checker framework annotations by default except when
+      actually running checker framework code quality tests -->
     <checker.qual.group.id>org.glowroot.misc</checker.qual.group.id>
     <checker.qual.artifact.id>glowroot-checker-qual-jdk6</checker.qual.artifact.id>
     <checker.qual.version>${project.version}</checker.qual.version>
     <!-- the sonar.jdbc.password system property is set here instead of on the command line so it is
-         not visible to ps -->
+      not visible to ps -->
     <sonar.jdbc.password>${env.SONAR_JDBC_PASSWORD}</sonar.jdbc.password>
   </properties>
 
@@ -196,7 +196,7 @@
                 <requireMavenVersion>
                   <version>[3.0,)</version>
                 </requireMavenVersion>
-                <!--requirePluginVersions /-->
+                <requirePluginVersions />
                 <requireUpperBoundDeps />
               </rules>
             </configuration>
@@ -216,10 +216,8 @@
         </executions>
       </plugin>
       <plugin>
-        <!--
-          ensure that only methods available in jdk 6 can
-          be used even when compiling with a more recent jdk
-        -->
+        <!-- ensure that only methods available in jdk 6 can be used even when compiling with a more
+          recent jdk -->
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
         <version>1.12</version>
@@ -303,6 +301,43 @@
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>0.7.2.201409121644</version>
         </plugin>
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <versionRange>[1.0.0,)</versionRange>
+                    <goals>
+                      <goal>enforce</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore />
+                  </action>
+                </pluginExecution>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-remote-resources-plugin</artifactId>
+                    <versionRange>[1.0.0,)</versionRange>
+                    <goals>
+                      <goal>process</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore />
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -329,9 +364,9 @@
                 </goals>
                 <configuration>
                   <resourceBundles>
-                    <!-- need to use explicit version below instead of ${project.version}
-                         since when plugins inherit this pom ${project.version} is replaced
-                         by the plugin's version -->
+                    <!-- need to use explicit version below instead of ${project.version} since when
+                      plugins inherit this pom, ${project.version} is replaced by the plugin's
+                      version -->
                     <resourceBundle>
                       org.glowroot.misc:glowroot-license-resource-bundle:0.5-SNAPSHOT
                     </resourceBundle>
@@ -412,7 +447,7 @@
                 <arg>-processor</arg>
                 <arg>org.immutables.value.internal.processor.Processor,org.checkerframework.checker.nullness.NullnessChecker</arg>
                 <!-- checker.stubs.dir needs to be absolute path since relative path will be
-                     interpreted from each module directory -->
+                  interpreted from each module directory -->
                 <arg>-Astubs=${checker.stubs.dir}</arg>
               </compilerArgs>
             </configuration>
