@@ -205,55 +205,6 @@ public class ServletPluginTest {
     }
 
     @Test
-    public void testServletContextInitialized() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureStartup", true);
-        // when
-        container.executeAppUnderTest(TestServletContextListener.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        assertThat(trace.getHeadline()).isEqualTo(
-                TestServletContextListener.class.getName() + ".contextInitialized()");
-    }
-
-    @Test
-    public void testServletInit() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureStartup", true);
-        // when
-        container.executeAppUnderTest(TestServletInit.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        assertThat(trace.getHeadline()).isEqualTo(
-                TestServletInit.class.getName() + ".init()");
-        assertThat(trace.getTransactionName()).isEqualTo(
-                "servlet init / " + TestServletInit.class.getName());
-        assertThat(entries.get(0).getMessage().getText())
-                .isEqualTo(TestServletInit.class.getName() + ".init()");
-    }
-
-    @Test
-    public void testFilterInit() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureStartup", true);
-        // when
-        container.executeAppUnderTest(TestFilterInit.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        assertThat(trace.getHeadline()).isEqualTo(TestFilterInit.class.getName() + ".init()");
-        assertThat(trace.getTransactionName()).isEqualTo("filter init / "
-                + TestFilterInit.class.getName());
-        assertThat(entries.get(0).getMessage().getText())
-                .isEqualTo(TestFilterInit.class.getName() + ".init()");
-    }
-
-    @Test
     public void testThrowsException() throws Exception {
         // given
         // when

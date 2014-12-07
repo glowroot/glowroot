@@ -3,8 +3,7 @@
   "id": "servlet",
   "version": "0.5-SNAPSHOT",
   "transactionTypes": [
-    "Servlet",
-    "Startup"
+    "Servlet"
   ],
   "properties": [
     {
@@ -30,17 +29,6 @@
         " with \"get[A-Z]\" or \"is[A-Z]\").",
         " '*' by itself means capture all session attributes.",
         " Values are converted into Strings if necessary via toString()."
-      ]
-    },
-    {
-      "name": "captureStartup",
-      "type": "boolean",
-      "label": "Startup",
-      "checkboxLabel": "Capture startup",
-      "description": [
-        "Capture servlet startup time associated with",
-        " javax.servlet.ServletContextListener.contextInitialized(),",
-        " javax.servlet.Servlet.init() and javax.servlet.Filter.init()."
       ]
     },
     {
@@ -86,7 +74,6 @@
     "org.glowroot.plugin.servlet.ServletAspect",
     "org.glowroot.plugin.servlet.RequestParameterAspect",
     "org.glowroot.plugin.servlet.ResponseHeaderAspect",
-    "org.glowroot.plugin.servlet.SessionAspect",
-    "org.glowroot.plugin.servlet.ServletInitAspect"
+    "org.glowroot.plugin.servlet.SessionAspect"
   ]
 }
