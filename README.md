@@ -34,9 +34,11 @@ Building requires Java 7+ (in order to perform [Immutables](https://immutables.g
 
 #### How to hack on it
 
-Run org.glowroot.sandbox.ui.UiSandboxMain under a debugger inside your favorite IDE. It starts Glowroot and generates a variety of sample traces to give the UI something to display and to help with manual testing. Connect your browser to http://localhost:4000.
+Glowroot uses [Immutables](https://immutables.github.io) annotation processing to eliminate maintenance on lots of boilerplate code. If you are using Eclipse, this requires installing the [m2e-apt](https://github.com/jbosstools/m2e-apt) plugin and changing Window > Preferences > Maven > Annotation Processing to "Automatically configure JDT APT".
 
-If you are working on the UI, you either need to run 'grunt' to re-build the web assets after each change, or (better) run
+To hack on the UI, run org.glowroot.sandbox.ui.UiSandboxMain under a debugger inside your favorite IDE. This starts Glowroot and generates a variety of sample traces to give the UI something to display and to help with manual testing. Connect your browser to http://localhost:4000.
+
+Also, if you are working on the web assets, you either need to run 'grunt' to re-build them after each change, or (better) run
 
     grunt serve
 
@@ -76,7 +78,7 @@ from the following locations:
 
 ## Overhead
 
-See the [glowroot-benchmark](https://github.com/glowroot/glowroot-benchmark) repository for a best effort to quantify the overhead by benchmarking the decently complex open source [Heat Clinic](http://demo.broadleafcommerce.org) demo application with and without Glowroot.
+While acknowledging that overhead depends on many factors, see [glowroot-benchmark](https://github.com/glowroot/glowroot-benchmark) for a best effort to provide some concrete overhead numbers.
 
 ## Code quality
 
