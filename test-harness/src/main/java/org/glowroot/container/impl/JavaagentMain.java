@@ -91,10 +91,9 @@ public class JavaagentMain {
         if (!useFileDb) {
             command.add("-Dglowroot.internal.h2.memdb=true");
         }
-        Integer aggregateInterval =
-                Integer.getInteger("glowroot.internal.collector.aggregateInterval");
+        Integer aggregateInterval = Integer.getInteger("glowroot.internal.aggregateInterval");
         if (aggregateInterval != null) {
-            command.add("-Dglowroot.internal.collector.aggregateInterval=" + aggregateInterval);
+            command.add("-Dglowroot.internal.aggregateInterval=" + aggregateInterval);
         }
         command.add(JavaagentMain.class.getName());
         command.add(Integer.toString(containerPort));

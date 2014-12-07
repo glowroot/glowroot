@@ -35,10 +35,8 @@ public class CollectorModule {
     private static final long fixedGaugeIntervalSeconds;
 
     static {
-        fixedAggregateIntervalSeconds =
-                Long.getLong("glowroot.internal.collector.aggregateInterval", 300);
-        fixedGaugeIntervalSeconds =
-                Long.getLong("glowroot.internal.collector.gaugeInterval", 5);
+        fixedAggregateIntervalSeconds = Long.getLong("glowroot.internal.aggregateInterval", 300);
+        fixedGaugeIntervalSeconds = Long.getLong("glowroot.internal.gaugeInterval", 5);
     }
 
     private final TransactionCollectorImpl transactionCollector;
