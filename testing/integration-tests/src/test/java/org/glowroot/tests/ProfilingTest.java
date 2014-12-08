@@ -141,6 +141,7 @@ public class ProfilingTest {
     public void shouldReadOutlierProfile() throws Exception {
         // given
         TraceConfig traceConfig = container.getConfigService().getTraceConfig();
+        traceConfig.setOutlierProfilingEnabled(true);
         traceConfig.setOutlierProfilingInitialDelayMillis(100);
         traceConfig.setOutlierProfilingIntervalMillis(20);
         container.getConfigService().updateTraceConfig(traceConfig);

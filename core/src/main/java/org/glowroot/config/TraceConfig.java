@@ -48,19 +48,19 @@ public abstract class TraceConfig {
 
     @Value.Default
     public boolean outlierProfilingEnabled() {
-        return true;
+        return false;
     }
 
     // minimum is imposed because of OutlierProfileWatcher#PERIOD_MILLIS
     // -1 means no stack traces are gathered, should be minimum 100 milliseconds
     @Value.Default
     public int outlierProfilingInitialDelayMillis() {
-        return 10000;
+        return 5000;
     }
 
     @Value.Default
     public int outlierProfilingIntervalMillis() {
-        return 1000;
+        return 500;
     }
 
     @Value.Derived
