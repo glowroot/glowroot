@@ -133,10 +133,11 @@ public class TransactionCollectorImpl implements TransactionCollector {
                     try {
                         Trace trace = TraceCreator.createCompletedTrace(transaction);
                         store(trace, transaction);
-                        pendingTransactions.remove(transaction);
                     } catch (Throwable t) {
                         // log and terminate successfully
                         logger.error(t.getMessage(), t);
+                    } finally {
+                        pendingTransactions.remove(transaction);
                     }
                 }
             };
