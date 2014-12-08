@@ -86,7 +86,7 @@ class MBeanGaugeJsonService {
         if (sortedNames.size() > request.limit()) {
             sortedNames = sortedNames.subList(0, request.limit());
         }
-        return Marshaling2.toJson(sortedNames, String.class);
+        return mapper.writeValueAsString(names);
     }
 
     @GET("/backend/config/mbean-attributes")
@@ -110,7 +110,6 @@ class MBeanGaugeJsonService {
             logger.debug(e.getMessage(), e);
             return Marshaling2.toJson(builder.mbeanUnavailable(true).build());
         }
-        builder.mbeanUnavailable(false);
         builder.addAllMbeanAttributes(getAttributeNames(mbeanInfo));
         return Marshaling2.toJson(builder.build());
     }
@@ -220,8 +219,14 @@ class MBeanGaugeJsonService {
     @Value.Immutable
     @Json.Marshaled
     abstract static class MBeanAttributeNamesResponse {
-        abstract boolean mbeanUnavailable();
-        abstract boolean duplicateMBean();
+        @Value.Default
+        boolean mbeanUnavailable() {
+            return false;
+        }
+        @Value.Default
+        boolean duplicateMBean() {
+            return false;
+        }
         abstract List<String> mbeanAttributes();
     }
 
@@ -243,7 +248,7 @@ class MBeanGaugeJsonService {
         abstract String name();
         abstract String mbeanObjectName();
         abstract List<String> mbeanAttributeNames();
-        abstract @Nullable String version();  // null for insert operations
+        abstract @Nullable String version(); // null for insert operations
 
         private static MBeanGaugeDto fromConfig(MBeanGauge config) {
             return ImmutableMBeanGaugeDto.builder()
