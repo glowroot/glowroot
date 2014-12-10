@@ -21,11 +21,15 @@ import java.util.Locale;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+import javax.management.Descriptor;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
+import javax.management.openmbean.CompositeData;
+import javax.management.openmbean.CompositeType;
+import javax.management.openmbean.OpenType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -179,6 +183,29 @@ class MBeanGaugeJsonService {
             if (attributeType.equals("long") || attributeType.equals("int")
                     || attributeType.equals("double") || attributeType.equals("float")) {
                 attributeNames.add(attribute.getName());
+            } else if (attributeType.equals(CompositeData.class.getName())) {
+                Descriptor descriptor = attribute.getDescriptor();
+                Object descriptorFieldValue = descriptor.getFieldValue("openType");
+                if (descriptorFieldValue instanceof CompositeType) {
+                    CompositeType compositeType = (CompositeType) descriptorFieldValue;
+                    for (String itemName : compositeType.keySet()) {
+                        OpenType<?> itemType = compositeType.getType(itemName);
+                        if (itemType == null) {
+                            break;
+                        }
+                        String className = itemType.getClassName();
+                        // see all possible classNames at
+                        // javax.management.openmbean.OpenType.ALLOWED_CLASSNAMES_LIST
+                        if (className.equals("java.lang.Long")
+                                || className.equals("java.lang.Integer")
+                                || className.equals("java.lang.Double")
+                                || className.equals("java.lang.Float")
+                                || className.equals("java.lang.BigDecimal")
+                                || className.equals("java.lang.BigInteger")) {
+                            attributeNames.add(attribute.getName() + "." + itemName);
+                        }
+                    }
+                }
             }
         }
         return attributeNames;

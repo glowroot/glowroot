@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter.Lf2SpacesIndenter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
@@ -44,7 +44,7 @@ class ConfigFile {
 
     private static final String NEWLINE;
 
-    private static final JsonFactory jsonFactory = new JsonFactory();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     static {
         String newline = StandardSystemProperty.LINE_SEPARATOR.value();
@@ -72,6 +72,10 @@ class ConfigFile {
             userInterfaceConfig = ((ImmutableUserInterfaceConfig) userInterfaceConfig)
                     .withDefaultTransactionType(getDefaultTransactionType(config.capturePoints()));
             config = ((ImmutableConfig) config).withUserInterfaceConfig(userInterfaceConfig);
+        }
+        if (!mapper.readTree(content).has("mbeanGauges")) {
+            List<MBeanGauge> defaultGauges = getDefaultMBeanGauges();
+            config = ((ImmutableConfig) config).withMbeanGauges(defaultGauges);
         }
         Map<String, PluginConfig> filePluginConfigs = Maps.newHashMap();
         for (PluginConfig pluginConfig : config.pluginConfigs()) {
@@ -166,6 +170,7 @@ class ConfigFile {
     Config getDefaultConfig() {
         return ImmutableConfig.builder()
                 .addAllPluginConfigs(getDefaultPluginConfigs(pluginDescriptors))
+                .addAllMbeanGauges(getDefaultMBeanGauges())
                 .build();
     }
 
@@ -173,11 +178,42 @@ class ConfigFile {
         Files.write(writeValueAsString(config), file, Charsets.UTF_8);
     }
 
+    private static List<MBeanGauge> getDefaultMBeanGauges() {
+        List<MBeanGauge> defaultGauges = Lists.newArrayList();
+        defaultGauges.add(ImmutableMBeanGauge.builder()
+                .name("java.lang/Memory")
+                .mbeanObjectName("java.lang:type=Memory")
+                .addMbeanAttributeNames("HeapMemoryUsage.used")
+                .build());
+        defaultGauges.add(ImmutableMBeanGauge.builder()
+                .name("java.lang/MemoryPool/PS Old Gen")
+                .mbeanObjectName("java.lang:type=MemoryPool,name=PS Old Gen")
+                .addMbeanAttributeNames("Usage.used")
+                .build());
+        defaultGauges.add(ImmutableMBeanGauge.builder()
+                .name("java.lang/MemoryPool/PS Eden Space")
+                .mbeanObjectName("java.lang:type=MemoryPool,name=PS Eden Space")
+                .addMbeanAttributeNames("Usage.used")
+                .build());
+        ImmutableMBeanGauge.Builder operatingSystemMBean = ImmutableMBeanGauge.builder()
+                .name("java.lang/OperatingSystem")
+                .mbeanObjectName("java.lang:type=OperatingSystem")
+                .addMbeanAttributeNames("FreePhysicalMemorySize");
+        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
+        if (javaVersion != null && !javaVersion.startsWith("1.6")) {
+            // these are only available since 1.7
+            operatingSystemMBean.addMbeanAttributeNames("ProcessCpuLoad");
+            operatingSystemMBean.addMbeanAttributeNames("SystemCpuLoad");
+        }
+        defaultGauges.add(operatingSystemMBean.build());
+        return defaultGauges;
+    }
+
     private static String writeValueAsString(Config config) throws IOException {
         CustomPrettyPrinter prettyPrinter = new CustomPrettyPrinter();
         prettyPrinter.indentArraysWith(Lf2SpacesIndenter.instance);
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb))
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))
                 .setPrettyPrinter(prettyPrinter);
         ConfigMarshaler.marshal(jg, config);
         jg.close();

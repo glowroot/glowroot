@@ -23,6 +23,7 @@ import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
+import javax.management.openmbean.CompositeData;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -82,8 +83,15 @@ class GaugeCollector extends ScheduledRunnable {
         for (String mbeanAttributeName : mbeanGauge.mbeanAttributeNames()) {
             Object attributeValue;
             try {
-                attributeValue =
-                        lazyPlatformMBeanServer.getAttribute(objectName, mbeanAttributeName);
+                if (mbeanAttributeName.contains(".")) {
+                    String[] path = mbeanAttributeName.split("\\.");
+                    attributeValue = lazyPlatformMBeanServer.getAttribute(objectName, path[0]);
+                    CompositeData compositeData = ((CompositeData) attributeValue);
+                    attributeValue = compositeData.get(path[1]);
+                } else {
+                    attributeValue =
+                            lazyPlatformMBeanServer.getAttribute(objectName, mbeanAttributeName);
+                }
             } catch (InstanceNotFoundException e) {
                 logger.debug(e.getMessage(), e);
                 // other attributes for this mbean will give same error, so log mbean not

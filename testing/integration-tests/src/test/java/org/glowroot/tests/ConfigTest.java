@@ -220,18 +220,20 @@ public class ConfigTest {
     @Test
     public void shouldInsertMBeanGauge() throws Exception {
         // given
+        List<? extends MBeanGauge> originalConfigs = container.getConfigService().getMBeanGauges();
         MBeanGauge config = createMBeanGauge();
         // when
         container.getConfigService().addMBeanGauge(config);
         // then
         List<MBeanGauge> configs = container.getConfigService().getMBeanGauges();
-        assertThat(configs).hasSize(1);
-        assertThat(configs.get(0)).isEqualTo(config);
+        assertThat(configs).hasSize(originalConfigs.size() + 1);
+        assertThat(configs.get(configs.size() - 1)).isEqualTo(config);
     }
 
     @Test
     public void shouldUpdateMBeanGauge() throws Exception {
         // given
+        List<? extends MBeanGauge> originalConfigs = container.getConfigService().getMBeanGauges();
         MBeanGauge config = createMBeanGauge();
         config = container.getConfigService().addMBeanGauge(config);
         // when
@@ -239,21 +241,21 @@ public class ConfigTest {
         container.getConfigService().updateMBeanGauge(config);
         // then
         List<MBeanGauge> configs = container.getConfigService().getMBeanGauges();
-        assertThat(configs).hasSize(1);
-        assertThat(configs.get(0)).isEqualTo(config);
+        assertThat(configs).hasSize(originalConfigs.size() + 1);
+        assertThat(configs.get(configs.size() - 1)).isEqualTo(config);
     }
 
     @Test
     public void shouldDeleteMBeanGauge() throws Exception {
         // given
+        List<? extends MBeanGauge> originalConfigs = container.getConfigService().getMBeanGauges();
         MBeanGauge config = createMBeanGauge();
         config = container.getConfigService().addMBeanGauge(config);
         // when
         container.getConfigService().removeMBeanGauge(config.getVersion());
         // then
-        List<? extends MBeanGauge> configs =
-                container.getConfigService().getMBeanGauges();
-        assertThat(configs).isEmpty();
+        List<? extends MBeanGauge> configs = container.getConfigService().getMBeanGauges();
+        assertThat(configs).isEqualTo(originalConfigs);
     }
 
     @Test
