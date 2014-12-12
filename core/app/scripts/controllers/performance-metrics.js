@@ -62,6 +62,13 @@ glowroot.controller('PerformanceMetricsCtrl', [
       return queryStrings.encodeObject(query);
     };
 
+    $scope.changeTransactionType = function (transactionType) {
+      if (transactionType !== $scope.transactionType) {
+        $scope.transactionType = transactionType;
+        refreshData();
+      }
+    };
+
     $scope.tracesQueryString = function () {
       var query = {
         transactionType: $scope.transactionType,
@@ -73,8 +80,12 @@ glowroot.controller('PerformanceMetricsCtrl', [
       return queryStrings.encodeObject(query);
     };
 
-    function refreshData() {
+    function refreshData(deferred) {
       var date = $scope.filterDate;
+      if (!date) {
+        deferred.reject('Missing date');
+        return;
+      }
       var refreshId = ++currentRefreshId;
       var query = {
         from: $scope.chartFrom,
@@ -140,6 +151,9 @@ glowroot.controller('PerformanceMetricsCtrl', [
               $('#detail').html('No data');
             }
             $scope.traceCount = data.traceCount;
+            if (deferred) {
+              deferred.resolve('Success');
+            }
           })
           .error(function (data, status) {
             $scope.showChartSpinner--;
@@ -147,9 +161,25 @@ glowroot.controller('PerformanceMetricsCtrl', [
             if (refreshId !== currentRefreshId) {
               return;
             }
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handler($scope, deferred)(data, status);
           });
     }
+
+    $scope.refreshButtonClick = function (deferred) {
+      if (!$scope.filterDate) {
+        deferred.reject('Missing date');
+        return;
+      }
+      var midnight = new Date($scope.chartFrom).setHours(0, 0, 0, 0);
+      if (midnight !== $scope.filterDate.getTime()) {
+        // filterDate has changed
+        chartFromToDefault = false;
+        $scope.chartFrom = $scope.filterDate.getTime() + ($scope.chartFrom - midnight);
+        $scope.chartTo = $scope.filterDate.getTime() + ($scope.chartTo - midnight);
+      }
+      updateLocation();
+      refreshData(deferred);
+    };
 
     $chart.bind('plotzoom', function (event, plot, args) {
       $scope.$apply(function () {
@@ -281,7 +311,7 @@ glowroot.controller('PerformanceMetricsCtrl', [
       $scope.chartFrom = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
       $scope.chartTo = Math.min($scope.chartFrom + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
-    $scope.transactionType = $location.search()['transaction-type'];
+    $scope.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
     $scope.transactionName = $location.search()['transaction-name'];
 
     function updateLocation() {

@@ -73,9 +73,9 @@ class ConfigFile {
                     .withDefaultTransactionType(getDefaultTransactionType(config.capturePoints()));
             config = ((ImmutableConfig) config).withUserInterfaceConfig(userInterfaceConfig);
         }
-        if (!mapper.readTree(content).has("mbeanGauges")) {
-            List<MBeanGauge> defaultGauges = getDefaultMBeanGauges();
-            config = ((ImmutableConfig) config).withMbeanGauges(defaultGauges);
+        if (!mapper.readTree(content).has("gauges")) {
+            List<Gauge> defaultGauges = getDefaultGauges();
+            config = ((ImmutableConfig) config).withGauges(defaultGauges);
         }
         Map<String, PluginConfig> filePluginConfigs = Maps.newHashMap();
         for (PluginConfig pluginConfig : config.pluginConfigs()) {
@@ -170,7 +170,7 @@ class ConfigFile {
     Config getDefaultConfig() {
         return ImmutableConfig.builder()
                 .addAllPluginConfigs(getDefaultPluginConfigs(pluginDescriptors))
-                .addAllMbeanGauges(getDefaultMBeanGauges())
+                .addAllGauges(getDefaultGauges())
                 .build();
     }
 
@@ -178,24 +178,24 @@ class ConfigFile {
         Files.write(writeValueAsString(config), file, Charsets.UTF_8);
     }
 
-    private static List<MBeanGauge> getDefaultMBeanGauges() {
-        List<MBeanGauge> defaultGauges = Lists.newArrayList();
-        defaultGauges.add(ImmutableMBeanGauge.builder()
+    private static List<Gauge> getDefaultGauges() {
+        List<Gauge> defaultGauges = Lists.newArrayList();
+        defaultGauges.add(ImmutableGauge.builder()
                 .name("java.lang/Memory")
                 .mbeanObjectName("java.lang:type=Memory")
                 .addMbeanAttributeNames("HeapMemoryUsage.used")
                 .build());
-        defaultGauges.add(ImmutableMBeanGauge.builder()
+        defaultGauges.add(ImmutableGauge.builder()
                 .name("java.lang/MemoryPool/PS Old Gen")
                 .mbeanObjectName("java.lang:type=MemoryPool,name=PS Old Gen")
                 .addMbeanAttributeNames("Usage.used")
                 .build());
-        defaultGauges.add(ImmutableMBeanGauge.builder()
+        defaultGauges.add(ImmutableGauge.builder()
                 .name("java.lang/MemoryPool/PS Eden Space")
                 .mbeanObjectName("java.lang:type=MemoryPool,name=PS Eden Space")
                 .addMbeanAttributeNames("Usage.used")
                 .build());
-        ImmutableMBeanGauge.Builder operatingSystemMBean = ImmutableMBeanGauge.builder()
+        ImmutableGauge.Builder operatingSystemMBean = ImmutableGauge.builder()
                 .name("java.lang/OperatingSystem")
                 .mbeanObjectName("java.lang:type=OperatingSystem")
                 .addMbeanAttributeNames("FreePhysicalMemorySize");

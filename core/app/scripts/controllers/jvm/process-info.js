@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,33 +16,16 @@
 
 /* global glowroot */
 
-glowroot.controller('ConfigMBeanGaugeListCtrl', [
+glowroot.controller('JvmProcessInfoCtrl', [
   '$scope',
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
-
-    $http.get('backend/config/mbean-gauges')
+    $http.get('backend/jvm/process-info')
         .success(function (data) {
           $scope.loaded = true;
-          $scope.gauges = data;
+          $scope.data = data;
         })
         .error(httpErrors.handler($scope));
-
-    $scope.addGauge = function () {
-      $scope.gauges.push({
-        config: {},
-        mbeanAvailable: false,
-        mbeanAvailableAttributeNames: []
-      });
-    };
-
-    // this is called by child controller
-    $scope.removeGauge = function (gauge) {
-      var index = $scope.gauges.indexOf(gauge);
-      if (index !== -1) {
-        $scope.gauges.splice(index, 1);
-      }
-    };
   }
 ]);

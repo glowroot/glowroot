@@ -42,7 +42,9 @@ glowroot.factory('httpErrors', [
         if (deferred) {
           return function (data, status) {
             // all actions that need to handle HTTP Precondition Failed pass a deferred object
-            if (status === 412) {
+            if (status === 403) {
+              deferred.reject('You don\'t have permission for this action');
+            } else if (status === 412) {
               // HTTP Precondition Failed
               deferred.reject('Someone else has updated the data on this page, please reload and try again');
             } else {

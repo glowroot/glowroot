@@ -26,7 +26,7 @@ import org.glowroot.common.Marshaling2;
 
 @Value.Immutable
 @Json.Marshaled
-public abstract class MBeanGauge {
+public abstract class Gauge {
 
     public abstract String name();
     public abstract String mbeanObjectName();

@@ -16,7 +16,7 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('JvmMBeansCtrl', [
+glowroot.controller('JvmMBeanTreeCtrl', [
   '$scope',
   '$location',
   '$http',

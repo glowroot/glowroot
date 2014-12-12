@@ -16,7 +16,7 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('ConfigMBeanGaugeCtrl', [
+glowroot.controller('ConfigGaugeCtrl', [
   '$scope',
   '$http',
   '$timeout',
@@ -131,7 +131,7 @@ glowroot.controller('ConfigMBeanGaugeCtrl', [
     function fetchMBeanAttributes(mbeanObjectName) {
       var queryData = {
         mbeanObjectName: mbeanObjectName,
-        mbeanGaugeVersion: $scope.config.version || ''
+        gaugeVersion: $scope.config.version || ''
       };
       $scope.mbeanAttributesLoading = true;
       $http.get('backend/config/mbean-attributes?' + queryStrings.encodeObject(queryData))
@@ -176,9 +176,9 @@ glowroot.controller('ConfigMBeanGaugeCtrl', [
       var url;
       var version = $scope.config.version;
       if (version) {
-        url = 'backend/config/mbean-gauges/update';
+        url = 'backend/config/gauges/update';
       } else {
-        url = 'backend/config/mbean-gauges/add';
+        url = 'backend/config/gauges/add';
       }
       $http.post(url, postData)
           .success(function (data) {
@@ -196,7 +196,7 @@ glowroot.controller('ConfigMBeanGaugeCtrl', [
 
     $scope.delete = function (deferred) {
       if ($scope.config.version) {
-        $http.post('backend/config/mbean-gauges/remove', '"' + $scope.config.version + '"')
+        $http.post('backend/config/gauges/remove', '"' + $scope.config.version + '"')
             .success(function (data) {
               $scope.$parent.removeGauge($scope.gauge);
               deferred.resolve('Deleted');

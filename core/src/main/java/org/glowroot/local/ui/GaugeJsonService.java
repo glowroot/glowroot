@@ -45,34 +45,34 @@ import org.glowroot.common.Marshaling2;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.DuplicateMBeanObjectNameException;
-import org.glowroot.config.ImmutableMBeanGauge;
-import org.glowroot.config.MBeanGauge;
+import org.glowroot.config.Gauge;
+import org.glowroot.config.ImmutableGauge;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 
 @JsonService
-class MBeanGaugeJsonService {
+class GaugeJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(MBeanGaugeJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(GaugeJsonService.class);
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private final ConfigService configService;
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
 
-    MBeanGaugeJsonService(ConfigService configService,
+    GaugeJsonService(ConfigService configService,
             LazyPlatformMBeanServer lazyPlatformMBeanServer) {
         this.configService = configService;
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
     }
 
-    @GET("/backend/config/mbean-gauges")
-    String getMBeanGauge() {
-        List<MBeanGaugeResponse> responses = Lists.newArrayList();
-        for (MBeanGauge mbeanGauge : configService.getMBeanGauges()) {
-            responses.add(buildResponse(mbeanGauge));
+    @GET("/backend/config/gauges")
+    String getGauges() {
+        List<GaugeResponse> responses = Lists.newArrayList();
+        for (Gauge gauge : configService.getGauges()) {
+            responses.add(buildResponse(gauge));
         }
-        return Marshaling2.toJson(responses, MBeanGaugeResponse.class);
+        return Marshaling2.toJson(responses, GaugeResponse.class);
     }
 
     @GET("/backend/config/matching-mbean-objects")
@@ -99,9 +99,9 @@ class MBeanGaugeJsonService {
                 QueryStrings.decode(queryString, MBeanAttributeNamesRequest.class);
         ImmutableMBeanAttributeNamesResponse.Builder builder =
                 ImmutableMBeanAttributeNamesResponse.builder();
-        for (MBeanGauge mbeanGauge : configService.getMBeanGauges()) {
-            if (mbeanGauge.mbeanObjectName().equals(request.mbeanObjectName())
-                    && !mbeanGauge.version().equals(request.mbeanGaugeVersion())) {
+        for (Gauge gauge : configService.getGauges()) {
+            if (gauge.mbeanObjectName().equals(request.mbeanObjectName())
+                    && !gauge.version().equals(request.gaugeVersion())) {
                 builder.duplicateMBean(true);
                 break;
             }
@@ -118,48 +118,48 @@ class MBeanGaugeJsonService {
         return Marshaling2.toJson(builder.build());
     }
 
-    @POST("/backend/config/mbean-gauges/add")
-    String addMBeanGauge(String content) throws IOException {
-        MBeanGaugeDto mbeanGaugeDto = Marshaling.fromJson(content, MBeanGaugeDto.class);
-        MBeanGauge mbeanGauge = mbeanGaugeDto.toConfig();
+    @POST("/backend/config/gauges/add")
+    String addGauge(String content) throws IOException {
+        GaugeDto gaugeDto = Marshaling.fromJson(content, GaugeDto.class);
+        Gauge gauge = gaugeDto.toConfig();
         try {
-            configService.insertMBeanGauge(mbeanGauge);
+            configService.insertGauge(gauge);
         } catch (DuplicateMBeanObjectNameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
             throw new JsonServiceException(CONFLICT, "mbeanObjectName");
         }
-        return Marshaling2.toJson(buildResponse(mbeanGauge));
+        return Marshaling2.toJson(buildResponse(gauge));
     }
 
-    @POST("/backend/config/mbean-gauges/update")
-    String updateMBeanGauge(String content) throws IOException {
-        MBeanGaugeDto mbeanGaugeDto = Marshaling.fromJson(content, MBeanGaugeDto.class);
-        MBeanGauge mbeanGauge = mbeanGaugeDto.toConfig();
-        String version = mbeanGaugeDto.version();
+    @POST("/backend/config/gauges/update")
+    String updateGauge(String content) throws IOException {
+        GaugeDto gaugeDto = Marshaling.fromJson(content, GaugeDto.class);
+        Gauge gauge = gaugeDto.toConfig();
+        String version = gaugeDto.version();
         if (version == null) {
             throw new IllegalArgumentException("Missing required request property: version");
         }
-        configService.updateMBeanGauge(mbeanGauge, version);
-        return Marshaling2.toJson(buildResponse(mbeanGauge));
+        configService.updateGauge(gauge, version);
+        return Marshaling2.toJson(buildResponse(gauge));
     }
 
-    @POST("/backend/config/mbean-gauges/remove")
-    void removeMBeanGauge(String content) throws IOException {
+    @POST("/backend/config/gauges/remove")
+    void removeGauge(String content) throws IOException {
         String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
-        configService.deleteMBeanGauge(version);
+        configService.deleteGauge(version);
     }
 
-    private MBeanGaugeResponse buildResponse(MBeanGauge mbeanGauge) {
+    private GaugeResponse buildResponse(Gauge gauge) {
         MBeanInfo mbeanInfo = null;
         try {
-            mbeanInfo = getMBeanInfo(mbeanGauge.mbeanObjectName());
+            mbeanInfo = getMBeanInfo(gauge.mbeanObjectName());
         } catch (Exception e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
         }
-        ImmutableMBeanGaugeResponse.Builder builder = ImmutableMBeanGaugeResponse.builder()
-                .config(MBeanGaugeDto.fromConfig(mbeanGauge));
+        ImmutableGaugeResponse.Builder builder = ImmutableGaugeResponse.builder()
+                .config(GaugeDto.fromConfig(gauge));
         if (mbeanInfo == null) {
             builder.mbeanUnavailable(true);
         } else {
@@ -240,7 +240,7 @@ class MBeanGaugeJsonService {
     @Json.Marshaled
     abstract static class MBeanAttributeNamesRequest {
         abstract String mbeanObjectName();
-        abstract @Nullable String mbeanGaugeVersion();
+        abstract @Nullable String gaugeVersion();
     }
 
     @Value.Immutable
@@ -259,8 +259,8 @@ class MBeanGaugeJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class MBeanGaugeResponse {
-        abstract MBeanGaugeDto config();
+    abstract static class GaugeResponse {
+        abstract GaugeDto config();
         @Value.Default
         boolean mbeanUnavailable() {
             return false;
@@ -270,15 +270,15 @@ class MBeanGaugeJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class MBeanGaugeDto {
+    abstract static class GaugeDto {
 
         abstract String name();
         abstract String mbeanObjectName();
         abstract List<String> mbeanAttributeNames();
         abstract @Nullable String version(); // null for insert operations
 
-        private static MBeanGaugeDto fromConfig(MBeanGauge config) {
-            return ImmutableMBeanGaugeDto.builder()
+        private static GaugeDto fromConfig(Gauge config) {
+            return ImmutableGaugeDto.builder()
                     .name(config.name())
                     .mbeanObjectName(config.mbeanObjectName())
                     .addAllMbeanAttributeNames(config.mbeanAttributeNames())
@@ -286,8 +286,8 @@ class MBeanGaugeJsonService {
                     .build();
         }
 
-        private MBeanGauge toConfig() {
-            return ImmutableMBeanGauge.builder()
+        private Gauge toConfig() {
+            return ImmutableGauge.builder()
                     .name(name())
                     .mbeanObjectName(mbeanObjectName())
                     .addAllMbeanAttributeNames(mbeanAttributeNames())

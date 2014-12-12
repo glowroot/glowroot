@@ -86,11 +86,6 @@ glowroot.config([
       templateUrl: 'views/jvm.html',
       controller: 'JvmCtrl'
     });
-    $stateProvider.state('jvm.process', {
-      url: '/process',
-      templateUrl: 'views/jvm/process.html',
-      controller: 'JvmProcessCtrl'
-    });
     $stateProvider.state('jvm.gauges', {
       url: '/gauges',
       templateUrl: 'views/jvm/gauges.html',
@@ -98,10 +93,10 @@ glowroot.config([
       // gauges controller needs to wait for layout when running under grunt serve
       resolve: waitForLayout
     });
-    $stateProvider.state('jvm.mbeans', {
-      url: '/mbeans',
-      templateUrl: 'views/jvm/mbeans.html',
-      controller: 'JvmMBeansCtrl'
+    $stateProvider.state('jvm.mbeanTree', {
+      url: '/mbean-tree',
+      templateUrl: 'views/jvm/mbean-tree.html',
+      controller: 'JvmMBeanTreeCtrl'
     });
     $stateProvider.state('jvm.threadDump', {
       url: '/thread-dump',
@@ -112,6 +107,11 @@ glowroot.config([
       url: '/heap-dump',
       templateUrl: 'views/jvm/heap-dump.html',
       controller: 'JvmHeapDumpCtrl'
+    });
+    $stateProvider.state('jvm.processInfo', {
+      url: '/process-info',
+      templateUrl: 'views/jvm/process-info.html',
+      controller: 'JvmProcessInfoCtrl'
     });
     $stateProvider.state('jvm.systemProperties', {
       url: '/system-properties',
@@ -148,30 +148,30 @@ glowroot.config([
       templateUrl: 'views/config/capture-point-list.html',
       controller: 'ConfigCapturePointListCtrl'
     });
-    $stateProvider.state('config.advanced', {
-      url: '/advanced',
-      templateUrl: 'views/config/advanced.html',
-      controller: 'ConfigAdvancedCtrl'
-    });
-    $stateProvider.state('config.userInterface', {
-      url: '/user-interface',
-      templateUrl: 'views/config/user-interface.html',
-      controller: 'ConfigUserInterfaceCtrl'
+    $stateProvider.state('config.gauges', {
+      url: '/gauges',
+      templateUrl: 'views/config/gauge-list.html',
+      controller: 'ConfigGaugeListCtrl'
     });
     $stateProvider.state('config.storage', {
       url: '/storage',
       templateUrl: 'views/config/storage.html',
       controller: 'ConfigStorageCtrl'
     });
+    $stateProvider.state('config.userInterface', {
+      url: '/user-interface',
+      templateUrl: 'views/config/user-interface.html',
+      controller: 'ConfigUserInterfaceCtrl'
+    });
+    $stateProvider.state('config.advanced', {
+      url: '/advanced',
+      templateUrl: 'views/config/advanced.html',
+      controller: 'ConfigAdvancedCtrl'
+    });
     $stateProvider.state('config.plugin', {
       url: '/plugin/:pluginId',
       templateUrl: 'views/config/plugin.html',
       controller: 'ConfigPluginCtrl'
-    });
-    $stateProvider.state('config.mbeanGauges', {
-      url: '/mbean-gauges',
-      templateUrl: 'views/config/mbean-gauge-list.html',
-      controller: 'ConfigMBeanGaugeListCtrl'
     });
     $stateProvider.state('login', {
       url: '/login',

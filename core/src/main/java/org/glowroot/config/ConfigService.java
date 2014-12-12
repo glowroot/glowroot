@@ -90,8 +90,8 @@ public class ConfigService {
         return null;
     }
 
-    public List<MBeanGauge> getMBeanGauges() {
-        return config.mbeanGauges();
+    public List<Gauge> getGauges() {
+        return config.gauges();
     }
 
     public List<CapturePoint> getCapturePoints() {
@@ -225,32 +225,32 @@ public class ConfigService {
         return pluginConfig.version();
     }
 
-    public String insertMBeanGauge(MBeanGauge mbeanGauge) throws DuplicateMBeanObjectNameException,
+    public String insertGauge(Gauge gauge) throws DuplicateMBeanObjectNameException,
             IOException {
         synchronized (writeLock) {
-            List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.mbeanGauges());
+            List<Gauge> gauges = Lists.newArrayList(config.gauges());
             // check for duplicate mbeanObjectName
-            for (MBeanGauge loopMBeanGauge : mbeanGauges) {
-                if (loopMBeanGauge.mbeanObjectName().equals(mbeanGauge.mbeanObjectName())) {
+            for (Gauge loopGauge : gauges) {
+                if (loopGauge.mbeanObjectName().equals(gauge.mbeanObjectName())) {
                     throw new DuplicateMBeanObjectNameException();
                 }
             }
-            mbeanGauges.add(mbeanGauge);
-            Config updatedConfig = ((ImmutableConfig) config).withMbeanGauges(mbeanGauges);
+            gauges.add(gauge);
+            Config updatedConfig = ((ImmutableConfig) config).withGauges(gauges);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
-        return mbeanGauge.version();
+        return gauge.version();
     }
 
-    public String updateMBeanGauge(MBeanGauge mbeanGauge, String priorVersion)
+    public String updateGauge(Gauge gauge, String priorVersion)
             throws IOException {
         synchronized (writeLock) {
-            List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.mbeanGauges());
+            List<Gauge> gauges = Lists.newArrayList(config.gauges());
             boolean found = false;
-            for (ListIterator<MBeanGauge> i = mbeanGauges.listIterator(); i.hasNext();) {
+            for (ListIterator<Gauge> i = gauges.listIterator(); i.hasNext();) {
                 if (priorVersion.equals(i.next().version())) {
-                    i.set(mbeanGauge);
+                    i.set(gauge);
                     found = true;
                     break;
                 }
@@ -258,18 +258,18 @@ public class ConfigService {
             if (!found) {
                 throw new IOException("Gauge config not found: " + priorVersion);
             }
-            Config updatedConfig = ((ImmutableConfig) config).withMbeanGauges(mbeanGauges);
+            Config updatedConfig = ((ImmutableConfig) config).withGauges(gauges);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
-        return mbeanGauge.version();
+        return gauge.version();
     }
 
-    public void deleteMBeanGauge(String version) throws IOException {
+    public void deleteGauge(String version) throws IOException {
         synchronized (writeLock) {
-            List<MBeanGauge> mbeanGauges = Lists.newArrayList(config.mbeanGauges());
+            List<Gauge> gauges = Lists.newArrayList(config.gauges());
             boolean found = false;
-            for (ListIterator<MBeanGauge> i = mbeanGauges.listIterator(); i.hasNext();) {
+            for (ListIterator<Gauge> i = gauges.listIterator(); i.hasNext();) {
                 if (version.equals(i.next().version())) {
                     i.remove();
                     found = true;
@@ -279,7 +279,7 @@ public class ConfigService {
             if (!found) {
                 throw new IOException("Gauge config not found: " + version);
             }
-            Config updatedConfig = ((ImmutableConfig) config).withMbeanGauges(mbeanGauges);
+            Config updatedConfig = ((ImmutableConfig) config).withGauges(gauges);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }

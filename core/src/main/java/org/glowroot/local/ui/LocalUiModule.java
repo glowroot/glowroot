@@ -116,8 +116,8 @@ public class LocalUiModule {
         CapturePointJsonService capturePointJsonService = new CapturePointJsonService(
                 configService, transactionModule.getAdviceCache(), classpathCache,
                 transactionModule);
-        MBeanGaugeJsonService mbeanGaugeJsonService =
-                new MBeanGaugeJsonService(configService, jvmModule.getLazyPlatformMBeanServer());
+        GaugeJsonService gaugeJsonService =
+                new GaugeJsonService(configService, jvmModule.getLazyPlatformMBeanServer());
         AdminJsonService adminJsonService = new AdminJsonService(aggregateDao, traceDao,
                 gaugePointDao, configService, transactionModule.getAdviceCache(), analyzedWorld,
                 instrumentation, transactionCollector, dataSource, transactionRegistry);
@@ -131,7 +131,7 @@ public class LocalUiModule {
         jsonServices.add(jvmJsonService);
         jsonServices.add(configJsonService);
         jsonServices.add(capturePointJsonService);
-        jsonServices.add(mbeanGaugeJsonService);
+        jsonServices.add(gaugeJsonService);
         jsonServices.add(adminJsonService);
 
         // for now only a single http worker thread to keep # of threads down

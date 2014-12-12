@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.GaugePoint;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.MBeanGauge;
+import org.glowroot.config.Gauge;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.ImmutableAvailability;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
@@ -121,7 +121,7 @@ class JvmJsonService {
         this.fixedGaugeIntervalMillis = fixedGaugeIntervalSeconds * 1000;
     }
 
-    @GET("/backend/jvm/process")
+    @GET("/backend/jvm/process-info")
     String getProcess() throws Exception {
         String pid = ProcessId.getPid();
         String command = System.getProperty("sun.java.command");
@@ -190,9 +190,9 @@ class JvmJsonService {
     @GET("/backend/jvm/all-gauge-names")
     String getAllGaugeNames() throws IOException {
         List<String> gaugeNames = Lists.newArrayList();
-        for (MBeanGauge mbeanGauge : configService.getMBeanGauges()) {
-            for (String mbeanAttributeName : mbeanGauge.mbeanAttributeNames()) {
-                gaugeNames.add(mbeanGauge.name() + "/" + mbeanAttributeName);
+        for (Gauge gauge : configService.getGauges()) {
+            for (String mbeanAttributeName : gauge.mbeanAttributeNames()) {
+                gaugeNames.add(gauge.name() + "/" + mbeanAttributeName);
             }
         }
         ImmutableList<String> sortedGaugeNames =

@@ -32,7 +32,7 @@ import org.glowroot.container.Container;
 import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.config.CapturePoint;
 import org.glowroot.container.config.CapturePoint.CaptureKind;
-import org.glowroot.container.config.MBeanGauge;
+import org.glowroot.container.config.Gauge;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
@@ -220,12 +220,12 @@ public class ConfigTest {
     @Test
     public void shouldInsertMBeanGauge() throws Exception {
         // given
-        List<? extends MBeanGauge> originalConfigs = container.getConfigService().getMBeanGauges();
-        MBeanGauge config = createMBeanGauge();
+        List<? extends Gauge> originalConfigs = container.getConfigService().getGauges();
+        Gauge config = createMBeanGauge();
         // when
-        container.getConfigService().addMBeanGauge(config);
+        container.getConfigService().addGauge(config);
         // then
-        List<MBeanGauge> configs = container.getConfigService().getMBeanGauges();
+        List<Gauge> configs = container.getConfigService().getGauges();
         assertThat(configs).hasSize(originalConfigs.size() + 1);
         assertThat(configs.get(configs.size() - 1)).isEqualTo(config);
     }
@@ -233,14 +233,14 @@ public class ConfigTest {
     @Test
     public void shouldUpdateMBeanGauge() throws Exception {
         // given
-        List<? extends MBeanGauge> originalConfigs = container.getConfigService().getMBeanGauges();
-        MBeanGauge config = createMBeanGauge();
-        config = container.getConfigService().addMBeanGauge(config);
+        List<? extends Gauge> originalConfigs = container.getConfigService().getGauges();
+        Gauge config = createMBeanGauge();
+        config = container.getConfigService().addGauge(config);
         // when
         updateAllFields(config);
-        container.getConfigService().updateMBeanGauge(config);
+        container.getConfigService().updateGauge(config);
         // then
-        List<MBeanGauge> configs = container.getConfigService().getMBeanGauges();
+        List<Gauge> configs = container.getConfigService().getGauges();
         assertThat(configs).hasSize(originalConfigs.size() + 1);
         assertThat(configs.get(configs.size() - 1)).isEqualTo(config);
     }
@@ -248,13 +248,13 @@ public class ConfigTest {
     @Test
     public void shouldDeleteMBeanGauge() throws Exception {
         // given
-        List<? extends MBeanGauge> originalConfigs = container.getConfigService().getMBeanGauges();
-        MBeanGauge config = createMBeanGauge();
-        config = container.getConfigService().addMBeanGauge(config);
+        List<? extends Gauge> originalConfigs = container.getConfigService().getGauges();
+        Gauge config = createMBeanGauge();
+        config = container.getConfigService().addGauge(config);
         // when
-        container.getConfigService().removeMBeanGauge(config.getVersion());
+        container.getConfigService().removeGauge(config.getVersion());
         // then
-        List<? extends MBeanGauge> configs = container.getConfigService().getMBeanGauges();
+        List<? extends Gauge> configs = container.getConfigService().getGauges();
         assertThat(configs).isEqualTo(originalConfigs);
     }
 
@@ -398,15 +398,15 @@ public class ConfigTest {
         config.setTraceEntryEnabledProperty(config.getTraceEntryEnabledProperty() + "l");
     }
 
-    private static MBeanGauge createMBeanGauge() {
-        MBeanGauge config = new MBeanGauge();
+    private static Gauge createMBeanGauge() {
+        Gauge config = new Gauge();
         config.setName("test");
         config.setMBeanObjectName("anobject:k=v");
         config.setMBeanAttributeNames(Lists.newArrayList("anattribute"));
         return config;
     }
 
-    private static void updateAllFields(MBeanGauge config) {
+    private static void updateAllFields(Gauge config) {
         config.setName(config.getName() + "a");
         config.setMBeanObjectName(config.getMBeanObjectName() + "b");
         List<String> mbeanAttributeNames = Lists.newArrayList();

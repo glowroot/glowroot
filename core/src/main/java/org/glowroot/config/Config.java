@@ -63,6 +63,6 @@ abstract class Config {
     @Json.Named("plugins")
     abstract List<PluginConfig> pluginConfigs();
 
-    abstract List<MBeanGauge> mbeanGauges();
+    abstract List<Gauge> gauges();
     abstract List<CapturePoint> capturePoints();
 }

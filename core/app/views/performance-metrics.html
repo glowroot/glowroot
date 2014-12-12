@@ -19,8 +19,54 @@
 </div>
 <div class="header">
   <div class="header-page-name">
-    <a ng-href="performance/transactions?{{transactionsQueryString()}}">{{transactionType}}</a>:
-    {{transactionName || 'All Transactions'}}
+    <div ng-if="transactionName">
+      <a ng-href="performance/transactions?{{transactionsQueryString()}}">{{transactionType}}</a>:
+      {{transactionName || 'All Transactions'}}
+    </div>
+    <div ng-if="!transactionName" ng-switch="layout.transactionTypes.length">
+      <div ng-switch-when="1">
+        {{transactionType}}
+      </div>
+      <div ng-switch-default>
+        <div dropdown class="dropdown">
+          <div dropdown-toggle class="dropdown-toggle" style="cursor: pointer; display: inline-block;">
+            {{transactionType}}
+            <span class="caret"></span>
+          </div>
+          <ul class="dropdown-menu">
+            <li ng-repeat="transactionType in layout.transactionTypes">
+              <a ng-click="changeTransactionType(transactionType)">
+                {{transactionType}}
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div ng-form
+     gt-form-with-primary-button>
+  <div class="form-group"
+       style="margin-bottom: 0;">
+    <div style="float: left; padding-right: 10px;">
+      <label class="control-label"
+             for="filterDate"
+             style="padding: 0 10px 0 60px;">
+        Date
+      </label>
+      <div gt-datepicker
+           gt-model="filterDate"
+           gt-id="filterDate"
+           style="display: inline-block;">
+      </div>
+    </div>
+    <div gt-button
+         gt-label="Refresh"
+         gt-click="refreshButtonClick(deferred)"
+         gt-no-spinner="true"
+         id="refreshButtonDiv">
+    </div>
   </div>
 </div>
 <div class="chart-container">

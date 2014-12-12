@@ -19,7 +19,7 @@
 </div>
 <div ng-include src="'template/gt-http-error.html'"></div>
 <div ng-repeat="gauge in gauges"
-     ng-controller="ConfigMBeanGaugeCtrl"
+     ng-controller="ConfigGaugeCtrl"
      class="panel panel-default">
   <div class="panel-heading">
     <h2>{{heading}}</h2>
@@ -120,7 +120,7 @@
      before it gets pushed down by existing gauge sections -->
 <div class="panel panel-default" ng-show="loaded">
   <div class="panel-heading">
-    <h2>Add mbean gauge</h2>
+    <h2>Add gauge</h2>
   </div>
   <!-- override .panel-body min-height: 150px, not needed anyway since no loading spinner in this panel -->
   <div class="panel-body" style="min-height: 0;">
