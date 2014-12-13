@@ -131,6 +131,10 @@ class ServletMessageSupplier extends MessageSupplier {
         responseHeaders.setHeader(name, value);
     }
 
+    void setResponseLongHeader(String name, long value) {
+        responseHeaders.setHeader(name, value);
+    }
+
     void addResponseHeader(String name, @Nullable String value) {
         if (value == null) {
             responseHeaders.addHeader(name, "");

@@ -65,6 +65,30 @@ public class ResponseHeaderAspect {
         }
     }
 
+    @Pointcut(className = "javax.servlet.ServletResponse", methodName = "setContentLengthLong",
+            methodParameterTypes = {"long"})
+    public static class SetContentLengthLongAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return isEnabledCommon();
+        }
+        @OnBefore
+        public static void onBefore() {
+            inAdvice.set(true);
+        }
+        @OnAfter
+        public static void onAfter(@BindParameter long value) {
+            inAdvice.set(false);
+            if (!captureResponseHeader("Content-Length")) {
+                return;
+            }
+            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            if (messageSupplier != null) {
+                messageSupplier.setResponseLongHeader("Content-Length", value);
+            }
+        }
+    }
+
     @Pointcut(className = "javax.servlet.ServletResponse", methodName = "setContentType",
             methodParameterTypes = {"java.lang.String"})
     public static class SetContentTypeAdvice {
