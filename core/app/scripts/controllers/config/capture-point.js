@@ -152,7 +152,9 @@ glowroot.controller('ConfigCapturePointCtrl', [
     };
 
     $scope.onBlurMethodName = function () {
-      if (!$scope.config.methodName) {
+      if ($scope.config.methodName) {
+        $scope.onSelectMethodName();
+      } else {
         // the user cleared the text input and tabbed away
         $scope.methodSignatures = [];
         $scope.selectedMethodSignature = undefined;
