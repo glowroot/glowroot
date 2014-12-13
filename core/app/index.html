@@ -34,6 +34,7 @@
 
   <!-- build:css({.tmp,.}) styles/main.css -->
   <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="bower_components/stackvis/share/icicle.css">
   <!-- endbuild -->
 </head>
 <body ng-app="glowroot"
@@ -155,6 +156,8 @@
   <script src="bower_components/flot.tooltip/js/jquery.flot.tooltip.js"></script>
   <script src="bower_components/moment/moment.js"></script>
   <script src="bower_components/spinjs/spin.js"></script>
+  <script src="bower_components/d3/d3.v2.js"></script>
+  <script src="bower_components/stackvis/share/icicle.js"></script>
   <!-- angular-ui-bootstrap-templates.js is generated at build time by grunt-angular-templates -->
   <script src="scripts/generated/angular-ui-bootstrap-templates.js"></script>
   <!-- endbuild -->
@@ -174,6 +177,7 @@
   <script src="scripts/services/conversions.js"></script>
   <script src="scripts/controllers/performance-transactions.js"></script>
   <script src="scripts/controllers/performance-metrics.js"></script>
+  <script src="scripts/controllers/performance-flame-graph.js"></script>
   <script src="scripts/controllers/errors-transactions.js"></script>
   <script src="scripts/controllers/errors-messages.js"></script>
   <script src="scripts/controllers/traces.js"></script>

@@ -173,6 +173,10 @@
           <span ng-pluralize count="mergedAggregate.profileSampleCount" when="{'1':'sample','other':'samples'}"></span>
         </span>
       </button>
+      <a ng-href="performance/flame-graph?{{flameGraphQueryString()}}"
+         style="margin-left: 50px;">
+        <em>View flame graph (experimental)</em>
+      </a>
       <div>
         <div class="hide trace-detail-spinner"></div>
       </div>

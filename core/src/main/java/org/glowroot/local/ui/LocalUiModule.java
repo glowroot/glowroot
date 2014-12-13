@@ -207,7 +207,8 @@ public class LocalUiModule {
         // pages
         uriMappings.put(Pattern.compile("^/$"), indexHtmlHttpService);
         uriMappings.put(Pattern.compile("^/performance/transactions$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/performance/metrics"), indexHtmlHttpService);
+        uriMappings.put(Pattern.compile("^/performance/metrics$"), indexHtmlHttpService);
+        uriMappings.put(Pattern.compile("^/performance/flame-graph$"), indexHtmlHttpService);
         uriMappings.put(Pattern.compile("^/errors/transactions$"), indexHtmlHttpService);
         uriMappings.put(Pattern.compile("^/errors/messages$"), indexHtmlHttpService);
         uriMappings.put(Pattern.compile("^/traces$"), indexHtmlHttpService);

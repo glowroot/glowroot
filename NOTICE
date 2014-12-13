@@ -33,6 +33,11 @@ Copyright 2012 Stefan Petre, Improvements by Andrew Rowls
 https://github.com/eternicode/bootstrap-datepicker
 Apache License, Version 2.0
 
+D3
+Copyright (c) 2010-2014 Michael Bostock
+http://d3js.org
+BSD 3-Clause License
+
 Flot
 Copyright 2007-2013 IOLA and Ole Laursen
 http://www.flotcharts.org
@@ -103,6 +108,11 @@ Ning Compress
 Copyright 2009-2010 Ning, Inc
 http://github.com/ning/compress
 Apache License, Version 2.0
+
+Node Stackvis
+Copyright (c) 2013 Joyent, Inc
+https://github.com/davepacheco/node-stackvis
+MIT License
 
 Open Sans Font
 Copyright 2010-2011 Google Corporation

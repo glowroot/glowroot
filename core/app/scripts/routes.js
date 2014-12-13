@@ -60,6 +60,11 @@ glowroot.config([
       // performance-metrics controller needs to wait for layout when running under grunt serve
       resolve: waitForLayout
     });
+    $stateProvider.state('performance-flame-graph', {
+      url: '/performance/flame-graph',
+      templateUrl: 'views/performance-flame-graph.html',
+      controller: 'PerformanceFlameGraphCtrl'
+    });
     $stateProvider.state('errors-transactions', {
       url: '/errors/transactions',
       templateUrl: 'views/errors-transactions.html',

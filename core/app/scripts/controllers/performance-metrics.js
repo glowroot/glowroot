@@ -366,6 +366,16 @@ glowroot.controller('PerformanceMetricsCtrl', [
               'backend/performance/profile?' + queryStrings.encodeObject(query));
     };
 
+    $scope.flameGraphQueryString = function (event) {
+      var query = {
+        from: $scope.chartFrom,
+        to: $scope.chartTo,
+        transactionType: $scope.transactionType,
+        transactionName: $scope.transactionName
+      };
+      return queryStrings.encodeObject(query);
+    };
+
     (function () {
       var options = {
         grid: {

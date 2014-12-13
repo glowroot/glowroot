@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
+import com.google.common.base.Strings;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -261,7 +262,40 @@ class AggregateJsonService {
         AggregateProfileNode profile = aggregateCommonService.getProfile(
                 request.transactionType(), request.transactionName(), request.from(),
                 request.to(), request.truncateLeafPercentage());
+        // TODO better error handling for null profile
         return mapper.writeValueAsString(profile);
+    }
+
+    @GET("/backend/performance/flame-graph")
+    String getFlameGraph(String queryString) throws Exception {
+        ProfileRequest request = QueryStrings.decode(queryString, ProfileRequest.class);
+        AggregateProfileNode profile = aggregateCommonService.getProfile(
+                request.transactionType(), request.transactionName(), request.from(),
+                request.to(), request.truncateLeafPercentage());
+        if (profile == null) {
+            // TODO better error handling
+            return "{}";
+        }
+        AggregateProfileNode interestingNode = profile;
+        while (interestingNode.getChildNodes().size() == 1) {
+            interestingNode = interestingNode.getChildNodes().get(0);
+        }
+        if (interestingNode.getChildNodes().isEmpty()) {
+            // only a single branch through entire tree
+            interestingNode = profile;
+        }
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeObjectFieldStart("");
+        jg.writeNumberField("svUnique", 0);
+        jg.writeNumberField("svTotal", interestingNode.getSampleCount());
+        jg.writeObjectFieldStart("svChildren");
+        writeFlameGraphNode(interestingNode, jg);
+        jg.writeEndObject();
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
     }
 
     // calculate top 5 metrics
@@ -301,6 +335,26 @@ class AggregateJsonService {
             return aggregate;
         }
         return null;
+    }
+
+    private static void writeFlameGraphNode(AggregateProfileNode node, JsonGenerator jg)
+            throws IOException {
+        jg.writeObjectFieldStart(Strings.nullToEmpty(node.getStackTraceElement()));
+        long svUnique = 0;
+        if (node.getLeafThreadState() != null) {
+            svUnique = node.getSampleCount();
+            for (AggregateProfileNode childNode : node.getChildNodes()) {
+                svUnique -= childNode.getSampleCount();
+            }
+        }
+        jg.writeNumberField("svUnique", svUnique);
+        jg.writeNumberField("svTotal", node.getSampleCount());
+        jg.writeObjectFieldStart("svChildren");
+        for (AggregateProfileNode childNode : node.getChildNodes()) {
+            writeFlameGraphNode(childNode, jg);
+        }
+        jg.writeEndObject();
+        jg.writeEndObject();
     }
 
     private static class StackedPoint {

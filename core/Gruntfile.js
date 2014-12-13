@@ -69,6 +69,7 @@ module.exports = function (grunt) {
       rules: [
         { from: '^/performance/transactions(\\?.*)?$', to: '/index.html' },
         { from: '^/performance/metrics\\?.*$', to: '/index.html' },
+        { from: '^/performance/flame-graph\\?.*$', to: '/index.html' },
         { from: '^/errors/transactions(\\?.*)?$', to: '/index.html' },
         { from: '^/errors/messages(\\?.*)?$', to: '/index.html' },
         { from: '^/traces(\\?.*)?$', to: '/index.html' },
