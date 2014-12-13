@@ -31,9 +31,11 @@ glowroot.controller('JvmGaugesCtrl', [
     var plotGaugeNames;
 
     var fixedGaugeIntervalMillis = $scope.layout.fixedGaugeIntervalSeconds * 1000;
+    var fixedGaugeRollupMillis = $scope.layout.fixedGaugeRollupSeconds * 1000;
 
     var currentRefreshId = 0;
     var currentZoomId = 0;
+    var currentRollupLevel;
 
     var $chart = $('#chart');
 
@@ -102,15 +104,32 @@ glowroot.controller('JvmGaugesCtrl', [
       return shortNames;
     }
 
+    function newRollupLevel(from, to) {
+      // 2 hours so that initial range will be rendered at fine-grained level (no rollup)
+      if (to - from <= 2 * 3600 * 1000) {
+        return 0;
+      } else {
+        return 1;
+      }
+    }
+
     function refreshChart(deferred) {
       var date = $scope.filterDate;
       var refreshId = ++currentRefreshId;
       var chartFrom = $scope.chartFrom;
       var chartTo = $scope.chartTo;
+      var plusMinus;
+      var rollupLevel = newRollupLevel(chartFrom, chartTo);
+      if (newRollupLevel === 0) {
+        plusMinus = fixedGaugeIntervalMillis;
+      } else {
+        plusMinus = fixedGaugeRollupMillis;
+      }
       var query = {
-        from: chartFrom - fixedGaugeIntervalMillis,
-        to: chartTo + fixedGaugeIntervalMillis,
-        gaugeNames: keyedColorPool.keys()
+        from: chartFrom - plusMinus,
+        to: chartTo + plusMinus,
+        gaugeNames: keyedColorPool.keys(),
+        rollupLevel: rollupLevel
       };
       $scope.showChartSpinner++;
       $http.get('backend/jvm/gauge-points?' + queryStrings.encodeObject(query))
@@ -124,7 +143,7 @@ glowroot.controller('JvmGaugesCtrl', [
             plot.getAxes().xaxis.options.max = chartTo;
             plot.getAxes().xaxis.options.zoomRange = [
               date.getTime(),
-                  date.getTime() + 24 * 60 * 60 * 1000
+              date.getTime() + 24 * 60 * 60 * 1000
             ];
             var plotData = data;
             plotGaugeNames = [];
@@ -132,6 +151,7 @@ glowroot.controller('JvmGaugesCtrl', [
               plotGaugeNames.push(gaugeName);
             });
             updatePlotData(plotData);
+            currentRollupLevel = rollupLevel;
             if (deferred) {
               deferred.resolve('Success');
             }
@@ -194,14 +214,17 @@ glowroot.controller('JvmGaugesCtrl', [
         // throw up spinner right away
         $scope.showChartSpinner++;
         $scope.showTableOverlay++;
+        // need to call setupGrid on each zoom to handle rapid zooming
+        plot.setupGrid();
         var zoomingOut = args.amount && args.amount < 1;
-        if (zoomingOut) {
+        var zoomingInNewRollup =
+            (currentRollupLevel !== newRollupLevel(plot.getAxes().xaxis.options.min, plot.getAxes().xaxis.options.max));
+        if (zoomingOut || zoomingInNewRollup) {
+          // need to clear y-axis on zooming in with new rollup also since could be fine-grained outliers
           plot.getAxes().yaxis.options.min = 0;
           plot.getAxes().yaxis.options.realMax = undefined;
         }
-        if (zoomingOut) {
-          // need to call setupGrid on each zoom to handle rapid zooming
-          plot.setupGrid();
+        if (zoomingOut || zoomingInNewRollup) {
           var zoomId = ++currentZoomId;
           // use 100 millisecond delay to handle rapid zooming
           $timeout(function () {
@@ -236,14 +259,21 @@ glowroot.controller('JvmGaugesCtrl', [
         // perform the zoom
         plot.getAxes().xaxis.options.min = ranges.xaxis.from;
         plot.getAxes().xaxis.options.max = ranges.xaxis.to;
-        updatePlotData(getFilteredData());
+        plot.setupGrid();
         $scope.chartFrom = plot.getAxes().xaxis.min;
         $scope.chartTo = plot.getAxes().xaxis.max;
         chartFromToDefault = false;
         updateLocation();
-        // no need to fetch new data
         // increment currentRefreshId to cancel any refresh in action
         currentRefreshId++;
+        var zoomingInNewRollup =
+            (currentRollupLevel !== newRollupLevel(plot.getAxes().xaxis.options.min, plot.getAxes().xaxis.options.max));
+        if (zoomingInNewRollup) {
+          refreshChart();
+        } else {
+          // no need to fetch new data
+          updatePlotData(getFilteredData());
+        }
       });
     });
 
@@ -416,7 +446,7 @@ glowroot.controller('JvmGaugesCtrl', [
           absoluteZoomRange: true,
           zoomRange: [
             $scope.filterDate.getTime(),
-                $scope.filterDate.getTime() + 24 * 60 * 60 * 1000
+            $scope.filterDate.getTime() + 24 * 60 * 60 * 1000
           ],
           reserveSpace: false
         },

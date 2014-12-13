@@ -37,6 +37,7 @@ abstract class Layout {
     abstract List<String> transactionCustomAttributes();
     abstract long fixedAggregateIntervalSeconds();
     abstract long fixedGaugeIntervalSeconds();
+    abstract long fixedGaugeRollupSeconds();
 
     @Value.Derived
     public String version() {

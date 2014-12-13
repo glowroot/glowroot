@@ -21,7 +21,8 @@ glowroot.factory('queryStrings', [
     function encodeObject(object) {
       var queryString = '';
       angular.forEach(object, function (value, key) {
-        if (value) {
+        // don't want to exclude values that are 0, so only exclude undefined and null
+        if (value !== undefined && value !== null) {
           key = key.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
           if (angular.isArray(value)) {
             angular.forEach(value, function (val) {

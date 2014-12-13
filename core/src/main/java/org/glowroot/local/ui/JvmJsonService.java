@@ -108,17 +108,20 @@ class JvmJsonService {
     private final OptionalService<HeapDumps> heapDumps;
 
     private final long fixedGaugeIntervalMillis;
+    private final long fixedGaugeRollupMillis;
 
     JvmJsonService(LazyPlatformMBeanServer lazyPlatformMBeanServer, GaugePointDao gaugePointDao,
             ConfigService configService,
             OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
-            OptionalService<HeapDumps> heapDumps, long fixedGaugeIntervalSeconds) {
+            OptionalService<HeapDumps> heapDumps, long fixedGaugeIntervalSeconds,
+            long fixedGaugeRollupSeconds) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         this.gaugePointDao = gaugePointDao;
         this.configService = configService;
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.heapDumps = heapDumps;
         this.fixedGaugeIntervalMillis = fixedGaugeIntervalSeconds * 1000;
+        this.fixedGaugeRollupMillis = fixedGaugeRollupSeconds * 1000;
     }
 
     @GET("/backend/jvm/process-info")
@@ -165,17 +168,23 @@ class JvmJsonService {
     @GET("/backend/jvm/gauge-points")
     String getGaugePoints(String queryString) throws Exception {
         GaugePointRequest request = QueryStrings.decode(queryString, GaugePointRequest.class);
+        double gapMillis;
+        if (request.rollupLevel() == 0) {
+            gapMillis = fixedGaugeIntervalMillis * 1.5;
+        } else {
+            gapMillis = fixedGaugeRollupMillis * 1.5;
+        }
         List<List<Number /*@Nullable*/[]>> series = Lists.newArrayList();
         for (String gaugeName : request.gaugeNames()) {
-            ImmutableList<GaugePoint> gaugePoints =
-                    gaugePointDao.readGaugePoints(gaugeName, request.from(), request.to());
+            ImmutableList<GaugePoint> gaugePoints = gaugePointDao.readGaugePoints(gaugeName,
+                    request.from(), request.to(), request.rollupLevel());
             List<Number /*@Nullable*/[]> points = Lists.newArrayList();
             GaugePoint lastGaugePoint = null;
             for (GaugePoint gaugePoint : gaugePoints) {
                 if (lastGaugePoint != null) {
                     long millisecondsSinceLastPoint =
                             gaugePoint.captureTime() - lastGaugePoint.captureTime();
-                    if (millisecondsSinceLastPoint > fixedGaugeIntervalMillis * 1.5) {
+                    if (millisecondsSinceLastPoint > gapMillis) {
                         points.add(null);
                     }
                 }
@@ -613,6 +622,7 @@ class JvmJsonService {
         abstract long from();
         abstract long to();
         abstract List<String> gaugeNames();
+        abstract int rollupLevel();
     }
 
     @Value.Immutable

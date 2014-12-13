@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.collector.GaugePoint;
 import org.glowroot.collector.GaugePointRepository;
 import org.glowroot.collector.ImmutableGaugePoint;
+import org.glowroot.common.Clock;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.RowMapper;
 import org.glowroot.local.store.Schemas.Column;
@@ -46,16 +47,40 @@ public class GaugePointDao implements GaugePointRepository {
             ImmutableList.<Index>of(ImmutableIndex.of("gauge_point_idx",
                     ImmutableList.of("gauge_name", "capture_time", "value")));
 
-    private final DataSource dataSource;
+    private static final ImmutableList<Column> gaugePointRollupColumns = ImmutableList.<Column>of(
+            ImmutableColumn.of("gauge_name", Types.VARCHAR),
+            ImmutableColumn.of("capture_time", Types.BIGINT),
+            ImmutableColumn.of("value", Types.DOUBLE),
+            ImmutableColumn.of("count", Types.DOUBLE)); // count is needed for further rollups
 
-    GaugePointDao(DataSource dataSource) throws SQLException {
+    private static final ImmutableList<Index> gaugePointRollupIndexes =
+            ImmutableList.<Index>of(ImmutableIndex.of("gauge_point_rollup_1_idx",
+                    ImmutableList.of("gauge_name", "capture_time", "value")));
+
+    private final DataSource dataSource;
+    private final Clock clock;
+    private final long fixedRollupIntervalMillis;
+    private volatile long lastRollupTime;
+
+    GaugePointDao(DataSource dataSource, Clock clock, long fixedRollupIntervalSeconds)
+            throws SQLException {
         this.dataSource = dataSource;
+        this.clock = clock;
+        this.fixedRollupIntervalMillis = fixedRollupIntervalSeconds * 1000;
         dataSource.syncTable("gauge_point", gaugePointColumns);
         dataSource.syncIndexes("gauge_point", gaugePointIndexes);
+        dataSource.syncTable("gauge_point_rollup_1", gaugePointRollupColumns);
+        dataSource.syncIndexes("gauge_point_rollup_1", gaugePointRollupIndexes);
+        lastRollupTime = dataSource.queryForLong(
+                "select ifnull(max(capture_time), 0) from gauge_point_rollup_1");
     }
 
+    // synchronization is needed for rollup logic
     @Override
     public void store(final List<GaugePoint> gaugePoints) {
+        if (gaugePoints.isEmpty()) {
+            return;
+        }
         try {
             dataSource.batchUpdate("insert into gauge_point (gauge_name, capture_time, value)"
                     + " values (?, ?, ?)", new BatchAdder() {
@@ -72,14 +97,34 @@ public class GaugePointDao implements GaugePointRepository {
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
+        // clock can never go backwards and future gauge captures will wait until this method
+        // completes since ScheduledExecutorService.scheduleAtFixedRate() guarantees that future
+        // invocations of GaugeCollector will wait until prior invocations complete
+        //
+        // TODO this clock logic will fail if remote collectors are introduced
+        long safeRollupTime = clock.currentTimeMillis() - 1;
+        safeRollupTime = (long) Math.floor(safeRollupTime / (double) fixedRollupIntervalMillis)
+                * fixedRollupIntervalMillis;
+        if (safeRollupTime > lastRollupTime) {
+            try {
+                rollup(lastRollupTime, safeRollupTime);
+                lastRollupTime = safeRollupTime;
+            } catch (SQLException e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
     }
 
     public ImmutableList<GaugePoint> readGaugePoints(String gaugeName, long captureTimeFrom,
-            long captureTimeTo) throws SQLException {
-        return dataSource.query("select gauge_name, capture_time, value from gauge_point"
+            long captureTimeTo, int rollupLevel) throws SQLException {
+        String tableName = "gauge_point";
+        if (rollupLevel > 0) {
+            tableName += "_rollup_" + rollupLevel;
+        }
+        return dataSource.query("select gauge_name, capture_time, value from " + tableName
                 + " where gauge_name = ? and capture_time >= ? and capture_time <= ?"
-                + " order by capture_time", new GaugePointRowMapper(), gaugeName,
-                captureTimeFrom, captureTimeTo);
+                + " order by capture_time", new GaugePointRowMapper(), gaugeName, captureTimeFrom,
+                captureTimeTo);
     }
 
     public void deleteAll() {
@@ -104,6 +149,15 @@ public class GaugePointDao implements GaugePointRepository {
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
+    }
+
+    private void rollup(long lastRollupTime, long safeRollupTime) throws SQLException {
+        // need ".0" to force double result
+        dataSource.update("insert into gauge_point_rollup_1 (gauge_name, capture_time, value,"
+                + " count) select gauge_name, ceil(capture_time / " + fixedRollupIntervalMillis
+                + ".0) * " + fixedRollupIntervalMillis + " ceil_capture_time, avg(value), count(*)"
+                + " from gauge_point where capture_time > ? and capture_time <= ?"
+                + " group by gauge_name, ceil_capture_time", lastRollupTime, safeRollupTime);
     }
 
     private static class GaugePointRowMapper implements RowMapper<GaugePoint> {

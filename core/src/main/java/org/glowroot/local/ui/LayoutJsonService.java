@@ -49,18 +49,21 @@ class LayoutJsonService {
     private final OptionalService<HeapDumps> heapDumps;
     private final long fixedAggregateIntervalSeconds;
     private final long fixedGaugeIntervalSeconds;
+    private final long fixedGaugeRollupSeconds;
 
     private volatile @Nullable Layout layout;
 
     LayoutJsonService(String version, ConfigService configService,
             List<PluginDescriptor> pluginDescriptors, OptionalService<HeapDumps> heapDumps,
-            long fixedAggregateIntervalSeconds, long fixedGaugeIntervalSeconds) {
+            long fixedAggregateIntervalSeconds, long fixedGaugeIntervalSeconds,
+            long fixedGaugeRollupSeconds) {
         this.version = version;
         this.configService = configService;
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         this.heapDumps = heapDumps;
         this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
         this.fixedGaugeIntervalSeconds = fixedGaugeIntervalSeconds;
+        this.fixedGaugeRollupSeconds = fixedGaugeRollupSeconds;
         configService.addConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
@@ -77,7 +80,7 @@ class LayoutJsonService {
         if (localLayout == null) {
             localLayout = buildLayout(version, configService, pluginDescriptors,
                     heapDumps.getService(), fixedAggregateIntervalSeconds,
-                    fixedGaugeIntervalSeconds);
+                    fixedGaugeIntervalSeconds, fixedGaugeRollupSeconds);
             layout = localLayout;
         }
         return Marshaling2.toJson(localLayout);
@@ -88,7 +91,7 @@ class LayoutJsonService {
         if (localLayout == null) {
             localLayout = buildLayout(version, configService, pluginDescriptors,
                     heapDumps.getService(), fixedAggregateIntervalSeconds,
-                    fixedGaugeIntervalSeconds);
+                    fixedGaugeIntervalSeconds, fixedGaugeRollupSeconds);
             layout = localLayout;
         }
         return localLayout.version();
@@ -107,7 +110,8 @@ class LayoutJsonService {
 
     private static Layout buildLayout(String version, ConfigService configService,
             List<PluginDescriptor> pluginDescriptors, @Nullable HeapDumps heapDumps,
-            long fixedAggregateIntervalSeconds, long fixedGaugeIntervalSeconds) {
+            long fixedAggregateIntervalSeconds, long fixedGaugeIntervalSeconds,
+            long fixedGaugeRollupSeconds) {
         List<LayoutPlugin> plugins = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             String id = pluginDescriptor.id();
@@ -159,6 +163,7 @@ class LayoutJsonService {
                 .addAllTransactionCustomAttributes(transactionCustomAttributes)
                 .fixedAggregateIntervalSeconds(fixedAggregateIntervalSeconds)
                 .fixedGaugeIntervalSeconds(fixedGaugeIntervalSeconds)
+                .fixedGaugeRollupSeconds(fixedGaugeRollupSeconds)
                 .build();
     }
 }

@@ -87,7 +87,8 @@ public class LocalUiModule {
         LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
                 configModule.getPluginDescriptors(), jvmModule.getHeapDumps(),
                 collectorModule.getFixedAggregateIntervalSeconds(),
-                collectorModule.getFixedGaugeIntervalSeconds());
+                collectorModule.getFixedGaugeIntervalSeconds(),
+                storageModule.getFixedGaugeRollupSeconds());
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configService, clock, layoutJsonService);
         IndexHtmlHttpService indexHtmlHttpService =
@@ -108,7 +109,8 @@ public class LocalUiModule {
                 collectorModule.getFixedAggregateIntervalSeconds());
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),
-                jvmModule.getHeapDumps(), collectorModule.getFixedGaugeIntervalSeconds());
+                jvmModule.getHeapDumps(), collectorModule.getFixedGaugeIntervalSeconds(),
+                storageModule.getFixedGaugeRollupSeconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
                 configModule.getPluginDescriptors(), dataDir, httpSessionManager,
                 transactionModule);

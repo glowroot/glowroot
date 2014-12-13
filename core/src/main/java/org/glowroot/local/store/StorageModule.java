@@ -44,6 +44,12 @@ public class StorageModule {
 
     private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 5;
 
+    private static final long fixedGaugeRollupSeconds;
+
+    static {
+        fixedGaugeRollupSeconds = Long.getLong("glowroot.internal.gaugeRollup1", 60);
+    }
+
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
     private final AggregateDao aggregateDao;
@@ -78,7 +84,7 @@ public class StorageModule {
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
         aggregateDao = new AggregateDao(dataSource, cappedDatabase);
         traceDao = new TraceDao(dataSource, cappedDatabase);
-        gaugePointDao = new GaugePointDao(dataSource);
+        gaugePointDao = new GaugePointDao(dataSource, clock, fixedGaugeRollupSeconds);
         PreInitializeStorageShutdownClasses.preInitializeClasses();
         if (viewerModeEnabled) {
             reaperRunnable = null;
@@ -116,6 +122,10 @@ public class StorageModule {
 
     public CappedDatabase getCappedDatabase() {
         return cappedDatabase;
+    }
+
+    public long getFixedGaugeRollupSeconds() {
+        return fixedGaugeRollupSeconds;
     }
 
     @OnlyUsedByTests

@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter.Lf2SpacesIndenter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -119,7 +118,9 @@ class ConfigFile {
         String warningMessage = null;
         try {
             config = readValue(content);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
+            // immutables json processing wraps IOExceptions inside RuntimeExceptions so can't rely
+            // on just catching IOException here
             logger.warn("error processing config file: {}", file.getAbsolutePath(), e);
             File backupFile = new File(file.getParentFile(), file.getName() + ".invalid-orig");
             config = getDefaultConfig();
