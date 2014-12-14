@@ -31,13 +31,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CollectorModule {
 
-    private static final long fixedAggregateIntervalSeconds;
-    private static final long fixedGaugeIntervalSeconds;
-
-    static {
-        fixedAggregateIntervalSeconds = Long.getLong("glowroot.internal.aggregateInterval", 300);
-        fixedGaugeIntervalSeconds = Long.getLong("glowroot.internal.gaugeInterval", 5);
-    }
+    private static final long fixedAggregateIntervalSeconds =
+            Long.getLong("glowroot.internal.aggregateInterval", 300);
+    private static final long fixedGaugeIntervalSeconds =
+            Long.getLong("glowroot.internal.gaugeInterval", 5);
 
     private final TransactionCollectorImpl transactionCollector;
     private final @Nullable AggregateCollector aggregateCollector;

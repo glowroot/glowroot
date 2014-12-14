@@ -53,9 +53,6 @@ public class LocalUiModule {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalUiModule.class);
 
-    // this is used for the demo site so there can be a standby instance on a different port
-    private static final @Nullable Integer port = Integer.getInteger("glowroot.internal.ui.port");
-
     // httpServer is only null if it could not even bind to port 0 (any available port)
     private final @Nullable HttpServer httpServer;
 
@@ -138,12 +135,7 @@ public class LocalUiModule {
 
         // for now only a single http worker thread to keep # of threads down
         final int numWorkerThreads = 1;
-        int port;
-        if (LocalUiModule.port == null) {
-            port = configService.getUserInterfaceConfig().port();
-        } else {
-            port = LocalUiModule.port;
-        }
+        int port = configService.getUserInterfaceConfig().port();
         String bindAddress = getBindAddress(properties);
         httpServer = buildHttpServer(bindAddress, port, numWorkerThreads, httpSessionManager,
                 indexHtmlHttpService, layoutJsonService, traceDetailHttpService,

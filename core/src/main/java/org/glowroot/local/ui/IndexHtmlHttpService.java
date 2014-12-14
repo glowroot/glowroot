@@ -35,12 +35,8 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class IndexHtmlHttpService implements HttpService {
 
-    private static final @Nullable String googleAnalyticsTrackingId;
-
-    static {
-        googleAnalyticsTrackingId =
-                System.getProperty("glowroot.internal.googleAnalyticsTrackingId");
-    }
+    private static final @Nullable String googleAnalyticsTrackingId =
+            System.getProperty("glowroot.internal.googleAnalyticsTrackingId");
 
     private final HttpSessionManager httpSessionManager;
     private final LayoutJsonService layoutJsonService;

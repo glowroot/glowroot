@@ -44,11 +44,8 @@ public class StorageModule {
 
     private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 5;
 
-    private static final long fixedGaugeRollupSeconds;
-
-    static {
-        fixedGaugeRollupSeconds = Long.getLong("glowroot.internal.gaugeRollup1", 60);
-    }
+    private static final long fixedGaugeRollupSeconds =
+            Long.getLong("glowroot.internal.gaugeRollup1", 60);
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
