@@ -71,8 +71,10 @@ glowroot.controller('JvmGaugesCtrl', [
               keyedColorPool.add(gaugeNames);
             }
           }
-          if (keyedColorPool.keys()) {
+          if (keyedColorPool.keys().length) {
             refreshChart();
+          } else {
+            $scope.chartNoData = true;
           }
         })
         .error(httpErrors.handler($scope));
@@ -195,8 +197,7 @@ glowroot.controller('JvmGaugesCtrl', [
         }
         $scope.chartNoData = nodata;
       } else {
-        // don't show "No data" when no gauges were even selected
-        $scope.chartNoData = false;
+        $scope.chartNoData = true;
       }
       if (plotData.length) {
         plot.setData(plotData);

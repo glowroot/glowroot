@@ -108,19 +108,19 @@ body {
   font-weight: 600;
 }
 
-.header-page-name a {
-  color: @glowroot-page-title-color;
-}
-
 .header-page-name li a {
-  font-size: 24px;
-  color: darken(@glowroot-page-title-color, 10%);
+  font-size: 22px;
   cursor: pointer;
 }
 
+.header-menu {
+  color: #555;
+  font-weight: normal;
+  font-size: 32px;
+}
+
 .header-page-name li a:hover {
-  color: white;
-  background-color: @glowroot-primary-color;
+  background-color: #ddd;
 }
 
 .navbar-brand {
@@ -217,4 +217,22 @@ body {
   text-decoration: none !important;
   display: inline-block;
   white-space: nowrap;
+}
+
+.large-caret {
+  .caret;
+  border-top: 6px solid;
+  border-right: 6px solid transparent;
+  border-left: 6px solid transparent;
+}
+
+hr.soften {
+  height: 1px;
+  margin-left: 50px;
+  margin-right: 50px;
+  background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, .1), rgba(0, 0, 0, 0));
+  background-image: -moz-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, .1), rgba(0, 0, 0, 0));
+  background-image: -ms-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, .1), rgba(0, 0, 0, 0));
+  background-image: -o-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, .1), rgba(0, 0, 0, 0));
+  border: 0;
 }

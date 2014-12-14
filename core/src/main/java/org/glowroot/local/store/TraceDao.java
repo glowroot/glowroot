@@ -327,10 +327,6 @@ public class TraceDao implements TraceRepository {
             sql += " and trace.error = ?";
             args.add(true);
         }
-        if (query.profiledOnly()) {
-            sql += " and trace.profiled = ?";
-            args.add(true);
-        }
         StringComparator transactionNameComparator = query.transactionNameComparator();
         String transactionName = query.transactionName();
         if (transactionNameComparator != null && !Strings.isNullOrEmpty(transactionName)) {

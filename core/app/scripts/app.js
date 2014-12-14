@@ -162,6 +162,14 @@ glowroot.run([
         $modalStack.dismiss(top.key);
       }
     });
+
+    $rootScope.$on('$stateChangeSuccess', function () {
+      // google analytics is enabled on https://demo.glowroot.org using the
+      // system property glowroot.internal.googleAnalyticsTrackingId
+      if (window.ga) {
+        window.ga('send', 'pageview', {page: $location.path()});
+      }
+    });
   }
 ]);
 

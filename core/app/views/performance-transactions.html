@@ -17,17 +17,19 @@
   <!-- need top padding so message is not hidden under navbar -->
   <div ng-include src="'template/gt-http-error.html'" style="padding-top: 50px;"></div>
 </div>
-<div class="header">
+<div class="header"
+     style="padding-bottom: 26px;">
   <div class="header-page-name">
-    <div ng-switch="layout.transactionTypes.length">
-      <div ng-switch-when="1">
-        {{filterTransactionType}}
-      </div>
-      <div ng-switch-default>
-        <div dropdown class="dropdown">
+    <div ng-show="layout.transactionTypes.length > 1">
+      <span class="inline-block"
+            style="border-right: 3px solid; padding-bottom: 4px; padding-right: 15px; margin-right: 15px;">
+        Transactions
+      </span><!-- this comment is to prevent space between inline-block elements prior to html minification
+   --><span class="inline-block header-menu">
+        <span dropdown class="dropdown">
           <div dropdown-toggle class="dropdown-toggle" style="cursor: pointer; display: inline-block;">
             {{filterTransactionType}}
-            <span class="caret"></span>
+            <span class="large-caret"></span>
           </div>
           <ul class="dropdown-menu">
             <li ng-repeat="transactionType in layout.transactionTypes">
@@ -36,45 +38,41 @@
               </a>
             </li>
           </ul>
-        </div>
-      </div>
+        </span>
+      </span>
+    </div>
+    <div ng-hide="layout.transactionTypes.length > 1"
+         style="padding-bottom: 4px;">
+      Transactions
     </div>
   </div>
 </div>
 <div ng-form
-     gt-form-with-primary-button>
-  <div class="form-group"
-       style="margin-bottom: 0;">
-    <div style="float: left; padding-right: 10px;">
-      <label class="control-label"
-             for="filterDate"
-             style="padding: 0 10px 0 60px;">
-        Date
-      </label>
-      <div gt-datepicker
-           gt-model="filterDate"
-           gt-id="filterDate"
-           style="display: inline-block;">
-      </div>
-    </div>
-    <div gt-button
-         gt-label="Refresh"
-         gt-click="refreshButtonClick(deferred)"
-         gt-no-spinner="true"
-         id="refreshButtonDiv">
-    </div>
+     gt-form-with-primary-button
+     class="clearfix">
+  <div class="pull-right">
+    <div gt-datepicker
+         gt-model="filterDate"
+         gt-id="filterDate"
+         style="display: inline-block; vertical-align: middle;">
+    </div><!-- this comment is to prevent space between inline-block elements prior to html minification
+ --><button class="btn btn-primary"
+            ng-click="refreshButtonClick()"
+            style="vertical-align: middle; margin-left: 8px;">
+      Refresh
+    </button><!-- this comment is to prevent space between inline-block elements prior to html minification
+ --><button popover-window="template/gt-chart-help.html"
+            popover-window-placement="left"
+            popover-window-trigger="focus"
+            class="chart-help-button inline-block"
+            style="border: none;">
+      <i title="Help"
+         class="fa fa-question-circle"
+         style="font-size: 28px; vertical-align: middle; margin-left: 8px;"></i>
+    </button>
   </div>
 </div>
 <div class="chart-container">
-  <button popover-window="template/gt-chart-help.html"
-          popover-window-placement="left"
-          popover-window-trigger="focus"
-          class="chart-help-button"
-          style="position: absolute; right: 0; top: -26px; border: none;">
-    <i title="Help"
-       class="fa fa-question-circle"
-       style="font-size: 28px;"></i>
-  </button>
   <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid zooming -->
   <div gt-spinner
        gt-show="showChartSpinner"
@@ -94,6 +92,11 @@
 <div ng-hide="chartNoData"
      style="position: relative; padding-top: 20px;">
   <div class="panel-overlay" ng-show="showTableOverlay">
+  </div>
+  <div style="padding-top: 10px; text-align: center;">
+    <div style="display: inline-block;">
+      (Drill in below for metrics and profiles)
+    </div>
   </div>
   <table class="table">
     <thead>

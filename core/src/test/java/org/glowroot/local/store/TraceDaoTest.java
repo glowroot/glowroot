@@ -72,7 +72,6 @@ public class TraceDaoTest {
                 .durationHigh(Long.MAX_VALUE)
                 .transactionType("unit test")
                 .errorOnly(false)
-                .profiledOnly(false)
                 .limit(1)
                 .build();
         // new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
@@ -103,7 +102,6 @@ public class TraceDaoTest {
                 .durationHigh(trace.duration())
                 .transactionType("unit test")
                 .errorOnly(false)
-                .profiledOnly(false)
                 .limit(1)
                 .build();
         // when
@@ -125,7 +123,6 @@ public class TraceDaoTest {
                 .durationHigh(trace.duration() + 2)
                 .transactionType("unit test")
                 .errorOnly(false)
-                .profiledOnly(false)
                 .limit(1)
                 .build();
         // when
@@ -147,7 +144,6 @@ public class TraceDaoTest {
                 .durationHigh(trace.duration() - 1)
                 .transactionType("unit test")
                 .errorOnly(false)
-                .profiledOnly(false)
                 .limit(1)
                 .build();
         // when
@@ -172,7 +168,6 @@ public class TraceDaoTest {
                 .customAttributeValueComparator(StringComparator.EQUALS)
                 .customAttributeValue("xyz")
                 .errorOnly(false)
-                .profiledOnly(false)
                 .limit(1)
                 .build();
         // when
@@ -197,7 +192,6 @@ public class TraceDaoTest {
                 .customAttributeValueComparator(null)
                 .customAttributeValue(null)
                 .errorOnly(false)
-                .profiledOnly(false)
                 .limit(1)
                 .build();
         // when
@@ -222,7 +216,6 @@ public class TraceDaoTest {
                 .customAttributeValueComparator(StringComparator.EQUALS)
                 .customAttributeValue("xyz")
                 .errorOnly(false)
-                .profiledOnly(false)
                 .limit(1)
                 .build();
         // when
@@ -247,7 +240,6 @@ public class TraceDaoTest {
                 .customAttributeValueComparator(StringComparator.EQUALS)
                 .customAttributeValue("abc")
                 .errorOnly(false)
-                .profiledOnly(false)
                 .limit(1)
                 .build();
         // when
@@ -272,7 +264,6 @@ public class TraceDaoTest {
                 .customAttributeValueComparator(StringComparator.EQUALS)
                 .customAttributeValue("xyz1")
                 .errorOnly(false)
-                .profiledOnly(false)
                 .limit(1)
                 .build();
         // when

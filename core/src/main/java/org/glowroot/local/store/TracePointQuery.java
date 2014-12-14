@@ -46,9 +46,5 @@ public abstract class TracePointQuery {
     public boolean errorOnly() {
         return false;
     }
-    @Value.Default
-    public boolean profiledOnly() {
-        return false;
-    }
     public abstract int limit();
 }

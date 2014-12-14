@@ -58,7 +58,7 @@ glowroot.controller('ErrorsTransactionsCtrl', [
     $scope.showChartSpinner = 0;
     $scope.showTableOverlay = 0;
 
-    function refreshData(deferred) {
+    function refreshData() {
       var date = $scope.filterDate;
       var refreshId = ++currentRefreshId;
       var query = {
@@ -107,9 +107,7 @@ glowroot.controller('ErrorsTransactionsCtrl', [
             plot.setupGrid();
             plot.draw();
             updateTransactionSummaries(data);
-            if (deferred) {
-              deferred.resolve('Success');
-            }
+            // TODO display 'Success' message
           })
           .error(function (data, status) {
             $scope.showChartSpinner--;
@@ -117,13 +115,13 @@ glowroot.controller('ErrorsTransactionsCtrl', [
             if (refreshId !== currentRefreshId) {
               return;
             }
-            httpErrors.handler($scope, deferred)(data, status);
+            httpErrors.handler($scope)(data, status);
           });
     }
 
-    $scope.refreshButtonClick = function (deferred) {
+    $scope.refreshButtonClick = function () {
       if (!$scope.filterDate) {
-        deferred.reject('Missing date');
+        // TODO display 'Missing date' message
         return;
       }
       var midnight = new Date($scope.chartFrom).setHours(0, 0, 0, 0);
@@ -134,8 +132,14 @@ glowroot.controller('ErrorsTransactionsCtrl', [
         $scope.chartTo = $scope.filterDate.getTime() + ($scope.chartTo - midnight);
       }
       updateLocation();
-      refreshData(deferred);
+      refreshData();
     };
+
+    $scope.$watch('filterDate', function (newValue, oldValue) {
+      if (newValue && newValue !== oldValue) {
+        $scope.refreshButtonClick();
+      }
+    });
 
     $chart.bind('plotzoom', function (event, plot, args) {
       $scope.$apply(function () {

@@ -215,7 +215,9 @@ class AggregateJsonService {
             dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
                     lastAggregate.captureTime());
         }
-        dataSeriesList.add(otherDataSeries);
+        if (!stackedPoints.isEmpty()) {
+            dataSeriesList.add(otherDataSeries);
+        }
 
         MergedAggregate mergedAggregate = aggregateCommonService.getMergedAggregate(aggregates);
         long traceCount;

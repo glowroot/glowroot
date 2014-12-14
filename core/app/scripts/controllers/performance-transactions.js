@@ -58,10 +58,10 @@ glowroot.controller('PerformanceTransactionsCtrl', [
     $scope.showChartSpinner = 0;
     $scope.showTableOverlay = 0;
 
-    function refreshData(deferred) {
+    function refreshData() {
       var date = $scope.filterDate;
       if (!date) {
-        deferred.reject('Missing date');
+        // TODO display 'Missing date' message
         return;
       }
       var refreshId = ++currentRefreshId;
@@ -112,9 +112,7 @@ glowroot.controller('PerformanceTransactionsCtrl', [
             plot.setupGrid();
             plot.draw();
             updateTransactionSummaries(data);
-            if (deferred) {
-              deferred.resolve('Success');
-            }
+            // TODO display 'Success' message
           })
           .error(function (data, status) {
             $scope.showChartSpinner--;
@@ -122,13 +120,13 @@ glowroot.controller('PerformanceTransactionsCtrl', [
             if (refreshId !== currentRefreshId) {
               return;
             }
-            httpErrors.handler($scope, deferred)(data, status);
+            httpErrors.handler($scope)(data, status);
           });
     }
 
-    $scope.refreshButtonClick = function (deferred) {
+    $scope.refreshButtonClick = function () {
       if (!$scope.filterDate) {
-        deferred.reject('Missing date');
+        // TODO display 'Missing date' message
         return;
       }
       var midnight = new Date($scope.chartFrom).setHours(0, 0, 0, 0);
@@ -139,7 +137,7 @@ glowroot.controller('PerformanceTransactionsCtrl', [
         $scope.chartTo = $scope.filterDate.getTime() + ($scope.chartTo - midnight);
       }
       updateLocation();
-      refreshData(deferred);
+      refreshData();
     };
 
     $chart.bind('plotzoom', function (event, plot, args) {
@@ -183,9 +181,13 @@ glowroot.controller('PerformanceTransactionsCtrl', [
 
     $scope.$watch('filterDate', function (newValue, oldValue) {
       if (newValue && newValue !== oldValue) {
-        $timeout(function () {
-          $('#refreshButtonDiv').find('button').click();
-        }, 0, false);
+        $scope.refreshButtonClick();
+      }
+    });
+
+    $scope.$watch('filterTransactionType', function (newValue, oldValue) {
+      if (newValue && newValue !== oldValue) {
+        $scope.refreshButtonClick();
       }
     });
 
@@ -204,6 +206,7 @@ glowroot.controller('PerformanceTransactionsCtrl', [
     $scope.changeTransactionType = function (transactionType) {
       if (transactionType !== $scope.filterTransactionType) {
         $scope.filterTransactionType = transactionType;
+        updateLocation();
         refreshData();
       }
     };

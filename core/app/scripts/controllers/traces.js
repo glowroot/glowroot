@@ -344,7 +344,6 @@ glowroot.controller('TracesCtrl', [
       appliedFilter.limit = 500;
     }
     appliedFilter.errorOnly = $location.search()['error-only'] === 'true';
-    appliedFilter.profiledOnly = $location.search()['profiled-only'] === 'true';
 
     $scope.filter = angular.copy(appliedFilter);
     // need to remove from and to so they aren't copied back during angular.extend(appliedFilter, $scope.filter)
@@ -413,9 +412,6 @@ glowroot.controller('TracesCtrl', [
       }
       if (appliedFilter.errorOnly) {
         query['error-only'] = 'true';
-      }
-      if (appliedFilter.profiledOnly) {
-        query['profiled-only'] = 'true';
       }
       if (!filterLimitDefault) {
         query.limit = appliedFilter.limit;

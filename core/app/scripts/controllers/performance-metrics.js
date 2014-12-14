@@ -65,6 +65,7 @@ glowroot.controller('PerformanceMetricsCtrl', [
     $scope.changeTransactionType = function (transactionType) {
       if (transactionType !== $scope.transactionType) {
         $scope.transactionType = transactionType;
+        updateLocation();
         refreshData();
       }
     };
@@ -80,10 +81,10 @@ glowroot.controller('PerformanceMetricsCtrl', [
       return queryStrings.encodeObject(query);
     };
 
-    function refreshData(deferred) {
+    function refreshData() {
       var date = $scope.filterDate;
       if (!date) {
-        deferred.reject('Missing date');
+        // TODO display 'Missing date' message
         return;
       }
       var refreshId = ++currentRefreshId;
@@ -151,9 +152,7 @@ glowroot.controller('PerformanceMetricsCtrl', [
               $('#detail').html('No data');
             }
             $scope.traceCount = data.traceCount;
-            if (deferred) {
-              deferred.resolve('Success');
-            }
+            // TODO display 'Success' message
           })
           .error(function (data, status) {
             $scope.showChartSpinner--;
@@ -161,13 +160,13 @@ glowroot.controller('PerformanceMetricsCtrl', [
             if (refreshId !== currentRefreshId) {
               return;
             }
-            httpErrors.handler($scope, deferred)(data, status);
+            httpErrors.handler($scope)(data, status);
           });
     }
 
-    $scope.refreshButtonClick = function (deferred) {
+    $scope.refreshButtonClick = function () {
       if (!$scope.filterDate) {
-        deferred.reject('Missing date');
+        // TODO display 'Missing date' message
         return;
       }
       var midnight = new Date($scope.chartFrom).setHours(0, 0, 0, 0);
@@ -178,8 +177,14 @@ glowroot.controller('PerformanceMetricsCtrl', [
         $scope.chartTo = $scope.filterDate.getTime() + ($scope.chartTo - midnight);
       }
       updateLocation();
-      refreshData(deferred);
+      refreshData();
     };
+
+    $scope.$watch('filterDate', function (newValue, oldValue) {
+      if (newValue && newValue !== oldValue) {
+        $scope.refreshButtonClick();
+      }
+    });
 
     $chart.bind('plotzoom', function (event, plot, args) {
       $scope.$apply(function () {
