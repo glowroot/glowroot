@@ -53,6 +53,10 @@ public class LocalUiModule {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalUiModule.class);
 
+    // default two http worker threads to keep # of threads down
+    private static final int numWorkerThreads =
+            Integer.getInteger("glowroot.internal.ui.workerThreads", 2);
+
     // httpServer is only null if it could not even bind to port 0 (any available port)
     private final @Nullable HttpServer httpServer;
 
@@ -133,13 +137,10 @@ public class LocalUiModule {
         jsonServices.add(gaugeJsonService);
         jsonServices.add(adminJsonService);
 
-        // for now only a single http worker thread to keep # of threads down
-        final int numWorkerThreads = 1;
         int port = configService.getUserInterfaceConfig().port();
         String bindAddress = getBindAddress(properties);
-        httpServer = buildHttpServer(bindAddress, port, numWorkerThreads, httpSessionManager,
-                indexHtmlHttpService, layoutJsonService, traceDetailHttpService,
-                traceExportHttpService, jsonServices);
+        httpServer = buildHttpServer(bindAddress, port, httpSessionManager, indexHtmlHttpService,
+                layoutJsonService, traceDetailHttpService, traceExportHttpService, jsonServices);
         if (httpServer != null) {
             configJsonService.setHttpServer(httpServer);
         }
@@ -188,9 +189,8 @@ public class LocalUiModule {
     }
 
     private static @Nullable HttpServer buildHttpServer(String bindAddress, int port,
-            int numWorkerThreads, HttpSessionManager httpSessionManager,
-            IndexHtmlHttpService indexHtmlHttpService, LayoutJsonService layoutJsonService,
-            TraceDetailHttpService traceDetailHttpService,
+            HttpSessionManager httpSessionManager, IndexHtmlHttpService indexHtmlHttpService,
+            LayoutJsonService layoutJsonService, TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService, List<Object> jsonServices) {
 
         String resourceBase = "org/glowroot/local/ui/app-dist";
