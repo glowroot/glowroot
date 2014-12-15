@@ -24,7 +24,7 @@
     "grunt-contrib-watch": "0.6.1",
     "grunt-filerev": "2.1.2",
     "grunt-newer": "0.8.0",
-    "grunt-usemin": "2.6.2",
+    "grunt-usemin": "3.0.0",
     "jshint-stylish": "1.0.0",
     "load-grunt-tasks": "1.0.0",
     "time-grunt": "1.0.0"

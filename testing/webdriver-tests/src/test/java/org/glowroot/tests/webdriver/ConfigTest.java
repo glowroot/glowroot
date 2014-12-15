@@ -130,7 +130,7 @@ public class ConfigTest {
     @Rule
     public TestWatcher getSauceLabsTestWatcher() {
         if (!SauceLabs.useSauceLabs()) {
-            return null;
+            return new TestWatcher() {};
         }
         String sauceUsername = System.getenv("SAUCE_USERNAME");
         String sauceAccessKey = System.getenv("SAUCE_ACCESS_KEY");
